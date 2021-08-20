@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -205,6 +206,9 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     public static String extractFileName(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
+        if (funcRootNode instanceof PBytecodeRootNode) {
+            return ((PBytecodeRootNode) funcRootNode).filename;
+        }
         SourceSection src = funcRootNode.getSourceSection();
 
         String filename = PythonContext.get(rootNode).getCodeFilename(funcRootNode.getCallTarget());
@@ -230,6 +234,9 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static int extractFirstLineno(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
+        if (funcRootNode instanceof PBytecodeRootNode) {
+            return ((PBytecodeRootNode) funcRootNode).firstlineno;
+        }
         SourceSection sourceSection = funcRootNode.getSourceSection();
         if (sourceSection != null) {
             return sourceSection.getStartLine();

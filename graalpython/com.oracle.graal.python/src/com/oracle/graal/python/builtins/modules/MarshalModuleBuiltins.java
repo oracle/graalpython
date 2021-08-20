@@ -1033,6 +1033,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             Signature signature = new Signature(positionalOnlyArgIndex, takesVarKeywordArgs, takesVarArgs ? argcount : -1, false, paramaterIds, keywordNames);
 
             PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(null), signature, bytecode,
+                            filename, name, firstlineno,
                             consts, names, varnames, freevars, cellvars, stacksize);
             RootCallTarget ct = Truffle.getRuntime().createCallTarget(rootNode);
             PCode code = factory.createCode(ct, signature, nlocals, stacksize, flags, consts, nameObjs, varnameObjs, freevars, cellvars, filename, name, firstlineno, lnotab);

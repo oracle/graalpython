@@ -133,6 +133,9 @@ public final class PBytecodeRootNode extends PRootNode {
 
     private final int stacksize;
     private final Signature signature;
+    private final String name;
+    public final String filename;
+    public final int firstlineno;
 
     @CompilationFinal(dimensions = 1) private final byte[] bytecode;
     @CompilationFinal(dimensions = 1) private final Object[] consts;
@@ -146,6 +149,7 @@ public final class PBytecodeRootNode extends PRootNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
     public PBytecodeRootNode(TruffleLanguage<?> language, Signature sign, byte[] bc,
+                    String filename, String name, int firstlineno,
                     Object[] consts, String[] names, String[] varnames, String[] freevars, String[] cellvars,
                     int stacksize) {
         super(language);
@@ -158,9 +162,13 @@ public final class PBytecodeRootNode extends PRootNode {
         this.freevars = freevars;
         this.cellvars = cellvars;
         this.stacksize = stacksize;
+        this.filename = filename;
+        this.name = name;
+        this.firstlineno = firstlineno;
     }
 
     public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, byte[] bc,
+                    String filename, String name, int firstlineno,
                     Object[] consts, String[] names, String[] varnames, String[] freevars, String[] cellvars,
                     int stacksize) {
         super(language, fd);
@@ -173,6 +181,14 @@ public final class PBytecodeRootNode extends PRootNode {
         this.freevars = freevars;
         this.cellvars = cellvars;
         this.stacksize = stacksize;
+        this.filename = filename;
+        this.name = name;
+        this.firstlineno = firstlineno;
+    }
+
+    @Override
+    public String getName() {
+        return name;
     }
 
     @Override
@@ -708,7 +724,6 @@ public final class PBytecodeRootNode extends PRootNode {
                             e.expect(StopIteration, insertChildNode(() -> IsBuiltinClassProfile.create(), i + 1));
                             stack[stackTop--] = null;
                             i += oparg;
-                            continue;
                         }
                     }
                     break;
@@ -729,7 +744,9 @@ public final class PBytecodeRootNode extends PRootNode {
                             case 1:
                                 {
                                     CallUnaryMethodNode callNode = insertChildNode(() -> CallUnaryMethodNode.create(), i);
-                                    stack[stackTop] = callNode.executeObject(frame, func, stack[stackTop]);
+                                    Object result = callNode.executeObject(frame, func, stack[stackTop]);
+                                    stack[stackTop--] = null;
+                                    stack[stackTop] = result;
                                 }
                                 break;
                             case 2:
@@ -738,6 +755,7 @@ public final class PBytecodeRootNode extends PRootNode {
                                     Object arg1 = stack[stackTop];
                                     stack[stackTop--] = null;
                                     Object arg0 = stack[stackTop];
+                                    stack[stackTop--] = null;
                                     stack[stackTop] = callNode.executeObject(frame, func, arg0, arg1);
                                 }
                                 break;
@@ -749,6 +767,7 @@ public final class PBytecodeRootNode extends PRootNode {
                                     Object arg1 = stack[stackTop];
                                     stack[stackTop--] = null;
                                     Object arg0 = stack[stackTop];
+                                    stack[stackTop--] = null;
                                     stack[stackTop] = callNode.execute(frame, func, arg0, arg1, arg2);
                                 }
                                 break;
