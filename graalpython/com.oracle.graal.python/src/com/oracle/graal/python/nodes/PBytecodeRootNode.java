@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 
@@ -246,7 +247,7 @@ public final class PBytecodeRootNode extends PRootNode {
                     {
                         Object value = fastlocals[oparg];
                         if (value == null) {
-                            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
+                            throw insertChildNode(() -> PRaiseNode.create(), i).raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
                         }
                         stack[++stackTop] = value;
                     }
@@ -460,13 +461,14 @@ public final class PBytecodeRootNode extends PRootNode {
                     throw new RuntimeException("inplace bytecodes");
                 case STORE_SUBSCR:
                     {
+                        PyObjectSetItem setItem = insertChildNode(() -> PyObjectSetItem.create(), i);
                         Object index = stack[stackTop];
                         stack[stackTop--] = null;
                         Object container = stack[stackTop];
                         stack[stackTop--] = null;
                         Object value = stack[stackTop];
                         stack[stackTop--] = null;
-                        insertChildNode(() -> PyObjectSetItem.create(), i).execute(frame, container, index, value);
+                        setItem.execute(frame, container, index, value);
                     }
                     break;
                 case DELETE_SUBSCR:
@@ -475,6 +477,7 @@ public final class PBytecodeRootNode extends PRootNode {
                     throw new RuntimeException("PRINT_EXPR");
                 case RAISE_VARARGS:
                     {
+                        RaiseNode raiseNode = insertChildNode(() -> RaiseNode.create(null, null), i);
                         int arg = oparg;
                         Object cause;
                         Object exception;
@@ -490,7 +493,6 @@ public final class PBytecodeRootNode extends PRootNode {
                         } else {
                             exception = PNone.NO_VALUE;
                         }
-                        RaiseNode raiseNode = insertChildNode(() -> RaiseNode.create(null, null), i);
                         raiseNode.execute(frame, exception, cause);
                     }
                     break;
@@ -514,8 +516,7 @@ public final class PBytecodeRootNode extends PRootNode {
                     throw new RuntimeException("async bytecodes");
                 case LOAD_BUILD_CLASS:
                     {
-                        String name = BuiltinNames.__BUILD_CLASS__;
-                        ReadGlobalOrBuiltinNode read = insertChildNode(() -> ReadGlobalOrBuiltinNode.create(name), i);
+                        ReadGlobalOrBuiltinNode read = insertChildNode(() -> ReadGlobalOrBuiltinNode.create(__BUILD_CLASS__), i);
                         stack[++stackTop] = read.execute(frame);
                     }
                     break;
@@ -599,9 +600,10 @@ public final class PBytecodeRootNode extends PRootNode {
                     throw new RuntimeException("MAP_ADD");
                 case LOAD_ATTR:
                     {
+                        PyObjectGetAttr getAttr = insertChildNode(() -> PyObjectGetAttr.create(), i);
                         String name = names[oparg];
                         Object owner = stack[stackTop];
-                        Object value = insertChildNode(() -> PyObjectGetAttr.create(), i).execute(frame, owner, name);
+                        Object value = getAttr.execute(frame, owner, name);
                         stack[stackTop] = value;
                     }
                     break;
@@ -609,6 +611,7 @@ public final class PBytecodeRootNode extends PRootNode {
                     throw new RuntimeException("COMARE_OP");
                 case IMPORT_NAME:
                     {
+                        CastToJavaIntExactNode castNode = insertChildNode(() -> CastToJavaIntExactNode.create(), i);
                         String name = names[oparg];
                         Object fromlist = stack[stackTop];
                         stack[stackTop--] = null;
@@ -622,7 +625,6 @@ public final class PBytecodeRootNode extends PRootNode {
                             Object[] list = ((PTuple) fromlist).getSequenceStorage().getInternalArray();
                             fromlistArg = (String[]) list;
                         }
-                        CastToJavaIntExactNode castNode = insertChildNode(() -> CastToJavaIntExactNode.create(), i);
                         int level = castNode.execute(stack[stackTop]);
                         ImportName importNode = insertChildNode(() -> ImportName.create(), i + 1);
                         Object result = importNode.execute(frame, context, builtins, name, globals, fromlistArg, level);
@@ -637,9 +639,10 @@ public final class PBytecodeRootNode extends PRootNode {
                     continue;
                 case POP_JUMP_IF_FALSE:
                     {
+                        PyObjectIsTrueNode isTrue = insertChildNode(() -> PyObjectIsTrueNode.create(), i);
                         Object cond = stack[stackTop];
                         stack[stackTop--] = null;
-                        if (!PyObjectIsTrueNode.getUncached().execute(frame, cond)) {
+                        if (!isTrue.execute(frame, cond)) {
                             i = oparg;
                             continue;
                         }
@@ -647,9 +650,10 @@ public final class PBytecodeRootNode extends PRootNode {
                     break;
                 case POP_JUMP_IF_TRUE:
                     {
+                        PyObjectIsTrueNode isTrue = insertChildNode(() -> PyObjectIsTrueNode.create(), i);
                         Object cond = stack[stackTop];
                         stack[stackTop--] = null;
-                        if (PyObjectIsTrueNode.getUncached().execute(frame, cond)) {
+                        if (isTrue.execute(frame, cond)) {
                             i = oparg;
                             continue;
                         }
@@ -657,8 +661,9 @@ public final class PBytecodeRootNode extends PRootNode {
                     break;
                 case JUMP_IF_FALSE_OR_POP:
                     {
+                        PyObjectIsTrueNode isTrue = insertChildNode(() -> PyObjectIsTrueNode.create(), i);
                         Object cond = stack[stackTop];
-                        if (!PyObjectIsTrueNode.getUncached().execute(frame, cond)) {
+                        if (!isTrue.execute(frame, cond)) {
                             i = oparg;
                             continue;
                         } else {
@@ -668,8 +673,9 @@ public final class PBytecodeRootNode extends PRootNode {
                     break;
                 case JUMP_IF_TRUE_OR_POP:
                     {
+                        PyObjectIsTrueNode isTrue = insertChildNode(() -> PyObjectIsTrueNode.create(), i);
                         Object cond = stack[stackTop];
-                        if (PyObjectIsTrueNode.getUncached().execute(frame, cond)) {
+                        if (isTrue.execute(frame, cond)) {
                             i = oparg;
                             continue;
                         } else {
@@ -688,7 +694,8 @@ public final class PBytecodeRootNode extends PRootNode {
                         Object iterable = stack[stackTop];
                         // TODO: handle coroutines iterable
                         if (!(iterable instanceof PGenerator)) {
-                            stack[stackTop] = PyObjectGetIter.getUncached().execute(frame, iterable);
+                            PyObjectGetIter getIter = insertChildNode(() -> PyObjectGetIter.create(), i);
+                            stack[stackTop] = getIter.execute(frame, iterable);
                         }
                     }
                     break;
@@ -762,6 +769,7 @@ public final class PBytecodeRootNode extends PRootNode {
                     break;
                 case CALL_FUNCTION_KW:
                     {
+                        CallNode callNode = insertChildNode(() -> CallNode.create(), i);
                         String[] kwNames = (String[]) ((PTuple) stack[stackTop]).getSequenceStorage().getInternalArray();
                         stack[stackTop--] = null;
                         Object func = stack[stackTop - oparg];
@@ -777,17 +785,17 @@ public final class PBytecodeRootNode extends PRootNode {
                             kwArgs[j] = new PKeyword(kwNames[j], stack[stackTop]);
                             stack[stackTop--] = null;
                         }
-                        CallNode callNode = insertChildNode(() -> CallNode.create(), i);
                         stack[stackTop] = callNode.execute(frame, func, arguments, kwArgs);
                     }
                     break;
                 case CALL_FUNCTION_EX:
                     {
+                        CallNode callNode = insertChildNode(() -> CallNode.create(), i);
                         Object func;
                         Object[] callargs;
                         PKeyword[] kwargs;
                         if ((oparg & 0x01) != 0) {
-                            kwargs = dictToPKeywords((PDict) stack[stackTop]);
+                            kwargs = dictToPKeywords((PDict) stack[stackTop], i + 1);
                             stack[stackTop--] = null;
                         } else {
                             kwargs = PKeyword.EMPTY_KEYWORDS;
@@ -795,13 +803,12 @@ public final class PBytecodeRootNode extends PRootNode {
                         callargs = ((PList) stack[stackTop]).getSequenceStorage().getInternalArray();
                         stack[stackTop--] = null;
                         func = stack[stackTop];
-                        CallNode callNode = insertChildNode(() -> CallNode.create(), i);
                         stack[stackTop] = callNode.execute(frame, func, callargs, kwargs);
                     }
                     break;
                 case MAKE_FUNCTION:
                     {
-                        String qualname = CastToJavaStringNode.getUncached().execute(stack[stackTop]);
+                        String qualname = insertChildNode(() -> CastToJavaStringNode.create(), i).execute(stack[stackTop]);
                         stack[stackTop--] = null;
                         PCode codeobj = (PCode) stack[stackTop];
                         stack[stackTop--] = null;
@@ -820,7 +827,7 @@ public final class PBytecodeRootNode extends PRootNode {
                         if ((oparg & 0x02) != 0) {
                             PDict kwDict = (PDict) stack[stackTop];
                             stack[stackTop--] = null;
-                            kwdefaults = dictToPKeywords(kwDict);
+                            kwdefaults = dictToPKeywords(kwDict, i + 1);
                         }
                         if ((oparg & 0x01) != 0) {
                             defaults = ((PTuple) stack[stackTop]).getSequenceStorage().getInternalArray();
@@ -847,16 +854,15 @@ public final class PBytecodeRootNode extends PRootNode {
 
             i += 2;
         }
-        throw new RuntimeException("no return from bytecode");
     }
 
-    private static PKeyword[] dictToPKeywords(PDict kwDict) {
+    private PKeyword[] dictToPKeywords(PDict kwDict, int nodeIndex) {
         HashingStorage store = kwDict.getDictStorage();
-        HashingStorageLibrary lib = HashingStorageLibrary.getFactory().getUncached(store);
         PKeyword[] kwdefaults;
         if (store instanceof KeywordsStorage) {
             kwdefaults = ((KeywordsStorage) store).getStore();
         } else {
+            HashingStorageLibrary lib = insertChildNode(() -> HashingStorageLibrary.getFactory().createDispatched(3), nodeIndex);
             kwdefaults = new PKeyword[lib.length(store)];
             int j = 0;
             for (HashingStorage.DictEntry entry : lib.entries(store)) {
