@@ -36,9 +36,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import sys
 import marshal
+import os
+import sys
+
+
 IS_GRAAL = sys.implementation.name == "graalpython"
+DIR0 = os.path.dirname(__file__)
 
 
 if IS_GRAAL:
@@ -52,19 +56,43 @@ else:
 
 
 CODE = get_code("bench.py", """
-import sys
+# import sys
 # def foo():
 #   pass
-len(sys.__name__)
+# len(sys.__name__)
+pass
 """)
 
 
+RETURN_NONE = [100, 0, 83, 0]
+COUNT = 200_000_000
+def generate_code(name, code_to_repeat, **kwargs):
+    filename = os.path.join(DIR0, name)
+    if not IS_GRAAL and False:
+        # generate our code files only with cpython
+        def foo(): pass
+        code = foo.__code__
+        cnt = int(2 * COUNT / len(code_to_repeat))
+        newcode = code.replace(co_code=bytes(bytearray(code_to_repeat * cnt + RETURN_NONE)), **kwargs)
+        with open(filename, "wb") as f:
+            marshal.dump(newcode, f)
+    return filename
+
+
+nop = generate_code("nop", [9, 0])
+pushpop = generate_code("pushpop", [100, 0, 1, 0])
+negative_one = generate_code("negative_one", [100, 1, 11, 0, 1, 0], co_consts=(None, 1,))
+
+
+with open(nop, "rb") as f:
+    CODE = marshal.load(f)
+
+
 def measure(num):
-    for i in range(num):
-        exec(CODE)
+    exec(CODE)
 
 
-def __benchmark__(num=5):
+def __benchmark__(num=1):
     measure(num)
 
 
