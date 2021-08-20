@@ -789,7 +789,12 @@ public final class PBytecodeRootNode extends PRootNode {
                 case CALL_FUNCTION_KW:
                     {
                         CallNode callNode = insertChildNode(() -> CallNode.create(), i);
-                        String[] kwNames = (String[]) ((PTuple) stack[stackTop]).getSequenceStorage().getInternalArray();
+                        Object[] kwNamesArray = ((PTuple) stack[stackTop]).getSequenceStorage().getInternalArray();
+                        String[] kwNames = new String[kwNamesArray.length];
+                        CastToJavaStringNode castStr = insertChildNode(() -> CastToJavaStringNode.create(), i + 1);
+                        for (int j = 0; j < kwNamesArray.length; j++) {
+                            kwNames[j] = castStr.execute(kwNamesArray[j]);
+                        }
                         stack[stackTop--] = null;
                         Object func = stack[stackTop - oparg];
                         int nkwargs = kwNames.length;
