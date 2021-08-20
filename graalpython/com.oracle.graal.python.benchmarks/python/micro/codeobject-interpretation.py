@@ -79,7 +79,7 @@ CODE = []
 
 def generate_code(name, code_to_repeat, **kwargs):
     filename = os.path.join(DIR0, name)
-    if not IS_GRAAL and True:
+    if not IS_GRAAL and False:
         # generate our code files only with cpython
         def foo(): pass
         code = foo.__code__
@@ -106,16 +106,77 @@ BYTECODE_FILES = [
 ]
 
 
+
 for _ in range(0, SIMULATED_FILECOUNT, len(BYTECODE_FILES)):
     for filename in BYTECODE_FILES:
         with open(filename, "rb") as f:
             CODE.append(marshal.load(f))
 
 
+CODESTR1 = "\n".join(["""
+import sys
+def foo(): pass
+len(sys.__name__)
+"""] * 100)
+CODESTR2 = "\n".join(["""
+def bar(): pass
+x = None
+len([])
+y = x
+"""] * 100)
+if IS_GRAAL and False: # test with bytecode or with AST
+    JUST_PYC_1 = __graalpython__.compile(CODESTR1, "1", "pyc-nocompile")
+    JUST_PYC_2 = __graalpython__.compile(CODESTR1, "2", "pyc-nocompile")
+else:
+    JUST_PYC_1 = marshal.dumps(compile(CODESTR1, "1", "exec"))
+    JUST_PYC_2 = marshal.dumps(compile(CODESTR2, "2", "exec"))
+
+
+MORE_CODEOBJECTS = []
+for _ in range(0, SIMULATED_FILECOUNT, 2):
+    MORE_CODEOBJECTS.append(marshal.loads(JUST_PYC_1))
+    MORE_CODEOBJECTS.append(marshal.loads(JUST_PYC_2))
+
+
+BYTECODE_FILE_DATA = []
+for filename in BYTECODE_FILES:
+    with open(filename, "rb") as f:
+        BYTECODE_FILE_DATA.append(f.read())
+
+
 def measure(num):
     for i in range(num):
-        exec(CODE[i % SIMULATED_FILECOUNT])
+        # Enable this to benchmark GraalPython code deserialization SST vs
+        # bytecode. Switch out the mode in the global setup above
+        # marshal.loads(JUST_PYC_1); marshal.loads(JUST_PYC_2)
+
+        # Enable this to measure executing different modules in AST vs bytecode
+        # exec(MORE_CODEOBJECTS[i % len(MORE_CODEOBJECTS)])
+
+        # Enable this to measure just unmarshalling
+        # marshal.loads(BYTECODE_FILE_DATA[i % len(BYTECODE_FILE_DATA)])
+
+        # Enable this to measure just loading file data
+        # with open(BYTECODE_FILES[i % len(BYTECODE_FILES)], "rb") as f:
+        #     f.read()
+
+        # Enable this to measure loading all the modules
+        # with open(BYTECODE_FILES[i % len(BYTECODE_FILES)], "rb") as f:
+        #     marshal.loads(f.read())
+
+        # Enable this to measure executing different modules
+        # exec(CODE[i % len(CODE)])
+
+        # Enable this to measure unmarshalling and executing code
+        # exec(marshal.loads(BYTECODE_FILE_DATA[i % len(BYTECODE_FILE_DATA)]))
+
+        # Enable this to measure all three, reading file, loading data, and executing
+        with open(BYTECODE_FILES[i % len(BYTECODE_FILES)], "rb") as f:
+            exec(marshal.loads(f.read()))
 
 
-def __benchmark__(num=1_000_000):
+def __benchmark__(num=100_000):
     measure(num)
+
+
+print("Benchmark file loaded")

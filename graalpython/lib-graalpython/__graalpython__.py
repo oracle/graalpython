@@ -172,7 +172,7 @@ def build_java_class(ns, name, base):
 @builtin
 def compile(codestr, path, mode="pyc"):
     bltin_compile = __builtins__["compile"]
-    if mode == "pyc":
+    if mode in ["pyc", "pyc-nocompile"]:
         import os, subprocess, marshal
         if isinstance(codestr, bytes):
             codestr = codestr.decode()
@@ -186,8 +186,11 @@ def compile(codestr, path, mode="pyc"):
         """
         proc = subprocess.run(["/usr/bin/python3", "-S", "-c", code], capture_output=True)
         if proc.returncode == 0:
-            print(f"Loaded {path} via CPython")
-            return bltin_compile(marshal.loads(proc.stdout), path, "exec")
+            if mode == "pyc":
+                print(f"Loaded {path} via CPython")
+                return bltin_compile(marshal.loads(proc.stdout), path, "exec")
+            else:
+                return proc.stdout
         raise RuntimeError("CPython bytecode compilation error")
     else:
         return bltin_compile(codestr, path, mode)
