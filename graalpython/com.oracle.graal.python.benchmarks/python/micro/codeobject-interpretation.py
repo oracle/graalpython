@@ -171,12 +171,57 @@ def measure(num):
         # exec(marshal.loads(BYTECODE_FILE_DATA[i % len(BYTECODE_FILE_DATA)]))
 
         # Enable this to measure all three, reading file, loading data, and executing
-        with open(BYTECODE_FILES[i % len(BYTECODE_FILES)], "rb") as f:
-            exec(marshal.loads(f.read()))
+        # with open(BYTECODE_FILES[i % len(BYTECODE_FILES)], "rb") as f:
+        #     exec(marshal.loads(f.read()))
 
 
-def __benchmark__(num=100_000):
+def __benchmark__(num=10_000):
     measure(num)
 
 
 print("Benchmark file loaded")
+
+
+# I've written the bytecode benchmark to simulate loading thousands of modules. I
+# always execute 10_000 iterations, to make it somewhat like loading a big
+# project with many pyc files, but not so large that the compiler would have time
+# to compile many of the operations involved in loading code.
+#
+# If we compare unmarshaling a code object from a bytes that has bytecode vs one
+# that has SST, we see that unmarshalling 10_000 bytecode code objects is 2-3x
+# faster than unmarshalling the SST. This is for two bits of code with 300 lines
+# of statements (creating functions, imports, assignments, calling
+# functions). This is just loading, not running. CPython on the same two codes is
+# more than 10x faster still.
+#
+# If we compare executing 10_000 times (cycling through the code objects so each
+# call target is not executed more than 10 times), the AST interpreter is faster
+# by around 20%.
+#
+# Loading artificial bytecode data with just dummy content (~2000 NOPs, PUSH/POP,
+# LOAD/STORE instructions...), CPython is ~15x faster unmarshalling it.
+#
+# Just opening files and reading their contents of that artificial bytecode data
+# (like the importlib would do with pyc files), CPython is ~13x faster than we
+# are. For CPython, this operation is 10x slower than unmarshalling the already
+# loaded bytes. For us the loading is ~8x slower than unmarshalling.
+#
+# Opening the files *and* loading the bytecode data yields that CPython is ~14x
+# faster than us.
+#
+# Now, if we preload that artificial code before the benchmark and just execut
+# those code objects 10_000 times, CPython is a whopping 20-30x faster than we
+# are. But the numbers are so small, it's hard to say (CPython 0.006-0.008s,
+# Graal 0.16-0.19s). OTOH, it's hard to argue that we would ever load more
+# modules than this during some application startup. Since this models quite well
+# what might happen when we load a big Python application consisting of many pyc
+# files, that seems a problem.
+#
+# Now, combining those: Loading + executing prepared bytes: is ~25-30x slower for
+# us than on CPython. Combining all three operations, CPython is 13-16x faster
+# than us. The large amount of time spent loading files helps us a little to skew
+# it into that ratio.
+#
+# The ratios don't quite add up, because doing more work also gives libgraal more
+# time to optimize parts of the work. It's still interesting, since this one-shot
+# loading of many pyc files is crucial for our perceived startup performance.
