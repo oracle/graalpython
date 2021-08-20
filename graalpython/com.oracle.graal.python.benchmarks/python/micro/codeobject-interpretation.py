@@ -56,72 +56,66 @@ else:
 
 
 CODE = get_code("bench.py", """
-# import sys
-# def foo():
-#   pass
-# len(sys.__name__)
+import sys
+def foo():
+  pass
+len(sys.__name__)
+print(sys, flush=False)
 pass
 """)
 
+# pollute the profile of the bytecode loop
+exec(CODE)
 
+
+# We're making sure that each code object is a separate call target. This is to
+# simulate we are loading SIMULATED_FILECOUNT modules, because each module is
+# potentially a lot of code but only gets executed once
 RETURN_NONE = [100, 0, 83, 0]
-COUNT = 200_000_000
+BYTECODE_COUNT = 200
+SIMULATED_FILECOUNT = 1000
+CODE = []
+
+
 def generate_code(name, code_to_repeat, **kwargs):
     filename = os.path.join(DIR0, name)
-    if not IS_GRAAL and False:
+    if not IS_GRAAL and True:
         # generate our code files only with cpython
         def foo(): pass
         code = foo.__code__
-        cnt = int(2 * COUNT / len(code_to_repeat))
+        cnt = int(2 * BYTECODE_COUNT / len(code_to_repeat))
         newcode = code.replace(co_code=bytes(bytearray(code_to_repeat * cnt + RETURN_NONE)), **kwargs)
         with open(filename, "wb") as f:
             marshal.dump(newcode, f)
+    # pollute the profile for the bytecode loop
+    with open(filename, "rb") as f:
+        exec(marshal.load(f))
     return filename
 
 
-nop = generate_code("nop", [9, 0])
-pushpop = generate_code("pushpop", [100, 0, 1, 0])
-negative_one = generate_code("negative_one", [100, 1, 11, 0, 1, 0], co_consts=(None, 1,))
-load_fast = generate_code("load_fast", [
-    100, 0, # load None
-    125, 0, # store fast 0
-    124, 0, # load fast 0
-      1, 0, # pop top
-], co_varnames=('x',))
+BYTECODE_FILES = [
+    generate_code("nop", [9, 0]),
+    generate_code("pushpop", [100, 0, 1, 0]),
+    generate_code("negative_one", [100, 1, 11, 0, 1, 0], co_consts=(None, 1,)),
+    generate_code("load_fast", [
+        100, 0, # load None
+        125, 0, # store fast 0
+        124, 0, # load fast 0
+        1, 0, # pop top
+    ], co_varnames=('x',)),
+]
 
 
-with open(load_fast, "rb") as f:
-    CODE = marshal.load(f)
+for _ in range(0, SIMULATED_FILECOUNT, len(BYTECODE_FILES)):
+    for filename in BYTECODE_FILES:
+        with open(filename, "rb") as f:
+            CODE.append(marshal.load(f))
 
 
 def measure(num):
-    exec(CODE)
+    for i in range(num):
+        exec(CODE[i % SIMULATED_FILECOUNT])
 
 
-def __benchmark__(num=1):
+def __benchmark__(num=1_000_000):
     measure(num)
-
-
-##########################
-# Measurements
-"""
-CPython
-  Unmarshal: 0.012s
-  Execution: 0.010s
-
-Graalpython
-  Interpreter
-    GPCode
-      Unmarshal: 0.197s
-      Execution: 0.024s
-    CPCode
-      Unmarshal: 0.035s
-      Execution: 0.951s
-  Compiler
-    GPCode
-      Unmarshal: 0.168s
-      Execution: 0.009s
-    CPCode
-      Unmarshal: 0.032s
-      Execution: 0.009s
-"""
