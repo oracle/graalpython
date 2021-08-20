@@ -82,9 +82,15 @@ def generate_code(name, code_to_repeat, **kwargs):
 nop = generate_code("nop", [9, 0])
 pushpop = generate_code("pushpop", [100, 0, 1, 0])
 negative_one = generate_code("negative_one", [100, 1, 11, 0, 1, 0], co_consts=(None, 1,))
+load_fast = generate_code("load_fast", [
+    100, 0, # load None
+    125, 0, # store fast 0
+    124, 0, # load fast 0
+      1, 0, # pop top
+], co_varnames=('x',))
 
 
-with open(nop, "rb") as f:
+with open(load_fast, "rb") as f:
     CODE = marshal.load(f)
 
 
