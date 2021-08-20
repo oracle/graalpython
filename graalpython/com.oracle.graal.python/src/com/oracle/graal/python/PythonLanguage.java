@@ -27,6 +27,7 @@ package com.oracle.graal.python;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
@@ -100,7 +101,6 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
-import java.util.Map;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
@@ -157,6 +157,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private static final LanguageReference<PythonLanguage> REFERENCE = LanguageReference.create(PythonLanguage.class);
 
     public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
+
+    @CompilationFinal public boolean singleContext = true;
+    private boolean firstContextInitialized;
 
     /**
      * This assumption will be valid if all contexts are single-threaded. Hence, it will be
@@ -293,12 +296,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
+        if (singleContext) {
+            return false;
+        }
         return PythonOptions.areOptionsCompatible(firstOptions, newOptions);
     }
 
     @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
-        if (!areOptionsCompatible(context.getEnv().getOptions(), newEnv.getOptions())) {
+        // We intentionally bypass the singleContext check in PythonLanguage#areOptionsCompatible
+        if (!PythonOptions.areOptionsCompatible(context.getEnv().getOptions(), newEnv.getOptions())) {
             Python3Core.writeInfo("Cannot use preinitialized context.");
             return false;
         }
@@ -327,6 +334,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         } else {
             assert areOptionsCompatible(options, PythonOptions.createEngineOptions(env)) : "invalid engine options";
         }
+        firstContextInitialized = true;
         return context;
     }
 
@@ -738,6 +746,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected void initializeMultipleContexts() {
         super.initializeMultipleContexts();
+        // We want to make sure that initializeMultipleContexts is always called before the first
+        // context is created.
+        // This would not be the case with inner contexts, but we achieve that by returning false
+        // from areOptionsCompatible when it is invoked for the first inner context, then Truffle
+        // creates a new PythonLanguage instance, calls initializeMultipleContexts on it, and only
+        // then uses it to create the inner contexts.
+        assert !firstContextInitialized;
+        singleContext = false;
         singleContextAssumption.invalidate();
     }
 
