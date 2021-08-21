@@ -120,7 +120,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -150,11 +149,10 @@ public abstract class ObjectNodes {
         @Specialization(guards = "isIDableObject(self)", assumptions = "getSingleThreadedAssumption()")
         static long singleThreadedObject(Object self,
                         @Cached ReadAttributeFromDynamicObjectNode readNode,
-                        @Cached WriteAttributeToDynamicObjectNode writeNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Cached WriteAttributeToDynamicObjectNode writeNode) {
             Object objectId = readNode.execute(self, OBJECT_ID);
             if (objectId == PNone.NO_VALUE) {
-                objectId = context.getNextObjectId();
+                objectId = PythonContext.get(readNode).getNextObjectId();
                 writeNode.execute(self, OBJECT_ID, objectId);
             }
             assert objectId instanceof Long : "internal object id hidden key must be a long at this point";
@@ -164,14 +162,13 @@ public abstract class ObjectNodes {
         @Specialization(guards = "isIDableObject(self)", replaces = "singleThreadedObject")
         static long multiThreadedObject(Object self,
                         @Cached ReadAttributeFromDynamicObjectNode readNode,
-                        @Cached WriteAttributeToDynamicObjectNode writeNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Cached WriteAttributeToDynamicObjectNode writeNode) {
             Object objectId = readNode.execute(self, OBJECT_ID);
             if (objectId == PNone.NO_VALUE) {
                 synchronized (self) {
                     objectId = readNode.execute(self, OBJECT_ID);
                     if (objectId == PNone.NO_VALUE) {
-                        objectId = context.getNextObjectId();
+                        objectId = PythonContext.get(readNode).getNextObjectId();
                         writeNode.execute(self, OBJECT_ID, objectId);
                     }
                 }
@@ -281,8 +278,8 @@ public abstract class ObjectNodes {
 
         @Specialization
         static Object id(boolean self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
+            PythonContext context = PythonContext.get(getObjectIdNode);
             Object bool = self ? context.getCore().getTrue() : context.getCore().getFalse();
             return getObjectIdNode.execute(bool);
         }
@@ -317,22 +314,20 @@ public abstract class ObjectNodes {
         }
 
         @Specialization
-        static Object id(String self,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+        Object id(String self) {
             if (self.length() == 0) {
                 return ID_EMPTY_UNICODE;
             }
-            return context.getNextStringId(self);
+            return PythonContext.get(this).getNextStringId(self);
         }
 
         @Specialization
-        static Object id(PString self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+        Object id(PString self,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
                         @Cached StringNodes.IsInternedStringNode isInternedStringNode,
                         @Cached StringNodes.StringMaterializeNode materializeNode) {
             if (isInternedStringNode.execute(self)) {
-                return id(materializeNode.execute(self), context);
+                return id(materializeNode.execute(self));
             }
             return getObjectIdNode.execute(self);
         }
@@ -350,9 +345,8 @@ public abstract class ObjectNodes {
 
         @Specialization(guards = "isForeignObjectNode.execute(self)", limit = "1")
         static Object idForeign(Object self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
-            return context.getNextObjectId(self);
+            return PythonContext.get(isForeignObjectNode).getNextObjectId(self);
         }
     }
 

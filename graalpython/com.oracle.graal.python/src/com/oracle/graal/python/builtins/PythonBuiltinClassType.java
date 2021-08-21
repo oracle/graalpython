@@ -63,7 +63,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -629,9 +628,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // Proxy InteropLibrary messages to the PythonBuiltinClass
     @ExportMessage
     public Object send(Message message, Object[] args,
-                    @CachedLibrary(limit = "1") ReflectionLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context) throws Exception {
-        return lib.send(context.getCore().lookupType(this), message, args);
+                    @CachedLibrary(limit = "1") ReflectionLibrary lib) throws Exception {
+        return lib.send(PythonContext.get(lib).getCore().lookupType(this), message, args);
     }
 
     @ExportMessage
@@ -691,9 +689,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     @ExportMessage
     public Object callObjectWithState(ThreadState state, Object[] arguments,
-                    @CachedContext(PythonLanguage.class) PythonContext ctx,
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        return lib.callObjectWithState(ctx.getCore().lookupType(this), state, arguments);
+        return lib.callObjectWithState(PythonContext.get(lib).getCore().lookupType(this), state, arguments);
     }
 
     @ExportMessage

@@ -86,7 +86,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
      * Creates a shallow copy.
      */
     private FunctionRootNode(FunctionRootNode other) {
-        super(PythonLanguage.getCurrent(), other.getFrameDescriptor(), other.executionCellSlots, other.getSignature());
+        super(PythonLanguage.get(other), other.getFrameDescriptor(), other.executionCellSlots, other.getSignature());
         this.executionCellSlots = other.executionCellSlots;
 
         this.sourceSection = other.getSourceSection();

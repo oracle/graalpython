@@ -58,8 +58,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -90,10 +88,9 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
     public abstract static class HPyDebugHandleIdNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static Object doGeneric(PDebugHandle self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+        Object doGeneric(PDebugHandle self,
                         @Cached ConditionProfile profile) {
-            return self.getHandle().getId(context.getHPyDebugContext(), profile);
+            return self.getHandle().getId(getContext().getHPyDebugContext(), profile);
         }
     }
 
@@ -122,9 +119,9 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
     public abstract static class HPyDebugHandleReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object doGeneric(VirtualFrame frame, PDebugHandle self,
-                        @CachedLanguage PythonLanguage language,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+        Object doGeneric(VirtualFrame frame, PDebugHandle self) {
+            PythonLanguage language = getLanguage();
+            PythonContext context = getContext();
             Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
                 return format(context.getHPyDebugContext(), self);

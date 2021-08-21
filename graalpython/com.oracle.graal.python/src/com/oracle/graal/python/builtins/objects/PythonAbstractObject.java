@@ -137,7 +137,6 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -1685,13 +1684,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         public String doDefault(PythonAbstractObject receiver,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached ReadAttributeFromObjectNode readStr,
                         @Cached CallNode callNode,
                         @Cached CastToJavaStringNode castStr,
                         @Cached ConditionProfile toStringUsed) {
             Object toStrAttr;
             String names;
+            PythonContext context = PythonContext.get(this);
             if (context.getOption(PythonOptions.UseReprForPrintString)) {
                 names = BuiltinNames.REPR;
             } else {

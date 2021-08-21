@@ -244,7 +244,7 @@ public class IOBaseBuiltins extends PythonBuiltins {
                     } catch (PException e1) {
                         PBaseException ee = e1.getEscapedException();
                         ee.setContext(e.setCatchingFrameAndGetEscapedException(frame, this));
-                        throw getRaiseNode().raiseExceptionObject(ee, getContext().getLanguage());
+                        throw getRaiseNode().raiseExceptionObject(ee);
                     }
                     throw e.getExceptionForReraise();
                 }

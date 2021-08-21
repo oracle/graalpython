@@ -51,7 +51,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibErro
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -75,7 +74,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -94,7 +92,6 @@ public class ZlibCompressBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isInitialized()")
         PBytes doNativeBytes(ZLibCompObject.NativeZlibCompObject self, PBytesLike data,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("co") @Cached ZlibNodes.ZlibNativeCompressObj compressObj) {
@@ -102,20 +99,19 @@ public class ZlibCompressBuiltins extends PythonBuiltins {
                 assert self.isInitialized();
                 byte[] bytes = toBytes.execute(data.getSequenceStorage());
                 int len = lenNode.execute(data.getSequenceStorage());
-                return factory().createBytes(compressObj.execute(self, ctxt, bytes, len));
+                return factory().createBytes(compressObj.execute(self, PythonContext.get(this), bytes, len));
             }
         }
 
         @Specialization(guards = {"self.isInitialized()", "!isBytes(data)"})
         PBytes doNativeObject(ZLibCompObject.NativeZlibCompObject self, Object data,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("bb") @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("co") @Cached ZlibNodes.ZlibNativeCompressObj compressObj) {
             synchronized (self) {
                 assert self.isInitialized();
                 byte[] bytes = toBytes.execute(data);
                 int len = bytes.length;
-                return factory().createBytes(compressObj.execute(self, ctxt, bytes, len));
+                return factory().createBytes(compressObj.execute(self, PythonContext.get(this), bytes, len));
             }
         }
 
@@ -183,9 +179,8 @@ public class ZlibCompressBuiltins extends PythonBuiltins {
     abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doit(ZLibCompObject self,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached BaseCopyNode copyNode) {
-            return copyNode.execute(self, ctxt, factory());
+            return copyNode.execute(self, PythonContext.get(this), factory());
         }
     }
 
@@ -199,9 +194,8 @@ public class ZlibCompressBuiltins extends PythonBuiltins {
     abstract static class DeepCopyNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doit(ZLibCompObject self, @SuppressWarnings("unused") Object memo,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached BaseCopyNode copyNode) {
-            return copyNode.execute(self, ctxt, factory());
+            return copyNode.execute(self, PythonContext.get(this), factory());
         }
     }
 
@@ -224,7 +218,6 @@ public class ZlibCompressBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"mode != Z_NO_FLUSH", "self.isInitialized()"})
         PBytes doit(ZLibCompObject.NativeZlibCompObject self, int mode,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached NativeLibrary.InvokeNativeFunction compressObjFlush,
                         @Cached ZlibNodes.GetNativeBufferNode getBuffer,
                         @Cached NativeLibrary.InvokeNativeFunction getIsInitialised,
@@ -232,6 +225,7 @@ public class ZlibCompressBuiltins extends PythonBuiltins {
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
             synchronized (self) {
                 assert self.isInitialized();
+                PythonContext ctxt = PythonContext.get(this);
                 NFIZlibSupport zlibSupport = ctxt.getNFIZlibSupport();
                 Object lastInput;
                 if (self.lastInput == null) {

@@ -56,7 +56,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -66,7 +65,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -215,13 +213,13 @@ public class Bz2Nodes {
 
         @Specialization
         byte[] nativeInternalDecompress(BZ2Object.BZ2Decompressor self, int maxLength,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached NativeLibrary.InvokeNativeFunction decompress,
                         @Cached NativeLibrary.InvokeNativeFunction getBzsAvailInReal,
                         @Cached NativeLibrary.InvokeNativeFunction getNextInIndex,
                         @Cached GetOutputNativeBufferNode getBuffer,
                         @Cached ConditionProfile errProfile,
                         @Cached BranchProfile ofProfile) {
+            PythonContext context = PythonContext.get(this);
             NFIBz2Support bz2Support = context.getNFIBz2Support();
             Object inGuest = self.getNextInGuest(context);
             int offset = self.getNextInIndex();

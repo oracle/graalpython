@@ -46,7 +46,6 @@ import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -75,7 +74,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -263,10 +261,9 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     abstract static class SetSentinelNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object setSentinel(
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+        Object setSentinel() {
             PLock sentinelLock = factory().createLock();
-            context.setSentinelLockWeakref(new WeakReference<>(sentinelLock));
+            PythonContext.get(this).setSentinelLockWeakref(new WeakReference<>(sentinelLock));
             return sentinelLock;
         }
     }

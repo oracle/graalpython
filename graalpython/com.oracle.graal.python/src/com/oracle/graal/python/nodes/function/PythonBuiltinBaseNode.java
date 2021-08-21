@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.function;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -113,18 +112,6 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaise implements In
         } else {
             return lazyClass;
         }
-    }
-
-    protected final ContextReference<PythonContext> getContextRef() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        return contextRef;
-    }
-
-    public final PythonContext getContext() {
-        return getContextRef().get();
     }
 
     public final Object getPosixSupport() {

@@ -67,8 +67,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -169,11 +167,11 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @Cached ToRegexSourceNode toRegexSourceNode,
                         @Cached CallNode callFallbackCompilerNode,
                         @CachedLibrary(limit = "2") InteropLibrary exceptionLib,
-                        @CachedLibrary(limit = "2") InteropLibrary compiledRegexLib,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @CachedLibrary(limit = "2") InteropLibrary compiledRegexLib) {
             try {
                 String flagsStr = toStringNode.execute(flags);
                 Source regexSource = toRegexSourceNode.execute(pattern, flagsStr);
+                PythonContext context = PythonContext.get(this);
                 Object compiledRegex = context.getEnv().parseInternal(regexSource).call();
                 if (compiledRegexLib.isNull(compiledRegex)) {
                     unsupportedRegexError.enter();
@@ -217,17 +215,18 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         Object call(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex,
-                        @CachedLanguage PythonLanguage language,
                         @Cached BranchProfile typeError,
                         @CachedLibrary("callable") InteropLibrary interop) {
-            Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);
+            PythonContext context = getContext();
+            PythonLanguage language = getLanguage();
+            Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
                 return interop.execute(callable, inputStringOrBytes, fromIndex);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 typeError.enter();
                 throw raise(TypeError, "%m", e);
             } finally {
-                IndirectCallContext.exit(frame, language, getContextRef(), state);
+                IndirectCallContext.exit(frame, language, context, state);
             }
         }
     }

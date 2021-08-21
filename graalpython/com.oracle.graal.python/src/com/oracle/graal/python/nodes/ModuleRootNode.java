@@ -97,7 +97,7 @@ public class ModuleRootNode extends PClosureRootNode {
             getWriteModuleDoc().executeObject(frame, doc);
         }
         if (hasAnnotations()) {
-            getWriteAnnotations().executeObject(frame, new PDict(lookupLanguageReference(PythonLanguage.class).get()));
+            getWriteAnnotations().executeObject(frame, new PDict(PythonLanguage.get(this)));
         }
     }
 

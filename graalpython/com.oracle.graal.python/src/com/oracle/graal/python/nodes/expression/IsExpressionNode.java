@@ -61,10 +61,9 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -118,9 +117,8 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         }
 
         @Specialization
-        static boolean doBP(boolean left, PInt right,
-                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
-            Python3Core core = ctxt.getCore();
+        boolean doBP(boolean left, PInt right) {
+            Python3Core core = PythonContext.get(this).getCore();
             if (left) {
                 return right == core.getTrue();
             } else {
@@ -226,9 +224,8 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         }
 
         @Specialization
-        static boolean doPB(PInt left, boolean right,
-                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
-            return doBP(right, left, ctxt);
+        boolean doPB(PInt left, boolean right) {
+            return doBP(right, left);
         }
 
         @Specialization
@@ -289,10 +286,9 @@ public abstract class IsExpressionNode extends BinaryOpNode {
 
         // none
         @Specialization
-        static boolean doObjectPNone(Object left, PNone right,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
-            if (language.getEngineOption(PythonOptions.EmulateJython) && ctxt.getEnv().isHostObject(left) && ctxt.getEnv().asHostObject(left) == null &&
+        boolean doObjectPNone(Object left, PNone right) {
+            Env env = PythonContext.get(this).getEnv();
+            if (PythonLanguage.get(this).getEngineOption(PythonOptions.EmulateJython) && env.isHostObject(left) && env.asHostObject(left) == null &&
                             right == PNone.NONE) {
                 return true;
             }
@@ -300,10 +296,8 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         }
 
         @Specialization
-        static boolean doPNoneObject(PNone left, Object right,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
-            return doObjectPNone(right, left, language, ctxt);
+        boolean doPNoneObject(PNone left, Object right) {
+            return doObjectPNone(right, left);
         }
 
         // pstring (may be interned)

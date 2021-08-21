@@ -83,11 +83,8 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -175,10 +172,10 @@ public abstract class HashingStorage {
 
         @Specialization(guards = {"!isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(iterable, iterLib)"}, limit = "1")
         HashingStorage doPDictKwargs(VirtualFrame frame, PHashingCollection iterable, PKeyword[] kwargs,
-                        @CachedLanguage PythonLanguage language,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                         @SuppressWarnings("unused") @CachedLibrary("iterable") PythonObjectLibrary iterLib,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+            PythonContext contextRef = PythonContext.get(this);
+            PythonLanguage language = PythonLanguage.get(this);
             Object state = IndirectCallContext.enter(frame, language, contextRef, this);
             try {
                 HashingStorage iterableDictStorage = iterable.getDictStorage();

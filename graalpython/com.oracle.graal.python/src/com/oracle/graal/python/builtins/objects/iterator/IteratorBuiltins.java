@@ -37,7 +37,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIter
 import java.math.BigInteger;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -70,7 +69,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -363,9 +361,9 @@ public class IteratorBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object reduce(VirtualFrame frame, PArrayIterator self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached ConditionProfile exhaustedProfile,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            PythonContext context = PythonContext.get(this);
             if (!exhaustedProfile.profile(self.isExhausted())) {
                 return reduceInternal(frame, self.array, self.getIndex(), context, pol);
             } else {
@@ -375,7 +373,6 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object reduce(VirtualFrame frame, PBaseSetIterator self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached SequenceStorageNodes.CreateStorageFromIteratorNode storageNode,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             int index = self.index;
@@ -383,12 +380,11 @@ public class IteratorBuiltins extends PythonBuiltins {
             PList list = factory().createList(storageNode.execute(frame, self));
             self.setExhausted(isExhausted);
             self.index = index;
-            return reduceInternal(frame, list, self.getIndex(), context, pol);
+            return reduceInternal(frame, list, self.getIndex(), PythonContext.get(this), pol);
         }
 
         @Specialization
         public Object reduce(VirtualFrame frame, PDictView.PBaseDictIterator<?> self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached SequenceStorageNodes.CreateStorageFromIteratorNode storageNode,
                         @Cached MapNodes.GetIteratorState getState,
                         @Cached MapNodes.SetIteratorState setState,
@@ -400,13 +396,13 @@ public class IteratorBuiltins extends PythonBuiltins {
             setState.execute(self.getIterator(), state);
             self.setExhausted(isExhausted);
             self.index = index;
-            return reduceInternal(frame, list, context, pol);
+            return reduceInternal(frame, list, PythonContext.get(this), pol);
         }
 
         @Specialization
         public Object reduce(VirtualFrame frame, PIntegerSequenceIterator self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            PythonContext context = PythonContext.get(this);
             if (self.isExhausted()) {
                 return reduceInternal(frame, factory().createList(), null, context, pol);
             }
@@ -415,8 +411,8 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object reduce(VirtualFrame frame, PPrimitiveIterator self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            PythonContext context = PythonContext.get(this);
             if (self.isExhausted()) {
                 return reduceInternal(frame, factory().createList(), null, context, pol);
             }
@@ -425,8 +421,8 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object reduce(VirtualFrame frame, PStringIterator self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            PythonContext context = PythonContext.get(this);
             if (self.isExhausted()) {
                 return reduceInternal(frame, "", null, context, pol);
             }
@@ -435,32 +431,30 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object reduce(VirtualFrame frame, PIntRangeIterator self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached LenOfRangeNode length,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             int start = self.getReduceStart();
             int stop = self.getReduceStop();
             int step = self.getReduceStep();
             int len = length.executeInt(start, stop, step);
-            return reduceInternal(frame, factory().createIntRange(start, stop, step, len), self.getIndex(), context, pol);
+            return reduceInternal(frame, factory().createIntRange(start, stop, step, len), self.getIndex(), PythonContext.get(this), pol);
         }
 
         @Specialization
         public Object reduce(VirtualFrame frame, PBigRangeIterator self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached LenOfRangeNode length,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             PInt start = self.getReduceStart();
             PInt stop = self.getReduceStop(factory());
             PInt step = self.getReduceStep();
             PInt len = factory().createInt(length.execute(start.getValue(), stop.getValue(), step.getValue()));
-            return reduceInternal(frame, factory().createBigRange(start, stop, step, len), self.getLongIndex(factory()), context, pol);
+            return reduceInternal(frame, factory().createBigRange(start, stop, step, len), self.getLongIndex(factory()), PythonContext.get(this), pol);
         }
 
         @Specialization(guards = "self.isPSequence()")
         public Object reduce(VirtualFrame frame, PSequenceIterator self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            PythonContext context = PythonContext.get(this);
             if (self.isExhausted()) {
                 return reduceInternal(frame, factory().createTuple(new Object[0]), null, context, pol);
             }
@@ -469,8 +463,8 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isPSequence()")
         public Object reduceNonSeq(@SuppressWarnings({"unused"}) VirtualFrame frame, PSequenceIterator self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            PythonContext context = PythonContext.get(this);
             if (!self.isExhausted()) {
                 return reduceInternal(frame, self.getObject(), self.getIndex(), context, pol);
             } else {

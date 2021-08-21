@@ -31,6 +31,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.List
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
@@ -134,7 +135,7 @@ public final class ListLiteralNode extends SequenceLiteralNode {
 
     public void reportUpdatedCapacity(BasicSequenceStorage newStore) {
         if (CompilerDirectives.inInterpreter()) {
-            if (lookupContextReference(PythonLanguage.class).get().getOption(PythonOptions.OverallocateLiteralLists)) {
+            if (PythonContext.get(this).getOption(PythonOptions.OverallocateLiteralLists)) {
                 if (newStore.capacity() > initialCapacity.estimate()) {
                     initialCapacity.updateFrom(newStore.capacity());
                     LOGGER.finest(() -> {

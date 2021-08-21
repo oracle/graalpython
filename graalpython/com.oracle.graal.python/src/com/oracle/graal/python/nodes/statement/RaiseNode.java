@@ -43,8 +43,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -136,27 +134,25 @@ public abstract class RaiseNode extends StatementNode {
     // raise <exception>
     @Specialization(guards = "isNoValue(cause)")
     void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, @SuppressWarnings("unused") PNone cause,
-                    @Cached BranchProfile isReraise,
-                    @Shared("language") @CachedLanguage PythonLanguage language) {
+                    @Cached BranchProfile isReraise) {
         if (exception.getException() != null) {
             isReraise.enter();
             exception.ensureReified();
         }
-        throw PRaiseNode.raise(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(language));
+        throw PRaiseNode.raise(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
     }
 
     // raise <exception> from *
     @Specialization(guards = "!isNoValue(cause)")
     void doRaise(@SuppressWarnings("unused") VirtualFrame frame, PBaseException exception, Object cause,
                     @Cached BranchProfile isReraise,
-                    @Cached SetExceptionCauseNode setExceptionCauseNode,
-                    @Shared("language") @CachedLanguage PythonLanguage language) {
+                    @Cached SetExceptionCauseNode setExceptionCauseNode) {
         if (exception.getException() != null) {
             isReraise.enter();
             exception.ensureReified();
         }
         setExceptionCauseNode.execute(frame, exception, cause);
-        throw PRaiseNode.raise(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(language));
+        throw PRaiseNode.raise(this, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
     }
 
     private void checkBaseClass(VirtualFrame frame, Object pythonClass, ValidExceptionNode validException, PRaiseNode raise) {
@@ -172,12 +168,11 @@ public abstract class RaiseNode extends StatementNode {
                     @Cached ValidExceptionNode validException,
                     @Cached CallNode callConstructor,
                     @Cached BranchProfile constructorTypeErrorProfile,
-                    @Cached PRaiseNode raise,
-                    @Shared("language") @CachedLanguage PythonLanguage language) {
+                    @Cached PRaiseNode raise) {
         checkBaseClass(frame, pythonClass, validException, raise);
         Object newException = callConstructor.execute(frame, pythonClass);
         if (newException instanceof PBaseException) {
-            throw raise.raiseExceptionObject((PBaseException) newException, language);
+            throw raise.raiseExceptionObject((PBaseException) newException);
         } else {
             constructorTypeErrorProfile.enter();
             throw raise.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
@@ -190,13 +185,12 @@ public abstract class RaiseNode extends StatementNode {
                     @Cached ValidExceptionNode validException,
                     @Cached PRaiseNode raise,
                     @Cached CallNode callConstructor,
-                    @Cached SetExceptionCauseNode setExceptionCauseNode,
-                    @Shared("language") @CachedLanguage PythonLanguage language) {
+                    @Cached SetExceptionCauseNode setExceptionCauseNode) {
         checkBaseClass(frame, pythonClass, validException, raise);
         Object newException = callConstructor.execute(frame, pythonClass);
         if (newException instanceof PBaseException) {
             setExceptionCauseNode.execute(frame, (PBaseException) newException, cause);
-            throw raise.raiseExceptionObject((PBaseException) newException, language);
+            throw raise.raiseExceptionObject((PBaseException) newException);
         } else {
             throw raise.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
         }

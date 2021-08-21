@@ -106,7 +106,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -395,8 +394,6 @@ public final class CApiContext extends CExtContext {
         @Child private InteropLibrary pointerObjectLib;
         @Child private PCallCapiFunction callBulkSubref;
 
-        @CompilationFinal private ContextReference<PythonContext> contextRef;
-
         protected CApiReferenceCleanerRootNode(PythonLanguage language) {
             super(language);
             this.calleeContext = CalleeContext.create();
@@ -409,11 +406,7 @@ public final class CApiContext extends CExtContext {
             try {
                 NativeObjectReference[] nativeObjectReferences = (NativeObjectReference[]) PArguments.getArgument(frame, 0);
                 int cleaned = 0;
-                if (contextRef == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    contextRef = lookupContextReference(PythonLanguage.class);
-                }
-                CApiContext cApiContext = contextRef.get().getCApiContext();
+                CApiContext cApiContext = PythonContext.get(this).getCApiContext();
                 long allocatedNativeMem = cApiContext.allocatedMemory;
                 long startTime = 0;
                 long middleTime = 0;

@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -66,7 +65,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
@@ -92,9 +90,8 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
 
         @Specialization(replaces = "lookupConstantMRO")
         protected Object lookupInBuiltinType(PythonBuiltinClassType klass, Object key,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @Cached ReadAttributeFromDynamicObjectNode readAttrNode) {
-            return findAttr(ctx.getCore(), klass, key, readAttrNode);
+            return findAttr(PythonContext.get(this).getCore(), klass, key, readAttrNode);
         }
 
         @Specialization(replaces = "lookupConstantMRO")
@@ -155,8 +152,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     @Specialization(guards = {"klass == cachedKlass"}, limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     protected static Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext ctx,
-                    @Cached("findAttr(ctx.getCore(), cachedKlass, key)") Object cachedValue) {
+                    @Cached("findAttr(getContext().getCore(), cachedKlass, key)") Object cachedValue) {
         return cachedValue;
     }
 
@@ -171,8 +167,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     @Specialization(guards = {"klass == cachedKlass", "canCache(cachedValue)"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
     protected static Object lookupPBCTCachedMulti(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext ctx,
-                    @Cached("findAttr(ctx.getCore(), cachedKlass, key)") Object cachedValue) {
+                    @Cached("findAttr(getContext().getCore(), cachedKlass, key)") Object cachedValue) {
         return cachedValue;
     }
 
@@ -191,21 +186,19 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     @Specialization(replaces = "lookupPBCTCached", guards = "klass == cachedKlass", limit = "getAttributeAccessInlineCacheMaxDepth()")
     protected Object lookupPBCTCachedOwner(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
-                    @CachedContext(PythonLanguage.class) PythonContext ctx,
-                    @Cached("findOwnerInMro(ctx.getCore(), cachedKlass, key)") PythonBuiltinClassType ownerKlass,
+                    @Cached("findOwnerInMro(getContext().getCore(), cachedKlass, key)") PythonBuiltinClassType ownerKlass,
                     @Cached ReadAttributeFromDynamicObjectNode readAttrNode) {
         if (ownerKlass == null) {
             return PNone.NO_VALUE;
         } else {
-            return readAttrNode.execute(ctx.getCore().lookupType(ownerKlass), key);
+            return readAttrNode.execute(PythonContext.get(this).getCore().lookupType(ownerKlass), key);
         }
     }
 
     @Specialization(replaces = "lookupPBCTCachedOwner")
     protected Object lookupPBCTGeneric(PythonBuiltinClassType klass,
-                    @CachedContext(PythonLanguage.class) PythonContext ctx,
                     @Cached ReadAttributeFromDynamicObjectNode readAttrNode) {
-        return findAttr(ctx.getCore(), klass, key, readAttrNode);
+        return findAttr(PythonContext.get(this).getCore(), klass, key, readAttrNode);
     }
 
     // PythonClass specializations:

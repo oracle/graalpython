@@ -71,10 +71,8 @@ import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -88,7 +86,6 @@ public final class TopLevelExceptionHandler extends RootNode {
     private final PException exception;
     private final SourceSection sourceSection;
     private final Source source;
-    @CompilationFinal private ContextReference<PythonContext> context;
 
     @Child private GilNode gilNode = GilNode.create();
 
@@ -113,11 +110,7 @@ public final class TopLevelExceptionHandler extends RootNode {
     }
 
     private PythonContext getContext() {
-        if (context == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            context = lookupContextReference(PythonLanguage.class);
-        }
-        return context.get();
+        return PythonContext.get(this);
     }
 
     @Override

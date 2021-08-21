@@ -42,10 +42,7 @@
 package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -53,7 +50,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class GilNode extends Node {
 
     private static final class Cached extends GilNode {
-        @CompilationFinal private ContextReference<PythonContext> contextRef;
         // The same profile is used for all methods. The profile condition should always be so that
         // we profile if a boundary call needs to be made at all.
         private final ConditionProfile binaryProfile = ConditionProfile.createBinaryProfile();
@@ -65,12 +61,12 @@ public abstract class GilNode extends Node {
 
         @Override
         public void release(boolean wasAcquired) {
-            release(getContext(), wasAcquired);
+            release(PythonContext.get(this), wasAcquired);
         }
 
         @Override
         public boolean acquire(Node location) {
-            return acquire(getContext(), location);
+            return acquire(PythonContext.get(this), location);
         }
 
         @Override
@@ -98,17 +94,9 @@ public abstract class GilNode extends Node {
             return false;
         }
 
-        private PythonContext getContext() {
-            if (contextRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                contextRef = lookupContextReference(PythonLanguage.class);
-            }
-            return contextRef.get();
-        }
-
         @Override
         public final boolean tryRelease() {
-            PythonContext context = getContext();
+            PythonContext context = PythonContext.get(this);
             if (binaryProfile.profile(context.ownsGil())) {
                 context.releaseGil();
                 return true;

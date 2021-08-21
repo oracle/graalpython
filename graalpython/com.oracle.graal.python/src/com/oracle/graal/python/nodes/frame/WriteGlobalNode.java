@@ -59,7 +59,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public abstract class WriteGlobalNode extends StatementNode implements GlobalNode, WriteNode {
     protected final String attributeId;
     @Child protected IsBuiltinClassProfile builtinProfile = IsBuiltinClassProfile.create();
-    protected final Assumption singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
+    protected final Assumption singleContextAssumption = PythonLanguage.get(this).singleContextAssumption;
 
     WriteGlobalNode(String attributeId) {
         this.attributeId = attributeId;

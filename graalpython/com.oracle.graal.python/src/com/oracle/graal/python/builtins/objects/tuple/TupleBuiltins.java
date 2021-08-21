@@ -46,7 +46,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -92,7 +91,6 @@ import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -209,7 +207,6 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @Specialization
         public static String repr(VirtualFrame frame, PTuple self,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached PyObjectReprAsJavaStringNode reprNode) {
@@ -218,7 +215,7 @@ public class TupleBuiltins extends PythonBuiltins {
             if (len == 0) {
                 return "()";
             }
-            if (!ctxt.reprEnter(self)) {
+            if (!PythonContext.get(reprNode).reprEnter(self)) {
                 return "(...)";
             }
             try {
@@ -240,7 +237,7 @@ public class TupleBuiltins extends PythonBuiltins {
                 PythonUtils.append(buf, ")");
                 return PythonUtils.sbToString(buf);
             } finally {
-                ctxt.reprLeave(self);
+                PythonContext.get(reprNode).reprLeave(self);
             }
         }
     }

@@ -42,7 +42,6 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -50,13 +49,12 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public class FunctionDefinitionNode extends ExpressionDefinitionNode {
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
+
     protected final String functionName;
     protected final String qualname;
     protected final String enclosingClassName;
@@ -99,14 +97,6 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         }
     }
 
-    protected PythonContext getContext() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        return contextRef.get();
-    }
-
     protected PythonObjectFactory factory() {
         return factory;
     }
@@ -136,7 +126,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
             defaultsStableAssumption = Truffle.getRuntime().createAssumption();
         }
 
-        PythonLanguage lang = lookupLanguageReference(PythonLanguage.class).get();
+        PythonLanguage lang = PythonLanguage.get(this);
         CompilerAsserts.partialEvaluationConstant(lang);
         PCode code;
         if (lang.singleContextAssumption.isValid()) {

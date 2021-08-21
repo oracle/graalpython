@@ -52,7 +52,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
@@ -69,7 +68,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
 
     protected final String attributeId;
     protected final ConditionProfile isGlobalProfile = ConditionProfile.createBinaryProfile();
-    protected final Assumption singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
+    protected final Assumption singleContextAssumption = PythonLanguage.get(this).singleContextAssumption;
 
     protected ReadGlobalOrBuiltinNode(String attributeId) {
         this.attributeId = attributeId;
@@ -199,7 +198,7 @@ abstract class ReadBuiltinNode extends Node {
     protected static final Assumption singleCoreNotInitialized = Truffle.getRuntime().createAssumption();
 
     protected final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
-    protected final Assumption singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
+    protected final Assumption singleContextAssumption = PythonLanguage.get(this).singleContextAssumption;
     protected final String attributeId;
 
     @CompilationFinal private ConditionProfile isCoreInitializedProfile;
@@ -217,8 +216,7 @@ abstract class ReadBuiltinNode extends Node {
     // module so we can treat anything read from it as constant here.
     @Specialization(assumptions = "singleContextAssumption")
     Object returnBuiltinFromConstantModule(
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                    @SuppressWarnings("unused") @Cached("getBuiltins(context)") PythonModule builtins) {
+                    @SuppressWarnings("unused") @Cached("getBuiltins()") PythonModule builtins) {
         Object builtin = readFromBuiltinsNode.execute(builtins, attributeId);
         if (isBuiltinProfile.profile(builtin != PNone.NO_VALUE)) {
             return builtin;
@@ -232,13 +230,13 @@ abstract class ReadBuiltinNode extends Node {
     }
 
     @Specialization
-    Object returnBuiltin(
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        PythonModule builtins = getBuiltins(context);
-        return returnBuiltinFromConstantModule(context, builtins);
+    Object returnBuiltin() {
+        PythonModule builtins = getBuiltins();
+        return returnBuiltinFromConstantModule(builtins);
     }
 
-    protected PythonModule getBuiltins(PythonContext context) {
+    protected PythonModule getBuiltins() {
+        PythonContext context = PythonContext.get(this);
         if (ensureContextInitializedProfile().profile(context.isInitialized())) {
             return context.getBuiltins();
         } else {

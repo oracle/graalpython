@@ -64,7 +64,6 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -408,9 +407,8 @@ public final class DynamicObjectStorage extends HashingStorage {
     }
 
     @ExportMessage
-    public HashingStorage clear(@CachedLanguage PythonLanguage lang,
-                    @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-        dylib.resetShape(store, lang.getEmptyShape());
+    public HashingStorage clear(@CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+        dylib.resetShape(store, PythonLanguage.get(dylib).getEmptyShape());
         return this;
     }
 
@@ -431,10 +429,9 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @SuppressWarnings("unused") @CachedLibrary("store") DynamicObjectLibrary dylib,
                         @Bind("dylib.getKeyArray(store)") Object[] keys,
                         @Cached("keys.length") int cachedLength,
-                        @CachedLanguage PythonLanguage lang,
                         @Cached("createAccess(cachedLength)") DynamicObjectLibrary[] readLib,
                         @Cached("createAccess(cachedLength)") DynamicObjectLibrary[] writeLib) {
-            DynamicObject copy = new Store(lang.getEmptyShape());
+            DynamicObject copy = new Store(PythonLanguage.get(dylib).getEmptyShape());
             for (int i = 0; i < cachedLength; i++) {
                 writeLib[i].put(copy, keys[i], readLib[i].getOrDefault(receiver.store, keys[i], PNone.NO_VALUE));
             }
@@ -443,9 +440,8 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(replaces = "copy")
         public static HashingStorage copyGeneric(DynamicObjectStorage receiver,
-                        @CachedLanguage PythonLanguage lang,
                         @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            DynamicObject copy = new Store(lang.getEmptyShape());
+            DynamicObject copy = new Store(PythonLanguage.get(dylib).getEmptyShape());
             Object[] keys = dylib.getKeyArray(receiver.store);
             for (Object key : keys) {
                 dylib.put(copy, key, dylib.getOrDefault(receiver.store, key, PNone.NO_VALUE));

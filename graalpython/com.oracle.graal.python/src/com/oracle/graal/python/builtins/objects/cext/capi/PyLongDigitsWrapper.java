@@ -55,7 +55,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -134,14 +133,13 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
     final Object readArrayElement(long index,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Shared("obSizeNode") @Cached ObSizeNode obSizeNode,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
                     @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             Object delegate = lib.getDelegate(this);
             long size = PInt.abs(obSizeNode.execute(delegate));
             if (index >= 0 && index < size) {
-                int longShift = context.getCApiContext().getPyLongBitsInDigit();
+                int longShift = PythonContext.get(lib).getCApiContext().getPyLongBitsInDigit();
                 int longMask = (1 << longShift) - 1;
                 if (delegate instanceof Integer || delegate instanceof Long) {
                     long val;

@@ -57,8 +57,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
@@ -94,8 +92,6 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
 
     @Specialization
     protected Object doDirect(VirtualFrame frame, Object[] arguments,
-                    @CachedLanguage PythonLanguage language,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
                     @Cached ConditionProfile isClassBodyProfile,
                     @Cached ConditionProfile isGeneratorFunctionProfile) {
         PArguments.setGlobals(arguments, globals);
@@ -104,7 +100,7 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
         optionallySetClassBodySpecial(arguments, ct, isClassBodyProfile);
         optionallySetGeneratorFunction(arguments, ct, isGeneratorFunctionProfile, callee);
         if (profileIsNullFrame(frame == null)) {
-            PythonThreadState threadState = context.getThreadState(language);
+            PythonThreadState threadState = PythonContext.get(this).getThreadState(PythonLanguage.get(this));
             PFrame.Reference frameInfo = IndirectCalleeContext.enter(threadState, arguments, ct);
             try {
                 return callNode.call(arguments);

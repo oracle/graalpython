@@ -100,7 +100,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
     }
 
     protected PCode getGeneratorCode() {
-        PythonLanguage lang = lookupLanguageReference(PythonLanguage.class).get();
+        PythonLanguage lang = PythonLanguage.get(this);
         if (generatorCallTarget == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             generatorCallTarget = PythonUtils.getOrCreateCallTarget(getGeneratorFunctionRootNode(lang));

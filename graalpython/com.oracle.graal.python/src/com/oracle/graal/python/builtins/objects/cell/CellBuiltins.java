@@ -309,8 +309,8 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class GetRefNode extends Node {
         public abstract Object execute(PCell self);
 
-        protected static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+        protected Assumption singleContextAssumption() {
+            return PythonLanguage.get(this).singleContextAssumption;
         }
 
         @Specialization(guards = "self == cachedSelf", assumptions = {"cachedSelf.isEffectivelyFinalAssumption()", "singleContextAssumption"}, limit = "1")

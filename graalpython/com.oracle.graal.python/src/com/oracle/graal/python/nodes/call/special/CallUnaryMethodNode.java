@@ -60,7 +60,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -118,10 +117,9 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
     @Specialization(guards = "isBuiltinDescriptor(info)", replaces = {"callUnarySpecialMethodSlotInlined", "callBinarySpecialMethodSlotInlined", "callTernarySpecialMethodSlotInlined"})
     Object callSpecialMethodSlotCallTarget(VirtualFrame frame, BuiltinMethodDescriptor info, Object receiver,
                     @Cached ConditionProfile invalidArgsProfile,
-                    @CachedLanguage PythonLanguage language,
                     @Cached GenericInvokeNode invokeNode) {
         raiseInvalidArgsNumUncached(invalidArgsProfile.profile(hasAllowedArgsNum(info)), info);
-        RootCallTarget callTarget = language.getDescriptorCallTarget(info);
+        RootCallTarget callTarget = PythonLanguage.get(this).getDescriptorCallTarget(info);
         Object[] arguments = PArguments.create(1);
         PArguments.setArgument(arguments, 0, receiver);
         return invokeNode.execute(frame, callTarget, arguments);

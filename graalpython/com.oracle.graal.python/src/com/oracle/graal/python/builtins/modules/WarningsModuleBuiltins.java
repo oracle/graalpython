@@ -95,8 +95,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -161,8 +159,6 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     static final class WarningsModuleNode extends Node implements IndirectCallNode {
         private static final String WARNINGS = "warnings";
 
-        @CompilationFinal LanguageReference<PythonLanguage> languageRef;
-        @CompilationFinal ContextReference<PythonContext> contextRef;
         @Child DynamicObjectLibrary warningsModuleLib;
         @Child CastToJavaStringNode castStr;
         @Child PRaiseNode raiseNode;
@@ -185,20 +181,11 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         }
 
         private PythonLanguage getLanguage() {
-            if (languageRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                languageRef = lookupLanguageReference(PythonLanguage.class);
-            }
-            return languageRef.get();
+            return PythonLanguage.get(this);
         }
 
         private PythonContext getContext() {
-            if (contextRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportPolymorphicSpecialize();
-                contextRef = lookupContextReference(PythonLanguage.class);
-            }
-            return contextRef.get();
+            return PythonContext.get(this);
         }
 
         private DynamicObjectLibrary getWarnLib() {
@@ -706,7 +693,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                     throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError, "exception %s not a BaseException subclass",
                                     polib.lookupAndCallRegularMethod(message, null, SpecialMethodNames.__REPR__));
                 } else {
-                    throw PRaiseNode.raise(node, (PBaseException) message, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.getCurrent()));
+                    throw PRaiseNode.raise(node, (PBaseException) message, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(polib)));
                 }
             }
 
@@ -992,7 +979,6 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
         private static final class WarnNodeCached extends WarnNode {
             @CompilationFinal BranchProfile noFrame = BranchProfile.create();
-            @CompilationFinal ContextReference<PythonContext> ctxRef;
             @Child WarningsModuleNode moduleFunctionsNode;
 
             @Override
@@ -1003,11 +989,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                     return;
                 }
                 assert frame instanceof VirtualFrame;
-                if (ctxRef == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    ctxRef = lookupContextReference(PythonLanguage.class);
-                }
-                PythonModule _warnings = ctxRef.get().getCore().lookupBuiltinModule("_warnings");
+                PythonModule _warnings = PythonContext.get(this).getCore().lookupBuiltinModule("_warnings");
                 String message = formatMessage(format, formatArgs);
                 if (moduleFunctionsNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1046,7 +1028,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             @TruffleBoundary
             @Override
             protected void execute(Frame frame, Object source, Object category, String format, int stackLevel, Object... formatArgs) {
-                PythonModule _warnings = lookupContextReference(PythonLanguage.class).get().getCore().lookupBuiltinModule("_warnings");
+                PythonModule _warnings = PythonContext.get(this).getCore().lookupBuiltinModule("_warnings");
                 Object warn = DynamicObjectLibrary.getUncached().getOrDefault(_warnings, "warn", PNone.NONE);
                 PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
                 String message;

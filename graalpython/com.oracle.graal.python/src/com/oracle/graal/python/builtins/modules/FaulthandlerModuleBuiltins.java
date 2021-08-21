@@ -62,7 +62,6 @@ import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.ThreadLocalAction;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -95,8 +94,8 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DumpTracebackNode extends PythonClinicBuiltinNode {
         @Specialization
-        PNone doit(VirtualFrame frame, Object file, boolean allThreads,
-                        @CachedLanguage PythonLanguage language) {
+        PNone doit(VirtualFrame frame, Object file, boolean allThreads) {
+            PythonLanguage language = PythonLanguage.get(this);
             PythonContext context = getContext();
             Object state = IndirectCallContext.enter(frame, language, context, this);
             try {

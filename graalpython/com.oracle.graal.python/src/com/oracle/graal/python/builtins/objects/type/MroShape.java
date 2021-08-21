@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -55,6 +54,7 @@ import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
 
 /**
@@ -183,16 +183,32 @@ public final class MroShape {
             if (kls.getShape() != currMroShape.shape) {
                 String message = String.format("mro:%s,index:%d,curr klass:%s\nactual shape:\n%s,\nexpected shape:\n%s",
                                 mro.getClassName(), i, kls, kls.getShape(), currMroShape.shape);
-                Set<Object> klsShapeProps = kls.getShape().getPropertyList().stream().filter(x -> !x.isHidden()).map(x -> x.getKey()).collect(Collectors.toSet());
+                Set<Object> klsShapeProps = new HashSet<>();
+                for (Property property : kls.getShape().getPropertyList()) {
+                    if (!property.isHidden()) {
+                        klsShapeProps.add(property.getKey());
+                    }
+                }
                 klsShapeProps.removeIf(x -> DynamicObjectLibrary.getUncached().getOrDefault(kls, x, null) == PNone.NO_VALUE);
-                Set<Object> currMroShapeProps = currMroShape.shape.getPropertyList().stream().filter(x -> !x.isHidden()).map(x -> x.getKey()).collect(Collectors.toSet());
+                Set<Object> currMroShapeProps = new HashSet<>();
+                for (Property property : currMroShape.shape.getPropertyList()) {
+                    if (!property.isHidden()) {
+                        currMroShapeProps.add(property.getKey());
+                    }
+                }
                 Set<Object> diff = new HashSet<>(klsShapeProps);
                 diff.addAll(currMroShapeProps);
                 diff.removeIf(x -> klsShapeProps.contains(x) && currMroShapeProps.contains(x));
                 // We ignore difference for special attributes that should not influence the MRO
                 // lookup results
                 diff.remove(__BASICSIZE__);
-                assert diff.size() == 0 : message + ",diff:" + String.join(",", diff.stream().map(Object::toString).collect(Collectors.joining(", ")));
+                if (diff.size() > 0) {
+                    HashSet<String> sDiff = new HashSet<>(diff.size());
+                    for (Object o : diff) {
+                        sDiff.add(o.toString());
+                    }
+                    assert diff.isEmpty() : message + ",diff:" + String.join(",", sDiff);
+                }
             }
             currMroShape = currMroShape.parent;
         }

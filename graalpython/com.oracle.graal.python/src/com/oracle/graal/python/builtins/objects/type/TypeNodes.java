@@ -145,8 +145,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -334,11 +332,10 @@ public abstract class TypeNodes {
 
         public abstract MroSequenceStorage execute(Object obj);
 
-        @Specialization
         static MroSequenceStorage doPythonClass(PythonManagedClass obj,
                         @Cached ConditionProfile notInitialized,
                         @Cached ConditionProfile isPythonClass,
-                        @CachedLanguage PythonLanguage language) {
+                        PythonLanguage language) {
             if (!notInitialized.profile(obj.isMROInitialized())) {
                 PythonAbstractClass[] mro = ComputeMroNode.doSlowPath(obj, false);
                 if (isPythonClass.profile(obj instanceof PythonClass)) {
@@ -353,9 +350,15 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static MroSequenceStorage doBuiltinClass(PythonBuiltinClassType obj,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            return context.getCore().lookupType(obj).getMethodResolutionOrder();
+        MroSequenceStorage doPythonClass(PythonManagedClass obj,
+                        @Cached ConditionProfile notInitialized,
+                        @Cached ConditionProfile isPythonClass) {
+            return doPythonClass(obj, notInitialized, isPythonClass, getLanguage());
+        }
+
+        @Specialization
+        MroSequenceStorage doBuiltinClass(PythonBuiltinClassType obj) {
+            return PythonContext.get(this).getCore().lookupType(obj).getMethodResolutionOrder();
         }
 
         @Specialization
@@ -506,9 +509,8 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        Set<PythonAbstractClass> doPythonClass(PythonBuiltinClassType obj,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            return context.getCore().lookupType(obj).getSubClasses();
+        Set<PythonAbstractClass> doPythonClass(PythonBuiltinClassType obj) {
+            return PythonContext.get(this).getCore().lookupType(obj).getSubClasses();
         }
 
         @Specialization
@@ -656,9 +658,8 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static PythonAbstractClass[] doPythonClass(PythonBuiltinClassType obj,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            return context.getCore().lookupType(obj).getBaseClasses();
+        PythonAbstractClass[] doPythonClass(PythonBuiltinClassType obj) {
+            return PythonContext.get(this).getCore().lookupType(obj).getBaseClasses();
         }
 
         @Specialization
@@ -710,9 +711,8 @@ public abstract class TypeNodes {
 
         @Specialization
         Object doPythonClass(PythonBuiltinClassType obj,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached GetBestBaseClassNode getBestBaseClassNode) {
-            PythonAbstractClass[] baseClasses = context.getCore().lookupType(obj).getBaseClasses();
+            PythonAbstractClass[] baseClasses = PythonContext.get(this).getCore().lookupType(obj).getBaseClasses();
             if (baseClasses.length == 0) {
                 return null;
             }
@@ -826,9 +826,8 @@ public abstract class TypeNodes {
 
         @Specialization
         boolean isCompatible(VirtualFrame frame, Object oldBase, PythonBuiltinClassType newBase,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached BranchProfile errorSlotsBranch) {
-            return isCompatible(frame, oldBase, context.getCore().lookupType(newBase), errorSlotsBranch);
+            return isCompatible(frame, oldBase, PythonContext.get(this).getCore().lookupType(newBase), errorSlotsBranch);
         }
 
         /**
@@ -1056,7 +1055,6 @@ public abstract class TypeNodes {
         @Specialization
         protected Object getSolid(Object type,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached LookupSpecialMethodNode.Dynamic lookupGetAttribute,
                         @Cached CallBinaryMethodNode callGetAttr,
                         @CachedLibrary(limit = "4") HashingStorageLibrary storageLibrary,
@@ -1066,7 +1064,8 @@ public abstract class TypeNodes {
                         @Cached BranchProfile typeIsNotBase,
                         @Cached BranchProfile hasBase,
                         @Cached BranchProfile hasNoBase) {
-            return solidBase(type, getBaseClassNode, context, lookupGetAttribute, callGetAttr, storageLibrary, getClassNode, objectLibrary, getArrayNode, typeIsNotBase, hasBase, hasNoBase, 0);
+            return solidBase(type, getBaseClassNode, PythonContext.get(this), lookupGetAttribute, callGetAttr, storageLibrary, getClassNode, objectLibrary, getArrayNode, typeIsNotBase, hasBase,
+                            hasNoBase, 0);
         }
 
         @TruffleBoundary
@@ -1497,16 +1496,14 @@ public abstract class TypeNodes {
         public abstract Shape execute(Object clazz);
 
         @Specialization(guards = "clazz == cachedClazz", limit = "1")
-        static Shape doBuiltinClassTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang,
+        Shape doBuiltinClassTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
                         @Cached("clazz") PythonBuiltinClassType cachedClazz) {
-            return cachedClazz.getInstanceShape(lang);
+            return cachedClazz.getInstanceShape(getLanguage());
         }
 
         @Specialization(replaces = "doBuiltinClassTypeCached")
-        static Shape doBuiltinClassType(PythonBuiltinClassType clazz,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return clazz.getInstanceShape(lang);
+        Shape doBuiltinClassType(PythonBuiltinClassType clazz) {
+            return clazz.getInstanceShape(getLanguage());
         }
 
         @Specialization(guards = "clazz == cachedClazz", assumptions = "singleContextAssumption()")

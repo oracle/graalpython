@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -68,7 +67,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -89,15 +87,13 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
             @Child private CallNode callNode = CallNode.create();
             @Child private GetThreadStateNode getThreadStateNode = GetThreadStateNodeGen.create();
 
-            private final ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
-
             protected AtExitRootNode(TruffleLanguage<?> language) {
                 super(language);
             }
 
             @Override
             public Object execute(VirtualFrame frame) {
-                PythonContext context = contextRef.get();
+                PythonContext context = PythonContext.get(this);
                 getThreadStateNode.setTopFrameInfo(context, PFrame.Reference.EMPTY);
                 getThreadStateNode.setCaughtException(context, PException.NO_EXCEPTION);
 
@@ -136,7 +132,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object register(Object callable, Object[] arguments, PKeyword[] keywords) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = PythonLanguage.getCurrent().createCachedCallTarget(AtExitRootNode::new, AtExitRootNode.class);
+            RootCallTarget callTarget = getLanguage().createCachedCallTarget(AtExitRootNode::new, AtExitRootNode.class);
             getContext().registerAtexitHook(callable, arguments, keywords, callTarget);
             return callable;
         }

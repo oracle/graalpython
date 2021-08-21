@@ -63,7 +63,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -184,8 +183,7 @@ public class SemLockBuiltins extends PythonBuiltins {
     abstract static class RebuildNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         Object doEnter(@SuppressWarnings("unused") Object handle, int kind, @SuppressWarnings("unused") Object maxvalue, Object nameObj,
-                        @Cached CastToJavaStringNode castNameNode,
-                        @CachedLanguage PythonLanguage lang) {
+                        @Cached CastToJavaStringNode castNameNode) {
 
             String name;
             try {
@@ -195,6 +193,7 @@ public class SemLockBuiltins extends PythonBuiltins {
             }
 
             Semaphore semaphore;
+            PythonLanguage lang = getLanguage();
             if (semaphoreExists(lang, name)) {
                 semaphore = semaphoreGet(lang, name);
             } else {

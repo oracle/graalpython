@@ -79,6 +79,7 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -174,8 +175,6 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -394,12 +393,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_BASE, key)")
         static Object doTpBase(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Cached GetNativeNullNode getNativeNullNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached GetSuperClassNode getSuperClassNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
             Object superClass = getSuperClassNode.execute(object);
             if (superClass != null) {
-                return toSulongNode.execute(ensureClassObject(context, superClass));
+                return toSulongNode.execute(ensureClassObject(PythonContext.get(getNativeNullNode), superClass));
             }
             return toSulongNode.execute(getNativeNullNode.execute());
         }
@@ -451,7 +449,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_AS_BUFFER, key)")
         static Object doTpAsBuffer(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached IsSubtypeNode isSubtype,
                         @Cached BranchProfile notBytes,
                         @Cached BranchProfile notBytearray,
@@ -461,27 +458,28 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached LookupNativeMemberInMRONode lookupTpAsBufferNode,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
                         @Shared("nullToSulongNode") @Cached ToSulongNode toSulongNode) {
-            PythonBuiltinClass pBytes = context.getCore().lookupType(PythonBuiltinClassType.PBytes);
+            Python3Core core = PythonContext.get(getNativeNullNode).getCore();
+            PythonBuiltinClass pBytes = core.lookupType(PythonBuiltinClassType.PBytes);
             if (isSubtype.execute(object, pBytes)) {
                 return new PyBufferProcsWrapper(pBytes);
             }
             notBytes.enter();
-            PythonBuiltinClass pBytearray = context.getCore().lookupType(PythonBuiltinClassType.PByteArray);
+            PythonBuiltinClass pBytearray = core.lookupType(PythonBuiltinClassType.PByteArray);
             if (isSubtype.execute(object, pBytearray)) {
                 return new PyBufferProcsWrapper(pBytearray);
             }
             notBytearray.enter();
-            PythonBuiltinClass pMemoryview = context.getCore().lookupType(PythonBuiltinClassType.PMemoryView);
+            PythonBuiltinClass pMemoryview = core.lookupType(PythonBuiltinClassType.PMemoryView);
             if (isSubtype.execute(object, pMemoryview)) {
                 return new PyBufferProcsWrapper(pMemoryview);
             }
             notMemoryview.enter();
-            PythonBuiltinClass pBuffer = context.getCore().lookupType(PythonBuiltinClassType.PBuffer);
+            PythonBuiltinClass pBuffer = core.lookupType(PythonBuiltinClassType.PBuffer);
             if (isSubtype.execute(object, pBuffer)) {
                 return new PyBufferProcsWrapper(pBuffer);
             }
             notBuffer.enter();
-            PythonBuiltinClass pMmap = context.getCore().lookupType(PythonBuiltinClassType.PMMap);
+            PythonBuiltinClass pMmap = core.lookupType(PythonBuiltinClassType.PMMap);
             if (isSubtype.execute(object, pMmap)) {
                 return new PyBufferProcsWrapper(pMmap);
             }
@@ -697,7 +695,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached IsBuiltinClassProfile isTupleProfile,
                         @Cached IsBuiltinClassProfile isDictProfile,
                         @Cached IsBuiltinClassProfile isListProfile,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
                         @Cached ReadAttributeFromObjectNode readAttrNode,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
@@ -706,7 +703,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 // We do not actually return _the_ traverse or clear function since we will never
                 // need
                 // it. It is just important to return a function.
-                PythonModule pythonCextModule = context.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
+                PythonModule pythonCextModule = PythonContext.get(getNativeNullNode).getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
                 Object sequenceClearMethod = readAttrNode.execute(pythonCextModule, "sequence_clear");
                 return toSulongNode.execute(sequenceClearMethod);
             }
@@ -1364,7 +1361,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(replaces = "doKnown")
         static void doGeneric(Object object, PythonNativeWrapper nativeWrapper, String key, Object value,
                         @Cached WriteKnownNativeMemberNode writeKnownNativeMemberNode,
-                        @CachedLanguage PythonLanguage lang,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib)
                         throws UnknownIdentifierException, UnsupportedTypeException, UnsupportedMessageException {
             try {
@@ -1377,7 +1373,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     // written before.
                     if (((DynamicObjectNativeWrapper) nativeWrapper).isMemberModifiable(key)) {
                         logGeneric(key);
-                        lib.setItem(((DynamicObjectNativeWrapper) nativeWrapper).createNativeMemberStore(lang), key, value);
+                        lib.setItem(((DynamicObjectNativeWrapper) nativeWrapper).createNativeMemberStore(PythonLanguage.get(writeKnownNativeMemberNode)), key, value);
                     } else {
                         throw UnknownIdentifierException.create(key);
                     }

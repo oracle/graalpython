@@ -50,14 +50,15 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
@@ -83,7 +84,7 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     /**
-     * This is basically like {@link #toNative(PythonContext, ConditionProfile)} but also returns
+     * This is basically like {@link #toNative(ConditionProfile, InteropLibrary)} but also returns
      * the ID.
      */
     public int getId(GraalHPyContext context, ConditionProfile hasIdProfile) {
@@ -117,11 +118,10 @@ public final class GraalHPyHandle implements TruffleObject {
      * in compiled code, this {@code GraalHPyHandle} object will definitively be allocated.
      */
     @ExportMessage
-    void toNative(
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Exclusive @Cached ConditionProfile isNativeProfile) {
+    void toNative(@Exclusive @Cached ConditionProfile isNativeProfile,
+                    @CachedLibrary("this") InteropLibrary lib) {
         if (!isPointer(isNativeProfile)) {
-            id = context.getHPyContext().getHPyHandleForObject(this);
+            id = PythonContext.get(lib).getHPyContext().getHPyHandleForObject(this);
         }
     }
 
@@ -133,24 +133,28 @@ public final class GraalHPyHandle implements TruffleObject {
 
     @ExportMessage
     static class GetNativeType {
-        @Specialization(assumptions = "singleContextAssumption()")
-        static Object doSingleContext(@SuppressWarnings("unused") GraalHPyHandle handle,
-                        @Cached("getHPyNativeType()") Object hpyNativeType) {
+
+        @Specialization(assumptions = "singleContextAssumption")
+        @SuppressWarnings("unused")
+        static Object doSingleContext(GraalHPyHandle handle,
+                        @CachedLibrary("handle") InteropLibrary lib,
+                        @Cached("singleContextAssumption(lib)") Assumption singleContextAssumption,
+                        @Cached("getHPyNativeType(lib)") Object hpyNativeType) {
             return hpyNativeType;
         }
 
         @Specialization(replaces = "doSingleContext")
         static Object doMultiContext(@SuppressWarnings("unused") GraalHPyHandle handle,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            return context.getHPyContext().getHPyNativeType();
+                        @CachedLibrary("handle") InteropLibrary lib) {
+            return PythonContext.get(lib).getHPyContext().getHPyNativeType();
         }
 
-        static Object getHPyNativeType() {
-            return PythonLanguage.getContext().getHPyContext().getHPyNativeType();
+        static Object getHPyNativeType(Node node) {
+            return PythonContext.get(node).getHPyContext().getHPyNativeType();
         }
 
-        static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+        static Assumption singleContextAssumption(Node node) {
+            return PythonLanguage.get(node).singleContextAssumption;
         }
     }
 

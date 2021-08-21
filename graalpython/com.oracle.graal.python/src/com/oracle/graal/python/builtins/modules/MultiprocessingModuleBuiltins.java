@@ -82,8 +82,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleContext;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -116,8 +114,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaIntExactNode castKindToIntNode,
                         @Cached CastToJavaIntExactNode castValueToIntNode,
                         @Cached CastToJavaIntExactNode castMaxvalueToIntNode,
-                        @Cached CastToJavaIntExactNode castUnlinkToIntNode,
-                        @CachedLanguage PythonLanguage lang) {
+                        @Cached CastToJavaIntExactNode castUnlinkToIntNode) {
             int kind = castKindToIntNode.execute(kindObj);
             if (kind != PSemLock.RECURSIVE_MUTEX && kind != PSemLock.SEMAPHORE) {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNRECOGNIZED_KIND);
@@ -139,6 +136,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                 // have to explicitly link it, so we do that here if we
                 // must. CPython always uses O_CREAT | O_EXCL for creating named
                 // semaphores, so a conflict raises.
+                PythonLanguage lang = getLanguage();
                 if (semaphoreExists(lang, name)) {
                     throw raise(PythonBuiltinClassType.FileExistsError, ErrorMessages.SEMAPHORE_NAME_TAKEN, name);
                 } else {
@@ -168,9 +166,8 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "sem_unlink", parameterNames = {"name"})
     abstract static class SemUnlink extends PythonUnaryBuiltinNode {
         @Specialization
-        PNone doit(String name,
-                        @CachedLanguage PythonLanguage lang) {
-            Semaphore prev = semaphoreRemove(name, lang);
+        PNone doit(String name) {
+            Semaphore prev = semaphoreRemove(name, getLanguage());
             if (prev == null) {
                 throw raise(PythonBuiltinClassType.FileNotFoundError, ErrorMessages.NO_SUCH_FILE_OR_DIR, "semaphores", name);
             }
@@ -187,9 +184,8 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SpawnContextNode extends PythonBuiltinNode {
         @Specialization
-        static long spawn(int fd, int sentinel,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            long tid = context.spawnTruffleContext(fd, sentinel);
+        long spawn(int fd, int sentinel) {
+            long tid = getContext().spawnTruffleContext(fd, sentinel);
             return convertTid(tid);
         }
     }
@@ -208,8 +204,8 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WaitTidNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PTuple waittid(long id, @SuppressWarnings("unused") int options,
-                        @CachedLanguage PythonLanguage lang) {
+        PTuple waittid(long id, @SuppressWarnings("unused") int options) {
+            PythonLanguage lang = getLanguage();
             long tid = convertTid(id);
             // TODO implement for options - WNOHANG and 0
             Thread thread = lang.getChildContextThread(tid);
@@ -227,8 +223,8 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     abstract static class TerminateThreadNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object terminate(long id,
-                        @CachedLanguage PythonLanguage language) {
+        Object terminate(long id) {
+            PythonLanguage language = getLanguage();
             Thread thread = language.getChildContextThread(convertTid(id));
             if (thread != null && thread.isAlive()) {
                 PythonContext.ChildContextData data = language.getChildContextData(convertTid(id));
@@ -254,12 +250,12 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "_pipe", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class PipeNode extends PythonBuiltinNode {
+
         @Specialization
         PTuple pipe(@Cached GilNode gil,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx,
-                        @SuppressWarnings("unused") @CachedLanguage PythonLanguage language,
-                        @Cached("language.getSharedMultiprocessingData()") SharedMultiprocessingData sharedData) {
+                        @Cached("getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData) {
             int[] pipe;
+            PythonContext ctx = getContext();
             gil.release(true);
             try {
                 pipe = sharedData.pipe();
@@ -277,8 +273,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     public abstract static class WriteNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "1")
         Object doWrite(int fd, PBytes data,
-                        @SuppressWarnings("unused") @CachedLanguage PythonLanguage lang,
-                        @Cached("lang.getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
+                        @Cached("getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
                         @CachedLibrary("data") PythonBufferAccessLibrary bufferLib,
                         @Cached GilNode gil) {
             gil.release(true);
@@ -295,11 +290,10 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         Object doWrite(long fd, PBytes data,
-                        @SuppressWarnings("unused") @CachedLanguage PythonLanguage lang,
-                        @Cached("lang.getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
+                        @Cached("getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
                         @CachedLibrary("data") PythonBufferAccessLibrary bufferLib,
                         @Cached GilNode gil) {
-            return doWrite((int) fd, data, lang, sharedData, bufferLib, gil);
+            return doWrite((int) fd, data, sharedData, bufferLib, gil);
         }
     }
 
@@ -308,8 +302,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     public abstract static class ReadNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doRead(int fd, @SuppressWarnings("unused") Object length,
-                        @SuppressWarnings("unused") @CachedLanguage PythonLanguage lang,
-                        @Cached("lang.getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
+                        @Cached("getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
                         @Cached GilNode gil) {
             gil.release(true);
             try {
@@ -327,10 +320,9 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doRead(long fd, Object length,
-                        @SuppressWarnings("unused") @CachedLanguage PythonLanguage lang,
-                        @Cached("lang.getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
+                        @Cached("getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
                         @Cached GilNode gil) {
-            return doRead((int) fd, length, lang, sharedData, gil);
+            return doRead((int) fd, length, sharedData, gil);
         }
     }
 
@@ -349,8 +341,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     abstract static class SelectNode extends PythonBuiltinNode {
         @Specialization
         Object doGeneric(VirtualFrame frame, Object rlist,
-                        @SuppressWarnings("unused") @CachedLanguage PythonLanguage lang,
-                        @Cached("lang.getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
+                        @Cached("getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached("createGetItem()") LookupAndCallBinaryNode callGetItemNode,
                         @Cached ListNodes.FastConstructListNode constructListNode,

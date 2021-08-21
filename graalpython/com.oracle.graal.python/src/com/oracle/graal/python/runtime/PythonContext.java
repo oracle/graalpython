@@ -118,9 +118,6 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
@@ -341,18 +338,15 @@ public final class PythonContext {
         @Specialization(guards = {"noContext == null", "!curThreadState.isShuttingDown()"})
         @SuppressWarnings("unused")
         static PythonThreadState doNoShutdown(PythonContext noContext,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Bind("getThreadState(language)") PythonThreadState curThreadState) {
+                        @Bind("getThreadState()") PythonThreadState curThreadState) {
             return curThreadState;
         }
 
         @Specialization(guards = {"noContext == null"}, replaces = "doNoShutdown")
-        static PythonThreadState doGeneric(@SuppressWarnings("unused") PythonContext noContext,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("context") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> context) {
-            PythonThreadState curThreadState = language.getThreadStateLocal().get();
+        PythonThreadState doGeneric(@SuppressWarnings("unused") PythonContext noContext) {
+            PythonThreadState curThreadState = PythonLanguage.get(this).getThreadStateLocal().get();
             if (curThreadState.isShuttingDown()) {
-                context.get().killThread();
+                PythonContext.get(this).killThread();
             }
             return curThreadState;
         }
@@ -360,23 +354,21 @@ public final class PythonContext {
         @Specialization(guards = "!curThreadState.isShuttingDown()")
         @SuppressWarnings("unused")
         static PythonThreadState doNoShutdownWithContext(PythonContext context,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Bind("getThreadState(language)") PythonThreadState curThreadState) {
+                        @Bind("getThreadState()") PythonThreadState curThreadState) {
             return curThreadState;
         }
 
         @Specialization(replaces = "doNoShutdownWithContext")
-        static PythonThreadState doGenericWithContext(PythonContext context,
-                        @Shared("language") @CachedLanguage PythonLanguage language) {
-            PythonThreadState curThreadState = language.getThreadStateLocal().get(context.env.getContext());
+        PythonThreadState doGenericWithContext(PythonContext context) {
+            PythonThreadState curThreadState = PythonLanguage.get(this).getThreadStateLocal().get(context.env.getContext());
             if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, curThreadState.isShuttingDown())) {
                 context.killThread();
             }
             return curThreadState;
         }
 
-        static PythonThreadState getThreadState(PythonLanguage language) {
-            return language.getThreadStateLocal().get();
+        PythonThreadState getThreadState() {
+            return PythonLanguage.get(this).getThreadStateLocal().get();
         }
     }
 
@@ -514,6 +506,12 @@ public final class PythonContext {
         this.in = env.in();
         this.out = env.out();
         this.err = env.err();
+    }
+
+    private static final ContextReference<PythonContext> REFERENCE = ContextReference.create(PythonLanguage.class);
+
+    public static PythonContext get(Node node) {
+        return REFERENCE.get(node);
     }
 
     public AllocationReporter getAllocationReporter() {

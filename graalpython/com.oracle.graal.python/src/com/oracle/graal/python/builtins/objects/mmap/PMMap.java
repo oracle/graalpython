@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.mmap;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -52,7 +51,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -141,13 +139,12 @@ public final class PMMap extends PythonObject {
     byte[] getBufferBytes(
                     @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
                     @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                    @CachedContext(PythonLanguage.class) PythonContext ctx,
                     @Cached BranchProfile gotException,
                     @Cached PConstructAndRaiseNode raiseNode) {
         try {
             int len = castToIntNode.execute(length);
             byte[] buffer = new byte[len];
-            posixLib.mmapReadBytes(ctx.getPosixSupport(), getPosixSupportHandle(), getPos(), buffer, buffer.length);
+            posixLib.mmapReadBytes(PythonContext.get(raiseNode).getPosixSupport(), getPosixSupportHandle(), getPos(), buffer, buffer.length);
             return buffer;
         } catch (PosixException e) {
             // TODO(fa) how to handle?
@@ -159,11 +156,10 @@ public final class PMMap extends PythonObject {
     @ExportMessage
     byte readByte(int byteOffset,
                     @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                    @CachedContext(PythonLanguage.class) PythonContext ctx,
                     @Cached BranchProfile gotException,
                     @Cached PConstructAndRaiseNode raiseNode) {
         try {
-            return posixLib.mmapReadByte(ctx.getPosixSupport(), getPosixSupportHandle(), byteOffset);
+            return posixLib.mmapReadByte(PythonContext.get(raiseNode).getPosixSupport(), getPosixSupportHandle(), byteOffset);
         } catch (PosixException e) {
             // TODO(fa) how to handle?
             gotException.enter();

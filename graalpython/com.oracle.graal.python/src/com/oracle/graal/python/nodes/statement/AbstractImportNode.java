@@ -75,8 +75,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -89,8 +87,7 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class AbstractImportNode extends StatementNode {
-    @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
+
     @Child ImportName importNameNode;
 
     public AbstractImportNode() {
@@ -98,19 +95,7 @@ public abstract class AbstractImportNode extends StatementNode {
     }
 
     private PythonLanguage getPythonLanguage() {
-        if (languageRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            languageRef = lookupLanguageReference(PythonLanguage.class);
-        }
-        return languageRef.get();
-    }
-
-    protected PythonContext getContext() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        return contextRef.get();
+        return PythonLanguage.get(this);
     }
 
     protected final Object importModule(VirtualFrame frame, String name) {

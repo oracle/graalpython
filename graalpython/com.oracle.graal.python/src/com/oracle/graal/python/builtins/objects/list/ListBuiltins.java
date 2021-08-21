@@ -54,7 +54,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.math.BigInteger;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -119,7 +118,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -155,7 +153,6 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object repr(VirtualFrame frame, PList self,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode repr,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItem) {
@@ -164,7 +161,7 @@ public class ListBuiltins extends PythonBuiltins {
             if (length == 0) {
                 return "[]";
             }
-            if (!ctxt.reprEnter(self)) {
+            if (!PythonContext.get(this).reprEnter(self)) {
                 return "[...]";
             }
             try {
@@ -192,7 +189,7 @@ public class ListBuiltins extends PythonBuiltins {
                 }
                 return PythonUtils.sbToString(PythonUtils.append(result, "]"));
             } finally {
-                ctxt.reprLeave(self);
+                PythonContext.get(this).reprLeave(self);
             }
         }
     }

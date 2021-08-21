@@ -29,7 +29,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Assertio
 
 import java.io.PrintStream;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -41,8 +40,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -52,8 +49,6 @@ public class AssertNode extends StatementNode {
     @Child private ExpressionNode message;
     @Child private LookupAndCallUnaryNode callNode;
     @CompilationFinal private Boolean assertionsEnabled = null;
-    @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 
@@ -77,7 +72,7 @@ public class AssertNode extends StatementNode {
                 // Python exceptions just fall through
                 throw e;
             } catch (Exception e) {
-                if (getPythonLanguage().getEngineOption(PythonOptions.CatchAllExceptions)) {
+                if (getLanguage().getEngineOption(PythonOptions.CatchAllExceptions)) {
                     // catch any other exception and convert to Python exception
                     throw assertionFailed(frame);
                 } else {
@@ -102,7 +97,7 @@ public class AssertNode extends StatementNode {
                 throw e;
             } catch (Exception e) {
                 assertionMessage = "internal exception occurred";
-                if (PythonOptions.isWithJavaStacktrace(getPythonLanguage())) {
+                if (PythonOptions.isWithJavaStacktrace(getLanguage())) {
                     printStackTrace(getContext(), e);
                 }
             }
@@ -128,21 +123,5 @@ public class AssertNode extends StatementNode {
     @TruffleBoundary
     private static void printStackTrace(PythonContext context, Exception e) {
         e.printStackTrace(new PrintStream(context.getStandardErr()));
-    }
-
-    private PythonLanguage getPythonLanguage() {
-        if (languageRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            languageRef = lookupLanguageReference(PythonLanguage.class);
-        }
-        return languageRef.get();
-    }
-
-    private PythonContext getContext() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        return contextRef.get();
     }
 }

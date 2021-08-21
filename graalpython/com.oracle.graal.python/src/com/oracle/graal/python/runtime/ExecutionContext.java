@@ -60,8 +60,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -208,7 +206,6 @@ public abstract class ExecutionContext {
         @CompilationFinal private boolean everEscaped = false;
 
         @CompilationFinal private ConditionProfile customLocalsProfile;
-        @CompilationFinal private LanguageReference<PythonLanguage> langRef;
 
         @Override
         public Node copy() {
@@ -233,11 +230,7 @@ public abstract class ExecutionContext {
                 customLocalsProfile = ConditionProfile.createCountingProfile();
             }
             if (customLocalsProfile.profile(customLocals != null && !(customLocals instanceof PFrame.Reference))) {
-                if (langRef == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    langRef = lookupLanguageReference(PythonLanguage.class);
-                }
-                thisFrameRef.setCustomLocals(langRef.get(), customLocals);
+                thisFrameRef.setCustomLocals(PythonLanguage.get(this), customLocals);
             }
         }
 
@@ -278,11 +271,7 @@ public abstract class ExecutionContext {
 
                 // force the frame so that it can be accessed later
                 ensureMaterializeNode().execute(frame, node, false, true);
-                if (langRef == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    langRef = lookupLanguageReference(PythonLanguage.class);
-                }
-                info.materialize(langRef.get(), frame, node);
+                info.materialize(PythonLanguage.get(this), frame, node);
                 // if this frame escaped we must ensure that also f_back does
                 callerInfo.markAsEscaped();
                 info.setBackref(callerInfo);
@@ -332,10 +321,9 @@ public abstract class ExecutionContext {
          *     public abstract Object execute(VirtualFrame frame, Object arg);
          *
          *     {@literal @}Specialization
-         *     Object doSomething(VirtualFrame frame, Object arg,
-         *                            {@literal @}CachedContext(PythonLanguage.class) PythonContext context) {
+         *     Object doSomething(VirtualFrame frame, Object arg) {
          *         // ...
-         *         PException savedExceptionState = IndirectCallContext.enter(frame, context, this);
+         *         PException savedExceptionState = IndirectCallContext.enter(frame, PythonContext.get(this), this);
          *         try {
          *             truffleBoundaryMethod(arg);
          *         } finally {
@@ -352,20 +340,6 @@ public abstract class ExecutionContext {
          * </pre>
          * </p>
          */
-        public static Object enter(VirtualFrame frame, PythonLanguage language, ContextReference<PythonContext> context, IndirectCallNode callNode) {
-            if (frame == null || callNode == null) {
-                return null;
-            }
-            boolean needsCallerFrame = callNode.calleeNeedsCallerFrame();
-            boolean needsExceptionState = callNode.calleeNeedsExceptionState();
-            if (!needsCallerFrame && !needsExceptionState) {
-                return null;
-            }
-
-            PythonThreadState pythonThreadState = context.get().getThreadState(language);
-            return enter(frame, pythonThreadState, needsCallerFrame, needsExceptionState, callNode);
-        }
-
         public static Object enter(VirtualFrame frame, PythonLanguage language, PythonContext context, IndirectCallNode callNode) {
             if (frame == null || callNode == null) {
                 return null;
@@ -381,7 +355,7 @@ public abstract class ExecutionContext {
         }
 
         /**
-         * @see #enter(VirtualFrame, PythonLanguage, ContextReference, IndirectCallNode)
+         * @see #enter(VirtualFrame, PythonLanguage, PythonContext, IndirectCallNode)
          */
         public static Object enter(VirtualFrame frame, PythonThreadState pythonThreadState, IndirectCallNode callNode) {
             if (frame == null || callNode == null) {
@@ -416,15 +390,6 @@ public abstract class ExecutionContext {
 
         /**
          * Cleanup after a call without frame. For more details, see {@link #enter}.
-         */
-        public static void exit(VirtualFrame frame, PythonLanguage language, ContextReference<PythonContext> contextRef, Object savedState) {
-            if (savedState != null && frame != null && contextRef != null) {
-                exit(frame, contextRef.get().getThreadState(language), savedState);
-            }
-        }
-
-        /**
-         * @see #exit(VirtualFrame, PythonLanguage, ContextReference, Object)
          */
         public static void exit(VirtualFrame frame, PythonLanguage language, PythonContext context, Object savedState) {
             if (savedState != null && frame != null && context != null) {

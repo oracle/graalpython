@@ -53,8 +53,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
@@ -68,8 +66,6 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     @Child private PythonObjectFactory ofactory;
     @CompilationFinal private LoopConditionProfile contextChainHandledProfile;
     @CompilationFinal private LoopConditionProfile contextChainContextProfile;
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
-    @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
 
     protected void tryChainExceptionFromHandler(PException handlerException, PException handledException) {
         // Chain the exception handled by the try block to the exception raised by the handler
@@ -164,22 +160,6 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         return contextChainContextProfile;
     }
 
-    protected final PythonContext getContext() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        return contextRef.get();
-    }
-
-    protected final PythonLanguage getPythonLanguage() {
-        if (languageRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            languageRef = lookupLanguageReference(PythonLanguage.class);
-        }
-        return languageRef.get();
-    }
-
     protected final PythonObjectFactory factory() {
         if (ofactory == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -189,7 +169,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     }
 
     protected final boolean shouldCatchAllExceptions() {
-        return getPythonLanguage().getEngineOption(PythonOptions.CatchAllExceptions);
+        return PythonLanguage.get(this).getEngineOption(PythonOptions.CatchAllExceptions);
     }
 
     public static PException wrapJavaException(Throwable e, Node node, PBaseException pythonException) {
@@ -209,7 +189,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
             return wrapJavaException(e, this, factory().createBaseException(SystemError, "%m", new Object[]{e}));
         }
         if (e instanceof StackOverflowError) {
-            getContext().reacquireGilAfterStackOverflow();
+            PythonContext.get(this).reacquireGilAfterStackOverflow();
             return wrapJavaException(e, this, factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
         }
         return null;

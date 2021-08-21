@@ -62,7 +62,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -167,7 +166,6 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
 
         private static class ReleaserRootNode extends RootNode {
             @Child private PosixSupportLibrary posixSupportLibrary = PosixSupportLibrary.getFactory().createDispatched(1);
-            private final ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
 
             ReleaserRootNode(TruffleLanguage<?> language) {
                 super(language);
@@ -175,7 +173,7 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
 
             @Override
             public Object execute(VirtualFrame frame) {
-                PythonContext context = contextRef.get();
+                PythonContext context = PythonContext.get(this);
                 Object dirStream = frame.getArguments()[0];
                 posixSupportLibrary.closedir(context.getPosixSupport(), dirStream);
                 return null;

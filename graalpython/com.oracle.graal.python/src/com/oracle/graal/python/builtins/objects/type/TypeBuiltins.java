@@ -62,7 +62,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -137,7 +136,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -738,7 +736,6 @@ public class TypeBuiltins extends PythonBuiltins {
                         @Cached CheckCompatibleForAssigmentNode checkCompatibleForAssigment,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached IsSameTypeNode isSameTypeNode,
-                        @CachedLanguage PythonLanguage language,
                         @Cached GetMroNode getMroNode) {
 
             Object[] a = getArray.execute(value);
@@ -771,7 +768,7 @@ public class TypeBuiltins extends PythonBuiltins {
             checkCompatibleForAssigment.execute(frame, oldBase, newBestBase);
 
             cls.setSuperClass(baseClasses);
-            SpecialMethodSlot.reinitializeSpecialMethodSlots(cls, language);
+            SpecialMethodSlot.reinitializeSpecialMethodSlots(cls, getLanguage());
 
             return PNone.NONE;
         }

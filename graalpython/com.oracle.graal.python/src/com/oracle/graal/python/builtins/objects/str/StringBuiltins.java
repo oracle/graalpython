@@ -147,7 +147,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -1899,9 +1898,9 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         Object doStringObject(VirtualFrame frame, String self, Object right,
                         @Shared("getItemNode") @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
-                        @Shared("getTupleItemNode") @Cached TupleBuiltins.GetItemNode getTupleItemNode,
-                        @CachedLanguage PythonLanguage language) {
+                        @Shared("getTupleItemNode") @Cached TupleBuiltins.GetItemNode getTupleItemNode) {
             PythonContext context = getContext();
+            PythonLanguage language = getLanguage();
             Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
                 return new StringFormatProcessor(context.getCore(), getRaiseNode(), getItemNode, getTupleItemNode, self).format(right);
@@ -1914,10 +1913,9 @@ public final class StringBuiltins extends PythonBuiltins {
         Object doGeneric(VirtualFrame frame, Object self, Object right,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Shared("getItemNode") @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
-                        @Shared("getTupleItemNode") @Cached TupleBuiltins.GetItemNode getTupleItemNode,
-                        @CachedLanguage PythonLanguage language) {
+                        @Shared("getTupleItemNode") @Cached TupleBuiltins.GetItemNode getTupleItemNode) {
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __MOD__, self);
-            return doStringObject(frame, selfStr, right, getItemNode, getTupleItemNode, language);
+            return doStringObject(frame, selfStr, right, getItemNode, getTupleItemNode);
         }
     }
 

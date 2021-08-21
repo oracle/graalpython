@@ -69,7 +69,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -172,7 +171,6 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(none)", limit = "2")
         Object getModule(VirtualFrame frame, PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
-                        @CachedLanguage PythonLanguage language,
                         @CachedLibrary(limit = "3") PythonObjectLibrary pylib,
                         @CachedLibrary("self") DynamicObjectLibrary dylib) {
             Object module = dylib.getOrDefault(self, __MODULE__, PNone.NO_VALUE);
@@ -182,11 +180,12 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
                  * easily support calls to this builtin with and without virtual frame, and because
                  * we don't care much about the performance here anyway
                  */
-                Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);
+                PythonLanguage language = getLanguage();
+                Object state = IndirectCallContext.enter(frame, language, getContext(), this);
                 try {
                     return pylib.lookupAttribute(self.getSelf(), null, __NAME__);
                 } finally {
-                    IndirectCallContext.exit(frame, language, getContextRef(), state);
+                    IndirectCallContext.exit(frame, language, getContext(), state);
                 }
             } else {
                 return module;

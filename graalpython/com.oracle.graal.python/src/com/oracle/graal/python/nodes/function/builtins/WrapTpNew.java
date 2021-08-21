@@ -137,7 +137,7 @@ public final class WrapTpNew extends SlotWrapper {
             if (newMethod instanceof PBuiltinFunction) {
                 if (builtinProfile == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    if (lookupLanguageReference(PythonLanguage.class).get().singleContextAssumption.isValid()) {
+                    if (PythonLanguage.get(this).singleContextAssumption.isValid()) {
                         builtinProfile = ValueProfile.createIdentityProfile();
                     } else {
                         builtinProfile = ValueProfile.getUncached();

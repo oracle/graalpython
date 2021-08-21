@@ -90,7 +90,6 @@ import org.tukaani.xz.X86Options;
 import org.tukaani.xz.XZFormatException;
 import org.tukaani.xz.check.Check;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAObject.LZMACompressor;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAObject.LZMADecompressor;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -118,7 +117,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -653,11 +651,10 @@ public class LZMANodes {
 
         @Specialization(guards = "format == FORMAT_XZ")
         void xz(LZMACompressor.Native self, @SuppressWarnings("unused") int format, long preset, @SuppressWarnings("unused") PNone filters,
-                        @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction lzmaEasyEncoder,
                         @Cached ConditionProfile errProfile) {
-            NFILZMASupport lzmaSupport = ctxt.getNFILZMASupport();
+            NFILZMASupport lzmaSupport = PythonContext.get(this).getNFILZMASupport();
             Object lzmast = lzmaSupport.createStream(createStream);
             self.init(lzmast, lzmaSupport);
             int lzret = lzmaSupport.lzmaEasyEncoder(lzmast, preset, self.getCheck(), lzmaEasyEncoder);
@@ -668,11 +665,11 @@ public class LZMANodes {
 
         @Specialization(guards = "format == FORMAT_XZ")
         void xz(VirtualFrame frame, LZMACompressor.Native self, @SuppressWarnings("unused") int format, @SuppressWarnings("unused") long preset, Object filters,
-                        @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction lzmaStreamEncoder,
                         @Cached NativeFilterChain filterChain,
                         @Cached ConditionProfile errProfile) {
+            PythonContext ctxt = PythonContext.get(this);
             NFILZMASupport lzmaSupport = ctxt.getNFILZMASupport();
             Object lzmast = lzmaSupport.createStream(createStream);
             self.init(lzmast, lzmaSupport);
@@ -686,11 +683,10 @@ public class LZMANodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "format == FORMAT_ALONE")
         void alone(LZMACompressor.Native self, int format, long preset, PNone filters,
-                        @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction lzmaAloneEncoderPreset,
                         @Cached ConditionProfile errProfile) {
-            NFILZMASupport lzmaSupport = ctxt.getNFILZMASupport();
+            NFILZMASupport lzmaSupport = PythonContext.get(this).getNFILZMASupport();
             Object lzmast = lzmaSupport.createStream(createStream);
             self.init(lzmast, lzmaSupport);
             int lzret = lzmaSupport.lzmaAloneEncoderPreset(lzmast, preset, lzmaAloneEncoderPreset);
@@ -702,11 +698,11 @@ public class LZMANodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "format == FORMAT_ALONE")
         void alone(VirtualFrame frame, LZMACompressor.Native self, int format, long preset, Object filters,
-                        @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction lzmaAloneEncoder,
                         @Cached NativeFilterChain filterChain,
                         @Cached ConditionProfile errProfile) {
+            PythonContext ctxt = PythonContext.get(this);
             NFILZMASupport lzmaSupport = ctxt.getNFILZMASupport();
             Object lzmast = lzmaSupport.createStream(createStream);
             self.init(lzmast, lzmaSupport);
@@ -720,11 +716,11 @@ public class LZMANodes {
         @SuppressWarnings("unused")
         @Specialization(guards = "format == FORMAT_RAW")
         void raw(VirtualFrame frame, LZMACompressor.Native self, int format, long preset, Object filters,
-                        @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction lzmaRawEncoder,
                         @Cached NativeFilterChain filterChain,
                         @Cached ConditionProfile errProfile) {
+            PythonContext ctxt = PythonContext.get(this);
             NFILZMASupport lzmaSupport = ctxt.getNFILZMASupport();
             Object lzmast = lzmaSupport.createStream(createStream);
             self.init(lzmast, lzmaSupport);
@@ -865,11 +861,10 @@ public class LZMANodes {
 
         @Specialization(guards = "format == FORMAT_AUTO")
         void auto(LZMADecompressor.Native self, @SuppressWarnings("unused") int format, int memlimit,
-                        @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction lzmaAutoDecoder,
                         @Cached ConditionProfile errProfile) {
-            NFILZMASupport lzmaSupport = context.getNFILZMASupport();
+            NFILZMASupport lzmaSupport = PythonContext.get(this).getNFILZMASupport();
             Object lzmast = lzmaSupport.createStream(createStream);
             self.init(lzmast, lzmaSupport);
             int decoderFlags = LZMA_TELL_ANY_CHECK | LZMA_TELL_NO_CHECK;
@@ -881,11 +876,10 @@ public class LZMANodes {
 
         @Specialization(guards = "format == FORMAT_XZ")
         void xz(LZMADecompressor.Native self, @SuppressWarnings("unused") int format, int memlimit,
-                        @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction lzmaStreamDecoder,
                         @Cached ConditionProfile errProfile) {
-            NFILZMASupport lzmaSupport = context.getNFILZMASupport();
+            NFILZMASupport lzmaSupport = PythonContext.get(this).getNFILZMASupport();
             Object lzmast = lzmaSupport.createStream(createStream);
             self.init(lzmast, lzmaSupport);
             int decoderFlags = LZMA_TELL_ANY_CHECK | LZMA_TELL_NO_CHECK;
@@ -897,11 +891,10 @@ public class LZMANodes {
 
         @Specialization(guards = "format == FORMAT_ALONE")
         void alone(LZMADecompressor.Native self, @SuppressWarnings("unused") int format, int memlimit,
-                        @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("cs") @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction lzmaAloneDecoder,
                         @Cached ConditionProfile errProfile) {
-            NFILZMASupport lzmaSupport = context.getNFILZMASupport();
+            NFILZMASupport lzmaSupport = PythonContext.get(this).getNFILZMASupport();
             Object lzmast = lzmaSupport.createStream(createStream);
             self.init(lzmast, lzmaSupport);
             int lzret = lzmaSupport.lzmaAloneDecoder(lzmast, memlimit, lzmaAloneDecoder);
@@ -924,11 +917,11 @@ public class LZMANodes {
 
         @Specialization
         void rawNative(VirtualFrame frame, LZMADecompressor.Native self, Object filters,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction lzmaRawDecoder,
                         @Cached NativeFilterChain filterChain,
                         @Cached ConditionProfile errProfile) {
+            PythonContext context = PythonContext.get(this);
             NFILZMASupport lzmaSupport = context.getNFILZMASupport();
             Object lzmast = lzmaSupport.createStream(createStream);
             self.init(lzmast, lzmaSupport);
@@ -1038,7 +1031,6 @@ public class LZMANodes {
 
         @Specialization
         byte[] nativeInternalDecompress(LZMADecompressor.Native self, int maxLength,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached NativeLibrary.InvokeNativeFunction decompress,
                         @Cached NativeLibrary.InvokeNativeFunction getLzsAvailIn,
                         @Cached NativeLibrary.InvokeNativeFunction getLzsAvailOut,
@@ -1047,6 +1039,7 @@ public class LZMANodes {
                         @Cached GetOutputNativeBufferNode getBuffer,
                         @Cached ConditionProfile errProfile,
                         @Cached BranchProfile ofProfile) {
+            PythonContext context = PythonContext.get(this);
             NFILZMASupport lzmaSupport = context.getNFILZMASupport();
             Object inGuest = context.getEnv().asGuestValue(self.getNextIn());
             int offset = self.getNextInIndex();
@@ -1181,21 +1174,19 @@ public class LZMANodes {
 
         public abstract boolean execute(int checkId);
 
-        protected boolean useNative(PythonContext ctxt) {
-            return ctxt.getNFILZMASupport().isAvailable();
+        protected boolean useNativeContext() {
+            return PythonContext.get(this).getNFILZMASupport().isAvailable();
         }
 
-        @Specialization(guards = "useNative(ctxt)")
+        @Specialization(guards = "useNativeContext()")
         boolean checkNative(int checkId,
-                        @Cached NativeLibrary.InvokeNativeFunction checkIsSupported,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
-            return ctxt.getNFILZMASupport().checkIsSupported(checkId, checkIsSupported) == 1;
+                        @Cached NativeLibrary.InvokeNativeFunction checkIsSupported) {
+            return PythonContext.get(this).getNFILZMASupport().checkIsSupported(checkId, checkIsSupported) == 1;
         }
 
         @TruffleBoundary
-        @Specialization(guards = "!useNative(ctxt)")
-        boolean checkJava(int checkId,
-                        @SuppressWarnings("unused") @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+        @Specialization(guards = "!useNativeContext()")
+        boolean checkJava(int checkId) {
             try {
                 Check.getInstance(checkId);
                 return true;
@@ -1209,19 +1200,19 @@ public class LZMANodes {
 
         public abstract byte[] execute(VirtualFrame frame, Object filter);
 
-        protected boolean useNative(PythonContext ctxt) {
-            return ctxt.getNFILZMASupport().isAvailable();
+        protected boolean useNativeContext() {
+            return PythonContext.get(this).getNFILZMASupport().isAvailable();
         }
 
-        @Specialization(guards = "useNative(ctxt)")
+        @Specialization(guards = "useNativeContext()")
         byte[] encodeNative(VirtualFrame frame, Object filter,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached LZMAFilterConverter filterConverter,
                         @Cached GetOutputNativeBufferNode getBuffer,
                         @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction encodeFilter,
                         @Cached NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Cached ConditionProfile errProfile) {
+            PythonContext ctxt = PythonContext.get(this);
             NFILZMASupport lzmaSupport = ctxt.getNFILZMASupport();
             Object lzmast = lzmaSupport.createStream(createStream);
             long[] opts = filterConverter.execute(frame, filter);
@@ -1239,9 +1230,8 @@ public class LZMANodes {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "!useNative(ctxt)")
-        byte[] encodeJava(Object filter,
-                        @SuppressWarnings("unused") @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+        @Specialization(guards = "!useNativeContext()")
+        byte[] encodeJava(Object filter) {
             throw raise(SystemError, LZMA_JAVA_ERROR);
         }
     }
@@ -1250,17 +1240,17 @@ public class LZMANodes {
 
         public abstract void execute(VirtualFrame frame, long id, byte[] encoded, PDict dict);
 
-        protected boolean useNative(PythonContext ctxt) {
-            return ctxt.getNFILZMASupport().isAvailable();
+        protected boolean useNativeContext() {
+            return PythonContext.get(this).getNFILZMASupport().isAvailable();
         }
 
-        @Specialization(guards = "useNative(ctxt)")
+        @Specialization(guards = "useNativeContext()")
         void decodeNative(VirtualFrame frame, long id, byte[] encoded, PDict dict,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached NativeLibrary.InvokeNativeFunction decodeFilter,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Cached ConditionProfile hasFrameProfile,
                         @Cached ConditionProfile errProfile) {
+            PythonContext ctxt = PythonContext.get(this);
             NFILZMASupport lzmaSupport = ctxt.getNFILZMASupport();
             long[] opts = new long[MAX_OPTS_INDEX];
             int len = encoded.length;
@@ -1277,9 +1267,8 @@ public class LZMANodes {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "!useNative(ctxt)")
-        void decodeJava(long id, byte[] encoded, PDict dict,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+        @Specialization(guards = "!useNativeContext()")
+        void decodeJava(long id, byte[] encoded, PDict dict) {
             throw raise(SystemError, LZMA_JAVA_ERROR);
         }
 

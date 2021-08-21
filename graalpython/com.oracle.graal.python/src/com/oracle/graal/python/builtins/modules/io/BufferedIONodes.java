@@ -57,7 +57,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeE
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -71,11 +70,9 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -448,10 +445,9 @@ public class BufferedIONodes {
 
         public abstract void execute(PBuffered self);
 
-        @Specialization(guards = {"!self.isOwn()", "!context.isFinalizing()"})
+        @Specialization(guards = {"!self.isOwn()", "!getContext().isFinalizing()"})
         void normal(PBuffered self,
-                        @Cached GilNode gil,
-                        @SuppressWarnings("unused") @Cached.Shared("c") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Cached GilNode gil) {
             gil.release(true);
             try {
                 self.getLock().acquireBlocking(this);
@@ -460,9 +456,8 @@ public class BufferedIONodes {
             }
         }
 
-        @Specialization(guards = {"!self.isOwn()", "context.isFinalizing()"})
-        void finalizing(PBuffered self,
-                        @SuppressWarnings("unused") @Cached.Shared("c") @CachedContext(PythonLanguage.class) PythonContext context) {
+        @Specialization(guards = {"!self.isOwn()", "getContext().isFinalizing()"})
+        void finalizing(PBuffered self) {
             /*
              * When finalizing, we don't want a deadlock to happen with daemon threads abruptly shut
              * down while they owned the lock. Therefore, only wait for a grace period (1 s.). Note

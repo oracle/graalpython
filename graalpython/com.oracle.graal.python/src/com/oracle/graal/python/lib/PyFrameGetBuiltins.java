@@ -40,10 +40,8 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -57,8 +55,8 @@ public abstract class PyFrameGetBuiltins extends Node {
     public abstract PythonModule execute();
 
     @Specialization
-    static PythonModule getBuiltins(@CachedContext(PythonLanguage.class) PythonContext context) {
-        return context.getCore().getBuiltins();
+    PythonModule getBuiltins() {
+        return PythonContext.get(this).getCore().getBuiltins();
     }
 
     public static PyFrameGetBuiltins getUncached() {

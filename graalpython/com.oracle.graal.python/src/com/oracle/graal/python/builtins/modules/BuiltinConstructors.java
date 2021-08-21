@@ -257,7 +257,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -1674,7 +1673,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
                 if (profileNew == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    if (PythonLanguage.getCurrent().singleContextAssumption.isValid()) {
+                    if (getLanguage().singleContextAssumption.isValid()) {
                         profileNew = ValueProfile.createIdentityProfile();
                     } else {
                         profileNew = ValueProfile.createClassProfile();
@@ -1682,7 +1681,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
                 if (profileInit == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    if (PythonLanguage.getCurrent().singleContextAssumption.isValid()) {
+                    if (getLanguage().singleContextAssumption.isValid()) {
                         profileInit = ValueProfile.createIdentityProfile();
                     } else {
                         profileInit = ValueProfile.createClassProfile();
@@ -2163,7 +2162,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Megamorphic
         @Specialization(guards = "isString(wName)")
         Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
-                        @CachedLanguage PythonLanguage language,
                         @Cached GetClassNode getClassNode,
                         @CachedLibrary(limit = "5") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
@@ -2201,6 +2199,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             try {
                 assert SpecialMethodSlot.pushInitializedTypePlaceholder();
                 PDict namespace = factory().createDict();
+                PythonLanguage language = PythonLanguage.get(this);
                 namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
                 PythonClass newType = typeMetaclass(frame, language, name, bases, namespace, metaclass, lib, hashingStoragelib,
                                 getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize, isIdentifier);
@@ -2443,7 +2442,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                     // Make slots into a tuple
                 }
-                Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);
+                Object state = IndirectCallContext.enter(frame, language, getContext(), this);
                 try {
                     pythonClass.setAttribute(__SLOTS__, slotsObject);
                     if (basesArray.length > 1) {
@@ -2459,7 +2458,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         addNativeSlots(pythonClass, newSlots);
                     }
                 } finally {
-                    IndirectCallContext.exit(frame, language, getContextRef(), state);
+                    IndirectCallContext.exit(frame, language, getContext(), state);
                 }
                 Object dict = LookupAttributeInMRONode.lookupSlowPath(pythonClass, __DICT__);
                 if (!addDict && dict == PNone.NO_VALUE) {
@@ -2472,7 +2471,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @TruffleBoundary
         private static HiddenKey createTypeKey(String name) {
-            return PythonLanguage.getCurrent().typeHiddenKeys.computeIfAbsent(name, n -> new HiddenKey(n));
+            return PythonLanguage.get(null).typeHiddenKeys.computeIfAbsent(name, n -> new HiddenKey(n));
         }
 
         @TruffleBoundary
@@ -2481,7 +2480,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // initialized yet
             if ((!hasPythonClassBases(basesArray) && LookupAttributeInMRONode.lookupSlowPath(pythonClass, __DICT__) == PNone.NO_VALUE) || basesHaveSlots(basesArray)) {
                 Builtin dictBuiltin = ObjectBuiltins.DictNode.class.getAnnotation(Builtin.class);
-                RootCallTarget callTarget = PythonLanguage.getCurrent().createCachedCallTarget(
+                RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(
                                 l -> new BuiltinFunctionRootNode(l, dictBuiltin, new StandaloneBuiltinFactory<PythonBinaryBuiltinNode>(DictNodeGen.create()), true), ObjectBuiltins.DictNode.class,
                                 StandaloneBuiltinFactory.class);
                 setAttribute(__DICT__, dictBuiltin, callTarget, pythonClass);
@@ -2491,7 +2490,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @TruffleBoundary
         private void addWeakrefDescrAttribute(PythonClass pythonClass) {
             Builtin builtin = GetWeakRefsNode.class.getAnnotation(Builtin.class);
-            RootCallTarget callTarget = PythonLanguage.getCurrent().createCachedCallTarget(
+            RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(
                             l -> new BuiltinFunctionRootNode(l, builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true), GetWeakRefsNode.class,
                             WeakRefModuleBuiltinsFactory.class);
             setAttribute(__WEAKREF__, builtin, callTarget, pythonClass);

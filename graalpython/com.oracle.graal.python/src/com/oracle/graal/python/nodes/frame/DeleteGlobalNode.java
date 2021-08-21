@@ -53,7 +53,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class DeleteGlobalNode extends StatementNode implements GlobalNode {
     private final String attributeId;
-    protected final Assumption singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
+    protected final Assumption singleContextAssumption = PythonLanguage.get(this).singleContextAssumption;
 
     DeleteGlobalNode(String attributeId) {
         this.attributeId = attributeId;

@@ -47,8 +47,6 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -146,8 +144,8 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
 abstract class ValidExceptionNode extends Node {
     protected abstract boolean execute(VirtualFrame frame, Object type);
 
-    protected static boolean emulateJython(PythonLanguage language) {
-        return language.getEngineOption(PythonOptions.EmulateJython);
+    protected boolean emulateJython() {
+        return PythonLanguage.get(this).getEngineOption(PythonOptions.EmulateJython);
     }
 
     protected static boolean isPythonExceptionType(PythonBuiltinClassType type) {
@@ -182,12 +180,14 @@ abstract class ValidExceptionNode extends Node {
         return isSubtype.execute(frame, type, PythonBuiltinClassType.PBaseException);
     }
 
-    @Specialization(guards = {"emulateJython(language)", "context.getEnv().isHostObject(type)"})
+    protected boolean isHostObject(Object object) {
+        return PythonContext.get(this).getEnv().isHostObject(object);
+    }
+
+    @Specialization(guards = {"emulateJython()", "isHostObject(type)"})
     @SuppressWarnings("unused")
-    boolean isJavaException(@SuppressWarnings("unused") VirtualFrame frame, Object type,
-                    @CachedLanguage PythonLanguage language,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        Object hostType = context.getEnv().asHostObject(type);
+    boolean isJavaException(@SuppressWarnings("unused") VirtualFrame frame, Object type) {
+        Object hostType = PythonContext.get(this).getEnv().asHostObject(type);
         return hostType instanceof Class && Throwable.class.isAssignableFrom((Class<?>) hostType);
     }
 
