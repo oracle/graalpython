@@ -135,15 +135,12 @@ public abstract class CodeNodes {
             };
 
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            RootCallTarget ct;
-            if (isNotAModule) {
+            if (context.getCore().isInitialized() || isNotAModule) {
                 return factory.createCode(createCode, flags, firstlineno, lnotab, filename);
-            } else if (context.getCore().isInitialized()) {
-                ct = (RootCallTarget) createCode.get();
             } else {
-                ct = (RootCallTarget) language.cacheCode(filename, createCode);
+                RootCallTarget ct = (RootCallTarget) language.cacheCode(filename, createCode);
+                return factory.createCode(ct, flags, firstlineno, lnotab, filename);
             }
-            return factory.createCode(ct, flags, firstlineno, lnotab, filename);
         }
 
         @TruffleBoundary
