@@ -110,7 +110,6 @@ import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -330,29 +329,6 @@ public abstract class HPyExternalFunctionNodes {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
-    static final class ConvertArgNode extends Node {
-
-        private final ConditionProfile isLongProfile = ConditionProfile.create();
-        @Child private InteropLibrary isPointerLibrary = InteropLibrary.getFactory().createDispatched(3);
-        @Child private InteropLibrary asPointerLibrary = InteropLibrary.getFactory().createDispatched(3);
-        @Child private InteropLibrary toNativeLibrary = InteropLibrary.getFactory().createDispatched(3);
-
-        public long execute(Object value) {
-            if (isLongProfile.profile(value instanceof Long)) {
-                return (long) value;
-            } else {
-                if (!isPointerLibrary.isPointer(value)) {
-                    toNativeLibrary.toNative(value);
-                }
-                try {
-                    return asPointerLibrary.asPointer(value);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-            }
-        }
-    }
-
     /**
      * Invokes an HPy C function. It takes care of argument and result conversion and always passes
      * the HPy context as a first parameter.
@@ -362,8 +338,6 @@ public abstract class HPyExternalFunctionNodes {
         @Child private HPyConvertArgsToSulongNode toSulongNode;
         @Child private HPyCheckFunctionResultNode checkFunctionResultNode;
         @Child private HPyCloseArgHandlesNode handleCloseNode;
-
-        @Children private final ConvertArgNode[] convert = new ConvertArgNode[10];
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
@@ -391,14 +365,6 @@ public abstract class HPyExternalFunctionNodes {
 
         public abstract Object execute(VirtualFrame frame, String name, Object callable, GraalHPyContext hPyContext, Object[] frameArgs);
 
-        private long arg(Object[] args, int index) {
-            if (convert[index] == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                convert[index] = insert(new ConvertArgNode());
-            }
-            return convert[index].execute(args[index]);
-        }
-
         @Specialization(limit = "1")
         Object doIt(VirtualFrame frame, String name, Object callable, GraalHPyContext hPyContext, Object[] arguments,
                         @CachedLibrary("callable") InteropLibrary lib,
@@ -418,54 +384,7 @@ public abstract class HPyExternalFunctionNodes {
             Object state = IndirectCallContext.enter(frame, pythonThreadState, this);
 
             try {
-                Object result;
-                if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI && convertedArguments.length <= 10) {
-                    long target = lib.asPointer(callable);
-                    switch (convertedArguments.length) {
-                        case 1:
-                            result = GraalHPyContext.executePrimitive1(target, arg(convertedArguments, 0));
-                            break;
-                        case 2:
-                            result = GraalHPyContext.executePrimitive2(target, arg(convertedArguments, 0), arg(convertedArguments, 1));
-                            break;
-                        case 3:
-                            result = GraalHPyContext.executePrimitive3(target, arg(convertedArguments, 0), arg(convertedArguments, 1), arg(convertedArguments, 2));
-                            break;
-                        case 4:
-                            result = GraalHPyContext.executePrimitive4(target, arg(convertedArguments, 0), arg(convertedArguments, 1), arg(convertedArguments, 2), arg(convertedArguments, 3));
-                            break;
-                        case 5:
-                            result = GraalHPyContext.executePrimitive5(target, arg(convertedArguments, 0), arg(convertedArguments, 1), arg(convertedArguments, 2), arg(convertedArguments, 3),
-                                            arg(convertedArguments, 4));
-                            break;
-                        case 6:
-                            result = GraalHPyContext.executePrimitive6(target, arg(convertedArguments, 0), arg(convertedArguments, 1), arg(convertedArguments, 2), arg(convertedArguments, 3),
-                                            arg(convertedArguments, 4), arg(convertedArguments, 5));
-                            break;
-                        case 7:
-                            result = GraalHPyContext.executePrimitive7(target, arg(convertedArguments, 0), arg(convertedArguments, 1), arg(convertedArguments, 2), arg(convertedArguments, 3),
-                                            arg(convertedArguments, 4), arg(convertedArguments, 5), arg(convertedArguments, 6));
-                            break;
-                        case 8:
-                            result = GraalHPyContext.executePrimitive8(target, arg(convertedArguments, 0), arg(convertedArguments, 1), arg(convertedArguments, 2), arg(convertedArguments, 3),
-                                            arg(convertedArguments, 4), arg(convertedArguments, 5), arg(convertedArguments, 6), arg(convertedArguments, 7));
-                            break;
-                        case 9:
-                            result = GraalHPyContext.executePrimitive9(target, arg(convertedArguments, 0), arg(convertedArguments, 1), arg(convertedArguments, 2), arg(convertedArguments, 3),
-                                            arg(convertedArguments, 4), arg(convertedArguments, 5), arg(convertedArguments, 6), arg(convertedArguments, 7), arg(convertedArguments, 8));
-                            break;
-                        case 10:
-                            result = GraalHPyContext.executePrimitive10(target, arg(convertedArguments, 0), arg(convertedArguments, 1), arg(convertedArguments, 2), arg(convertedArguments, 3),
-                                            arg(convertedArguments, 4), arg(convertedArguments, 5), arg(convertedArguments, 6), arg(convertedArguments, 7), arg(convertedArguments, 8),
-                                            arg(convertedArguments, 9));
-                            break;
-                        default:
-                            throw CompilerDirectives.shouldNotReachHere();
-                    }
-                } else {
-                    result = lib.execute(callable, convertedArguments);
-                }
-                return checkFunctionResultNode.execute(pythonThreadState, hPyContext, name, result);
+                return checkFunctionResultNode.execute(pythonThreadState, hPyContext, name, lib.execute(callable, convertedArguments));
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
             } catch (ArityException e) {

@@ -43,11 +43,17 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextNativePointer;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * This object is used to override specific native upcall pointers in the HPyContext. This is
@@ -88,5 +94,220 @@ public final class GraalHPyContextJNI implements TruffleObject {
     @TruffleBoundary
     Object readMember(@SuppressWarnings("unused") String key) {
         return new HPyContextNativePointer(0L);
+    }
+
+    enum JNIFunctionSignature {
+        PRIMITIVE1(1),
+        PRIMITIVE2(2),
+        PRIMITIVE3(3),
+        PRIMITIVE4(4),
+        PRIMITIVE5(5),
+        PRIMITIVE6(6),
+        PRIMITIVE7(7),
+        PRIMITIVE8(8),
+        PRIMITIVE9(9),
+        PRIMITIVE10(10),
+        INQUIRY(2),
+        SSIZEOBJARGPROC(4),
+        SSIZESSIZEOBJARGPROC(5),
+        OBJOBJPROC(3),
+        OBJOBJARGPROC(4),
+        INITPROC(5),
+        DESTROYFUNC(1),
+        FREEFUNC(2),
+        GETBUFFERPROC(4),
+        RELEASEBUFFERPROC(3),
+        RICHCOMPAREFUNC(4);
+
+        final int arity;
+
+        JNIFunctionSignature(int arity) {
+            this.arity = arity;
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class GraalHPyJNIFunctionPointer implements TruffleObject {
+        final long pointer;
+        final JNIFunctionSignature signature;
+
+        GraalHPyJNIFunctionPointer(long pointer, JNIFunctionSignature signature) {
+            this.pointer = pointer;
+            this.signature = signature;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        boolean isExecutable() {
+            return true;
+        }
+
+        @ExportMessage
+        static class Execute {
+
+            @Specialization(guards = "receiver.signature == cachedSignature")
+            static Object doCached(GraalHPyJNIFunctionPointer receiver, Object[] arguments,
+                            @Cached("receiver.signature") JNIFunctionSignature cachedSignature,
+                            @Cached(parameters = "receiver.signature") GraalHPyJNIConvertArgNode convertArgNode) {
+                long result;
+                switch (cachedSignature) {
+                    case PRIMITIVE1:
+                        result = GraalHPyContext.executePrimitive1(receiver.pointer, convertArgNode.execute(arguments, 0));
+                        break;
+                    case PRIMITIVE2:
+                        result = GraalHPyContext.executePrimitive2(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1));
+                        break;
+                    case PRIMITIVE3:
+                        result = GraalHPyContext.executePrimitive3(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1), convertArgNode.execute(arguments, 2));
+                        break;
+                    case PRIMITIVE4:
+                        result = GraalHPyContext.executePrimitive4(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1), convertArgNode.execute(arguments, 2),
+                                        convertArgNode.execute(arguments, 3));
+                        break;
+                    case PRIMITIVE5:
+                        result = GraalHPyContext.executePrimitive5(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1), convertArgNode.execute(arguments, 2),
+                                        convertArgNode.execute(arguments, 3), convertArgNode.execute(arguments, 4));
+                        break;
+                    case PRIMITIVE6:
+                        result = GraalHPyContext.executePrimitive6(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1), convertArgNode.execute(arguments, 2),
+                                        convertArgNode.execute(arguments, 3), convertArgNode.execute(arguments, 4), convertArgNode.execute(arguments, 5));
+                        break;
+                    case PRIMITIVE7:
+                        result = GraalHPyContext.executePrimitive7(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1), convertArgNode.execute(arguments, 2),
+                                        convertArgNode.execute(arguments, 3), convertArgNode.execute(arguments, 4), convertArgNode.execute(arguments, 5), convertArgNode.execute(arguments, 6));
+                        break;
+                    case PRIMITIVE8:
+                        result = GraalHPyContext.executePrimitive8(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1), convertArgNode.execute(arguments, 2),
+                                        convertArgNode.execute(arguments, 3), convertArgNode.execute(arguments, 4), convertArgNode.execute(arguments, 5), convertArgNode.execute(arguments, 6),
+                                        convertArgNode.execute(arguments, 7));
+                        break;
+                    case PRIMITIVE9:
+                        result = GraalHPyContext.executePrimitive9(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1), convertArgNode.execute(arguments, 2),
+                                        convertArgNode.execute(arguments, 3), convertArgNode.execute(arguments, 4), convertArgNode.execute(arguments, 5), convertArgNode.execute(arguments, 6),
+                                        convertArgNode.execute(arguments, 7), convertArgNode.execute(arguments, 8));
+                        break;
+                    case PRIMITIVE10:
+                        result = GraalHPyContext.executePrimitive10(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1), convertArgNode.execute(arguments, 2),
+                                        convertArgNode.execute(arguments, 3), convertArgNode.execute(arguments, 4), convertArgNode.execute(arguments, 5), convertArgNode.execute(arguments, 6),
+                                        convertArgNode.execute(arguments, 7), convertArgNode.execute(arguments, 8), convertArgNode.execute(arguments, 9));
+                        break;
+                    case INQUIRY:
+                        result = GraalHPyContext.executeInquiry(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1));
+                        break;
+                    case SSIZEOBJARGPROC:
+                        result = GraalHPyContext.executeSsizeobjargproc(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1),
+                                        (long) arguments[2], convertArgNode.execute(arguments, 3));
+                        break;
+                    case SSIZESSIZEOBJARGPROC:
+                        result = GraalHPyContext.executeSsizesizeobjargproc(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1),
+                                        (long) arguments[2], (long) arguments[3], convertArgNode.execute(arguments, 4));
+                        break;
+                    case OBJOBJPROC:
+                        result = GraalHPyContext.executeObjobjproc(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1), convertArgNode.execute(arguments, 2));
+                        break;
+                    case OBJOBJARGPROC:
+                        result = GraalHPyContext.executeObjobjargproc(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2), convertArgNode.execute(arguments, 3));
+                        break;
+                    case INITPROC:
+                        result = GraalHPyContext.executeInitproc(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1), convertArgNode.execute(arguments, 2),
+                                        (long) arguments[3], convertArgNode.execute(arguments, 4));
+                        break;
+                    case DESTROYFUNC:
+                        GraalHPyContext.hpyCallDestroyFunc((long) arguments[0], receiver.pointer);
+                        result = 0;
+                        break;
+                    case FREEFUNC:
+                        GraalHPyContext.executeFreefunc(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1));
+                        result = 0;
+                        break;
+                    case GETBUFFERPROC:
+                        result = GraalHPyContext.executeGetbufferproc(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2), (int) arguments[3]);
+                        break;
+                    case RELEASEBUFFERPROC:
+                        GraalHPyContext.executeReleasebufferproc(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1), convertArgNode.execute(arguments, 2));
+                        result = 0;
+                        break;
+                    case RICHCOMPAREFUNC:
+                        result = GraalHPyContext.executeRichcomparefunc(receiver.pointer, convertArgNode.execute(arguments, 0), convertArgNode.execute(arguments, 1),
+                                        convertArgNode.execute(arguments, 2), (int) arguments[3]);
+                        break;
+                    default:
+                        throw CompilerDirectives.shouldNotReachHere();
+                }
+                return result;
+            }
+        }
+    }
+
+    @GenerateUncached
+    abstract static class GraalHPyJNIConvertArgNode extends Node {
+
+        private static final GraalHPyJNIConvertArgUncachedNode UNCACHED = new GraalHPyJNIConvertArgUncachedNode();
+
+        public static GraalHPyJNIConvertArgNode create(JNIFunctionSignature signature) {
+            return new GraalHPyJNIConvertArgCachedNode();
+        }
+
+        public static GraalHPyJNIConvertArgNode getUncached(JNIFunctionSignature signature) {
+            return UNCACHED;
+        }
+
+        public abstract long execute(Object[] arguments, int i);
+
+        static final class GraalHPyJNIConvertArgCachedNode extends GraalHPyJNIConvertArgNode {
+            /**
+             * Carefully picked limit. Expected possible argument object types are: LLVM native
+             * pointer, LLVM managed pointer, {@link GraalHPyContext}, and {@link GraalHPyHandle}.
+             */
+            private static final int CACHE_LIMIT = 4;
+
+            @Child private InteropLibrary interopLibrary;
+
+            @Override
+            public long execute(Object[] arguments, int i) {
+                // TODO(fa): improved cached implementation; use state bits to remember types we've
+                // seen per argument
+                Object value = arguments[i];
+                if (value instanceof Long) {
+                    return (long) value;
+                } else {
+                    if (interopLibrary == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        interopLibrary = insert(InteropLibrary.getFactory().createDispatched(CACHE_LIMIT));
+                    }
+                    if (!interopLibrary.isPointer(value)) {
+                        interopLibrary.toNative(value);
+                    }
+                    try {
+                        return interopLibrary.asPointer(value);
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere();
+                    }
+                }
+            }
+        }
+
+        static final class GraalHPyJNIConvertArgUncachedNode extends GraalHPyJNIConvertArgNode {
+
+            @Override
+            public long execute(Object[] arguments, int i) {
+                Object value = arguments[i];
+                if (value instanceof Long) {
+                    return (long) value;
+                } else {
+                    InteropLibrary interopLibrary = InteropLibrary.getUncached(value);
+                    if (!interopLibrary.isPointer(value)) {
+                        interopLibrary.toNative(value);
+                    }
+                    try {
+                        return interopLibrary.asPointer(value);
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere();
+                    }
+                }
+            }
+        }
     }
 }

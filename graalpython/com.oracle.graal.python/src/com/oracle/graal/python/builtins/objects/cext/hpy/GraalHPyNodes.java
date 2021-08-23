@@ -72,6 +72,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextJNI.GraalHPyJNIFunctionPointer;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextJNI.JNIFunctionSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
@@ -79,6 +81,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyLegacyDef.HPyLe
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyWriteMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllHandleCloseNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachJNIFunctionTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachNFIFunctionTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetSetterHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyKeywordsHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRichcmptFuncArgsCloseNodeGen;
@@ -117,6 +121,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
@@ -130,6 +135,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -641,6 +647,7 @@ public class GraalHPyNodes {
 
         @Specialization(limit = "1")
         static GetSetDescriptor doIt(GraalHPyContext context, Object type, Object memberDef,
+                        @CachedLanguage @SuppressWarnings("unused") PythonLanguage language,
                         @CachedLibrary("memberDef") InteropLibrary memberDefLib,
                         @CachedLibrary(limit = "2") InteropLibrary valueLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
@@ -2071,6 +2078,28 @@ public class GraalHPyNodes {
         }
     }
 
+    abstract static class HPyAttachFunctionTypeNode extends PNodeWithContext {
+        public abstract Object execute(GraalHPyContext hpyContext, Object pointerObject, LLVMType llvmFunctionType);
+
+        public static HPyAttachFunctionTypeNode create() {
+            PythonLanguage language = PythonLanguage.get(null);
+            if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
+                return HPyAttachJNIFunctionTypeNodeGen.create();
+            }
+            assert language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.NFI;
+            return HPyAttachNFIFunctionTypeNodeGen.create();
+        }
+
+        public static HPyAttachFunctionTypeNode getUncached() {
+            PythonLanguage language = PythonLanguage.get(null);
+            if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
+                return HPyAttachJNIFunctionTypeNodeGen.getUncached();
+            }
+            assert language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.NFI;
+            return HPyAttachNFIFunctionTypeNodeGen.getUncached();
+        }
+    }
+
     /**
      * This node can be used to attach a function type to a function pointer if the function pointer
      * is not executable, i.e., if
@@ -2080,10 +2109,8 @@ public class GraalHPyNodes {
      * available. The node will return a typed function pointer that is then executable.
      */
     @GenerateUncached
-    public abstract static class HPyAttachFunctionTypeNode extends PNodeWithContext {
+    public abstract static class HPyAttachNFIFunctionTypeNode extends HPyAttachFunctionTypeNode {
         public static final String NFI_LANGUAGE = "nfi";
-
-        public abstract Object execute(GraalHPyContext hpyContext, Object pointerObject, LLVMType llvmFunctionType);
 
         @Specialization(guards = "llvmFunctionType == cachedType", limit = "3", assumptions = "singleContextAssumption()")
         static Object doCachedSingleContext(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object pointerObject, @SuppressWarnings("unused") LLVMType llvmFunctionType,
@@ -2178,6 +2205,81 @@ public class GraalHPyNodes {
                     return "(POINTER, POINTER, POINTER): VOID";
                 case HPyFunc_destroyfunc:
                     return "(POINTER): VOID";
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    /**
+     */
+    @GenerateUncached
+    public abstract static class HPyAttachJNIFunctionTypeNode extends HPyAttachFunctionTypeNode {
+
+        @Specialization
+        static GraalHPyJNIFunctionPointer doGeneric(GraalHPyContext hpyContext, Object pointerObject, LLVMType llvmFunctionType,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
+            if (!interopLibrary.isPointer(pointerObject)) {
+                interopLibrary.toNative(pointerObject);
+            }
+            try {
+                return new GraalHPyJNIFunctionPointer(interopLibrary.asPointer(pointerObject), getJNISignature(llvmFunctionType));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        private static JNIFunctionSignature getJNISignature(LLVMType llvmFunctionType) {
+            switch (llvmFunctionType) {
+                case HPyModule_init:
+                    return JNIFunctionSignature.PRIMITIVE1;
+                case HPyFunc_noargs:
+                case HPyFunc_unaryfunc:
+                case HPyFunc_getiterfunc:
+                case HPyFunc_iternextfunc:
+                case HPyFunc_reprfunc:
+                case HPyFunc_lenfunc:
+                case HPyFunc_hashfunc:
+                    return JNIFunctionSignature.PRIMITIVE2;
+                case HPyFunc_binaryfunc:
+                case HPyFunc_o:
+                case HPyFunc_getter:
+                case HPyFunc_getattrfunc:
+                case HPyFunc_getattrofunc:
+                case HPyFunc_ssizeargfunc:
+                    return JNIFunctionSignature.PRIMITIVE3;
+                case HPyFunc_varargs:
+                case HPyFunc_ternaryfunc:
+                case HPyFunc_descrgetfunc:
+                case HPyFunc_ssizessizeargfunc:
+                    return JNIFunctionSignature.PRIMITIVE4;
+                case HPyFunc_keywords:
+                    return JNIFunctionSignature.PRIMITIVE5;
+                case HPyFunc_inquiry:
+                    return JNIFunctionSignature.INQUIRY;
+                case HPyFunc_ssizeobjargproc:
+                    return JNIFunctionSignature.SSIZEOBJARGPROC;
+                case HPyFunc_initproc:
+                    return JNIFunctionSignature.INITPROC;
+                case HPyFunc_ssizessizeobjargproc:
+                    return JNIFunctionSignature.SSIZESSIZEOBJARGPROC;
+                case HPyFunc_objobjargproc:
+                case HPyFunc_setter:
+                case HPyFunc_descrsetfunc:
+                case HPyFunc_setattrfunc:
+                case HPyFunc_setattrofunc:
+                    return JNIFunctionSignature.OBJOBJARGPROC;
+                case HPyFunc_freefunc:
+                    return JNIFunctionSignature.FREEFUNC;
+                case HPyFunc_richcmpfunc:
+                    return JNIFunctionSignature.RICHCOMPAREFUNC;
+                case HPyFunc_objobjproc:
+                    return JNIFunctionSignature.OBJOBJPROC;
+                case HPyFunc_getbufferproc:
+                    return JNIFunctionSignature.GETBUFFERPROC;
+                case HPyFunc_releasebufferproc:
+                    return JNIFunctionSignature.RELEASEBUFFERPROC;
+                case HPyFunc_destroyfunc:
+                    return JNIFunctionSignature.DESTROYFUNC;
             }
             throw CompilerDirectives.shouldNotReachHere();
         }

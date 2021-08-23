@@ -415,3 +415,43 @@ JNIEXPORT jlong JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_G
 JNIEXPORT jlong JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_executePrimitive10(JNIEnv *env, jclass clazz, jlong target, jlong arg1, jlong arg2, jlong arg3, jlong arg4, jlong arg5, jlong arg6, jlong arg7, jlong arg8, jlong arg9, jlong arg10) {
     return ((jlong (*)(jlong, jlong, jlong, jlong, jlong, jlong, jlong, jlong, jlong, jlong)) target)(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
 }
+JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_executeInquiry(JNIEnv *env, jclass clazz, jlong target, jlong arg1, jlong arg2) {
+	return ((jint (*)(jlong, jlong)) target)(arg1, arg2);
+}
+
+JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_executeSsizeobjargproc(JNIEnv *env, jclass clazz, jlong target, jlong arg1, jlong arg2, jlong arg3, jlong arg4) {
+	return ((jint (*)(jlong, jlong, jlong, jlong)) target)(arg1, arg2, arg3, arg4);
+}
+
+JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_executeSsizesizeobjargproc(JNIEnv *env, jclass clazz, jlong target, jlong arg1, jlong arg2, jlong arg3, jlong arg4, jlong arg5) {
+	return ((jint (*)(jlong, jlong, jlong, jlong, jlong)) target)(arg1, arg2, arg3, arg4, arg5);
+}
+
+JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_executeObjobjproc(JNIEnv *env, jclass clazz, jlong target, jlong arg1, jlong arg2, jlong arg3) {
+	return ((jint (*)(jlong, jlong, jlong)) target)(arg1, arg2, arg3);
+}
+
+JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_executeObjobjargproc(JNIEnv *env, jclass clazz, jlong target, jlong arg1, jlong arg2, jlong arg3, jlong arg4) {
+	return ((jint (*)(jlong, jlong, jlong, jlong)) target)(arg1, arg2, arg3, arg4);
+}
+
+JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_executeInitproc(JNIEnv *env, jclass clazz, jlong target, jlong arg1, jlong arg2, jlong arg3, jlong arg4, jlong arg5) {
+	return ((jint (*)(jlong, jlong, jlong, jlong, jlong)) target)(arg1, arg2, arg3, arg4, arg5);
+}
+
+JNIEXPORT void JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_executeFreefunc(JNIEnv *env, jclass clazz, jlong target, jlong arg1, jlong arg2) {
+	((void (*)(jlong, jlong)) target)(arg1, arg2);
+}
+
+JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_executeGetbufferproc(JNIEnv *env, jclass clazz, jlong target, jlong arg1, jlong arg2, jlong arg3, jint arg4) {
+	return ((jint (*)(jlong, jlong, jlong, jint)) target)(arg1, arg2, arg3, arg4);
+}
+
+JNIEXPORT void JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_executeReleasebufferproc(JNIEnv *env, jclass clazz, jlong target, jlong arg1, jlong arg2, jlong arg3) {
+	((void (*)(jlong, jlong, jlong)) target)(arg1, arg2, arg3);
+}
+
+
+JNIEXPORT jlong JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_executeRichcomparefunc(JNIEnv *env, jclass clazz, jlong target, jlong arg1, jlong arg2, jlong arg3, jint arg4) {
+	return ((jlong (*)(jlong, jlong, jlong, jlong)) target)(arg1, arg2, arg3, arg4);
+}
