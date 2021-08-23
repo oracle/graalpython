@@ -55,6 +55,8 @@ import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
+import org.graalvm.shadowed.org.jline.keymap.KeyMap;
+import org.graalvm.shadowed.org.jline.reader.Binding;
 
 import org.graalvm.shadowed.org.jline.reader.Candidate;
 import org.graalvm.shadowed.org.jline.reader.Completer;
@@ -62,6 +64,7 @@ import org.graalvm.shadowed.org.jline.reader.EndOfFileException;
 import org.graalvm.shadowed.org.jline.reader.History;
 import org.graalvm.shadowed.org.jline.reader.LineReader;
 import org.graalvm.shadowed.org.jline.reader.LineReaderBuilder;
+import org.graalvm.shadowed.org.jline.reader.Macro;
 import org.graalvm.shadowed.org.jline.reader.ParsedLine;
 import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 import org.graalvm.shadowed.org.jline.terminal.Terminal;
@@ -113,6 +116,25 @@ public class JLineConsoleHandler extends ConsoleHandler {
         reader = builder.build();
         reader.option(LineReader.Option.DISABLE_EVENT_EXPANSION, true);
         reader.setVariable(LineReader.COMMENT_BEGIN, "#");
+
+        // numpad bindings
+        KeyMap<Binding> binding = reader.getKeyMaps().get(LineReader.MAIN);
+        binding.bind(new Macro(KeyMap.translate("0")), KeyMap.translate("^[Op"));
+        binding.bind(new Macro(KeyMap.translate(".")), KeyMap.translate("^[On"));
+        binding.bind(new Macro(KeyMap.translate("^M")), KeyMap.translate("^[OM"));
+        binding.bind(new Macro(KeyMap.translate("1")), KeyMap.translate("^[Oq"));
+        binding.bind(new Macro(KeyMap.translate("2")), KeyMap.translate("^[Or"));
+        binding.bind(new Macro(KeyMap.translate("3")), KeyMap.translate("^[Os"));
+        binding.bind(new Macro(KeyMap.translate("4")), KeyMap.translate("^[Ot"));
+        binding.bind(new Macro(KeyMap.translate("5")), KeyMap.translate("^[Ou"));
+        binding.bind(new Macro(KeyMap.translate("6")), KeyMap.translate("^[Ov"));
+        binding.bind(new Macro(KeyMap.translate("7")), KeyMap.translate("^[Ow"));
+        binding.bind(new Macro(KeyMap.translate("8")), KeyMap.translate("^[Ox"));
+        binding.bind(new Macro(KeyMap.translate("9")), KeyMap.translate("^[Oy"));
+        binding.bind(new Macro(KeyMap.translate("+")), KeyMap.translate("^[Ol"));
+        binding.bind(new Macro(KeyMap.translate("-")), KeyMap.translate("^[OS"));
+        binding.bind(new Macro(KeyMap.translate("*")), KeyMap.translate("^[OR"));
+        binding.bind(new Macro(KeyMap.translate("/")), KeyMap.translate("^[OQ"));
     }
 
     @Override
