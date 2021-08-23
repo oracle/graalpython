@@ -223,6 +223,10 @@ public abstract class PythonObjectFactory extends Node {
         return PythonLanguage.getCurrent();
     }
 
+    public final Shape getShape(PythonBuiltinClassType cls) {
+        return cls.getInstanceShape(PythonLanguage.get(this));
+    }
+
     public final Shape getShape(Object cls) {
         return executeGetShape(cls, true);
     }
@@ -323,9 +327,9 @@ public abstract class PythonObjectFactory extends Node {
         if (length != array.length) {
             byte[] buf = new byte[length];
             PythonUtils.arraycopy(array, offset, buf, 0, buf.length);
-            return createBytes(PythonBuiltinClassType.PBytes, buf);
+            return createBytes(buf, length);
         }
-        return createBytes(PythonBuiltinClassType.PBytes, array);
+        return createBytes(array, length);
     }
 
     public final PBytes createBytes(Object cls, byte[] array) {
@@ -341,7 +345,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PBytes createBytes(SequenceStorage storage) {
-        return createBytes(PythonBuiltinClassType.PBytes, storage);
+        return trace(new PBytes(PythonBuiltinClassType.PBytes, getShape(PythonBuiltinClassType.PBytes), storage));
     }
 
     public final PBytes createBytes(Object cls, SequenceStorage storage) {
