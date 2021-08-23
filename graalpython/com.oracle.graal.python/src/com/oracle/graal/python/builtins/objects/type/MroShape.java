@@ -100,6 +100,7 @@ public final class MroShape {
                 if ((DynamicObjectLibrary.getUncached().getShapeFlags(managedClass) & HAS_NO_VALUE_PROPERTIES) != 0) {
                     return null;
                 }
+                assert hasNoNoValueProperties(managedClass);
                 mroShape = mroShape.add(managedClass.getShape());
             } else {
                 return null;
@@ -146,9 +147,27 @@ public final class MroShape {
             if (mroIndex == NOT_FOUND_INDEX) {
                 return PNone.NO_VALUE;
             } else {
-                return readNode.execute(PythonManagedClass.cast(mro.getItemNormalized(mroIndex)), key);
+                Object result = readNode.execute(PythonManagedClass.cast(mro.getItemNormalized(mroIndex)), key);
+                // We must not get NO_VALUE because that would mean the MROShape contains a class
+                // with NO_VALUE properties and cannot be used to lookup properties only by shapes
+                assert result != PNone.NO_VALUE : mro.getClassName() + "." + key;
+                return result;
             }
         }
+    }
+
+    private static boolean hasNoNoValueProperties(PythonManagedClass klass) {
+        DynamicObjectLibrary lib = DynamicObjectLibrary.getFactory().getUncached(klass);
+        for (Object key : klass.getShape().getKeyList()) {
+            if (key instanceof String && lib.getOrDefault(klass, key, null) == PNone.NO_VALUE) {
+                // The MROShape machinery makes the assumption that shapes are enough to determine
+                // MRO lookup results, in the presence of properties with NO_VALUE shape is not
+                // enough, such shapes should be marked with the HAS_NO_VALUE_PROPERTIES flag
+                assert false : klass + "." + key;
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
