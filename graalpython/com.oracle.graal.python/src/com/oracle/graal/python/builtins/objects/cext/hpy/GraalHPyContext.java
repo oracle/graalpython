@@ -1211,49 +1211,70 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     /* HPy JNI trampoline declarations */
 
+    @TruffleBoundary
     static native void hpyCallDestroyFunc(long nativeSpace, long destroyFunc);
 
+    @TruffleBoundary
     public static native long executePrimitive1(long target, long arg1);
 
+    @TruffleBoundary
     public static native long executePrimitive2(long target, long arg1, long arg2);
 
+    @TruffleBoundary
     public static native long executePrimitive3(long target, long arg1, long arg2, long arg3);
 
+    @TruffleBoundary
     public static native long executePrimitive4(long target, long arg1, long arg2, long arg3, long arg4);
 
+    @TruffleBoundary
     public static native long executePrimitive5(long target, long arg1, long arg2, long arg3, long arg4, long arg5);
 
+    @TruffleBoundary
     public static native long executePrimitive6(long target, long arg1, long arg2, long arg3, long arg4, long arg5, long arg6);
 
+    @TruffleBoundary
     public static native long executePrimitive7(long target, long arg1, long arg2, long arg3, long arg4, long arg5, long arg6, long arg7);
 
+    @TruffleBoundary
     public static native long executePrimitive8(long target, long arg1, long arg2, long arg3, long arg4, long arg5, long arg6, long arg7, long arg8);
 
+    @TruffleBoundary
     public static native long executePrimitive9(long target, long arg1, long arg2, long arg3, long arg4, long arg5, long arg6, long arg7, long arg8, long arg9);
 
+    @TruffleBoundary
     public static native long executePrimitive10(long target, long arg1, long arg2, long arg3, long arg4, long arg5, long arg6, long arg7, long arg8, long arg9, long arg10);
 
+    @TruffleBoundary
     public static native int executeInquiry(long target, long arg1, long arg2);
 
+    @TruffleBoundary
     public static native int executeSsizeobjargproc(long target, long arg1, long arg2, long arg3, long arg4);
 
+    @TruffleBoundary
     public static native int executeSsizesizeobjargproc(long target, long arg1, long arg2, long arg3, long arg4, long arg5);
 
+    @TruffleBoundary
     public static native int executeObjobjproc(long target, long arg1, long arg2, long arg3);
 
+    @TruffleBoundary
     public static native int executeObjobjargproc(long target, long arg1, long arg2, long arg3, long arg4);
 
+    @TruffleBoundary
     public static native int executeInitproc(long target, long arg1, long arg2, long arg3, long arg4, long arg5);
 
+    @TruffleBoundary
     public static native void executeFreefunc(long target, long arg1, long arg2);
 
+    @TruffleBoundary
     public static native int executeGetbufferproc(long target, long arg1, long arg2, long arg3, int arg4);
 
+    @TruffleBoundary
     public static native void executeReleasebufferproc(long target, long arg1, long arg2, long arg3);
 
+    @TruffleBoundary
     public static native long executeRichcomparefunc(long target, long arg1, long arg2, long arg3, int arg4);
 
-    // returns the function pointer of GenericNew
+    @TruffleBoundary
     private static native int initJNI(GraalHPyContext context, long nativePointer);
 
     public enum Counter {
