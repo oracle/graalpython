@@ -134,13 +134,15 @@ public abstract class CodeNodes {
                 return context.getEnv().parsePublic(source);
             };
 
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
             RootCallTarget ct;
-            if (context.getCore().isInitialized() || isNotAModule) {
+            if (isNotAModule) {
+                return factory.createCode(createCode, flags, firstlineno, lnotab, filename);
+            } else if (context.getCore().isInitialized()) {
                 ct = (RootCallTarget) createCode.get();
             } else {
                 ct = (RootCallTarget) language.cacheCode(filename, createCode);
             }
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
             return factory.createCode(ct, flags, firstlineno, lnotab, filename);
         }
 

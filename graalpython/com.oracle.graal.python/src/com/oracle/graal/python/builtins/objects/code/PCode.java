@@ -70,9 +70,13 @@ import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -95,8 +99,11 @@ public final class PCode extends PythonBuiltinObject {
     static final long FLAG_MODULE = 0x40; // CO_NOFREE on CPython, we use it on modules, it's
                                           // redundant anyway
 
-    private final RootCallTarget callTarget;
-    private final Signature signature;
+    // callTargetSupplier may be null, in which case callTarget and signature will be
+    // set. Otherwise, these are lazily created from the supplier.
+    private Supplier<CallTarget> callTargetSupplier;
+    @CompilationFinal private RootCallTarget callTarget;
+    @CompilationFinal private Signature signature;
 
     // number of local variables
     private int nlocals = -1;
@@ -130,15 +137,20 @@ public final class PCode extends PythonBuiltinObject {
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget) {
         super(cls, instanceShape);
         this.callTarget = callTarget;
-        if (callTarget.getRootNode() instanceof PRootNode) {
-            this.signature = ((PRootNode) callTarget.getRootNode()).getSignature();
-        } else {
-            this.signature = Signature.createVarArgsAndKwArgsOnly();
-        }
+        initializeSignature(callTarget);
     }
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, int flags, int firstlineno, byte[] lnotab, String filename) {
         this(cls, instanceShape, callTarget);
+        this.flags = flags;
+        this.firstlineno = firstlineno;
+        this.lnotab = lnotab;
+        this.filename = filename;
+    }
+
+    public PCode(Object cls, Shape instanceShape, Supplier<CallTarget> callTargetSupplier, int flags, int firstlineno, byte[] lnotab, String filename) {
+        super(cls, instanceShape);
+        this.callTargetSupplier = callTargetSupplier;
         this.flags = flags;
         this.firstlineno = firstlineno;
         this.lnotab = lnotab;
@@ -514,10 +526,38 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public Signature getSignature() {
+        if (signature == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            initializeSignature(getRootCallTarget());
+        }
         return signature;
     }
 
+    @TruffleBoundary
+    private synchronized void initializeSignature(RootCallTarget rootCallTarget) {
+        if (signature == null) {
+            if (rootCallTarget.getRootNode() instanceof PRootNode) {
+                signature = ((PRootNode) rootCallTarget.getRootNode()).getSignature();
+            } else {
+                signature = Signature.createVarArgsAndKwArgsOnly();
+            }
+        }
+    }
+
     public RootCallTarget getRootCallTarget() {
+        if (callTarget == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            initializeCallTarget();
+        }
+        return callTarget;
+    }
+
+    @TruffleBoundary
+    private synchronized RootCallTarget initializeCallTarget() {
+        if (callTarget == null) {
+            callTarget = (RootCallTarget) callTargetSupplier.get();
+            callTargetSupplier = null;
+        }
         return callTarget;
     }
 
