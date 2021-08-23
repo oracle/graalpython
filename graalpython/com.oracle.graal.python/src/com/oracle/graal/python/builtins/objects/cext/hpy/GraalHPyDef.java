@@ -391,9 +391,13 @@ public abstract class GraalHPyDef {
         HPySlot(int value, HPySlotWrapper signature, Object... attributeKeys) {
             this.value = value;
             this.attributeKeys = attributeKeys;
-            this.signatures = new HPySlotWrapper[this.attributeKeys.length];
-            for (int i = 0; i < this.signatures.length; i++) {
-                this.signatures[i] = signature;
+            if (attributeKeys.length > 0) {
+                this.signatures = new HPySlotWrapper[attributeKeys.length];
+                for (int i = 0; i < this.signatures.length; i++) {
+                    this.signatures[i] = signature;
+                }
+            } else {
+                this.signatures = new HPySlotWrapper[]{signature};
             }
         }
 
