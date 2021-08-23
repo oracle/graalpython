@@ -146,7 +146,7 @@ public abstract class PyObjectGetMethod extends Node {
             returnBoundDescr.enter();
             return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));
         }
-        return descr;
+        return new BoundDescriptor(descr);
     }
 
     // No explicit branch profiling when we're looking up multiple things
@@ -185,6 +185,6 @@ public abstract class PyObjectGetMethod extends Node {
         if (getMethod != null) {
             return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));
         }
-        return descr;
+        return new BoundDescriptor(descr);
     }
 }
