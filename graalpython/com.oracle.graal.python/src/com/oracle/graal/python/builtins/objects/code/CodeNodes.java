@@ -130,7 +130,7 @@ public abstract class CodeNodes {
 
             Supplier<CallTarget> createCode = () -> {
                 ByteSequence bytes = ByteSequence.create(codedata);
-                Source source = Source.newBuilder(PythonLanguage.ID, bytes, filename).mimeType(PythonLanguage.MIME_TYPE_BYTECODE).build();
+                Source source = Source.newBuilder(PythonLanguage.ID, bytes, filename).mimeType(PythonLanguage.MIME_TYPE_BYTECODE).cached(!language.singleContextAssumption.isValid()).build();
                 return context.getEnv().parsePublic(source);
             };
 
