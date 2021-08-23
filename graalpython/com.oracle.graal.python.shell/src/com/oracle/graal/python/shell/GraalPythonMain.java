@@ -835,7 +835,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     if (input == null) {
                         throw new EOFException();
                     }
-                    if (input.isEmpty() || input.charAt(0) == '#') {
+                    if (canSkipFromEval(input)) {
                         // nothing to parse
                         continue;
                     }
@@ -937,6 +937,16 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         } catch (ExitException e) {
             return e.code;
         }
+    }
+
+    private static boolean canSkipFromEval(String input) {
+        String[] split = input.split("\n");
+        for (String s : split) {
+            if (!s.isEmpty() && !s.startsWith("#")) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private Value evalInternal(Context context, String code) {
