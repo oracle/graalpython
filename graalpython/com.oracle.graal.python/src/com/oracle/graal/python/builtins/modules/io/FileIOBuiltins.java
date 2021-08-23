@@ -117,14 +117,16 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -287,10 +289,10 @@ public class FileIOBuiltins extends PythonBuiltins {
             return PythonContext.get(this).getPosixSupport();
         }
 
-        @Specialization(guards = {"!isBadMode(mode)", "!isInvalidMode(mode)"}, limit = "2")
+        @Specialization(guards = {"!isBadMode(mode)", "!isInvalidMode(mode)"})
         public void doInit(VirtualFrame frame, PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @CachedLibrary("opener") PythonObjectLibrary libOpener,
+                        @Cached CallNode callOpener,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached IONodes.CastOpenNameNode castOpenNameNode,
@@ -333,7 +335,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                 if (opener instanceof PNone) {
                     self.setFD(open(frame, name, flags, 0666, ctxt, posixLib, exceptionProfile), ctxt);
                 } else {
-                    Object fdobj = libOpener.callObject(opener, frame, nameobj, flags);
+                    Object fdobj = callOpener.execute(frame, opener, nameobj, flags);
                     if (!indexCheckNode.execute(fdobj)) {
                         throw raise(TypeError, EXPECTED_INT_FROM_OPENER);
                     }
@@ -804,9 +806,9 @@ public class FileIOBuiltins extends PythonBuiltins {
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "!self.isCloseFD()")
         Object simple(VirtualFrame frame, PFileIO self,
-                        @Shared("l") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Cached PyObjectCallMethodObjArgs callClose) {
             try {
-                lib.lookupAndCallRegularMethod(getContext().getCore().lookupType(PRawIOBase), frame, CLOSE, self);
+                callClose.execute(frame, getContext().getCore().lookupType(PRawIOBase), CLOSE, self);
             } catch (PException e) {
                 self.setClosed();
                 throw e;
@@ -818,9 +820,9 @@ public class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = {"self.isCloseFD()", "!self.isFinalizing()"})
         Object common(VirtualFrame frame, PFileIO self,
                         @Shared("c") @Cached PosixModuleBuiltins.CloseNode posixClose,
-                        @Shared("l") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Shared("l") @Cached PyObjectCallMethodObjArgs callSuperClose) {
             try {
-                lib.lookupAndCallRegularMethod(getContext().getCore().lookupType(PRawIOBase), frame, CLOSE, self);
+                callSuperClose.execute(frame, getContext().getCore().lookupType(PRawIOBase), CLOSE, self);
             } catch (PException e) {
                 try {
                     internalClose(frame, self, posixClose);
@@ -838,10 +840,10 @@ public class FileIOBuiltins extends PythonBuiltins {
         Object slow(VirtualFrame frame, PFileIO self,
                         @Shared("c") @Cached PosixModuleBuiltins.CloseNode posixClose,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                        @Shared("l") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Shared("l") @Cached PyObjectCallMethodObjArgs callSuperClose) {
             PException rawIOException = null;
             try {
-                lib.lookupAndCallRegularMethod(getContext().getCore().lookupType(PRawIOBase), frame, CLOSE, self);
+                callSuperClose.execute(frame, getContext().getCore().lookupType(PRawIOBase), CLOSE, self);
             } catch (PException e) {
                 rawIOException = e;
             }
@@ -1050,11 +1052,11 @@ public class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isClosed()")
         Object doit(VirtualFrame frame, PFileIO self,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary libSelf,
+                        @Cached PyObjectLookupAttr lookupName,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode repr) {
             String mode = ModeNode.modeString(self);
             String closefd = self.isCloseFD() ? "True" : "False";
-            Object nameobj = libSelf.lookupAttribute(self, frame, "name");
+            Object nameobj = lookupName.execute(frame, self, "name");
             if (nameobj instanceof PNone) {
                 return PythonUtils.format("<_io.FileIO fd=%d mode='%s' closefd=%s>", self.getFD(), mode, closefd);
             } else {
