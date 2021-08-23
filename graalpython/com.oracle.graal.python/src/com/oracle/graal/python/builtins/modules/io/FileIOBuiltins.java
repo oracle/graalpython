@@ -522,9 +522,11 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Cached BranchProfile readErrorProfile,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Cached BranchProfile multipleReadsProfile,
                         @Cached BranchProfile exceptionProfile,
                         @Cached GilNode gil) {
             int bufsize = SMALLCHUNK;
+            boolean mayBeQuick = false;
             try {
                 long pos = posixLib.lseek(getPosixSupport(), self.getFD(), 0L, mapPythonSeekWhenceToPosix(SEEK_CUR));
                 long[] status = posixLib.fstat(getPosixSupport(), self.getFD());
@@ -537,14 +539,33 @@ public class FileIOBuiltins extends PythonBuiltins {
                      */
                     bufsize = (int) (end - pos + 1); // cast guaranteed since we check against
                                                      // (MAX_SIZE: MAX_INT)
+                    mayBeQuick = true;
                 }
             } catch (PosixSupportLibrary.PosixException e) {
                 // ignore
             }
 
-            ByteArrayOutputStream result = createOutputStream();
             byte[] buffer;
             int bytesRead = 0;
+            try {
+                PBytes b = posixRead.read(frame, self.getFD(), bufsize, posixLib, readErrorProfile, gil);
+                buffer = getBytes.execute(b.getSequenceStorage());
+                bytesRead = buffer.length;
+                if (bytesRead == 0 || (mayBeQuick && bytesRead == bufsize - 1)) {
+                    return b;
+                }
+            } catch (PosixSupportLibrary.PosixException e) {
+                exceptionProfile.enter();
+                if (e.getErrorCode() == EAGAIN.getNumber()) {
+                    return PNone.NONE;
+                }
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+
+            multipleReadsProfile.enter();
+            ByteArrayOutputStream result = createOutputStream();
+            append(result, buffer, bytesRead);
+
             while (true) {
                 if (bytesRead >= bufsize) {
                     // see CPython's function 'fileio.c: new_buffersize'
