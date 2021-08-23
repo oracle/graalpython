@@ -124,7 +124,6 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextF
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_CONTEXT_TO_NATIVE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 
 import java.io.IOException;
 import java.lang.ref.PhantomReference;
@@ -224,6 +223,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
 import com.oracle.graal.python.lib.CanBeDoubleNodeGen;
@@ -233,7 +233,7 @@ import com.oracle.graal.python.lib.PyObjectSizeNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
@@ -1460,10 +1460,14 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
 
         try {
-            return com.oracle.graal.python.builtins.objects.ints.PInt.intValue(PyIndexCheckNodeGen.getUncached().execute(receiver) || CanBeDoubleNodeGen.getUncached().execute(receiver) ||
-                            LookupInheritedAttributeNode.Dynamic.getUncached().execute(receiver, __INT__) != PNone.NO_VALUE);
+            if (PyIndexCheckNodeGen.getUncached().execute(receiver) || CanBeDoubleNodeGen.getUncached().execute(receiver)) {
+                return 1;
+            }
+            Object receiverType = GetClassNode.getUncached().execute(receiver);
+            return com.oracle.graal.python.builtins.objects.ints.PInt.intValue(LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.Int).execute(receiverType) != PNone.NO_VALUE);
         } catch (PException e) {
-            throw CompilerDirectives.shouldNotReachHere("error handling not implemented");
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+            return 0;
         }
     }
 

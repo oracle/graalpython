@@ -55,7 +55,6 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_GET_DEFINES;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_GET_LEGACY_METHODS;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -121,6 +120,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
@@ -136,6 +136,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
@@ -173,6 +174,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
@@ -1833,6 +1835,7 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
+    @ImportStatic(SpecialMethodSlot.class)
     public static final class GraalHPyIsNumber extends GraalHPyContextFunction {
 
         @ExportMessage
@@ -1841,13 +1844,18 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached CanBeDoubleNode canBeDoubleNode,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                        @Cached GetClassNode getClassNode,
+                        @Cached(parameters = "Int") LookupCallableSlotInMRONode lookup,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
             Object receiver = asPythonObjectNode.execute(nativeContext, arguments[1]);
             try {
-                return PInt.intValue(indexCheckNode.execute(receiver) || canBeDoubleNode.execute(receiver) || lookup.execute(receiver, __INT__) != PNone.NO_VALUE);
+                if (indexCheckNode.execute(receiver) || canBeDoubleNode.execute(receiver)) {
+                    return 1;
+                }
+                Object receiverType = getClassNode.execute(receiver);
+                return PInt.intValue(lookup.execute(receiverType) != PNone.NO_VALUE);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(nativeContext, e);
                 return GraalHPyHandle.NULL_HANDLE;
