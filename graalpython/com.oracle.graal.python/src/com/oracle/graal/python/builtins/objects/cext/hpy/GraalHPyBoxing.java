@@ -60,11 +60,11 @@ public class GraalHPyBoxing {
      * handles and integers.
      */
 
-    private static final long NAN_BOXING_BASE = 0x0007_0000_0000_0000l;
-    private static final long NAN_BOXING_MASK = 0xFFFF_0000_0000_0000l;
-    private static final long NAN_BOXING_INT = 0x0001_0000_0000_0000l;
+    private static final long NAN_BOXING_BASE = 0x0007_0000_0000_0000L;
+    private static final long NAN_BOXING_MASK = 0xFFFF_0000_0000_0000L;
+    private static final long NAN_BOXING_INT = 0x0001_0000_0000_0000L;
 
-    private static final long NAN_BOXING_INT_MASK = 0x00000000FFFFFFFFl;
+    private static final long NAN_BOXING_INT_MASK = 0x00000000FFFFFFFFL;
     private static final long NAN_BOXING_MAX_HANDLE = Integer.MAX_VALUE;
 
     public static boolean isBoxedDouble(long value) {

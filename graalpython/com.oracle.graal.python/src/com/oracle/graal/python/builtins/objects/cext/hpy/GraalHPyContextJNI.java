@@ -62,12 +62,9 @@ import com.oracle.truffle.api.nodes.Node;
  * {@link GraalHPyContextFunctions}.
  */
 @ExportLibrary(InteropLibrary.class)
-public final class GraalHPyContextJNI implements TruffleObject {
+final class GraalHPyContextJNI implements TruffleObject {
 
-    private final GraalHPyContext context;
-
-    public GraalHPyContextJNI(GraalHPyContext context) {
-        this.context = context;
+    GraalHPyContextJNI(@SuppressWarnings("unused") GraalHPyContext context) {
     }
 
     @ExportMessage
@@ -246,11 +243,11 @@ public final class GraalHPyContextJNI implements TruffleObject {
 
         private static final GraalHPyJNIConvertArgUncachedNode UNCACHED = new GraalHPyJNIConvertArgUncachedNode();
 
-        public static GraalHPyJNIConvertArgNode create(JNIFunctionSignature signature) {
+        public static GraalHPyJNIConvertArgNode create(@SuppressWarnings("unused") JNIFunctionSignature signature) {
             return new GraalHPyJNIConvertArgCachedNode();
         }
 
-        public static GraalHPyJNIConvertArgNode getUncached(JNIFunctionSignature signature) {
+        public static GraalHPyJNIConvertArgNode getUncached(@SuppressWarnings("unused") JNIFunctionSignature signature) {
             return UNCACHED;
         }
 

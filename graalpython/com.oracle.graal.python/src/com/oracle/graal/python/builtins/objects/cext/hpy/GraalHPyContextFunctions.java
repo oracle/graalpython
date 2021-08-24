@@ -1575,11 +1575,9 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached ReadAttributeFromObjectNode readBasicsizeNode,
                         @Cached IsTypeNode isTypeNode,
                         @Cached HPyRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                         @Cached PCallHPyFunction callMallocNode,
                         @Cached PCallHPyFunction callWriteDataNode,
                         @Cached HPyAsHandleNode asHandleNode,
@@ -2178,8 +2176,7 @@ public abstract class GraalHPyContextFunctions {
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
-                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached HPyCloseHandleNode closeHandleNode) throws ArityException, UnsupportedTypeException {
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode) throws ArityException, UnsupportedTypeException {
             checkArity(arguments, 2);
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
             GraalHPyTracker builder = GraalHPyTrackerCleanup.cast(asPythonObjectNode.execute(nativeContext, arguments[1]));

@@ -163,22 +163,6 @@ public abstract class GraalHPyObjectBuiltins {
             return pythonObject;
         }
 
-        private ReadAttributeFromObjectNode ensureReadBasicsizeNode() {
-            if (readBasicsizeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readBasicsizeNode = insert(ReadAttributeFromObjectNode.createForceType());
-            }
-            return readBasicsizeNode;
-        }
-
-        private WriteAttributeToObjectNode ensureWriteNativeSpaceNode() {
-            if (writeNativeSpaceNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeNativeSpaceNode = insert(WriteAttributeToObjectNode.createForceType());
-            }
-            return writeNativeSpaceNode;
-        }
-
         private PCallHPyFunction ensureCallHPyFunctionNode() {
             if (callHPyFunctionNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();

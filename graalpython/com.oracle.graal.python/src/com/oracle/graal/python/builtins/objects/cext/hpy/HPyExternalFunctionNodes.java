@@ -1667,14 +1667,6 @@ public abstract class HPyExternalFunctionNodes {
             }
         }
 
-        private ConditionProfile ensureIsAllocatedProfile() {
-            if (isAllocatedProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isAllocatedProfile = ConditionProfile.create();
-            }
-            return isAllocatedProfile;
-        }
-
         private int castToInt(Object value) {
             if (valueLib.fitsInInt(value)) {
                 try {
