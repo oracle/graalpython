@@ -46,7 +46,6 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.PythonLanguage.SharedMultiprocessingData;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -78,6 +77,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.SharedContextData;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ArrayBuilder;
@@ -268,17 +268,17 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     abstract static class PipeNode extends PythonBuiltinNode {
 
         @Specialization
-        PTuple pipe(@Cached GilNode gil,
-                        @Cached("getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData) {
+        PTuple pipe(@Cached GilNode gil) {
             int[] pipe;
             PythonContext ctx = getContext();
+            SharedContextData sharedData = ctx.getSharedContextData();
             gil.release(true);
             try {
                 pipe = sharedData.pipe();
                 ctx.getChildContextFDs().add(pipe[0]);
                 ctx.getChildContextFDs().add(pipe[1]);
-                getLanguage().addFdToKeep(pipe[0]);
-                getLanguage().addFdToKeep(pipe[1]);
+                sharedData.addFdToKeep(pipe[0]);
+                sharedData.addFdToKeep(pipe[1]);
             } finally {
                 gil.acquire();
             }
@@ -291,9 +291,9 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     public abstract static class WriteNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "1")
         Object doWrite(int fd, PBytes data,
-                        @Cached("getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
                         @CachedLibrary("data") PythonBufferAccessLibrary bufferLib,
                         @Cached GilNode gil) {
+            SharedContextData sharedData = getContext().getSharedContextData();
             gil.release(true);
             try {
                 byte[] bytes = bufferLib.getCopiedByteArray(data);
@@ -312,10 +312,9 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         Object doWrite(long fd, PBytes data,
-                        @Cached("getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
                         @CachedLibrary("data") PythonBufferAccessLibrary bufferLib,
                         @Cached GilNode gil) {
-            return doWrite((int) fd, data, sharedData, bufferLib, gil);
+            return doWrite((int) fd, data, bufferLib, gil);
         }
     }
 
@@ -324,8 +323,8 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     public abstract static class ReadNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doRead(int fd, @SuppressWarnings("unused") Object length,
-                        @Cached("getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
                         @Cached GilNode gil) {
+            SharedContextData sharedData = getContext().getSharedContextData();
             gil.release(true);
             try {
                 Object data = sharedData.takeSharedContextData(this, fd, () -> {
@@ -342,9 +341,8 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doRead(long fd, Object length,
-                        @Cached("getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
                         @Cached GilNode gil) {
-            return doRead((int) fd, length, sharedData, gil);
+            return doRead((int) fd, length, gil);
         }
     }
 
@@ -352,12 +350,11 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PNone close(@SuppressWarnings("unused") int fd,
-                        @Cached("getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData) {
+        PNone close(@SuppressWarnings("unused") int fd) {
             assert fd < 0;
-            PythonLanguage lang = getLanguage();
-            if (lang.isFdToKeep(fd)) {
-                if (lang.removeFdToKeep(fd)) {
+            SharedContextData sharedData = getContext().getSharedContextData();
+            if (sharedData.isFdToKeep(fd)) {
+                if (sharedData.removeFdToKeep(fd)) {
                     sharedData.closeFd(fd);
                 }
             } else {
@@ -367,9 +364,8 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone close(@SuppressWarnings("unused") long fd,
-                        @Cached("getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData) {
-            return close((int) fd, sharedData);
+        PNone close(@SuppressWarnings("unused") long fd) {
+            return close((int) fd);
         }
     }
 
@@ -378,13 +374,13 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     abstract static class SelectNode extends PythonBuiltinNode {
         @Specialization
         Object doGeneric(VirtualFrame frame, Object rlist,
-                        @Cached("getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached("createGetItem()") LookupAndCallBinaryNode callGetItemNode,
                         @Cached ListNodes.FastConstructListNode constructListNode,
                         @Cached CastToJavaIntLossyNode castToJava,
                         @Cached GilNode gil) {
             ArrayBuilder<Integer> notEmpty = new ArrayBuilder<>();
+            SharedContextData sharedData = getContext().getSharedContextData();
             gil.release(true);
             try {
                 PSequence pSequence = constructListNode.execute(frame, rlist);

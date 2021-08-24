@@ -525,8 +525,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PNone close(VirtualFrame frame, int fd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                if (getLanguage().isFdToKeep(fd)) {
-                    getContext().closeLater(fd);
+                PythonContext ctx = getContext();
+                if (ctx.getSharedContextData().isFdToKeep(fd)) {
+                    ctx.closeLater(fd);
                     return PNone.NONE;
                 }
                 posixLib.close(getPosixSupport(), fd);

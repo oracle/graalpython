@@ -56,7 +56,6 @@ import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.PythonLanguage.SharedMultiprocessingData;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -130,7 +129,10 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.llvm.api.Toolchain;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class PythonContext {
@@ -468,6 +470,7 @@ public final class PythonContext {
     public static final String CHILD_CONTEXT_DATA = "childContextData";
     @CompilationFinal private List<Integer> childContextFDs;
     private final ChildContextData childContextData;
+    private final SharedContextData sharedContextData;
 
     private final Set<Integer> fdsToClose = new HashSet<>();
 
@@ -520,11 +523,155 @@ public final class PythonContext {
         }
     }
 
+    public static final class SharedContextData {
+
+        private int counter = 0;
+
+        private final SortedMap<Integer, LinkedBlockingQueue<Object>> fdData = new TreeMap<>();
+        private final Map<Integer, Integer> fdsToKeep = new HashMap<>();
+
+        @TruffleBoundary
+        public boolean isFdToKeep(int fd) {
+            synchronized (fdsToKeep) {
+                return fdsToKeep.containsKey(fd);
+            }
+        }
+
+        @TruffleBoundary
+        public void addFdToKeep(int fd) {
+            synchronized (fdsToKeep) {
+                Integer c = fdsToKeep.get(fd);
+                if (c == null) {
+                    c = 1;
+                } else {
+                    c = c + 1;
+                }
+                fdsToKeep.put(fd, c);
+            }
+        }
+
+        @TruffleBoundary
+        public boolean removeFdToKeep(int fd) {
+            synchronized (fdsToKeep) {
+                Integer c = fdsToKeep.get(fd);
+                if (c == null) {
+                    return false;
+                }
+                if (c == 1) {
+                    fdsToKeep.remove(fd);
+                    return true;
+                } else {
+                    fdsToKeep.put(fd, c - 1);
+                    return false;
+                }
+            }
+        }
+
+        /**
+         * @return fake (negative) fd values to avoid clash with real file descriptors and to detect
+         *         potential usage by other python builtins
+         */
+        @TruffleBoundary
+        public int[] pipe() {
+            synchronized (fdData) {
+                LinkedBlockingQueue<Object> q = new LinkedBlockingQueue<>();
+                int readFD = --counter;
+                fdData.put(readFD, q);
+                int writeFD = --counter;
+                fdData.put(writeFD, q);
+                return new int[]{readFD, writeFD};
+            }
+        }
+
+        @TruffleBoundary
+        public boolean addSharedContextData(int fd, byte[] bytes, Runnable noFDHandler, Runnable brokenPipeHandler) {
+            LinkedBlockingQueue<Object> q = null;
+            synchronized (fdData) {
+                q = fdData.get(fd);
+                if (q == null) {
+                    noFDHandler.run();
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                Integer fd2 = getPairFd(fd);
+                if (isClosed(fd2)) {
+                    brokenPipeHandler.run();
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            q.add(bytes);
+            return true;
+        }
+
+        @TruffleBoundary
+        public void closeFd(int fd) {
+            synchronized (fdData) {
+                fdData.remove(fd);
+            }
+        }
+
+        @TruffleBoundary
+        public Object takeSharedContextData(Node node, int fd, Runnable noFDHandler) {
+            LinkedBlockingQueue<Object> q;
+            synchronized (fdData) {
+                q = fdData.get(fd);
+                if (q == null) {
+                    noFDHandler.run();
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                Integer fd2 = getPairFd(fd);
+                if (isClosed(fd2)) {
+                    if (q.isEmpty()) {
+                        return PythonUtils.EMPTY_BYTE_ARRAY;
+                    }
+                }
+            }
+            Object[] o = new Object[]{PNone.NONE};
+            TruffleSafepoint.setBlockedThreadInterruptible(node, (lbq) -> {
+                o[0] = lbq.take();
+            }, q);
+            return o[0];
+        }
+
+        @TruffleBoundary
+        public boolean isBlocking(int fd) {
+            LinkedBlockingQueue<Object> q;
+            synchronized (fdData) {
+                q = fdData.get(fd);
+                if (q == null) {
+                    return false;
+                }
+                Integer fd2 = getPairFd(fd);
+                if (isClosed(fd2)) {
+                    return false;
+                }
+            }
+            return q.isEmpty();
+        }
+
+        @TruffleBoundary
+        public void closeFDs(List<Integer> fds) {
+            synchronized (fds) {
+                for (Integer fd : fds) {
+                    fds.remove(fd);
+                }
+            }
+        }
+
+        private static int getPairFd(int fd) {
+            return fd % 2 == 0 ? fd + 1 : fd - 1;
+        }
+
+        private boolean isClosed(int fd) {
+            return fdData.get(fd) == null && fd >= counter;
+        }
+    }
+
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core) {
         this.language = language;
         this.core = core;
         this.env = env;
         this.childContextData = (ChildContextData) env.getConfig().get(CHILD_CONTEXT_DATA);
+        this.sharedContextData = this.childContextData == null ? new SharedContextData() : null;
         this.handler = new AsyncHandler(this);
         this.sharedFinalizer = new AsyncHandler.SharedFinalizer(this);
         this.optionValues = PythonOptions.createOptionValuesStorage(env);
@@ -554,6 +701,10 @@ public final class PythonContext {
         return childContextData;
     }
 
+    public synchronized SharedContextData getSharedContextData() {
+        return isChildContext() ? childContextData.parentCtx.sharedContextData : this.sharedContextData;
+    }
+
     public long spawnTruffleContext(int fd, int sentinel, int[] fdsToKeep) {
         ChildContextData data = new ChildContextData();
         if (!isChildContext()) {
@@ -563,7 +714,7 @@ public final class PythonContext {
         }
 
         Builder builder = data.parentCtx.env.newContextBuilder().config(PythonContext.CHILD_CONTEXT_DATA, data);
-        Thread thread = data.parentCtx.env.createThread(new ChildContextThread(fd, sentinel, data, language.getSharedMultiprocessingData(), builder));
+        Thread thread = data.parentCtx.env.createThread(new ChildContextThread(fd, sentinel, data, builder));
 
         // TODO always force java posix in spawned
         long tid = thread.getId();
@@ -572,7 +723,7 @@ public final class PythonContext {
         for (int fdToKeep : fdsToKeep) {
             // prevent file descriptors from being closed when passed to another "process",
             // equivalent to fds_to_keep arg in posix fork_exec
-            language.addFdToKeep(fdToKeep);
+            getSharedContextData().addFdToKeep(fdToKeep);
         }
         start(thread);
         return tid;
@@ -602,14 +753,12 @@ public final class PythonContext {
         private final ChildContextData data;
         private final Builder builder;
         private final int sentinel;
-        private final SharedMultiprocessingData sharedData;
 
-        public ChildContextThread(int fd, int sentinel, ChildContextData data, SharedMultiprocessingData sharedData, Builder builder) {
+        public ChildContextThread(int fd, int sentinel, ChildContextData data, Builder builder) {
             this.fd = fd;
             this.data = data;
             this.builder = builder;
             this.sentinel = sentinel;
-            this.sharedData = sharedData;
         }
 
         @Override
@@ -639,7 +788,7 @@ public final class PythonContext {
                             LOGGER.log(Level.FINE, t, () -> "exception while closing spawned child context");
                         }
                     }
-                    sharedData.closeFd(sentinel);
+                    data.parentCtx.sharedContextData.closeFd(sentinel);
                 }
             } catch (ThreadDeath td) {
                 // as a result of of TruffleContext.closeCancelled()
@@ -1260,7 +1409,7 @@ public final class PythonContext {
                 Iterator<Integer> it = fdsToClose.iterator();
                 while (it.hasNext()) {
                     int fd = it.next();
-                    if (language.removeFdToKeep(fd)) {
+                    if (getSharedContextData().removeFdToKeep(fd)) {
                         it.remove();
                         if (fd > 0) {
                             try {
@@ -1269,15 +1418,15 @@ public final class PythonContext {
                                 LOGGER.log(Level.FINEST, ex, () -> "got PosixException while closing file discriptor " + fd);
                             }
                         } else {
-                            language.getSharedMultiprocessingData().closeFd(fd);
+                            getSharedContextData().closeFd(fd);
                         }
                     }
                 }
             }
         }
         for (int fd : getChildContextFDs()) {
-            if (language.removeFdToKeep(fd)) {
-                language.getSharedMultiprocessingData().closeFd(fd);
+            if (getSharedContextData().removeFdToKeep(fd)) {
+                getSharedContextData().closeFd(fd);
             }
         }
         mainThread = null;

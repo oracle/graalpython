@@ -79,7 +79,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -101,12 +100,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.concurrent.LinkedBlockingQueue;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
@@ -228,10 +222,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private final Map<Long, ChildContextData> childContextData = new ConcurrentHashMap<>();
 
-    private final SharedMultiprocessingData sharedMPData = new SharedMultiprocessingData();
-
-    private final Map<Integer, Integer> fdsToKeep = new HashMap<>();
-
     @TruffleBoundary
     public Thread getChildContextThread(long tid) {
         return childContextThreads.get(tid);
@@ -259,47 +249,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public static PythonLanguage get(Node node) {
         return REFERENCE.get(node);
-    }
-
-    public synchronized SharedMultiprocessingData getSharedMultiprocessingData() {
-        return sharedMPData;
-    }
-
-    @TruffleBoundary
-    public boolean isFdToKeep(int fd) {
-        synchronized (fdsToKeep) {
-            return fdsToKeep.containsKey(fd);
-        }
-    }
-
-    @TruffleBoundary
-    public void addFdToKeep(int fd) {
-        synchronized (fdsToKeep) {
-            Integer c = fdsToKeep.get(fd);
-            if (c == null) {
-                c = 1;
-            } else {
-                c = c + 1;
-            }
-            fdsToKeep.put(fd, c);
-        }
-    }
-
-    @TruffleBoundary
-    public boolean removeFdToKeep(int fd) {
-        synchronized (fdsToKeep) {
-            Integer c = fdsToKeep.get(fd);
-            if (c == null) {
-                return false;
-            }
-            if (c == 1) {
-                fdsToKeep.remove(fd);
-                return true;
-            } else {
-                fdsToKeep.put(fd, c - 1);
-                return false;
-            }
-        }
     }
 
     public static int getNumberOfSpecialSingletons() {
@@ -930,108 +879,4 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return callTarget;
     }
 
-    public static class SharedMultiprocessingData {
-
-        private int counter = 0;
-
-        private final SortedMap<Integer, LinkedBlockingQueue<Object>> sharedContextData = new TreeMap<>();
-
-        /**
-         * @return fake (negative) fd values to avoid clash with real file descriptors and to detect
-         *         potential usage by other python builtins
-         */
-        @TruffleBoundary
-        public int[] pipe() {
-            synchronized (sharedContextData) {
-                LinkedBlockingQueue<Object> q = new LinkedBlockingQueue<>();
-                int readFD = --counter;
-                sharedContextData.put(readFD, q);
-                int writeFD = --counter;
-                sharedContextData.put(writeFD, q);
-                return new int[]{readFD, writeFD};
-            }
-        }
-
-        @TruffleBoundary
-        public boolean addSharedContextData(int fd, byte[] bytes, Runnable noFDHandler, Runnable brokenPipeHandler) {
-            LinkedBlockingQueue<Object> q = null;
-            synchronized (sharedContextData) {
-                q = sharedContextData.get(fd);
-                if (q == null) {
-                    noFDHandler.run();
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-                Integer fd2 = getPairFd(fd);
-                if (isClosed(fd2)) {
-                    brokenPipeHandler.run();
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-            }
-            q.add(bytes);
-            return true;
-        }
-
-        @TruffleBoundary
-        public void closeFd(int fd) {
-            synchronized (sharedContextData) {
-                sharedContextData.remove(fd);
-            }
-        }
-
-        @TruffleBoundary
-        public Object takeSharedContextData(Node node, int fd, Runnable noFDHandler) {
-            LinkedBlockingQueue<Object> q;
-            synchronized (sharedContextData) {
-                q = sharedContextData.get(fd);
-                if (q == null) {
-                    noFDHandler.run();
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-                Integer fd2 = getPairFd(fd);
-                if (isClosed(fd2)) {
-                    if (q.isEmpty()) {
-                        return PythonUtils.EMPTY_BYTE_ARRAY;
-                    }
-                }
-            }
-            Object[] o = new Object[]{PNone.NONE};
-            TruffleSafepoint.setBlockedThreadInterruptible(node, (lbq) -> {
-                o[0] = lbq.take();
-            }, q);
-            return o[0];
-        }
-
-        @TruffleBoundary
-        public boolean isBlocking(int fd) {
-            LinkedBlockingQueue<Object> q;
-            synchronized (sharedContextData) {
-                q = sharedContextData.get(fd);
-                if (q == null) {
-                    return false;
-                }
-                Integer fd2 = getPairFd(fd);
-                if (isClosed(fd2)) {
-                    return false;
-                }
-            }
-            return q.isEmpty();
-        }
-
-        @TruffleBoundary
-        public void closeFDs(List<Integer> fds) {
-            synchronized (sharedContextData) {
-                for (Integer fd : fds) {
-                    sharedContextData.remove(fd);
-                }
-            }
-        }
-
-        private static int getPairFd(int fd) {
-            return fd % 2 == 0 ? fd + 1 : fd - 1;
-        }
-
-        private boolean isClosed(int fd) {
-            return sharedContextData.get(fd) == null && fd >= counter;
-        }
-    }
 }
