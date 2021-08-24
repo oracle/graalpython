@@ -19,7 +19,7 @@ from subprocess import _args_from_interpreter_flags
 from . import process
 
 # Begin Truffle change
-from _multiprocessing import _close
+from _multiprocessing import _close, _gettid
 # End Truffle change
 
 __all__ = [
@@ -202,15 +202,21 @@ class Finalize(object):
         self._args = args
         self._kwargs = kwargs or {}
         self._key = (exitpriority, next(_finalizer_counter))
-        self._pid = os.getpid()
-
+        # Begin Truffle change
+#        self._pid = os.getpid()
+        self._pid = _gettid()
+        # End Truffle change
+        
         _finalizer_registry[self._key] = self
 
     def __call__(self, wr=None,
                  # Need to bind these locally because the globals can have
                  # been cleared at shutdown
                  _finalizer_registry=_finalizer_registry,
-                 sub_debug=sub_debug, getpid=os.getpid):
+                 # Begin Truffle change
+                 #sub_debug=sub_debug, getpid=os.getpid):
+                 sub_debug=sub_debug, getpid=_gettid):
+                 # Begin Truffle change
         '''
         Run the callback unless it has already been called or cancelled
         '''
