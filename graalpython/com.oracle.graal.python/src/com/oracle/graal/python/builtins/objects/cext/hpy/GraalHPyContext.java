@@ -288,6 +288,7 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
+import org.graalvm.nativeimage.ImageInfo;
 import sun.misc.Unsafe;
 
 @ExportLibrary(InteropLibrary.class)
@@ -1173,12 +1174,13 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             nativePointer = PCallHPyFunctionNodeGen.getUncached().call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this, new GraalHPyContextJNI(this));
             PythonLanguage language = PythonLanguage.getCurrent();
             if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
+                loadJNIBackend();
                 if (initJNI(this, castLong(nativePointer)) != 0) {
                     throw new RuntimeException("Could not initialize HPy JNI backend.");
                 }
             }
             if (useNativeFastPaths) {
-                Source src = Source.newBuilder("nfi", "load \"" + PYTHON_JNI_PATH + "\"", "load libpythonjni").build();
+                Source src = Source.newBuilder("nfi", "load \"" + getPythonJNIPath() + "\"", "load libpythonjni").build();
                 CallTarget lib = PythonLanguage.getContext().getEnv().parseInternal(src);
                 InteropLibrary interop = InteropLibrary.getUncached();
                 try {
@@ -1201,11 +1203,24 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
     }
 
-    private static String PYTHON_JNI_PATH = System.getProperty("python.jni.path");
+    private static boolean jniBackendLoaded = false;
 
-    static {
-        if (PYTHON_JNI_PATH != null) {
-            System.load(PYTHON_JNI_PATH);
+    private static String getPythonJNIPath() {
+        return System.getProperty("python.jni.path");
+    }
+
+    private static void loadJNIBackend() {
+        if (!(ImageInfo.inImageBuildtimeCode() || jniBackendLoaded)) {
+            String pythonJNIPath = getPythonJNIPath();
+            LOGGER.fine("Loading HPy JNI backend from " + pythonJNIPath);
+            if (pythonJNIPath != null) {
+                try {
+                    System.load(pythonJNIPath);
+                    jniBackendLoaded = true;
+                } catch (NullPointerException | UnsatisfiedLinkError e) {
+                    LOGGER.fine("HPy JNI backend library could not be found: " + pythonJNIPath);
+                }
+            }
         }
     }
 
