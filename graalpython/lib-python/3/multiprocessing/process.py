@@ -21,7 +21,9 @@ import itertools
 import threading
 from _weakrefset import WeakSet
 
+# Begin Truffle change
 from _multiprocessing import _gettid
+# End Truffle change
 
 #
 #

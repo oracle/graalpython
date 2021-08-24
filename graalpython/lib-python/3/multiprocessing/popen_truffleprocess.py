@@ -6,7 +6,9 @@ from .context import reduction, set_spawning_popen
 from . import spawn
 from . import util
 
+# Begin Truffle change
 from _multiprocessing import _waittid, _terminate_spawned_thread, _spawn_context, _pipe, _write
+# End Truffle change
 
 __all__ = ['Popen']
 
