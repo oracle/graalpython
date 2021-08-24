@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.frame;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeRootNode;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -179,9 +180,9 @@ public final class PFrame extends PythonBuiltinObject {
         Reference curFrameInfo = new Reference(null);
         this.virtualFrameInfo = curFrameInfo;
         curFrameInfo.setPyFrame(this);
-        this.location = code.getRootNode();
-        this.inClassScope = code.getRootNode() instanceof ClassBodyRootNode;
-        this.line = code.getRootNode() == null ? code.getFirstLineNo() : -2;
+        this.location = GetCodeRootNode.getUncached().execute(code);
+        this.inClassScope = this.location instanceof ClassBodyRootNode;
+        this.line = this.location == null ? code.getFirstLineNo() : -2;
         this.arguments = frameArgs;
 
         localsDict = locals;

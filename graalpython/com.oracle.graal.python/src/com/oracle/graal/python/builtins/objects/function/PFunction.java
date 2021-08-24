@@ -29,6 +29,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeCallTargetNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -94,8 +95,11 @@ public final class PFunction extends PythonObject {
         this.defaultsStableAssumption = defaultsStableAssumption;
     }
 
-    public RootCallTarget getCallTarget() {
-        return getCode().getRootCallTarget();
+    /**
+     * Prefer to use a cached CodeNodes.GetCodeCallTargetNode on the fast path.
+     */
+    public RootCallTarget getCallTargetUncached() {
+        return GetCodeCallTargetNode.getUncached().execute(code);
     }
 
     public Assumption getCodeStableAssumption() {
@@ -108,10 +112,6 @@ public final class PFunction extends PythonObject {
 
     public PythonObject getGlobals() {
         return globals;
-    }
-
-    public RootNode getFunctionRootNode() {
-        return getCallTarget().getRootNode();
     }
 
     public String getName() {
@@ -130,16 +130,8 @@ public final class PFunction extends PythonObject {
         this.qualname = qualname;
     }
 
-    public Signature getSignature() {
-        return getCode().getSignature();
-    }
-
     public PCell[] getClosure() {
         return closure;
-    }
-
-    public boolean isGeneratorFunction() {
-        return code.getRootCallTarget().getRootNode() instanceof GeneratorFunctionRootNode;
     }
 
     @Override
@@ -184,8 +176,8 @@ public final class PFunction extends PythonObject {
     }
 
     @TruffleBoundary
-    public String getSourceCode() {
-        RootNode rootNode = getCallTarget().getRootNode();
+    String getSourceCode() {
+        RootNode rootNode = getCallTargetUncached().getRootNode();
         if (rootNode instanceof GeneratorFunctionRootNode) {
             rootNode = ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode();
         }
@@ -219,10 +211,12 @@ public final class PFunction extends PythonObject {
     }
 
     @ExportMessage
-    public SourceSection getSourceLocation(@Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
+    public SourceSection getSourceLocation(
+                    @Shared("getCt") @Cached GetCodeCallTargetNode getCt,
+                    @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
-            SourceSection result = getSourceLocationDirect();
+            SourceSection result = getSourceLocationDirect(getCt);
             if (result == null) {
                 throw UnsupportedMessageException.create();
             } else {
@@ -234,8 +228,8 @@ public final class PFunction extends PythonObject {
     }
 
     @TruffleBoundary
-    private SourceSection getSourceLocationDirect() {
-        RootNode rootNode = getCallTarget().getRootNode();
+    private SourceSection getSourceLocationDirect(GetCodeCallTargetNode getCt) {
+        RootNode rootNode = getCt.execute(code).getRootNode();
         SourceSection result;
         if (rootNode instanceof PRootNode) {
             result = ((PRootNode) rootNode).getSourceSection();
@@ -251,10 +245,12 @@ public final class PFunction extends PythonObject {
     }
 
     @ExportMessage
-    public boolean hasSourceLocation(@Shared("gil") @Cached GilNode gil) {
+    public boolean hasSourceLocation(
+                    @Shared("getCt") @Cached GetCodeCallTargetNode getCt,
+                    @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return getSourceLocationDirect() != null;
+            return getSourceLocationDirect(getCt) != null;
         } finally {
             gil.release(mustRelease);
         }

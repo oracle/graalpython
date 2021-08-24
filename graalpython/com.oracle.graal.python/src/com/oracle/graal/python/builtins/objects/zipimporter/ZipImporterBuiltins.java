@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -705,7 +706,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
                 module.setAttribute(SpecialAttributeNames.__PATH__, list);
             }
 
-            code.getRootCallTarget().call(PArguments.withGlobals(module));
+            CodeNodes.GetCodeCallTargetNode.getUncached().execute(code).call(PArguments.withGlobals(module));
             return module;
         }
 

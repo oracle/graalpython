@@ -102,8 +102,8 @@ public final class PCode extends PythonBuiltinObject {
     // callTargetSupplier may be null, in which case callTarget and signature will be
     // set. Otherwise, these are lazily created from the supplier.
     private Supplier<CallTarget> callTargetSupplier;
-    @CompilationFinal private RootCallTarget callTarget;
-    @CompilationFinal private Signature signature;
+    RootCallTarget callTarget;
+    Signature signature;
 
     // number of local variables
     private int nlocals = -1;
@@ -381,7 +381,7 @@ public final class PCode extends PythonBuiltinObject {
         return flags;
     }
 
-    public RootNode getRootNode() {
+    RootNode getRootNode() {
         return getRootCallTarget().getRootNode();
     }
 
@@ -525,16 +525,15 @@ public final class PCode extends PythonBuiltinObject {
         return PCode.takesVarKeywordArgs(getFlags());
     }
 
-    public Signature getSignature() {
+    private Signature getSignature() {
         if (signature == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             initializeSignature(getRootCallTarget());
         }
         return signature;
     }
 
     @TruffleBoundary
-    private synchronized void initializeSignature(RootCallTarget rootCallTarget) {
+    synchronized Signature initializeSignature(RootCallTarget rootCallTarget) {
         if (signature == null) {
             if (rootCallTarget.getRootNode() instanceof PRootNode) {
                 signature = ((PRootNode) rootCallTarget.getRootNode()).getSignature();
@@ -542,18 +541,18 @@ public final class PCode extends PythonBuiltinObject {
                 signature = Signature.createVarArgsAndKwArgsOnly();
             }
         }
+        return signature;
     }
 
-    public RootCallTarget getRootCallTarget() {
+    private RootCallTarget getRootCallTarget() {
         if (callTarget == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             initializeCallTarget();
         }
         return callTarget;
     }
 
     @TruffleBoundary
-    private synchronized RootCallTarget initializeCallTarget() {
+    synchronized RootCallTarget initializeCallTarget() {
         if (callTarget == null) {
             callTarget = (RootCallTarget) callTargetSupplier.get();
             callTargetSupplier = null;
