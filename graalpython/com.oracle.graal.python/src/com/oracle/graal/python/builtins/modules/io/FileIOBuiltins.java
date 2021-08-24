@@ -545,12 +545,11 @@ public class FileIOBuiltins extends PythonBuiltins {
                 // ignore
             }
 
-            byte[] buffer;
             int bytesRead = 0;
+            PBytes b;
             try {
-                PBytes b = posixRead.read(frame, self.getFD(), bufsize, posixLib, readErrorProfile, gil);
-                buffer = getBytes.execute(b.getSequenceStorage());
-                bytesRead = buffer.length;
+                b = posixRead.read(frame, self.getFD(), bufsize, posixLib, readErrorProfile, gil);
+                bytesRead = b.getSequenceStorage().length();
                 if (bytesRead == 0 || (mayBeQuick && bytesRead == bufsize - 1)) {
                     return b;
                 }
@@ -563,6 +562,7 @@ public class FileIOBuiltins extends PythonBuiltins {
             }
 
             multipleReadsProfile.enter();
+            byte[] buffer = getBytes.execute(b.getSequenceStorage());
             ByteArrayOutputStream result = createOutputStream();
             append(result, buffer, bytesRead);
 
@@ -577,7 +577,7 @@ public class FileIOBuiltins extends PythonBuiltins {
 
                 int n;
                 try {
-                    PBytes b = posixRead.read(frame, self.getFD(), bufsize - bytesRead, posixLib, readErrorProfile, gil);
+                    b = posixRead.read(frame, self.getFD(), bufsize - bytesRead, posixLib, readErrorProfile, gil);
                     /*
                      * PosixModuleBuiltins#ReadNode creates PBytes with exact size;
                      */
