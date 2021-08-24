@@ -390,7 +390,8 @@ suite = {
                 "com.oracle.graal.python", # for the generated JNI header file
             ],
             "use_jdk_headers": True, # the generated JNI header includes jni.h
-            "cflags": ["-DHPY_UNIVERSAL_ABI", "-g", "-O3", "-Werror",
+            "cflags": ["-DHPY_UNIVERSAL_ABI", "-DNDEBUG",
+                       "-g", "-O3", "-Werror",
                        "-I<path:com.oracle.graal.python.cext>/include",
                        "-I<path:com.oracle.graal.python.cext>/hpy"
             ],
@@ -459,7 +460,7 @@ suite = {
                 "com.oracle.graal.python.jni",
             ],
             "layout": {
-                "bin/": "dependency:com.oracle.graal.python.jni",
+                "./": "dependency:com.oracle.graal.python.jni",
             },
             "description": "Contains the native library needed by HPy JNI backend.",
             "maven": True,
@@ -482,7 +483,7 @@ suite = {
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
             ],
             "javaProperties": {
-                "python.jni.path": "<path:GRAALPYTHON_JNI>/bin/<lib:pythonjni>"
+                "python.jni.library": "<lib:pythonjni>"
             },
             "sourcesPath": "graalpython.src.zip",
             "description": "GraalPython engine",
@@ -549,6 +550,9 @@ suite = {
             "native": True,
             "platformDependent": True,
             "description": "Graal.Python support distribution for the GraalVM",
+            "distDependencies": [
+                "GRAALPYTHON_JNI",
+            ],
             "layout": {
                 "./": [
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
@@ -558,8 +562,7 @@ suite = {
                 ],
                 "./lib-graalpython/": [
                     "dependency:graalpython:com.oracle.graal.python.cext/*",
-                    # TODO(fa): decide how to ship that in GraalVM
-                    #"dependency:com.oracle.graal.python.jni",
+                    "extracted-dependency:GRAALPYTHON_JNI/*",
                 ],
             },
             "maven": False,

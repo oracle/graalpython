@@ -93,6 +93,10 @@ def _get_capi_home():
     return mx.dependency("com.oracle.graal.python.cext").get_output_root()
 
 
+def _get_jni_home():
+    return mx.distribution("GRAALPYTHON_JNI").get_output()
+
+
 def _extract_graalpython_internal_options(args):
     non_internal = []
     additional_dists = []
@@ -133,10 +137,17 @@ def python(args, **kwargs):
 
 
 def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, main_class=GRAALPYTHON_MAIN_CLASS, **kwargs):
+    experimental_opt_added = False
     if not any(arg.startswith("--python.CAPI") for arg in args):
         capi_home = _get_capi_home()
-        args.insert(0, "--experimental-options")
         args.insert(0, "--python.CAPI=%s" % capi_home)
+        args.insert(0, "--experimental-options")
+        experimental_opt_added = True
+    
+    if not any(arg.startswith("--python.JNIHome") for arg in args):
+        args.insert(0, "--python.JNIHome=" + _get_jni_home())
+        if not experimental_opt_added:
+            args.insert(0, "--experimental-options")
 
     if not env:
         env = os.environ.copy()

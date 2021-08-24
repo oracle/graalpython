@@ -142,13 +142,14 @@ class EnvBuilder:
             if sys.platform != "win32":
                 f.write("#!/bin/sh\n")
             f.write(" ".join(__graalpython__.executable_list))
-            f.write(" --experimental-options --python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s' --python.CAPI='%s'" % (
+            f.write(" --experimental-options --python.CoreHome='%s' --python.StdLibHome='%s' --python.SysPrefix='%s' --python.SysBasePrefix='%s' --python.Executable='%s' --python.CAPI='%s'  --python.JNIHome='%s'" % (
                 __graalpython__.core_home,
                 __graalpython__.stdlib_home,
                 context.env_dir,
                 sys.base_prefix,
                 os.path.join(context.env_dir, binname, exename),
                 __graalpython__.capi_home,
+                __graalpython__.jni_home,
             ))
             if sys.platform == "win32":
                 f.write(" %*")

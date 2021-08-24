@@ -184,6 +184,9 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.INTERNAL, help = "If {@code true}, code is enabled that tries to reduce expensive upcalls into the runtime" +
                     "when HPy API functions are used. This is achieved by mirroring data in native memory.", stability = OptionStability.EXPERIMENTAL) //
     public static final OptionKey<TriState> HPyUseNativeFastPaths = new OptionKey<>(TriState.UNDEFINED, TRI_STATE_OPTION_TYPE);
+    
+    @Option(category = OptionCategory.INTERNAL, help = "Specify the directory where the JNI library is located.", stability = OptionStability.EXPERIMENTAL) //
+    public static final OptionKey<String> JNIHome = new OptionKey<>("");
 
     @Option(category = OptionCategory.EXPERT, help = "Prints path to parsed files") //
     public static final OptionKey<Boolean> ParserLogFiles = new OptionKey<>(false);

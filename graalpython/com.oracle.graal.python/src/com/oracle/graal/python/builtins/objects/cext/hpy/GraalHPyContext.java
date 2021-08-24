@@ -129,11 +129,14 @@ import java.io.IOException;
 import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
+
+import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -288,7 +291,6 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
-import org.graalvm.nativeimage.ImageInfo;
 import sun.misc.Unsafe;
 
 @ExportLibrary(InteropLibrary.class)
@@ -1180,8 +1182,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 }
             }
             if (useNativeFastPaths) {
-                Source src = Source.newBuilder("nfi", "load \"" + getPythonJNIPath() + "\"", "load libpythonjni").build();
-                CallTarget lib = PythonLanguage.getContext().getEnv().parseInternal(src);
+                PythonContext context = getContext();
+                Source src = Source.newBuilder("nfi", "load \"" + getJNILibrary() + "\"", "load " + PythonContext.PYTHON_JNI_LIBRARY_NAME).build();
+                CallTarget lib = context.getEnv().parseInternal(src);
                 InteropLibrary interop = InteropLibrary.getUncached();
                 try {
                     Object rlib = lib.call();
@@ -1205,21 +1208,20 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     private static boolean jniBackendLoaded = false;
 
-    private static String getPythonJNIPath() {
-        return System.getProperty("python.jni.path");
+    private String getJNILibrary() {
+        CompilerAsserts.neverPartOfCompilation();
+        return Paths.get(getContext().getJNIHome(), PythonContext.PYTHON_JNI_LIBRARY_NAME).toString();
     }
 
-    private static void loadJNIBackend() {
+    private void loadJNIBackend() {
         if (!(ImageInfo.inImageBuildtimeCode() || jniBackendLoaded)) {
-            String pythonJNIPath = getPythonJNIPath();
+            String pythonJNIPath = getJNILibrary();
             LOGGER.fine("Loading HPy JNI backend from " + pythonJNIPath);
-            if (pythonJNIPath != null) {
-                try {
-                    System.load(pythonJNIPath);
-                    jniBackendLoaded = true;
-                } catch (NullPointerException | UnsatisfiedLinkError e) {
-                    LOGGER.fine("HPy JNI backend library could not be found: " + pythonJNIPath);
-                }
+            try {
+                System.load(pythonJNIPath);
+                jniBackendLoaded = true;
+            } catch (NullPointerException | UnsatisfiedLinkError e) {
+                LOGGER.fine("HPy JNI backend library could not be found: " + pythonJNIPath);
             }
         }
     }
