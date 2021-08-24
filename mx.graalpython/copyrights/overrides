@@ -197,6 +197,7 @@ graalpython/com.oracle.graal.python.cext/src/pystrhex.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/sliceobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodectype.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodetype_db.h,python.copyright
+graalpython/com.oracle.graal.python.jni/src/ctx_tracker.c,hpy.copyright
 graalpython/com.oracle.graal.python.shell/src/com/oracle/graal/python/shell/GraalPythonMain.java,zippy.copyright
 graalpython/com.oracle.graal.python.tck/src/com/oracle/graal/python/tck/resources/euler31.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.tck/src/com/oracle/graal/python/tck/resources/mandelbrot3.py,benchmarks.copyright
@@ -573,7 +574,6 @@ graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_call.c,hpy.copyrig
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_listbuilder.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_module.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_object.c,hpy.copyright
-graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_tracker.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_tuple.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_tuplebuilder.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_type.c,hpy.copyright
