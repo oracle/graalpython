@@ -73,3 +73,11 @@
 *graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_bad_auth_name
 *graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_bracket_flags
 *graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_connect
+*graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_enable_UTF8_True_append
+*graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_enable_UTF8_raises_error_if_not_supported
+*graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_enable_raises_error_if_no_capability
+*graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_enable_raises_error_if_not_AUTH
+*graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_invalid_authentication
+*graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_issue5949
+*graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_line_termination
+*graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_linetoolong
