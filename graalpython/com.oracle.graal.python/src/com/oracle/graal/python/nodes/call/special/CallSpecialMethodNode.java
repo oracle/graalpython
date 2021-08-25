@@ -212,7 +212,7 @@ abstract class CallSpecialMethodNode extends Node {
 
     private static RootCallTarget getCallTargetOfFunction(Object func) {
         if (func instanceof PFunction) {
-            return ((PFunction) func).getCallTarget();
+            return ((PFunction) func).getCallTargetUncached();
         } else if (func instanceof PBuiltinFunction) {
             return ((PBuiltinFunction) func).getCallTarget();
         }

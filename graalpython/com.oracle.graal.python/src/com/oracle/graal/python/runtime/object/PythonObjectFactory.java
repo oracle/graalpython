@@ -168,7 +168,9 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
@@ -221,6 +223,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public static final PythonLanguage getLanguage() {
         return PythonLanguage.getCurrent();
+    }
+
+    public final Shape getShape(PythonBuiltinClassType cls) {
+        return cls.getInstanceShape(PythonLanguage.get(this));
     }
 
     public final Shape getShape(Object cls) {
@@ -323,9 +329,9 @@ public abstract class PythonObjectFactory extends Node {
         if (length != array.length) {
             byte[] buf = new byte[length];
             PythonUtils.arraycopy(array, offset, buf, 0, buf.length);
-            return createBytes(PythonBuiltinClassType.PBytes, buf);
+            return createBytes(buf, length);
         }
-        return createBytes(PythonBuiltinClassType.PBytes, array);
+        return createBytes(array, length);
     }
 
     public final PBytes createBytes(Object cls, byte[] array) {
@@ -341,7 +347,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PBytes createBytes(SequenceStorage storage) {
-        return createBytes(PythonBuiltinClassType.PBytes, storage);
+        return trace(new PBytes(PythonBuiltinClassType.PBytes, getShape(PythonBuiltinClassType.PBytes), storage));
     }
 
     public final PBytes createBytes(Object cls, SequenceStorage storage) {
@@ -941,6 +947,10 @@ public abstract class PythonObjectFactory extends Node {
                     Object[] freevars, Object[] cellvars, String filename, String name, int firstlineno, byte[] lnotab) {
         return trace(new PCode(PythonBuiltinClassType.PCode, getShape(PythonBuiltinClassType.PCode), callTarget, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars,
                         filename, name, firstlineno, lnotab));
+    }
+
+    public PCode createCode(Supplier<CallTarget> createCode, int flags, int firstlineno, byte[] lnotab, String filename) {
+        return trace(new PCode(PythonBuiltinClassType.PCode, getShape(PythonBuiltinClassType.PCode), createCode, flags, firstlineno, lnotab, filename));
     }
 
     public final PZipImporter createZipImporter(Object cls, PDict zipDirectoryCache, String separator) {

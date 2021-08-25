@@ -952,12 +952,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             if (function instanceof PBuiltinFunction) {
                 return ((PBuiltinFunction) function).getCallTarget();
             } else if (function instanceof PFunction) {
-                return ((PFunction) function).getCallTarget();
+                return ((PFunction) function).getCallTargetUncached();
             }
         } else if (callable instanceof PBuiltinFunction) {
             return ((PBuiltinFunction) callable).getCallTarget();
         } else if (callable instanceof PFunction) {
-            return ((PFunction) callable).getCallTarget();
+            return ((PFunction) callable).getCallTargetUncached();
         }
         return null;
     }
@@ -1001,7 +1001,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Override
         public Signature fromPFunction(PFunction fun) {
-            return fun.getCode().getSignature();
+            return GetSignatureNode.getUncached().execute(fun);
         }
 
         @Override

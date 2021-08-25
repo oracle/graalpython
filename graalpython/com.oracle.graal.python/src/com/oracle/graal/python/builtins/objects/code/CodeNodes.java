@@ -46,6 +46,7 @@ import java.util.List;
 import org.graalvm.polyglot.io.ByteSequence;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -57,11 +58,18 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 
 public abstract class CodeNodes {
@@ -130,18 +138,17 @@ public abstract class CodeNodes {
 
             Supplier<CallTarget> createCode = () -> {
                 ByteSequence bytes = ByteSequence.create(codedata);
-                Source source = Source.newBuilder(PythonLanguage.ID, bytes, filename).mimeType(PythonLanguage.MIME_TYPE_BYTECODE).build();
+                Source source = Source.newBuilder(PythonLanguage.ID, bytes, filename).mimeType(PythonLanguage.MIME_TYPE_BYTECODE).cached(!language.singleContextAssumption.isValid()).build();
                 return context.getEnv().parsePublic(source);
             };
 
-            RootCallTarget ct;
-            if (context.getCore().isInitialized() || isNotAModule) {
-                ct = (RootCallTarget) createCode.get();
-            } else {
-                ct = (RootCallTarget) language.cacheCode(filename, createCode);
-            }
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            return factory.createCode(ct, flags, firstlineno, lnotab, filename);
+            if (context.getCore().isInitialized() || isNotAModule) {
+                return factory.createCode(createCode, flags, firstlineno, lnotab, filename);
+            } else {
+                RootCallTarget ct = (RootCallTarget) language.cacheCode(filename, createCode);
+                return factory.createCode(ct, flags, firstlineno, lnotab, filename);
+            }
         }
 
         @TruffleBoundary
@@ -157,6 +164,145 @@ public abstract class CodeNodes {
 
         public static CreateCodeNode create() {
             return new CreateCodeNode();
+        }
+    }
+
+    public static final class GetCodeCallTargetNode extends Node {
+        private static final GetCodeCallTargetNode UNCACHED = new GetCodeCallTargetNode(false);
+
+        private final boolean isAdoptable;
+        @CompilationFinal private Assumption singleContextAssumption;
+        @CompilationFinal private ConditionProfile hasCtProfile;
+        @CompilationFinal private PCode cachedCode1;
+        @CompilationFinal private PCode cachedCode2;
+        @CompilationFinal private RootCallTarget cachedCt1;
+        @CompilationFinal private RootCallTarget cachedCt2;
+
+        private GetCodeCallTargetNode(boolean isAdoptable) {
+            this.isAdoptable = isAdoptable;
+        }
+
+        public final RootCallTarget execute(PCode code) {
+            if (isAdoptable) {
+                if (singleContextAssumption == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    singleContextAssumption = PythonLanguage.get(this).singleContextAssumption;
+                }
+                if (hasCtProfile == null) {
+                    if (singleContextAssumption.isValid()) {
+                        if (cachedCode1 == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            cachedCode1 = code;
+                            cachedCt1 = code.initializeCallTarget();
+                            return cachedCt1;
+                        }
+                        if (cachedCode1 == code) {
+                            return cachedCt1;
+                        }
+                        if (cachedCode2 == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            cachedCode2 = code;
+                            cachedCt2 = code.initializeCallTarget();
+                            return cachedCt2;
+                        }
+                        if (cachedCode2 == code) {
+                            return cachedCt2;
+                        }
+                    }
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    cachedCode1 = cachedCode2 = null;
+                    cachedCt1 = cachedCt2 = null;
+                    hasCtProfile = ConditionProfile.createBinaryProfile();
+                }
+                RootCallTarget ct = code.callTarget;
+                if (hasCtProfile.profile(ct == null)) {
+                    ct = code.initializeCallTarget();
+                }
+                return ct;
+            } else {
+                RootCallTarget ct = code.callTarget;
+                if (ct == null) {
+                    ct = code.initializeCallTarget();
+                }
+                return ct;
+            }
+        }
+
+        public static GetCodeCallTargetNode create() {
+            return new GetCodeCallTargetNode(true);
+        }
+
+        public static GetCodeCallTargetNode getUncached() {
+            return UNCACHED;
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class GetCodeSignatureNode extends Node {
+        public abstract Signature execute(PCode code);
+
+        protected static final Assumption getSingleContextAssumption() {
+            return PythonLanguage.get(null).singleContextAssumption;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "cachedCode == code", limit = "2", assumptions = "singleContextAssumption")
+        protected static Signature doCached(PCode code,
+                        @Cached("getSingleContextAssumption()") Assumption singleContextAssumption,
+                        @Cached("code") PCode cachedCode,
+                        @Cached("code.initializeCallTarget()") RootCallTarget ct,
+                        @Cached("code.initializeSignature(ct)") Signature signature) {
+            return signature;
+        }
+
+        @Specialization(replaces = "doCached")
+        protected static Signature doCode(PCode code,
+                        @Cached ConditionProfile signatureProfile,
+                        @Cached ConditionProfile ctProfile) {
+            Signature signature = code.signature;
+            if (signatureProfile.profile(signature == null)) {
+                RootCallTarget ct = code.callTarget;
+                if (ctProfile.profile(ct == null)) {
+                    ct = code.initializeCallTarget();
+                }
+                signature = code.initializeSignature(ct);
+            }
+            return signature;
+        }
+    }
+
+    public static final class GetCodeRootNode extends Node {
+        private static final GetCodeRootNode UNCACHED = new GetCodeRootNode(false);
+
+        private final boolean isAdoptable;
+        @Child private GetCodeCallTargetNode getCodeCallTargetNode;
+
+        private GetCodeRootNode(boolean isAdoptable) {
+            this.isAdoptable = isAdoptable;
+            if (!isAdoptable) {
+                getCodeCallTargetNode = GetCodeCallTargetNode.getUncached();
+            }
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return isAdoptable;
+        }
+
+        public final RootNode execute(PCode code) {
+            if (getCodeCallTargetNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getCodeCallTargetNode = insert(GetCodeCallTargetNode.create());
+            }
+            return getCodeCallTargetNode.execute(code).getRootNode();
+        }
+
+        public static GetCodeRootNode create() {
+            return new GetCodeRootNode(true);
+        }
+
+        public static GetCodeRootNode getUncached() {
+            return UNCACHED;
         }
     }
 }

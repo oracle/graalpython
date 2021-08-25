@@ -549,21 +549,21 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile errorProfile,
                         @Cached GilNode gil) {
+            if (length < 0) {
+                int error = OSErrorEnum.EINVAL.getNumber();
+                throw raiseOSError(frame, error, posixLib.strerror(getPosixSupport(), error));
+            }
             try {
-                return read(frame, fd, length, posixLib, errorProfile, gil);
+                return read(fd, length, posixLib, errorProfile, gil);
             } catch (PosixException e) {
                 errorProfile.enter();
                 throw raiseOSErrorFromPosixException(frame, e);
             }
         }
 
-        public PBytes read(VirtualFrame frame, int fd, int length,
+        public PBytes read(int fd, int length,
                         PosixSupportLibrary posixLib,
                         BranchProfile errorProfile, GilNode gil) throws PosixException {
-            if (length < 0) {
-                int error = OSErrorEnum.EINVAL.getNumber();
-                throw raiseOSError(frame, error, posixLib.strerror(getPosixSupport(), error));
-            }
             gil.release(true);
             try {
                 while (true) {

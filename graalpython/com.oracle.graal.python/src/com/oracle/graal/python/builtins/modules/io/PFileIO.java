@@ -47,7 +47,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.Shape;
 
-public class PFileIO extends PythonBuiltinObject {
+public final class PFileIO extends PythonBuiltinObject {
 
     private FD fd;
     private boolean created;

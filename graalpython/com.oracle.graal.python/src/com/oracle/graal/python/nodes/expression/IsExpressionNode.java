@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -260,12 +261,13 @@ public abstract class IsExpressionNode extends BinaryOpNode {
 
         // code
         @Specialization
-        static boolean doCode(PCode left, PCode right) {
+        static boolean doCode(PCode left, PCode right,
+                        @Cached CodeNodes.GetCodeCallTargetNode getCt) {
             // Special case for code objects: Frames create them on-demand even if they refer to the
             // same function. So we need to compare the root nodes.
             if (left != right) {
-                RootCallTarget leftCt = left.getRootCallTarget();
-                RootCallTarget rightCt = right.getRootCallTarget();
+                RootCallTarget leftCt = getCt.execute(left);
+                RootCallTarget rightCt = getCt.execute(right);
                 if (leftCt != null && rightCt != null) {
                     // TODO: handle splitting, i.e., cloned root nodes
                     RootNode leftRootNode = leftCt.getRootNode();

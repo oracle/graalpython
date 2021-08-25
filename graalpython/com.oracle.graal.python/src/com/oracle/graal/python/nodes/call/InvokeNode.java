@@ -62,7 +62,7 @@ public abstract class InvokeNode extends Node implements IndirectCallNode {
         RootCallTarget callTarget;
         Object actualCallee = callee;
         if (actualCallee instanceof PFunction) {
-            callTarget = ((PFunction) actualCallee).getCallTarget();
+            callTarget = ((PFunction) actualCallee).getCallTargetUncached();
         } else if (actualCallee instanceof PBuiltinFunction) {
             callTarget = ((PBuiltinFunction) callee).getCallTarget();
         } else {

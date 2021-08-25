@@ -101,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
@@ -634,20 +635,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         Object execInheritGlobalsInheritLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals,
                         @Cached ReadCallerFrameNode readCallerFrameNode,
-                        @Cached ReadLocalsNode getLocalsNode) {
+                        @Cached ReadLocalsNode getLocalsNode,
+                        @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
             PCode code = createAndCheckCode(frame, source);
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             inheritLocals(frame, callerFrame, args, getLocalsNode);
 
-            return invokeNode.execute(frame, code.getRootCallTarget(), args);
+            return invokeNode.execute(frame, getCt.execute(code), args);
         }
 
         @Specialization
         Object execCustomGlobalsGlobalLocals(VirtualFrame frame, Object source, PDict globals, @SuppressWarnings("unused") PNone locals,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached HashingCollectionNodes.SetItemNode setBuiltins) {
+                        @Cached HashingCollectionNodes.SetItemNode setBuiltins,
+                        @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
             PCode code = createAndCheckCode(frame, source);
             Object[] args = PArguments.create();
             setCustomGlobals(frame, globals, setBuiltins, args, lib);
@@ -655,7 +658,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             // fall back (like their CPython counterparts) to writing to the globals. We only need
             // to ensure that the `locals()` call still gives us the globals dict
             PArguments.setCustomLocals(args, globals);
-            RootCallTarget rootCallTarget = code.getRootCallTarget();
+            RootCallTarget rootCallTarget = getCt.execute(code);
             if (rootCallTarget == null) {
                 throw raise(ValueError, ErrorMessages.CANNOT_CREATE_CALL_TARGET, code);
             }
@@ -665,26 +668,28 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = {"isMapping(locals)"})
         Object execInheritGlobalsCustomLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, Object locals,
-                        @Cached ReadCallerFrameNode readCallerFrameNode) {
+                        @Cached ReadCallerFrameNode readCallerFrameNode,
+                        @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
             PCode code = createAndCheckCode(frame, source);
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             Object[] args = PArguments.create();
             inheritGlobals(callerFrame, args);
             setCustomLocals(args, locals);
 
-            return invokeNode.execute(frame, code.getRootCallTarget(), args);
+            return invokeNode.execute(frame, getCt.execute(code), args);
         }
 
         @Specialization(guards = {"isMapping(locals)"})
         Object execCustomGlobalsCustomLocals(VirtualFrame frame, Object source, PDict globals, Object locals,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached HashingCollectionNodes.SetItemNode setBuiltins) {
+                        @Cached HashingCollectionNodes.SetItemNode setBuiltins,
+                        @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
             PCode code = createAndCheckCode(frame, source);
             Object[] args = PArguments.create();
             setCustomGlobals(frame, globals, setBuiltins, args, lib);
             setCustomLocals(args, locals);
 
-            return invokeNode.execute(frame, code.getRootCallTarget(), args);
+            return invokeNode.execute(frame, getCt.execute(code), args);
         }
 
         @Specialization(guards = {"!isAnyNone(globals)", "!isDict(globals)"})

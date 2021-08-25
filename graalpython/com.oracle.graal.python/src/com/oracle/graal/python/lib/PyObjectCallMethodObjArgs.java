@@ -108,7 +108,7 @@ public abstract class PyObjectCallMethodObjArgs extends Node {
                     @Cached CallNode callNode,
                     @Cached ConditionProfile isBoundProfile) {
         Object callable = getMethod.execute(frame, receiver, name);
-        if (isBoundProfile.profile(callable instanceof BoundDescriptor)) {
+        if (isBoundProfile.profile(callable instanceof BoundDescriptor)) { // not a method
             return callNode.execute(frame, ((BoundDescriptor) callable).descriptor, arguments, PKeyword.EMPTY_KEYWORDS);
         } else {
             Object[] unboundArguments = new Object[arguments.length + 1];

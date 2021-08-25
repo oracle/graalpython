@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.builtins;
 
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -206,8 +207,9 @@ public abstract class FunctionNodes {
 
         @Specialization
         static Signature doFunction(PFunction function,
-                        @Shared("get") @Cached GetFunctionCodeNode getFunctionCodeNode) {
-            return getFunctionCodeNode.execute(function).getSignature();
+                        @Shared("get") @Cached GetFunctionCodeNode getFunctionCodeNode,
+                        @Shared("getSignature") @Cached CodeNodes.GetCodeSignatureNode getSignature) {
+            return getSignature.execute(getFunctionCodeNode.execute(function));
         }
 
         @Specialization
@@ -218,8 +220,9 @@ public abstract class FunctionNodes {
         @Specialization(guards = "isPFunction(function)")
         static Signature doMethod(@SuppressWarnings("unused") PMethod method,
                         @Bind("method.getFunction()") Object function,
-                        @Shared("get") @Cached GetFunctionCodeNode getFunctionCodeNode) {
-            return getFunctionCodeNode.execute((PFunction) function).getSignature();
+                        @Shared("get") @Cached GetFunctionCodeNode getFunctionCodeNode,
+                        @Shared("getSignature") @Cached CodeNodes.GetCodeSignatureNode getSignature) {
+            return getSignature.execute(getFunctionCodeNode.execute((PFunction) function));
         }
 
         @Specialization(guards = "isPBuiltinFunction(method.getFunction())")
@@ -235,6 +238,10 @@ public abstract class FunctionNodes {
 
         public static GetSignatureNode create() {
             return GetSignatureNodeGen.create();
+        }
+
+        public static GetSignatureNode getUncached() {
+            return GetSignatureNodeGen.getUncached();
         }
     }
 }

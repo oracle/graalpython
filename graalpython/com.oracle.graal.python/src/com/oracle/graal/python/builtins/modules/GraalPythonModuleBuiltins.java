@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
@@ -88,6 +89,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
@@ -365,7 +367,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object run(String modulename, PCode code, @SuppressWarnings("unused") PNone modulepath) {
-            final CallTarget ct = code.getRootCallTarget();
+            final CallTarget ct = CodeNodes.GetCodeCallTargetNode.getUncached().execute(code);
             if (ct == null) {
                 throw raise(NotImplementedError, "cannot cache a synthetically constructed code object");
             }
@@ -375,7 +377,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         public Object run(String modulename, PCode code, PList modulepath,
                         @Shared("cast") @Cached CastToJavaStringNode castString) {
-            final CallTarget ct = code.getRootCallTarget();
+            final CallTarget ct = CodeNodes.GetCodeCallTargetNode.getUncached().execute(code);
             if (ct == null) {
                 throw raise(NotImplementedError, "cannot cache a synthetically constructed code object");
             }
@@ -477,7 +479,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public String doIt(PFunction func) {
-            return NodeUtil.printTreeToString(func.getCallTarget().getRootNode());
+            return NodeUtil.printTreeToString(func.getCallTargetUncached().getRootNode());
         }
 
         @Specialization(guards = "isFunction(method.getFunction())")
@@ -485,7 +487,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         public String doIt(PMethod method) {
             // cast ensured by guard
             PFunction fun = (PFunction) method.getFunction();
-            return NodeUtil.printTreeToString(fun.getCallTarget().getRootNode());
+            return NodeUtil.printTreeToString(fun.getCallTargetUncached().getRootNode());
         }
 
         @Specialization
@@ -497,7 +499,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public String doIt(PCode code) {
-            return NodeUtil.printTreeToString(code.getRootNode());
+            return NodeUtil.printTreeToString(CodeNodes.GetCodeRootNode.getUncached().execute(code));
         }
 
         @Fallback
@@ -565,9 +567,9 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
              * won't work when they are called from an instance of that class due to the implicit
              * currying with "self".
              */
-            Signature signature = func.getSignature();
+            Signature signature = GetSignatureNode.getUncached().execute(func);
             PFunction builtinFunc;
-            FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
+            FunctionRootNode functionRootNode = (FunctionRootNode) CodeNodes.GetCodeRootNode.getUncached().execute(func.getCode());
             if (signature.getParameterIds().length > 0 && signature.getParameterIds()[0].equals("self")) {
                 /*
                  * If the first parameter is called self, we assume the function does explicitly
@@ -614,8 +616,9 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BuiltinMethodNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object doIt(PFunction func) {
-            FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
+        public Object doIt(PFunction func,
+                        @Cached CodeNodes.GetCodeRootNode getRootNode) {
+            FunctionRootNode functionRootNode = (FunctionRootNode) getRootNode.execute(func.getCode());
             functionRootNode.setPythonInternal(true);
             return func;
         }

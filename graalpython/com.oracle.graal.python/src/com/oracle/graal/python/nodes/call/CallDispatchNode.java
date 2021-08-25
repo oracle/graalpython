@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.call;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeCallTargetNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
@@ -110,9 +111,10 @@ public abstract class CallDispatchNode extends Node {
     }
 
     // We have multiple contexts, don't cache the objects so that contexts can be cleaned up
-    @Specialization(guards = {"callee.getCallTarget() == ct"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCachedCode")
+    @Specialization(guards = {"getCt.execute(callee.getCode()) == ct"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCachedCode")
     protected Object callFunctionCachedCt(VirtualFrame frame, PFunction callee, Object[] arguments,
-                    @SuppressWarnings("unused") @Cached("callee.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("callee.getCallTargetUncached()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached GetCodeCallTargetNode getCt,
                     @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
         return invoke.execute(frame, callee, callee.getGlobals(), callee.getClosure(), arguments);
     }
