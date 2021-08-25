@@ -21,6 +21,7 @@
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_if_else_expr
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_import
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_lambdef
+*graalpython.lib-python.3.test.test_grammar.GrammarTests.test_listcomps
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_matrix_mul
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_multiplicative_ops
 *graalpython.lib-python.3.test.test_grammar.GrammarTests.test_nonlocal

@@ -41,3 +41,4 @@
 *graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_nested_cgi_path_issue21323
 *graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_no_leading_slash
 *graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_os_environ_is_not_altered
+*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_post

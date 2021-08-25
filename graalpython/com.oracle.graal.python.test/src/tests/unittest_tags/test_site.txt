@@ -5,6 +5,7 @@
 *graalpython.lib-python.3.test.test_site.HelperFunctionsTests.test_addpackage_import_bad_syntax
 *graalpython.lib-python.3.test.test_site.HelperFunctionsTests.test_addsitedir
 *graalpython.lib-python.3.test.test_site.HelperFunctionsTests.test_get_path
+*graalpython.lib-python.3.test.test_site.HelperFunctionsTests.test_getsitepackages
 *graalpython.lib-python.3.test.test_site.HelperFunctionsTests.test_getuserbase
 *graalpython.lib-python.3.test.test_site.HelperFunctionsTests.test_getusersitepackages
 *graalpython.lib-python.3.test.test_site.HelperFunctionsTests.test_init_pathinfo
