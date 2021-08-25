@@ -171,6 +171,7 @@ public abstract class CodeNodes {
         private static final GetCodeCallTargetNode UNCACHED = new GetCodeCallTargetNode(false);
 
         private final boolean isAdoptable;
+        @CompilationFinal private Assumption singleContextAssumption;
         @CompilationFinal private ConditionProfile hasCtProfile;
         @CompilationFinal private PCode cachedCode1;
         @CompilationFinal private PCode cachedCode2;
@@ -183,24 +184,30 @@ public abstract class CodeNodes {
 
         public final RootCallTarget execute(PCode code) {
             if (isAdoptable) {
+                if (singleContextAssumption == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    singleContextAssumption = PythonLanguage.get(this).singleContextAssumption;
+                }
                 if (hasCtProfile == null) {
-                    if (cachedCode1 == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        cachedCode1 = code;
-                        cachedCt1 = code.initializeCallTarget();
-                        return cachedCt1;
-                    }
-                    if (cachedCode1 == code) {
-                        return cachedCt1;
-                    }
-                    if (cachedCode2 == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        cachedCode2 = code;
-                        cachedCt2 = code.initializeCallTarget();
-                        return cachedCt2;
-                    }
-                    if (cachedCode2 == code) {
-                        return cachedCt2;
+                    if (singleContextAssumption.isValid()) {
+                        if (cachedCode1 == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            cachedCode1 = code;
+                            cachedCt1 = code.initializeCallTarget();
+                            return cachedCt1;
+                        }
+                        if (cachedCode1 == code) {
+                            return cachedCt1;
+                        }
+                        if (cachedCode2 == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            cachedCode2 = code;
+                            cachedCt2 = code.initializeCallTarget();
+                            return cachedCt2;
+                        }
+                        if (cachedCode2 == code) {
+                            return cachedCt2;
+                        }
                     }
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     cachedCode1 = cachedCode2 = null;
@@ -234,9 +241,14 @@ public abstract class CodeNodes {
     public abstract static class GetCodeSignatureNode extends Node {
         public abstract Signature execute(PCode code);
 
+        protected static final Assumption getSingleContextAssumption() {
+            return PythonLanguage.get(null).singleContextAssumption;
+        }
+
         @SuppressWarnings("unused")
-        @Specialization(guards = "cachedCode == code", limit = "2")
+        @Specialization(guards = "cachedCode == code", limit = "2", assumptions = "singleContextAssumption")
         protected static Signature doCached(PCode code,
+                        @Cached("getSingleContextAssumption()") Assumption singleContextAssumption,
                         @Cached("code") PCode cachedCode,
                         @Cached("code.initializeCallTarget()") RootCallTarget ct,
                         @Cached("code.initializeSignature(ct)") Signature signature) {
