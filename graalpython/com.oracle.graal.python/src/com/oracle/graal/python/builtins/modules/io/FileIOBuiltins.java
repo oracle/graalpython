@@ -491,7 +491,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Cached BranchProfile exceptionProfile,
                         @Cached GilNode gil) {
             try {
-                return posixRead.read(frame, self.getFD(), size, posixLib, readErrorProfile, gil);
+                return posixRead.read(self.getFD(), size, posixLib, readErrorProfile, gil);
             } catch (PosixSupportLibrary.PosixException e) {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;
@@ -548,7 +548,7 @@ public class FileIOBuiltins extends PythonBuiltins {
             int bytesRead = 0;
             PBytes b;
             try {
-                b = posixRead.read(frame, self.getFD(), bufsize, posixLib, readErrorProfile, gil);
+                b = posixRead.read(self.getFD(), bufsize, posixLib, readErrorProfile, gil);
                 bytesRead = b.getSequenceStorage().length();
                 if (bytesRead == 0 || (mayBeQuick && bytesRead == bufsize - 1)) {
                     return b;
@@ -577,7 +577,7 @@ public class FileIOBuiltins extends PythonBuiltins {
 
                 int n;
                 try {
-                    b = posixRead.read(frame, self.getFD(), bufsize - bytesRead, posixLib, readErrorProfile, gil);
+                    b = posixRead.read(self.getFD(), bufsize - bytesRead, posixLib, readErrorProfile, gil);
                     /*
                      * PosixModuleBuiltins#ReadNode creates PBytes with exact size;
                      */
@@ -629,7 +629,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                     return 0;
                 }
                 try {
-                    PBytes data = posixRead.read(frame, self.getFD(), size, posixLib, readErrorProfile, gil);
+                    PBytes data = posixRead.read(self.getFD(), size, posixLib, readErrorProfile, gil);
                     int n = bufferLib.getBufferLength(data);
                     bufferLib.readIntoBuffer(data, 0, buffer, 0, n, bufferLib);
                     return n;

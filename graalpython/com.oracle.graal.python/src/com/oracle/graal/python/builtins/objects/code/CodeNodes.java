@@ -234,6 +234,7 @@ public abstract class CodeNodes {
     public abstract static class GetCodeSignatureNode extends Node {
         public abstract Signature execute(PCode code);
 
+        @SuppressWarnings("unused")
         @Specialization(guards = "cachedCode == code", limit = "2")
         protected static Signature doCached(PCode code,
                         @Cached("code") PCode cachedCode,

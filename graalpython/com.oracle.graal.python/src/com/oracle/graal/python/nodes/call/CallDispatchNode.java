@@ -114,7 +114,7 @@ public abstract class CallDispatchNode extends Node {
     @Specialization(guards = {"getCt.execute(callee.getCode()) == ct"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCachedCode")
     protected Object callFunctionCachedCt(VirtualFrame frame, PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee.getCallTargetUncached()") RootCallTarget ct,
-                    @Cached GetCodeCallTargetNode getCt,
+                    @SuppressWarnings("unused") @Cached GetCodeCallTargetNode getCt,
                     @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
         return invoke.execute(frame, callee, callee.getGlobals(), callee.getClosure(), arguments);
     }
