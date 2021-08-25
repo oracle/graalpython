@@ -537,8 +537,8 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
             return callUnaryNode.call(FUN_GET_PTR_ARRAY_TYPE_ID, 0);
         }
 
-        protected static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+        protected Assumption singleContextAssumption() {
+            return PythonLanguage.get(this).singleContextAssumption;
         }
     }
 

@@ -138,15 +138,15 @@ public abstract class ObjectNodes {
 
         public abstract long execute(Object self);
 
-        protected static Assumption getSingleThreadedAssumption() {
-            return PythonLanguage.getCurrent().singleThreadedAssumption;
+        protected static Assumption getSingleThreadedAssumption(Node node) {
+            return PythonLanguage.get(node).singleThreadedAssumption;
         }
 
         protected static boolean isIDableObject(Object object) {
             return object instanceof PythonObject || object instanceof PythonAbstractNativeObject;
         }
 
-        @Specialization(guards = "isIDableObject(self)", assumptions = "getSingleThreadedAssumption()")
+        @Specialization(guards = "isIDableObject(self)", assumptions = "getSingleThreadedAssumption(readNode)")
         static long singleThreadedObject(Object self,
                         @Cached ReadAttributeFromDynamicObjectNode readNode,
                         @Cached WriteAttributeToDynamicObjectNode writeNode) {

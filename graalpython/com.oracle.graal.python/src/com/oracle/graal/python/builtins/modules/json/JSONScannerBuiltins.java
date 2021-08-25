@@ -85,13 +85,13 @@ public class JSONScannerBuiltins extends PythonBuiltins {
         @TruffleBoundary
         protected PTuple call(PJSONScanner self, String string, int idx) {
             if (tupleInstanceShape == null) {
-                tupleInstanceShape = PythonLanguage.getCurrent().getBuiltinTypeInstanceShape(PythonBuiltinClassType.PTuple);
+                tupleInstanceShape = PythonLanguage.get(null).getBuiltinTypeInstanceShape(PythonBuiltinClassType.PTuple);
             }
             if (listInstanceShape == null) {
-                listInstanceShape = PythonLanguage.getCurrent().getBuiltinTypeInstanceShape(PythonBuiltinClassType.PList);
+                listInstanceShape = PythonLanguage.get(null).getBuiltinTypeInstanceShape(PythonBuiltinClassType.PList);
             }
             if (dictInstanceShape == null) {
-                dictInstanceShape = PythonLanguage.getCurrent().getBuiltinTypeInstanceShape(PythonBuiltinClassType.PDict);
+                dictInstanceShape = PythonLanguage.get(null).getBuiltinTypeInstanceShape(PythonBuiltinClassType.PDict);
             }
             IntRef nextIdx = new IntRef();
             Object result = scanOnceUnicode(self, string, idx, nextIdx);

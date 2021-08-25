@@ -1004,8 +1004,8 @@ public class GraalHPyNodes {
             }
         }
 
-        static Assumption noDebugModeAssumption() {
-            return PythonLanguage.getCurrent().noHPyDebugModeAssumption;
+        Assumption noDebugModeAssumption() {
+            return PythonLanguage.get(this).noHPyDebugModeAssumption;
         }
     }
 
@@ -1360,8 +1360,8 @@ public class GraalHPyNodes {
             return contextProfile.profile(hpyContext).createHandle(object);
         }
 
-        static Assumption noDebugModeAssumption() {
-            return PythonLanguage.getCurrent().noHPyDebugModeAssumption;
+        Assumption noDebugModeAssumption() {
+            return PythonLanguage.get(null).noHPyDebugModeAssumption;
         }
     }
 

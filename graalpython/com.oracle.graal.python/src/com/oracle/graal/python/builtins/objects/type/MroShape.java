@@ -175,7 +175,7 @@ public final class MroShape {
      * over attribute lookup nodes and other relevant places.
      */
     @SuppressWarnings("unused")
-    public static boolean validate(Object obj) {
+    public static boolean validate(Object obj, PythonLanguage language) {
         if (!(obj instanceof PythonClass)) {
             return true;
         }
@@ -231,7 +231,7 @@ public final class MroShape {
             }
             currMroShape = currMroShape.parent;
         }
-        assert currMroShape == PythonLanguage.getCurrent().getMroShapeRoot() : mro.getClassName();
+        assert currMroShape == language.getMroShapeRoot() : mro.getClassName();
         return true;
     }
 }

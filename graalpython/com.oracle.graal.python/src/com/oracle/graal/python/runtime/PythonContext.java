@@ -1027,12 +1027,12 @@ public final class PythonContext {
 
     @TruffleBoundary
     public boolean reprEnter(Object item) {
-        return getThreadState(PythonLanguage.getCurrent()).reprEnter(item);
+        return getThreadState(PythonLanguage.get(null)).reprEnter(item);
     }
 
     @TruffleBoundary
     public void reprLeave(Object item) {
-        getThreadState(PythonLanguage.getCurrent()).reprLeave(item);
+        getThreadState(PythonLanguage.get(null)).reprLeave(item);
     }
 
     public long getPerfCounterStart() {

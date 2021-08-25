@@ -417,7 +417,7 @@ public abstract class TypeNodes {
         @TruffleBoundary
         static MroSequenceStorage doSlowPath(Object obj) {
             if (obj instanceof PythonManagedClass) {
-                return doPythonClass((PythonManagedClass) obj, ConditionProfile.getUncached(), ConditionProfile.getUncached(), PythonLanguage.getCurrent());
+                return doPythonClass((PythonManagedClass) obj, ConditionProfile.getUncached(), ConditionProfile.getUncached(), PythonLanguage.get(null));
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
             } else if (PGuards.isNativeClass(obj)) {

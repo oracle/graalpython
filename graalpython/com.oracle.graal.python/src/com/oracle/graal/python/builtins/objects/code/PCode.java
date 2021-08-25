@@ -314,7 +314,7 @@ public final class PCode extends PythonBuiltinObject {
                 return false;
             } else if (node instanceof FunctionDefinitionNode) {
                 FunctionDefinitionNode fdNode = (FunctionDefinitionNode) node;
-                constants.add(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(PythonLanguage.getCurrent()), fdNode.getCallTarget()));
+                constants.add(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(PythonLanguage.get(node)), fdNode.getCallTarget()));
                 constants.add(fdNode.getQualname());
                 return true;
             } else if (node instanceof GeneratorExpressionNode) {

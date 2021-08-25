@@ -818,7 +818,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         @Override
         public void run() {
             try {
-                PythonLanguage language = PythonLanguage.getCurrent();
+                PythonLanguage language = PythonLanguage.get(null);
                 PythonContext pythonContext = PythonLanguage.getContext();
                 GraalHPyContext hPyContext = pythonContext.getHPyContext();
                 RootCallTarget callTarget = hPyContext.getReferenceCleanerCallTarget();

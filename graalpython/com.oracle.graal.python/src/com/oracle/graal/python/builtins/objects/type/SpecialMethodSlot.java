@@ -479,7 +479,7 @@ public enum SpecialMethodSlot {
             // proceed with that
             newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
         }
-        fixupSpecialMethodInSubClasses(GetSubclassesNode.getUncached().execute(klass), slot, newValue, PythonLanguage.getCurrent());
+        fixupSpecialMethodInSubClasses(GetSubclassesNode.getUncached().execute(klass), slot, newValue, PythonLanguage.get(null));
     }
 
     @TruffleBoundary
@@ -503,7 +503,7 @@ public enum SpecialMethodSlot {
             newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
         }
 
-        PythonLanguage language = PythonLanguage.getCurrent();
+        PythonLanguage language = PythonLanguage.get(null);
         slot.setValue(klass, newValue, language);
         fixupSpecialMethodInSubClasses(klass.getSubClasses(), slot, value, language);
     }

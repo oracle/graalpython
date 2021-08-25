@@ -550,7 +550,7 @@ public abstract class GraalHPyContextFunctions {
         private RootCallTarget ensureCallTarget() {
             if (callTarget == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callTarget = createCallTarget(PythonLanguage.getCurrent());
+                callTarget = createCallTarget(PythonLanguage.get(null));
             }
             return callTarget;
         }

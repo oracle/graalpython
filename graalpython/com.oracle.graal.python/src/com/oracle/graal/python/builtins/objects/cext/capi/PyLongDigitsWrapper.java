@@ -62,6 +62,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
@@ -255,9 +256,10 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
             return PCallCapiFunction.getUncached().call(FUN_GET_UINT32_ARRAY_TYPE_ID, 0);
         }
 
-        @Specialization(assumptions = "singleContextAssumption()")
+        @Specialization(assumptions = "singleContextAssumption(lib)")
         static Object doByteArray(@SuppressWarnings("unused") PyLongDigitsWrapper object,
-                        @Exclusive @Cached("callGetUInt32ArrayTypeIDUncached(object)") Object nativeType) {
+                        @Exclusive @Cached("callGetUInt32ArrayTypeIDUncached(object)") Object nativeType,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") InteropLibrary lib) {
             return nativeType;
         }
 
@@ -267,8 +269,8 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
             return callGetTypeIDNode.call(FUN_GET_UINT32_ARRAY_TYPE_ID, 0);
         }
 
-        protected static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+        protected static Assumption singleContextAssumption(Node node) {
+            return PythonLanguage.get(node).singleContextAssumption;
         }
     }
 }

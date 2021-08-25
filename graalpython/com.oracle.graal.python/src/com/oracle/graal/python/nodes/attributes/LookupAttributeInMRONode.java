@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -259,8 +260,8 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return cachedAttrInMROInfo.value;
     }
 
-    public static MroShapeLookupResult lookupInMroShape(MroShape shape, String key, Object klass) {
-        assert MroShape.validate(klass);
+    public MroShapeLookupResult lookupInMroShape(MroShape shape, Object klass) {
+        assert MroShape.validate(klass, PythonLanguage.get(this));
         return shape.lookup(key);
     }
 
@@ -271,7 +272,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
                     limit = "getAttributeAccessInlineCacheMaxDepth()")
     protected Object lookupConstantMROShape(PythonClass klass,
                     @SuppressWarnings("unused") @Cached("klass.getMroShape()") MroShape cachedMroShape,
-                    @Cached("lookupInMroShape(cachedMroShape, key, klass)") MroShapeLookupResult lookupResult) {
+                    @Cached("lookupInMroShape(cachedMroShape, klass)") MroShapeLookupResult lookupResult) {
         return lookupResult.getFromMro(getMro(klass), key);
     }
 

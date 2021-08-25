@@ -954,7 +954,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             ByteBuffer.wrap(codeString).putLong(codeLen, PythonLanguage.getContext().getDeserializationId(fileName));
             int firstLineNo = readInt();
             byte[] lnoTab = readBytes();
-            return CreateCodeNode.createCode(PythonLanguage.getCurrent(), PythonLanguage.getContext(), flags, codeString, fileName, firstLineNo, lnoTab);
+            return CreateCodeNode.createCode(PythonLanguage.getContext(), flags, codeString, fileName, firstLineNo, lnoTab);
         }
 
         @SuppressWarnings("unused")

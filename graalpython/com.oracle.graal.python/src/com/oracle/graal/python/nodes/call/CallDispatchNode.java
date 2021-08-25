@@ -74,7 +74,7 @@ public abstract class CallDispatchNode extends Node {
     }
 
     protected Assumption singleContextAssumption() {
-        return PythonLanguage.getCurrent().singleContextAssumption;
+        return PythonLanguage.get(this).singleContextAssumption;
     }
 
     public final Object executeCall(VirtualFrame frame, PFunction callee, Object[] arguments) {

@@ -328,7 +328,7 @@ public final class PythonClass extends PythonManagedClass {
                 invalidateMroShapeSubTypes();
             } else {
                 mroShapeInvalidationsCount++;
-                updateMroShapeSubTypes(PythonLanguage.getCurrent());
+                updateMroShapeSubTypes(PythonLanguage.get(null));
             }
         }
     }
@@ -371,7 +371,7 @@ public final class PythonClass extends PythonManagedClass {
     static void updateMroShapeSubTypes(PythonBuiltinClass klass) {
         ArrayDeque<Object> toProcess = new ArrayDeque<>();
         toProcess.add(klass);
-        PythonLanguage lang = PythonLanguage.getCurrent();
+        PythonLanguage lang = PythonLanguage.get(null);
         while (toProcess.size() > 0) {
             Object next = toProcess.pop();
             if (next instanceof PythonClass) {

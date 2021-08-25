@@ -138,7 +138,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     }
 
     private static String encodeHome(String path) {
-        String home = PythonLanguage.getCurrent().getHome();
+        String home = PythonLanguage.get(null).getHome();  // behind @TruffleBoundary
         if (path.startsWith(home)) {
             return HOME_PREFIX + path.substring(home.length());
         }
@@ -147,7 +147,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
 
     private static String decodeHome(String path) {
         if (path.startsWith(HOME_PREFIX)) {
-            String home = PythonLanguage.getCurrent().getHome();
+            String home = PythonLanguage.get(null).getHome();  // behind @TruffleBoundary
             return home + path.substring(HOME_PREFIX.length());
         }
         return path;
@@ -235,7 +235,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                 final Node[] fromVisitor = new Node[1];
                 result.accept((Node node) -> {
                     if (node instanceof GeneratorFunctionDefinitionNode) {
-                        fromVisitor[0] = ((GeneratorFunctionDefinitionNode) node).getGeneratorFunctionRootNode(PythonLanguage.getCurrent());
+                        fromVisitor[0] = ((GeneratorFunctionDefinitionNode) node).getGeneratorFunctionRootNode(PythonLanguage.get(node));
                         return false;
                     } else if (node instanceof FunctionDefinitionNode) {
                         fromVisitor[0] = ((FunctionDefinitionNode) node).getFunctionRoot();

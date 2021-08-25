@@ -105,7 +105,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     protected RootNode cloneUninitialized() {
-        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, isPythonInternal, getFrameDescriptor(), uninitializedBody, executionCellSlots,
+        return new FunctionRootNode(PythonLanguage.get(this), getSourceSection(), functionName, isGenerator, isPythonInternal, getFrameDescriptor(), uninitializedBody, executionCellSlots,
                         getSignature(), doc);
     }
 
@@ -116,7 +116,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     public FunctionRootNode rewriteWithNewSignature(Signature newSignature, NodeVisitor nodeVisitor, Function<ExpressionNode, ExpressionNode> bodyFun) {
         ExpressionNode newUninitializedBody = bodyFun.apply(NodeUtil.cloneNode(uninitializedBody));
         newUninitializedBody.accept(nodeVisitor);
-        return new FunctionRootNode(PythonLanguage.getCurrent(), getSourceSection(), functionName, isGenerator, true, getFrameDescriptor(), newUninitializedBody, executionCellSlots,
+        return new FunctionRootNode(PythonLanguage.get(this), getSourceSection(), functionName, isGenerator, true, getFrameDescriptor(), newUninitializedBody, executionCellSlots,
                         newSignature, doc);
     }
 
