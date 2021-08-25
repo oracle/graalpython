@@ -127,8 +127,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.llvm.api.Toolchain;
-import java.util.Iterator;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
@@ -472,8 +470,6 @@ public final class PythonContext {
     private final ChildContextData childContextData;
     private final SharedContextData sharedContextData;
 
-    private final Set<Integer> fdsToClose = new HashSet<>();
-
     public static final class ChildContextData {
         private int exitCode = 0;
         private boolean signaled;
@@ -525,44 +521,53 @@ public final class PythonContext {
 
     public static final class SharedContextData {
 
-        private int counter = 0;
+        private int fdCounter = 0;
 
-        private final SortedMap<Integer, LinkedBlockingQueue<Object>> fdData = new TreeMap<>();
-        private final Map<Integer, Integer> fdsToKeep = new HashMap<>();
+        /**
+         * Maps the two fake file descriptors created in {@link #pipe()} to one
+         * {@link LinkedBlockingQueue}
+         */
+        private final SortedMap<Integer, LinkedBlockingQueue<Object>> pipeData = new TreeMap<>();
 
+        /**
+         * Holds ref count of file descriptors which were passed over to a spawned child context.
+         * This can be either:<br>
+         * <ul>
+         * <li>fake file descriptors created via {@link #pipe()}</li>
+         * <li>real file descriptors coming from the posix implementation</li>
+         * </ul>
+         */
+        private final Map<Integer, Integer> fdRefCount = new HashMap<>();
+
+        /**
+         * Increases reference count for the given file descriptor.
+         */
         @TruffleBoundary
-        public boolean isFdToKeep(int fd) {
-            synchronized (fdsToKeep) {
-                return fdsToKeep.containsKey(fd);
+        private void incrementFDRefCount(int fd) {
+            synchronized (fdRefCount) {
+                fdRefCount.compute(fd, (f, count) -> (count == null) ? 1 : count + 1);
             }
         }
 
+        /**
+         * Decreases reference count for the given file descriptor.
+         * 
+         * @return {@code true} if ref count was decreased, {@link false} if ref count isn't tracked
+         *         anymore.
+         */
         @TruffleBoundary
-        public void addFdToKeep(int fd) {
-            synchronized (fdsToKeep) {
-                Integer c = fdsToKeep.get(fd);
-                if (c == null) {
-                    c = 1;
-                } else {
-                    c = c + 1;
-                }
-                fdsToKeep.put(fd, c);
-            }
-        }
-
-        @TruffleBoundary
-        public boolean removeFdToKeep(int fd) {
-            synchronized (fdsToKeep) {
-                Integer c = fdsToKeep.get(fd);
+        public boolean decrementFDRefCount(int fd) {
+            synchronized (fdRefCount) {
+                Integer c = fdRefCount.get(fd);
                 if (c == null) {
                     return false;
                 }
-                if (c == 1) {
-                    fdsToKeep.remove(fd);
+                if (c == 0) {
+                    fdRefCount.remove(fd);
+                    return false;
+                } else {
+                    fdRefCount.put(fd, c - 1);
                     return true;
-                } else {
-                    fdsToKeep.put(fd, c - 1);
-                    return false;
                 }
             }
         }
@@ -573,21 +578,21 @@ public final class PythonContext {
          */
         @TruffleBoundary
         public int[] pipe() {
-            synchronized (fdData) {
+            synchronized (pipeData) {
                 LinkedBlockingQueue<Object> q = new LinkedBlockingQueue<>();
-                int readFD = --counter;
-                fdData.put(readFD, q);
-                int writeFD = --counter;
-                fdData.put(writeFD, q);
+                int readFD = --fdCounter;
+                pipeData.put(readFD, q);
+                int writeFD = --fdCounter;
+                pipeData.put(writeFD, q);
                 return new int[]{readFD, writeFD};
             }
         }
 
         @TruffleBoundary
-        public boolean addSharedContextData(int fd, byte[] bytes, Runnable noFDHandler, Runnable brokenPipeHandler) {
+        public boolean addPipeData(int fd, byte[] bytes, Runnable noFDHandler, Runnable brokenPipeHandler) {
             LinkedBlockingQueue<Object> q = null;
-            synchronized (fdData) {
-                q = fdData.get(fd);
+            synchronized (pipeData) {
+                q = pipeData.get(fd);
                 if (q == null) {
                     noFDHandler.run();
                     throw CompilerDirectives.shouldNotReachHere();
@@ -603,17 +608,17 @@ public final class PythonContext {
         }
 
         @TruffleBoundary
-        public void closeFd(int fd) {
-            synchronized (fdData) {
-                fdData.remove(fd);
+        public void closePipe(int fd) {
+            synchronized (pipeData) {
+                pipeData.remove(fd);
             }
         }
 
         @TruffleBoundary
-        public Object takeSharedContextData(Node node, int fd, Runnable noFDHandler) {
+        public Object takePipeData(Node node, int fd, Runnable noFDHandler) {
             LinkedBlockingQueue<Object> q;
-            synchronized (fdData) {
-                q = fdData.get(fd);
+            synchronized (pipeData) {
+                q = pipeData.get(fd);
                 if (q == null) {
                     noFDHandler.run();
                     throw CompilerDirectives.shouldNotReachHere();
@@ -635,8 +640,8 @@ public final class PythonContext {
         @TruffleBoundary
         public boolean isBlocking(int fd) {
             LinkedBlockingQueue<Object> q;
-            synchronized (fdData) {
-                q = fdData.get(fd);
+            synchronized (pipeData) {
+                q = pipeData.get(fd);
                 if (q == null) {
                     return false;
                 }
@@ -649,7 +654,7 @@ public final class PythonContext {
         }
 
         @TruffleBoundary
-        public void closeFDs(List<Integer> fds) {
+        public static void closeFDs(List<Integer> fds) {
             synchronized (fds) {
                 for (Integer fd : fds) {
                     fds.remove(fd);
@@ -662,7 +667,7 @@ public final class PythonContext {
         }
 
         private boolean isClosed(int fd) {
-            return fdData.get(fd) == null && fd >= counter;
+            return pipeData.get(fd) == null && fd >= fdCounter;
         }
     }
 
@@ -671,7 +676,7 @@ public final class PythonContext {
         this.core = core;
         this.env = env;
         this.childContextData = (ChildContextData) env.getConfig().get(CHILD_CONTEXT_DATA);
-        this.sharedContextData = this.childContextData == null ? new SharedContextData() : null;
+        this.sharedContextData = this.childContextData == null ? new SharedContextData() : childContextData.parentCtx.sharedContextData;
         this.handler = new AsyncHandler(this);
         this.sharedFinalizer = new AsyncHandler.SharedFinalizer(this);
         this.optionValues = PythonOptions.createOptionValuesStorage(env);
@@ -701,8 +706,8 @@ public final class PythonContext {
         return childContextData;
     }
 
-    public synchronized SharedContextData getSharedContextData() {
-        return isChildContext() ? childContextData.parentCtx.sharedContextData : this.sharedContextData;
+    public SharedContextData getSharedContextData() {
+        return sharedContextData;
     }
 
     public long spawnTruffleContext(int fd, int sentinel, int[] fdsToKeep) {
@@ -723,17 +728,10 @@ public final class PythonContext {
         for (int fdToKeep : fdsToKeep) {
             // prevent file descriptors from being closed when passed to another "process",
             // equivalent to fds_to_keep arg in posix fork_exec
-            getSharedContextData().addFdToKeep(fdToKeep);
+            getSharedContextData().incrementFDRefCount(fdToKeep);
         }
         start(thread);
         return tid;
-    }
-
-    @TruffleBoundary
-    public void closeLater(int fd) {
-        synchronized (fdsToClose) {
-            fdsToClose.add(fd);
-        }
     }
 
     @TruffleBoundary
@@ -788,7 +786,7 @@ public final class PythonContext {
                             LOGGER.log(Level.FINE, t, () -> "exception while closing spawned child context");
                         }
                     }
-                    data.parentCtx.sharedContextData.closeFd(sentinel);
+                    data.parentCtx.sharedContextData.closePipe(sentinel);
                 }
             } catch (ThreadDeath td) {
                 // as a result of of TruffleContext.closeCancelled()
@@ -1404,29 +1402,9 @@ public final class PythonContext {
             disposeThreadStates();
         }
         cleanupHPyResources();
-        if (!cancelling) {
-            synchronized (fdsToClose) {
-                Iterator<Integer> it = fdsToClose.iterator();
-                while (it.hasNext()) {
-                    int fd = it.next();
-                    if (getSharedContextData().removeFdToKeep(fd)) {
-                        it.remove();
-                        if (fd > 0) {
-                            try {
-                                PosixSupportLibrary.getUncached().close(getPosixSupport(), fd);
-                            } catch (PosixSupportLibrary.PosixException ex) {
-                                LOGGER.log(Level.FINEST, ex, () -> "got PosixException while closing file discriptor " + fd);
-                            }
-                        } else {
-                            getSharedContextData().closeFd(fd);
-                        }
-                    }
-                }
-            }
-        }
         for (int fd : getChildContextFDs()) {
-            if (getSharedContextData().removeFdToKeep(fd)) {
-                getSharedContextData().closeFd(fd);
+            if (!getSharedContextData().decrementFDRefCount(fd)) {
+                getSharedContextData().closePipe(fd);
             }
         }
         mainThread = null;

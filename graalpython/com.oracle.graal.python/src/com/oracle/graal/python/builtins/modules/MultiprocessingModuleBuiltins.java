@@ -277,8 +277,6 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                 pipe = sharedData.pipe();
                 ctx.getChildContextFDs().add(pipe[0]);
                 ctx.getChildContextFDs().add(pipe[1]);
-                sharedData.addFdToKeep(pipe[0]);
-                sharedData.addFdToKeep(pipe[1]);
             } finally {
                 gil.acquire();
             }
@@ -297,7 +295,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
             gil.release(true);
             try {
                 byte[] bytes = bufferLib.getCopiedByteArray(data);
-                sharedData.addSharedContextData(fd, bytes,
+                sharedData.addPipeData(fd, bytes,
                                 () -> {
                                     throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                                 },
@@ -327,7 +325,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
             SharedContextData sharedData = getContext().getSharedContextData();
             gil.release(true);
             try {
-                Object data = sharedData.takeSharedContextData(this, fd, () -> {
+                Object data = sharedData.takePipeData(this, fd, () -> {
                     throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                 });
                 if (data == PNone.NONE) {
@@ -353,12 +351,8 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         PNone close(@SuppressWarnings("unused") int fd) {
             assert fd < 0;
             SharedContextData sharedData = getContext().getSharedContextData();
-            if (sharedData.isFdToKeep(fd)) {
-                if (sharedData.removeFdToKeep(fd)) {
-                    sharedData.closeFd(fd);
-                }
-            } else {
-                getContext().closeLater(fd);
+            if (!sharedData.decrementFDRefCount(fd)) {
+                sharedData.closePipe(fd);
             }
             return PNone.NONE;
         }
