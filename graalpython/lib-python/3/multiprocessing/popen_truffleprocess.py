@@ -7,7 +7,7 @@ from . import spawn
 from . import util
 
 # Begin Truffle change
-from _multiprocessing import _waittid, _terminate_spawned_thread, _spawn_context, _pipe, _write
+from _multiprocessing import _waittid, _terminate_spawned_thread, _spawn_context, _pipe, _write, _close
 # End Truffle change
 
 __all__ = ['Popen']
@@ -128,7 +128,7 @@ class Popen(object):
 
             for fd in (child_r, child_w):
                 if fd is not None:
-                    os.close(fd)
+                    _close(fd)
 
     def close(self):
         if self.finalizer is not None:
