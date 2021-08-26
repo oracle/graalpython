@@ -45,6 +45,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory;
@@ -214,6 +216,13 @@ public abstract class PyObjectLookupAttr extends Node {
                     @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
         Object type = getClass.execute(receiver);
         Object getattribute = lookupGetattribute.execute(frame, type, receiver);
+        if (!getClass.isAdoptable()) {
+            // It pays to try this in the uncached case, avoiding a full call to __getattribute__
+            Object result = readAttributeQuickly(type, getattribute, receiver, name);
+            if (result != null) {
+                return result;
+            }
+        }
         try {
             return callGetattribute.executeObject(frame, getattribute, receiver, name);
         } catch (PException e) {
@@ -232,5 +241,61 @@ public abstract class PyObjectLookupAttr extends Node {
 
     public static PyObjectLookupAttr getUncached() {
         return PyObjectLookupAttrNodeGen.getUncached();
+    }
+
+    /**
+     * We try to improve the performance of this in the interpreter and uncached case for a simple
+     * class of cases. The reason is that in the uncached case, we would do a full call to the
+     * __getattribute__ method and that raises an exception, which is expensive and may not be
+     * needed. This actually always helps in interpreted mode even in the cached case, but we cannot
+     * really use it then, because when we only use it in the interpreter, the compiled code would
+     * skip this and immediately deopt, if the code after was never run and initialized. And anyway,
+     * the hope is that in the cached case, we just stay in the above specializations
+     * {@link #doBuiltinObject}, {@link #doBuiltinModule}, or {@link #doBuiltinType} and get the
+     * fast path through them.
+     *
+     * This inlines parts of the logic of the {@code ObjectBuiltins.GetAttributeNode} and {@code
+     * ModuleBuiltins.GetAttributeNode}. This method returns {@code PNone.NO_VALUE} when the
+     * attribute is not found and the original would've raised an AttributeError. It returns {@code
+     * null} when no shortcut was applicable. If {@code PNone.NO_VALUE} was returned, name is
+     * guaranteed to be a {@code java.lang.String}.
+     */
+    static final Object readAttributeQuickly(Object type, Object getattribute, Object receiver, Object name) {
+        if (name instanceof String) {
+            if (getattribute == OBJ_GET_ATTRIBUTE && type instanceof PythonManagedClass) {
+                String stringName = (String) name;
+                PythonAbstractClass[] bases = ((PythonManagedClass) type).getBaseClasses();
+                if (bases.length == 1) {
+                    PythonAbstractClass base = bases[0];
+                    if (base instanceof PythonBuiltinClass &&
+                                    ((PythonBuiltinClass) base).getType() == PythonBuiltinClassType.PythonObject) {
+                        if (!(stringName.charAt(0) == '_' && stringName.charAt(1) == '_')) {
+                            // not a special name, so this attribute cannot be inherited, and can
+                            // only be on the type or the object. If it's on the type, return to
+                            // the generic code.
+                            ReadAttributeFromObjectNode readUncached = ReadAttributeFromObjectNode.getUncached();
+                            Object descr = readUncached.execute(type, stringName);
+                            if (descr == PNone.NO_VALUE) {
+                                return readUncached.execute(receiver, stringName);
+                            }
+                        }
+                    }
+                }
+            } else if (getattribute == MODULE_GET_ATTRIBUTE && type == PythonBuiltinClassType.PythonModule) {
+                // this is slightly simpler than the previous case, since we don't need to check
+                // the type. There may be a module-level __getattr__, however. Since that would be
+                // a call anyway, we return to the generic code in that case
+                String stringName = (String) name;
+                if (!(stringName.charAt(0) == '_' && stringName.charAt(1) == '_')) {
+                    // not a special name, so this attribute cannot be on the module class
+                    ReadAttributeFromObjectNode readUncached = ReadAttributeFromObjectNode.getUncached();
+                    Object result = readUncached.execute(receiver, stringName);
+                    if (result != PNone.NO_VALUE) {
+                        return result;
+                    }
+                }
+            }
+        }
+        return null;
     }
 }

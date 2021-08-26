@@ -40,17 +40,16 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -60,54 +59,40 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Equivalent PyObject_GetAttr*. Like Python, this method raises when the attribute doesn't exist.
+ * Equivalent to use for PyObject_SetItem.
  */
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
-public abstract class PyObjectGetAttr extends Node {
-    public abstract Object execute(Frame frame, Object receiver, Object name);
+public abstract class PyObjectSetItem extends Node {
+    public abstract void execute(Frame frame, Object container, Object index, Object item);
 
-    @Specialization(guards = "name == cachedName", limit = "1")
-    static Object getFixedAttr(VirtualFrame frame, Object receiver, @SuppressWarnings("unused") String name,
-                    @SuppressWarnings("unused") @Cached("name") String cachedName,
-                    @Cached("create(name)") GetFixedAttributeNode getAttrNode) {
-        return getAttrNode.execute(frame, receiver);
+    @Specialization
+    void doWithFrame(VirtualFrame frame, Object primary, Object index, Object value,
+                    @Cached GetClassNode getClassNode,
+                    @Cached("create(SetItem)") LookupSpecialMethodSlotNode lookupSetitem,
+                    @Cached PRaiseNode raise,
+                    @Cached CallTernaryMethodNode callSetitem) {
+        Object setitem = lookupSetitem.execute(frame, getClassNode.execute(primary), primary);
+        if (setitem == PNone.NO_VALUE) {
+            throw raise.raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, primary);
+        }
+        callSetitem.execute(frame, setitem, primary, index, value);
     }
 
-    @Specialization(replaces = "getFixedAttr")
-    static Object getDynamicAttr(Frame frame, Object receiver, Object name,
-                    @Cached GetClassNode getClass,
-                    @Cached(parameters = "GetAttribute") LookupSpecialMethodSlotNode lookupGetattribute,
-                    @Cached(parameters = "GetAttr") LookupSpecialMethodSlotNode lookupGetattr,
-                    @Cached CallBinaryMethodNode callGetattribute,
-                    @Cached CallBinaryMethodNode callGetattr,
-                    @Cached IsBuiltinClassProfile errorProfile) {
-        Object type = getClass.execute(receiver);
-        Object getattribute = lookupGetattribute.execute(frame, type, receiver);
-        if (!getClass.isAdoptable()) {
-            // It pays to try this in the uncached case, avoiding a full call to __getattribute__
-            Object result = PyObjectLookupAttr.readAttributeQuickly(type, getattribute, receiver, name);
-            if (result != null) {
-                if (result == PNone.NO_VALUE) {
-                    throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
-                }
-                return result;
-            }
+    @Specialization(replaces = "doWithFrame")
+    void doGeneric(Object primary, Object index, Object value,
+                    @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "SetItem") LookupCallableSlotInMRONode lookupSetitem,
+                    @Cached PRaiseNode raise,
+                    @Cached CallTernaryMethodNode callSetitem) {
+        Object setitem = lookupSetitem.execute(getClassNode.execute(primary));
+        if (setitem == PNone.NO_VALUE) {
+            throw raise.raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, primary);
         }
-        try {
-            return callGetattribute.executeObject(frame, getattribute, receiver, name);
-        } catch (PException e) {
-            e.expect(PythonBuiltinClassType.AttributeError, errorProfile);
-            Object getattr = lookupGetattr.execute(frame, type, receiver);
-            if (getattr != PNone.NO_VALUE) {
-                return callGetattr.executeObject(frame, getattr, receiver, name);
-            } else {
-                throw e;
-            }
-        }
+        callSetitem.execute(null, setitem, primary, index, value);
     }
 
-    public static PyObjectGetAttr getUncached() {
-        return PyObjectGetAttrNodeGen.getUncached();
+    public static PyObjectSetItem getUncached() {
+        return PyObjectSetItemNodeGen.getUncached();
     }
 }

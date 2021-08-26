@@ -516,6 +516,7 @@ public abstract class ErrorMessages {
     public static final String RETURNED_NON_STRING = "%s returned non-string (type %p)";
     public static final String P_S_RETURNED_NON_STRING = "%p.%s returned non-string (type %p)";
     public static final String RETURNED_NONBYTES = "%s returned non-bytes (type %p)";
+    public static final String RETURNED_NONITER = "iter() returned non-iterator of type %p";
     public static final String RETURNED_NULL_WO_SETTING_ERROR = "%s returned NULL without setting an error";
     public static final String RETURNED_RESULT_WITH_ERROR_SET = "%s returned a result with an error set";
     public static final String RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S = "%s returned an unexpected return code; expected 'int' but was %s";
