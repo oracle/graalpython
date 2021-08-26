@@ -140,6 +140,7 @@ public abstract class BuiltinNames {
     public static final String SET = "set";
     public static final String BUILTINS = "builtins";
     public static final String __GRAALPYTHON__ = "__graalpython__";
+    public static final String _CODECS = "_codecs";
     public static final String GETSET_DESCRIPTOR = "getset_descriptor";
     public static final String MEMBER_DESCRIPTOR = "member_descriptor";
     public static final String SIMPLE_QUEUE = "SimpleQueue";

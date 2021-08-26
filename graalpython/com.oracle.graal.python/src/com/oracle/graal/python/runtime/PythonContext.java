@@ -51,6 +51,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
@@ -483,6 +484,22 @@ public final class PythonContext {
     @CompilationFinal private List<Integer> childContextFDs;
     private final ChildContextData childContextData;
     private final SharedMultiprocessingData sharedMultiprocessingData;
+
+    private final List<Object> codecSearchPath = new ArrayList<>();
+    private final Map<String, PTuple> codecSearchCache = new HashMap<>();
+    private final Map<String, Object> codecErrorRegistry = new HashMap<>();
+
+    public List<Object> getCodecSearchPath() {
+        return codecSearchPath;
+    }
+
+    public Map<String, PTuple> getCodecSearchCache() {
+        return codecSearchCache;
+    }
+
+    public Map<String, Object> getCodecErrorRegistry() {
+        return codecErrorRegistry;
+    }
 
     public static final class ChildContextData {
         private int exitCode = 0;
