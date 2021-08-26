@@ -63,7 +63,6 @@
 #include "common/runtime/ctx_tracker.h"
 
 static JNIEnv* jniEnv;
-static jobject contextInstance;
 
 #define ALL_UPCALLS \
     UPCALL(New, SIG_HPY SIG_PTR, SIG_HPY) \
@@ -72,7 +71,8 @@ static jobject contextInstance;
     UPCALL(Close, SIG_HPY, SIG_VOID) \
     UPCALL(FloatFromDouble, SIG_DOUBLE, SIG_HPY) \
     UPCALL(FloatAsDouble, SIG_HPY, SIG_DOUBLE) \
-    UPCALL(LongAsLong, SIG_LONG, SIG_HPY) \
+    UPCALL(LongAsLong, SIG_HPY, SIG_LONG) \
+    UPCALL(LongFromLong, SIG_LONG, SIG_HPY) \
     UPCALL(Dup, SIG_HPY, SIG_HPY) \
     UPCALL(GetItemi, SIG_HPY SIG_SIZE_T, SIG_HPY) \
     UPCALL(NumberCheck, SIG_HPY, SIG_INT) \
@@ -116,6 +116,10 @@ static double ctx_FloatAsDouble_jni(HPyContext ctx, HPy h) {
 
 static long ctx_LongAsLong_jni(HPyContext ctx, HPy h) {
     return DO_UPCALL_LONG(CONTEXT_INSTANCE(ctx), LongAsLong, HPY_UP(h));
+}
+
+static HPy ctx_LongFromLong_jni(HPyContext ctx, long l) {
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), LongFromLong, l);
 }
 
 static HPy ctx_New_jni(HPyContext ctx, HPy type, void** data) {
@@ -216,6 +220,7 @@ static HPy (*original_Dup)(HPyContext ctx, HPy h);
 static HPy (*original_FloatFromDouble)(HPyContext ctx, double v);
 static double (*original_FloatAsDouble)(HPyContext ctx, HPy h);
 static long (*original_LongAsLong)(HPyContext ctx, HPy h);
+static HPy (*original_LongFromLong)(HPyContext ctx, long l);
 static int (*original_ListCheck)(HPyContext ctx, HPy h);
 static int (*original_NumberCheck)(HPyContext ctx, HPy h);
 static void (*original_Close)(HPyContext ctx, HPy h);
@@ -252,6 +257,15 @@ static long augment_LongAsLong(HPyContext ctx, HPy h) {
         return unboxInt(bits);
     } else {
         return original_LongAsLong(ctx, h);
+    }
+}
+
+static HPy augment_LongFromLong(HPyContext ctx, long l) {
+	int32_t i = (int32_t) l;
+	if (l == i) {
+        return toPtr(boxInt(i));
+    } else {
+        return original_LongFromLong(ctx, l);
     }
 }
 
@@ -302,6 +316,9 @@ void initDirectFastPaths(HPyContext context) {
     original_LongAsLong = context->ctx_Long_AsLong;
     context->ctx_Long_AsLong = augment_LongAsLong;
     
+    original_LongFromLong = context->ctx_Long_FromLong;
+    context->ctx_Long_FromLong = augment_LongFromLong;
+
     original_Close = context->ctx_Close;
     context->ctx_Close = augment_Close;
     

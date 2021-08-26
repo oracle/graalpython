@@ -1287,6 +1287,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         UpcallLength,
         UpcallListCheck,
         UpcallLongAsLong,
+        UpcallLongFromLong,
         UpcallFloatAsDouble,
         UpcallFloatFromDouble;
 
@@ -1355,6 +1356,15 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 return -1L;
             }
         }
+    }
+
+    public final long ctxLongFromLong(long l) {
+        Counter.UpcallLongFromLong.increment();
+
+        if (com.oracle.graal.python.builtins.objects.ints.PInt.isIntRange(l)) {
+            return GraalHPyBoxing.boxInt((int) l);
+        }
+        return createHandle(l).getId(this, ConditionProfile.getUncached());
     }
 
     public final long ctxCast(long handle) {

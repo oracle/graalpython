@@ -11,6 +11,7 @@
     {"name":"ctxLength","parameterTypes":["long"] }, 
     {"name":"ctxListCheck","parameterTypes":["long"] }, 
     {"name":"ctxLongAsLong","parameterTypes":["long"] }, 
+    {"name":"ctxLongFromLong","parameterTypes":["long"] },
     {"name":"ctxNew","parameterTypes":["long","long"] }, 
     {"name":"ctxNumberCheck","parameterTypes":["long"] }, 
     {"name":"ctxTypeGenericNew","parameterTypes":["long"] }
