@@ -1,0 +1,19 @@
+[
+{
+  "name":"com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext",
+  "methods":[
+    {"name":"ctxCast","parameterTypes":["long"] }, 
+    {"name":"ctxClose","parameterTypes":["long"] }, 
+    {"name":"ctxDup","parameterTypes":["long"] }, 
+    {"name":"ctxFloatAsDouble","parameterTypes":["long"] }, 
+    {"name":"ctxFloatFromDouble","parameterTypes":["double"] }, 
+    {"name":"ctxGetItemi","parameterTypes":["long","long"] }, 
+    {"name":"ctxLength","parameterTypes":["long"] }, 
+    {"name":"ctxListCheck","parameterTypes":["long"] }, 
+    {"name":"ctxLongAsLong","parameterTypes":["long"] }, 
+    {"name":"ctxNew","parameterTypes":["long","long"] }, 
+    {"name":"ctxNumberCheck","parameterTypes":["long"] }, 
+    {"name":"ctxTypeGenericNew","parameterTypes":["long"] }
+  ]
+}
+]
