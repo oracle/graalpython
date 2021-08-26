@@ -778,7 +778,7 @@ public final class PythonContext {
         return sharedMultiprocessingData;
     }
 
-    public long spawnTruffleContext(int fd, int sentinel, int[] fdsToKeep) {
+    public long spawnTruffleContext(PythonContext context, int fd, int sentinel, int[] fdsToKeep) {
         ChildContextData data = new ChildContextData();
         if (!isChildContext()) {
             data.setParentContext(this);
@@ -787,7 +787,7 @@ public final class PythonContext {
         }
 
         Builder builder = data.parentCtx.env.newContextBuilder().config(PythonContext.CHILD_CONTEXT_DATA, data);
-        Thread thread = data.parentCtx.env.createThread(new ChildContextThread(fd, sentinel, data, builder));
+        Thread thread = data.parentCtx.env.createThread(new ChildContextThread(context, fd, sentinel, data, builder));
 
         // TODO always force java posix in spawned
         long tid = thread.getId();
@@ -819,12 +819,14 @@ public final class PythonContext {
         private final ChildContextData data;
         private final Builder builder;
         private final int sentinel;
+        private final PythonContext context;
 
-        public ChildContextThread(int fd, int sentinel, ChildContextData data, Builder builder) {
+        public ChildContextThread(PythonContext context, int fd, int sentinel, ChildContextData data, Builder builder) {
             this.fd = fd;
             this.data = data;
             this.builder = builder;
             this.sentinel = sentinel;
+            this.context = context;
         }
 
         @Override
@@ -838,7 +840,7 @@ public final class PythonContext {
                     Source source = Source.newBuilder(PythonLanguage.ID,
                                     "from multiprocessing.spawn import spawn_truffleprocess; spawn_truffleprocess(" + fd + ", " + sentinel + ")",
                                     "<spawned-child-context>").internal(true).build();
-                    CallTarget ct = PythonLanguage.getContext().getEnv().parsePublic(source);
+                    CallTarget ct = context.getEnv().parsePublic(source);
                     data.running.countDown();
 
                     Object res = ct.call();

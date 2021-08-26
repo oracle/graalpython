@@ -46,7 +46,6 @@ import java.util.TimeZone;
 
 import org.graalvm.nativeimage.ImageInfo;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -179,7 +178,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     private static Object[] getTimeStruct(long seconds, boolean local) {
         Object[] timeStruct = new Object[11];
         Instant instant = Instant.ofEpochSecond(seconds);
-        ZoneId zone = (local) ? PythonLanguage.getContext().getEnv().getTimeZone() : ZoneId.of("GMT");
+        ZoneId zone = (local) ? PythonContext.get(null).getEnv().getTimeZone() : ZoneId.of("GMT");
         ZonedDateTime zonedDateTime = LocalDateTime.ofInstant(instant, zone).atZone(zone);
         timeStruct[TM_YEAR] = zonedDateTime.getYear();
         timeStruct[TM_MON] = zonedDateTime.getMonth().ordinal() + 1; /* Want January == 1 */
@@ -201,7 +200,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     private static int[] getIntLocalTimeStruct(long seconds) {
         int[] timeStruct = new int[9];
         Instant instant = Instant.ofEpochSecond(seconds);
-        ZoneId zone = PythonLanguage.getContext().getEnv().getTimeZone();
+        ZoneId zone = PythonContext.get(null).getEnv().getTimeZone();
         ZonedDateTime zonedDateTime = LocalDateTime.ofInstant(instant, zone).atZone(zone);
         timeStruct[TM_YEAR] = zonedDateTime.getYear();
         timeStruct[TM_MON] = zonedDateTime.getMonth().ordinal() + 1; /* Want January == 1 */
@@ -920,7 +919,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static long op(int[] integers) {
             LocalDateTime localtime = LocalDateTime.of(integers[0], integers[1], integers[2], integers[3], integers[4], integers[5]);
-            ZoneId timeZone = PythonLanguage.getContext().getEnv().getTimeZone();
+            ZoneId timeZone = PythonContext.get(null).getEnv().getTimeZone();
             return localtime.toEpochSecond(timeZone.getRules().getOffset(localtime));
         }
     }

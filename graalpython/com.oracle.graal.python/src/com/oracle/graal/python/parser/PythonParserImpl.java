@@ -61,6 +61,7 @@ import com.oracle.graal.python.parser.sst.SSTSerializerVisitor;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -208,7 +209,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             if (path.isEmpty() || offset != 0) {
                 source = Source.newBuilder(PythonLanguage.ID, contents, name).build();
             } else {
-                source = Source.newBuilder(PythonLanguage.ID, PythonLanguage.getContext().getEnv().getPublicTruffleFile(path)).content(contents).name(name).build();
+                source = Source.newBuilder(PythonLanguage.ID, PythonContext.get(null).getEnv().getPublicTruffleFile(path)).content(contents).name(name).build();
             }
             sstNode = new SSTDeserializer(dis, globalScope, offset).readNode();
         } catch (IOException e) {

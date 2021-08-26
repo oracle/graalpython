@@ -79,7 +79,7 @@ public class PythonModuleTests {
     @Before
     public void setUp() {
         PythonTests.enterContext();
-        context = PythonLanguage.getContext();
+        context = PythonContext.get(null);
     }
 
     @After

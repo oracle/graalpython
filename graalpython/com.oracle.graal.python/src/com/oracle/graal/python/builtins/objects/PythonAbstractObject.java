@@ -904,7 +904,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getSysModules();
+            PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE, plib))) {
@@ -937,7 +937,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getSysModules();
+            PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE, plib))) {
@@ -981,7 +981,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getSysModules();
+            PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtype.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
@@ -1013,7 +1013,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getSysModules();
+            PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
@@ -1059,7 +1059,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getSysModules();
+            PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib))) {
@@ -1123,7 +1123,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 throw UnsupportedMessageException.create();
             }
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getSysModules();
+            PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib))) {

@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python;
 
-import static com.oracle.graal.python.PythonLanguage.getContext;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -95,7 +93,7 @@ public class WithPythonContextRule implements MethodRule {
                 RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new RootNode(null) {
                     @Override
                     public Object execute(VirtualFrame frame) {
-                        pythonContext = getContext();
+                        pythonContext = PythonContext.get(this);
                         try {
                             base.evaluate();
                         } catch (Throwable e) {

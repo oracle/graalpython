@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.modules;
 import java.util.Arrays;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
@@ -68,6 +67,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
@@ -99,7 +99,8 @@ public class PwdModuleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        boolean hasGetpwentries = PosixSupportLibrary.getUncached().hasGetpwentries(PythonLanguage.getContext().getPosixSupport());
+        PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
+        boolean hasGetpwentries = posixLib.hasGetpwentries(PythonContext.get(posixLib).getPosixSupport());
         if (hasGetpwentries) {
             return PwdModuleBuiltinsFactory.getFactories();
         } else {

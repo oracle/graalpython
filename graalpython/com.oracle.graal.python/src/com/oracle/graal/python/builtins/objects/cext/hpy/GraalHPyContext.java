@@ -818,8 +818,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         @Override
         public void run() {
             try {
-                PythonLanguage language = PythonLanguage.get(null);
-                PythonContext pythonContext = PythonLanguage.getContext();
+                PythonContext pythonContext = PythonContext.get(null);
+                PythonLanguage language = pythonContext.getLanguage();
                 GraalHPyContext hPyContext = pythonContext.getHPyContext();
                 RootCallTarget callTarget = hPyContext.getReferenceCleanerCallTarget();
                 PDict dummyGlobals = PythonObjectFactory.getUncached().createDict();

@@ -185,7 +185,8 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                 Object item = getItem.execute(frame, storage, i);
                 keep[i] = castToJavaIntNode.execute(item);
             }
-            long tid = getContext().spawnTruffleContext(fd, sentinel, keep);
+            PythonContext context = getContext();
+            long tid = context.spawnTruffleContext(context, fd, sentinel, keep);
             return convertTid(tid);
         }
     }

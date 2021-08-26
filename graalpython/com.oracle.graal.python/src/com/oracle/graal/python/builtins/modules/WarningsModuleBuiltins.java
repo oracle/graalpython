@@ -372,8 +372,8 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         /**
          * Slow path. Sometimes may try to import the warnings module.
          */
-        private static Object getWarningsAttr(String attr, boolean tryImport) {
-            return getWarningsAttr(null, attr, tryImport, PythonObjectLibrary.getUncached(), PythonLanguage.getContext());
+        private static Object getWarningsAttr(PythonContext context, String attr, boolean tryImport) {
+            return getWarningsAttr(null, attr, tryImport, PythonObjectLibrary.getUncached(), context);
         }
 
         /**
@@ -412,8 +412,8 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         /**
          * On slow path.
          */
-        private static PDict getOnceRegistry(PythonModule module) {
-            Object registry = getWarningsAttr("onceregistry", false);
+        private static PDict getOnceRegistry(PythonContext context, PythonModule module) {
+            Object registry = getWarningsAttr(context, "onceregistry", false);
             if (registry == null) {
                 registry = getStateOnceRegistry(module);
             }
@@ -595,7 +595,8 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             PythonObjectLibrary polib = PythonObjectLibrary.getUncached();
             PRaiseNode raise = PRaiseNode.getUncached();
 
-            Object showFn = getWarningsAttr("_showwarnmsg", sourceIn != null);
+            PythonContext context = PythonContext.get(raise);
+            Object showFn = getWarningsAttr(context, "_showwarnmsg", sourceIn != null);
             if (showFn == null) {
                 showWarning(filename, lineno, text, category, sourceline);
                 return;
@@ -605,7 +606,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 throw raise.raise(PythonBuiltinClassType.TypeError, "warnings._showwarnmsg() must be set to a callable");
             }
 
-            Object warnmsgCls = getWarningsAttr("WarningMessage", false);
+            Object warnmsgCls = getWarningsAttr(context, "WarningMessage", false);
             if (warnmsgCls == null) {
                 throw raise.raise(PythonBuiltinClassType.RuntimeError, "unable to get warnings.WarningMessage");
             }
@@ -705,7 +706,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 boolean alreadyWarned = false;
                 if (PString.equals("once", action)) {
                     if (registry == null || registry == PNone.NONE) {
-                        Object currentRegistry = getOnceRegistry(warnings);
+                        Object currentRegistry = getOnceRegistry(PythonContext.get(node), warnings);
                         alreadyWarned = updateRegistry(warnings, currentRegistry, text, category, false);
                     } else {
                         alreadyWarned = updateRegistry(warnings, registry, text, category, false);

@@ -34,6 +34,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -528,7 +529,7 @@ public class JSONScannerBuiltins extends PythonBuiltins {
 
     private static RuntimeException stopIteration(Node raisingNode, Object value) {
         CompilerAsserts.neverPartOfCompilation();
-        Object exception = CallNode.getUncached().execute(PythonLanguage.getContext().getCore().lookupType(PythonBuiltinClassType.StopIteration), value);
+        Object exception = CallNode.getUncached().execute(PythonContext.get(raisingNode).getCore().lookupType(PythonBuiltinClassType.StopIteration), value);
         throw PRaiseNode.raise(raisingNode, (PBaseException) exception, false);
     }
 }

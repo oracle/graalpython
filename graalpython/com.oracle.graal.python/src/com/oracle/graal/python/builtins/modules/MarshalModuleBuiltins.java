@@ -36,7 +36,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
@@ -88,6 +87,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -951,10 +951,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 throw CompilerDirectives.shouldNotReachHere();
             }
             // get a new ID every time we deserialize the same filename in the same context
-            ByteBuffer.wrap(codeString).putLong(codeLen, PythonLanguage.getContext().getDeserializationId(fileName));
+            PythonContext context = PythonContext.get(factory);
+            ByteBuffer.wrap(codeString).putLong(codeLen, context.getDeserializationId(fileName));
             int firstLineNo = readInt();
             byte[] lnoTab = readBytes();
-            return CreateCodeNode.createCode(PythonLanguage.getContext(), flags, codeString, fileName, firstLineNo, lnoTab);
+            return CreateCodeNode.createCode(context, flags, codeString, fileName, firstLineNo, lnoTab);
         }
 
         @SuppressWarnings("unused")

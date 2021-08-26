@@ -67,7 +67,7 @@ public class ConversionNodeTests {
 
     protected static Object call(Object arg, ArgumentCastNodeWithRaise castNode) {
         PythonLanguage language = PythonLanguage.get(castNode);
-        final PythonContext pythonContext = PythonLanguage.getContext();
+        final PythonContext pythonContext = PythonContext.get(castNode);
 
         RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new PRootNode(language) {
             @Child private CalleeContext calleeContext = CalleeContext.create();

@@ -41,7 +41,6 @@
 
 package com.oracle.graal.python.runtime;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.nodes.Node;
@@ -114,13 +113,13 @@ public abstract class GilNode extends Node {
         @Override
         @TruffleBoundary
         public final boolean acquire(Node location) {
-            return acquire(PythonLanguage.getContext(), location);
+            return acquire(PythonContext.get(this), location);
         }
 
         @Override
         @TruffleBoundary
         public final void release(boolean wasAcquired) {
-            release(PythonLanguage.getContext(), wasAcquired);
+            release(PythonContext.get(this), wasAcquired);
         }
 
         @Override
@@ -144,7 +143,7 @@ public abstract class GilNode extends Node {
         @Override
         @TruffleBoundary
         public final boolean tryRelease() {
-            PythonContext context = PythonLanguage.getContext();
+            PythonContext context = PythonContext.get(this);
             if (context.ownsGil()) {
                 context.releaseGil();
                 return true;
@@ -176,7 +175,7 @@ public abstract class GilNode extends Node {
 
         @Override
         public final void close() {
-            if (PythonLanguage.getContext().ownsGil()) {
+            if (PythonContext.get(this).ownsGil()) {
                 // we are forgiving in this usage for cases where the gil is released and we're
                 // exiting with an exception
                 release(this == INSTANCE_WITH_RELEASE);
@@ -245,7 +244,7 @@ public abstract class GilNode extends Node {
     }
 
     public static UncachedRelease uncachedRelease() {
-        assert PythonLanguage.getContext().ownsGil();
+        assert PythonContext.get(UncachedRelease.INSTANCE).ownsGil();
         UncachedRelease.INSTANCE.release(true);
         return UncachedRelease.INSTANCE;
     }

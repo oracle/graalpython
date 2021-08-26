@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -140,7 +141,7 @@ public abstract class PRootNode extends RootNode {
 
     @TruffleBoundary
     private void triggerDeprecationWarningsBoundary() {
-        Python3Core errors = PythonLanguage.getContext().getCore();
+        Python3Core errors = PythonContext.get(this).getCore();
         try {
             for (String warning : deprecationWarnings) {
                 errors.warn(PythonBuiltinClassType.DeprecationWarning, "%s", warning);

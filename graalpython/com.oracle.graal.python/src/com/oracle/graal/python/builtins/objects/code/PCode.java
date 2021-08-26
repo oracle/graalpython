@@ -68,6 +68,7 @@ import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
@@ -198,7 +199,7 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static void setRootNodeFileName(RootNode rootNode, String filename) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        PythonLanguage.getContext().setCodeFilename(funcRootNode.getCallTarget(), filename);
+        PythonContext.get(rootNode).setCodeFilename(funcRootNode.getCallTarget(), filename);
     }
 
     @TruffleBoundary
@@ -206,7 +207,7 @@ public final class PCode extends PythonBuiltinObject {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
         SourceSection src = funcRootNode.getSourceSection();
 
-        String filename = PythonLanguage.getContext().getCodeFilename(funcRootNode.getCallTarget());
+        String filename = PythonContext.get(rootNode).getCodeFilename(funcRootNode.getCallTarget());
         if (filename != null) {
             // for compiled modules, _imp._fix_co_filename will set the filename
             return filename;

@@ -106,7 +106,7 @@ public class ParserBenchRunner {
         context.initialize("python");
         context.enter();
 
-        this.pyContext = PythonLanguage.getContext();
+        this.pyContext = PythonContext.get(null);
         this.parser = (PythonParserImpl) pyContext.getCore().getParser();
         this.core = pyContext.getCore();
     }
@@ -179,7 +179,7 @@ public class ParserBenchRunner {
         }
         File file;
         PythonFileFilter filter = new PythonFileFilter(recursion, excludedPaths);
-        PythonContext pyContext = PythonLanguage.getContext();
+        PythonContext pyContext = PythonContext.get(null);
         for (String path : paths) {
             file = new File(path);
             if (file.isDirectory() || filter.accept(file)) {

@@ -70,7 +70,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import java.util.Iterator;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
@@ -923,7 +922,7 @@ public class DequeBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object repr(PDeque self) {
-            PythonContext ctxt = PythonLanguage.getContext();
+            PythonContext ctxt = PythonContext.get(this);
             if (!ctxt.reprEnter(self)) {
                 return "[...]";
             }
