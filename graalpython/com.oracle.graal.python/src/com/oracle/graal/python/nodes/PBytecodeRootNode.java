@@ -124,13 +124,16 @@ import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.BytecodeOSRNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
-public final class PBytecodeRootNode extends PRootNode {
+public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNode {
 
     private final int stacksize;
     private final Signature signature;
@@ -149,11 +152,25 @@ public final class PBytecodeRootNode extends PRootNode {
     @Child private CalleeContext calleeContext = CalleeContext.create();
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
+    @CompilationFinal private Object osrMetadata;
+
+    private static final FrameDescriptor bytecodeFrameDescriptor = new FrameDescriptor();
+    private static final FrameSlot STACK;
+    private static final FrameSlot LOCALS;
+    private static final FrameSlot CELLVARS;
+    private static final FrameSlot FREEVARS;
+    static {
+        STACK = bytecodeFrameDescriptor.addFrameSlot("stack", FrameSlotKind.Object);
+        LOCALS = bytecodeFrameDescriptor.addFrameSlot("locals", FrameSlotKind.Object);
+        CELLVARS = bytecodeFrameDescriptor.addFrameSlot("cellvars", FrameSlotKind.Object);
+        FREEVARS = bytecodeFrameDescriptor.addFrameSlot("freevars", FrameSlotKind.Object);
+    }
+
     public PBytecodeRootNode(TruffleLanguage<?> language, Signature sign, byte[] bc,
                     String filename, String name, int firstlineno,
                     Object[] consts, String[] names, String[] varnames, String[] freevars, String[] cellvars,
                     int stacksize) {
-        super(language);
+        super(language, bytecodeFrameDescriptor);
         this.signature = sign;
         this.bytecode = bc;
         this.adoptedNodes = new Node[bc.length];
@@ -207,7 +224,34 @@ public final class PBytecodeRootNode extends PRootNode {
         PythonContext context = PythonContext.get(this);
         calleeContext.enter(frame);
         try {
-            return executeLoop(frame, context);
+            int stackTop = -1;
+
+            // CPython has an array of object called "localsplus" with everything. We use separate
+            // arrays
+            Object[] stack = new Object[stacksize];
+            Object[] args = frame.getArguments();
+            Object[] fastlocals = new Object[varnames.length];
+            System.arraycopy(args, PArguments.USER_ARGUMENTS_OFFSET, fastlocals, 0, PArguments.getUserArgumentLength(args));
+            int varargsIdx = signature.getVarargsIdx();
+            if (varargsIdx >= 0) {
+                fastlocals[varargsIdx] = factory.createList(PArguments.getVariableArguments(args));
+            }
+            if (signature.takesVarKeywordArgs()) {
+                int idx = signature.getParameterIds().length + signature.getKeywordNames().length;
+                if (varargsIdx >= 0) {
+                    idx += 1;
+                }
+                fastlocals[idx] = factory.createDict(PArguments.getKeywordArguments(args));
+            }
+            Object[] celllocals = new Object[cellvars.length];
+            Object[] freelocals = new Object[freevars.length];
+
+            frame.setObject(STACK, stack);
+            frame.setObject(LOCALS, fastlocals);
+            frame.setObject(CELLVARS, celllocals);
+            frame.setObject(FREEVARS, freelocals);
+
+            return executeOSR(frame, 0, stackTop);
         } finally {
             calleeContext.exit(frame, this);
         }
@@ -235,36 +279,32 @@ public final class PBytecodeRootNode extends PRootNode {
         return node;
     }
 
+    @Override
+    public Object getOSRMetadata() {
+        return osrMetadata;
+    }
+
+    @Override
+    public void setOSRMetadata(Object osrMetadata) {
+        this.osrMetadata = osrMetadata;
+    }
+
+    @Override
     @BytecodeInterpreterSwitch
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
-    private Object executeLoop(VirtualFrame frame, PythonContext context) {
-        int stackTop = -1;
+    public Object executeOSR(VirtualFrame frame, int target, Object stackTopArgument) {
+        int stackTop = stackTopArgument;
+        PythonContext context = PythonContext.get(this);
         Object globals = PArguments.getGlobals(frame);
         PythonModule builtins = context.getBuiltins();
-
         Object locals = PArguments.getCustomLocals(frame);
 
-        // CPython has an array of object called "localsplus" with everything. We use separate
-        // arrays
-        Object[] stack = new Object[stacksize];
-        Object[] args = frame.getArguments();
-        Object[] fastlocals = new Object[varnames.length];
-        System.arraycopy(args, PArguments.USER_ARGUMENTS_OFFSET, fastlocals, 0, PArguments.getUserArgumentLength(args));
-        int varargsIdx = signature.getVarargsIdx();
-        if (varargsIdx >= 0) {
-            fastlocals[varargsIdx] = factory.createList(PArguments.getVariableArguments(args));
-        }
-        if (signature.takesVarKeywordArgs()) {
-            int idx = signature.getParameterIds().length + signature.getKeywordNames().length;
-            if (varargsIdx >= 0) {
-                idx += 1;
-            }
-            fastlocals[idx] = factory.createDict(PArguments.getKeywordArguments(args));
-        }
-        Object[] celllocals = new Object[cellvars.length];
-        Object[] freelocals = new Object[freevars.length];
+        Object[] stack = (Object[])frame.getObject(STACK);
+        Object[] fastlocals = (Object[])frame.getObject(LOCALS);
+        Object[] cellvars = (Object[])frame.getObject(CELLVARS);
+        Object[] freevars = (Object[])frame.getObject(FREEVARS);
 
-        int i = 0;
+        int i = target;
         int oparg = Byte.toUnsignedInt(bytecode[i + 1]);
         while (true) {
             switch (bytecode[i]) {
@@ -716,6 +756,14 @@ public final class PBytecodeRootNode extends PRootNode {
                     }
                     break;
                 case JUMP_ABSOLUTE:
+                    if (oparg < i) {
+                        if (BytecodeOSRNode.pollOSRBackEdge(this)) {
+                            Object osrResult = BytecodeOSRNode.tryOSR(this, oparg, stackTop, null, frame);
+                            if (osrResult != null) {
+                                return osrResult;
+                            }
+                        }
+                    }
                     i = oparg;
                     oparg = Byte.toUnsignedInt(bytecode[i + 1]);
                     continue;
