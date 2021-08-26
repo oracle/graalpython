@@ -117,6 +117,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -218,6 +219,17 @@ public final class PBytecodeRootNode extends PRootNode {
         if (node == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             node = nodeSupplier.get();
+            adoptedNodes[bytecodeIndex] = insert(node);
+        }
+        return node;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends Node> T insertChildNode(Function<String, T> nodeSupplier, int bytecodeIndex, String argument) {
+        T node = (T) adoptedNodes[bytecodeIndex];
+        if (node == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            node = nodeSupplier.apply(argument);
             adoptedNodes[bytecodeIndex] = insert(node);
         }
         return node;
@@ -539,7 +551,7 @@ public final class PBytecodeRootNode extends PRootNode {
                 case STORE_NAME:
                     {
                         String name = names[oparg];
-                        WriteGlobalNode writeGlobalNode = insertChildNode(() -> WriteGlobalNode.create(name), i);
+                        WriteGlobalNode writeGlobalNode = insertChildNode((a) -> WriteGlobalNode.create(a), i, name);
                         writeGlobalNode.executeObject(frame, stack[stackTop]);
                         stack[stackTop--] = null;
                     }
@@ -547,7 +559,7 @@ public final class PBytecodeRootNode extends PRootNode {
                 case DELETE_NAME:
                     {
                         String name = names[oparg];
-                        DeleteGlobalNode deleteGlobalNode = insertChildNode(() -> DeleteGlobalNode.create(name), i);
+                        DeleteGlobalNode deleteGlobalNode = insertChildNode((a) -> DeleteGlobalNode.create(a), i, name);
                         deleteGlobalNode.executeVoid(frame);
                     }
                     break;
@@ -572,7 +584,7 @@ public final class PBytecodeRootNode extends PRootNode {
                 case LOAD_GLOBAL: // we use the same node for both of these, unlike CPython
                     {
                         String name = names[oparg];
-                        ReadGlobalOrBuiltinNode read = insertChildNode(() -> ReadGlobalOrBuiltinNode.create(name), i);
+                        ReadGlobalOrBuiltinNode read = insertChildNode((a) -> ReadGlobalOrBuiltinNode.create(a), i, name);
                         stack[++stackTop] = read.execute(frame);
                     }
                     break;
