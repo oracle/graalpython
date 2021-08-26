@@ -204,7 +204,7 @@ public final class PBytecodeRootNode extends PRootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        PythonContext context = lookupContextReference(PythonLanguage.class).get();
+        PythonContext context = PythonContext.get(this);
         calleeContext.enter(frame);
         try {
             return executeLoop(frame, context);
