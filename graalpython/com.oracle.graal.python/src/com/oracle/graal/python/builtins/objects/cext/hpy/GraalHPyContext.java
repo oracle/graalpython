@@ -980,7 +980,6 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.HPyNativeSpaceCleanerRootNode.class);
 
         @Child private PCallHPyFunction callBulkFree;
-        @Child private InteropLibrary interopLibrary;
 
         HPyNativeSpaceCleanerRootNode(PythonContext context) {
             super(context.getLanguage());
@@ -1019,32 +1018,12 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 middleTime = System.currentTimeMillis();
             }
 
-            if (PythonLanguage.get(this).getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.NFI) {
-                NativeSpaceArrayWrapper nativeSpaceArrayWrapper = new NativeSpaceArrayWrapper(handleReferences);
-                if (callBulkFree == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    callBulkFree = insert(PCallHPyFunctionNodeGen.create());
-                }
-                callBulkFree.call(context, GraalHPyNativeSymbol.GRAAL_HPY_BULK_FREE, nativeSpaceArrayWrapper, nativeSpaceArrayWrapper.getArraySize());
-            } else {
-                if (interopLibrary == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    interopLibrary = insert(InteropLibrary.getFactory().createDispatched(3));
-                }
-
-                for (GraalHPyHandleReference ref : handleReferences) {
-                    long nativeSpace = (long) ref.getNativeSpace();
-                    Object destroyFunc = ref.getDestroyFunc();
-                    if (destroyFunc != null) {
-                        try {
-                            interopLibrary.execute(destroyFunc, nativeSpace);
-                        } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
-                            throw CompilerDirectives.shouldNotReachHere();
-                        }
-                    }
-                    unsafe.freeMemory(nativeSpace);
-                }
+            NativeSpaceArrayWrapper nativeSpaceArrayWrapper = new NativeSpaceArrayWrapper(handleReferences);
+            if (callBulkFree == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callBulkFree = insert(PCallHPyFunctionNodeGen.create());
             }
+            callBulkFree.call(context, GraalHPyNativeSymbol.GRAAL_HPY_BULK_FREE, nativeSpaceArrayWrapper, nativeSpaceArrayWrapper.getArraySize());
 
             if (loggable) {
                 final long countDuration = middleTime - startTime;
