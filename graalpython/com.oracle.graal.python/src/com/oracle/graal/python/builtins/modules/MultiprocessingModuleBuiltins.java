@@ -77,7 +77,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.SharedContextData;
+import com.oracle.graal.python.runtime.PythonContext.SharedMultiprocessingData;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ArrayBuilder;
@@ -271,7 +271,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         PTuple pipe(@Cached GilNode gil) {
             int[] pipe;
             PythonContext ctx = getContext();
-            SharedContextData sharedData = ctx.getSharedContextData();
+            SharedMultiprocessingData sharedData = ctx.getSharedMultiprocessingData();
             gil.release(true);
             try {
                 pipe = sharedData.pipe();
@@ -291,7 +291,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         Object doWrite(int fd, PBytes data,
                         @CachedLibrary("data") PythonBufferAccessLibrary bufferLib,
                         @Cached GilNode gil) {
-            SharedContextData sharedData = getContext().getSharedContextData();
+            SharedMultiprocessingData sharedData = getContext().getSharedMultiprocessingData();
             gil.release(true);
             try {
                 byte[] bytes = bufferLib.getCopiedByteArray(data);
@@ -322,7 +322,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doRead(int fd, @SuppressWarnings("unused") Object length,
                         @Cached GilNode gil) {
-            SharedContextData sharedData = getContext().getSharedContextData();
+            SharedMultiprocessingData sharedData = getContext().getSharedMultiprocessingData();
             gil.release(true);
             try {
                 Object data = sharedData.takePipeData(this, fd, () -> {
@@ -350,7 +350,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         @Specialization
         PNone close(@SuppressWarnings("unused") int fd) {
             assert fd < 0;
-            SharedContextData sharedData = getContext().getSharedContextData();
+            SharedMultiprocessingData sharedData = getContext().getSharedMultiprocessingData();
             if (!sharedData.decrementFDRefCount(fd)) {
                 sharedData.closePipe(fd);
             }
@@ -374,7 +374,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaIntLossyNode castToJava,
                         @Cached GilNode gil) {
             ArrayBuilder<Integer> notEmpty = new ArrayBuilder<>();
-            SharedContextData sharedData = getContext().getSharedContextData();
+            SharedMultiprocessingData sharedData = getContext().getSharedMultiprocessingData();
             gil.release(true);
             try {
                 PSequence pSequence = constructListNode.execute(frame, rlist);

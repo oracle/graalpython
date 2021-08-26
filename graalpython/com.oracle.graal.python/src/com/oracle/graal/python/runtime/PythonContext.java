@@ -468,7 +468,7 @@ public final class PythonContext {
     public static final String CHILD_CONTEXT_DATA = "childContextData";
     @CompilationFinal private List<Integer> childContextFDs;
     private final ChildContextData childContextData;
-    private final SharedContextData sharedContextData;
+    private final SharedMultiprocessingData sharedMultiprocessingData;
 
     public static final class ChildContextData {
         private int exitCode = 0;
@@ -519,7 +519,7 @@ public final class PythonContext {
         }
     }
 
-    public static final class SharedContextData {
+    public static final class SharedMultiprocessingData {
 
         private int fdCounter = 0;
 
@@ -552,7 +552,7 @@ public final class PythonContext {
         /**
          * Decreases reference count for the given file descriptor.
          * 
-         * @return {@code true} if ref count was decreased, {@link false} if ref count isn't tracked
+         * @return {@code true} if ref count was decreased, {@code false} if ref count isn't tracked
          *         anymore.
          */
         @TruffleBoundary
@@ -676,7 +676,7 @@ public final class PythonContext {
         this.core = core;
         this.env = env;
         this.childContextData = (ChildContextData) env.getConfig().get(CHILD_CONTEXT_DATA);
-        this.sharedContextData = this.childContextData == null ? new SharedContextData() : childContextData.parentCtx.sharedContextData;
+        this.sharedMultiprocessingData = this.childContextData == null ? new SharedMultiprocessingData() : childContextData.parentCtx.sharedMultiprocessingData;
         this.handler = new AsyncHandler(this);
         this.sharedFinalizer = new AsyncHandler.SharedFinalizer(this);
         this.optionValues = PythonOptions.createOptionValuesStorage(env);
@@ -706,8 +706,8 @@ public final class PythonContext {
         return childContextData;
     }
 
-    public SharedContextData getSharedContextData() {
-        return sharedContextData;
+    public SharedMultiprocessingData getSharedMultiprocessingData() {
+        return sharedMultiprocessingData;
     }
 
     public long spawnTruffleContext(int fd, int sentinel, int[] fdsToKeep) {
@@ -728,7 +728,7 @@ public final class PythonContext {
         for (int fdToKeep : fdsToKeep) {
             // prevent file descriptors from being closed when passed to another "process",
             // equivalent to fds_to_keep arg in posix fork_exec
-            getSharedContextData().incrementFDRefCount(fdToKeep);
+            getSharedMultiprocessingData().incrementFDRefCount(fdToKeep);
         }
         start(thread);
         return tid;
@@ -786,7 +786,7 @@ public final class PythonContext {
                             LOGGER.log(Level.FINE, t, () -> "exception while closing spawned child context");
                         }
                     }
-                    data.parentCtx.sharedContextData.closePipe(sentinel);
+                    data.parentCtx.sharedMultiprocessingData.closePipe(sentinel);
                 }
             } catch (ThreadDeath td) {
                 // as a result of of TruffleContext.closeCancelled()
@@ -1403,8 +1403,8 @@ public final class PythonContext {
         }
         cleanupHPyResources();
         for (int fd : getChildContextFDs()) {
-            if (!getSharedContextData().decrementFDRefCount(fd)) {
-                getSharedContextData().closePipe(fd);
+            if (!getSharedMultiprocessingData().decrementFDRefCount(fd)) {
+                getSharedMultiprocessingData().closePipe(fd);
             }
         }
         mainThread = null;
