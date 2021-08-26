@@ -2148,14 +2148,13 @@ def update_hpy_import_cmd(args):
     import_files(hpy_repo_include_dir, header_dest)
     remove_inexistent_files(hpy_repo_include_dir, header_dest)
 
-    # argparse sources go into 'lib-graalpython/module/hpy/devel/src'
-    argparse_file_src = join(hpy_repo_runtime_dir, "argparse.c")
-    if not os.path.exists(argparse_file_src):
-        mx.abort("File '{}' is missing but required.".format(argparse_file_src))
-    argparse_file_dest = join(_get_core_home(), "modules", "hpy", "devel", "src", "argparse.c")
-    import_file(argparse_file_src, argparse_file_dest)
 
-    # 'ctx_tracker.c' goes to 'com.oracle.graal.python.jni/src/ctx_tracker.c'
+    # runtime sources go into 'lib-graalpython/module/hpy/devel/src'
+    runtime_files_dest = join(_get_core_home(), "modules", "hpy", "devel", "src")
+    import_files(hpy_repo_runtime_dir, runtime_files_dest)
+    remove_inexistent_files(hpy_repo_runtime_dir, runtime_files_dest)
+
+    # 'ctx_tracker.c' also goes to 'com.oracle.graal.python.jni/src/ctx_tracker.c'
     tracker_file_src = join(hpy_repo_runtime_dir, "ctx_tracker.c")
     if not os.path.exists(tracker_file_src):
         mx.abort("File '{}' is missing but required.".format(tracker_file_src))
@@ -2179,7 +2178,7 @@ def update_hpy_import_cmd(args):
     spec.loader.exec_module(version_module)
     imported_version = version_module.__version__
 
-    SUITE.vc.git_command(SUITE.dir, ["add", header_dest, test_files_dest, argparse_file_dest, tracker_file_dest])
+    SUITE.vc.git_command(SUITE.dir, ["add", header_dest, test_files_dest, runtime_files_dest, tracker_file_dest])
     input("Check that the updated files look as intended, then press RETURN...")
     SUITE.vc.commit(SUITE.dir, "Update HPy inlined files: %s" % import_version)
     SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
