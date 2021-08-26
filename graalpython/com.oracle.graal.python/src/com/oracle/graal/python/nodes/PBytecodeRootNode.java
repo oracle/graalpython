@@ -44,7 +44,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -264,9 +263,8 @@ public final class PBytecodeRootNode extends PRootNode {
         Object[] freelocals = new Object[freevars.length];
 
         int i = 0;
+        int oparg = Byte.toUnsignedInt(bytecode[i + 1]);
         while (true) {
-            int oparg = Byte.toUnsignedInt(bytecode[i + 1]);
-
             switch (bytecode[i]) {
                 case NOP:
                     break;
@@ -549,16 +547,16 @@ public final class PBytecodeRootNode extends PRootNode {
                     break;
                 case STORE_NAME:
                     {
-                        String name = names[oparg];
-                        WriteGlobalNode writeGlobalNode = insertChildNode((a) -> WriteGlobalNode.create(a), i, name);
+                        String varname = names[oparg];
+                        WriteGlobalNode writeGlobalNode = insertChildNode((a) -> WriteGlobalNode.create(a), i, varname);
                         writeGlobalNode.executeObject(frame, stack[stackTop]);
                         stack[stackTop--] = null;
                     }
                     break;
                 case DELETE_NAME:
                     {
-                        String name = names[oparg];
-                        DeleteGlobalNode deleteGlobalNode = insertChildNode((a) -> DeleteGlobalNode.create(a), i, name);
+                        String varname = names[oparg];
+                        DeleteGlobalNode deleteGlobalNode = insertChildNode((a) -> DeleteGlobalNode.create(a), i, varname);
                         deleteGlobalNode.executeVoid(frame);
                     }
                     break;
@@ -567,7 +565,7 @@ public final class PBytecodeRootNode extends PRootNode {
                     throw new RuntimeException("unpack bytecodes");
                 case STORE_ATTR:
                     {
-                        String name = names[oparg];
+                        String varname = names[oparg];
                         Object owner = stack[stackTop];
                         stack[stackTop--] = null;
                         Object value = stack[stackTop];
@@ -582,8 +580,8 @@ public final class PBytecodeRootNode extends PRootNode {
                 case LOAD_NAME:
                 case LOAD_GLOBAL: // we use the same node for both of these, unlike CPython
                     {
-                        String name = names[oparg];
-                        ReadGlobalOrBuiltinNode read = insertChildNode((a) -> ReadGlobalOrBuiltinNode.create(a), i, name);
+                        String varname = names[oparg];
+                        ReadGlobalOrBuiltinNode read = insertChildNode((a) -> ReadGlobalOrBuiltinNode.create(a), i, varname);
                         stack[++stackTop] = read.execute(frame);
                     }
                     break;
@@ -628,9 +626,9 @@ public final class PBytecodeRootNode extends PRootNode {
                 case LOAD_ATTR:
                     {
                         PyObjectGetAttr getAttr = insertChildNode(() -> PyObjectGetAttr.create(), i);
-                        String name = names[oparg];
+                        String varname = names[oparg];
                         Object owner = stack[stackTop];
-                        Object value = getAttr.execute(frame, owner, name);
+                        Object value = getAttr.execute(frame, owner, varname);
                         stack[stackTop] = value;
                     }
                     break;
@@ -639,7 +637,7 @@ public final class PBytecodeRootNode extends PRootNode {
                 case IMPORT_NAME:
                     {
                         CastToJavaIntExactNode castNode = insertChildNode(() -> CastToJavaIntExactNode.create(), i);
-                        String name = names[oparg];
+                        String modname = names[oparg];
                         Object fromlist = stack[stackTop];
                         stack[stackTop--] = null;
                         String[] fromlistArg;
@@ -654,7 +652,7 @@ public final class PBytecodeRootNode extends PRootNode {
                         }
                         int level = castNode.execute(stack[stackTop]);
                         ImportName importNode = insertChildNode(() -> ImportName.create(), i + 1);
-                        Object result = importNode.execute(frame, context, builtins, name, globals, fromlistArg, level);
+                        Object result = importNode.execute(frame, context, builtins, modname, globals, fromlistArg, level);
                         stack[stackTop] = result;
                     }
                     break;
@@ -663,6 +661,7 @@ public final class PBytecodeRootNode extends PRootNode {
                     throw new RuntimeException("import start / import from");
                 case JUMP_FORWARD:
                     i += oparg;
+                    oparg = Byte.toUnsignedInt(bytecode[i + 1]);
                     continue;
                 case POP_JUMP_IF_FALSE:
                     {
@@ -671,6 +670,7 @@ public final class PBytecodeRootNode extends PRootNode {
                         stack[stackTop--] = null;
                         if (!isTrue.execute(frame, cond)) {
                             i = oparg;
+                            oparg = Byte.toUnsignedInt(bytecode[i + 1]);
                             continue;
                         }
                     }
@@ -682,6 +682,7 @@ public final class PBytecodeRootNode extends PRootNode {
                         stack[stackTop--] = null;
                         if (isTrue.execute(frame, cond)) {
                             i = oparg;
+                            oparg = Byte.toUnsignedInt(bytecode[i + 1]);
                             continue;
                         }
                     }
@@ -692,6 +693,7 @@ public final class PBytecodeRootNode extends PRootNode {
                         Object cond = stack[stackTop];
                         if (!isTrue.execute(frame, cond)) {
                             i = oparg;
+                            oparg = Byte.toUnsignedInt(bytecode[i + 1]);
                             continue;
                         } else {
                             stack[stackTop--] = null;
@@ -704,6 +706,7 @@ public final class PBytecodeRootNode extends PRootNode {
                         Object cond = stack[stackTop];
                         if (isTrue.execute(frame, cond)) {
                             i = oparg;
+                            oparg = Byte.toUnsignedInt(bytecode[i + 1]);
                             continue;
                         } else {
                             stack[stackTop--] = null;
@@ -712,6 +715,7 @@ public final class PBytecodeRootNode extends PRootNode {
                     break;
                 case JUMP_ABSOLUTE:
                     i = oparg;
+                    oparg = Byte.toUnsignedInt(bytecode[i + 1]);
                     continue;
                 case GET_ITER:
                     stack[stackTop] = insertChildNode(() -> PyObjectGetIter.create(), i).execute(frame, stack[stackTop]);
@@ -868,7 +872,7 @@ public final class PBytecodeRootNode extends PRootNode {
                             defaults = ((PTuple) stack[stackTop]).getSequenceStorage().getInternalArray();
                             stack[stackTop--] = null;
                         }
-                        stack[++stackTop] = factory.createFunction(qualname, null, codeobj, (PythonObject) globals, (Object[]) defaults, (PKeyword[]) kwdefaults, (PCell[]) closure);
+                        stack[++stackTop] = factory.createFunction(qualname, null, codeobj, (PythonObject) globals, defaults, kwdefaults, closure);
                         if (annotations != null) {
                             DynamicObjectLibrary.getUncached().put((DynamicObject)stack[stackTop], __ANNOTATIONS__, annotations);
                         }
@@ -880,14 +884,15 @@ public final class PBytecodeRootNode extends PRootNode {
                     throw new RuntimeException("FORMAT_VALUE");
                 case EXTENDED_ARG:
                     i += 2;
-                    bc = Byte.toUnsignedInt(bytecode[i]);
                     oparg = Byte.toUnsignedInt(bytecode[i + 1]) | (oparg << 8);
                     continue;
                 default:
                     throw new RuntimeException("not implemented bytecode");
             }
 
+            // prepare next loop
             i += 2;
+            oparg = Byte.toUnsignedInt(bytecode[i + 1]);
         }
     }
 
@@ -967,7 +972,6 @@ public final class PBytecodeRootNode extends PRootNode {
     private static final byte POP_BLOCK =                     87;
     private static final byte END_FINALLY =                   88;
     private static final byte POP_EXCEPT =                    89;
-    private static final byte HAVE_ARGUMENT =                 90;
     private static final byte STORE_NAME =                    90;
     private static final byte DELETE_NAME =                   91;
     private static final byte UNPACK_SEQUENCE =               92;
