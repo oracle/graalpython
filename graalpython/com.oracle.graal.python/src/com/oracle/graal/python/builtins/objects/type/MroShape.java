@@ -147,7 +147,7 @@ public final class MroShape {
             if (mroIndex == NOT_FOUND_INDEX) {
                 return PNone.NO_VALUE;
             } else {
-                Object result = readNode.execute(PythonManagedClass.cast(mro.getItemNormalized(mroIndex)), key);
+                Object result = readNode.execute(mro.getItemNormalized(mroIndex), key);
                 // We must not get NO_VALUE because that would mean the MROShape contains a class
                 // with NO_VALUE properties and cannot be used to lookup properties only by shapes
                 assert result != PNone.NO_VALUE : mro.getClassName() + "." + key;
