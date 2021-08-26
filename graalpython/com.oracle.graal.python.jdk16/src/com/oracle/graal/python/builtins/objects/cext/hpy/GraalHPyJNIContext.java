@@ -67,7 +67,7 @@ import jdk.incubator.foreign.ResourceScope;
  * {@link GraalHPyContextFunctions}.
  */
 @ExportLibrary(InteropLibrary.class)
-public final class GraalHPyContextJNI implements TruffleObject {
+public final class GraalHPyJNIContext implements TruffleObject {
 
     private static final HashMap<Class<?>, MemoryLayout> CLINKER_VALUE_LAYOUTS = new HashMap<>();
     static {
@@ -76,9 +76,9 @@ public final class GraalHPyContextJNI implements TruffleObject {
         CLINKER_VALUE_LAYOUTS.put(double.class, CLinker.C_DOUBLE);
     }
 
-    private final GraalHPyContextJNI context;
+    private final GraalHPyContext context;
 
-    public GraalHPyContextJNI(GraalHPyContext context) {
+    public GraalHPyJNIContext(GraalHPyContext context) {
         this.context = context;
     }
 

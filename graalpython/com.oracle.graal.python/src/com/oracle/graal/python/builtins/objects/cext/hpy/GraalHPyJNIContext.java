@@ -62,9 +62,9 @@ import com.oracle.truffle.api.nodes.Node;
  * {@link GraalHPyContextFunctions}.
  */
 @ExportLibrary(InteropLibrary.class)
-final class GraalHPyContextJNI implements TruffleObject {
+final class GraalHPyJNIContext implements TruffleObject {
     
-    GraalHPyContextJNI(@SuppressWarnings("unused") GraalHPyContext context) {
+    GraalHPyJNIContext(@SuppressWarnings("unused") GraalHPyContext context) {
     }
 
     @ExportMessage
