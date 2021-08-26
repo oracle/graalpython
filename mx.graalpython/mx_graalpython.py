@@ -143,7 +143,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         args.insert(0, "--python.CAPI=%s" % capi_home)
         args.insert(0, "--experimental-options")
         experimental_opt_added = True
-    
+
     if not any(arg.startswith("--python.JNIHome") for arg in args):
         args.insert(0, "--python.JNIHome=" + _get_jni_home())
         if not experimental_opt_added:
