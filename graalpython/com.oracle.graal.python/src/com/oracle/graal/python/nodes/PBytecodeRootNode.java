@@ -125,6 +125,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -235,6 +236,7 @@ public final class PBytecodeRootNode extends PRootNode {
     }
 
     @BytecodeInterpreterSwitch
+    @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
     private Object executeLoop(VirtualFrame frame, PythonContext context) {
         int stackTop = -1;
         Object globals = PArguments.getGlobals(frame);
