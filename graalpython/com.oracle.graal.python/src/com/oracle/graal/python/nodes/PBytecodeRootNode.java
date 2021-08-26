@@ -123,6 +123,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -153,11 +154,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @CompilationFinal private Object osrMetadata;
 
+    private static final FrameDescriptor DESCRIPTOR = new FrameDescriptor();
+
     public PBytecodeRootNode(TruffleLanguage<?> language, Signature sign, byte[] bc,
                     String filename, String name, int firstlineno,
                     Object[] consts, String[] names, String[] varnames, String[] freevars, String[] cellvars,
                     int stacksize) {
-        super(language);
+        super(language, DESCRIPTOR);
         this.signature = sign;
         this.bytecode = bc;
         this.adoptedNodes = new Node[bc.length];
@@ -208,12 +211,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @ValueType
     private static final class InterpreterState {
+        final Object[] arguments;
         final Object[] stack;
         final Object[] fastlocals;
         final Object[] celllocals;
         final Object[] freelocals;
 
-        InterpreterState(Object[] stack, Object[] fastlocals, Object[] celllocals, Object[] freelocals) {
+        InterpreterState(Object[] arguments, Object[] stack, Object[] fastlocals, Object[] celllocals, Object[] freelocals) {
+            this.arguments = arguments;
             this.stack = stack;
             this.fastlocals = fastlocals;
             this.celllocals = celllocals;
@@ -249,7 +254,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             Object[] celllocals = new Object[cellvars.length];
             Object[] freelocals = new Object[freevars.length];
 
-            InterpreterState state = new InterpreterState(stack, fastlocals, celllocals, freelocals);
+            InterpreterState state = new InterpreterState(args, stack, fastlocals, celllocals, freelocals);
             return executeOSR(frame, 0xffff, state);
         } finally {
             calleeContext.exit(frame, this);
@@ -291,13 +296,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @Override
     @BytecodeInterpreterSwitch
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
-    public Object executeOSR(VirtualFrame frame, int target, Object interpreterState) {
+    public Object executeOSR(VirtualFrame ignoredFrame, int target, Object interpreterState) {
         PythonContext context = PythonContext.get(this);
-        Object globals = PArguments.getGlobals(frame);
         PythonModule builtins = context.getBuiltins();
-        Object locals = PArguments.getCustomLocals(frame);
 
         InterpreterState state = (InterpreterState)interpreterState;
+        // We create a fresh frame here, many of our nodes care about frame arguments, none about any slots
+        VirtualFrame frame = Truffle.getRuntime().createVirtualFrame(state.arguments, DESCRIPTOR);
+        Object globals = PArguments.getGlobals(state.arguments);
+        // Object locals = PArguments.getCustomLocals(frame); // TODO: deal with custom locals
         Object[] stack = state.stack;
         Object[] fastlocals = state.fastlocals;
         Object[] celllocals = state.celllocals;
