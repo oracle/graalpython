@@ -235,7 +235,7 @@ MESO_BENCHMARKS = {
     'lavaMD_rodinia': ITER_10 + ['32'],
     'lavaMD_rodinia-sized2': ITER_10 + ['48'],
     'pathfinder_rodinia': ITER_10 + ['10'],
-    'pathfinder_rodinia-sized2': ITER_10 + ['30'],
+    'pathfinder_rodinia-sized2': ITER_10 + ['40'],
     'particlefilter_rodinia': ITER_10 + ['2048'],
     'srad_rodinia': ITER_10 + ['100'],
     'srad_rodinia-sized2': ITER_10 + ['1000'],
