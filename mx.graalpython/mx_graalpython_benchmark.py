@@ -347,6 +347,13 @@ class GraalPythonVmBase(GuestVm):
             cp.append(self._cp_suffix)
         return cp
 
+    @staticmethod
+    def _remove_vm_prefix(argument):
+        if argument.startswith('--vm.'):
+            return '-' + argument.strip('--vm.')
+        else:
+            return argument
+
     def run(self, cwd, args):
         _check_vm_args(self.name(), args)
         extra_polyglot_args = self.get_extra_polyglot_args()
@@ -356,6 +363,7 @@ class GraalPythonVmBase(GuestVm):
             return self.run_in_graalvm(cwd, args, extra_polyglot_args, host_vm)
 
         # Otherwise, we're running from the source tree
+        args = [self._remove_vm_prefix(x) for x in args]
         truffle_options = [
             # "-Dpolyglot.engine.CompilationExceptionsAreFatal=true"
         ]
@@ -733,7 +741,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
             remaining = ["-i", str(iterations)] + (remaining if remaining else [])
 
         if self._checkup:
-            vm_options += ['--engine.TraceCompilation', '-XX:+PrintGC']
+            vm_options += ['--engine.TraceCompilation', '--vm.XX:+PrintGC']
 
         return vm_options, remaining
 

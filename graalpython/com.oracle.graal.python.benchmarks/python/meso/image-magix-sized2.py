@@ -111,14 +111,10 @@ class BilinImage(Image):
 
 
 SZ = 20
-import java
-INPUT_DATA = java.type("int[]")(SZ * SZ)
-for i in range(SZ * SZ):
-    INPUT_DATA[i] = i
 
 
 def measure(num):
-    img = Image(SZ, SZ, data=INPUT_DATA)
+    img = Image(SZ, SZ, data=list(range(SZ * SZ)))
     for i in range(num):
         img = img.sobel(horizontal=True, vertical=True)
         img = img.fisheye(bilinear=True, fraction=3)
@@ -129,14 +125,20 @@ def __benchmark__(num=10000):
     return measure(num)
 
 
+def java_embedded_bench_entrypoint(num=10000):
+    measure(int(num))
+
+
 if __name__ == '__main__':
     import sys
-    import time
-    start = time.time()
-    if len(sys.argv) >= 2:
-        num = int(sys.argv[1])
-        img = __benchmark__(num)
-    else:
-        img = __benchmark__(2)
-    print(img.data)
-    print("%s took %s s" % (__file__, time.time() - start))
+    if not (len(sys.argv) == 1 and sys.argv[0] == 'java_embedding_bench'):
+        import time
+        SZ = 5
+        start = time.time()
+        if len(sys.argv) >= 2:
+            num = int(sys.argv[1])
+            img = __benchmark__(num)
+        else:
+            img = __benchmark__(2)
+        print(img.data)
+        print("%s took %s s" % (__file__, time.time() - start))
