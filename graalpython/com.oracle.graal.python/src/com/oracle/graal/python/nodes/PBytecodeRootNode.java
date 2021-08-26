@@ -962,6 +962,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return kwdefaults;
     }
 
+    // TODO: Below are 119 bytecodes. That's less than 128, so we can compact them and then use the
+    // sign bit to quicken bytecodes. Thus we could initially just set the sign bit and use an
+    // uncached node, then if we execute with the sign bit, we create a cached node for the
+    // bytecode and optimize from there.
+
     private static final byte POP_TOP =                        1;
     private static final byte ROT_TWO =                        2;
     private static final byte ROT_THREE =                      3;
