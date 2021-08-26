@@ -122,10 +122,9 @@ import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.BytecodeOSRNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -154,23 +153,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @CompilationFinal private Object osrMetadata;
 
-    private static final FrameDescriptor bytecodeFrameDescriptor = new FrameDescriptor();
-    private static final FrameSlot STACK;
-    private static final FrameSlot LOCALS;
-    private static final FrameSlot CELLVARS;
-    private static final FrameSlot FREEVARS;
-    static {
-        STACK = bytecodeFrameDescriptor.addFrameSlot("stack", FrameSlotKind.Object);
-        LOCALS = bytecodeFrameDescriptor.addFrameSlot("locals", FrameSlotKind.Object);
-        CELLVARS = bytecodeFrameDescriptor.addFrameSlot("cellvars", FrameSlotKind.Object);
-        FREEVARS = bytecodeFrameDescriptor.addFrameSlot("freevars", FrameSlotKind.Object);
-    }
-
     public PBytecodeRootNode(TruffleLanguage<?> language, Signature sign, byte[] bc,
                     String filename, String name, int firstlineno,
                     Object[] consts, String[] names, String[] varnames, String[] freevars, String[] cellvars,
                     int stacksize) {
-        super(language, bytecodeFrameDescriptor);
+        super(language);
         this.signature = sign;
         this.bytecode = bc;
         this.adoptedNodes = new Node[bc.length];
@@ -219,15 +206,31 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return false;
     }
 
+    @ValueType
+    private static final class InterpreterState {
+        final Object[] stack;
+        final Object[] fastlocals;
+        final Object[] celllocals;
+        final Object[] freelocals;
+
+        InterpreterState(Object[] stack, Object[] fastlocals, Object[] celllocals, Object[] freelocals) {
+            this.stack = stack;
+            this.fastlocals = fastlocals;
+            this.celllocals = celllocals;
+            this.freelocals = freelocals;
+        }
+    }
+
     @Override
     public Object execute(VirtualFrame frame) {
         PythonContext context = PythonContext.get(this);
         calleeContext.enter(frame);
         try {
-            int stackTop = -1;
+            assert stacksize < Short.MAX_VALUE : "stacksize cannot be larger than short range";
+            assert bytecode.length < Math.pow(2, Short.SIZE) : "bytecode cannot be longer than unsigned short range";
 
             // CPython has an array of object called "localsplus" with everything. We use separate
-            // arrays
+            // arrays.
             Object[] stack = new Object[stacksize];
             Object[] args = frame.getArguments();
             Object[] fastlocals = new Object[varnames.length];
@@ -246,12 +249,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             Object[] celllocals = new Object[cellvars.length];
             Object[] freelocals = new Object[freevars.length];
 
-            frame.setObject(STACK, stack);
-            frame.setObject(LOCALS, fastlocals);
-            frame.setObject(CELLVARS, celllocals);
-            frame.setObject(FREEVARS, freelocals);
-
-            return executeOSR(frame, 0, stackTop);
+            InterpreterState state = new InterpreterState(stack, fastlocals, celllocals, freelocals);
+            return executeOSR(frame, 0xffff, state);
         } finally {
             calleeContext.exit(frame, this);
         }
@@ -292,19 +291,20 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @Override
     @BytecodeInterpreterSwitch
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
-    public Object executeOSR(VirtualFrame frame, int target, Object stackTopArgument) {
-        int stackTop = stackTopArgument;
+    public Object executeOSR(VirtualFrame frame, int target, Object interpreterState) {
         PythonContext context = PythonContext.get(this);
         Object globals = PArguments.getGlobals(frame);
         PythonModule builtins = context.getBuiltins();
         Object locals = PArguments.getCustomLocals(frame);
 
-        Object[] stack = (Object[])frame.getObject(STACK);
-        Object[] fastlocals = (Object[])frame.getObject(LOCALS);
-        Object[] cellvars = (Object[])frame.getObject(CELLVARS);
-        Object[] freevars = (Object[])frame.getObject(FREEVARS);
+        InterpreterState state = (InterpreterState)interpreterState;
+        Object[] stack = state.stack;
+        Object[] fastlocals = state.fastlocals;
+        Object[] celllocals = state.celllocals;
+        Object[] freelocals = state.freelocals;
 
-        int i = target;
+        int stackTop = (short)target;
+        int i = (target >> Short.SIZE) & 0xffff;
         int oparg = Byte.toUnsignedInt(bytecode[i + 1]);
         while (true) {
             switch (bytecode[i]) {
@@ -758,7 +758,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case JUMP_ABSOLUTE:
                     if (oparg < i) {
                         if (BytecodeOSRNode.pollOSRBackEdge(this)) {
-                            Object osrResult = BytecodeOSRNode.tryOSR(this, oparg, stackTop, null, frame);
+                            Object osrResult = BytecodeOSRNode.tryOSR(this, (oparg << Short.SIZE) | stackTop, interpreterState, null, frame);
                             if (osrResult != null) {
                                 return osrResult;
                             }
