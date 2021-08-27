@@ -406,7 +406,7 @@ static HPy augment_UnicodeFromWideChar(HPyContext ctx, const wchar_t *u, HPy_ssi
 
 void initDirectFastPaths(HPyContext context) {
     LOG("%p", context);
-    context->name = "augmented!";
+    context->name = "HPy Universal ABI (GraalVM backend, JNI)";
     
     original_FloatFromDouble = context->ctx_Float_FromDouble;
     context->ctx_Float_FromDouble = augment_FloatFromDouble;
