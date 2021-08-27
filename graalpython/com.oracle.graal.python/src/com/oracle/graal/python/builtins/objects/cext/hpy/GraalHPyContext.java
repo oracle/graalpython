@@ -185,6 +185,7 @@ import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -1235,7 +1236,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         UpcallFloatAsDouble,
         UpcallFloatFromDouble,
         UpcallUnicodeFromWideChar,
-        UpcallUnicodeFromJCharArray;
+        UpcallUnicodeFromJCharArray,
+        UpcallDictNew,
+        UpcallListNew;
 
         long count;
 
@@ -1624,6 +1627,27 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     public final long ctxUnicodeFromJCharArray(char[] arr) {
         Counter.UpcallUnicodeFromJCharArray.increment();
         return createHandle(new String(arr, 0, arr.length)).getId(this, ConditionProfile.getUncached());
+    }
+
+    public final long ctxDictNew() {
+        Counter.UpcallDictNew.increment();
+        PDict dict = PythonObjectFactory.getUncached().createDict();
+        return createHandle(dict).getId(this, ConditionProfile.getUncached());
+    }
+
+    public final long ctxListNew(long llen) {
+        try {
+            Counter.UpcallListNew.increment();
+            int len = CastToJavaIntExactNode.getUncached().execute(llen);
+            Object[] data = new Object[len];
+            Arrays.fill(data, PNone.NONE);
+            PList list = PythonObjectFactory.getUncached().createList(data);
+            return createHandle(list).getId(this, ConditionProfile.getUncached());
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+            // NULL handle
+            return 0;
+        }
     }
 
     @ExportMessage

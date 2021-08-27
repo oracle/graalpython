@@ -82,12 +82,15 @@ static JNIEnv* jniEnv;
     UPCALL(ListCheck, SIG_HPY, SIG_INT) \
     UPCALL(UnicodeFromWideChar, SIG_PTR SIG_SIZE_T, SIG_HPY) \
     UPCALL(UnicodeFromJCharArray, SIG_JCHARARRAY, SIG_HPY) \
+    UPCALL(DictNew, , SIG_HPY) \
+    UPCALL(ListNew, SIG_SIZE_T, SIG_HPY) \
 
 #define UPCALL(name, jniSigArgs, jniSigRet) static jmethodID jniMethod_ ## name;
 ALL_UPCALLS
 #undef UPCALL
 
 #define DO_UPCALL_HPY(jni_ctx, name, ...) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
+#define DO_UPCALL_HPY_NOARGS(jni_ctx, name) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name)})
 #define DO_UPCALL_TRACKER(jni_ctx, name, ...) ((HPyTracker){(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
 #define DO_UPCALL_PTR(jni_ctx, name, ...) (void*) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
 #define DO_UPCALL_SIZE_T(jni_ctx, name, ...) (HPy_ssize_t) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
@@ -168,6 +171,14 @@ static HPy ctx_TypeGenericNew_jni(HPyContext ctx, HPy type, _HPyPtr args, HPy_ss
 
 static HPy ctx_Unicode_FromWideChar_jni(HPyContext ctx, const wchar_t *arr, HPy_ssize_t idx) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), UnicodeFromWideChar, (PTR_UP) arr, (SIZE_T_UP) idx);
+}
+
+static HPy ctx_DictNew_jni(HPyContext ctx) {
+    return DO_UPCALL_HPY_NOARGS(CONTEXT_INSTANCE(ctx), DictNew);
+}
+
+static HPy ctx_ListNew_jni(HPyContext ctx, HPy_ssize_t len) {
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ListNew, (SIZE_T_UP) len);
 }
 
 //*************************
@@ -465,6 +476,9 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_SetItem = ctx_SetItem_jni;
 
     context->ctx_Unicode_FromWideChar = ctx_Unicode_FromWideChar_jni;
+
+    context->ctx_Dict_New = ctx_DictNew_jni;
+    context->ctx_List_New = ctx_ListNew_jni;
 
     context->ctx_Tracker_New = ctx_Tracker_New;
     context->ctx_Tracker_Add = ctx_Tracker_Add;

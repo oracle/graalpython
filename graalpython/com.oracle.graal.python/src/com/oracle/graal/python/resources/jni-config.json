@@ -4,6 +4,7 @@
   "methods":[
     {"name":"ctxCast","parameterTypes":["long"] }, 
     {"name":"ctxClose","parameterTypes":["long"] }, 
+    {"name":"ctxDictNew","parameterTypes":[] }, 
     {"name":"ctxDup","parameterTypes":["long"] }, 
     {"name":"ctxFloatAsDouble","parameterTypes":["long"] }, 
     {"name":"ctxFloatFromDouble","parameterTypes":["double"] }, 
@@ -12,6 +13,7 @@
     {"name":"ctxSetItemi","parameterTypes":["long","long","long"] }, 
     {"name":"ctxLength","parameterTypes":["long"] }, 
     {"name":"ctxListCheck","parameterTypes":["long"] }, 
+    {"name":"ctxListNew","parameterTypes":["long"] }, 
     {"name":"ctxLongAsLong","parameterTypes":["long"] }, 
     {"name":"ctxLongFromLong","parameterTypes":["long"] },
     {"name":"ctxNew","parameterTypes":["long","long"] }, 
