@@ -211,7 +211,7 @@ final class GraalHPyJNIContext implements TruffleObject {
                                         (long) arguments[3], convertArgNode.execute(arguments, 4));
                         break;
                     case DESTROYFUNC:
-                        GraalHPyContext.hpyCallDestroyFunc((long) arguments[0], receiver.pointer);
+                        GraalHPyContext.hpyCallDestroyFunc(convertArgNode.execute(arguments, 0), receiver.pointer);
                         result = 0;
                         break;
                     case FREEFUNC:
