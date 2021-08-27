@@ -216,7 +216,7 @@ MESO_BENCHMARKS = {
     'image-magix': ITER_10 + ['10000'],
     'image-magix-sized2': ITER_10 + ['30000'],
     'parrot-b2': ITER_10 + ['200'],
-    'threadring': ITER_10 + ['100_000_000'],
+    'threadring': ITER_25 + ['100_000_000'],
     'regexdna': ITER_25 + [],
     'regexdna-sized2': ITER_25 + ['4'],
     'knucleotide': ITER_25 + [],
@@ -231,14 +231,14 @@ MESO_BENCHMARKS = {
     'mm-sized2': ITER_15 + ['350'],
     # Rodinia
     'backprop_rodinia': ITER_10 + ['1048576'],
-    'backprop_rodinia-sized2': ITER_10 + ['8388608'],
+    'backprop_rodinia-sized2': ITER_15 + ['8388608'],
     'lavaMD_rodinia': ITER_10 + ['32'],
-    'lavaMD_rodinia-sized2': ITER_10 + ['48'],
+    'lavaMD_rodinia-sized2': ITER_15 + ['48'],
     'pathfinder_rodinia': ITER_10 + ['10'],
-    'pathfinder_rodinia-sized2': ITER_10 + ['40'],
+    'pathfinder_rodinia-sized2': ITER_25 + ['50'],
     'particlefilter_rodinia': ITER_10 + ['2048'],
     'srad_rodinia': ITER_10 + ['100'],
-    'srad_rodinia-sized2': ITER_10 + ['1000'],
+    'srad_rodinia-sized2': ITER_15 + ['1000'],
 }
 
 
