@@ -1477,11 +1477,12 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                     }
 
                     if (dictStorage instanceof HashMapStorage) {
-                        ((HashMapStorage) dictStorage).put((String) key, null);
+                        ((HashMapStorage) dictStorage).put((String) key, value);
+                        return 0;
                     }
-                } else {
-                    dict.setDictStorage(HashingStorageLibrary.getUncached().setItem(dictStorage, key, value));
+                    // fall through to generic case
                 }
+                dict.setDictStorage(HashingStorageLibrary.getUncached().setItem(dictStorage, key, value));
                 return 0;
             } else if (clazz == PythonBuiltinClassType.PList && PGuards.isInteger(key) && ctxListSetItem(receiver, ((Number) key).longValue(), hValue)) {
                 return 0;
