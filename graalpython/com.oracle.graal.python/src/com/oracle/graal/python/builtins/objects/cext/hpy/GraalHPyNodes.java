@@ -1256,7 +1256,7 @@ public class GraalHPyNodes {
                 return hpyContext;
             }
         }
-        
+
         public abstract Object execute(GraalHPyContext hpyContext, long bits);
 
         @Specialization
@@ -1330,15 +1330,11 @@ public class GraalHPyNodes {
     @ImportStatic(PGuards.class)
     public abstract static class HPyAsHandleNode extends CExtToNativeNode {
 
-        @Specialization
-        static long doDouble(@SuppressWarnings("unused") GraalHPyContext hpyContext, double value) {
-            return GraalHPyBoxing.boxDouble(value);
-        }
-
-        @Specialization
-        static long doDouble(@SuppressWarnings("unused") GraalHPyContext hpyContext, int value) {
-            return GraalHPyBoxing.boxInt(value);
-        }
+        /*
+         * NOTE: We *MUST NOT* box values here because we don't know where the handle will be given
+         * to. In case we give it to LLVM code, we must still have an object that emulates the HPy
+         * struct.
+         */
 
         @Specialization(guards = "isNoValue(object)")
         @SuppressWarnings("unused")
@@ -1346,12 +1342,12 @@ public class GraalHPyNodes {
             return GraalHPyHandle.NULL_HANDLE;
         }
 
-        @Specialization(guards = {"!isNoValue(object)", "!isDouble(object)", "!isInt(object)"}, assumptions = "noDebugModeAssumption()")
+        @Specialization(guards = {"!isNoValue(object)"}, assumptions = "noDebugModeAssumption()")
         static GraalHPyHandle doObject(CExtContext hpyContext, Object object) {
             return CompilerDirectives.castExact(hpyContext, GraalHPyContext.class).createHandle(object);
         }
 
-        @Specialization(guards = {"!isNoValue(object)", "!isDouble(object)", "!isInt(object)"})
+        @Specialization(guards = {"!isNoValue(object)"})
         static GraalHPyHandle doDebugObject(GraalHPyContext hpyContext, Object object,
                         @Cached("createClassProfile()") ValueProfile contextProfile) {
             return contextProfile.profile(hpyContext).createHandle(object);

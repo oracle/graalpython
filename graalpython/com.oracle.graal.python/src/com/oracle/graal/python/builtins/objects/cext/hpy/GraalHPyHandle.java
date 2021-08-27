@@ -81,7 +81,6 @@ public final class GraalHPyHandle implements TruffleObject {
 
     GraalHPyHandle(Object delegate) {
         assert delegate != null : "HPy handles to Java null are not allowed";
-        assert !GraalHPyBoxing.isBoxablePrimitive(delegate) : "should be NaN boxed instead";
         this.delegate = delegate;
         this.id = -1;
     }
@@ -93,6 +92,7 @@ public final class GraalHPyHandle implements TruffleObject {
     public int getId(GraalHPyContext context, ConditionProfile hasIdProfile) {
         int result = id;
         if (!isPointer(hasIdProfile)) {
+            assert !GraalHPyBoxing.isBoxablePrimitive(delegate) : "allocating handle for value that could be boxed";
             result = context.getHPyHandleForObject(this);
             id = result;
         }
@@ -102,7 +102,7 @@ public final class GraalHPyHandle implements TruffleObject {
     @ExportMessage
     boolean isPointer(
                     @Exclusive @Cached ConditionProfile isNativeProfile) {
-        return isNativeProfile.profile(id != -1);
+        return isNativeProfile.profile(id != -1 || delegate instanceof Integer || delegate instanceof Double);
     }
 
     @ExportMessage
@@ -113,7 +113,14 @@ public final class GraalHPyHandle implements TruffleObject {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnsupportedMessageException.create();
         }
-        return GraalHPyBoxing.boxHandle(id);
+        if (id != -1) {
+            return GraalHPyBoxing.boxHandle(id);
+        } else if (delegate instanceof Integer) {
+            return GraalHPyBoxing.boxInt((Integer) delegate);
+        } else if (delegate instanceof Double) {
+            return GraalHPyBoxing.boxDouble((Double) delegate);
+        }
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     /**
@@ -124,6 +131,7 @@ public final class GraalHPyHandle implements TruffleObject {
     void toNative(@Exclusive @Cached ConditionProfile isNativeProfile,
                     @CachedLibrary("this") InteropLibrary lib) {
         if (!isPointer(isNativeProfile)) {
+            assert !GraalHPyBoxing.isBoxablePrimitive(delegate) : "allocating handle for value that could be boxed";
             id = PythonContext.get(lib).getHPyContext().getHPyHandleForObject(this);
         }
     }
