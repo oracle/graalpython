@@ -1080,11 +1080,18 @@ public class GraalHPyNodes {
         static GraalHPyHandle doBoxedPrimitive(GraalHPyContext hpyContext, long bits) {
             /*
              * In this case, the long value is a boxed primitive and we cannot resolve it to a
-             * GraalHPyHandle instance (because no instance has ever been created). We return Java
-             * null to indicate this. All users of this node *MUST* handle this case by either
-             * resolving the long value to the primitive or do some other special handling.
+             * GraalHPyHandle instance (because no instance has ever been created). We create a
+             * fresh GaalHPyHandle instance here.
              */
-            return null;
+            Object delegate;
+            if (GraalHPyBoxing.isBoxedInt(bits)) {
+                delegate = GraalHPyBoxing.unboxInt(bits);
+            } else if (GraalHPyBoxing.isBoxedDouble(bits)) {
+                delegate = GraalHPyBoxing.unboxDouble(bits);
+            } else {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+            return hpyContext.createHandle(delegate);
         }
     }
 
