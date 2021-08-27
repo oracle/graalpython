@@ -44,7 +44,6 @@ import java.util.ArrayList;
 
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class GraalHPyDebugContext extends GraalHPyContext {
 
@@ -99,7 +98,7 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
     }
 
     private void trackHandle(GraalHPyHandle handle) {
-        int id = handle.getId(this, ConditionProfile.getUncached());
+        int id = handle.getIdDebug(this);
         if (id >= generationTable.length) {
             int newSize = Math.max(16, generationTable.length * 2);
             generationTable = PythonUtils.arrayCopyOf(generationTable, newSize);

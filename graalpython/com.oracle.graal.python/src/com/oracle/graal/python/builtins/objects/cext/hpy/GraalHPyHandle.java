@@ -99,6 +99,15 @@ public final class GraalHPyHandle implements TruffleObject {
         return result;
     }
 
+    public int getIdDebug(GraalHPyContext context) {
+        int result = id;
+        if (id == -1) {
+            result = context.getHPyHandleForObject(this);
+            id = result;
+        }
+        return result;
+    }
+
     @ExportMessage
     boolean isPointer(
                     @Exclusive @Cached ConditionProfile isNativeProfile) {
