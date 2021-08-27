@@ -96,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
@@ -107,6 +108,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -1331,17 +1333,19 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
      * uncached version.
      */
     @GenerateUncached
+    @ImportStatic(SpecialMethodSlot.class)
     public abstract static class PInteropSubscriptNode extends Node {
 
         public abstract Object execute(Object primary, Object index);
 
         @Specialization
-        Object doSpecialObject(Object primary, Object index,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
+        static Object doSpecialObject(Object primary, Object index,
+                        @Cached GetClassNode getClassNode,
+                        @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupInMRONode,
                         @Cached CallBinaryMethodNode callGetItemNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached ConditionProfile profile) {
-            Object attrGetItem = lookupGetItemNode.execute(primary, __GETITEM__);
+            Object attrGetItem = lookupInMRONode.execute(getClassNode.execute(primary));
             if (profile.profile(attrGetItem == PNone.NO_VALUE)) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, primary);
             }
