@@ -18,8 +18,8 @@
     {"name":"ctxLongFromLong","parameterTypes":["long"] },
     {"name":"ctxNew","parameterTypes":["long","long"] }, 
     {"name":"ctxNumberCheck","parameterTypes":["long"] }, 
-    {"name":"ctxTypeGenericNew","parameterTypes":["long"], 
-    {"name":"ctxUnicodeFromWideChar","parameterTypes":["long","long"], 
+    {"name":"ctxTypeGenericNew","parameterTypes":["long"] }, 
+    {"name":"ctxUnicodeFromWideChar","parameterTypes":["long","long"] }, 
     {"name":"ctxUnicodeFromJCharArray","parameterTypes":["char[]"] }
   ]
 }
