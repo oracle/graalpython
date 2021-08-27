@@ -1413,10 +1413,10 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
             Object clazz = GetClassNode.getUncached().execute(receiver);
             if (clazz == PythonBuiltinClassType.PList || clazz == PythonBuiltinClassType.PTuple) {
-                int idx = 0;
-                if (!com.oracle.graal.python.builtins.objects.ints.PInt.isIntRange(lidx)) {
+                if (!PInt.isIntRange(lidx)) {
                     throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, lidx);
                 }
+                int idx = (int) lidx;
                 PSequence sequence = (PSequence) receiver;
                 SequenceStorage storage = sequence.getSequenceStorage();
                 if (storage instanceof IntSequenceStorage) {
@@ -1519,11 +1519,11 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     private boolean ctxListSetItem(Object receiver, long lidx, long hValue) {
         // fast path for list
-        int idx = 0;
-        if (!com.oracle.graal.python.builtins.objects.ints.PInt.isIntRange(lidx)) {
+        if (!PInt.isIntRange(lidx)) {
             throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, lidx);
         }
-        com.oracle.graal.python.builtins.objects.list.PList sequence = (PList) receiver;
+        int idx = (int) lidx;
+        PList sequence = (PList) receiver;
         SequenceStorage storage = sequence.getSequenceStorage();
         if (storage instanceof IntSequenceStorage && GraalHPyBoxing.isBoxedInt(hValue)) {
             ((IntSequenceStorage) storage).setIntItemNormalized(idx, GraalHPyBoxing.unboxInt(hValue));
