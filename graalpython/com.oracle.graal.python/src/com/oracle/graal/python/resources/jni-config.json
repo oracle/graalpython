@@ -8,6 +8,8 @@
     {"name":"ctxFloatAsDouble","parameterTypes":["long"] }, 
     {"name":"ctxFloatFromDouble","parameterTypes":["double"] }, 
     {"name":"ctxGetItemi","parameterTypes":["long","long"] }, 
+    {"name":"ctxSetItem","parameterTypes":["long","long","long"] }, 
+    {"name":"ctxSetItemi","parameterTypes":["long","long","long"] }, 
     {"name":"ctxLength","parameterTypes":["long"] }, 
     {"name":"ctxListCheck","parameterTypes":["long"] }, 
     {"name":"ctxLongAsLong","parameterTypes":["long"] }, 

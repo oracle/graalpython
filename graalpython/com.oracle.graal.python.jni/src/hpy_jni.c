@@ -75,6 +75,8 @@ static JNIEnv* jniEnv;
     UPCALL(LongFromLong, SIG_LONG, SIG_HPY) \
     UPCALL(Dup, SIG_HPY, SIG_HPY) \
     UPCALL(GetItemi, SIG_HPY SIG_SIZE_T, SIG_HPY) \
+    UPCALL(SetItemi, SIG_HPY SIG_SIZE_T SIG_HPY, SIG_INT) \
+    UPCALL(SetItem, SIG_HPY SIG_HPY SIG_HPY, SIG_INT) \
     UPCALL(NumberCheck, SIG_HPY, SIG_INT) \
     UPCALL(Length, SIG_HPY, SIG_SIZE_T) \
     UPCALL(ListCheck, SIG_HPY, SIG_INT) \
@@ -128,6 +130,14 @@ static HPy ctx_New_jni(HPyContext ctx, HPy type, void** data) {
 
 static HPy ctx_GetItemi_jni(HPyContext ctx, HPy obj, HPy_ssize_t idx) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetItemi, HPY_UP(obj), (SIZE_T_UP) idx);
+}
+
+static int ctx_SetItemi_jni(HPyContext ctx, HPy obj, HPy_ssize_t idx, HPy value) {
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), SetItemi, HPY_UP(obj), (SIZE_T_UP) idx, HPY_UP(value));
+}
+
+static int ctx_SetItem_jni(HPyContext ctx, HPy obj, HPy key, HPy value) {
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), SetItem, HPY_UP(obj), HPY_UP(key), HPY_UP(value));
 }
 
 static void ctx_Close_jni(HPyContext ctx, HPy h) {
@@ -368,6 +378,8 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_Type_GenericNew = ctx_TypeGenericNew_jni;
     
     context->ctx_GetItem_i = ctx_GetItemi_jni;
+    context->ctx_SetItem_i = ctx_SetItemi_jni;
+    context->ctx_SetItem = ctx_SetItem_jni;
 
     context->ctx_Tracker_New = ctx_Tracker_New;
     context->ctx_Tracker_Add = ctx_Tracker_Add;

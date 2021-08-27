@@ -1256,6 +1256,8 @@ public class GraalHPyNodes {
                 return hpyContext;
             }
         }
+        
+        public abstract Object execute(GraalHPyContext hpyContext, long bits);
 
         @Specialization
         static Object doHandle(@SuppressWarnings("unused") GraalHPyContext hpyContext, GraalHPyHandle handle) {

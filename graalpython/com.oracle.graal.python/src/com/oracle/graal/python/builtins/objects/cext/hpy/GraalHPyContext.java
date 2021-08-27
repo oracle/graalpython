@@ -144,16 +144,22 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.ReturnType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAttachFunctionTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRaiseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
+import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -165,10 +171,13 @@ import com.oracle.graal.python.lib.PyIndexCheckNodeGen;
 import com.oracle.graal.python.lib.PyObjectSizeNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
@@ -185,6 +194,8 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
@@ -1212,6 +1223,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         UpcallClose,
         UpcallTrackerNew,
         UpcallGetItemI,
+        UpcallSetItem,
+        UpcallSetItemI,
         UpcallDup,
         UpcallNumberCheck,
         UpcallLength,
@@ -1384,29 +1397,152 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
     }
 
-    public final long ctxGetItemi(long handle, long idx) {
+    public final long ctxGetItemi(long handle, long lidx) {
         Counter.UpcallGetItemI.increment();
-        assert GraalHPyBoxing.isBoxedHandle(handle);
         try {
+            // If handle 'hSequence' is a boxed int or double, the object is not subscriptable.
+            if (!GraalHPyBoxing.isBoxedHandle(handle)) {
+                throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, 0);
+            }
             Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
             Object clazz = GetClassNode.getUncached().execute(receiver);
             if (clazz == PythonBuiltinClassType.PList || clazz == PythonBuiltinClassType.PTuple) {
+                int idx = 0;
+                if (!com.oracle.graal.python.builtins.objects.ints.PInt.isIntRange(lidx)) {
+                    throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, lidx);
+                }
                 PSequence sequence = (PSequence) receiver;
                 SequenceStorage storage = sequence.getSequenceStorage();
                 if (storage instanceof IntSequenceStorage) {
-                    return GraalHPyBoxing.boxInt(((IntSequenceStorage) storage).getIntItemNormalized((int) idx));
+                    return GraalHPyBoxing.boxInt(((IntSequenceStorage) storage).getIntItemNormalized(idx));
                 } else if (storage instanceof DoubleSequenceStorage) {
-                    return GraalHPyBoxing.boxDouble(((DoubleSequenceStorage) storage).getDoubleItemNormalized((int) idx));
+                    return GraalHPyBoxing.boxDouble(((DoubleSequenceStorage) storage).getDoubleItemNormalized(idx));
+                } else if (storage instanceof LongSequenceStorage) {
+                    long lresult = ((LongSequenceStorage) storage).getLongItemNormalized(idx);
+                    if (com.oracle.graal.python.builtins.objects.ints.PInt.isIntRange(lresult)) {
+                        return GraalHPyBoxing.boxInt((int) lresult);
+                    }
+                    return GraalHPyBoxing.boxHandle(createHandle(lresult).getId(this, ConditionProfile.getUncached()));
+                } else if (storage instanceof ObjectSequenceStorage) {
+                    Object result = ((ObjectSequenceStorage) storage).getItemNormalized(idx);
+                    return GraalHPyBoxing.boxHandle(createHandle(result).getId(this, ConditionProfile.getUncached()));
                 }
                 // TODO: other storages...
             }
-            Object result = PInteropSubscriptNode.getUncached().execute(receiver, idx);
+            Object result = PInteropSubscriptNode.getUncached().execute(receiver, lidx);
             return GraalHPyBoxing.boxHandle(createHandle(result).getId(this, ConditionProfile.getUncached()));
-        } catch (Throwable t) {
-            t.printStackTrace();
-            System.exit(-1);
-            throw CompilerDirectives.shouldNotReachHere();
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+            // NULL handle
+            return 0;
         }
+    }
+
+    /**
+     * HPy signature: {@code HPy_SetItem(HPyContext ctx, HPy obj, HPy key, HPy value)}
+     * 
+     * @param hSequence
+     * @param hKey
+     * @param hValue
+     * @return {@code 0} on success; {@code -1} on error
+     */
+    public final int ctxSetItem(long hSequence, long hKey, long hValue) {
+        Counter.UpcallSetItem.increment();
+        try {
+            // If handle 'hSequence' is a boxed int or double, the object is not a sequence.
+            if (!GraalHPyBoxing.isBoxedHandle(hSequence)) {
+                throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, 0);
+            }
+            Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(hSequence)).getDelegate();
+            Object clazz = GetClassNode.getUncached().execute(receiver);
+            Object key = HPyAsPythonObjectNodeGen.getUncached().execute(this, hKey);
+            Object value = HPyAsPythonObjectNodeGen.getUncached().execute(this, hValue);
+
+            // fast path
+            if (clazz == PythonBuiltinClassType.PDict) {
+                PDict dict = (PDict) receiver;
+                HashingStorage dictStorage = dict.getDictStorage();
+
+                // super-fast path for string keys
+                if (key instanceof String) {
+                    if (dictStorage instanceof EmptyStorage) {
+                        dictStorage = PDict.createNewStorage(true, 1);
+                        dict.setDictStorage(dictStorage);
+                    }
+
+                    if (dictStorage instanceof HashMapStorage) {
+                        ((HashMapStorage) dictStorage).put((String) key, null);
+                    }
+                } else {
+                    dict.setDictStorage(HashingStorageLibrary.getUncached().setItem(dictStorage, key, value));
+                }
+                return 0;
+            } else if (clazz == PythonBuiltinClassType.PList && PGuards.isInteger(key) && ctxListSetItem(receiver, ((Number) key).longValue(), hValue)) {
+                return 0;
+            }
+            return setItemGeneric(receiver, clazz, key, value);
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+            // non-null value indicates an error
+            return -1;
+        }
+    }
+
+    public final int ctxSetItemi(long hSequence, long lidx, long hValue) {
+        Counter.UpcallSetItemI.increment();
+        try {
+            // If handle 'hSequence' is a boxed int or double, the object is not a sequence.
+            if (!GraalHPyBoxing.isBoxedHandle(hSequence)) {
+                throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, 0);
+            }
+            Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(hSequence)).getDelegate();
+            Object clazz = GetClassNode.getUncached().execute(receiver);
+
+            if (clazz == PythonBuiltinClassType.PList && ctxListSetItem(receiver, lidx, hValue)) {
+                return 0;
+            }
+            Object value = HPyAsPythonObjectNodeGen.getUncached().execute(this, hValue);
+            return setItemGeneric(receiver, clazz, lidx, value);
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+            // non-null value indicates an error
+            return -1;
+        }
+    }
+
+    private boolean ctxListSetItem(Object receiver, long lidx, long hValue) {
+        // fast path for list
+        int idx = 0;
+        if (!com.oracle.graal.python.builtins.objects.ints.PInt.isIntRange(lidx)) {
+            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, lidx);
+        }
+        com.oracle.graal.python.builtins.objects.list.PList sequence = (PList) receiver;
+        SequenceStorage storage = sequence.getSequenceStorage();
+        if (storage instanceof IntSequenceStorage && GraalHPyBoxing.isBoxedInt(hValue)) {
+            ((IntSequenceStorage) storage).setIntItemNormalized(idx, GraalHPyBoxing.unboxInt(hValue));
+            return true;
+        } else if (storage instanceof DoubleSequenceStorage && GraalHPyBoxing.isBoxedDouble(hValue)) {
+            ((DoubleSequenceStorage) storage).setDoubleItemNormalized(idx, GraalHPyBoxing.unboxDouble(hValue));
+            return true;
+        } else if (storage instanceof LongSequenceStorage && GraalHPyBoxing.isBoxedInt(hValue)) {
+            ((LongSequenceStorage) storage).setLongItemNormalized(idx, GraalHPyBoxing.unboxInt(hValue));
+            return true;
+        } else if (storage instanceof ObjectSequenceStorage) {
+            Object value = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(hValue)).getDelegate();
+            ((ObjectSequenceStorage) storage).setItemNormalized(idx, value);
+            return true;
+        }
+        // TODO: other storages...
+        return false;
+    }
+
+    private static int setItemGeneric(Object receiver, Object clazz, Object key, Object value) {
+        Object setItemAttribute = LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.SetItem).execute(clazz);
+        if (setItemAttribute == PNone.NO_VALUE) {
+            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, receiver);
+        }
+        CallTernaryMethodNode.getUncached().execute(null, setItemAttribute, receiver, key, value);
+        return 0;
     }
 
     public final int ctxNumberCheck(long handle) {
