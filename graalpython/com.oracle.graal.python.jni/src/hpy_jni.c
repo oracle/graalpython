@@ -80,6 +80,8 @@ static JNIEnv* jniEnv;
     UPCALL(NumberCheck, SIG_HPY, SIG_INT) \
     UPCALL(Length, SIG_HPY, SIG_SIZE_T) \
     UPCALL(ListCheck, SIG_HPY, SIG_INT) \
+    UPCALL(UnicodeFromWideChar, SIG_PTR SIG_SIZE_T, SIG_HPY) \
+    UPCALL(UnicodeFromJCharArray, SIG_JCHARARRAY, SIG_HPY) \
 
 #define UPCALL(name, jniSigArgs, jniSigRet) static jmethodID jniMethod_ ## name;
 ALL_UPCALLS
@@ -164,6 +166,10 @@ static HPy ctx_TypeGenericNew_jni(HPyContext ctx, HPy type, _HPyPtr args, HPy_ss
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), TypeGenericNew, HPY_UP(type));
 }
 
+static HPy ctx_Unicode_FromWideChar_jni(HPyContext ctx, const wchar_t *arr, HPy_ssize_t idx) {
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), UnicodeFromWideChar, (PTR_UP) arr, (SIZE_T_UP) idx);
+}
+
 //*************************
 // BOXING
 
@@ -234,7 +240,7 @@ static HPy (*original_LongFromLong)(HPyContext ctx, long l);
 static int (*original_ListCheck)(HPyContext ctx, HPy h);
 static int (*original_NumberCheck)(HPyContext ctx, HPy h);
 static void (*original_Close)(HPyContext ctx, HPy h);
-static void *(*original_TrackerNew)(HPyContext ctx, HPy_ssize_t size);
+static HPy (*original_UnicodeFromWideChar)(HPyContext ctx, const wchar_t *arr, HPy_ssize_t size);
 
 static void *augment_Cast(HPyContext ctx, HPy h) {
     uint64_t bits = toBits(h);
@@ -313,6 +319,80 @@ static int augment_ListCheck(HPyContext ctx, HPy obj) {
     }
 }
 
+
+static HPy augment_UnicodeFromWideChar(HPyContext ctx, const wchar_t *u, HPy_ssize_t size) {
+    if (u == NULL && size != 0) {
+        return HPy_NULL;
+    }
+
+    if (size == -1) {
+        size = wcslen(u);
+    }
+
+    if (size > INT32_MAX) {
+    	/* TODO(fa): error message */
+        return HPy_NULL;
+    }
+
+    /* If the Unicode data is known at construction time, we can apply
+       some optimizations which share commonly used objects. */
+
+    /* Optimization for empty strings */
+    /* TODO(fa)
+    if (size == 0)
+        _Py_RETURN_UNICODE_EMPTY();
+    */
+
+    /* Single character Unicode objects in the Latin-1 range are
+       shared when using this constructor */
+    /* TODO(fa)
+    if (size == 1 && (Py_UCS4)*u < 256)
+        return get_latin1_char((unsigned char)*u);
+    */
+
+    /* If not empty and not single character, copy the Unicode data
+       into the new object */
+    uint32_t maxchar = 0;
+    wchar_t ch;
+    for (HPy_ssize_t i = 0; i < size; i++) {
+#if SIZEOF_WCHAR_T == 2
+        if (Py_UNICODE_IS_HIGH_SURROGATE(iter[0])
+            && (iter+1) < end
+            && Py_UNICODE_IS_LOW_SURROGATE(iter[1]))
+        {
+            ch = Py_UNICODE_JOIN_SURROGATES(iter[0], iter[1]);
+            ++(*num_surrogates);
+            iter += 2;
+        }
+        else
+#endif
+        ch = u[i];
+        if (ch > maxchar) {
+            maxchar = ch;
+            /* TODO(fa): error
+            if (*maxchar > MAX_UNICODE) {
+                PyErr_Format(PyExc_ValueError,
+                             "character U+%x is not in range [U+0000; U+10ffff]",
+                             ch);
+                return -1;
+            }
+            */
+        }
+    }
+
+    if (maxchar < 65536) {
+    	jarray jCharArray = (*jniEnv)->NewCharArray(jniEnv, (jsize) size);
+	   	jchar *content = (*jniEnv)->GetPrimitiveArrayCritical(jniEnv, jCharArray, 0);
+        for (HPy_ssize_t i = 0; i < size; i++) {
+        	content[i] = (jchar) u[i];
+        }
+	   	(*jniEnv)->ReleasePrimitiveArrayCritical(jniEnv, jCharArray, content, 0);
+        return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), UnicodeFromJCharArray, jCharArray);
+    } else {
+    	return original_UnicodeFromWideChar(ctx, u, size);
+    }
+}
+
 void initDirectFastPaths(HPyContext context) {
     LOG("%p", context);
     context->name = "augmented!";
@@ -343,6 +423,9 @@ void initDirectFastPaths(HPyContext context) {
     
     original_ListCheck = context->ctx_List_Check;
     context->ctx_List_Check = augment_ListCheck;
+
+    original_UnicodeFromWideChar = context->ctx_Unicode_FromWideChar;
+    context->ctx_Unicode_FromWideChar = augment_UnicodeFromWideChar;
 }
 
 void setHPyContextNativeSpace(HPyContext context, void** nativeSpace) {
@@ -381,6 +464,8 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_SetItem_i = ctx_SetItemi_jni;
     context->ctx_SetItem = ctx_SetItem_jni;
 
+    context->ctx_Unicode_FromWideChar = ctx_Unicode_FromWideChar_jni;
+
     context->ctx_Tracker_New = ctx_Tracker_New;
     context->ctx_Tracker_Add = ctx_Tracker_Add;
     context->ctx_Tracker_ForgetAll = ctx_Tracker_ForgetAll;
@@ -397,6 +482,7 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 #define SIG_LONG "J"
 #define SIG_DOUBLE "D"
 #define SIG_TRACKER "J"
+#define SIG_JCHARARRAY "[C"
 
 #define UPCALL(name, jniSigArgs, jniSigRet) \
     jniMethod_ ## name = (*env)->GetMethodID(env, clazz, "ctx" #name, "(" jniSigArgs ")" jniSigRet); \

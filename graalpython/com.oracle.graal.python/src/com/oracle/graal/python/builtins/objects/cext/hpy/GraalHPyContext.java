@@ -159,6 +159,7 @@ import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -1232,7 +1233,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         UpcallLongAsLong,
         UpcallLongFromLong,
         UpcallFloatAsDouble,
-        UpcallFloatFromDouble;
+        UpcallFloatFromDouble,
+        UpcallUnicodeFromWideChar,
+        UpcallUnicodeFromJCharArray;
 
         long count;
 
@@ -1594,6 +1597,33 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         } else {
             return 0;
         }
+    }
+
+    public final long ctxUnicodeFromWideChar(long wcharArrayPtr, long size) {
+        Counter.UpcallUnicodeFromWideChar.increment();
+
+        if (!PInt.isIntRange(size)) {
+            // NULL handle
+            return 0;
+        }
+        int isize = (int) size;
+
+        char[] decoded = new char[isize];
+        for (int i = 0; i < size; i++) {
+            int wchar = unsafe.getInt(wcharArrayPtr + (long) Integer.BYTES * i);
+            if (Character.isBmpCodePoint(wchar)) {
+                decoded[i] = (char) wchar;
+            } else {
+                // TODO(fa): handle this case
+                throw new RuntimeException();
+            }
+        }
+        return createHandle(new String(decoded, 0, isize)).getId(this, ConditionProfile.getUncached());
+    }
+
+    public final long ctxUnicodeFromJCharArray(char[] arr) {
+        Counter.UpcallUnicodeFromJCharArray.increment();
+        return createHandle(new String(arr, 0, arr.length)).getId(this, ConditionProfile.getUncached());
     }
 
     @ExportMessage
