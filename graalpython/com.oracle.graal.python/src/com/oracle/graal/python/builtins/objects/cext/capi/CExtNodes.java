@@ -1447,7 +1447,7 @@ public abstract class CExtNodes {
                         @Cached ConditionProfile isNullProfile) {
             // this branch is not a shortcut; it actually returns a different object
             if (isNullProfile.profile(interopLibrary.isNull(value))) {
-                return new PythonAbstractNativeObject((TruffleObject) value);
+                return new PythonAbstractNativeObject(value);
             }
             return asPythonObjectNode.execute(resolveHandleNode.execute(value));
         }

@@ -128,7 +128,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
@@ -1354,7 +1353,7 @@ public abstract class HPyExternalFunctionNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseUncached(this, SystemError, "Attempting to getter function but object has no associated native space.");
             }
-            objects[0] = new PythonAbstractNativeObject((TruffleObject) nativeSpacePtr);
+            objects[0] = new PythonAbstractNativeObject(nativeSpacePtr);
             return objects;
         }
 
@@ -1436,7 +1435,7 @@ public abstract class HPyExternalFunctionNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseUncached(this, SystemError, "Attempting to setter function but object has no associated native space.");
             }
-            objects[0] = new PythonAbstractNativeObject((TruffleObject) nativeSpacePtr);
+            objects[0] = new PythonAbstractNativeObject(nativeSpacePtr);
             return objects;
         }
 

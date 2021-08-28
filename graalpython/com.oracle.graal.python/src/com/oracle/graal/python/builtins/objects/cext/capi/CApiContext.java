@@ -350,7 +350,7 @@ public final class CApiContext extends CExtContext {
         /**
          * The associated native pointer object that needs to be released if this reference dies.
          */
-        final TruffleObject ptrObject;
+        final Object ptrObject;
 
         /** The ID of this reference, i.e., the index of the ref in the global reference list. */
         final int id;
@@ -374,7 +374,7 @@ public final class CApiContext extends CExtContext {
             this.id = id;
         }
 
-        public TruffleObject getPtrObject() {
+        public Object getPtrObject() {
             return ptrObject;
         }
 
