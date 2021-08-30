@@ -625,7 +625,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     {
                         String varname = names[oparg];
                         WriteGlobalNode writeGlobalNode = insertChildNode((a) -> WriteGlobalNode.create(a), i, varname);
-                        writeGlobalNode.executeObject(frame, stack[stackTop]);
+                        writeGlobalNode.executeObjectWithGlobals(frame, globals, stack[stackTop]);
                         stack[stackTop--] = null;
                     }
                     break;
@@ -633,7 +633,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     {
                         String varname = names[oparg];
                         DeleteGlobalNode deleteGlobalNode = insertChildNode((a) -> DeleteGlobalNode.create(a), i, varname);
-                        deleteGlobalNode.executeVoid(frame);
+                        deleteGlobalNode.executeWithGlobals(frame, globals);
                     }
                     break;
                 case UNPACK_SEQUENCE:
