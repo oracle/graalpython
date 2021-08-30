@@ -44,6 +44,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -132,7 +133,7 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
         private static Object[] getOpenDebugHandles(GraalHPyDebugContext debugContext, int generation) {
             ArrayList<GraalHPyHandle> openHandles = debugContext.getOpenHandles(generation);
             int n = openHandles.size();
-            openHandles.sort((a, b) -> Integer.compare(debugContext.getGenerationForHandle(b), debugContext.getGenerationForHandle(a)));
+            openHandles.sort(Comparator.comparingLong(debugContext::getDebugHandleInfo));
             Object[] result = new Object[n];
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             // do reverse order to match order expected by HPy tests
