@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.thread;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 
@@ -59,6 +60,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -98,6 +101,15 @@ public class SemLockBuiltins extends PythonBuiltins {
         @Specialization
         boolean isMine(PSemLock self) {
             return self.isMine();
+        }
+    }
+
+    @Builtin(name = "_is_zero", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsZeroNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean isZero(PSemLock self) {
+            return self.isZero();
         }
     }
 
@@ -148,23 +160,33 @@ public class SemLockBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "acquire", minNumOfPositionalArgs = 1, parameterNames = {"self", "blocking", "timeout"})
+    @ArgumentClinic(name = "blocking", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "LockBuiltins.DEFAULT_BLOCKING")
     @GenerateNodeFactory
-    abstract static class AcquireNode extends PythonTernaryBuiltinNode {
+    abstract static class AcquireNode extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SemLockBuiltinsClinicProviders.AcquireNodeClinicProviderGen.INSTANCE;
+        }
 
         protected static boolean isFast(PSemLock self) {
             return self.getKind() == PSemLock.RECURSIVE_MUTEX && self.isMine();
         }
 
         @Specialization(guards = "isFast(self)")
-        boolean fast(PSemLock self, @SuppressWarnings("unused") Object blocking, @SuppressWarnings("unused") Object timeout) {
+        boolean fast(PSemLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") Object timeout) {
             self.increaseCount();
             return true;
         }
 
         @Specialization(guards = "!isFast(self)")
-        Object slow(VirtualFrame frame, PSemLock self, Object blocking, Object timeout,
+        Object slow(VirtualFrame frame, PSemLock self, boolean blocking, Object timeout,
                         @Cached AcquireLockNode acquireLockNode) {
-            return acquireLockNode.call(frame, self, blocking, timeout);
+            Object tout = timeout;
+            if (!blocking) {
+                tout = LockBuiltins.UNSET_TIMEOUT;
+            }
+            return acquireLockNode.call(frame, self, blocking, tout);
         }
     }
 
@@ -205,11 +227,6 @@ public class SemLockBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Semaphore semaphorePut(PythonLanguage lang, Semaphore semaphore, String name) {
-            return lang.namedSemaphores.put(name, semaphore);
-        }
-
-        @TruffleBoundary
         private static Semaphore semaphoreGet(PythonLanguage lang, String name) {
             return lang.namedSemaphores.get(name);
         }
@@ -241,7 +258,6 @@ public class SemLockBuiltins extends PythonBuiltins {
                 assert self.getCount() == 1;
             }
             self.release();
-            self.decreaseCount();
             return PNone.NONE;
         }
     }

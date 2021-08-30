@@ -178,6 +178,9 @@ public final class TopLevelExceptionHandler extends RootNode {
                 ExceptionUtils.printJavaStackTrace(pythonException.getException());
             }
             if (!getSourceSection().getSource().isInteractive()) {
+                if (getContext().isChildContext()) {
+                    getContext().getChildContextData().setExitCode(1);
+                }
                 throw new PythonExitException(this, 1);
             }
         }

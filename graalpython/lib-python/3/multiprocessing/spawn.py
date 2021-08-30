@@ -18,8 +18,11 @@ from . import process
 from .context import reduction
 from . import util
 
-from _multiprocessing import _read
 import io
+
+# Begin Truffle change
+from _multiprocessing import _read
+# End Truffle change
 
 __all__ = ['_main', 'freeze_support', 'set_executable', 'get_executable',
            'get_preparation_data', 'get_command_line', 'import_main_path']
