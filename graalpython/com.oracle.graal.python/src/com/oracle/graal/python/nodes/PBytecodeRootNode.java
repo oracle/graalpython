@@ -217,6 +217,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @Override
+    public String toString() {
+        return "<bytecode " + name + " at " + Integer.toHexString(hashCode()) + ">";
+    }
+
+    @Override
     public Signature getSignature() {
         return signature;
     }
