@@ -341,7 +341,7 @@ static HPy augment_UnicodeFromWideChar(HPyContext ctx, const wchar_t *u, HPy_ssi
     }
 
     if (size > INT32_MAX) {
-    	/* TODO(fa): error message */
+        /* TODO(fa): error message */
         return HPy_NULL;
     }
 
@@ -365,7 +365,8 @@ static HPy augment_UnicodeFromWideChar(HPyContext ctx, const wchar_t *u, HPy_ssi
        into the new object */
     uint32_t maxchar = 0;
     wchar_t ch;
-    for (HPy_ssize_t i = 0; i < size; i++) {
+    HPy_ssize_t i;
+    for (i = 0; i < size; i++) {
 #if SIZEOF_WCHAR_T == 2
         if (Py_UNICODE_IS_HIGH_SURROGATE(iter[0])
             && (iter+1) < end
@@ -392,15 +393,16 @@ static HPy augment_UnicodeFromWideChar(HPyContext ctx, const wchar_t *u, HPy_ssi
     }
 
     if (maxchar < 65536) {
-    	jarray jCharArray = (*jniEnv)->NewCharArray(jniEnv, (jsize) size);
-	   	jchar *content = (*jniEnv)->GetPrimitiveArrayCritical(jniEnv, jCharArray, 0);
-        for (HPy_ssize_t i = 0; i < size; i++) {
-        	content[i] = (jchar) u[i];
+        jarray jCharArray = (*jniEnv)->NewCharArray(jniEnv, (jsize) size);
+        jchar *content = (*jniEnv)->GetPrimitiveArrayCritical(jniEnv, jCharArray, 0);
+        HPy_ssize_t i;
+        for (i = 0; i < size; i++) {
+            content[i] = (jchar) u[i];
         }
-	   	(*jniEnv)->ReleasePrimitiveArrayCritical(jniEnv, jCharArray, content, 0);
+        (*jniEnv)->ReleasePrimitiveArrayCritical(jniEnv, jCharArray, content, 0);
         return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), UnicodeFromJCharArray, jCharArray);
     } else {
-    	return original_UnicodeFromWideChar(ctx, u, size);
+        return original_UnicodeFromWideChar(ctx, u, size);
     }
 }
 
