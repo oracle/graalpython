@@ -263,26 +263,32 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @SuppressWarnings("unchecked")
     private <T extends Node> T insertChildNode(Supplier<T> nodeSupplier, int bytecodeIndex) {
+        CompilerAsserts.partialEvaluationConstant(bytecodeIndex);
         T node = (T) adoptedNodes[bytecodeIndex];
-        if (node == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            node = nodeSupplier.get();
-            adoptedNodes[bytecodeIndex] = insert(node);
-        }
         CompilerAsserts.partialEvaluationConstant(node);
-        return node;
+        if (node != null) {
+            return node;
+        } else {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            T newNode = nodeSupplier.get();
+            adoptedNodes[bytecodeIndex] = insert(newNode);
+            return newNode;
+        }
     }
 
     @SuppressWarnings("unchecked")
     private <T extends Node> T insertChildNode(Function<String, T> nodeSupplier, int bytecodeIndex, String argument) {
+        CompilerAsserts.partialEvaluationConstant(bytecodeIndex);
         T node = (T) adoptedNodes[bytecodeIndex];
-        if (node == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            node = nodeSupplier.apply(argument);
-            adoptedNodes[bytecodeIndex] = insert(node);
-        }
         CompilerAsserts.partialEvaluationConstant(node);
-        return node;
+        if (node != null) {
+            return node;
+        } else {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            T newNode = nodeSupplier.apply(argument);
+            adoptedNodes[bytecodeIndex] = insert(newNode);
+            return newNode;
+        }
     }
 
     @Override
@@ -340,15 +346,33 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int stackTop = (short)target;
         int i = (target >> Short.SIZE) & 0xffff;
         int oparg = Byte.toUnsignedInt(bytecode[i + 1]);
+
+        CompilerAsserts.partialEvaluationConstant(bytecode);
+        CompilerAsserts.partialEvaluationConstant(target);
+        CompilerAsserts.partialEvaluationConstant(i);
+        CompilerAsserts.partialEvaluationConstant(stackTop);
+        CompilerAsserts.partialEvaluationConstant(oparg);
+
         while (true) {
-            switch (bytecode[i]) {
+            final byte bc = bytecode[i];
+
+            CompilerAsserts.partialEvaluationConstant(bc);
+            CompilerAsserts.partialEvaluationConstant(i);
+            CompilerAsserts.partialEvaluationConstant(stackTop);
+            CompilerDirectives.ensureVirtualized(stack);
+            CompilerDirectives.ensureVirtualized(fastlocals);
+            CompilerDirectives.ensureVirtualized(celllocals);
+            CompilerDirectives.ensureVirtualized(freelocals);
+
+            switch (bc) {
                 case NOP:
                     break;
                 case LOAD_FAST:
                     {
+                        PRaiseNode raiseNode = insertChildNode(() -> PRaiseNode.create(), i);
                         Object value = fastlocals[oparg];
                         if (value == null) {
-                            throw insertChildNode(() -> PRaiseNode.create(), i).raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
+                            raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
                         }
                         stack[++stackTop] = value;
                     }
@@ -822,7 +846,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         } catch (PException e) {
                             e.expect(StopIteration, insertChildNode(() -> IsBuiltinClassProfile.create(), i + 1));
                             stack[stackTop--] = null;
-                            i += oparg;
+                            i += oparg + 2;
+                            oparg = Byte.toUnsignedInt(bytecode[i + 1]);
+                            continue;
                         }
                     }
                     break;
