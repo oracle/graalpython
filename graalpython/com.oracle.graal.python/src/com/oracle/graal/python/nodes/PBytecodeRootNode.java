@@ -119,6 +119,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -268,6 +269,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             node = nodeSupplier.get();
             adoptedNodes[bytecodeIndex] = insert(node);
         }
+        CompilerAsserts.partialEvaluationConstant(node);
         return node;
     }
 
@@ -279,6 +281,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             node = nodeSupplier.apply(argument);
             adoptedNodes[bytecodeIndex] = insert(node);
         }
+        CompilerAsserts.partialEvaluationConstant(node);
         return node;
     }
 
