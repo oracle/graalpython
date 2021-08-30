@@ -93,6 +93,10 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
         return currentGeneration;
     }
 
+    public int getGenerationForHandle(GraalHPyHandle handle) {
+        return generationTable[handle.getIdDebug(this)];
+    }
+
     public int newGeneration() {
         return ++currentGeneration;
     }
