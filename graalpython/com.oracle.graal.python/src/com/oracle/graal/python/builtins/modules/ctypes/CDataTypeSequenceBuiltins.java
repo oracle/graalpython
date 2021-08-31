@@ -47,13 +47,14 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointer
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCSimpleType;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCStructType;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnionType;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARRAY_LENGTH_MUST_BE_0_NOT_D;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_A_TYPE_OBJECT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -69,7 +70,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -93,24 +93,23 @@ public class CDataTypeSequenceBuiltins extends PythonBuiltins {
 
     @Builtin(name = __MUL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class RepeatNode extends PythonBinaryBuiltinNode {
+    abstract static class RepeatNode extends PythonBinaryBuiltinNode {
         // TODO: weakref ctypes.cache values
         @Specialization(guards = "length >= 0")
         Object PyCArrayType_from_ctype(VirtualFrame frame, Object itemtype, int length,
-                        @CachedLanguage PythonLanguage language,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @Cached CallNode callNode,
                         @Cached IsTypeNode isTypeNode,
                         @Cached GetNameNode getNameNode) {
             Object key = factory().createTuple(new Object[]{itemtype, length});
-            CtypesThreadState ctypes = CtypesThreadState.get(getContext(), language);
+            CtypesThreadState ctypes = CtypesThreadState.get(getContext(), getLanguage());
             Object result = hlib.getItem(ctypes.cache, key);
             if (result != null) {
                 return result;
             }
 
             if (!isTypeNode.execute(itemtype)) {
-                throw raise(TypeError, "Expected a type object");
+                throw raise(TypeError, EXPECTED_A_TYPE_OBJECT);
             }
             String name = PythonUtils.format("%s_Array_%d", getNameNode.execute(itemtype), length);
             PDict dict = factory().createDict(new PKeyword[]{new PKeyword("_length_", length), new PKeyword("_type_", itemtype)});
@@ -122,7 +121,7 @@ public class CDataTypeSequenceBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "length < 0")
         Object error(@SuppressWarnings("unused") Object self, int length) {
-            throw raise(ValueError, "Array length must be >= 0, not %d", length);
+            throw raise(ValueError, ARRAY_LENGTH_MUST_BE_0_NOT_D, length);
         }
     }
 }

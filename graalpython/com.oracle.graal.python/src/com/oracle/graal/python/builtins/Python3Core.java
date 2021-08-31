@@ -108,6 +108,7 @@ import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CDataBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeSequenceBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins;
@@ -545,6 +546,7 @@ public final class Python3Core implements ParserErrorCallback {
                         new SimpleCDataBuiltins(),
                         new PyCArrayBuiltins(),
                         new PyCPointerBuiltins(),
+                        new CDataBuiltins(),
 
                         // _hpy_universal
                         new GraalHPyUniversalModuleBuiltins(),

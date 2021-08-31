@@ -42,6 +42,13 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_HASPOINTER;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_ISPOINTER;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARRAY_TOO_LARGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.CLASS_MUST_DEFINE_A_LENGTH_ATTRIBUTE;
+import static com.oracle.graal.python.nodes.ErrorMessages.CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE;
+import static com.oracle.graal.python.nodes.ErrorMessages.THE_LENGTH_ATTRIBUTE_IS_TOO_LARGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.THE_LENGTH_ATTRIBUTE_MUST_BE_AN_INTEGER;
+import static com.oracle.graal.python.nodes.ErrorMessages.THE_LENGTH_ATTRIBUTE_MUST_NOT_BE_NEGATIVE;
+import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_MUST_HAVE_STORAGE_INFO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -50,7 +57,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -72,7 +78,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -94,7 +99,7 @@ public class PyCArrayTypeBuiltins extends PythonBuiltins {
     @ImportStatic({PyCPointerTypeBuiltins.class, PyCArrayTypeBuiltins.class, SpecialMethodNames.class})
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class PyCArrayTypeNewNode extends PythonBuiltinNode {
+    protected abstract static class PyCArrayTypeNewNode extends PythonBuiltinNode {
 
         @Specialization
         Object PyCArrayType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
@@ -103,7 +108,6 @@ public class PyCArrayTypeBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile profile,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TypeNode typeNew,
-                        @CachedLanguage PythonLanguage language,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
@@ -113,7 +117,7 @@ public class PyCArrayTypeBuiltins extends PythonBuiltins {
             Object result = typeNew.execute(frame, type, args[0], args[1], args[2], kwds);
             Object length_attr = lookupAttrIdLength.execute(result);
             if (length_attr == null) {
-                throw raise(AttributeError, "class must define a '_length_' attribute");
+                throw raise(AttributeError, CLASS_MUST_DEFINE_A_LENGTH_ATTRIBUTE);
             }
 
             int length;
@@ -121,26 +125,26 @@ public class PyCArrayTypeBuiltins extends PythonBuiltins {
                 length = asSizeNode.executeExact(frame, length_attr);
             } catch (PException e) {
                 if (e.expectTypeOrOverflowError(profile)) {
-                    throw raise(OverflowError, "The '_length_' attribute is too large");
+                    throw raise(OverflowError, THE_LENGTH_ATTRIBUTE_IS_TOO_LARGE);
                 } else {
-                    throw raise(TypeError, "The '_length_' attribute must be an integer");
+                    throw raise(TypeError, THE_LENGTH_ATTRIBUTE_MUST_BE_AN_INTEGER);
                 }
             }
 
             if (length < 0) {
-                throw raise(ValueError, "The '_length_' attribute must not be negative");
+                throw raise(ValueError, THE_LENGTH_ATTRIBUTE_MUST_NOT_BE_NEGATIVE);
             }
 
             Object type_attr = lookupAttrId.execute(result);
             if (type_attr == null) {
-                throw raise(AttributeError, "class must define a '_type_' attribute");
+                throw raise(AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
             }
 
             StgDictObject stgdict = factory().createStgDictObject(PythonBuiltinClassType.StgDict);
 
             StgDictObject itemdict = pyTypeStgDictNode.execute(type_attr);
             if (itemdict == null) {
-                throw raise(TypeError, "_type_ must have storage info");
+                throw raise(TypeError, TYPE_MUST_HAVE_STORAGE_INFO);
             }
 
             assert itemdict.format != null;
@@ -156,7 +160,7 @@ public class PyCArrayTypeBuiltins extends PythonBuiltins {
 
             int itemsize = itemdict.size;
             if (itemsize != 0 && length > Integer.MAX_VALUE / itemsize) {
-                throw raise(OverflowError, "array too large");
+                throw raise(OverflowError, ARRAY_TOO_LARGE);
             }
 
             int itemalign = itemdict.align;
@@ -193,12 +197,9 @@ public class PyCArrayTypeBuiltins extends PythonBuiltins {
              * strings!
              */
             if (itemdict.getfunc == FieldDesc.c.getfunc) {
-                LazyPyCArrayTypeBuiltins.createCharArrayGetSet(language, result);
-                /*- TODO    
-                } else if (itemdict.getfunc == _ctypes_get_fielddesc("u").getfunc) { // CTYPES_UNICODE
-                if (-1 == add_getset(result, WCharArray_getsets))
-                
-                */
+                LazyPyCArrayTypeBuiltins.createCharArrayGetSet(getLanguage(), result);
+            } else if (itemdict.getfunc == FieldDesc.u.getfunc) { // CTYPES_UNICODE
+                LazyPyCArrayTypeBuiltins.createWCharArrayGetSet(getLanguage(), result);
             }
 
             return result;

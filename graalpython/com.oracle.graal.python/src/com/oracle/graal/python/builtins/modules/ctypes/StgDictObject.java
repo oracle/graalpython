@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.object.Shape;
 
-public class StgDictObject extends PDict {
+public final class StgDictObject extends PDict {
 
     protected static final int VOID_PTR_SIZE = Long.BYTES; // sizeof(void *)
 
@@ -87,6 +87,7 @@ public class StgDictObject extends PDict {
         paramfunc = -1;
         setfunc = FieldSet.nil;
         getfunc = FieldGet.nil;
+        ffi_type_pointer = new FFIType();
     }
 
     protected void clear() {
@@ -101,7 +102,7 @@ public class StgDictObject extends PDict {
         dst.clear();
         dst.format = null;
         dst.shape = null;
-        dst.ffi_type_pointer.elements = null;
+        dst.ffi_type_pointer = new FFIType();
 
         if (src.format != null) {
             dst.format = src.format;

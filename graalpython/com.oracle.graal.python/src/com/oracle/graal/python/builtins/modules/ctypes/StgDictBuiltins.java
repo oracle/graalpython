@@ -41,6 +41,11 @@
 package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.CField;
+import static com.oracle.graal.python.nodes.ErrorMessages.ABSTRACT_CLASS;
+import static com.oracle.graal.python.nodes.ErrorMessages.ANONYMOUS_MUST_BE_A_SEQUENCE;
+import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_MUST_BE_A_SEQUENCE;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_IS_SPECIFIED_IN_ANONYMOUS_BUT_NOT_IN_FIELDS;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNEXPECTED_TYPE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
@@ -48,7 +53,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -84,7 +88,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -106,7 +109,7 @@ public class StgDictBuiltins extends PythonBuiltins {
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class InitNode extends PythonBuiltinNode {
+    protected abstract static class InitNode extends PythonBuiltinNode {
 
         @Specialization
         Object init(VirtualFrame frame, StgDictObject self, Object[] args, PKeyword[] kwargs,
@@ -131,7 +134,7 @@ public class StgDictBuiltins extends PythonBuiltins {
 
     @Builtin(name = __SIZEOF__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class SizeOfNode extends PythonUnaryBuiltinNode {
+    protected abstract static class SizeOfNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         Object doit(VirtualFrame frame, StgDictObject self,
@@ -163,7 +166,6 @@ public class StgDictBuiltins extends PythonBuiltins {
          */
         @Specialization
         void MakeFields(VirtualFrame frame, Object type, CFieldObject descr, int index, int offset, PythonObjectFactory factory,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached GetClassNode getClassNode,
                         @Cached GetAnyAttributeNode getAttributeNode,
                         @Cached SetAttributeNode.Dynamic setAttributeNode,
@@ -180,9 +182,10 @@ public class StgDictBuiltins extends PythonBuiltins {
                 // pass through
             }
             if (!isFieldsSeq) {
-                throw raise(TypeError, "_fields_ must be a sequence");
+                throw raise(TypeError, FIELDS_MUST_BE_A_SEQUENCE);
             }
 
+            PythonContext context = PythonContext.get(this);
             for (int i = 0; i < sizeNode.execute(frame, fields); ++i) {
                 PTuple pair = (PTuple) getItemNode.execute(frame, fields, i); /* borrowed */
                 /* Convert to PyArg_UnpackTuple... */
@@ -191,11 +194,11 @@ public class StgDictBuiltins extends PythonBuiltins {
                 Object fname = array[0];
                 CFieldObject fdescr = (CFieldObject) getAttributeNode.executeObject(frame, descr.proto, fname);
                 if (getClassNode.execute(fdescr) != context.getCore().lookupType(CField)) {
-                    throw raise(TypeError, "unexpected type");
+                    throw raise(TypeError, UNEXPECTED_TYPE);
                 }
                 if (fdescr.anonymous != 0) {
                     MakeFields(frame, type, fdescr, index + fdescr.index, offset + fdescr.offset, factory,
-                                    context, getClassNode, getAttributeNode, setAttributeNode,
+                                    getClassNode, getAttributeNode, setAttributeNode,
                                     isSequenceNode, sizeNode, getItemNode, getArray, getAttrString);
                     continue;
                 }
@@ -222,7 +225,7 @@ public class StgDictBuiltins extends PythonBuiltins {
         protected StgDictObject checkAbstractClass(Object type, PRaiseNode raiseNode) {
             StgDictObject dict = execute(type);
             if (dict == null) {
-                throw raiseNode.raise(TypeError, "abstract class");
+                throw raiseNode.raise(TypeError, ABSTRACT_CLASS);
             }
             return dict;
         }
@@ -293,14 +296,14 @@ public class StgDictBuiltins extends PythonBuiltins {
                 // pass through
             }
             if (!isAnonSeq) {
-                throw raise(TypeError, "_anonymous_ must be a sequence");
+                throw raise(TypeError, ANONYMOUS_MUST_BE_A_SEQUENCE);
             }
 
             for (int i = 0; i < sizeNode.execute(frame, anon); ++i) {
                 Object fname = getItemNode.execute(frame, anon, i); /* borrowed */
                 CFieldObject descr = (CFieldObject) getAttr.executeObject(frame, type, fname);
                 if (getClassNode.execute(descr) != CField) {
-                    throw raise(AttributeError, "'%U' is specified in _anonymous_ but not in _fields_", fname);
+                    throw raise(AttributeError, S_IS_SPECIFIED_IN_ANONYMOUS_BUT_NOT_IN_FIELDS, fname);
                 }
                 descr.anonymous = 1;
 

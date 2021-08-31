@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins._fields_;
+import static com.oracle.graal.python.nodes.ErrorMessages.DUPLICATE_VALUES_FOR_FIELD_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.TOO_MANY_INITIALIZERS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -80,7 +82,7 @@ public class StructureBuiltins extends PythonBuiltins {
 
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class NewNode extends PythonBuiltinNode {
+    protected abstract static class NewNode extends PythonBuiltinNode {
 
         @Specialization
         Object GenericPyCDataNew(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
@@ -93,7 +95,7 @@ public class StructureBuiltins extends PythonBuiltins {
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class InitNode extends PythonBuiltinNode {
+    protected abstract static class InitNode extends PythonBuiltinNode {
 
         @Specialization
         Object Struct_init(VirtualFrame frame, CDataObject self, Object[] args, PKeyword[] kwds,
@@ -108,7 +110,7 @@ public class StructureBuiltins extends PythonBuiltins {
                 int res = _init_pos_args(frame, self, getClassNode.execute(self), args, kwds, 0,
                                 setAttr, getItemNode, toString, hlib, pyTypeStgDictNode, getBaseClassNode);
                 if (res < args.length) {
-                    throw raise(TypeError, "too many initializers");
+                    throw raise(TypeError, TOO_MANY_INITIALIZERS);
                 }
             }
 
@@ -159,7 +161,7 @@ public class StructureBuiltins extends PythonBuiltins {
                 Object val = args[i + index];
                 if (kwds.length > 0) {
                     if (KeywordsStorage.findStringKey(kwds, name) != -1) {
-                        throw raise(TypeError, "duplicate values for field %s", name);
+                        throw raise(TypeError, DUPLICATE_VALUES_FOR_FIELD_S, name);
                     }
                 }
 

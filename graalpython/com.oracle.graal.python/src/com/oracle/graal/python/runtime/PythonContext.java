@@ -404,7 +404,7 @@ public final class PythonContext {
     private final IDUtils idUtils = new IDUtils();
 
     // ctypes' used native libraries/functions.
-    private final HashMap<Long, Object> ptrAdrMap = new HashMap<>();
+    private final ConcurrentHashMap<Long, Object> ptrAdrMap = new ConcurrentHashMap<>();
 
     @CompilationFinal private PosixSupport posixSupport;
     @CompilationFinal private NFIZlibSupport nativeZlib;
@@ -891,7 +891,7 @@ public final class PythonContext {
         return nativeLZMA;
     }
 
-    public HashMap<Long, Object> getCtypesAdrMap() {
+    public ConcurrentHashMap<Long, Object> getCtypesAdrMap() {
         return ptrAdrMap;
     }
 

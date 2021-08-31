@@ -42,7 +42,19 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.DICTFLAG_FINAL;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.getHandleFromLongObject;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
+import static com.oracle.graal.python.nodes.ErrorMessages.BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES;
+import static com.oracle.graal.python.nodes.ErrorMessages.CTYPES_OBJECT_STRUCTURE_TOO_DEEP;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_INSTANCE_GOT_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_INSTANCE_INSTEAD_OF_POINTER_TO_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_INSTANCE_INSTEAD_OF_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.INCOMPATIBLE_TYPES_S_INSTANCE_INSTEAD_OF_S_INSTANCE;
+import static com.oracle.graal.python.nodes.ErrorMessages.INTEGER_EXPECTED;
+import static com.oracle.graal.python.nodes.ErrorMessages.NOT_A_CTYPE_INSTANCE;
+import static com.oracle.graal.python.nodes.ErrorMessages.OFFSET_CANNOT_BE_NEGATIVE;
+import static com.oracle.graal.python.nodes.ErrorMessages.THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_BUFFER_IS_NOT_C_CONTIGUOUS;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_BUFFER_IS_NOT_WRITABLE;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -63,7 +75,6 @@ import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.SetFuncNod
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesDlSymNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.DLHandler;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
-import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheckExact;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
@@ -74,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -86,7 +98,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
@@ -104,6 +115,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
                 PythonBuiltinClassType.PyCArrayType,
                 PythonBuiltinClassType.PyCFuncPtrType,
                 PythonBuiltinClassType.PyCPointerType,
+                PythonBuiltinClassType.PyCSimpleType,
 })
 public class CDataTypeBuiltins extends PythonBuiltins {
 
@@ -128,21 +140,18 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object CDataType_from_param(VirtualFrame frame, Object type, Object value,
-                        @Cached PyTypeCheckExact pyTypeCheckExact,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached("create(_as_parameter_)") LookupInheritedAttributeNode lookupAttrId,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetNameNode getNameNode) {
-            Object as_parameter;
             if (isInstanceNode.executeWith(frame, value, type)) {
                 return value;
             }
-            if (pyTypeCheckExact.isPyCArg(value)) {
+            if (PGuards.isPyCArg(value)) {
                 PyCArgObject p = (PyCArgObject) value;
                 Object ob = p.obj;
-                StgDictObject dict;
-                dict = pyTypeStgDictNode.execute(type);
+                StgDictObject dict = pyTypeStgDictNode.execute(type);
 
                 /*
                  * If we got a PyCArgObject, we must check if the object packed in it is an instance
@@ -153,17 +162,17 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         return value;
                     }
                 }
-                throw raise(TypeError, "expected %s instance instead of pointer to %s",
+                throw raise(TypeError, EXPECTED_S_INSTANCE_INSTEAD_OF_POINTER_TO_S,
                                 getNameNode.execute(getClassNode.execute(type)));
             }
 
-            as_parameter = lookupAttrId.execute(value);
+            Object as_parameter = lookupAttrId.execute(value);
 
             if (as_parameter != null) {
-                return CDataType_from_param(frame, type, as_parameter, pyTypeCheckExact,
+                return CDataType_from_param(frame, type, as_parameter,
                                 pyTypeStgDictNode, lookupAttrId, isInstanceNode, getClassNode, getNameNode);
             }
-            throw raise(TypeError, "expected %s instance instead of %s",
+            throw raise(TypeError, EXPECTED_S_INSTANCE_INSTEAD_OF_S,
                             getNameNode.execute(getClassNode.execute(type)),
                             getNameNode.execute(getClassNode.execute(value)));
         }
@@ -196,7 +205,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         Object error(Object type, Object arg) {
-            throw raise(TypeError, "integer expected");
+            throw raise(TypeError, INTEGER_EXPECTED);
         }
     }
 
@@ -223,19 +232,19 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             PMemoryView buffer = memoryViewNode.execute(frame, obj);
 
             if (buffer.isReadOnly()) {
-                throw raise(TypeError, "underlying buffer is not writable");
+                throw raise(TypeError, UNDERLYING_BUFFER_IS_NOT_WRITABLE);
             }
 
             if (!buffer.isCContiguous()) {
-                throw raise(TypeError, "underlying buffer is not C contiguous");
+                throw raise(TypeError, UNDERLYING_BUFFER_IS_NOT_C_CONTIGUOUS);
             }
 
             if (offset < 0) {
-                throw raise(ValueError, "offset cannot be negative");
+                throw raise(ValueError, OFFSET_CANNOT_BE_NEGATIVE);
             }
 
             if (dict.size > buffer.getLength() - offset) {
-                throw raise(ValueError, "Buffer size too small (%d instead of at least %d bytes)", buffer.getLength(), dict.size + offset);
+                throw raise(ValueError, BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES, buffer.getLength(), dict.size + offset);
             }
 
             auditNode.audit("ctypes.cdata/buffer", buffer, buffer.getLength(), offset);
@@ -267,11 +276,11 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
 
             if (offset < 0) {
-                throw raise(ValueError, "offset cannot be negative");
+                throw raise(ValueError, OFFSET_CANNOT_BE_NEGATIVE);
             }
 
             if (dict.size > bytes.length - offset) {
-                throw raise(ValueError, "Buffer size too small (%d instead of at least %d bytes)", bytes.length, dict.size + offset);
+                throw raise(ValueError, BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES, bytes.length, dict.size + offset);
             }
 
             auditNode.audit("ctypes.cdata/buffer", bytes, bytes.length, offset);
@@ -307,7 +316,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             auditNode.audit("ctypes.dlsym", dll, name);
             Object obj = getAttributeNode.executeObject(frame, dll);
             if (!longCheckNode.execute(obj)) {
-                throw raise(TypeError, "the _handle attribute of the second argument must be an integer");
+                throw raise(TypeError, THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER);
             }
             DLHandler handle = getHandleFromLongObject(obj, getContext(), asVoidPtr, getRaiseNode());
             Object address = dlSymNode.execute(frame, handle, name, getContext(), factory(), ValueError);
@@ -345,7 +354,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isBytes(obj)")
-        CDataObject PyCData_AtAddress(Object type, Object obj, int offset, PythonObjectFactory factory,
+        CDataObject PyCData_AtAddress(Object type, Object obj, @SuppressWarnings("unused") int offset, PythonObjectFactory factory,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached AuditNode auditNode) {
@@ -359,7 +368,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             if (obj instanceof PMemoryView) {
                 pd.b_ptr = PtrValue.memoryView((PMemoryView) obj);
             } else {
-                pd.b_ptr = PtrValue.object(obj, offset);
+                throw raise(NotImplementedError); // TODO get Objects from numeric pointers.
             }
             pd.b_length = stgdict.length;
             pd.b_size = stgdict.size;
@@ -371,7 +380,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
     // corresponds to PyCData_get
     @ImportStatic(FieldGet.class)
     protected abstract static class PyCDataGetNode extends PNodeWithRaise {
-        protected abstract Object execute(Object type, FieldGet getfunc, Object src, int index, int size, PtrValue adr, PythonContext context, PythonObjectFactory factory);
+        protected abstract Object execute(Object type, FieldGet getfunc, Object src, int index, int size, PtrValue adr, PythonObjectFactory factory);
 
         @Specialization(guards = "getfunc != nil")
         Object withFunc(@SuppressWarnings("unused") Object type,
@@ -379,7 +388,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") Object src,
                         @SuppressWarnings("unused") int index,
                         int size, PtrValue adr,
-                        @SuppressWarnings("unused") PythonContext context, PythonObjectFactory factory,
+                        PythonObjectFactory factory,
                         @Cached GetFuncNode getFuncNode) {
             return getFuncNode.execute(getfunc, adr, size, factory);
         }
@@ -390,13 +399,14 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         Object src,
                         int index,
                         int size, PtrValue adr,
-                        PythonContext context, PythonObjectFactory factory,
+                        PythonObjectFactory factory,
                         @Cached PyTypeCheck pyTypeCheck,
+                        @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached GetFuncNode getFuncNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             StgDictObject dict = pyTypeStgDictNode.execute(type);
-            if (dict != null && dict.getfunc != FieldGet.nil && !pyTypeCheck.ctypesSimpleInstance(type, context, getBaseClassNode)) {
+            if (dict != null && dict.getfunc != FieldGet.nil && !pyTypeCheck.ctypesSimpleInstance(type, getBaseClassNode, isSameTypeNode)) {
                 return getFuncNode.execute(dict.getfunc, adr, size, factory);
             }
             return PyCData_FromBaseObj(type, src, index, adr, pyTypeCheck, factory, getRaiseNode(), pyTypeStgDictNode);
@@ -421,7 +431,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                         @Cached GetNameNode getName,
                         @Cached KeepRefNode keepRefNode) {
             if (!pyTypeCheck.isCDataObject(dst)) {
-                throw raise(TypeError, "not a ctype instance");
+                throw raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
 
             Object result = PyCDataSetInternal(frame, type, setfunc, value, size, ptr, factory,
@@ -467,9 +477,8 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                 // assert(PyType_Check(type));
                 if (PGuards.isPTuple(value)) {
                     Object ob = callNode.execute(frame, type, value);
-                    if (ob == null) {
-                        throw raise(RuntimeError, "(%s) ", getName.execute(type));
-                    }
+                    // throw raise(RuntimeError, "(%s) ", getName.execute(type));
+                    // XXX we never return `null` it will throw elsewhere.
                     return PyCDataSetInternal(frame, type, setfunc, ob, size, ptr, factory,
                                     pyTypeCheck,
                                     setFuncNode,
@@ -482,7 +491,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                     // *(void **)ptr = NULL;
                     return PNone.NONE;
                 } else {
-                    throw raise(TypeError, "expected %s instance, got %s", getName.execute(type), getName.execute(value));
+                    throw raise(TypeError, EXPECTED_S_INSTANCE_GOT_S, getName.execute(type), getName.execute(value));
                 }
             }
             CDataObject src = (CDataObject) value;
@@ -495,12 +504,12 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
             if (pyTypeCheck.isPyCPointerTypeObject(type) && pyTypeCheck.isArrayObject(value)) {
                 StgDictObject p1 = pyObjectStgDictNode.execute(value);
-                assert p1 != null; /* Cannot be NULL for array instances */
+                assert p1 != null : "Cannot be NULL for array instances";
                 StgDictObject p2 = pyTypeStgDictNode.execute(type);
-                assert p2 != null; /* Cannot be NULL for pointer types */
+                assert p2 != null : "Cannot be NULL for pointer types";
 
                 if (p1.proto != p2.proto) {
-                    throw raise(TypeError, "incompatible types, %s instance instead of %s instance", getName.execute(value), getName.execute(type));
+                    throw raise(TypeError, INCOMPATIBLE_TYPES_S_INSTANCE_INSTEAD_OF_S_INSTANCE, getName.execute(value), getName.execute(type));
                 }
                 // *(void **)ptr = src.b_ptr; TODO
 
@@ -515,7 +524,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                  */
                 return factory.createTuple(new Object[]{keep, value});
             }
-            throw raise(TypeError, "incompatible types, %s instance instead of %s instance", getName.execute(value), getName.execute(type));
+            throw raise(TypeError, INCOMPATIBLE_TYPES_S_INSTANCE_INSTEAD_OF_S_INSTANCE, getName.execute(value), getName.execute(type));
         }
 
     }
@@ -595,7 +604,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             bytesLeft = MAX_KEY_SIZE - PythonUtils.sbLength(sb) - 1;
             /* Hex format needs 2 characters per byte */
             if (bytesLeft < Integer.BYTES * 2) {
-                throw raiseNode.raise(ValueError, "ctypes object structure too deep");
+                throw raiseNode.raise(ValueError, CTYPES_OBJECT_STRUCTURE_TOO_DEEP);
             }
             PythonUtils.append(sb, PythonUtils.format(":%x", target.b_index));
             target = target.b_base;
@@ -603,8 +612,9 @@ public class CDataTypeBuiltins extends PythonBuiltins {
         return PythonUtils.sbToString(sb);
     }
 
-    /*- XXX: (mq) This might not be necessary in our end but will keep it until we fully support ctypes.
     static void PyCData_MallocBuffer(CDataObject obj, StgDictObject dict) {
+        obj.b_ptr = PtrValue.bytes(dict.size);
+        /*- XXX: (mq) This might not be necessary in our end but will keep it until we fully support ctypes.
             if (dict.size <= sizeof(obj.b_value)) {
                 /* No need to call malloc, can use the default buffer * /
                 obj.b_ptr.ptr = obj.b_value;
@@ -624,10 +634,9 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                 obj.b_needsfree = 1;
                 memset(obj.b_ptr, 0, dict.size);
             }
-            obj.b_size = dict.size;
-            return 0;
+        */
+        obj.b_size = dict.size;
     }
-    */
 
     static CDataObject PyCData_FromBaseObj(Object type, Object base, int index, PtrValue adr,
                     PyTypeCheck pyTypeCheck,
@@ -663,7 +672,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
         obj.b_index = 0;
         obj.b_objects = null;
         obj.b_length = dict.length;
-        obj.b_ptr = PtrValue.bytes(dict.size); // PyCData_MallocBuffer(obj, dict);
+        PyCData_MallocBuffer(obj, dict);
         return obj;
     }
 }

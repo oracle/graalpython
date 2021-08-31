@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
-public class CThunkObject extends PythonBuiltinObject {
+public final class CThunkObject extends PythonBuiltinObject {
 
     Object pcl_write; // ffi_closure /* the C callable, writeable */
     Object pcl_exec; /* the C callable, executable */

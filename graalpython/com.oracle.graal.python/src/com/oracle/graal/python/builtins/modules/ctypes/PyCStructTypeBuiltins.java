@@ -72,12 +72,12 @@ public class PyCStructTypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class NewNode extends StructUnionTypeNewNode {
+    protected abstract static class NewNode extends StructUnionTypeNewNode {
     }
 
     @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
+    protected abstract static class SetattrNode extends PythonTernaryBuiltinNode {
 
         @Specialization
         protected PNone doStringKey(VirtualFrame frame, Object object, String key, Object value,

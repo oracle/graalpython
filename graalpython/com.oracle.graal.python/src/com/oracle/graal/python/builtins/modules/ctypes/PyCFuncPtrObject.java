@@ -42,9 +42,9 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 
 import com.oracle.truffle.api.object.Shape;
 
-public class PyCFuncPtrObject extends CDataObject {
+public final class PyCFuncPtrObject extends CDataObject {
 
-    CThunkObject thunk;
+    // CThunkObject thunk;
     Object callable;
 
     /* These two fields will override the ones in the type's stgdict if they are set */

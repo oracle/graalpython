@@ -46,6 +46,9 @@ import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_ISPOINTER;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins._ctypes_alloc_format_string_with_shape;
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.ffi_type_pointer;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_CDATA_INSTANCE;
+import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_MUST_BE_A_TYPE;
+import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_MUST_HAVE_STORAGE_INFO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 
 import java.util.List;
@@ -100,7 +103,7 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
     @ImportStatic(PyCPointerTypeBuiltins.class)
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class PyCPointerTypeNewNode extends PythonBuiltinNode {
+    protected abstract static class PyCPointerTypeNewNode extends PythonBuiltinNode {
 
         @Specialization
         protected Object PyCPointerType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
@@ -162,14 +165,14 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = from_param, minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    public abstract static class FromParamNode extends PythonBinaryBuiltinNode {
+    protected abstract static class FromParamNode extends PythonBinaryBuiltinNode {
 
         // Corresponds to _byref
         /* _byref consumes a refcount to its argument */
         protected PyCArgObject byref(Object obj,
                         @Cached PyTypeCheck pyTypeCheck) {
             if (!pyTypeCheck.isCDataObject(obj)) {
-                throw raise(PythonErrorType.TypeError, "expected CData instance");
+                throw raise(PythonErrorType.TypeError, EXPECTED_CDATA_INSTANCE);
             }
 
             CDataObject cdata = (CDataObject) obj;
@@ -211,7 +214,7 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
                  * Array instances are also pointers when the item types are the same.
                  */
                 StgDictObject v = pyObjectStgDictNode.execute(value);
-                assert v != null; /* Cannot be NULL for pointer or array objects */
+                assert v != null : "Cannot be NULL for pointer or array objects";
                 if (toJavaBooleanNode.execute(isSubClassNode.execute(frame, v.proto, typedict.proto))) {
                     return value;
                 }
@@ -222,7 +225,7 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = set_type, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class SetTypeNode extends PythonBuiltinNode {
+    protected abstract static class SetTypeNode extends PythonBuiltinNode {
 
         @Specialization
         Object PyCPointerType_set_type(Object self, String type,
@@ -238,7 +241,7 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!isString(type)")
         Object error(Object self, Object type) {
-            throw raise(TypeError, "_type_ must be a type");
+            throw raise(TypeError, TYPE_MUST_BE_A_TYPE);
         }
     }
 
@@ -259,10 +262,10 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
                     PyTypeStgDictNode pyTypeStgDictNode,
                     PRaiseNode raiseNode) {
         if (proto == null || !isTypeNode.execute(proto)) {
-            throw raiseNode.raise(TypeError, "_type_ must be a type");
+            throw raiseNode.raise(TypeError, TYPE_MUST_BE_A_TYPE);
         }
         if (pyTypeStgDictNode.execute(proto) == null) {
-            throw raiseNode.raise(TypeError, "_type_ must have storage info");
+            throw raiseNode.raise(TypeError, TYPE_MUST_HAVE_STORAGE_INFO);
         }
         stgdict.proto = proto;
     }

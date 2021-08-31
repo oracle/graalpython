@@ -42,19 +42,22 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 
-final class PtrValue {
-    private static final ByteArraySupport SERIALIZE = ByteArraySupport.littleEndian();
-    private static final EmptyStorage EMPTY_STORAGE = new EmptyStorage();
-    Storage ptr; // can be guest value
+final class PtrValue implements TruffleObject {
+    private static final ByteArraySupport SERIALIZE_LE = ByteArraySupport.littleEndian();
+    private static final NullStorage NULL_STORAGE = new NullStorage();
+    Storage ptr;
     int offset;
 
     protected PtrValue(Storage ptr, int offset) {
@@ -63,15 +66,109 @@ final class PtrValue {
     }
 
     protected PtrValue() {
-        this(new EmptyStorage(), 0);
+        this(NULL_STORAGE, 0);
     }
 
-    protected static PtrValue empty() {
-        return new PtrValue(EMPTY_STORAGE, 0);
+    protected void toBytes(byte[] bytes) {
+        ptr = new ByteArrayStorage(bytes);
+        offset = 0;
+    }
+
+    protected boolean isManagedBytes() {
+        return ptr instanceof ByteArrayStorage;
+    }
+
+    protected boolean isNativePointer() {
+        return ptr instanceof NativePointerStorage;
+    }
+
+    protected static PtrValue nil() {
+        return new PtrValue(NULL_STORAGE, 0);
     }
 
     protected static PtrValue bytes(byte[] bytes) {
         return new PtrValue(new ByteArrayStorage(bytes), 0);
+    }
+
+    protected void toNativePointer(Object o) {
+        if (o instanceof PtrValue) {
+            ptr = ((PtrValue) o).ptr;
+            offset = ((PtrValue) o).offset;
+        } else {
+            ptr = new NativePointerStorage(o);
+            offset = 0;
+        }
+    }
+
+    protected void toPrimitive(FFIType type, Object v) {
+        assert !type.type.isArray() : "Cannot convert array to primitive";
+        ptr = new PrimitiveStorage(v, type.type);
+    }
+
+    private static final int DEFAULT_ARRAY_SIZE = 16;
+
+    protected void createStorage(FFIType type, Object value) {
+        if (ptr == NULL_STORAGE) {
+            ptr = createStorageInternal(type, value);
+            offset = 0;
+        }
+    }
+
+    private static Storage createStorageInternal(FFIType type, Object value) {
+        switch (type.type) {
+            case FFI_TYPE_VOID:
+                return NULL_STORAGE;
+
+            case FFI_TYPE_UINT8:
+            case FFI_TYPE_SINT8:
+            case FFI_TYPE_UINT16:
+            case FFI_TYPE_SINT16:
+            case FFI_TYPE_UINT32:
+            case FFI_TYPE_SINT32:
+            case FFI_TYPE_UINT64:
+            case FFI_TYPE_SINT64:
+            case FFI_TYPE_FLOAT:
+            case FFI_TYPE_DOUBLE:
+                return new PrimitiveStorage(value, type.type);
+
+            case FFI_TYPE_STRUCT: // TODO
+            case FFI_TYPE_STRING:
+            case FFI_TYPE_UINT8_ARRAY:
+            case FFI_TYPE_SINT8_ARRAY:
+                return new ByteArrayStorage(DEFAULT_ARRAY_SIZE);
+
+            case FFI_TYPE_UINT16_ARRAY:
+            case FFI_TYPE_SINT16_ARRAY:
+                return new ShortArrayStorage(DEFAULT_ARRAY_SIZE);
+
+            case FFI_TYPE_UINT32_ARRAY:
+            case FFI_TYPE_SINT32_ARRAY:
+                return new IntArrayStorage(DEFAULT_ARRAY_SIZE);
+
+            case FFI_TYPE_UINT64_ARRAY:
+            case FFI_TYPE_SINT64_ARRAY:
+                return new LongArrayStorage(DEFAULT_ARRAY_SIZE);
+
+            case FFI_TYPE_FLOAT_ARRAY:
+                return new FloatArrayStorage(DEFAULT_ARRAY_SIZE);
+
+            case FFI_TYPE_DOUBLE_ARRAY:
+                return new DoubleArrayStorage(DEFAULT_ARRAY_SIZE);
+
+            case FFI_TYPE_POINTER:
+                return new NativePointerStorage(value);
+            default:
+                throw CompilerDirectives.shouldNotReachHere("Not supported type!");
+
+        }
+    }
+
+    protected static PtrValue create(FFIType type, Object value, int offset) {
+        return new PtrValue(createStorageInternal(type, value), offset);
+    }
+
+    protected static PtrValue create(FFIType type, Object value) {
+        return create(type, value, 0);
     }
 
     protected static PtrValue bytes(int size) {
@@ -82,12 +179,8 @@ final class PtrValue {
         return new PtrValue(new MemoryViewStorage(mv), 0);
     }
 
-    protected static PtrValue object(Object o) {
-        return new PtrValue(new ObjectStorage(o), 0);
-    }
-
-    protected static PtrValue object(Object o, int offset) { // TODO
-        return new PtrValue(new ObjectStorage(o), offset);
+    protected static PtrValue nativePointer(Object o) {
+        return new PtrValue(new NativePointerStorage(o), 0);
     }
 
     protected static PtrValue ref(Storage storage) {
@@ -98,9 +191,9 @@ final class PtrValue {
         return new PtrValue(ptr, offset + incOffset);
     }
 
-    protected Object getObject() {
-        assert ptr instanceof ObjectStorage;
-        return ((ObjectStorage) ptr).value;
+    protected Object getNativePointer() {
+        assert ptr instanceof NativePointerStorage;
+        return ((NativePointerStorage) ptr).value;
     }
 
     protected PtrValue copy() {
@@ -111,7 +204,7 @@ final class PtrValue {
     }
 
     protected static boolean isNull(PtrValue b_ptr) {
-        return b_ptr == null || b_ptr.ptr instanceof EmptyStorage;
+        return b_ptr == null || b_ptr.ptr == NULL_STORAGE;
     }
 
     /*-
@@ -121,121 +214,10 @@ final class PtrValue {
     }
     */
 
-    public enum StorageType {
-        UNINITIALIZED(0),
-        INT8(Byte.BYTES),
-        INT16(Short.BYTES),
-        INT32(Integer.BYTES),
-        INT64(Long.BYTES),
-        FLOAT(Float.BYTES),
-        DOUBLE(Double.BYTES),
-        POINTER(Long.BYTES),
-        STRING(Character.BYTES),
-        OBJECT(Long.BYTES);
-
-        final short size;
-
-        StorageType(int size) {
-            this.size = (short) size;
-        }
-    }
-
-    protected void specialize(int typeSize, int length, Object value) {
-        if (typeSize == ptr.type.size) {
-            if (length > 1 && ptr instanceof ArrayStorage) {
-                return;
-            }
-            if (length == 1 && !(ptr instanceof ArrayStorage)) {
-                return;
-            }
-        }
-        switch (typeSize) {
-            case Byte.BYTES:
-                if (length > 1) {
-                    if (ptr instanceof EmptyStorage) {
-                        ptr = new ByteArrayStorage(length);
-                    } else {
-                        ptr = ptr.resize(length);
-                    }
-                } else {
-                    ptr = new ByteStorage((byte) 0);
-                }
-                break;
-            case Short.BYTES:
-                if (length > 1) {
-                    if (ptr instanceof EmptyStorage) {
-                        ptr = new ShortArrayStorage(length);
-                    } else {
-                        ptr = ptr.resize(length);
-                    }
-                } else {
-                    ptr = new ShortStorage((byte) 0);
-                }
-                break;
-            case Integer.BYTES:
-                if (value instanceof Double || value instanceof Float) {
-                    if (length > 1) {
-                        if (ptr instanceof EmptyStorage) {
-                            ptr = new FloatArrayStorage(length);
-                        } else {
-                            ptr = ptr.resize(length);
-                        }
-                    } else {
-                        ptr = new FloatStorage((byte) 0);
-                    }
-
-                } else {
-                    if (length > 1) {
-                        if (ptr instanceof EmptyStorage) {
-                            ptr = new IntArrayStorage(length);
-                        } else {
-                            ptr = ptr.resize(length);
-                        }
-                    } else {
-                        ptr = new IntStorage((byte) 0);
-                    }
-                }
-                break;
-            case Long.BYTES:
-                if (value instanceof Integer || value instanceof Long) {
-                    if (length > 1) {
-                        if (ptr instanceof EmptyStorage) {
-                            ptr = new LongArrayStorage(length);
-                        } else {
-                            ptr = ptr.resize(length);
-                        }
-                    } else {
-                        ptr = new LongStorage((byte) 0);
-                    }
-                } else if (value instanceof Double) {
-                    if (length > 1) {
-                        if (ptr instanceof EmptyStorage) {
-                            ptr = new DoubleArrayStorage(length);
-                        } else {
-                            ptr = ptr.resize(length);
-                        }
-                    } else {
-                        ptr = new DoubleStorage((byte) 0);
-                    }
-                } else {
-                    if (length > 1) {
-                        if (ptr instanceof EmptyStorage) {
-                            ptr = new ObjectArrayStorage(length);
-                        } else {
-                            ptr = ptr.resize(length);
-                        }
-                    } else {
-                        ptr = new ObjectStorage(value);
-                    }
-                }
-                break;
-        }
-    }
-
     abstract static class Storage {
-        final StorageType type;
+        final FFI_TYPES type;
 
-        Storage(StorageType type) {
+        Storage(FFI_TYPES type) {
             this.type = type;
         }
 
@@ -254,291 +236,95 @@ final class PtrValue {
         protected abstract Storage resize(int length);
     }
 
-    static final class EmptyStorage extends Storage {
-        EmptyStorage() {
-            super(StorageType.UNINITIALIZED);
+    static final class NullStorage extends Storage {
+
+        NullStorage() {
+            super(FFI_TYPES.FFI_TYPE_VOID);
         }
 
         @Override
         protected Object getValue(int idx) {
-            throw CompilerDirectives.shouldNotReachHere("Empty Pointer Storage! Specialize first");
-        }
-
-        @Override
-        protected Object getNativeObject(Env env) {
-            throw CompilerDirectives.shouldNotReachHere("Empty Pointer Storage! Specialize first");
+            throw CompilerDirectives.shouldNotReachHere("Null Storage!");
         }
 
         @Override
         protected void setValue(Object v, int idx) {
-            throw CompilerDirectives.shouldNotReachHere("Empty Pointer Storage! Specialize first");
+            throw CompilerDirectives.shouldNotReachHere("Null Storage!");
         }
 
         @Override
         protected Storage resize(int length) {
-            throw CompilerDirectives.shouldNotReachHere("Empty Pointer Storage!");
-        }
-    }
-
-    static class ObjectStorage extends Storage {
-        Object value;
-
-        ObjectStorage(Object value) {
-            super(StorageType.OBJECT);
-            this.value = value;
+            throw CompilerDirectives.shouldNotReachHere("Null Storage!");
         }
 
         @Override
-        protected final Object getValue(int idx) {
-            assert idx == 0;
+        protected Object getNativeObject(Env env) {
+            return env.asGuestValue(null);
+        }
+    }
+
+    static final class PrimitiveStorage extends Storage {
+
+        Object value;
+
+        PrimitiveStorage(Object o, FFI_TYPES type) {
+            super(type);
+            this.value = o;
+        }
+
+        @Override
+        protected Object getValue(int idx) {
             return value;
         }
 
         @Override
         protected void setValue(Object v, int idx) {
-            assert idx == 0;
             value = v;
+        }
+
+        @Override
+        protected Storage resize(int length) {
+            throw CompilerDirectives.shouldNotReachHere("Primitive Storage!");
+        }
+
+        @Override
+        protected Object getNativeObject(Env env) {
+            return value;
+        }
+    }
+
+    static final class NativePointerStorage extends Storage {
+
+        Object value;
+
+        NativePointerStorage(Object o) {
+            super(FFI_TYPES.FFI_TYPE_POINTER);
+            this.value = o;
+        }
+
+        @Override
+        protected Object getValue(int idx) {
+            return value;
+        }
+
+        @Override
+        protected void setValue(Object v, int idx) {
+            value = v;
+        }
+
+        @Override
+        protected Storage resize(int length) {
+            throw CompilerDirectives.shouldNotReachHere("Native Pointer Storage!");
         }
 
         @Override
         protected Object getNativeObject(Env env) {
             return env.asGuestValue(value);
         }
-
-        @Override
-        protected Storage resize(int length) {
-            if (length > 1) {
-                ObjectArrayStorage storage = new ObjectArrayStorage(length);
-                storage.value[0] = value;
-                return storage;
-            }
-            return this;
-        }
-    }
-
-    static class ByteStorage extends Storage {
-        byte value;
-
-        ByteStorage(byte value) {
-            super(StorageType.INT8);
-            this.value = value;
-        }
-
-        @Override
-        protected final Object getValue(int idx) {
-            assert idx == 0;
-            return value;
-        }
-
-        @Override
-        protected void setValue(Object v, int idx) {
-            assert idx == 0;
-            assert v instanceof Byte;
-            value = (byte) v;
-        }
-
-        @Override
-        protected Object getNativeObject(Env env) {
-            return value;
-        }
-
-        @Override
-        protected Storage resize(int length) {
-            if (length > 1) {
-                ByteArrayStorage storage = new ByteArrayStorage(length);
-                storage.value[0] = value;
-                return storage;
-            }
-            return this;
-        }
-    }
-
-    static class ShortStorage extends Storage {
-        short value;
-
-        ShortStorage(short value) {
-            super(StorageType.INT16);
-            this.value = value;
-        }
-
-        @Override
-        protected final Object getValue(int idx) {
-            assert idx == 0;
-            return value;
-        }
-
-        @Override
-        protected void setValue(Object v, int idx) {
-            assert idx == 0;
-            assert v instanceof Short;
-            value = (short) v;
-        }
-
-        @Override
-        protected Object getNativeObject(Env env) {
-            return value;
-        }
-
-        @Override
-        protected Storage resize(int length) {
-            if (length > 1) {
-                ShortArrayStorage storage = new ShortArrayStorage(length);
-                storage.value[0] = value;
-                return storage;
-            }
-            return this;
-        }
-    }
-
-    static class IntStorage extends Storage {
-        int value;
-
-        IntStorage(int value) {
-            super(StorageType.INT32);
-            this.value = value;
-        }
-
-        @Override
-        protected final Object getValue(int idx) {
-            return value;
-        }
-
-        @Override
-        protected void setValue(Object v, int idx) {
-            assert idx == 0;
-            assert v instanceof Integer;
-            value = (int) v;
-        }
-
-        @Override
-        protected Object getNativeObject(Env env) {
-            return value;
-        }
-
-        @Override
-        protected Storage resize(int length) {
-            if (length > 1) {
-                IntArrayStorage storage = new IntArrayStorage(length);
-                storage.value[0] = value;
-                return storage;
-            }
-            return this;
-        }
-    }
-
-    static class LongStorage extends Storage {
-        long value;
-
-        LongStorage(long value) {
-            super(StorageType.INT64);
-            this.value = value;
-        }
-
-        @Override
-        protected final Object getValue(int idx) {
-            assert idx == 0;
-            return value;
-        }
-
-        @Override
-        protected void setValue(Object v, int idx) {
-            assert idx == 0;
-            assert v instanceof Long;
-            value = (long) v;
-        }
-
-        @Override
-        protected Object getNativeObject(Env env) {
-            return value;
-        }
-
-        @Override
-        protected Storage resize(int length) {
-            if (length > 1) {
-                FloatArrayStorage storage = new FloatArrayStorage(length);
-                storage.value[0] = value;
-                return storage;
-            }
-            return this;
-        }
-    }
-
-    static class FloatStorage extends Storage {
-        float value;
-
-        FloatStorage(float value) {
-            super(StorageType.FLOAT);
-            this.value = value;
-        }
-
-        @Override
-        protected final Object getValue(int idx) {
-            assert idx == 0;
-            return value;
-        }
-
-        @Override
-        protected void setValue(Object v, int idx) {
-            assert idx == 0;
-            assert v instanceof Float;
-            value = (float) v;
-        }
-
-        @Override
-        protected Object getNativeObject(Env env) {
-            return value;
-        }
-
-        @Override
-        protected Storage resize(int length) {
-            if (length > 1) {
-                FloatArrayStorage storage = new FloatArrayStorage(length);
-                storage.value[0] = value;
-                return storage;
-            }
-            return this;
-        }
-    }
-
-    static class DoubleStorage extends Storage {
-        double value;
-
-        DoubleStorage(double value) {
-            super(StorageType.DOUBLE);
-            this.value = value;
-        }
-
-        @Override
-        protected final Object getValue(int idx) {
-            assert idx == 0;
-            return value;
-        }
-
-        @Override
-        protected void setValue(Object v, int idx) {
-            assert idx == 0;
-            assert v instanceof Double;
-            value = (double) v;
-        }
-
-        @Override
-        protected Object getNativeObject(Env env) {
-            return value;
-        }
-
-        @Override
-        protected Storage resize(int length) {
-            if (length > 1) {
-                DoubleArrayStorage storage = new DoubleArrayStorage(length);
-                storage.value[0] = value;
-                return storage;
-            }
-            return this;
-        }
     }
 
     abstract static class ArrayStorage extends Storage {
-        ArrayStorage(StorageType type) {
+        ArrayStorage(FFI_TYPES type) {
             super(type);
         }
 
@@ -549,12 +335,12 @@ final class PtrValue {
         byte[] value;
 
         ByteArrayStorage(int size) {
-            super(StorageType.INT8);
+            super(FFI_TYPES.FFI_TYPE_SINT8);
             this.value = new byte[size];
         }
 
         ByteArrayStorage(byte[] bytes) {
-            super(StorageType.INT8);
+            super(FFI_TYPES.FFI_TYPE_SINT8);
             this.value = bytes;
         }
 
@@ -568,18 +354,30 @@ final class PtrValue {
             if (v instanceof Byte) {
                 value[idx] = (byte) v;
                 return;
+            } else if (v instanceof Short) {
+                SERIALIZE_LE.putShort(value, idx, (short) v);
+                return;
             } else if (v instanceof Integer) {
-                SERIALIZE.putInt(value, idx, (int) v);
+                SERIALIZE_LE.putInt(value, idx, (int) v);
                 return;
             } else if (v instanceof Long) {
-                SERIALIZE.putLong(value, idx, (long) v);
+                SERIALIZE_LE.putLong(value, idx, (long) v);
                 return;
             } else if (v instanceof Double) {
-                SERIALIZE.putDouble(value, idx, (double) v);
+                SERIALIZE_LE.putDouble(value, idx, (double) v);
+                return;
+            } else if (v instanceof Boolean) {
+                value[idx] = (byte) (((boolean) v) ? 1 : 0);
                 return;
             } else if (v instanceof Float) {
-                SERIALIZE.putFloat(value, idx, (float) v);
+                SERIALIZE_LE.putFloat(value, idx, (float) v);
                 return;
+            } else if (v instanceof String) {
+                String s = (String) v;
+                if (PString.length(s) == 1) {
+                    value[idx] = (byte) PString.charAt(s, 0);
+                    return;
+                }
             }
             throw CompilerDirectives.shouldNotReachHere("Incompatible value type for ByteArrayStorage");
         }
@@ -599,6 +397,30 @@ final class PtrValue {
             return this;
         }
 
+        protected void memcpy(int offset, byte[] src, int srcOffset, int length) {
+            PythonUtils.arraycopy(src, srcOffset, value, offset, length);
+        }
+
+        protected void memcpy(int offset, byte[] src) {
+            memcpy(offset, src, 0, src.length);
+        }
+
+        protected byte[] trim(int offset) {
+            return trim(this, offset);
+        }
+
+        protected static byte[] trim(ByteArrayStorage storage, int offset) {
+            byte[] bytes = storage.value;
+            int end = bytes.length;
+            for (int i = offset; i < end; i++) {
+                if (bytes[i] == 0) {
+                    end = i;
+                    break;
+                }
+            }
+            return PythonUtils.arrayCopyOfRange(bytes, offset, end);
+        }
+
         @Override
         ArrayStorage copy() {
             return new ByteArrayStorage(PythonUtils.arrayCopyOf(value, value.length));
@@ -611,7 +433,7 @@ final class PtrValue {
 
         @TruffleBoundary
         MemoryViewStorage(PMemoryView bytes) {
-            super(StorageType.INT8);
+            super(FFI_TYPES.FFI_TYPE_SINT8);
             this.value = bytes;
             this.length = PythonBufferAccessLibrary.getUncached().getBufferLength(bytes);
         }
@@ -660,7 +482,7 @@ final class PtrValue {
         short[] value;
 
         ShortArrayStorage(int size) {
-            super(StorageType.INT16);
+            super(FFI_TYPES.FFI_TYPE_SINT16);
             this.value = new short[size];
         }
 
@@ -708,7 +530,7 @@ final class PtrValue {
         int[] value;
 
         IntArrayStorage(int size) {
-            super(StorageType.INT32);
+            super(FFI_TYPES.FFI_TYPE_SINT32);
             this.value = new int[size];
         }
 
@@ -750,7 +572,7 @@ final class PtrValue {
         long[] value;
 
         LongArrayStorage(int size) {
-            super(StorageType.INT64);
+            super(FFI_TYPES.FFI_TYPE_SINT64);
             this.value = new long[size];
         }
 
@@ -798,7 +620,7 @@ final class PtrValue {
         float[] value;
 
         FloatArrayStorage(int size) {
-            super(StorageType.FLOAT);
+            super(FFI_TYPES.FFI_TYPE_FLOAT);
             this.value = new float[size];
         }
 
@@ -847,7 +669,7 @@ final class PtrValue {
         double[] value;
 
         DoubleArrayStorage(int size) {
-            super(StorageType.DOUBLE);
+            super(FFI_TYPES.FFI_TYPE_DOUBLE);
             this.value = new double[size];
         }
 
@@ -891,46 +713,4 @@ final class PtrValue {
             return s;
         }
     }
-
-    static class ObjectArrayStorage extends ArrayStorage {
-        Object[] value;
-
-        ObjectArrayStorage(int size) {
-            super(StorageType.OBJECT);
-            this.value = new Object[size];
-        }
-
-        @Override
-        protected final Object getValue(int idx) {
-            return value[idx];
-        }
-
-        @Override
-        protected void setValue(Object v, int idx) {
-            value[idx] = v;
-        }
-
-        @Override
-        protected Object getNativeObject(Env env) {
-            return env.asGuestValue(value);
-        }
-
-        @Override
-        protected Storage resize(int length) {
-            if (length > value.length) {
-                ObjectArrayStorage storage = new ObjectArrayStorage(length);
-                PythonUtils.arraycopy(value, 0, storage.value, 0, length);
-                return storage;
-            }
-            return this;
-        }
-
-        @Override
-        ArrayStorage copy() {
-            ObjectArrayStorage s = new ObjectArrayStorage(0);
-            s.value = PythonUtils.arrayCopyOf(value, value.length);
-            return s;
-        }
-    }
-
 }

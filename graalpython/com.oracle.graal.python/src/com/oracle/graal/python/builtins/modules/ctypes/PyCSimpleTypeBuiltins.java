@@ -43,8 +43,15 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCSimpleType;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SimpleCData;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StgDict;
+import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins._as_parameter_;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.from_param;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_ISPOINTER;
+import static com.oracle.graal.python.nodes.ErrorMessages.A_TYPE_ATTRIBUTE_WHICH_MUST_BE_A_STRING_OF_LENGTH_1;
+import static com.oracle.graal.python.nodes.ErrorMessages.CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE;
+import static com.oracle.graal.python.nodes.ErrorMessages.CLASS_MUST_DEFINE_A_TYPE_STRING_ATTRIBUTE;
+import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_S_NOT_SUPPORTED;
+import static com.oracle.graal.python.nodes.ErrorMessages.WHICH_MUST_BE_A_SINGLE_CHARACTER_STRING_CONTAINING_ONE_OF_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.WRONG_TYPE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -52,7 +59,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -64,6 +70,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -78,13 +85,12 @@ import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -106,7 +112,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
     @ImportStatic(PyCPointerTypeBuiltins.class)
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class PyCSimpleTypeNewNode extends PythonBuiltinNode {
+    protected abstract static class PyCSimpleTypeNewNode extends PythonBuiltinNode {
 
         protected boolean isStruct() {
             return true;
@@ -114,14 +120,12 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object PyCSimpleType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
-                        @CachedLanguage PythonLanguage language,
                         @Cached TypeNode typeNew,
                         @Cached InternStringNode internStringNode,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @Cached("create(_type_)") LookupAttributeInMRONode lookupAttrId,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached GetClassNode getClassNode,
                         @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached SetAttributeNode.Dynamic setAttrString,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
@@ -132,7 +136,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
 
             Object proto = lookupAttrId.execute(result);
             if (proto == PNone.NO_VALUE) {
-                throw raise(AttributeError, "class must define a '_type_' attribute");
+                throw raise(AttributeError, CLASS_MUST_DEFINE_A_TYPE_ATTRIBUTE);
             }
             String proto_str;
             int proto_len;
@@ -140,18 +144,17 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
                 proto_str = toJavaStringNode.execute(proto);
                 proto_len = PString.length(proto_str);
             } else {
-                throw raise(TypeError, "class must define a '_type_' string attribute");
+                throw raise(TypeError, CLASS_MUST_DEFINE_A_TYPE_STRING_ATTRIBUTE);
             }
             if (proto_len != 1) {
-                throw raise(ValueError, "class must define a '_type_' attribute which must be a string of length 1");
+                throw raise(ValueError, A_TYPE_ATTRIBUTE_WHICH_MUST_BE_A_STRING_OF_LENGTH_1);
             }
             if (PString.indexOf(SIMPLE_TYPE_CHARS, proto_str, 0) == -1) {
-                throw raise(AttributeError, "class must define a '_type_' attribute which must be\na single character string containing one of '%s'.",
-                                SIMPLE_TYPE_CHARS);
+                throw raise(AttributeError, WHICH_MUST_BE_A_SINGLE_CHARACTER_STRING_CONTAINING_ONE_OF_S, SIMPLE_TYPE_CHARS);
             }
             FieldDesc fmt = FFIType._ctypes_get_fielddesc(PString.charAt(proto_str, 0));
             if (fmt == null) {
-                throw raise(ValueError, "_type_ '%s' not supported", proto_str);
+                throw raise(ValueError, TYPE_S_NOT_SUPPORTED, proto_str);
             }
 
             StgDictObject stgdict = factory().createStgDictObject(StgDict);
@@ -169,7 +172,6 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
 
             /* This consumes the refcount on proto which we have */
             stgdict.proto = proto_str;
-            // hlib.setItem(stgdict.getDictStorage(), _type_, proto_str);
 
             /* replace the class dict by our updated spam dict */
             PDict resDict = lib.getDict(result);
@@ -190,15 +192,15 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
             if (getBaseClassNode.execute(result) == getCore().lookupType(SimpleCData)) {
                 switch (proto_str) {
                     case "z": /* c_char_p */
-                        LazyPyCSimpleTypeBuiltins.addCCharPFromParam(language, result);
+                        LazyPyCSimpleTypeBuiltins.addCCharPFromParam(getLanguage(), result);
                         stgdict.flags |= TYPEFLAG_ISPOINTER;
                         break;
                     case "Z": /* c_wchar_p */
-                        LazyPyCSimpleTypeBuiltins.addCWCharPFromParam(language, result);
+                        LazyPyCSimpleTypeBuiltins.addCWCharPFromParam(getLanguage(), result);
                         stgdict.flags |= TYPEFLAG_ISPOINTER;
                         break;
                     case "P": /* c_void_p */
-                        LazyPyCSimpleTypeBuiltins.addCVoidPFromParam(language, result);
+                        LazyPyCSimpleTypeBuiltins.addCVoidPFromParam(getLanguage(), result);
                         stgdict.flags |= TYPEFLAG_ISPOINTER;
                         break;
                     case "s":
@@ -211,7 +213,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
                 }
             }
 
-            if (getClassNode.execute(type) == getCore().lookupType(PyCSimpleType) && fmt.setfunc_swapped != FieldSet.nil && fmt.getfunc_swapped != FieldGet.nil) {
+            if (type == PyCSimpleType && fmt.setfunc_swapped != FieldSet.nil && fmt.getfunc_swapped != FieldGet.nil) {
                 Object swapped = CreateSwappedType(frame, type, args, kwds, proto, fmt,
                                 typeNew,
                                 internStringNode,
@@ -283,14 +285,14 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
     @ImportStatic(CDataTypeBuiltins.class)
     @Builtin(name = from_param, minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    public abstract static class FromParamNode extends PythonBinaryBuiltinNode {
+    protected abstract static class FromParamNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         Object PyCSimpleType_from_param(VirtualFrame frame, Object type, Object value,
                         @Cached SetFuncNode setFuncNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached("create(_as_parameter_)") LookupAttributeInMRONode lookupAsParam) {
+                        @Cached LookupAttributeNode lookupAsParam) {
             /*
              * If the value is already an instance of the requested type, we can use it as is
              */
@@ -310,20 +312,22 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.tag = PString.charAt(fmt, 0);
             parg.pffi_type = fd.pffi_type;
-            parg.value.specialize(parg.pffi_type.size, 0, value);
-            parg.obj = setFuncNode.execute(frame, fd.setfunc, parg.value, value, 0);
-            if (parg.obj != null) {
+            parg.value.createStorage(parg.pffi_type, value);
+            try {
+                parg.obj = setFuncNode.execute(frame, fd.setfunc, parg.value, value, 0);
                 return parg;
+            } catch (PException e) {
+                // pass through to check for _as_parameter_
             }
 
-            Object as_parameter = lookupAsParam.execute(value);
+            Object as_parameter = lookupAsParam.execute(frame, value, _as_parameter_, false);
             if (as_parameter != null) {
                 // Py_EnterRecursiveCall("while processing _as_parameter_"); TODO
                 Object r = PyCSimpleType_from_param(frame, type, as_parameter, setFuncNode, isInstanceNode, pyTypeStgDictNode, lookupAsParam);
                 // Py_LeaveRecursiveCall();
                 return r;
             }
-            throw raise(TypeError, "wrong type");
+            throw raise(TypeError, WRONG_TYPE);
         }
     }
 

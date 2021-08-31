@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SimpleCData;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.GenericPyCDataNew;
+import static com.oracle.graal.python.nodes.ErrorMessages.CANT_DELETE_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
@@ -66,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -91,14 +93,14 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
     static void Simple_set_value(VirtualFrame frame, CDataObject self, Object value,
                     PythonObjectFactory factory,
                     PRaiseNode raiseNode,
-                    PyTypeStgDictNode pyTypeStgDictNode,
+                    PyObjectStgDictNode pyObjectStgDictNode,
                     SetFuncNode setFuncNode,
                     KeepRefNode keepRefNode) {
-        StgDictObject dict = pyTypeStgDictNode.execute(self);
+        StgDictObject dict = pyObjectStgDictNode.execute(self);
         if (value == null) {
-            throw raiseNode.raise(TypeError, "can't delete attribute");
+            throw raiseNode.raise(TypeError, CANT_DELETE_ATTRIBUTE);
         }
-        assert dict != null; /* Cannot be NULL for CDataObject instances */
+        assert dict != null : "Cannot be NULL for CDataObject instances";
         assert dict.setfunc != FieldSet.nil;
         Object result = setFuncNode.execute(frame, dict.setfunc, self.b_ptr, value, dict.size);
 
@@ -108,7 +110,7 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
 
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class NewNode extends PythonBuiltinNode {
+    protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization
         protected Object newCData(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
@@ -119,16 +121,16 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class InitNode extends PythonBuiltinNode {
+    protected abstract static class InitNode extends PythonBuiltinNode {
 
         @Specialization
         Object Simple_init(VirtualFrame frame, CDataObject self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Cached SetFuncNode setFuncNode,
                         @Cached KeepRefNode keepRefNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
             if (args.length > 0) {
                 Simple_set_value(frame, self, args[0],
-                                factory(), getRaiseNode(), pyTypeStgDictNode, setFuncNode, keepRefNode);
+                                factory(), getRaiseNode(), pyObjectStgDictNode, setFuncNode, keepRefNode);
             }
             return PNone.NONE;
         }
@@ -136,14 +138,14 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
 
     @Builtin(name = "value", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "current value")
     @GenerateNodeFactory
-    public abstract static class SimpleValueNode extends PythonBinaryBuiltinNode {
+    protected abstract static class SimpleValueNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(value)")
         Object Simple_get_value(CDataObject self, @SuppressWarnings("unused") PNone value,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached GetFuncNode getFuncNode) {
             StgDictObject dict = pyObjectStgDictNode.execute(self);
-            assert dict != null; /* Cannot be NULL for CDataObject instances */
+            assert dict != null : "Cannot be NULL for CDataObject instances";
             assert dict.getfunc != FieldGet.nil;
             return getFuncNode.execute(dict.getfunc, self.b_ptr, self.b_size, factory());
         }
@@ -152,25 +154,26 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
         Object set_value(VirtualFrame frame, CDataObject self, Object value,
                         @Cached SetFuncNode setFuncNode,
                         @Cached KeepRefNode keepRefNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
             Simple_set_value(frame, self, value,
-                            factory(), getRaiseNode(), pyTypeStgDictNode, setFuncNode, keepRefNode);
+                            factory(), getRaiseNode(), pyObjectStgDictNode, setFuncNode, keepRefNode);
             return PNone.NONE;
         }
     }
 
     @Builtin(name = "__ctypes_from_outparam__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class CtypesFromOutparamNode extends PythonUnaryBuiltinNode {
+    protected abstract static class CtypesFromOutparamNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         Object Simple_from_outparm(CDataObject self,
                         @Cached GetClassNode getClassNode,
+                        @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached GetFuncNode getFuncNode) {
-            if (pyTypeCheck.ctypesSimpleInstance(getClassNode.execute(self), getContext(), getBaseClassNode)) {
+            if (pyTypeCheck.ctypesSimpleInstance(getClassNode.execute(self), getBaseClassNode, isSameTypeNode)) {
                 return self;
             }
             /* call stgdict.getfunc */
@@ -181,7 +184,7 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
 
     @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class SimpleBoolNode extends PythonUnaryBuiltinNode {
+    protected abstract static class SimpleBoolNode extends PythonUnaryBuiltinNode {
 
         @SuppressWarnings("unused")
         @Specialization
@@ -210,12 +213,12 @@ public class SimpleCDataBuiltins extends PythonBuiltins {
         @Specialization
         Object Simple_repr(CDataObject self,
                         @Cached GetClassNode getClassNode,
-                        @Cached GetBaseClassNode getBaseClassNode,
+                        @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetNameNode getNameNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached GetFuncNode getFuncNode) {
             Object clazz = getClassNode.execute(self);
-            if (getBaseClassNode.execute(clazz) != getCore().lookupType(SimpleCData)) {
+            if (!isSameTypeNode.execute(clazz, SimpleCData)) {
                 return PythonUtils.format("<%s object at %s>", getNameNode.execute(clazz), getNameNode.execute(getClassNode.execute(self)));
             }
 

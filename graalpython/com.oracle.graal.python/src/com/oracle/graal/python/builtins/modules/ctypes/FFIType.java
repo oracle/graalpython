@@ -42,77 +42,136 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 
 import com.oracle.graal.python.util.PythonUtils;
 
-public class FFIType {
+final class FFIType {
 
-    public static final FFIType ffi_type_pointer = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_POINTER);
+    protected static final FFIType ffi_type_pointer = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_POINTER);
     // Arrays
-    public static final FFIType ffi_type_uint8_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_UINT8_ARRAY);
-    public static final FFIType ffi_type_sint8_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_SINT8_ARRAY);
-    public static final FFIType ffi_type_uint16_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_UINT16_ARRAY);
-    public static final FFIType ffi_type_sint16_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_SINT16_ARRAY);
-    public static final FFIType ffi_type_uint32_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_UINT32_ARRAY);
-    public static final FFIType ffi_type_sint32_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_SINT32_ARRAY);
-    public static final FFIType ffi_type_uint64_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_UINT64_ARRAY);
-    public static final FFIType ffi_type_sint64_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_SINT64_ARRAY);
-    public static final FFIType ffi_type_float_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_FLOAT_ARRAY);
-    public static final FFIType ffi_type_double_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_DOUBLE_ARRAY);
+    protected static final FFIType ffi_type_uint8_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_UINT8_ARRAY);
+    protected static final FFIType ffi_type_sint8_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_SINT8_ARRAY);
+    protected static final FFIType ffi_type_uint16_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_UINT16_ARRAY);
+    protected static final FFIType ffi_type_sint16_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_SINT16_ARRAY);
+    protected static final FFIType ffi_type_uint32_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_UINT32_ARRAY);
+    protected static final FFIType ffi_type_sint32_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_SINT32_ARRAY);
+    protected static final FFIType ffi_type_uint64_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_UINT64_ARRAY);
+    protected static final FFIType ffi_type_sint64_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_SINT64_ARRAY);
+    protected static final FFIType ffi_type_float_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_FLOAT_ARRAY);
+    protected static final FFIType ffi_type_double_array = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_DOUBLE_ARRAY);
 
     // Primitives
-    public static final FFIType nfi_type_string = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_STRING);
-    public static final FFIType ffi_type_uint8 = new FFIType(Byte.BYTES, Byte.BYTES, FFI_TYPES.FFI_TYPE_UINT8, ffi_type_uint8_array);
-    public static final FFIType ffi_type_sint8 = new FFIType(Byte.BYTES, Byte.BYTES, FFI_TYPES.FFI_TYPE_SINT8, ffi_type_sint8_array);
-    public static final FFIType ffi_type_uint16 = new FFIType(Short.BYTES, Short.BYTES, FFI_TYPES.FFI_TYPE_UINT16, ffi_type_uint16_array);
-    public static final FFIType ffi_type_sint16 = new FFIType(Short.BYTES, Short.BYTES, FFI_TYPES.FFI_TYPE_SINT16, ffi_type_sint16_array);
-    public static final FFIType ffi_type_uint32 = new FFIType(Integer.BYTES, Integer.BYTES, FFI_TYPES.FFI_TYPE_UINT32, ffi_type_uint32_array);
-    public static final FFIType ffi_type_sint32 = new FFIType(Integer.BYTES, Integer.BYTES, FFI_TYPES.FFI_TYPE_SINT32, ffi_type_sint32_array);
-    public static final FFIType ffi_type_uint64 = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_UINT64, ffi_type_uint64_array);
-    public static final FFIType ffi_type_sint64 = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_SINT64, ffi_type_sint64_array);
-    public static final FFIType ffi_type_double = new FFIType(Double.BYTES, Float.BYTES, FFI_TYPES.FFI_TYPE_DOUBLE, ffi_type_double_array);
+    protected static final FFIType nfi_type_string = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_STRING);
+    protected static final FFIType ffi_type_uint8 = new FFIType(Byte.BYTES, Byte.BYTES, FFI_TYPES.FFI_TYPE_UINT8, ffi_type_uint8_array);
+    protected static final FFIType ffi_type_sint8 = new FFIType(Byte.BYTES, Byte.BYTES, FFI_TYPES.FFI_TYPE_SINT8, ffi_type_sint8_array);
+    protected static final FFIType ffi_type_uint16 = new FFIType(Short.BYTES, Short.BYTES, FFI_TYPES.FFI_TYPE_UINT16, ffi_type_uint16_array);
+    protected static final FFIType ffi_type_sint16 = new FFIType(Short.BYTES, Short.BYTES, FFI_TYPES.FFI_TYPE_SINT16, ffi_type_sint16_array);
+    protected static final FFIType ffi_type_uint32 = new FFIType(Integer.BYTES, Integer.BYTES, FFI_TYPES.FFI_TYPE_UINT32, ffi_type_uint32_array);
+    protected static final FFIType ffi_type_sint32 = new FFIType(Integer.BYTES, Integer.BYTES, FFI_TYPES.FFI_TYPE_SINT32, ffi_type_sint32_array);
+    protected static final FFIType ffi_type_uint64 = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_UINT64, ffi_type_uint64_array);
+    protected static final FFIType ffi_type_sint64 = new FFIType(Long.BYTES, Long.BYTES, FFI_TYPES.FFI_TYPE_SINT64, ffi_type_sint64_array);
+    protected static final FFIType ffi_type_float = new FFIType(Float.BYTES, Float.BYTES, FFI_TYPES.FFI_TYPE_FLOAT, ffi_type_float_array);
+    protected static final FFIType ffi_type_double = new FFIType(Double.BYTES, Float.BYTES, FFI_TYPES.FFI_TYPE_DOUBLE, ffi_type_double_array);
+    protected static final FFIType ffi_type_uchar = ffi_type_uint8;
+    protected static final FFIType ffi_type_schar = ffi_type_sint8;
+    protected static final FFIType ffi_type_ushort = ffi_type_uint16;
+    protected static final FFIType ffi_type_sshort = ffi_type_sint16;
+    protected static final FFIType ffi_type_uint = ffi_type_uint32;
+    protected static final FFIType ffi_type_sint = ffi_type_sint32;
+    protected static final FFIType ffi_type_ulong = ffi_type_uint64;
+    protected static final FFIType ffi_type_slong = ffi_type_sint64;
     // XXX there is no direct representation in java for long double
-    public static final FFIType ffi_type_uchar = ffi_type_uint8;
-    public static final FFIType ffi_type_schar = ffi_type_sint8;
-    public static final FFIType ffi_type_ushort = ffi_type_uint16;
-    public static final FFIType ffi_type_sshort = ffi_type_sint16;
-    public static final FFIType ffi_type_uint = ffi_type_uint32;
-    public static final FFIType ffi_type_sint = ffi_type_sint32;
-    public static final FFIType ffi_type_ulong = ffi_type_uint64;
-    public static final FFIType ffi_type_slong = ffi_type_sint64;
-    public static final FFIType ffi_type_float = new FFIType(Float.BYTES, Float.BYTES, FFI_TYPES.FFI_TYPE_FLOAT);
-    public static final FFIType ffi_type_longdouble = ffi_type_double;
+    protected static final FFIType ffi_type_longdouble = ffi_type_double;
 
     enum FFI_TYPES {
-        FFI_TYPE_VOID("VOID"),
-        FFI_TYPE_UINT8("UINT8"),
-        FFI_TYPE_SINT8("SINT8"),
-        FFI_TYPE_UINT16("UINT16"),
-        FFI_TYPE_SINT16("SINT16"),
-        FFI_TYPE_UINT32("UINT32"),
-        FFI_TYPE_SINT32("SINT32"),
-        FFI_TYPE_UINT64("UINT64"),
-        FFI_TYPE_SINT64("SINT64"),
-        FFI_TYPE_FLOAT("FLOAT"),
-        FFI_TYPE_DOUBLE("DOUBLE"),
-        FFI_TYPE_UINT8_ARRAY("[UINT8]"),
-        FFI_TYPE_SINT8_ARRAY("[SINT8]"),
-        FFI_TYPE_UINT16_ARRAY("[UINT16]"),
-        FFI_TYPE_SINT16_ARRAY("[SINT16]"),
-        FFI_TYPE_UINT32_ARRAY("[UINT32]"),
-        FFI_TYPE_SINT32_ARRAY("[SINT32]"),
-        FFI_TYPE_UINT64_ARRAY("[UINT64]"),
-        FFI_TYPE_SINT64_ARRAY("[SINT64]"),
-        FFI_TYPE_FLOAT_ARRAY("[FLOAT]"),
-        FFI_TYPE_DOUBLE_ARRAY("[DOUBLE]"),
-        FFI_TYPE_POINTER("POINTER"),
-        FFI_TYPE_STRING("STRING"),
-        FFI_TYPE_STRUCT("OBJECT");
+        /*
+         * This type is only allowed as return type, and is used to denote functions that do not
+         * return a value.
+         *
+         * Since in the Polyglot API, all executable objects have to return a value, a Polyglot
+         * object with isNull == true will be returned from native functions that have a VOID return
+         * type.
+         *
+         * The return value of managed callback functions with return type VOID will be ignored.
+         */
+        FFI_TYPE_VOID("VOID", 0), // `void`
+
+        FFI_TYPE_UINT8("UINT8", Byte.BYTES),
+        FFI_TYPE_SINT8("SINT8", Byte.BYTES),
+        FFI_TYPE_UINT16("UINT16", Short.BYTES),
+        FFI_TYPE_SINT16("SINT16", Short.BYTES),
+        FFI_TYPE_UINT32("UINT32", Integer.BYTES),
+        FFI_TYPE_SINT32("SINT32", Integer.BYTES),
+        FFI_TYPE_UINT64("UINT64", Long.BYTES),
+        FFI_TYPE_SINT64("SINT64", Long.BYTES),
+        FFI_TYPE_FLOAT("FLOAT", Float.BYTES),
+        FFI_TYPE_DOUBLE("DOUBLE", Double.BYTES),
+        FFI_TYPE_UINT8_ARRAY("[UINT8]", Long.BYTES, true),
+        FFI_TYPE_SINT8_ARRAY("[SINT8]", Long.BYTES, true),
+        FFI_TYPE_UINT16_ARRAY("[UINT16]", Long.BYTES, true),
+        FFI_TYPE_SINT16_ARRAY("[SINT16]", Long.BYTES, true),
+        FFI_TYPE_UINT32_ARRAY("[UINT32]", Long.BYTES, true),
+        FFI_TYPE_SINT32_ARRAY("[SINT32]", Long.BYTES, true),
+        FFI_TYPE_UINT64_ARRAY("[UINT64]", Long.BYTES, true),
+        FFI_TYPE_SINT64_ARRAY("[SINT64]", Long.BYTES, true),
+        FFI_TYPE_FLOAT_ARRAY("[FLOAT]", Long.BYTES, true),
+        FFI_TYPE_DOUBLE_ARRAY("[DOUBLE]", Long.BYTES, true),
+
+        /*
+         * This type is a generic pointer argument. On the native side, it does not matter what
+         * exact pointer type the argument is.
+         *
+         * A polyglot object passed to POINTER arguments will be converted to a native pointer if
+         * possible (using the isPointer, asPointer and toNative messages as necessary). An object
+         * with isNull == true will be passed as a native NULL.
+         *
+         * POINTER return values will produce a polyglot object with isPointer == true. The native
+         * NULL pointer will additionally have isNull == true.
+         *
+         * In addition, the returned pointer object will also have a method bind, and behave the
+         * same as symbols loaded from an NFI library. When calling bind on such a pointer, it is
+         * the user’s responsibility to ensure that the pointer really points to a function with a
+         * matching signature.
+         */
+        FFI_TYPE_POINTER("POINTER", Long.BYTES), // `void *`
+
+        /*
+         * The STRING values passed from native functions to managed code behave like POINTER return
+         * values, but in addition they have isString == true.
+         */
+
+        FFI_TYPE_STRING("STRING", Long.BYTES, true), // `char *` (zero-terminated UTF-8 string)
+
+        /*
+         * `TruffleObject` (Arbitrary object which Native code can do nothing with values of type
+         * TruffleObject except pass them back to managed code, either through return values or
+         * passing them to callback function pointers..
+         */
+        // (mq) This is not something we will be using for the time being.
+        FFI_TYPE_OBJECT("OBJECT", Long.BYTES), // `TruffleObject`
+
+        FFI_TYPE_STRUCT("POINTER", Long.BYTES, true);
 
         private final String nfiType;
+        private final int size;
+        private final boolean isArray;
 
-        FFI_TYPES(String str) {
+        FFI_TYPES(String str, int size, boolean isArray) {
             this.nfiType = str;
+            this.size = size;
+            this.isArray = isArray;
         }
 
-        public String getNFIType() {
+        FFI_TYPES(String str, int size) {
+            this(str, size, false);
+        }
+
+        protected int getSize() {
+            return size;
+        }
+
+        protected boolean isArray() {
+            return isArray;
+        }
+
+        protected String getNFIType() {
             return nfiType;
         }
     }
@@ -124,7 +183,7 @@ public class FFIType {
 
     final FFIType asArray;
 
-    public FFIType(int size, int alignment, FFI_TYPES type, FFIType[] elements, FFIType asArray) {
+    protected FFIType(int size, int alignment, FFI_TYPES type, FFIType[] elements, FFIType asArray) {
         this.size = size;
         this.alignment = alignment;
         this.type = type;
@@ -132,24 +191,24 @@ public class FFIType {
         this.asArray = asArray == null ? this : asArray;
     }
 
-    public FFIType(int size, int alignment, FFI_TYPES type, FFIType[] elements) {
+    protected FFIType(int size, int alignment, FFI_TYPES type, FFIType[] elements) {
         this(size, alignment, type, elements, null);
     }
 
-    public FFIType(int size, int alignment, FFI_TYPES type) {
+    protected FFIType(int size, int alignment, FFI_TYPES type) {
         this(size, alignment, type, null, null);
     }
 
-    public FFIType(int size, int alignment, FFI_TYPES type, FFIType asArray) {
+    protected FFIType(int size, int alignment, FFI_TYPES type, FFIType asArray) {
         this(size, alignment, type, null, asArray);
     }
 
-    public FFIType(FFIType copyFrom) {
-        this(copyFrom.size, copyFrom.alignment, copyFrom.type, copyFrom.elements);
+    protected FFIType(FFIType copyFrom) {
+        this(copyFrom.size, copyFrom.alignment, copyFrom.type, copyFrom.elements, copyFrom.asArray);
     }
 
-    public FFIType() {
-        this(ffi_type_pointer.size, ffi_type_pointer.alignment, ffi_type_pointer.type, null, null);
+    protected FFIType() {
+        this(0, 0, FFI_TYPES.FFI_TYPE_VOID, null, null);
     }
 
     protected static int typeSize() {
@@ -161,7 +220,7 @@ public class FFIType {
     }
 
     private static String getNFIType(FFIType type) {
-        return type.type.nfiType;
+        return type.type.getNFIType();
     }
 
     protected static String buildNFISignature(FFIType[] atypes, FFIType restype) {
@@ -192,6 +251,8 @@ public class FFIType {
     protected static final int OBJECT_TYPE = 256;
     protected static final int POINTER_TYPE = 512;
 
+    protected static final int BYTE_ARRAY_TYPE = 1024;
+
     enum FieldSet {
         nil(0),
 
@@ -221,10 +282,10 @@ public class FFIType {
         Q_set(LONG_TYPE), // long
         Q_set_sw(LONG_TYPE), // long
         P_set(POINTER_TYPE), // Pointer
-        z_set(STRING_TYPE), // String
+        z_set(BYTE_ARRAY_TYPE), // char *
         u_set(STRING_TYPE), // String
         U_set(STRING_TYPE), // String
-        Z_set(STRING_TYPE), // String
+        Z_set(BYTE_ARRAY_TYPE), // char *
         vBOOL_set(BOOL_TYPE), // boolean
         bool_set(BOOL_TYPE), // boolean
         O_set(OBJECT_TYPE); // Object
@@ -269,10 +330,10 @@ public class FFIType {
         Q_get(LONG_TYPE), // long
         Q_get_sw(LONG_TYPE), // long
         P_get(POINTER_TYPE), // Pointer
-        z_get(STRING_TYPE), // String
+        z_get(BYTE_ARRAY_TYPE), // char *
         u_get(STRING_TYPE), // String
         U_get(STRING_TYPE), // String
-        Z_get(STRING_TYPE), // String
+        Z_get(BYTE_ARRAY_TYPE), // char *
         vBOOL_get(BOOL_TYPE), // boolean
         bool_get(BOOL_TYPE), // boolean
         O_get(OBJECT_TYPE); // Object

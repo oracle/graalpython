@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
-public class StructParamObject extends PythonBuiltinObject {
+public final class StructParamObject extends PythonBuiltinObject {
 
     Object ptr;
 

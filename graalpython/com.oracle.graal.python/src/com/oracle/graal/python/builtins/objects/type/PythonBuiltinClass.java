@@ -60,13 +60,9 @@ import com.oracle.truffle.api.utilities.TriState;
 public final class PythonBuiltinClass extends PythonManagedClass {
     private final PythonBuiltinClassType type;
 
-    private static PythonBuiltinClassType getTypeClass(PythonBuiltinClassType type) {
-        return type.getType() == null ? PythonBuiltinClassType.PythonClass : type.getType();
-    }
-
     @TruffleBoundary
     public PythonBuiltinClass(PythonLanguage lang, PythonBuiltinClassType builtinClass, PythonAbstractClass base) {
-        super(lang, getTypeClass(builtinClass), getTypeClass(builtinClass).getInstanceShape(lang), builtinClass.getInstanceShape(lang), builtinClass.getName(), base);
+        super(lang, builtinClass.getType(), builtinClass.getType().getInstanceShape(lang), builtinClass.getInstanceShape(lang), builtinClass.getName(), base);
         this.type = builtinClass;
     }
 

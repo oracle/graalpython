@@ -685,6 +685,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
                 type.type = type.base.type;
             }
         }
+
+        // Finally, we set all remaining types to PythonClass.
+        for (PythonBuiltinClassType type : VALUES) {
+            if (type.type == null) {
+                type.type = PythonClass;
+            }
+        }
     }
 
     // Proxy InteropLibrary messages to the PythonBuiltinClass

@@ -40,6 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createUTF8String;
+import static com.oracle.graal.python.nodes.ErrorMessages.CANT_DELETE_ATTRIBUTE;
+import static com.oracle.graal.python.nodes.ErrorMessages.HAS_NO_STGINFO;
+import static com.oracle.graal.python.nodes.ErrorMessages.NOT_A_CTYPE_INSTANCE;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNICODE_STRING_EXPECTED_INSTEAD_OF_S_INSTANCE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
@@ -58,18 +63,21 @@ import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
+import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.MemoryViewStorage;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ObjectStorage;
+import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.NativePointerStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
-import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -126,10 +134,10 @@ public class CFieldBuiltins extends PythonBuiltins {
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyCDataSetNode cDataSetNode) {
             if (!pyTypeCheck.isCDataObject(inst)) {
-                throw raise(TypeError, "not a ctype instance");
+                throw raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
             if (value == PNone.NO_VALUE) {
-                throw raise(TypeError, "can't delete attribute");
+                throw raise(TypeError, CANT_DELETE_ATTRIBUTE);
             }
             CDataObject dst = (CDataObject) inst;
             cDataSetNode.execute(frame, dst, self.proto, self.setfunc, value,
@@ -137,34 +145,29 @@ public class CFieldBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
+        @SuppressWarnings("unused")
         @Specialization
-        protected Object doit(VirtualFrame frame, CFieldObject self, Object inst, PNone value,
+        protected Object doit(CFieldObject self, Object inst, PNone value,
                         @Cached PyCDataSetNode cDataSetNode) {
-            throw raise(TypeError, "can't delete attribute");
+            throw raise(TypeError, CANT_DELETE_ATTRIBUTE);
         }
     }
 
     @Builtin(name = __GET__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    @SuppressWarnings("unused")
-    public abstract static class GetNode extends PythonTernaryBuiltinNode {
+    abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization
-        protected Object doit(CFieldObject self, Object inst, Object type,
+        protected Object doit(CFieldObject self, Object inst, @SuppressWarnings("unused") Object type,
                         @Cached PyCDataGetNode pyCDataGetNode,
-                        @Cached PyTypeCheck pyTypeCheck,
-                        @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached GetFuncNode getFuncNode,
-                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+                        @Cached PyTypeCheck pyTypeCheck) {
             if (inst == PNone.NO_VALUE) {
                 return self;
             }
             if (!pyTypeCheck.isCDataObject(inst)) {
-                throw raise(TypeError, "not a ctype instance");
+                throw raise(TypeError, NOT_A_CTYPE_INSTANCE);
             }
             CDataObject src = (CDataObject) inst;
-            return pyCDataGetNode.execute(self.proto, self.getfunc, inst, self.index, self.size, src.b_ptr.ref(self.offset),
-                            getContext(),
-                            factory());
+            return pyCDataGetNode.execute(self.proto, self.getfunc, inst, self.index, self.size, src.b_ptr.ref(self.offset), factory());
         }
     }
 
@@ -207,7 +210,7 @@ public class CFieldBuiltins extends PythonBuiltins {
      * offset, this will be updated. prev_desc points to the type of the previous bitfield, if any.
      */
     @SuppressWarnings("fallthrough")
-    public abstract static class PyCFieldFromDesc extends PNodeWithRaise {
+    abstract static class PyCFieldFromDesc extends PNodeWithRaise {
 
         abstract Object execute(Object desc, int index, int bitsize, int pack, boolean big_endian, int[] props, PythonObjectFactory factory);
 
@@ -218,7 +221,7 @@ public class CFieldBuiltins extends PythonBuiltins {
             CFieldObject self = factory.createCFieldObject(PythonBuiltinClassType.CField);
             StgDictObject dict = pyTypeStgDictNode.execute(desc);
             if (dict == null) {
-                throw raise(TypeError, "has no _stginfo_");
+                throw raise(TypeError, HAS_NO_STGINFO);
             }
             int fieldtype;
             if (bitsize != 0 /* this is a bitfield request */
@@ -258,7 +261,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                 if (adict != null && adict.proto != null) {
                     StgDictObject idict = pyTypeStgDictNode.execute(adict.proto);
                     if (idict == null) {
-                        throw raise(TypeError, "has no _stginfo_");
+                        throw raise(TypeError, HAS_NO_STGINFO);
                     }
                     if (idict.getfunc == FieldDesc.c.getfunc) {
                         FieldDesc fd = FieldDesc.s;
@@ -443,21 +446,36 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "setfunc.isType(STRING_TYPE)")
-        static Object doString(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, String value, int size) {
-            ptr.ptr.setValue(value, ptr.offset / (size != 0 ? size : 1));
+        static Object doString(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, String value, @SuppressWarnings("unused") int size) {
+            byte[] ptrBytes = ((ByteArrayStorage) ptr.ptr).value;
+            byte[] strBytes = BytesUtils.utf8StringToBytes(value);
+            PythonUtils.arraycopy(strBytes, 0, ptrBytes, 0, strBytes.length);
             return PNone.NONE;
         }
 
         @Specialization(guards = "setfunc.isType(STRING_TYPE)")
-        static Object doStringObj(VirtualFrame frame, FieldSet setfunc, PtrValue ptr, Object valueObj, int size,
-                        @Cached PyObjectStrAsJavaStringNode asString) {
-            String value = asString.execute(frame, valueObj);
+        static Object doStringObj(FieldSet setfunc, PtrValue ptr, Object valueObj, int size,
+                        @Cached CastToJavaStringCheckedNode asString) {
+            String value = asString.execute(valueObj, UNICODE_STRING_EXPECTED_INSTEAD_OF_S_INSTANCE, new Object[]{valueObj});
             return doString(setfunc, ptr, value, size);
         }
 
+        @Specialization(guards = "setfunc.isType(BYTE_ARRAY_TYPE)")
+        static Object doBytes(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, byte[] value, @SuppressWarnings("unused") int size) {
+            ptr.toBytes(value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "setfunc.isType(BYTE_ARRAY_TYPE)")
+        static Object doBytesObj(FieldSet setfunc, PtrValue ptr, PBytes valueObj, int size,
+                        @Cached GetInternalByteArrayNode getBytes) {
+            byte[] value = getBytes.execute(valueObj.getSequenceStorage());
+            return doBytes(setfunc, ptr, value, size);
+        }
+
         @Specialization(guards = "setfunc.isType(OBJECT_TYPE) || setfunc.isType(POINTER_TYPE)")
-        static Object doObject(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, int size) {
-            ptr.ptr.setValue(value, ptr.offset / (size != 0 ? size : 1));
+        static Object doObject(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size) {
+            ptr.toNativePointer(value);
             return PNone.NONE;
         }
 
@@ -475,21 +493,23 @@ public class CFieldBuiltins extends PythonBuiltins {
         abstract Object execute(FieldGet setfunc, PtrValue adr, int size, PythonObjectFactory factory);
 
         @Specialization(guards = "getfunc.isType(BYTE_TYPE)")
-        static Object getValue(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+        static Object getValue(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, int size, PythonObjectFactory factory) {
             return factory.createBytes(new byte[]{(byte) ptr.ptr.getValue(ptr.offset / (size != 0 ? size : 1))});
         }
 
         @Specialization(guards = "getfunc.isType(POINTER_TYPE)")
-        static Object getPointerValue(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory,
+        static Object getPointerValue(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, PythonObjectFactory factory,
                         @CachedLibrary(limit = "1") InteropLibrary ilib) {
             Object p;
             if (ptr.ptr instanceof MemoryViewStorage) {
                 PMemoryView mv = ((MemoryViewStorage) ptr.ptr).value;
                 p = mv.getBufferPointer();
                 p = p != null ? p : mv.getBuffer();
-            } else {
-                p = ((ObjectStorage) ptr.ptr).value;
+            } else if (ptr.isNativePointer()) {
+                p = ((NativePointerStorage) ptr.ptr).value;
                 p = p != null ? p : PNone.NONE;
+            } else {
+                p = PNone.NONE;
             }
             if (ilib.isPointer(p)) {
                 try {
@@ -503,18 +523,19 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"getfunc.isType(STRING_TYPE)"})
-        static Object getString(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, int size, @SuppressWarnings("unused") PythonObjectFactory factory,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
-            try {
-                return lib.asString(ptr.ptr.getValue(ptr.offset / (size != 0 ? size : 1)));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
+        static Object getString(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, @SuppressWarnings("unused") int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
+            byte[] bytes = ((ByteArrayStorage) ptr.ptr).value;
+            for (int i = 0; i < bytes.length; i++) {
+                if (bytes[i] == 0) {
+                    bytes = PythonUtils.arrayCopyOf(bytes, i);
+                    break;
+                }
             }
+            return createUTF8String(bytes);
         }
 
-        @SuppressWarnings("unused")
         @Fallback
-        Object asIs(FieldGet getfunc, PtrValue ptr, int size, PythonObjectFactory factory) {
+        Object asIs(@SuppressWarnings("unused") FieldGet getfunc, PtrValue ptr, int size, @SuppressWarnings("unused") PythonObjectFactory factory) {
             return ptr.ptr.getValue(ptr.offset / (size != 0 ? size : 1));
         }
     }

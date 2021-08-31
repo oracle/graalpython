@@ -51,6 +51,25 @@ import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuil
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PARAMFLAG_FOUT;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.__ctypes_from_outparam__;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins.PyCFuncPtrTypeNewNode.converters_from_argtypes;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS;
+import static com.oracle.graal.python.nodes.ErrorMessages.CALL_TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN;
+import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CONSTRUCT_INSTANCE_OF_THIS_CLASS_NO_ARGTYPES;
+import static com.oracle.graal.python.nodes.ErrorMessages.NOT_ENOUGH_ARGUMENTS;
+import static com.oracle.graal.python.nodes.ErrorMessages.NULL_STGDICT_UNEXPECTED;
+import static com.oracle.graal.python.nodes.ErrorMessages.OUT_PARAMETER_D_MUST_BE_A_POINTER_TYPE_NOT_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.PARAMFLAGS_MUST_BE_A_SEQUENCE_OF_INT_STRING_VALUE_TUPLES;
+import static com.oracle.graal.python.nodes.ErrorMessages.PARAMFLAGS_MUST_BE_A_TUPLE_OR_NONE;
+import static com.oracle.graal.python.nodes.ErrorMessages.PARAMFLAGS_MUST_HAVE_THE_SAME_LENGTH_AS_ARGTYPES;
+import static com.oracle.graal.python.nodes.ErrorMessages.PARAMFLAG_D_NOT_YET_IMPLEMENTED;
+import static com.oracle.graal.python.nodes.ErrorMessages.PARAMFLAG_VALUE_D_NOT_SUPPORTED;
+import static com.oracle.graal.python.nodes.ErrorMessages.REQUIRED_ARGUMENT_S_MISSING;
+import static com.oracle.graal.python.nodes.ErrorMessages.RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_OUT_PARAMETER_MUST_BE_PASSED_AS_DEFAULT_VALUE;
+import static com.oracle.graal.python.nodes.ErrorMessages.THE_ERRCHECK_ATTRIBUTE_MUST_BE_CALLABLE;
+import static com.oracle.graal.python.nodes.ErrorMessages.THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER;
+import static com.oracle.graal.python.nodes.ErrorMessages.THIS_FUNCTION_TAKES_AT_LEAST_D_ARGUMENT_S_D_GIVEN;
+import static com.oracle.graal.python.nodes.ErrorMessages.THIS_FUNCTION_TAKES_D_ARGUMENT_S_D_GIVEN;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -82,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -105,7 +125,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -121,51 +141,66 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
         return PyCFuncPtrBuiltinsFactory.getFactories();
     }
 
+    /*
+     * PyCFuncPtr_new accepts different argument lists in addition to the standard _basespec_
+     * keyword arg:
+     *
+     * one argument form "i" - function address "O" - must be a callable, creates a C callable
+     * function
+     *
+     * two or more argument forms (the third argument is a paramflags tuple) "(sO)|..." - (function
+     * name, dll object (with an integer handle)), paramflags "(iO)|..." - (function ordinal, dll
+     * object (with an integer handle)), paramflags "is|..." - vtable index, method name, creates
+     * callable calling COM vtbl
+     */
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class NewNode extends PythonBuiltinNode {
+    protected abstract static class PyCFuncPtrNewNode extends PythonBuiltinNode {
 
-        /*
-         * PyCFuncPtr_new accepts different argument lists in addition to the standard _basespec_
-         * keyword arg:
-         *
-         * one argument form "i" - function address "O" - must be a callable, creates a C callable
-         * function
-         *
-         * two or more argument forms (the third argument is a paramflags tuple) "(sO)|..." -
-         * (function name, dll object (with an integer handle)), paramflags "(iO)|..." - (function
-         * ordinal, dll object (with an integer handle)), paramflags "is|..." - vtable index, method
-         * name, creates callable calling COM vtbl
-         */
-        @Specialization
-        Object PyCFuncPtr_new(VirtualFrame frame, Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
-                        @Cached PyCFuncPtrFromDllNode pyCFuncPtrFromDllNode,
-                        @Cached PyLongCheckNode longCheckNode,
-                        // @Cached KeepRefNode keepRefNode,
+        protected static boolean isLong(Object[] arg, PyLongCheckNode longCheckNode) {
+            return arg[0] instanceof PythonNativeVoidPtr || longCheckNode.execute(arg[0]);
+        }
+
+        protected static boolean isTuple(Object[] arg) {
+            return PGuards.isPTuple(arg[0]);
+        }
+
+        @Specialization(guards = "args.length == 0")
+        Object simple(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+            CDataObject ob = factory().createPyCFuncPtrObject(type);
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+            return GenericPyCDataNew(dict, ob);
+        }
+
+        @Specialization(guards = {"args.length <= 1", "isTuple(args)"})
+        Object fromNativeLibrary(VirtualFrame frame, Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+                        @Cached PyCFuncPtrFromDllNode pyCFuncPtrFromDllNode) {
+            return pyCFuncPtrFromDllNode.execute(frame, type, args, getContext(), factory());
+        }
+
+        @Specialization(guards = {"args.length == 1", "isLong(args, longCheckNode)"})
+        Object usingNativePointer(Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+                        @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
                         @Cached PyLongAsVoidPtr asVoidPtr,
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+            Object ptr = asVoidPtr.execute(args[0]);
+            CDataObject ob = factory().createPyCFuncPtrObject(type);
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+            GenericPyCDataNew(dict, ob);
+            ob.b_ptr = PtrValue.create(dict.ffi_type_pointer, ptr);
+            return ob;
+        }
+
+        @Specialization(guards = {"args.length > 0", "!isPTuple(args)", "!isLong(args, longCheckNode)"})
+        Object callback(Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+                        @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
+                        // @Cached KeepRefNode keepRefNode,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
-            if (args.length == 0) {
-                CDataObject ob = factory().createPyCFuncPtrObject(type);
-                StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
-                return GenericPyCDataNew(dict, ob);
-            }
-
-            if (1 == args.length && args[0] instanceof PTuple) {
-                return pyCFuncPtrFromDllNode.execute(frame, type, args, getContext(), factory());
-            }
-
-            if (1 == args.length && (args[0] instanceof PythonNativeVoidPtr || longCheckNode.execute(args[0]))) { // PyLong_Check
-                Object ptr = asVoidPtr.execute(args[0]);
-                CDataObject ob = factory().createPyCFuncPtrObject(type);
-                StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
-                GenericPyCDataNew(dict, ob);
-                ob.b_ptr = PtrValue.object(ptr);
-                return ob;
-            }
             Object callable = args[0];
             if (!lib.isCallable(callable)) {
-                throw raise(TypeError, "argument must be callable or integer function address");
+                throw raise(TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
             }
 
             /*
@@ -180,138 +215,30 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
              * (PyErr_Occurred()) { return NULL; }
              */
 
-            StgDictObject dict = pyTypeStgDictNode.execute(type);
+            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
             /* XXXX Fails if we do: 'PyCFuncPtr(lambda x: x)' */
             if (dict == null || dict.argtypes == null) {
-                throw raise(TypeError, "cannot construct instance of this class: no argtypes");
+                throw raise(TypeError, CANNOT_CONSTRUCT_INSTANCE_OF_THIS_CLASS_NO_ARGTYPES);
             }
 
             throw raise(NotImplementedError);
-
-            /*- TODO callback
-            CThunkObject thunk = _ctypes_alloc_callback(callable,
-                            dict.argtypes,
-                            dict.restype,
-                            dict.flags,
-                            pyTypeStgDictNode);
-            
+            /*-
+            CThunkObject thunk = _ctypes_alloc_callback(callable, dict.argtypes, dict.restype, dict.flags);
             PyCFuncPtrObject self = factory().createPyCFuncPtrObject(type);
-            GenericPyCData_new(type,
-                            self,
-                            getRaiseNode(),
-                            pyTypeStgDictNode);
+            GenericPyCDataNew(dict, self);
             self.callable = callable;
             self.thunk = thunk;
-            self.b_ptr = new PtrValue(thunk.pcl_exec);
+            self.b_ptr = PtrValue.object(thunk.pcl_exec);
             
-            keepRefNode.execute(frame, self, 0, thunk, factory());
+            keepRefNode.execute(self, 0, thunk, factory());
             return self;
-            
             */
         }
 
-        @Builtin(name = "errcheck", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "a function to check for errors")
-        @GenerateNodeFactory
-        public abstract static class PointerErrCheckNode extends PythonBinaryBuiltinNode {
-
-            @Specialization(guards = "isNoValue(value)")
-            Object PyCFuncPtr_get_errcheck(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value) {
-                if (self.errcheck != null) {
-                    return self.errcheck;
-                }
-                return PNone.NONE;
-            }
-
-            @Specialization(guards = "!isNoValue(value)")
-            Object PyCFuncPtr_set_errcheck(PyCFuncPtrObject self, Object value,
-                            @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-                if (value != PNone.NONE && !lib.isCallable(value)) {
-                    throw raise(TypeError, "the errcheck attribute must be callable");
-                }
-                self.errcheck = value;
-                return PNone.NONE;
-            }
-        }
-
-        @ImportStatic(PyCFuncPtrTypeBuiltins.class)
-        @Builtin(name = "restype", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "specify the result type")
-        @GenerateNodeFactory
-        public abstract static class PointerResTypeNode extends PythonBinaryBuiltinNode {
-
-            @Specialization(guards = "isNoValue(value)")
-            Object PyCFuncPtr_get_restype(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value,
-                            @Cached PyObjectStgDictNode pyObjectStgDictNode) {
-                if (self.restype != null) {
-                    return self.restype;
-                }
-                StgDictObject dict = pyObjectStgDictNode.execute(self);
-                assert dict != null; /* Cannot be NULL for PyCFuncPtrObject instances */
-                if (dict.restype != null) {
-                    return dict.restype;
-                } else {
-                    return PNone.NONE;
-                }
-            }
-
-            @Specialization(guards = "!isNoValue(value)")
-            Object PyCFuncPtr_set_restype(PyCFuncPtrObject self, Object value,
-                            @Cached("create(_check_retval_)") LookupAttributeInMRONode lookupAttr,
-                            @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                            @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-                if (value == PNone.NONE) {
-                    self.checker = null;
-                    self.restype = null;
-                    return PNone.NONE;
-                }
-                if (pyTypeStgDictNode.execute(value) != null && !lib.isCallable(value)) {
-                    throw raise(TypeError, "restype must be a type, a callable, or None");
-                }
-                self.checker = lookupAttr.execute(value);
-                self.restype = value;
-                return PNone.NONE;
-            }
-        }
-
-        @Builtin(name = "argtypes", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "specify the argument types")
-        @GenerateNodeFactory
-        public abstract static class PointerArgTypesNode extends PythonBinaryBuiltinNode {
-
-            @Specialization(guards = "isNoValue(value)")
-            Object PyCFuncPtr_get_argtypes(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value,
-                            @Cached PyTypeStgDictNode pyTypeStgDictNode) {
-                if (self.argtypes != null) {
-                    return factory().createTuple(self.argtypes);
-                }
-                StgDictObject dict = pyTypeStgDictNode.execute(self);
-                assert dict != null; /* Cannot be NULL for PyCFuncPtrObject instances */
-                if (dict.argtypes != null) {
-                    return factory().createTuple(dict.argtypes);
-                } else {
-                    return PNone.NONE;
-                }
-            }
-
-            @Specialization(guards = "!isNoValue(value)")
-            Object PyCFuncPtr_set_argtypes(PyCFuncPtrObject self, Object value,
-                            @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
-                            @Cached GetInternalObjectArrayNode getArray) {
-                if (value == PNone.NONE) {
-                    self.converters = null;
-                    self.argtypes = null;
-                } else {
-                    assert PGuards.isPTuple(value);
-                    Object[] ob = getArray.execute(((PTuple) value).getSequenceStorage());
-                    self.converters = converters_from_argtypes(ob, getRaiseNode(), lookupAttr);
-                    self.argtypes = ob;
-                }
-                return PNone.NONE;
-            }
-        }
-
-        /*-
+        @SuppressWarnings("unused")
         CThunkObject CThunkObject_new(int nArgs) {
             CThunkObject p = factory().createCThunkObject(PythonBuiltinClassType.CThunkObject, nArgs);
-        
+
             p.pcl_write = null;
             p.pcl_exec = null;
             p.cif = null; // TODO init ffi_cif
@@ -321,19 +248,22 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             p.restype = null;
             p.setfunc = null;
             p.ffi_restype = null;
-        
-            for (int i = 0; i < nArgs + 1; ++i)
+
+            for (int i = 0; i < nArgs + 1; ++i) {
                 p.atypes[i] = null;
+            }
             return p;
         }
-        
-        CThunkObject _ctypes_alloc_callback(Object callable, Object[] converters, Object restype, int flags,
-                        PyTypeStgDictNode pyTypeStgDictNode) {
+
+        @SuppressWarnings("unused")
+        CThunkObject _ctypes_alloc_callback(Object callable, Object[] converters, Object restype, int flags) {
+            throw raise(NotImplementedError);
+            /*- TODO
             int nArgs = converters.length;
             CThunkObject p = CThunkObject_new(nArgs);
-        
+            
             p.pcl_write = ffi_closure_alloc(sizeof(ffi_closure), p.pcl_exec);
-        
+            
             p.flags = flags;
             int i;
             for (i = 0; i < nArgs; ++i) {
@@ -341,7 +271,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 p.atypes[i] = _ctypes_get_ffi_type(cnv, pyTypeStgDictNode);
             }
             p.atypes[i] = null;
-        
+            
             p.restype = restype;
             if (restype == PNone.NONE) {
                 p.setfunc = FieldSet.nil;
@@ -349,28 +279,145 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             } else {
                 StgDictObject dict = pyTypeStgDictNode.execute(restype);
                 if (dict == null || dict.setfunc == FieldSet.nil) {
-                    throw raise(TypeError, "invalid result type for callback function");
+                    throw raise(TypeError, INVALID_RESULT_TYPE_FOR_CALLBACK_FUNCTION);
                 }
                 p.setfunc = dict.setfunc;
                 p.ffi_restype = dict.ffi_type_pointer;
             }
-        
+            
             ffi_abi cc = FFI_DEFAULT_ABI;
             int result = ffi_prep_cif(p.cif, cc, nArgs, _ctypes_get_ffi_type(restype, pyTypeStgDictNode), p.atypes);
             if (result != FFI_OK) {
-                throw raise(RuntimeError, "ffi_prep_cif failed with %d", result);
+                throw raise(RuntimeError, FFI_PREP_CIF_FAILED_WITH_D, result);
             }
             result = ffi_prep_closure_loc(p.pcl_write, p.cif, closure_fcn, p, p.pcl_exec);
             if (result != FFI_OK) {
-                throw raise(RuntimeError, "ffi_prep_closure failed with %d", result);
+                throw raise(RuntimeError, FFI_PREP_CLOSURE_FAILED_WITH_D, result);
             }
-        
+            
             p.converters = converters;
             p.callable = callable;
             return p;
+            */
         }
-        
-        */
+
+    }
+
+    @Builtin(name = "errcheck", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "a function to check for errors")
+    @GenerateNodeFactory
+    protected abstract static class PointerErrCheckNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = "isNoValue(value)")
+        Object PyCFuncPtr_get_errcheck(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value) {
+            if (self.errcheck != null) {
+                return self.errcheck;
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object PyCFuncPtr_set_errcheck(PyCFuncPtrObject self, Object value,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            if (value != PNone.NONE && !lib.isCallable(value)) {
+                throw raise(TypeError, THE_ERRCHECK_ATTRIBUTE_MUST_BE_CALLABLE);
+            }
+            self.errcheck = value;
+            return PNone.NONE;
+        }
+    }
+
+    @ImportStatic(PyCFuncPtrTypeBuiltins.class)
+    @Builtin(name = "restype", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "specify the result type")
+    @GenerateNodeFactory
+    protected abstract static class PointerResTypeNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = "isNoValue(value)")
+        Object PyCFuncPtr_get_restype(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value,
+                        @Cached PyObjectStgDictNode pyObjectStgDictNode) {
+            if (self.restype != null) {
+                return self.restype;
+            }
+            StgDictObject dict = pyObjectStgDictNode.execute(self);
+            assert dict != null : "Cannot be NULL for PyCFuncPtrObject instances";
+            if (dict.restype != null) {
+                return dict.restype;
+            } else {
+                return PNone.NONE;
+            }
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object PyCFuncPtr_set_restype(PyCFuncPtrObject self, Object value,
+                        @Cached("create(_check_retval_)") LookupAttributeInMRONode lookupAttr,
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            if (value == PNone.NONE) {
+                self.checker = null;
+                self.restype = null;
+                return PNone.NONE;
+            }
+            if (pyTypeStgDictNode.execute(value) != null && !lib.isCallable(value)) {
+                throw raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE);
+            }
+            self.checker = lookupAttr.execute(value);
+            self.restype = value;
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "argtypes", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "specify the argument types")
+    @GenerateNodeFactory
+    protected abstract static class PointerArgTypesNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = {"isNoValue(value)", "self.argtypes != null"})
+        Object PyCFuncPtr_get_argtypes(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value) {
+            return factory().createTuple(self.argtypes);
+        }
+
+        @Specialization(guards = {"isNoValue(value)", "self.argtypes == null"})
+        Object PyCFuncPtr_get_argtypes(PyCFuncPtrObject self, @SuppressWarnings("unused") PNone value,
+                        @Cached PyTypeStgDictNode pyTypeStgDictNode) {
+            StgDictObject dict = pyTypeStgDictNode.execute(self);
+            assert dict != null : "Cannot be NULL for PyCFuncPtrObject instances";
+            if (dict.argtypes != null) {
+                return factory().createTuple(dict.argtypes);
+            } else {
+                return PNone.NONE;
+            }
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object PyCFuncPtr_set_argtypes(PyCFuncPtrObject self, PNone value) {
+            self.converters = null;
+            self.argtypes = null;
+            return value;
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object PyCFuncPtr_set_argtypes(PyCFuncPtrObject self, PTuple value,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
+                        @Cached GetInternalObjectArrayNode getArray) {
+            Object[] ob = getArray.execute(value.getSequenceStorage());
+            self.converters = converters_from_argtypes(ob, getRaiseNode(), lookupAttr);
+            self.argtypes = ob;
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object PyCFuncPtr_set_argtypes(PyCFuncPtrObject self, PList value,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
+                        @Cached GetInternalObjectArrayNode getArray) {
+            Object[] ob = getArray.execute(value.getSequenceStorage());
+            self.converters = converters_from_argtypes(ob, getRaiseNode(), lookupAttr);
+            self.argtypes = ob;
+            return PNone.NONE;
+        }
+
+        @Fallback
+        Object error(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value) {
+            throw raise(TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
+        }
+
     }
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
@@ -389,11 +436,10 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
 
     @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class PyCFuncPtrCallNode extends PythonVarargsBuiltinNode {
+    protected abstract static class PyCFuncPtrCallNode extends PythonVarargsBuiltinNode {
 
         @Specialization
         Object PyCFuncPtr_call(VirtualFrame frame, PyCFuncPtrObject self, Object[] inargs, PKeyword[] kwds,
-                        @CachedLanguage PythonLanguage language,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyLongAsVoidPtr asVoidPtr,
                         @Cached CallNode callNode,
@@ -406,7 +452,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                         @Cached LookupAndCallUnaryDynamicNode lookupAndCallUnaryDynamicNode,
                         @Cached CallProcNode callProcNode) {
             StgDictObject dict = pyObjectStgDictNode.execute(self);
-            assert dict != null; /* Cannot be NULL for PyCFuncPtrObject instances */
+            assert dict != null : "Cannot be NULL for PyCFuncPtrObject instances";
             Object restype = self.restype != null ? self.restype : dict.restype;
             Object[] converters = self.converters != null ? self.converters : dict.converters;
             Object checker = self.checker != null ? self.checker : dict.checker;
@@ -415,7 +461,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             Object errcheck = self.errcheck /* ? self.errcheck : dict.errcheck */;
 
             int[] props = new int[3];
-            NativeFunction pProc = getFunctionFromLongObject(self.b_ptr.getObject(), getContext(), asVoidPtr);
+            NativeFunction pProc = getFunctionFromLongObject(self.b_ptr.getNativePointer(), getContext(), asVoidPtr);
             Object[] callargs = _build_callargs(frame, self, argtypes, inargs, kwds, props,
                             pyTypeCheck, getArray, castToJavaIntExactNode, castToJavaStringNode, pyTypeStgDictNode, callNode, getNameNode);
             int inoutmask = props[pinoutmask_idx];
@@ -432,15 +478,15 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                      * argtypes tuple.
                      */
                     if (required > actual) {
-                        throw raise(TypeError, "this function takes at least %d argument%s (%d given)",
+                        throw raise(TypeError, THIS_FUNCTION_TAKES_AT_LEAST_D_ARGUMENT_S_D_GIVEN,
                                         required, required == 1 ? "" : "s", actual);
                     }
                 } else if (required != actual) {
-                    throw raise(TypeError, "this function takes %d argument%s (%d given)",
+                    throw raise(TypeError, THIS_FUNCTION_TAKES_D_ARGUMENT_S_D_GIVEN,
                                     required, required == 1 ? "" : "s", actual);
                 }
             }
-            CtypesThreadState state = CtypesThreadState.get(getContext(), language);
+            CtypesThreadState state = CtypesThreadState.get(getContext(), PythonLanguage.get(this));
             Object result = callProcNode.execute(frame, pProc,
                             callargs,
                             dict.flags,
@@ -450,7 +496,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                             checker,
                             state,
                             factory(),
-                            getContext().getEnv());
+                            getContext());
             /* The 'errcheck' protocol */
             if (result != null && errcheck != null) {
                 Object v = callNode.execute(frame, errcheck, result, self, callargs);
@@ -483,9 +529,9 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             }
             /* we can't currently emit a better error message */
             if (name != null) {
-                throw raise(TypeError, "required argument '%s' missing", name);
+                throw raise(TypeError, REQUIRED_ARGUMENT_S_MISSING, name);
             } else {
-                throw raise(TypeError, "not enough arguments");
+                throw raise(TypeError, NOT_ENOUGH_ARGUMENTS);
             }
         }
 
@@ -591,10 +637,10 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                             /*
                              * Cannot happen: _validate_paramflags() would not accept such an object
                              */
-                            throw raise(RuntimeError, "NULL stgdict unexpected");
+                            throw raise(RuntimeError, NULL_STGDICT_UNEXPECTED);
                         }
                         if (PGuards.isString(dict.proto)) { // TODO Py_TPFLAGS_UNICODE_SUBCLASS
-                            throw raise(TypeError, "%s 'out' parameter must be passed as default value", getNameNode.execute(ob));
+                            throw raise(TypeError, S_OUT_PARAMETER_MUST_BE_PASSED_AS_DEFAULT_VALUE, getNameNode.execute(ob));
                         }
                         if (pyTypeCheck.isPyCArrayTypeObject(ob)) {
                             ob = callNode.execute(frame, ob);
@@ -611,7 +657,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                         props[pnumretvals_idx]++;
                         break;
                     default:
-                        throw raise(ValueError, "paramflag %d not yet implemented", flag);
+                        throw raise(ValueError, PARAMFLAG_D_NOT_YET_IMPLEMENTED, flag);
                 }
             }
 
@@ -627,7 +673,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                  * When we have default values or named parameters, this error message is
                  * misleading. See unittests/test_paramflags.py
                  */
-                throw raise(TypeError, "call takes exactly %d arguments (%d given)", inargs_index, actual_args);
+                throw raise(TypeError, CALL_TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, inargs_index, actual_args);
             }
 
             /*
@@ -719,7 +765,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
 
             Object obj = getAttributeNode.executeObject(frame, dll, _handle);
             if (!(obj instanceof PythonNativeVoidPtr) && !longCheckNode.execute(obj)) { // PyLong_Check
-                throw raise(TypeError, "the _handle attribute of the second argument must be an integer");
+                throw raise(TypeError, THE_HANDLE_ATTRIBUTE_OF_THE_SECOND_ARGUMENT_MUST_BE_AN_INTEGER);
             }
             DLHandler handle = getHandleFromLongObject(obj, context, asVoidPtr, getRaiseNode());
             Object address = dlSymNode.execute(frame, handle, name, context, factory, AttributeError);
@@ -730,7 +776,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             GenericPyCDataNew(dict, self);
             self.paramflags = paramflags;
 
-            self.b_ptr = PtrValue.object(address); // TODO
+            self.b_ptr = PtrValue.nativePointer(address); // TODO
             keepRefNode.execute(self, 0, dll, factory);
 
             self.callable = self;
@@ -750,12 +796,12 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             }
 
             if (!PGuards.isPTuple(paramflags)) {
-                throw raise(TypeError, "paramflags must be a tuple or None");
+                throw raise(TypeError, PARAMFLAGS_MUST_BE_A_TUPLE_OR_NONE);
             }
 
             int len = paramflags.length;
             if (len != dict.argtypes.length) {
-                throw raise(ValueError, "paramflags must have the same length as argtypes");
+                throw raise(ValueError, PARAMFLAGS_MUST_HAVE_THE_SAME_LENGTH_AS_ARGTYPES);
             }
 
             for (int i = 0; i < len; ++i) {
@@ -765,7 +811,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 int flag = (int) array[0];
                 if (array.length > 1) {
                     if (!PGuards.isString(array[1])) {
-                        throw raise(TypeError, "paramflags must be a sequence of (int [,string [,value]]) tuples");
+                        throw raise(TypeError, PARAMFLAGS_MUST_BE_A_SEQUENCE_OF_INT_STRING_VALUE_TUPLES);
                     }
                 }
                 Object typ = argtypes[i];
@@ -779,7 +825,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                         _check_outarg_type(typ, i + 1, pyTypeCheck, pyTypeStgDictNode);
                         break;
                     default:
-                        throw raise(TypeError, "paramflag value %d not supported", flag);
+                        throw raise(TypeError, PARAMFLAG_VALUE_D_NOT_SUPPORTED, flag);
                 }
             }
         }
@@ -807,7 +853,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 return;
             }
 
-            throw raise(TypeError, "'out' parameter %d must be a pointer type, not %s", index, GetNameNode.getUncached().execute(arg));
+            throw raise(TypeError, OUT_PARAMETER_D_MUST_BE_A_POINTER_TYPE_NOT_S, index, GetNameNode.getUncached().execute(arg));
         }
 
         protected static boolean strchr(String chars, char code) {

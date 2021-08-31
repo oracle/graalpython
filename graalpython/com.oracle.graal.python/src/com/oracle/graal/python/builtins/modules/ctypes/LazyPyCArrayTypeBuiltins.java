@@ -41,8 +41,14 @@
 package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createUTF8String;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
+import static com.oracle.graal.python.nodes.ErrorMessages.BYTES_EXPECTED_INSTEAD_OF_S_INSTANCE;
+import static com.oracle.graal.python.nodes.ErrorMessages.BYTE_STRING_TOO_LONG;
+import static com.oracle.graal.python.nodes.ErrorMessages.STRING_TOO_LONG;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNICODE_STRING_EXPECTED_INSTEAD_OF_S_INSTANCE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
 
@@ -51,19 +57,31 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCArrayTypeBuiltinsFactory.CharArrayRawNodeFactory;
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCArrayTypeBuiltinsFactory.CharArrayValueNodeFactory;
+import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCArrayTypeBuiltinsFactory.WCharArrayValueNodeFactory;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -89,6 +107,13 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         NodeFactory<CharArrayValueNode> valueFactory = CharArrayValueNodeFactory.getInstance();
         Builtin valueNodeBuiltin = CharArrayValueNode.class.getAnnotation(Builtin.class);
+        createGetSet(language, type, valueFactory, valueNodeBuiltin);
+    }
+
+    @TruffleBoundary
+    protected static void createWCharArrayGetSet(PythonLanguage language, Object type) {
+        NodeFactory<WCharArrayValueNode> valueFactory = WCharArrayValueNodeFactory.getInstance();
+        Builtin valueNodeBuiltin = WCharArrayValueNode.class.getAnnotation(Builtin.class);
         createGetSet(language, type, valueFactory, valueNodeBuiltin);
     }
 
@@ -119,8 +144,19 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doSet(CDataObject self, Object value,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            self.b_ptr = PtrValue.bytes(getBytes(lib, value));
+                        @CachedLibrary(limit = "1") PythonBufferAcquireLibrary qlib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary alib) {
+            Object buf = qlib.acquire(value, BufferFlags.PyBUF_SIMPLE);
+            byte[] bytes = alib.getInternalOrCopiedByteArray(buf);
+            if (bytes.length > self.b_size) {
+                throw raise(ValueError, BYTE_STRING_TOO_LONG);
+            }
+            if (self.b_ptr.isManagedBytes()) {
+                ByteArrayStorage storage = (ByteArrayStorage) self.b_ptr.ptr;
+                storage.memcpy(self.b_ptr.offset, bytes);
+            } else {
+                throw raise(NotImplementedError);
+            }
             return PNone.NONE;
         }
     }
@@ -131,16 +167,66 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object doGet(CDataObject self, @SuppressWarnings("unused") PNone value) {
-            return createUTF8String(self.getBufferBytes());
+            if (self.b_ptr.isManagedBytes()) {
+                return factory().createBytes(ByteArrayStorage.trim((ByteArrayStorage) self.b_ptr.ptr, self.b_ptr.offset));
+            } else {
+                throw raise(NotImplementedError);
+            }
         }
 
         @Specialization
-        Object doSet(CDataObject self, Object value,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            self.b_ptr = PtrValue.bytes(getBytes(lib, value));
+        Object doSet(CDataObject self, PBytes value,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached GetInternalByteArrayNode getBytes) {
+            if (self.b_ptr.isManagedBytes()) {
+                int len = lenNode.execute(value.getSequenceStorage());
+                if (len > self.b_size) {
+                    throw raise(ValueError, BYTE_STRING_TOO_LONG);
+                }
+                ByteArrayStorage storage = (ByteArrayStorage) self.b_ptr.ptr;
+                storage.memcpy(self.b_ptr.offset, getBytes.execute(value.getSequenceStorage()));
+            } else {
+                throw raise(NotImplementedError);
+            }
             return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isPBytes(value)"})
+        Object error(@SuppressWarnings("unused") CDataObject self, Object value,
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetNameNode getNameNode) {
+            throw raise(TypeError, BYTES_EXPECTED_INSTEAD_OF_S_INSTANCE, getNameNode.execute(getClassNode.execute(value)));
         }
     }
 
-    // TODO WCharArray
+    @Builtin(name = "value", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "string value")
+    @GenerateNodeFactory
+    abstract static class WCharArrayValueNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = "isNoValue(value)")
+        Object doGet(CDataObject self, @SuppressWarnings("unused") PNone value) {
+            return createUTF8String(ByteArrayStorage.trim((ByteArrayStorage) self.b_ptr.ptr, self.b_ptr.offset));
+        }
+
+        @Specialization(guards = "isString(value)")
+        Object doSet(CDataObject self, Object value,
+                        @Cached CastToJavaStringNode toJavaStringNode) {
+            String str = toJavaStringNode.execute(value);
+            int len = PString.length(str);
+            if (len > self.b_size) {
+                throw raise(ValueError, STRING_TOO_LONG);
+            }
+            ByteArrayStorage storage = (ByteArrayStorage) self.b_ptr.ptr;
+            storage.memcpy(self.b_ptr.offset, BytesUtils.utf8StringToBytes(str));
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isString(value)"})
+        Object error(@SuppressWarnings("unused") CDataObject self, Object value,
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetNameNode getNameNode) {
+            throw raise(TypeError, UNICODE_STRING_EXPECTED_INSTEAD_OF_S_INSTANCE, getNameNode.execute(getClassNode.execute(value)));
+        }
+    }
+
 }

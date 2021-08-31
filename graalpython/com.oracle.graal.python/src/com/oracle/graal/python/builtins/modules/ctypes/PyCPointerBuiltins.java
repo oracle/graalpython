@@ -45,6 +45,14 @@ import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.GetKeepedObjects;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData_FromBaseObj;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createUTF8String;
+import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CREATE_INSTANCE_HAS_NO_TYPE;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_INSTEAD_OF_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.NULL_POINTER_ACCESS;
+import static com.oracle.graal.python.nodes.ErrorMessages.POINTER_DOES_NOT_SUPPORT_ITEM_DELETION;
+import static com.oracle.graal.python.nodes.ErrorMessages.POINTER_INDICES_MUST_BE_INTEGER;
+import static com.oracle.graal.python.nodes.ErrorMessages.SLICE_START_IS_REQUIRED_FOR_STEP_0;
+import static com.oracle.graal.python.nodes.ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO;
+import static com.oracle.graal.python.nodes.ErrorMessages.SLICE_STOP_IS_REQUIRED;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
@@ -65,7 +73,6 @@ import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCData
 import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.PyCDataSetNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.EmptyStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -107,15 +114,15 @@ public class PyCPointerBuiltins extends PythonBuiltins {
                     KeepRefNode keepRefNode,
                     PythonObjectFactory factory) {
         if (value == null) {
-            throw raiseNode.raise(TypeError, "Pointer does not support item deletion");
+            throw raiseNode.raise(TypeError, POINTER_DOES_NOT_SUPPORT_ITEM_DELETION);
         }
         StgDictObject stgdict = pyObjectStgDictNode.execute(self);
-        assert stgdict != null; /* Cannot be NULL for pointer instances */
+        assert stgdict != null : "Cannot be NULL for pointer instances";
         assert stgdict.proto != null;
         if (!pyTypeCheck.isCDataObject(value)) {
             boolean res = isInstanceNode.executeWith(frame, value, stgdict.proto);
             if (!res) {
-                raiseNode.raise(TypeError, "expected %s instead of %s",
+                raiseNode.raise(TypeError, EXPECTED_S_INSTEAD_OF_S,
                                 getNameNode.execute(stgdict.proto),
                                 getNameNode.execute(getClassNode.execute(value)));
             }
@@ -137,13 +144,13 @@ public class PyCPointerBuiltins extends PythonBuiltins {
 
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class NewNode extends PythonBuiltinNode {
+    protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization
         protected Object Pointer_new(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
             if (dict.proto == null) {
-                throw raise(TypeError, "Cannot create instance: has no _type_");
+                throw raise(TypeError, CANNOT_CREATE_INSTANCE_HAS_NO_TYPE);
             }
             return GenericPyCDataNew(dict, factory().createCDataObject(type));
         }
@@ -151,7 +158,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class InitNode extends PythonBuiltinNode {
+    protected abstract static class InitNode extends PythonBuiltinNode {
 
         @Specialization
         Object Pointer_init(VirtualFrame frame, CDataObject self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
@@ -172,7 +179,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
 
     @Builtin(name = "contents", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "the object this pointer points to (read-write)")
     @GenerateNodeFactory
-    public abstract static class PointerContentNode extends PythonBinaryBuiltinNode {
+    protected abstract static class PointerContentNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(value)")
         Object get_contents(CDataObject self, @SuppressWarnings("unused") PNone value,
@@ -180,11 +187,11 @@ public class PyCPointerBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             if (PtrValue.isNull(self.b_ptr)) {
-                throw raise(ValueError, "NULL pointer access");
+                throw raise(ValueError, NULL_POINTER_ACCESS);
             }
 
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
-            assert stgdict != null; /* Cannot be NULL for pointer instances */
+            assert stgdict != null : "Cannot be NULL for pointer instances";
             return PyCData_FromBaseObj(stgdict.proto,
                             self, 0, self.b_ptr, pyTypeCheck, factory(), getRaiseNode(), pyTypeStgDictNode);
         }
@@ -205,7 +212,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
 
     @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class PointerBoolNode extends PythonUnaryBuiltinNode {
+    protected abstract static class PointerBoolNode extends PythonUnaryBuiltinNode {
 
         @SuppressWarnings("unused")
         @Specialization
@@ -224,24 +231,21 @@ public class PyCPointerBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             if (value == PNone.NO_VALUE) {
-                throw raise(TypeError, "Pointer does not support item deletion");
+                throw raise(TypeError, POINTER_DOES_NOT_SUPPORT_ITEM_DELETION);
             }
 
             if (PtrValue.isNull(self.b_ptr)) {
-                throw raise(ValueError, "NULL pointer access");
+                throw raise(ValueError, NULL_POINTER_ACCESS);
             }
 
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
-            assert stgdict != null; /* Cannot be NULL for pointer instances */
+            assert stgdict != null : "Cannot be NULL for pointer instances";
 
             Object proto = stgdict.proto;
             assert proto != null;
 
             StgDictObject itemdict = pyTypeStgDictNode.execute(proto);
-            /*
-             * Cannot be NULL because the itemtype of a pointer is always a ctypes type
-             */
-            assert itemdict != null;
+            assert itemdict != null : "Cannot be NULL because the itemtype of a pointer is always a ctypes type";
 
             int size = itemdict.size;
             int offset = index * itemdict.size;
@@ -261,27 +265,22 @@ public class PyCPointerBuiltins extends PythonBuiltins {
                         @Cached PyCDataGetNode pyCDataGetNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode) {
-            if (PtrValue.isNull(self.b_ptr) || self.b_ptr.ptr instanceof EmptyStorage) {
-                throw raise(ValueError, "NULL pointer access");
+            if (PtrValue.isNull(self.b_ptr)) {
+                throw raise(ValueError, NULL_POINTER_ACCESS);
             }
 
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
-            assert stgdict != null; /* Cannot be NULL for pointer object instances */
+            assert stgdict != null : "Cannot be NULL for pointer object instances";
 
             Object proto = stgdict.proto;
             assert proto != null;
             StgDictObject itemdict = pyTypeStgDictNode.execute(proto);
-            /*
-             * proto is the item type of the pointer, a ctypes type, so this cannot be NULL
-             */
-            assert itemdict != null;
+            assert itemdict != null : "proto is the item type of the pointer, a ctypes type, so this cannot be NULL";
 
             int size = itemdict.size;
             int offset = index * itemdict.size;
 
-            return pyCDataGetNode.execute(proto, stgdict.getfunc, self, index, size, self.b_ptr.ref(offset),
-                            getContext(),
-                            factory());
+            return pyCDataGetNode.execute(proto, stgdict.getfunc, self, index, size, self.b_ptr.ref(offset), factory());
         }
 
         @Specialization
@@ -300,19 +299,19 @@ public class PyCPointerBuiltins extends PythonBuiltins {
             } else {
                 step = asSizeNode.executeExact(frame, slice.getStep(), ValueError);
                 if (step == 0) {
-                    throw raise(ValueError, "slice step cannot be zero");
+                    throw raise(ValueError, SLICE_STEP_CANNOT_BE_ZERO);
                 }
             }
             if (slice.getStart() == PNone.NONE) {
                 if (step < 0) {
-                    throw raise(ValueError, "slice start is required for step < 0");
+                    throw raise(ValueError, SLICE_START_IS_REQUIRED_FOR_STEP_0);
                 }
                 start = 0;
             } else {
                 start = asSizeNode.executeExact(frame, slice.getStart(), ValueError);
             }
             if (slice.getStop() == PNone.NONE) {
-                throw raise(ValueError, "slice stop is required");
+                throw raise(ValueError, SLICE_STOP_IS_REQUIRED);
             }
             stop = asSizeNode.executeExact(frame, slice.getStop(), ValueError);
             int len;
@@ -326,7 +325,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
             }
 
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
-            assert stgdict != null; /* Cannot be NULL for pointer instances */
+            assert stgdict != null : "Cannot be NULL for pointer instances";
             Object proto = stgdict.proto;
             assert proto != null;
             StgDictObject itemdict = pyTypeStgDictNode.execute(proto);
@@ -367,7 +366,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
             for (int cur = start, i = 0; i < len; cur += step, i++) {
                 np[i] = Pointer_item(self, cur, pyCDataGetNode, pyTypeStgDictNode, pyObjectStgDictNode);
             }
-            return np;
+            return factory().createList(np);
 
         }
 
@@ -382,7 +381,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
                 int i = asSizeNode.executeExact(frame, item, IndexError);
                 return Pointer_item(self, i, pyCDataGetNode, pyTypeStgDictNode, pyObjectStgDictNode);
             }
-            throw raise(TypeError, "Pointer indices must be integer");
+            throw raise(TypeError, POINTER_INDICES_MUST_BE_INTEGER);
 
         }
     }

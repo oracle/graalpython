@@ -47,6 +47,14 @@ import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuilti
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_ISPOINTER;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins._ctypes_alloc_format_string_with_shape;
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES.FFI_TYPE_STRUCT;
+import static com.oracle.graal.python.nodes.ErrorMessages.BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_IS_FINAL;
+import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_MUST_BE_A_SEQUENCE_OF_NAME_C_TYPE_PAIRS;
+import static com.oracle.graal.python.nodes.ErrorMessages.FIELDS_MUST_BE_A_SEQUENCE_OF_PAIRS;
+import static com.oracle.graal.python.nodes.ErrorMessages.NUMBER_OF_BITS_INVALID_FOR_BIT_FIELD;
+import static com.oracle.graal.python.nodes.ErrorMessages.PACK_MUST_BE_A_NON_NEGATIVE_INTEGER;
+import static com.oracle.graal.python.nodes.ErrorMessages.SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE;
+import static com.oracle.graal.python.nodes.ErrorMessages.STRUCTURE_OR_UNION_CANNOT_CONTAIN_ITSELF;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -234,7 +242,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                     pack = asSizeNode.executeLossy(frame, tmp);
                 } catch (PException e) {
                     e.expectTypeOrOverflowError(isBuiltinClassProfile);
-                    throw raise(ValueError, "_pack_ must be a non-negative integer");
+                    throw raise(ValueError, PACK_MUST_BE_A_NON_NEGATIVE_INTEGER);
                 }
             }
 
@@ -244,14 +252,14 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                 len = sizeNode.execute(frame, fields);
             } catch (PException e) {
                 e.expectTypeError(isBuiltinClassProfile);
-                throw raise(TypeError, "'_fields_' must be a sequence of pairs");
+                throw raise(TypeError, FIELDS_MUST_BE_A_SEQUENCE_OF_PAIRS);
             }
 
             StgDictObject stgdict = pyTypeStgDictNode.execute(type);
             /* If this structure/union is already marked final we cannot assign _fields_ anymore. */
 
             if ((stgdict.flags & DICTFLAG_FINAL) != 0) { /* is final ? */
-                throw raise(AttributeError, "_fields_ is final");
+                throw raise(AttributeError, FIELDS_IS_FINAL);
             }
 
             stgdict.format = null;
@@ -276,10 +284,12 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                 union_size = 0;
                 total_align = align != 0 ? align : 1;
                 stgdict.ffi_type_pointer.type = FFI_TYPE_STRUCT;
-                int ffielemLen = basedict.length + len + 1;
+                int ffielemLen = basedict.length + len;
                 stgdict.ffi_type_pointer.elements = new FFIType[ffielemLen];
-                for (int idx = 0; idx < ffielemLen; idx++) {
-                    stgdict.ffi_type_pointer.elements[idx] = new FFIType(basedict.ffi_type_pointer.elements[idx]);
+                if (basedict.ffi_type_pointer.elements != null && basedict.ffi_type_pointer.elements.length == ffielemLen) {
+                    for (int idx = 0; idx < ffielemLen; idx++) {
+                        stgdict.ffi_type_pointer.elements[idx] = new FFIType(basedict.ffi_type_pointer.elements[idx]);
+                    }
                 }
                 ffi_ofs = basedict.length;
             } else {
@@ -289,7 +299,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                 union_size = 0;
                 total_align = 1;
                 stgdict.ffi_type_pointer.type = FFI_TYPE_STRUCT;
-                stgdict.ffi_type_pointer.elements = new FFIType[len + 1];
+                stgdict.ffi_type_pointer.elements = new FFIType[len];
                 /*-
                 for (int idx = 0; idx < len + 1; idx++) {
                     stgdict.ffi_type_pointer.elements[idx] = new FFIType();
@@ -332,7 +342,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                 }
                 StgDictObject dict = pyTypeStgDictNode.execute(desc);
                 if (dict == null) {
-                    throw raise(TypeError, "second item in _fields_ tuple (index %d) must be a C type", i);
+                    throw raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
                 }
                 stgdict.ffi_type_pointer.elements[ffi_ofs + i] = dict.ffi_type_pointer;
                 if ((dict.flags & (TYPEFLAG_ISPOINTER | TYPEFLAG_HASPOINTER)) != 0) {
@@ -358,10 +368,10 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                             }
                             /* else fall through */
                         default:
-                            throw raise(TypeError, "bit fields not allowed for type %s", getNameNode.execute(desc));
+                            throw raise(TypeError, BIT_FIELDS_NOT_ALLOWED_FOR_TYPE_S, getNameNode.execute(desc));
                     }
                     if (bitsize <= 0 || bitsize > dict.size * 8) {
-                        throw raise(ValueError, "number of bits invalid for bit field");
+                        throw raise(ValueError, NUMBER_OF_BITS_INVALID_FOR_BIT_FIELD);
                     }
                 } else {
                     bitsize = 0;
@@ -369,7 +379,6 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
 
                 if (isStruct && !isPacked) {
                     String fieldfmt = dict.format != null ? dict.format : "B";
-                    len = PString.length(name) + PString.length(fieldfmt);
                     String buf = PythonUtils.format("%s:%s:", fieldfmt, name);
 
                     if (dict.shape != null) {
@@ -482,13 +491,13 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
 
                     StgDictObject dict = pyTypeStgDictNode.execute(desc);
                     if (dict == null) {
-                        throw raise(TypeError, "second item in _fields_ tuple (index %d) must be a C type", i);
+                        throw raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
                     }
                     if (pyTypeCheck.isPyCArrayTypeObject(desc)) {
                         /* It's an array. */
                         StgDictObject edict = pyTypeStgDictNode.execute(dict.proto);
                         if (edict == null) {
-                            throw raise(TypeError, "second item in _fields_ tuple (index %d) must be a C type", i);
+                            throw raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
                         }
                     }
                 }
@@ -530,7 +539,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                     StgDictObject dict = pyTypeStgDictNode.execute(desc);
                     /* Possibly this check could be avoided, but see above comment. */
                     if (dict == null) {
-                        throw raise(TypeError, "second item in _fields_ tuple (index %d) must be a C type", i);
+                        throw raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
                     }
                     assert (element_index < (ffi_ofs + len)); /* will be used below */
                     if (!pyTypeCheck.isPyCArrayTypeObject(desc)) {
@@ -540,7 +549,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                         int length = dict.length;
                         StgDictObject edict = pyTypeStgDictNode.execute(dict.proto);
                         if (edict == null) {
-                            throw raise(TypeError, "second item in _fields_ tuple (index %d) must be a C type", i);
+                            throw raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
                         }
                         FFIType ffiType = new FFIType(
                                         length * edict.ffi_type_pointer.size,
@@ -569,7 +578,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
              * We did check that this flag was NOT set above, it must not have been set until now.
              */
             if ((stgdict.flags & DICTFLAG_FINAL) != 0) {
-                throw raise(AttributeError, "Structure or union cannot contain itself");
+                throw raise(AttributeError, STRUCTURE_OR_UNION_CANNOT_CONTAIN_ITSELF);
             }
             stgdict.flags |= DICTFLAG_FINAL;
 
@@ -577,7 +586,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
         }
 
         void fieldsError() {
-            throw raise(TypeError, "'_fields_' must be a sequence of (name, C type) pairs");
+            throw raise(TypeError, FIELDS_MUST_BE_A_SEQUENCE_OF_NAME_C_TYPE_PAIRS);
         }
     }
 }

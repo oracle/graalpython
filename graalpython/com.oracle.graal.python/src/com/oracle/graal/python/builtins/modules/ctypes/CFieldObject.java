@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
-public class CFieldObject extends PythonBuiltinObject {
+public final class CFieldObject extends PythonBuiltinObject {
 
     int offset;
     int size;

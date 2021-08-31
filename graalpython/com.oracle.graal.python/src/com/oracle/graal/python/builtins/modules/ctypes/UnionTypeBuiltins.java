@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.P
 import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.StructUnionTypeNewNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -71,7 +72,7 @@ public class UnionTypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class NewNode extends StructUnionTypeNewNode {
+    protected abstract static class NewNode extends StructUnionTypeNewNode {
         @Override
         protected boolean isStruct() {
             return false;
@@ -80,13 +81,13 @@ public class UnionTypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
+    protected abstract static class SetattrNode extends PythonTernaryBuiltinNode {
 
         @Specialization
         protected PNone doStringKey(VirtualFrame frame, Object object, String key, Object value,
-                        @Cached SetattrNode setattrNode,
+                        @Cached WriteAttributeToObjectNode writeNode,
                         @Cached PyCStructUnionTypeUpdateStgDict updateStgDict) {
-            setattrNode.execute(frame, object, key, value);
+            writeNode.execute(object, key, value);
             if (PString.equals(key, StructUnionTypeBuiltins._fields_)) {
                 updateStgDict.execute(frame, object, value, false, factory());
             }

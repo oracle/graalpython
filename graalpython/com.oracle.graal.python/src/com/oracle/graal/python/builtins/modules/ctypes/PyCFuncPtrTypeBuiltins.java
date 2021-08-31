@@ -42,6 +42,10 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.from_param;
 import static com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.TYPEFLAG_ISPOINTER;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES;
+import static com.oracle.graal.python.nodes.ErrorMessages.CLASS_MUST_DEFINE_FLAGS_WHICH_MUST_BE_AN_INTEGER;
+import static com.oracle.graal.python.nodes.ErrorMessages.ITEM_D_IN_ARGTYPES_HAS_NO_FROM_PARAM_METHOD;
+import static com.oracle.graal.python.nodes.ErrorMessages.RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE1;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -101,7 +105,7 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
     @ImportStatic(PyCPointerTypeBuiltins.class)
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class PyCFuncPtrTypeNewNode extends PythonBuiltinNode {
+    protected abstract static class PyCFuncPtrTypeNewNode extends PythonBuiltinNode {
 
         @Specialization
         Object PyCFuncPtrType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
@@ -146,7 +150,7 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
 
             Object ob = hlib.getItem(stgdict.getDictStorage(), _flags_);
             if (!PGuards.isInteger(ob)) {
-                throw raise(TypeError, "class must define _flags_ which must be an integer");
+                throw raise(TypeError, CLASS_MUST_DEFINE_FLAGS_WHICH_MUST_BE_AN_INTEGER);
             }
             stgdict.flags = asNumber.execute(ob) | TYPEFLAG_ISPOINTER;
 
@@ -154,7 +158,7 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             ob = hlib.getItem(stgdict.getDictStorage(), _argtypes_);
             if (ob != null) {
                 if (!PGuards.isPTuple(ob)) {
-                    throw raise(TypeError, "_argtypes_ must be a sequence of types");
+                    throw raise(TypeError, ARGTYPES_MUST_BE_A_SEQUENCE_OF_TYPES);
                 }
                 Object[] obtuple = getArray.execute(((PTuple) ob).getSequenceStorage());
                 Object[] converters = converters_from_argtypes(obtuple, getRaiseNode(), lookupAttr);
@@ -163,9 +167,9 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             }
 
             ob = hlib.getItem(stgdict.getDictStorage(), _restype_);
-            if (ob != null) {
-                if (ob != PNone.NONE && pyTypeStgDictNode.execute(ob) == null && !lib.isCallable(ob)) {
-                    throw raise(TypeError, "_restype_ must be a type, a callable, or None");
+            if (!PGuards.isPNone(ob)) {
+                if (pyTypeStgDictNode.execute(ob) == null && !lib.isCallable(ob)) {
+                    throw raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE1);
                 }
                 stgdict.restype = ob;
                 stgdict.checker = lookupAttr.execute(ob, _check_retval_);
@@ -245,7 +249,7 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                     // }
                 }
                 if (cnv == PNone.NO_VALUE) {
-                    throw raiseNode.raise(TypeError, "item %d in _argtypes_ has no from_param method", i + 1);
+                    throw raiseNode.raise(TypeError, ITEM_D_IN_ARGTYPES_HAS_NO_FROM_PARAM_METHOD, i + 1);
                 }
                 converters[i] = cnv;
             }

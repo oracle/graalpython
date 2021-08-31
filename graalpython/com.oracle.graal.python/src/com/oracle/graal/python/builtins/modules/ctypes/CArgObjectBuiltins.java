@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -116,19 +117,19 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                     if (isLiteralChar((char) bytes[0])) {
                         return PythonUtils.format("<cparam '%c' ('%c')>", self.tag, self.value);
                     } else {
-                        return PythonUtils.format("<cparam '%c' ('\\x%02x')>", self.tag, self.value);
+                        return PythonUtils.format("<cparam '%c' ('\\x%02x')>", self.tag, PythonAbstractObject.systemHashCode(self.value));
                     }
 
                 case 'z':
                 case 'Z':
                 case 'P':
-                    return PythonUtils.format("<cparam '%c' (%p)>", self.tag, self.value);
+                    return PythonUtils.format("<cparam '%c' 0x%x>", self.tag, PythonAbstractObject.systemHashCode(self.value));
 
                 default:
                     if (isLiteralChar(self.tag)) {
-                        return PythonUtils.format("<cparam '%c' at %p>", self.tag, self);
+                        return PythonUtils.format("<cparam '%c' at 0x%x>", self.tag, PythonAbstractObject.systemHashCode(self));
                     } else {
-                        return PythonUtils.format("<cparam 0x%02x at %p>", self.tag, self);
+                        return PythonUtils.format("<cparam 0x%02x at 0x%x>", self.tag, PythonAbstractObject.systemHashCode(self));
                     }
             }
         }
@@ -159,7 +160,7 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                 parg.value = self.b_ptr;
                 return parg;
             case PyCSimpleTypeParamFunc: // Corresponds to PyCSimpleType_paramfunc
-                assert stgDict != null; /* Cannot be NULL for CDataObject instances */
+                assert stgDict != null : "Cannot be NULL for CDataObject instances";
                 String fmt = (String) stgDict.proto;
                 assert fmt != null;
 
@@ -193,7 +194,7 @@ public class CArgObjectBuiltins extends PythonBuiltins {
                     struct_param.ptr = ptr;
                 }
 
-                assert stgDict != null; /* Cannot be NULL for structure/union instances */
+                assert stgDict != null : "Cannot be NULL for structure/union instances";
                 parg.pffi_type = stgDict.ffi_type_pointer;
                 parg.tag = 'V';
                 parg.value = ptr;

@@ -44,6 +44,11 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCArray;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.GenericPyCDataNew;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createUTF8String;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARRAY_DOES_NOT_SUPPORT_ITEM_DELETION;
+import static com.oracle.graal.python.nodes.ErrorMessages.CAN_ONLY_ASSIGN_SEQUENCE_OF_SAME_SIZE;
+import static com.oracle.graal.python.nodes.ErrorMessages.INDICES_MUST_BE_INTEGER;
+import static com.oracle.graal.python.nodes.ErrorMessages.INDICES_MUST_BE_INTEGERS;
+import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_INDEX;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
@@ -97,7 +102,7 @@ public class PyCArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class NewNode extends PythonBuiltinNode {
+    protected abstract static class NewNode extends PythonBuiltinNode {
         @Specialization
         protected Object newCData(Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
@@ -108,7 +113,7 @@ public class PyCArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class InitNode extends PythonBuiltinNode {
+    protected abstract static class InitNode extends PythonBuiltinNode {
 
         @Specialization
         Object Array_init(VirtualFrame frame, CDataObject self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
@@ -123,7 +128,7 @@ public class PyCArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__class_getitem__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ClassGetitemNode extends PythonBinaryBuiltinNode {
+    protected abstract static class ClassGetitemNode extends PythonBinaryBuiltinNode {
 
         @SuppressWarnings("unused")
         @Specialization
@@ -141,12 +146,12 @@ public class PyCArrayBuiltins extends PythonBuiltins {
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyCDataSetNode pyCDataSetNode) {
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
-            assert stgdict != null; /* Cannot be NULL for array object instances */
+            assert stgdict != null : "Cannot be NULL for array object instances";
             if (index < 0 || index >= stgdict.length) {
-                throw raise(IndexError, "invalid index");
+                throw raise(IndexError, INVALID_INDEX);
             }
             int size = stgdict.size / stgdict.length;
-            self.b_ptr.specialize(size, stgdict.length, value);
+            self.b_ptr.createStorage(stgdict.ffi_type_pointer, value);
             int offset = index * size;
 
             pyCDataSetNode.execute(frame, self, stgdict.proto, stgdict.setfunc, value, index, size, self.b_ptr.ref(offset), factory());
@@ -169,7 +174,7 @@ public class PyCArrayBuiltins extends PythonBuiltins {
                                 pyObjectStgDictNode,
                                 pyCDataSetNode);
             } else {
-                throw raise(TypeError, "indices must be integer");
+                throw raise(TypeError, INDICES_MUST_BE_INTEGER);
             }
             return PNone.NONE;
         }
@@ -191,7 +196,7 @@ public class PyCArrayBuiltins extends PythonBuiltins {
 
             int otherlen = pySequenceLength.execute(frame, value);
             if (otherlen != slicelen) {
-                throw raise(ValueError, "Can only assign sequence of same size");
+                throw raise(ValueError, CAN_ONLY_ASSIGN_SEQUENCE_OF_SAME_SIZE);
             }
             for (int cur = start, i = 0; i < otherlen; cur += step, i++) {
                 Array_ass_item(frame, self, cur, pySequenceGetItem.execute(frame, value, i),
@@ -204,7 +209,7 @@ public class PyCArrayBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object error(CDataObject self, Object item, PNone value) {
-            throw raise(TypeError, "Array does not support item deletion");
+            throw raise(TypeError, ARRAY_DOES_NOT_SUPPORT_ITEM_DELETION);
         }
     }
 
@@ -221,16 +226,14 @@ public class PyCArrayBuiltins extends PythonBuiltins {
                         @Cached PyCDataGetNode pyCDataGetNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode) {
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
-            assert stgdict != null; /* Cannot be NULL for array object instances */
+            assert stgdict != null : "Cannot be NULL for array object instances";
             /*
              * Would it be clearer if we got the item size from stgdict.proto's stgdict?
              */
             int size = stgdict.size / stgdict.length;
             int offset = index * size;
 
-            return pyCDataGetNode.execute(stgdict.proto, stgdict.getfunc, self, index, size, self.b_ptr.ref(offset),
-                            getContext(),
-                            factory());
+            return pyCDataGetNode.execute(stgdict.proto, stgdict.getfunc, self, index, size, self.b_ptr.ref(offset), factory());
         }
 
         @Specialization
@@ -241,14 +244,11 @@ public class PyCArrayBuiltins extends PythonBuiltins {
                         @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
                         @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
-            assert stgdict != null; /* Cannot be NULL for array object instances */
+            assert stgdict != null : "Cannot be NULL for array object instances";
             Object proto = stgdict.proto;
 
-            /*
-             * proto is the item type of the array, a ctypes type, so this cannot be NULL
-             */
             StgDictObject itemdict = pyTypeStgDictNode.execute(proto);
-            assert itemdict != null;
+            assert itemdict != null : "proto is the item type of the array, a ctypes type, so this cannot be NULL";
 
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.b_length, sliceUnpack.execute(slice));
             int slicelen = sliceInfo.sliceLength;
@@ -302,7 +302,7 @@ public class PyCArrayBuiltins extends PythonBuiltins {
                         @Cached PyCDataGetNode pyCDataGetNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode) {
             if (!indexCheckNode.execute(item)) {
-                throw raise(TypeError, "indices must be integers");
+                throw raise(TypeError, INDICES_MUST_BE_INTEGERS);
             }
             Object idx = indexNode.execute(frame, item);
             int index = asSizeNode.executeExact(frame, idx);
@@ -310,7 +310,7 @@ public class PyCArrayBuiltins extends PythonBuiltins {
                 index += self.b_length;
             }
             if (isInvalid(self, index)) {
-                throw raise(IndexError, "invalid index");
+                throw raise(IndexError, INVALID_INDEX);
             }
 
             return Array_item(self, index, pyCDataGetNode, pyObjectStgDictNode);

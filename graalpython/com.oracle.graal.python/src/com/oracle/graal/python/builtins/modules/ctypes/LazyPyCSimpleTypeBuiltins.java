@@ -42,7 +42,9 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.from_param;
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.ffi_type_pointer;
+import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.ffi_type_uint8_array;
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.nfi_type_string;
+import static com.oracle.graal.python.nodes.ErrorMessages.WRONG_TYPE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -54,7 +56,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.SetFuncNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
-import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheckExact;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCSimpleTypeBuiltinsFactory.CCharPFromParamNodeFactory;
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCSimpleTypeBuiltinsFactory.CVoidPFromParamNodeFactory;
@@ -62,6 +63,11 @@ import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCSimpleTypeBuiltins
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyLongCheckNode;
@@ -129,7 +135,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
     @ImportStatic(CDataTypeBuiltins.class)
     @Builtin(name = from_param, minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    public abstract static class CWCharPFromParamNode extends PythonBinaryBuiltinNode {
+    protected abstract static class CWCharPFromParamNode extends PythonBinaryBuiltinNode {
 
         @SuppressWarnings("unused")
         @Specialization
@@ -143,19 +149,16 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached SetFuncNode setFuncNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyTypeCheckExact pyTypeCheckExact,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CWCharPFromParamNode cwCharPFromParamNode,
                         @Cached("create(_as_parameter_)") LookupAttributeInMRONode lookupAsParam) {
             if (PGuards.isString(value)) {
-                PyCArgObject parg;
-                FieldDesc fd = FieldDesc.Z;
-                parg = factory().createCArgObject();
+                PyCArgObject parg = factory().createCArgObject();
                 parg.pffi_type = nfi_type_string;
                 parg.tag = 'Z';
                 parg.value = PtrValue.bytes(PythonUtils.EMPTY_BYTE_ARRAY);
-                parg.obj = setFuncNode.execute(frame, fd.setfunc, parg.value, value, 0);
+                parg.obj = setFuncNode.execute(frame, FieldDesc.Z.setfunc, parg.value, value, 0);
                 return parg;
             }
             boolean res = isInstanceNode.executeWith(frame, value, type);
@@ -165,14 +168,13 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             if (pyTypeCheck.isArrayObject(value) || pyTypeCheck.isPointerObject(value)) {
                 /* c_wchar array instance or pointer(c_wchar(...)) */
                 StgDictObject dt = pyObjectStgDictNode.execute(value);
-                StgDictObject dict;
-                assert dt != null; /* Cannot be NULL for pointer or array objects */
-                dict = dt.proto != null ? pyTypeStgDictNode.execute(dt.proto) : null;
+                assert dt != null : "Cannot be NULL for pointer or array objects";
+                StgDictObject dict = dt.proto != null ? pyTypeStgDictNode.execute(dt.proto) : null;
                 if (dict != null && (dict.setfunc == FieldDesc.u.setfunc)) {
                     return value;
                 }
             }
-            if (pyTypeCheckExact.isPyCArg(value)) {
+            if (PGuards.isPyCArg(value)) {
                 /* byref(c_char(...)) */
                 PyCArgObject a = (PyCArgObject) value;
                 StgDictObject dict = pyObjectStgDictNode.execute(a.obj);
@@ -186,14 +188,14 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 return cwCharPFromParamNode.call(frame, type, as_parameter);
             }
             /* XXX better message */
-            throw raise(TypeError, "wrong type");
+            throw raise(TypeError, WRONG_TYPE);
         }
     }
 
     @ImportStatic(CDataTypeBuiltins.class)
     @Builtin(name = from_param, minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    public abstract static class CVoidPFromParamNode extends PythonBinaryBuiltinNode {
+    protected abstract static class CVoidPFromParamNode extends PythonBinaryBuiltinNode {
 
         @SuppressWarnings("unused")
         @Specialization
@@ -202,48 +204,56 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isNone(value)")
-        Object c_void_p_from_param(VirtualFrame frame, Object type, Object value,
-                        @Cached PyTypeCheckExact pyTypeCheckExact,
+        protected static boolean isLong(Object value, PyLongCheckNode longCheckNode) {
+            return value instanceof PythonNativeVoidPtr || longCheckNode.execute(value); // PyLong_Check
+        }
+
+        @Specialization(guards = "isLong(value, longCheckNode)")
+        Object voidPtr(@SuppressWarnings("unused") Object type, Object value,
+                        @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
+                        @Cached CastToNativeLongNode toNativeLongNode) {
+            /* Should probably allow buffer interface as well */
+            /* int, long */
+            PyCArgObject parg = factory().createCArgObject();
+            parg.pffi_type = ffi_type_pointer;
+            parg.tag = 'P';
+            // TODO: check if wrap is needed
+            parg.value = PtrValue.nativePointer(toNativeLongNode.execute(value));
+            parg.obj = PNone.NONE;
+            return parg;
+        }
+
+        @Specialization
+        Object bytes(@SuppressWarnings("unused") Object type, PBytes value, // PyBytes_Check
+                        @Cached GetInternalByteArrayNode getBytes) {
+            /* bytes */
+            PyCArgObject parg = factory().createCArgObject();
+            parg.pffi_type = ffi_type_uint8_array;
+            parg.tag = 'z';
+            parg.value = PtrValue.bytes(getBytes.execute(value.getSequenceStorage()));
+            parg.obj = value;
+            return parg;
+        }
+
+        @Specialization
+        Object string(@SuppressWarnings("unused") Object type, String value) { // PyUnicode_Check
+            /* unicode */
+            PyCArgObject parg = factory().createCArgObject();
+            parg.pffi_type = nfi_type_string;
+            parg.tag = 'Z';
+            parg.value = PtrValue.bytes(BytesUtils.utf8StringToBytes(value));
+            parg.obj = value;
+            return parg;
+        }
+
+        @Specialization(guards = {"!isNone(value)", "!isPBytes(value)", "!isString(value)", "!isLong(value, longCheckNode)"})
+        Object c_void_p_from_param(VirtualFrame frame, Object type, Object value, // PyUnicode_Check
+                        @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
                         @Cached PyTypeCheck pyTypeCheck,
-                        @Cached PyLongCheckNode longCheckNode,
-                        @Cached SetFuncNode setFuncNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CVoidPFromParamNode cVoidPFromParamNode,
                         @Cached("create(_as_parameter_)") LookupAttributeInMRONode lookupAsParam) {
-            /* Should probably allow buffer interface as well */
-            /* int, long */
-            if (longCheckNode.execute(value)) { // PyLong_Check
-                FieldDesc fd = FieldDesc.P;
-                PyCArgObject parg = factory().createCArgObject();
-                parg.pffi_type = ffi_type_pointer;
-                parg.tag = 'P';
-                parg.value = PtrValue.object(value);
-                parg.obj = setFuncNode.execute(frame, fd.setfunc, parg.value, value, 0);
-                return parg;
-            }
-            /* XXX struni: remove later */
-            /* bytes */
-            if (PGuards.isBytes(value)) { // PyBytes_Check
-                FieldDesc fd = FieldDesc.z;
-                PyCArgObject parg = factory().createCArgObject();
-                parg.pffi_type = nfi_type_string;
-                parg.tag = 'z';
-                parg.value = PtrValue.bytes(PythonUtils.EMPTY_BYTE_ARRAY);
-                parg.obj = setFuncNode.execute(frame, fd.setfunc, parg.value, value, 0);
-                return parg;
-            }
-            /* unicode */
-            if (PGuards.isString(value)) { // PyUnicode_Check
-                FieldDesc fd = FieldDesc.Z;
-                PyCArgObject parg = factory().createCArgObject();
-                parg.pffi_type = nfi_type_string;
-                parg.tag = 'Z';
-                parg.value = PtrValue.bytes(PythonUtils.EMPTY_BYTE_ARRAY);
-                parg.obj = setFuncNode.execute(frame, fd.setfunc, parg.value, value, 0);
-                return parg;
-            }
             /* c_void_p instance (or subclass) */
             boolean res = isInstanceNode.executeWith(frame, value, type);
             if (res) {
@@ -256,7 +266,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 return value;
             }
             /* byref(...) */
-            if (pyTypeCheckExact.isPyCArg(value)) {
+            if (PGuards.isPyCArg(value)) {
                 /* byref(c_xxx()) */
                 PyCArgObject a = (PyCArgObject) value;
                 if (a.tag == 'P') {
@@ -276,7 +286,8 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             /* c_char_p, c_wchar_p */
             StgDictObject stgd = pyObjectStgDictNode.execute(value);
             if (stgd != null && pyTypeCheck.isCDataObject(value) && PGuards.isString(stgd.proto)) { // PyUnicode_Check
-                switch (PString.charAt((String) stgd.proto, 0)) {
+                char code = PString.charAt((String) stgd.proto, 0);
+                switch (code) {
                     case 'z': /* c_char_p */
                     case 'Z': /* c_wchar_p */
                         PyCArgObject parg = factory().createCArgObject();
@@ -284,7 +295,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         parg.tag = 'Z';
                         parg.obj = value;
                         /* Remember: b_ptr points to where the pointer is stored! */
-                        parg.value = (((CDataObject) value).b_ptr);
+                        parg.value = ((CDataObject) value).b_ptr;
                         return parg;
                 }
             }
@@ -294,14 +305,14 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 return cVoidPFromParamNode.call(frame, type, as_parameter);
             }
             /* XXX better message */
-            throw raise(TypeError, "wrong type");
+            throw raise(TypeError, WRONG_TYPE);
         }
     }
 
     @ImportStatic(CDataTypeBuiltins.class)
     @Builtin(name = from_param, minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    public abstract static class CCharPFromParamNode extends PythonBinaryBuiltinNode {
+    protected abstract static class CCharPFromParamNode extends PythonBinaryBuiltinNode {
 
         @SuppressWarnings("unused")
         @Specialization
@@ -310,25 +321,25 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isNone(value)")
+        @Specialization
+        Object bytes(@SuppressWarnings("unused") Object type, PBytes value,
+                        @Cached GetInternalByteArrayNode getBytes) {
+            PyCArgObject parg = factory().createCArgObject();
+            parg.pffi_type = ffi_type_uint8_array;
+            parg.tag = 'z';
+            parg.value = PtrValue.bytes(getBytes.execute(value.getSequenceStorage()));
+            parg.obj = value;
+            return parg;
+        }
+
+        @Specialization(guards = {"!isNone(value)", "!isBytes(value)"})
         Object c_char_p_from_param(VirtualFrame frame, Object type, Object value,
-                        @Cached PyTypeCheckExact pyTypeCheckExact,
-                        @Cached SetFuncNode setFuncNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached CCharPFromParamNode cCharPFromParamNode,
                         @Cached("create(_as_parameter_)") LookupAttributeInMRONode lookupAsParam) {
-            if (PGuards.isBytes(value)) { // PyBytes_Check
-                FieldDesc fd = FieldDesc.z;
-                PyCArgObject parg = factory().createCArgObject();
-                parg.pffi_type = nfi_type_string;
-                parg.tag = 'z';
-                parg.value.specialize(parg.pffi_type.size, 0, value);
-                parg.obj = setFuncNode.execute(frame, fd.setfunc, parg.value, value, 0);
-                return parg;
-            }
             boolean res = isInstanceNode.executeWith(frame, value, type);
             if (res) {
                 return value;
@@ -336,13 +347,13 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             if (pyTypeCheck.isArrayObject(value) || pyTypeCheck.isPointerObject(value)) {
                 /* c_char array instance or pointer(c_char(...)) */
                 StgDictObject dt = pyObjectStgDictNode.execute(value);
-                assert dt != null; /* Cannot be NULL for pointer or array objects */
+                assert dt != null : "Cannot be NULL for pointer or array objects";
                 StgDictObject dict = dt.proto != null ? pyTypeStgDictNode.execute(dt.proto) : null;
                 if (dict != null && (dict.setfunc == FieldDesc.c.setfunc)) {
                     return value;
                 }
             }
-            if (pyTypeCheckExact.isPyCArg(value)) {
+            if (PGuards.isPyCArg(value)) {
                 /* byref(c_char(...)) */
                 PyCArgObject a = (PyCArgObject) value;
                 StgDictObject dict = pyObjectStgDictNode.execute(a.obj);
@@ -356,7 +367,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                 return cCharPFromParamNode.call(frame, type, as_parameter);
             }
             /* XXX better message */
-            throw raise(TypeError, "wrong type");
+            throw raise(TypeError, WRONG_TYPE);
         }
     }
 }
