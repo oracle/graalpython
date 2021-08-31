@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,13 +22,14 @@
  * SOFTWARE.
  */
 
-#ifndef HPY_COMMON_RUNTIME_CTX_OBJECT_H
-#define HPY_COMMON_RUNTIME_CTX_OBJECT_H
+#ifndef HPY_COMMON_RUNTIME_HELPERS_H
+#define HPY_COMMON_RUNTIME_HELPERS_H
 
-#include <Python.h>
 #include "hpy.h"
+#include "hpy/hpytype.h"
 
-_HPy_HIDDEN void ctx_Dump(HPyContext ctx, HPy h);
-_HPy_HIDDEN int ctx_TypeCheck(HPyContext ctx, HPy h_obj, HPy h_type);
+HPyAPI_HELPER int
+HPyHelpers_AddType(HPyContext *ctx, HPy obj, const char *name,
+                  HPyType_Spec *hpyspec, HPyType_SpecParam *params);
 
-#endif /* HPY_COMMON_RUNTIME_CTX_OBJECT_H */
+#endif /* HPY_COMMON_RUNTIME_HELPERS_H */

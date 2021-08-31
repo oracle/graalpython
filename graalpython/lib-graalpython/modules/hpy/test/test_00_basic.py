@@ -61,7 +61,7 @@ class TestBasic(HPyTest):
     def test_noop_function(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS, .doc="hello world")
-            static HPy f_impl(HPyContext ctx, HPy self)
+            static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 return HPy_Dup(ctx, ctx->h_None);
             }
@@ -75,7 +75,7 @@ class TestBasic(HPyTest):
     def test_self_is_module(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
-            static HPy f_impl(HPyContext ctx, HPy self)
+            static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 return HPy_Dup(ctx, self);
             }
@@ -87,7 +87,7 @@ class TestBasic(HPyTest):
     def test_identity_function(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 return HPy_Dup(ctx, arg);
             }
@@ -100,7 +100,7 @@ class TestBasic(HPyTest):
     def test_float_asdouble(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 double a = HPyFloat_AsDouble(ctx, arg);
                 return HPyFloat_FromDouble(ctx, a * 2.);
@@ -114,12 +114,12 @@ class TestBasic(HPyTest):
         import pytest
         mod = self.make_module("""
             HPyDef_METH(f_noargs, "f_noargs", f_noargs_impl, HPyFunc_NOARGS)
-            static HPy f_noargs_impl(HPyContext ctx, HPy self)
+            static HPy f_noargs_impl(HPyContext *ctx, HPy self)
             {
                 return HPy_Dup(ctx, ctx->h_None);
             }
             HPyDef_METH(f_o, "f_o", f_o_impl, HPyFunc_O)
-            static HPy f_o_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_o_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 return HPy_Dup(ctx, ctx->h_None);
             }
@@ -137,7 +137,7 @@ class TestBasic(HPyTest):
     def test_close(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 HPy one = HPyLong_FromLong(ctx, 1);
                 if (HPy_IsNull(one))
@@ -156,7 +156,7 @@ class TestBasic(HPyTest):
     def test_bool(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 int cond = HPyLong_AsLong(ctx, arg) > 5;
                 return HPy_Dup(ctx, cond ? ctx->h_True : ctx->h_False);
@@ -171,7 +171,7 @@ class TestBasic(HPyTest):
         import pytest
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 long x = HPyLong_AsLong(ctx, arg);
                 if (x < 5) {
@@ -193,7 +193,7 @@ class TestBasic(HPyTest):
     def test_varargs(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy *args, HPy_ssize_t nargs)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy *args, HPy_ssize_t nargs)
             {
                 long a, b;
                 if (!HPyArg_Parse(ctx, NULL, args, nargs, "ll", &a, &b))
@@ -209,7 +209,7 @@ class TestBasic(HPyTest):
     def test_builtin_handles(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 long i = HPyLong_AsLong(ctx, arg);
                 HPy h;
@@ -263,17 +263,17 @@ class TestBasic(HPyTest):
         """
         extra = """
             HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
-            static HPy f_impl(HPyContext ctx, HPy self)
+            static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 return HPyLong_FromLong(ctx, 12345);
             }
             HPyDef_METH(g, "g", g_impl, HPyFunc_O)
-            static HPy g_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy g_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 return HPy_Dup(ctx, arg);
             }
             HPyDef_METH(h, "h", h_impl, HPyFunc_VARARGS)
-            static HPy h_impl(HPyContext ctx, HPy self, HPy *args, HPy_ssize_t nargs)
+            static HPy h_impl(HPyContext *ctx, HPy self, HPy *args, HPy_ssize_t nargs)
             {
                 long a, b;
                 if (!HPyArg_Parse(ctx, NULL, args, nargs, "ll", &a, &b))
@@ -281,7 +281,7 @@ class TestBasic(HPyTest):
                 return HPyLong_FromLong(ctx, 10*a + b);
             }
             HPyDef_METH(i, "i", i_impl, HPyFunc_KEYWORDS)
-            static HPy i_impl(HPyContext ctx, HPy self, HPy *args, HPy_ssize_t nargs,
+            static HPy i_impl(HPyContext *ctx, HPy self, HPy *args, HPy_ssize_t nargs,
                               HPy kw)
             {
                 long a, b;
@@ -303,7 +303,7 @@ class TestBasic(HPyTest):
     def test_Float_FromDouble(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
-            static HPy f_impl(HPyContext ctx, HPy self)
+            static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 return HPyFloat_FromDouble(ctx, 123.45);
             }
@@ -331,22 +331,22 @@ class TestBasic(HPyTest):
     def test_repr_str_ascii_bytes(self):
         mod = self.make_module("""
             HPyDef_METH(f1, "f1", f1_impl, HPyFunc_O)
-            static HPy f1_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f1_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 return HPy_Repr(ctx, arg);
             }
             HPyDef_METH(f2, "f2", f2_impl, HPyFunc_O)
-            static HPy f2_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f2_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 return HPy_Str(ctx, arg);
             }
             HPyDef_METH(f3, "f3", f3_impl, HPyFunc_O)
-            static HPy f3_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f3_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 return HPy_ASCII(ctx, arg);
             }
             HPyDef_METH(f4, "f4", f4_impl, HPyFunc_O)
-            static HPy f4_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f4_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 return HPy_Bytes(ctx, arg);
             }
@@ -365,7 +365,7 @@ class TestBasic(HPyTest):
     def test_is_true(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 int cond = HPy_IsTrue(ctx, arg);
                 return HPy_Dup(ctx, cond ? ctx->h_True : ctx->h_False);
@@ -379,7 +379,7 @@ class TestBasic(HPyTest):
     def test_richcompare(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 HPy arg2 = HPyLong_FromLong(ctx, 100);
                 HPy result = HPy_RichCompare(ctx, arg, arg2, HPy_GT);
@@ -395,7 +395,7 @@ class TestBasic(HPyTest):
     def test_richcomparebool(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 HPy arg2 = HPyLong_FromLong(ctx, 100);
                 int result = HPy_RichCompareBool(ctx, arg, arg2, HPy_GE);
@@ -411,7 +411,7 @@ class TestBasic(HPyTest):
     def test_hash(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 HPy_hash_t hash = HPy_Hash(ctx, arg);
                 return HPyLong_FromSsize_t(ctx, hash);
@@ -425,7 +425,7 @@ class TestBasic(HPyTest):
     def test_ctx_name(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
-            static HPy f_impl(HPyContext ctx, HPy self)
+            static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 return HPyUnicode_FromString(ctx, ctx->name);
             }
@@ -445,3 +445,17 @@ class TestBasic(HPyTest):
             assert ctx_name.startswith('HPy Debug Mode ABI')
         else:
             assert False, 'unexpected hpy_abi: %s' % hpy_abi
+
+    def test_FromVoidP_AsVoidP(self):
+        mod = self.make_module("""
+            HPyDef_METH(f, "f", f_impl, HPyFunc_O)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
+            {
+                void *p = HPy_AsVoidP(arg);
+                HPy h = HPy_FromVoidP(p);
+                return HPy_Dup(ctx, h);
+            }
+            @EXPORT(f)
+            @INIT
+        """)
+        assert mod.f(42) == 42

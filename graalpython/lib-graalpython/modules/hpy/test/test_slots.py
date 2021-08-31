@@ -21,9 +21,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .support import HPyTest, DefaultExtensionTemplate
+from .support import HPyTest
 from .test_hpytype import PointTemplate
 import pytest
+
 
 class TestSlots(HPyTest):
 
@@ -36,14 +37,14 @@ class TestSlots(HPyTest):
             HPyDef_SLOT(Point_new, HPyType_GenericNew, HPy_tp_new)
 
             HPyDef_SLOT(Point_init, Point_init_impl, HPy_tp_init)
-            static int Point_init_impl(HPyContext ctx, HPy self, HPy *args,
+            static int Point_init_impl(HPyContext *ctx, HPy self, HPy *args,
                                        HPy_ssize_t nargs, HPy kw)
             {
                 long x, y;
                 if (!HPyArg_Parse(ctx, NULL, args, nargs, "ll", &x, &y))
                     return -1;
 
-                PointObject *p = HPy_CAST(ctx, PointObject, self);
+                PointObject *p = PointObject_AsStruct(ctx, self);
                 p->x = x;
                 p->y = y;
                 return 0;
@@ -74,7 +75,7 @@ class TestSlots(HPyTest):
             }
 
             HPyDef_METH(get_destroyed_x, "get_destroyed_x", get_destroyed_x_impl, HPyFunc_NOARGS)
-            static HPy get_destroyed_x_impl(HPyContext ctx, HPy self)
+            static HPy get_destroyed_x_impl(HPyContext *ctx, HPy self)
             {
                 return HPyLong_FromLong(ctx, destroyed_x);
             }
@@ -98,7 +99,7 @@ class TestSlots(HPyTest):
 
             #define MYSLOT(NAME)                                               \
                 HPyDef_SLOT(p_##NAME, NAME##_impl, HPy_nb_##NAME);             \
-                static HPy NAME##_impl(HPyContext ctx, HPy self, HPy other)    \
+                static HPy NAME##_impl(HPyContext *ctx, HPy self, HPy other)    \
                 {                                                              \
                     HPy s = HPyUnicode_FromString(ctx, #NAME);                 \
                     HPy res = HPyTuple_Pack(ctx, 3, self, s, other);           \
@@ -146,7 +147,7 @@ class TestSlots(HPyTest):
 
             #define MYSLOT(NAME)                                               \
                 HPyDef_SLOT(p_##NAME, NAME##_impl, HPy_nb_##NAME);             \
-                static HPy NAME##_impl(HPyContext ctx, HPy self, HPy other)    \
+                static HPy NAME##_impl(HPyContext *ctx, HPy self, HPy other)    \
                 {                                                              \
                     HPy s = HPyUnicode_FromString(ctx, #NAME);                 \
                     HPy res = HPyTuple_Pack(ctx, 3, self, s, other);           \
@@ -194,7 +195,7 @@ class TestSlots(HPyTest):
 
             #define MYSLOT(NAME)                                               \
                 HPyDef_SLOT(p_##NAME, NAME##_impl, HPy_nb_##NAME);             \
-                static HPy NAME##_impl(HPyContext ctx, HPy self)               \
+                static HPy NAME##_impl(HPyContext *ctx, HPy self)               \
                 {                                                              \
                     HPy s = HPyUnicode_FromString(ctx, #NAME);                 \
                     HPy res = HPyTuple_Pack(ctx, 2, s, self);                  \
@@ -223,27 +224,27 @@ class TestSlots(HPyTest):
             @DEFINE_Point_new
 
             HPyDef_SLOT(p_int, p_int_impl, HPy_nb_int);
-            static HPy p_int_impl(HPyContext ctx, HPy self)
+            static HPy p_int_impl(HPyContext *ctx, HPy self)
             {
                 return HPyLong_FromLong(ctx, 42);
             }
 
             HPyDef_SLOT(p_float, p_float_impl, HPy_nb_float);
-            static HPy p_float_impl(HPyContext ctx, HPy self)
+            static HPy p_float_impl(HPyContext *ctx, HPy self)
             {
                 return HPyFloat_FromDouble(ctx, 123.4);
             }
 
             HPyDef_SLOT(p_index, p_index_impl, HPy_nb_index);
-            static HPy p_index_impl(HPyContext ctx, HPy self)
+            static HPy p_index_impl(HPyContext *ctx, HPy self)
             {
                 return HPyLong_FromLong(ctx, -456);
             }
 
             HPyDef_SLOT(p_bool, p_bool_impl, HPy_nb_bool);
-            static int p_bool_impl(HPyContext ctx, HPy self)
+            static int p_bool_impl(HPyContext *ctx, HPy self)
             {
-                PointObject *point = HPy_CAST(ctx, PointObject, self);
+                PointObject *point = PointObject_AsStruct(ctx, self);
                 return (point->x != 0);
             }
 
@@ -263,7 +264,7 @@ class TestSlots(HPyTest):
             @DEFINE_PointObject
 
             HPyDef_SLOT(p_power, p_power_impl, HPy_nb_power);
-            static HPy p_power_impl(HPyContext ctx, HPy self, HPy x, HPy y)
+            static HPy p_power_impl(HPyContext *ctx, HPy self, HPy x, HPy y)
             {
                 HPy s = HPyUnicode_FromString(ctx, "power");
                 HPy res = HPyTuple_Pack(ctx, 4, self, s, x, y);
@@ -272,7 +273,7 @@ class TestSlots(HPyTest):
             }
 
             HPyDef_SLOT(p_inplace_power, p_inplace_power_impl, HPy_nb_inplace_power);
-            static HPy p_inplace_power_impl(HPyContext ctx, HPy self, HPy x, HPy y)
+            static HPy p_inplace_power_impl(HPyContext *ctx, HPy self, HPy x, HPy y)
             {
                 HPy s = HPyUnicode_FromString(ctx, "inplace_power");
                 HPy res = HPyTuple_Pack(ctx, 4, self, s, x, y);
@@ -294,18 +295,17 @@ class TestSlots(HPyTest):
         import pytest
         import sys
         mod = self.make_module("""
-            typedef struct {
-                HPyObject_HEAD
+            @TYPE_STRUCT_BEGIN(FakeArrayObject)
                 int exports;
-            } FakeArrayObject;
+            @TYPE_STRUCT_END
 
             static char static_mem[12] = {0,1,2,3,4,5,6,7,8,9,10,11};
             static HPy_ssize_t _shape[1] = {12};
             static HPy_ssize_t _strides[1] = {1};
 
             HPyDef_SLOT(FakeArray_getbuffer, _getbuffer_impl, HPy_bf_getbuffer)
-            static int _getbuffer_impl(HPyContext ctx, HPy self, HPy_buffer* buf, int flags) {
-                FakeArrayObject *arr = HPy_CAST(ctx, FakeArrayObject, self);
+            static int _getbuffer_impl(HPyContext *ctx, HPy self, HPy_buffer* buf, int flags) {
+                FakeArrayObject *arr = FakeArrayObject_AsStruct(ctx, self);
                 if (arr->exports > 0) {
                     buf->obj = HPy_NULL;
                     HPyErr_SetString(ctx, ctx->h_BufferError,
@@ -328,8 +328,8 @@ class TestSlots(HPyTest):
             }
 
             HPyDef_SLOT(FakeArray_releasebuffer, _relbuffer_impl, HPy_bf_releasebuffer)
-            static void _relbuffer_impl(HPyContext ctx, HPy h_obj, HPy_buffer* buf) {
-                FakeArrayObject *arr = HPy_CAST(ctx, FakeArrayObject, h_obj);
+            static void _relbuffer_impl(HPyContext *ctx, HPy h_obj, HPy_buffer* buf) {
+                FakeArrayObject *arr = FakeArrayObject_AsStruct(ctx, h_obj);
                 arr->exports--;
             }
 
@@ -343,6 +343,7 @@ class TestSlots(HPyTest):
                 .name = "mytest.FakeArray",
                 .basicsize = sizeof(FakeArrayObject),
                 .defines = FakeArray_defines,
+                .legacy = FakeArrayObject_IS_LEGACY,
             };
 
             @EXPORT_TYPE("FakeArray", FakeArray_Spec)
@@ -372,13 +373,13 @@ class TestSqSlots(HPyTest):
             @DEFINE_PointObject
 
             HPyDef_SLOT(Point_getitem, Point_getitem_impl, HPy_sq_item);
-            static HPy Point_getitem_impl(HPyContext ctx, HPy self, HPy_ssize_t idx)
+            static HPy Point_getitem_impl(HPyContext *ctx, HPy self, HPy_ssize_t idx)
             {
                 return HPyLong_FromLong(ctx, (long)idx*2);
             }
 
             HPyDef_SLOT(Point_length, Point_length_impl, HPy_sq_length);
-            static HPy_ssize_t Point_length_impl(HPyContext ctx, HPy self)
+            static HPy_ssize_t Point_length_impl(HPyContext *ctx, HPy self)
             {
                 return 1234;
             }
@@ -400,13 +401,13 @@ class TestSqSlots(HPyTest):
             @DEFINE_Point_xy
 
             HPyDef_SLOT(Point_len, Point_len_impl, HPy_sq_length);
-            static HPy_ssize_t Point_len_impl(HPyContext ctx, HPy self)
+            static HPy_ssize_t Point_len_impl(HPyContext *ctx, HPy self)
             {
                 return 2;
             }
 
             HPyDef_SLOT(Point_setitem, Point_setitem_impl, HPy_sq_ass_item);
-            static int Point_setitem_impl(HPyContext ctx, HPy self, HPy_ssize_t idx,
+            static int Point_setitem_impl(HPyContext *ctx, HPy self, HPy_ssize_t idx,
                                           HPy h_value)
             {
                 long value;
@@ -417,7 +418,7 @@ class TestSqSlots(HPyTest):
                     if (HPyErr_Occurred(ctx))
                         return -1;
                 }
-                PointObject *point = HPy_CAST(ctx, PointObject, self);
+                PointObject *point = PointObject_AsStruct(ctx, self);
                 if (idx == 0)
                     point->x = value;
                 else if (idx == 1)
@@ -460,7 +461,7 @@ class TestSqSlots(HPyTest):
             @DEFINE_PointObject
 
             HPyDef_SLOT(Point_concat, Point_concat_impl, HPy_sq_concat);
-            static HPy Point_concat_impl(HPyContext ctx, HPy self, HPy other)
+            static HPy Point_concat_impl(HPyContext *ctx, HPy self, HPy other)
             {
                 HPy s = HPyUnicode_FromString(ctx, "sq_concat");
                 HPy res = HPyTuple_Pack(ctx, 3, self, s, other);
@@ -470,7 +471,7 @@ class TestSqSlots(HPyTest):
 
             HPyDef_SLOT(Point_inplace_concat, Point_inplace_concat_impl,
                         HPy_sq_inplace_concat);
-            static HPy Point_inplace_concat_impl(HPyContext ctx, HPy self, HPy other)
+            static HPy Point_inplace_concat_impl(HPyContext *ctx, HPy self, HPy other)
             {
                 HPy s = HPyUnicode_FromString(ctx, "sq_inplace_concat");
                 HPy res = HPyTuple_Pack(ctx, 3, self, s, other);
@@ -494,10 +495,10 @@ class TestSqSlots(HPyTest):
             @DEFINE_PointObject
 
             HPyDef_SLOT(Point_repeat, Point_repeat_impl, HPy_sq_repeat);
-            static HPy Point_repeat_impl(HPyContext ctx, HPy self, HPy_ssize_t t)
+            static HPy Point_repeat_impl(HPyContext *ctx, HPy self, HPy_ssize_t t)
             {
                 HPy s = HPyUnicode_FromString(ctx, "sq_repeat");
-                HPy other = HPyLong_FromLong(ctx, t);
+                HPy other = HPyLong_FromLong(ctx, (long) t);
                 HPy res = HPyTuple_Pack(ctx, 3, self, s, other);
                 HPy_Close(ctx, other);
                 HPy_Close(ctx, s);
@@ -506,10 +507,10 @@ class TestSqSlots(HPyTest):
 
             HPyDef_SLOT(Point_inplace_repeat, Point_inplace_repeat_impl,
                         HPy_sq_inplace_repeat);
-            static HPy Point_inplace_repeat_impl(HPyContext ctx, HPy self, HPy_ssize_t t)
+            static HPy Point_inplace_repeat_impl(HPyContext *ctx, HPy self, HPy_ssize_t t)
             {
                 HPy s = HPyUnicode_FromString(ctx, "sq_inplace_repeat");
-                HPy other = HPyLong_FromLong(ctx, t);
+                HPy other = HPyLong_FromLong(ctx, (long) t);
                 HPy res = HPyTuple_Pack(ctx, 3, self, s, other);
                 HPy_Close(ctx, other);
                 HPy_Close(ctx, s);
@@ -533,7 +534,7 @@ class TestSqSlots(HPyTest):
             @DEFINE_PointObject
 
             HPyDef_SLOT(Point_contains, Point_contains_impl, HPy_sq_contains);
-            static int Point_contains_impl(HPyContext ctx, HPy self, HPy other)
+            static int Point_contains_impl(HPyContext *ctx, HPy self, HPy other)
             {
                 long val = HPyLong_AsLong(ctx, other);
                 if (HPyErr_Occurred(ctx))
@@ -559,11 +560,11 @@ class TestSqSlots(HPyTest):
             @DEFINE_Point_new
 
             HPyDef_SLOT(Point_cmp, Point_cmp_impl, HPy_tp_richcompare);
-            static HPy Point_cmp_impl(HPyContext ctx, HPy self, HPy o, HPy_RichCmpOp op)
+            static HPy Point_cmp_impl(HPyContext *ctx, HPy self, HPy o, HPy_RichCmpOp op)
             {
                 // XXX we should check the type of o
-                PointObject *p1 = HPy_CAST(ctx, PointObject, self);
-                PointObject *p2 = HPy_CAST(ctx, PointObject, o);
+                PointObject *p1 = PointObject_AsStruct(ctx, self);
+                PointObject *p2 = PointObject_AsStruct(ctx, o);
                 HPy_RETURN_RICHCOMPARE(ctx, p1->x, p2->x, op);
             }
 

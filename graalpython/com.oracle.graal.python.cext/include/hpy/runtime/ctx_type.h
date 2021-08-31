@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2021, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,17 +27,37 @@
 
 #include <Python.h>
 #include "hpy.h"
-#include "common/hpytype.h"
-
-_HPy_HIDDEN void* ctx_Cast(HPyContext ctx, HPy h);
-_HPy_HIDDEN HPy ctx_Type_FromSpec(HPyContext ctx, HPyType_Spec *hpyspec,
-                                  HPyType_SpecParam *params);
-_HPy_HIDDEN HPy ctx_New(HPyContext ctx, HPy h_type, void **data);
-_HPy_HIDDEN HPy ctx_Type_GenericNew(HPyContext ctx, HPy h_type, HPy *args,
-                                    HPy_ssize_t nargs, HPy kw);
+#include "hpy/hpytype.h"
 
 _HPy_HIDDEN PyMethodDef *create_method_defs(HPyDef *hpydefs[],
                                             PyMethodDef *legacy_methods);
 
+/* The C structs of pure HPy (i.e. non-legacy) custom types do NOT include
+ * PyObject_HEAD. So, the CPython implementation of HPy_New must allocate a
+ * memory region which is big enough to contain PyObject_HEAD + any eventual
+ * extra padding + the actual user struct. We use union alignment to ensure
+ * that the payload is correctly aligned for every possible struct.
+ *
+ * Legacy custom types already include PyObject_HEAD and so do not need to
+ * allocate extra memory region or use HPyPure_PyObject_HEAD_SIZE.
+ */
+typedef struct {
+    PyObject_HEAD
+    union {
+        unsigned char payload[1];
+        // these fields are never accessed: they are present just to ensure
+        // the correct alignment of payload
+        unsigned short _m_short;
+        unsigned int _m_int;
+        unsigned long _m_long;
+        unsigned long long _m_longlong;
+        float _m_float;
+        double _m_double;
+        long double _m_longdouble;
+        void *_m_pointer;
+    };
+} _HPyPure_FullyAlignedSpaceForPyObject_HEAD;
+
+#define HPyPure_PyObject_HEAD_SIZE (offsetof(_HPyPure_FullyAlignedSpaceForPyObject_HEAD, payload))
 
 #endif /* HPY_COMMON_RUNTIME_CTX_TYPE_H */
