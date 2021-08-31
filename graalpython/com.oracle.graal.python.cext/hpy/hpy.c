@@ -1187,6 +1187,11 @@ HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Tuple_FromArray)(HPyContext *ctx, _HPyPtr item
 	return UPCALL_HPY(ctx_Tuple_FromArray, ctx, items, n);
 }
 
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Import_ImportModule)(HPyContext *ctx, const char *name)
+{
+	return UPCALL_HPY(ctx_Import_ImportModule, ctx, name);
+}
+
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(FromPyObject)(HPyContext *ctx, cpy_PyObject *obj)
 {
 	/* Although, this operation is not supported for in ABI compatibility mode, we still
@@ -1454,6 +1459,7 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context) {
     HPY_CTX_UPCALL(ctx_Dict_New);
     HPY_CTX_UPCALL(ctx_Tuple_Check);
     HPY_CTX_UPCALL(ctx_Tuple_FromArray);
+    HPY_CTX_UPCALL(ctx_Import_ImportModule);
     HPY_CTX_UPCALL(ctx_FromPyObject);
     HPY_CTX_UPCALL(ctx_AsPyObject);
     HPY_CTX_UPCALL(ctx_ListBuilder_New);
