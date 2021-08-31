@@ -764,7 +764,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
             if benchmark_name is None and benchmark_info:
                 benchmark_name = benchmark_info.group(1)
                 iterations_count = int(benchmark_info.group(2))
-                mx.log(f"Checking benchmark {benchmark_name} with {iterations_count} iterations")
+                mx.log("Checking benchmark %s with %d iterations" % (benchmark_name, iterations_count))
                 continue
 
             if benchmark_name is None:
@@ -776,13 +776,11 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
                 warmup = int(warmup_match.group(1))
                 for i in range(warmup, len(iteration_times)):
                     if gc_times[i] > iteration_times[i] / 10:
-                        mx.warn(
-                            f"Benchmark checkup: {benchmark_name}: excessive GC pause of {gc_times[i]} (on {i} iteration)")
+                        mx.warn("Benchmark checkup: %s: excessive GC pause of %.8f (on %d iteration)" % (benchmark_name, gc_times[i], i))
                 if warmup > iterations_count / 2:
-                    mx.warn(f"Benchmark checkup: {benchmark_name}: warmup detected too late (on {warmup} iteration)")
+                    mx.warn("Benchmark checkup: %s: warmup detected too late (on %d iteration)" % (benchmark_name, warmup))
                 if late_compilation:
-                    mx.warn(
-                        f"Benchmark checkup: {benchmark_name}: compilation detected too late (on {late_compilation} iteration)")
+                    mx.warn("Benchmark checkup: %s: compilation detected too late (on %d iteration)" % (benchmark_name, late_compilation))
                 iteration_times = []
                 gc_times = []
                 current_iteration = -1
