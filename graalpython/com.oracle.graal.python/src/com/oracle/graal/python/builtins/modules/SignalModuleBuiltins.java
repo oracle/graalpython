@@ -48,6 +48,7 @@ import java.util.concurrent.Semaphore;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -64,7 +65,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.AsyncHandler;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -345,7 +345,9 @@ final class Signals {
     static final String[] signalNames = new String[SIGMAX + 1];
 
     static {
-        for (String signal : new String[]{"HUP", "INT", "QUIT", "TRAP", "ABRT", "KILL", "ALRM", "TERM", "USR1", "USR2", "TTIN", "TTOUT", "VTALRM", "WINCH", "PWR", "LOST", "INFO", "TSTP"}) {
+        for (String signal : new String[]{"ABRT", "ALRM", "BUS", "FPE", "HUP", "ILL", "INFO", "INT", "KILL", "LOST",
+                        "PIPE", "PWR", "QUIT", "SEGV", "SYS", "TERM", "TRAP", "TSTP", "TTIN", "TTOUT", "USR1", "USR2",
+                        "VTALRM", "WINCH"}) {
             try {
                 int number = new sun.misc.Signal(signal).getNumber();
                 if (number > SIGMAX) {
