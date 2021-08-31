@@ -1596,6 +1596,49 @@ public class IntBuiltins extends PythonBuiltins {
             return op(left, right);
         }
 
+        @Specialization(guards = "a.isNativePointer()")
+        Object opVoidNativePtrLong(PythonNativeVoidPtr a, long b) {
+            if (a.isNativePointer()) {
+                return op(a.getNativePointer(), b);
+            }
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        @Specialization(guards = "!a.isNativePointer()")
+        Object opVoidPtrLong(VirtualFrame frame, PythonNativeVoidPtr a, long b,
+                        @Shared("h") @Cached PyObjectHashNode hashNode) {
+            return op(hashNode.execute(frame, a), b);
+        }
+
+        @Specialization(guards = {"a.isNativePointer()", "b.isNativePointer()"})
+        long voidPtrsNative(PythonNativeVoidPtr a, PythonNativeVoidPtr b) {
+            long ptrVal = a.getNativePointer();
+            // pointers are considered unsigned
+            return op(ptrVal, b.getNativePointer());
+        }
+
+        @Specialization(guards = {"a.isNativePointer()", "!b.isNativePointer()"})
+        long voidPtrsANative(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
+                        @Shared("h") @Cached PyObjectHashNode hashNode) {
+            long ptrVal = a.getNativePointer();
+            // pointers are considered unsigned
+            return op(ptrVal, hashNode.execute(frame, b));
+        }
+
+        @Specialization(guards = {"!a.isNativePointer()", "b.isNativePointer()"})
+        long voidPtrsBNative(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
+                        @Shared("h") @Cached PyObjectHashNode hashNode) {
+            long ptrVal = b.getNativePointer();
+            // pointers are considered unsigned
+            return op(ptrVal, hashNode.execute(frame, a));
+        }
+
+        @Specialization(guards = {"!a.isNativePointer()", "!b.isNativePointer()"})
+        long voidPtrsManaged(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
+                        @Shared("h") @Cached PyObjectHashNode hashNode) {
+            return op(hashNode.execute(frame, a), hashNode.execute(frame, b));
+        }
+
         @Specialization
         PInt doPInt(long left, PInt right) {
             return factory().createInt(op(PInt.longToBigInteger(left), right.getValue()));
@@ -1738,21 +1781,57 @@ public class IntBuiltins extends PythonBuiltins {
             return a.compareTo(b) == 0;
         }
 
+        // left: PythonNativeVoidPtr
+
+        @Specialization
+        static boolean eqLongVoidPtr(VirtualFrame frame, long a, PythonNativeVoidPtr b,
+                        @Shared("h") @Cached PyObjectHashNode hashNode) {
+            return eqVoidPtrLong(frame, b, a, hashNode);
+        }
+
+        @Specialization
+        static boolean eqPIntVoidPtr(PInt a, PythonNativeVoidPtr b) {
+            return eqVoidPtrPInt(b, a);
+        }
+
         @Specialization
         static boolean eqVoidPtrLong(VirtualFrame frame, PythonNativeVoidPtr a, long b,
-                        @Cached PyObjectHashNode hashNode) {
+                        @Shared("h") @Cached PyObjectHashNode hashNode) {
             if (a.isNativePointer()) {
                 long ptrVal = a.getNativePointer();
                 // pointers are considered unsigned
-                return ptrVal >= 0L && ptrVal == b;
+                return ptrVal == b;
             }
             return hashNode.execute(frame, a) == b;
         }
 
-        @Specialization
-        static boolean eqLongVoidPtr(VirtualFrame frame, long a, PythonNativeVoidPtr b,
-                        @Cached PyObjectHashNode hashNode) {
-            return eqVoidPtrLong(frame, b, a, hashNode);
+        @Specialization(guards = {"a.isNativePointer()", "b.isNativePointer()"})
+        static boolean voidPtrsNative(PythonNativeVoidPtr a, PythonNativeVoidPtr b) {
+            long ptrVal = a.getNativePointer();
+            // pointers are considered unsigned
+            return ptrVal == b.getNativePointer();
+        }
+
+        @Specialization(guards = {"a.isNativePointer()", "!b.isNativePointer()"})
+        static boolean voidPtrsANative(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
+                        @Shared("h") @Cached PyObjectHashNode hashNode) {
+            long ptrVal = a.getNativePointer();
+            // pointers are considered unsigned
+            return ptrVal == hashNode.execute(frame, b);
+        }
+
+        @Specialization(guards = {"!a.isNativePointer()", "b.isNativePointer()"})
+        static boolean voidPtrsBNative(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
+                        @Shared("h") @Cached PyObjectHashNode hashNode) {
+            long ptrVal = b.getNativePointer();
+            // pointers are considered unsigned
+            return ptrVal == hashNode.execute(frame, a);
+        }
+
+        @Specialization(guards = {"!a.isNativePointer()", "!b.isNativePointer()"})
+        static boolean voidPtrsManaged(VirtualFrame frame, PythonNativeVoidPtr a, PythonNativeVoidPtr b,
+                        @Shared("h") @Cached PyObjectHashNode hashNode) {
+            return hashNode.execute(frame, a) == hashNode.execute(frame, b);
         }
 
         @Specialization
@@ -1772,11 +1851,6 @@ public class IntBuiltins extends PythonBuiltins {
             } catch (OverflowException e) {
                 return false;
             }
-        }
-
-        @Specialization
-        static boolean eqPIntVoidPtr(PInt a, PythonNativeVoidPtr b) {
-            return eqVoidPtrPInt(b, a);
         }
 
         @Fallback

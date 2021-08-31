@@ -97,6 +97,10 @@ public class KeywordsStorage extends HashingStorage {
     }
 
     protected int findStringKey(String key) {
+        return findStringKey(keywords, key);
+    }
+
+    public static int findStringKey(PKeyword[] keywords, String key) {
         for (int i = 0; i < keywords.length; i++) {
             if (keywords[i].getName().equals(key)) {
                 return i;

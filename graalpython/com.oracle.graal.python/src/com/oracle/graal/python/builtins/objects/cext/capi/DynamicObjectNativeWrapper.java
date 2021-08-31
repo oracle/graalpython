@@ -82,6 +82,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
@@ -675,6 +676,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) throws UnsupportedMessageException {
             // TODO(fa): we could cache the dict instance on the class' native wrapper
             PDict dict = lib.getDict(object);
+            if (dict instanceof StgDictObject) {
+                return dict.getNativeWrapper();
+            }
             HashingStorage dictStorage = dict != null ? dict.getDictStorage() : null;
             if (dictStorage instanceof DynamicObjectStorage) {
                 // reuse the existing and modifiable storage
@@ -1280,6 +1284,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 object.setNativeModuleDef(value);
             }
 
+            private static boolean isBuiltinDict(IsBuiltinClassProfile isPrimitiveDictProfile, Object value) {
+                return value instanceof PDict &&
+                                (isPrimitiveDictProfile.profileObject(value, PythonBuiltinClassType.PDict) ||
+                                                isPrimitiveDictProfile.profileObject(value, PythonBuiltinClassType.StgDict));
+            }
+
             @Specialization(guards = "eq(TP_DICT, key)", limit = "1")
             static void doTpDict(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object nativeValue,
                             @CachedLibrary("object") PythonObjectLibrary lib,
@@ -1287,7 +1297,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                             @Cached WriteAttributeToObjectNode writeAttrNode,
                             @Cached IsBuiltinClassProfile isPrimitiveDictProfile) throws UnsupportedMessageException {
                 Object value = asPythonObjectNode.execute(nativeValue);
-                if (value instanceof PDict && isPrimitiveDictProfile.profileObject(value, PythonBuiltinClassType.PDict)) {
+                if (isBuiltinDict(isPrimitiveDictProfile, value)) {
                     // special and fast case: commit items and change store
                     PDict d = (PDict) value;
                     for (HashingStorage.DictEntry entry : d.entries()) {

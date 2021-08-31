@@ -2043,9 +2043,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyLong_AsVoidPtr", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyLongAsVoidPtr extends PythonUnaryBuiltinNode {
+    public abstract static class PyLongAsVoidPtr extends PythonUnaryBuiltinNode {
         @Child private ConvertPIntToPrimitiveNode asPrimitiveNode;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
+
+        public abstract Object execute(Object o);
 
         @Specialization
         static long doPointer(int n) {

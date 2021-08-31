@@ -37,6 +37,13 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
+import com.oracle.graal.python.builtins.modules.ctypes.CDataObject;
+import com.oracle.graal.python.builtins.modules.ctypes.CFieldObject;
+import com.oracle.graal.python.builtins.modules.ctypes.CThunkObject;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCArgObject;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrObject;
+import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
+import com.oracle.graal.python.builtins.modules.ctypes.StructParamObject;
 import com.oracle.graal.python.builtins.modules.io.PBuffered;
 import com.oracle.graal.python.builtins.modules.io.PBytesIO;
 import com.oracle.graal.python.builtins.modules.io.PBytesIOBuffer;
@@ -1079,6 +1086,34 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PRWPair createRWPair(Object clazz) {
         return trace(new PRWPair(clazz, getShape(clazz)));
+    }
+
+    public final PyCArgObject createCArgObject() {
+        return trace(new PyCArgObject(PythonBuiltinClassType.CArgObject, getShape(PythonBuiltinClassType.CArgObject)));
+    }
+
+    public final CThunkObject createCThunkObject(Object clazz, int nArgs) {
+        return trace(new CThunkObject(clazz, getShape(clazz), nArgs));
+    }
+
+    public final StructParamObject createStructParamObject(Object clazz) {
+        return trace(new StructParamObject(clazz, getShape(clazz)));
+    }
+
+    public final CDataObject createCDataObject(Object clazz) {
+        return trace(new CDataObject(clazz, getShape(clazz)));
+    }
+
+    public final PyCFuncPtrObject createPyCFuncPtrObject(Object clazz) {
+        return trace(new PyCFuncPtrObject(clazz, getShape(clazz)));
+    }
+
+    public final CFieldObject createCFieldObject(Object clazz) {
+        return trace(new CFieldObject(clazz, getShape(clazz)));
+    }
+
+    public final StgDictObject createStgDictObject(Object clazz) {
+        return trace(new StgDictObject(clazz, getShape(clazz)));
     }
 
     public final PSSLContext createSSLContext(Object clazz, SSLMethod method, int verifyFlags, boolean checkHostname, int verifyMode, SSLContext context) {

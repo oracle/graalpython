@@ -165,6 +165,8 @@ graalpython/com.oracle.graal.python.cext/modules/_bz2.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_sre.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_struct.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_mmap.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testmultiphase.c,python.copyright

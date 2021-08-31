@@ -219,6 +219,28 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // HPy
     DebugHandle("DebugHandle", GraalHPyDebugModuleBuiltins.HPY_DEBUG, Flags.PUBLIC_DERIVED_WODICT),
 
+    // _ctype
+    CArgObject("CArgObject", Flags.PUBLIC_BASE_WDICT),
+    CThunkObject("CThunkObject", "_ctypes", Flags.PUBLIC_BASE_WDICT),
+    StgDict("StgDict", Flags.PRIVATE_DERIVED_WODICT),
+    PyCStructType("PyCStructType", "_ctypes", Flags.PUBLIC_BASE_WDICT),
+    UnionType("UnionType", "_ctypes", Flags.PUBLIC_BASE_WDICT),
+    PyCPointerType("PyCPointerType", "_ctypes", Flags.PUBLIC_BASE_WDICT),
+    PyCArrayType("PyCArrayType", "_ctypes", Flags.PUBLIC_BASE_WDICT),
+    PyCSimpleType("PyCSimpleType", "_ctypes", Flags.PUBLIC_BASE_WDICT),
+    PyCFuncPtrType("PyCFuncPtrType", "_ctypes", Flags.PUBLIC_BASE_WDICT),
+    Structure("Structure", "_ctypes", Flags.PUBLIC_BASE_WDICT), // type = PyCStructType
+    Union("Union", "_ctypes", Flags.PUBLIC_BASE_WDICT), // type = UnionType
+    PyCPointer("_Pointer", "_ctypes", Flags.PUBLIC_BASE_WDICT), // type = PyCPointerType
+    PyCArray("Array", "_ctypes", Flags.PUBLIC_BASE_WDICT), // type = PyCArrayType
+    PyCData("_CData", "_ctypes", Flags.PUBLIC_BASE_WDICT), // type = PyCStructType
+    SimpleCData("_SimpleCData", "_ctypes", Flags.PUBLIC_BASE_WDICT), // type = PyCStructType
+    PyCFuncPtr("PyCFuncPtr", "_ctypes", Flags.PUBLIC_BASE_WDICT), // type = PyCFuncPtrType
+    CField("CField", "_ctypes", Flags.PUBLIC_BASE_WDICT),
+    DictRemover("DictRemover", "_ctypes", Flags.PUBLIC_BASE_WDICT),
+    StructParam("StructParam_Type", "_ctypes", Flags.PUBLIC_BASE_WDICT),
+    ArgError("ArgumentError", "ctypes", Flags.EXCEPTION),
+
     // Errors and exceptions:
 
     // everything after BaseException is considered to be an exception
@@ -350,6 +372,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     private final boolean isException;
 
     // initialized in static constructor
+    @CompilationFinal private PythonBuiltinClassType type;
     @CompilationFinal private PythonBuiltinClassType base;
 
     /**
@@ -401,6 +424,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     public String getPrintName() {
         return printName;
+    }
+
+    public PythonBuiltinClassType getType() {
+        return type;
     }
 
     public PythonBuiltinClassType getBase() {
@@ -475,6 +502,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         // which are different for each context. We'd have to turn those factories into singletons
         // to guarantee their identity across contexts. For the sake of simplicity, we just ignore
         // those slots for now.
+        PStruct.type = PythonClass;
         PStructRusage.redefinedSlots = reprAndNew;
         PStructPasswd.redefinedSlots = reprAndNew;
         PUnameResult.redefinedSlots = reprAndNew;
@@ -491,14 +519,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PFlags.redefinedSlots = repr;
         PTerminalSize.redefinedSlots = reprAndNew;
 
-        // set the base classes (and check uniqueness):
-
-        HashSet<String> set = new HashSet<>();
-        for (PythonBuiltinClassType type : VALUES) {
-            assert set.add(type.name) : type.name();
-            type.base = PythonObject;
-        }
-
+        PythonObject.type = PythonClass;
         PythonObject.base = null;
 
         Boolean.base = PInt;
@@ -606,6 +627,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PThreadInfo.base = PTuple;
         PUnraisableHookArgs.base = PTuple;
 
+        PArrayIterator.type = PythonClass;
+        PSocket.type = PythonClass;
+
         // _io.UnsupportedOperation inherits from ValueError and OSError
         // done currently within IOModuleBuiltins class
         IOUnsupportedOperation.base = OSError;
@@ -622,7 +646,52 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PTextIOWrapper.base = PTextIOBase;
         PStringIO.base = PTextIOBase;
 
+        // _ctypes
+        StgDict.base = PDict;
+        PyCStructType.base = PythonClass;
+        UnionType.base = PythonClass;
+        PyCPointerType.base = PythonClass;
+        PyCArrayType.base = PythonClass;
+        PyCSimpleType.base = PythonClass;
+        PyCFuncPtrType.base = PythonClass;
+        Structure.type = PyCStructType;
+        Structure.base = PyCData;
+        Union.type = UnionType;
+        Union.base = PyCData;
+        PyCPointer.type = PyCPointerType;
+        PyCPointer.base = PyCData;
+        PyCArray.type = PyCArrayType;
+        PyCArray.base = PyCData;
+        SimpleCData.type = PyCSimpleType;
+        SimpleCData.base = PyCData;
+        PyCFuncPtr.type = PyCFuncPtrType;
+        PyCFuncPtr.base = PyCData;
+
         Empty.base = Exception;
+
+        HashSet<String> set = new HashSet<>();
+        for (PythonBuiltinClassType type : VALUES) {
+            assert set.add(type.name) : type.name(); // check uniqueness
+
+            /* Initialize type.base (defaults to PythonObject unless that's us) */
+            if (type.base == null && type != PythonObject) {
+                type.base = PythonObject;
+            }
+
+            /*
+             * Now the only way base can still be null is if type is PythonObject.
+             */
+            if (type.type == null && type.base != null) {
+                type.type = type.base.type;
+            }
+        }
+
+        // Finally, we set all remaining types to PythonClass.
+        for (PythonBuiltinClassType type : VALUES) {
+            if (type.type == null) {
+                type.type = PythonClass;
+            }
+        }
     }
 
     // Proxy InteropLibrary messages to the PythonBuiltinClass

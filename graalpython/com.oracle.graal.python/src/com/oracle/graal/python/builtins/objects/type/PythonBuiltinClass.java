@@ -62,7 +62,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
 
     @TruffleBoundary
     public PythonBuiltinClass(PythonLanguage lang, PythonBuiltinClassType builtinClass, PythonAbstractClass base) {
-        super(lang, PythonBuiltinClassType.PythonClass, PythonBuiltinClassType.PythonClass.getInstanceShape(lang), builtinClass.getInstanceShape(lang), builtinClass.getName(), base);
+        super(lang, builtinClass.getType(), builtinClass.getType().getInstanceShape(lang), builtinClass.getInstanceShape(lang), builtinClass.getName(), base);
         this.type = builtinClass;
     }
 

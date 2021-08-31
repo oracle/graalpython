@@ -11,30 +11,6 @@ index ba88c733f..e4db40429 100644
          except AssertionError:
              msg = ("The current Numpy installation ({!r}) fails to "
                     "pass simple sanity checks. This can be caused for example "
-diff --git a/numpy/core/_dtype_ctypes.py b/numpy/core/_dtype_ctypes.py
-index 0852b1ef2..cf4dc6fb0 100644
---- a/numpy/core/_dtype_ctypes.py
-+++ b/numpy/core/_dtype_ctypes.py
-@@ -22,7 +22,6 @@ Unfortunately, this fails because:
- * PEP3118 cannot represent unions, but both numpy and ctypes can
- * ctypes cannot handle big-endian structs with PEP3118 (bpo-32780)
- """
--import _ctypes
- import ctypes
- 
- import numpy as np
-diff --git a/numpy/core/_internal.py b/numpy/core/_internal.py
-index 1d3bb5584..202c63b90 100644
---- a/numpy/core/_internal.py
-+++ b/numpy/core/_internal.py
-@@ -13,6 +13,7 @@ from numpy.compat import unicode
- from numpy.core.overrides import set_module
- from .multiarray import dtype, array, ndarray
- try:
-+    import _ctypes
-     import ctypes
- except ImportError:
-     ctypes = None
 diff --git a/numpy/core/getlimits.py b/numpy/core/getlimits.py
 index 544b8b35f..799f669e6 100644
 --- a/numpy/core/getlimits.py
@@ -746,19 +722,6 @@ index d1b029c18..2bdff3d6c 100644
  
          retval = execute_legacy_ufunc_loop(ufunc, trivial_loop_ok,
                              op, dtypes, order,
-diff --git a/numpy/ctypeslib.py b/numpy/ctypeslib.py
-index 535ea768b..2ecf3a23b 100644
---- a/numpy/ctypeslib.py
-+++ b/numpy/ctypeslib.py
-@@ -61,7 +61,7 @@ from numpy import (
- from numpy.core.multiarray import _flagdict, flagsobj
- 
- try:
--    import ctypes
-+    ctypes = None # Truffle: use the mock ctypes
- except ImportError:
-     ctypes = None
- 
 diff --git a/numpy/distutils/ccompiler.py b/numpy/distutils/ccompiler.py
 index 14451fa66..85e64cc6e 100644
 --- a/numpy/distutils/ccompiler.py
@@ -806,18 +769,6 @@ index 9fc68a7aa..6c04f96c1 100644
      }
  }
  
-diff --git a/numpy/tests/test_ctypeslib.py b/numpy/tests/test_ctypeslib.py
-index 521208c36..b9fa4c3e1 100644
---- a/numpy/tests/test_ctypeslib.py
-+++ b/numpy/tests/test_ctypeslib.py
-@@ -10,6 +10,7 @@ from numpy.distutils.misc_util import get_shared_lib_extension
- from numpy.testing import assert_, assert_array_equal, assert_raises, assert_equal
- 
- try:
-+    import _ctypes
-     import ctypes
- except ImportError:
-     ctypes = None
 diff --git a/setup.py b/setup.py
 index 8b2ded1f2..8a9295a27 100755
 --- a/setup.py

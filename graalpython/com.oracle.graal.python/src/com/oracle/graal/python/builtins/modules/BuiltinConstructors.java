@@ -2145,7 +2145,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private GetObjectArrayNode getObjectArrayNode;
         @Child private IsAcceptableBaseNode isAcceptableBaseNode;
 
-        protected abstract Object execute(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);
+        public abstract Object execute(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);
 
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
@@ -2224,7 +2224,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 Object moduleAttr = ensureReadAttrNode().execute(newType, __MODULE__);
                 if (moduleAttr == PNone.NO_VALUE) {
                     PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
-                    PythonObject globals = callerFrame.getGlobals();
+                    PythonObject globals = callerFrame != null ? callerFrame.getGlobals() : null;
                     if (globals != null) {
                         String moduleName = getModuleNameFromGlobals(globals, hashingStoragelib);
                         if (moduleName != null) {
@@ -2758,7 +2758,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return isSubtypeNode.execute(frame, subclass, superclass);
         }
 
-        protected static TypeNode create() {
+        public static TypeNode create() {
             return BuiltinConstructorsFactory.TypeNodeFactory.create(null);
         }
 

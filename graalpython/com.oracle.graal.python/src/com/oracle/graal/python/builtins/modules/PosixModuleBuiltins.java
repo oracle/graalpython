@@ -2131,8 +2131,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     /**
      * Helper node that accepts either str or bytes and converts it to {@code PBytes}.
      */
-    abstract static class StringOrBytesToBytesNode extends PythonBuiltinBaseNode {
-        abstract PBytes execute(Object obj);
+    public abstract static class StringOrBytesToBytesNode extends PythonBuiltinBaseNode {
+        public abstract PBytes execute(Object obj);
 
         @Specialization
         PBytes doString(String str) {

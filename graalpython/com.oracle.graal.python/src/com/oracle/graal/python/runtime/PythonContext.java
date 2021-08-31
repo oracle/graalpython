@@ -57,6 +57,7 @@ import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
@@ -165,6 +166,8 @@ public final class PythonContext {
         /* corresponds to 'PyThreadState.dict' */
         PDict dict;
 
+        CtypesThreadState ctypes;
+
         /*
          * This is the native wrapper object if we need to expose the thread state as PyThreadState
          * object. We need to store it here because the wrapper may receive 'toNative' in which case
@@ -238,6 +241,14 @@ public final class PythonContext {
 
         public void setDict(PDict dict) {
             this.dict = dict;
+        }
+
+        public CtypesThreadState getCtypes() {
+            return ctypes;
+        }
+
+        public void setCtypes(CtypesThreadState ctypes) {
+            this.ctypes = ctypes;
         }
 
         public PThreadState getNativeWrapper() {
@@ -391,6 +402,9 @@ public final class PythonContext {
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
     private final IDUtils idUtils = new IDUtils();
+
+    // ctypes' used native libraries/functions.
+    private final ConcurrentHashMap<Long, Object> ptrAdrMap = new ConcurrentHashMap<>();
 
     @CompilationFinal private PosixSupport posixSupport;
     @CompilationFinal private NFIZlibSupport nativeZlib;
@@ -875,6 +889,10 @@ public final class PythonContext {
 
     public NFILZMASupport getNFILZMASupport() {
         return nativeLZMA;
+    }
+
+    public ConcurrentHashMap<Long, Object> getCtypesAdrMap() {
+        return ptrAdrMap;
     }
 
     public TruffleLanguage.Env getEnv() {
