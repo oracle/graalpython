@@ -40,13 +40,19 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.HEXDIGITS;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.digitValue;
 import static com.oracle.graal.python.nodes.BuiltinNames._CODECS;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BYTESLIKE_OBJ_REQUIRED;
+import static com.oracle.graal.python.nodes.ErrorMessages.CODEC_SEARCH_MUST_RETURN_4;
 import static com.oracle.graal.python.nodes.ErrorMessages.ENCODING_ERROR_WITH_CODE;
 import static com.oracle.graal.python.nodes.ErrorMessages.HANDLER_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ESCAPE_AT;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_RETURN_TUPLE;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_ENCODING;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_ERROR_HANDLER;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -66,7 +72,6 @@ import java.util.List;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -86,11 +91,7 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_CALLABLE;
-import static com.oracle.graal.python.nodes.ErrorMessages.CODEC_SEARCH_MUST_RETURN_4;
-import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_RETURN_TUPLE;
-import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_ENCODING;
-import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_ERROR_HANDLER;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -477,21 +478,11 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    // _codecs.encode(obj, encoding='utf-8', errors='strict')
-    @Builtin(name = "__truffle_encode__", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
-    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"", useDefaultForNone = true)
-    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
-    @GenerateNodeFactory
-    public abstract static class CodecsEncodeNode extends PythonTernaryClinicBuiltinNode {
-        public abstract Object execute(Object str, Object encoding, Object errors);
+    public abstract static class CodecsEncodeToJavaBytesNode extends PNodeWithRaise {
+        public abstract byte[] execute(Object self, String encoding, String errors);
 
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return CodecsModuleBuiltinsClinicProviders.CodecsEncodeNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization(guards = {"isString(self)"})
-        Object encode(Object self, String encoding, String errors,
+        @Specialization
+        byte[] encode(Object self, String encoding, String errors,
                         @Cached CastToJavaStringNode castStr,
                         @Cached HandleEncodingErrorNode errorHandler) {
             String input = castStr.execute(self);
@@ -510,7 +501,29 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raise(MemoryError);
             }
-            PBytes bytes = factory().createBytes(encoder.getBytes());
+            return encoder.getBytes();
+        }
+    }
+
+    // _codecs.encode(obj, encoding='utf-8', errors='strict')
+    @Builtin(name = "__truffle_encode__", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"", useDefaultForNone = true)
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
+    @GenerateNodeFactory
+    public abstract static class CodecsEncodeNode extends PythonTernaryClinicBuiltinNode {
+        public abstract Object execute(Object str, Object encoding, Object errors);
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return CodecsModuleBuiltinsClinicProviders.CodecsEncodeNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization(guards = {"isString(self)"})
+        Object encode(Object self, String encoding, String errors,
+                        @Cached CastToJavaStringNode castStr,
+                        @Cached CodecsEncodeToJavaBytesNode encode) {
+            String input = castStr.execute(self);
+            PBytes bytes = factory().createBytes(encode.execute(self, encoding, errors));
             return factory().createTuple(new Object[]{bytes, input.length()});
         }
 
