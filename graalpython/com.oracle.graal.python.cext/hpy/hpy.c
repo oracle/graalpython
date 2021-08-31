@@ -1042,6 +1042,11 @@ HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(TypeCheck)(HPyContext *ctx, HPy obj, 
 	return (int) UPCALL_I32(ctx_TypeCheck, ctx, obj, type);
 }
 
+HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(Is)(HPyContext *ctx, HPy obj, HPy other)
+{
+	return (int) UPCALL_I32(ctx_Is, ctx, obj, other);
+}
+
 HPyAPI_STORAGE void *_HPy_IMPL_NAME_NOPREFIX(AsStruct)(HPyContext *ctx, HPy obj)
 {
 	return UPCALL_HPY(ctx_AsStruct, ctx, obj);
@@ -1420,6 +1425,7 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context) {
     HPY_CTX_UPCALL(ctx_SetItem_s);
     HPY_CTX_UPCALL(ctx_Type);
     HPY_CTX_UPCALL(ctx_TypeCheck);
+    HPY_CTX_UPCALL(ctx_Is);
     HPY_CTX_UPCALL(ctx_AsStruct);
     HPY_CTX_UPCALL(ctx_AsStructLegacy);
     HPY_CTX_UPCALL(ctx_New);

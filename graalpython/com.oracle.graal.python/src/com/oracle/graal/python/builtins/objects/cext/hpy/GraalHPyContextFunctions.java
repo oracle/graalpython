@@ -146,6 +146,7 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -2286,4 +2287,31 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyIs extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached IsNode isNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                checkArity(arguments, 3);
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object left = asPythonObjectNode.execute(context, arguments[1]);
+                Object right = asPythonObjectNode.execute(context, arguments[2]);
+                try {
+                    return PInt.intValue(isNode.execute(left, right));
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(context, e);
+                    return -1;
+                }
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
 }

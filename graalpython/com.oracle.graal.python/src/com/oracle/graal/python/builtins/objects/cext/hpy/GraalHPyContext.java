@@ -168,6 +168,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyGetItem;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyHasAttr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyInplaceArithmetic;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIs;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsCallTupleDict;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsCallable;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsNumber;
@@ -474,6 +475,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_NEW("ctx_New"),
         CTX_TYPE("ctx_Type"),
         CTX_TYPECHECK("ctx_TypeCheck"),
+        CTX_IS("ctx_Is"),
         CTX_TYPE_GENERIC_NEW("ctx_Type_GenericNew"),
         CTX_FLOAT_FROMDOUBLE("ctx_Float_FromDouble"),
         CTX_FLOAT_ASDOUBLE("ctx_Float_AsDouble"),
@@ -1179,6 +1181,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_NEW.ordinal()] = new GraalHPyNew();
         members[HPyContextMember.CTX_TYPE.ordinal()] = new GraalHPyType();
         members[HPyContextMember.CTX_TYPECHECK.ordinal()] = new GraalHPyTypeCheck();
+        members[HPyContextMember.CTX_IS.ordinal()] = new GraalHPyIs();
         members[HPyContextMember.CTX_TYPE_GENERIC_NEW.ordinal()] = new GraalHPyTypeGenericNew();
         members[HPyContextMember.CTX_CAST.ordinal()] = new GraalHPyCast();
 
