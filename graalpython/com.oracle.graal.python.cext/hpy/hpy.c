@@ -56,7 +56,7 @@ static HPyContext *g_debug_ctx;
 typedef HPyDef* HPyDefPtr;
 
 POLYGLOT_DECLARE_TYPE(HPy)
-POLYGLOT_DECLARE_STRUCT(_HPyContext_s)
+POLYGLOT_DECLARE_TYPE(HPyContext)
 POLYGLOT_DECLARE_TYPE(HPyDef)
 POLYGLOT_DECLARE_TYPE(HPyDef_Kind)
 POLYGLOT_DECLARE_TYPE(HPyDefPtr)
@@ -80,7 +80,7 @@ int graal_hpy_init(HPyContext *context, void *initObject) {
 	g_universal_ctx = context;
 
 	// register the native type of HPy
-	polyglot_invoke(initObject, "setHPyContextNativeType", polyglot__HPyContext_s_typeid());
+	polyglot_invoke(initObject, "setHPyContextNativeType", polyglot_HPyContext_typeid());
 	polyglot_invoke(initObject, "setHPyNativeType", polyglot_HPy_typeid());
 	polyglot_invoke(initObject, "setHPyArrayNativeType", polyglot_array_typeid(polyglot_HPy_typeid(), 0));
 
