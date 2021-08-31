@@ -47,12 +47,12 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -202,21 +202,12 @@ abstract class CallSpecialMethodNode extends Node {
         return 0;
     }
 
-    protected static RootCallTarget getCallTarget(PMethod meth) {
-        return getCallTargetOfFunction(meth.getFunction());
+    protected static RootCallTarget getCallTarget(PMethod meth, GetCallTargetNode getCtNode) {
+        return getCtNode.execute(meth.getFunction());
     }
 
-    protected static RootCallTarget getCallTarget(PBuiltinMethod meth) {
-        return getCallTargetOfFunction(meth.getFunction());
-    }
-
-    private static RootCallTarget getCallTargetOfFunction(Object func) {
-        if (func instanceof PFunction) {
-            return ((PFunction) func).getCallTargetUncached();
-        } else if (func instanceof PBuiltinFunction) {
-            return ((PBuiltinFunction) func).getCallTarget();
-        }
-        return null;
+    protected static RootCallTarget getCallTarget(PBuiltinMethod meth, GetCallTargetNode getCtNode) {
+        return getCtNode.execute(meth.getFunction());
     }
 
     protected static boolean expectBooleanResult(Object value) throws UnexpectedResultException {

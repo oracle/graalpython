@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.call.special;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
@@ -88,9 +89,10 @@ public abstract class CallQuaternaryMethodNode extends CallSpecialMethodNode {
         return builtinNode.call(frame, arg1, arg2, arg3, arg4);
     }
 
-    @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "!takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "!takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3, Object arg4,
-                    @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
+                    @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getQuaternary(frame, func.getFunction())") PythonQuaternaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {

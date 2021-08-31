@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -101,9 +102,10 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
         return builtinNode.varArgExecute(frame, func.getSelf(), arguments, keywords);
     }
 
-    @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSelfMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object[] arguments, PKeyword[] keywords,
-                    @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
+                    @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getVarargs(frame, func.getFunction())") PythonVarargsBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
