@@ -469,6 +469,7 @@ public abstract class ErrorMessages {
     public static final String OBJ_HAS_NO_LEN = "object of type '%p' has no len()";
     public static final String OBJ_ISNT_CALLABLE = "'%p' object is not callable";
     public static final String OBJ_ISNT_ITERATOR = "'%p' object is not an iterator";
+    public static final String OBJ_ISNT_MAPPING = "'%p' object is not a mapping";
     public static final String OBJ_ISNT_REVERSIBLE = "'%p' object is not reversible";
     public static final String OBJ_NOT_ITERABLE = "'%p' object is not iterable";
     public static final String OBJ_NOT_SUBSCRIPTABLE = "'%p' object is not subscriptable";

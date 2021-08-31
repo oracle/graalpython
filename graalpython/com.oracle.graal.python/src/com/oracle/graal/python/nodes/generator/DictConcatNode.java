@@ -40,9 +40,13 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -56,6 +60,8 @@ public abstract class DictConcatNode extends ExpressionNode {
 
     @Children final ExpressionNode[] mappables;
 
+    @Child private PRaiseNode raiseNode;
+
     protected DictConcatNode(ExpressionNode... mappablesNodes) {
         this.mappables = mappablesNodes;
     }
@@ -66,6 +72,7 @@ public abstract class DictConcatNode extends ExpressionNode {
                     @Cached ConditionProfile hasFrame,
                     @CachedLibrary(limit = "2") HashingStorageLibrary firstlib,
                     @CachedLibrary(limit = "1") HashingStorageLibrary otherlib) {
+        // TODO support mappings in general
         PDict first = null;
         PDict other;
         for (ExpressionNode n : mappables) {
@@ -90,12 +97,22 @@ public abstract class DictConcatNode extends ExpressionNode {
         dict.setDictStorage(dictStorage);
     }
 
-    private static PDict expectDict(Object first) {
+    private PDict expectDict(Object first) {
         if (!(first instanceof PDict)) {
-            CompilerDirectives.transferToInterpreter();
-            throw new RuntimeException("non-dictionary in dictionary appending");
+            throw getRaiseNode().raise(TypeError, ErrorMessages.OBJ_ISNT_MAPPING, first);
         }
         return (PDict) first;
     }
 
+    protected final PRaiseNode getRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            if (isAdoptable()) {
+                raiseNode = insert(PRaiseNode.create());
+            } else {
+                raiseNode = PRaiseNode.getUncached();
+            }
+        }
+        return raiseNode;
+    }
 }
