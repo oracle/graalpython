@@ -455,7 +455,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
         CTX_MODULE_CREATE("ctx_Module_Create"),
         CTX_DUP("ctx_Dup"),
-        CTX_CAST("ctx_Cast"),
+        CTX_AS_STRUCT("ctx_AsStruct"),
+        CTX_AS_STRUCT_LEGACY("ctx_AsStructLegacy"),
         CTX_CLOSE("ctx_Close"),
         CTX_BOOL_FROMLONG("ctx_Bool_FromLong"),
         CTX_LONG_FROMLONG("ctx_Long_FromLong"),
@@ -1183,7 +1184,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_TYPECHECK.ordinal()] = new GraalHPyTypeCheck();
         members[HPyContextMember.CTX_IS.ordinal()] = new GraalHPyIs();
         members[HPyContextMember.CTX_TYPE_GENERIC_NEW.ordinal()] = new GraalHPyTypeGenericNew();
-        members[HPyContextMember.CTX_CAST.ordinal()] = new GraalHPyCast();
+        GraalHPyCast graalHPyCast = new GraalHPyCast();
+        members[HPyContextMember.CTX_AS_STRUCT.ordinal()] = graalHPyCast;
+        members[HPyContextMember.CTX_AS_STRUCT_LEGACY.ordinal()] = graalHPyCast;
 
         // unary
         members[HPyContextMember.CTX_NEGATIVE.ordinal()] = new GraalHPyUnaryArithmetic(UnaryArithmetic.Neg);
