@@ -129,6 +129,7 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotKind;
+import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.BytecodeOSRNode;
@@ -311,22 +312,62 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         frame.setObject(FAST_SLOT, fast);
         frame.setObject(CELL_SLOT, cell);
         frame.setObject(FREE_SLOT, free);
-        System.arraycopy((Object[])FrameUtil.getObjectSafe(parentFrame, STACK_SLOT), 0, stack, 0, stacksize);
-        System.arraycopy((Object[])FrameUtil.getObjectSafe(parentFrame, FAST_SLOT), 0, fast, 0, fast.length);
-        System.arraycopy((Object[])FrameUtil.getObjectSafe(parentFrame, CELL_SLOT), 0, cell, 0, cell.length);
-        System.arraycopy((Object[])FrameUtil.getObjectSafe(parentFrame, FREE_SLOT), 0, free, 0, free.length);
+        try {
+            copyStack(stack, (Object[])parentFrame.getObject(STACK_SLOT));
+            copyLocals(fast, (Object[])parentFrame.getObject(FAST_SLOT));
+            copyCellvars(cell, (Object[])parentFrame.getObject(CELL_SLOT));
+            copyFreevars(free, (Object[])parentFrame.getObject(FREE_SLOT));
+        } catch (FrameSlotTypeException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
     }
 
     @Override
     public void restoreParentFrame(VirtualFrame osrFrame, VirtualFrame parentFrame) {
-        Object[] stack = (Object[])FrameUtil.getObjectSafe(parentFrame, STACK_SLOT);
-        Object[] fast = (Object[])FrameUtil.getObjectSafe(parentFrame, FAST_SLOT);
-        Object[] cell = (Object[])FrameUtil.getObjectSafe(parentFrame, CELL_SLOT);
-        Object[] free = (Object[])FrameUtil.getObjectSafe(parentFrame, FREE_SLOT);
-        System.arraycopy(FrameUtil.getObjectSafe(osrFrame, STACK_SLOT), 0, stack, 0, stacksize);
-        System.arraycopy(FrameUtil.getObjectSafe(osrFrame, FAST_SLOT), 0, fast, 0, fast.length);
-        System.arraycopy(FrameUtil.getObjectSafe(osrFrame, CELL_SLOT), 0, cell, 0, cell.length);
-        System.arraycopy(FrameUtil.getObjectSafe(osrFrame, FREE_SLOT), 0, free, 0, free.length);
+        try {
+            Object[] stack = (Object[])parentFrame.getObject(STACK_SLOT);
+            Object[] fast = (Object[])parentFrame.getObject(FAST_SLOT);
+            Object[] cell = (Object[])parentFrame.getObject(CELL_SLOT);
+            Object[] free = (Object[])parentFrame.getObject(FREE_SLOT);
+            Object[] osrStack = (Object[])osrFrame.getObject(STACK_SLOT);
+            Object[] osrFast = (Object[])osrFrame.getObject(FAST_SLOT);
+            Object[] osrCell = (Object[])osrFrame.getObject(CELL_SLOT);
+            Object[] osrFree = (Object[])osrFrame.getObject(FREE_SLOT);
+            copyStack(stack, osrStack);
+            copyLocals(fast, osrFast);
+            copyCellvars(cell, osrCell);
+            copyFreevars(free, osrFree);
+        } catch (FrameSlotTypeException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+    }
+
+    @ExplodeLoop
+    private final void copyStack(Object[] dst, Object[] src) {
+        for (int i = 0; i < stacksize; i++) {
+            dst[i] = src[i];
+        }
+    }
+
+    @ExplodeLoop
+    private final void copyLocals(Object[] dst, Object[] src) {
+        for (int i = 0; i < varnames.length; i++) {
+            dst[i] = src[i];
+        }
+    }
+
+    @ExplodeLoop
+    private final void copyCellvars(Object[] dst, Object[] src) {
+        for (int i = 0; i < cellvars.length; i++) {
+            dst[i] = src[i];
+        }
+    }
+
+    @ExplodeLoop
+    private final void copyFreevars(Object[] dst, Object[] src) {
+        for (int i = 0; i < freevars.length; i++) {
+            dst[i] = src[i];
+        }
     }
 
     @Override
