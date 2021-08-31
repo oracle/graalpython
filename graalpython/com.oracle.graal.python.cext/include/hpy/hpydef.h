@@ -3,8 +3,8 @@
 
 #include <stddef.h> /* to make sure "offsetof" is available for our users */
 
-#include "common/hpyfunc.h"
-#include "common/autogen_hpyslot.h"
+#include "hpy/hpyfunc.h"
+#include "hpy/autogen_hpyslot.h"
 
 typedef struct {
     HPySlot_Slot slot;     // The slot to fill
