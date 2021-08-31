@@ -413,7 +413,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         PRaiseNode raiseNode = insertChildNode(() -> PRaiseNode.create(), i);
                         Object value = fastlocals[oparg];
                         if (value == null) {
-                            raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
+                            throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
                         }
                         stack[++stackTop] = value;
                     }
