@@ -46,7 +46,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import com.ibm.icu.lang.UCharacter;
-import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -155,29 +155,29 @@ public class StringUtils {
                         continue;
                     // Hex Unicode: u????
                     case 'u':
-                        int code = getHexValue(st, i + 2, 4);
+                        int code = getHexValue(errorCallback, st, i + 2, 4);
                         sb.append(Character.toChars(code));
                         i += 5;
                         continue;
                     // Hex Unicode: U????????
                     case 'U':
-                        code = getHexValue(st, i + 2, 8);
+                        code = getHexValue(errorCallback, st, i + 2, 8);
                         if (Character.isValidCodePoint(code)) {
                             sb.append(Character.toChars(code));
                         } else {
-                            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + ILLEGAl_CHARACTER, i, i + 9);
+                            throw errorCallback.getContext().getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + ILLEGAl_CHARACTER, i, i + 9);
                         }
                         i += 9;
                         continue;
                     // Hex Unicode: x??
                     case 'x':
-                        code = getHexValue(st, i + 2, 2);
+                        code = getHexValue(errorCallback, st, i + 2, 2);
                         sb.append(Character.toChars(code));
                         i += 3;
                         continue;
                     case 'N':
                         // a character from Unicode Data Database
-                        i = doCharacterName(st, sb, i + 2);
+                        i = doCharacterName(errorCallback.getContext().getCore(), st, sb, i + 2);
                         continue;
                     default:
                         if (!wasDeprecationWarning) {
@@ -219,7 +219,7 @@ public class StringUtils {
     private static final String UNKNOWN_UNICODE_ERROR = " unknown Unicode character name";
     private static final String ILLEGAl_CHARACTER = "illegal Unicode character";
 
-    private static int getHexValue(String text, int start, int len) {
+    private static int getHexValue(ParserErrorCallback errors, String text, int start, int len) {
         int digit;
         int result = 0;
         for (int index = start; index < (start + len); index++) {
@@ -228,17 +228,17 @@ public class StringUtils {
                 if (digit == -1) {
                     // Like cpython, raise error with the wrong character first,
                     // even if there are not enough characters
-                    throw createTruncatedError(start - 2, index - 1, len);
+                    throw createTruncatedError(errors, start - 2, index - 1, len);
                 }
                 result = result * 16 + digit;
             } else {
-                throw createTruncatedError(start - 2, index - 1, len);
+                throw createTruncatedError(errors, start - 2, index - 1, len);
             }
         }
         return result;
     }
 
-    private static PException createTruncatedError(int startIndex, int endIndex, int len) {
+    private static PException createTruncatedError(ParserErrorCallback errors, int startIndex, int endIndex, int len) {
         String truncatedMessage = null;
         switch (len) {
             case 2:
@@ -251,7 +251,7 @@ public class StringUtils {
                 truncatedMessage = TRUNCATED_UXXXXXXXX_ERROR;
                 break;
         }
-        return PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + truncatedMessage, startIndex, endIndex);
+        return errors.getContext().getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + truncatedMessage, startIndex, endIndex);
     }
 
     /**
@@ -263,17 +263,17 @@ public class StringUtils {
      * @return offset of the close brace
      */
     @CompilerDirectives.TruffleBoundary
-    private static int doCharacterName(String text, StringBuilder sb, int offset) {
+    private static int doCharacterName(Python3Core core, String text, StringBuilder sb, int offset) {
         if (offset >= text.length()) {
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
+            throw core.raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
         }
         char ch = text.charAt(offset);
         if (ch != '{') {
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
+            throw core.raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
         }
         int closeIndex = text.indexOf("}", offset + 1);
         if (closeIndex == -1) {
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, text.length() - 1);
+            throw core.raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, text.length() - 1);
         }
         String charName = text.substring(offset + 1, closeIndex).toUpperCase();
         // When JDK 1.8 will not be supported, we can replace with Character.codePointOf(String
@@ -282,7 +282,7 @@ public class StringUtils {
         if (cp >= 0) {
             sb.append(Character.toChars(cp));
         } else {
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + UNKNOWN_UNICODE_ERROR, offset - 2, closeIndex);
+            throw core.raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + UNKNOWN_UNICODE_ERROR, offset - 2, closeIndex);
         }
         return closeIndex;
     }

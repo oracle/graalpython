@@ -43,9 +43,9 @@ package com.oracle.graal.python.test.parser;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.parser.sst.StringUtils;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonParser.ErrorType;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.truffle.api.nodes.Node;
@@ -78,8 +78,8 @@ public class StringUtilsTests extends ParserTestBase {
         }
 
         @Override
-        public PythonLanguage getLanguage() {
-            return null;
+        public PythonContext getContext() {
+            return PythonContext.get(null);
         }
     };
 

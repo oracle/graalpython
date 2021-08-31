@@ -121,7 +121,7 @@ public abstract class CodeNodes {
             if (codedata.length == 0) {
                 ct = language.createCachedCallTarget(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, name);
             } else {
-                RootNode rootNode = context.getCore().getSerializer().deserialize(codedata, toStringArray(cellvars), toStringArray(freevars));
+                RootNode rootNode = context.getCore().getSerializer().deserialize(context.getCore(), codedata, toStringArray(cellvars), toStringArray(freevars));
                 ct = PythonUtils.getOrCreateCallTarget(rootNode);
                 if (filename != null) {
                     context.setCodeFilename(ct, filename);

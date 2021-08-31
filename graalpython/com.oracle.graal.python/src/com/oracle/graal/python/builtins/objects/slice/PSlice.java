@@ -34,6 +34,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -103,7 +104,7 @@ public abstract class PSlice extends PythonBuiltinObject {
     protected static void checkNegative(int length) {
         if (length < 0) {
             CompilerDirectives.transferToInterpreter();
-            throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
+            throw PythonContext.get(null).getCore().raise(ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
         }
     }
 
@@ -135,7 +136,7 @@ public abstract class PSlice extends PythonBuiltinObject {
             stepIsNegative = pySign(step) < 0;
             if (pySign(step) == 0) {
                 CompilerDirectives.transferToInterpreter();
-                throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                throw PythonContext.get(null).getCore().raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
             }
         }
 

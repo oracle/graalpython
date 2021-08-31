@@ -386,7 +386,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (bytes.length == 0) {
                 return createCachedCallTarget(l -> new BadOPCodeNode(l), BadOPCodeNode.class);
             }
-            return PythonUtils.getOrCreateCallTarget(core.getSerializer().deserialize(bytes));
+            return PythonUtils.getOrCreateCallTarget(core.getSerializer().deserialize(core, bytes));
         }
         for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
             if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
@@ -606,10 +606,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public String getHome() {
         return getLanguageHome();
-    }
-
-    public static Python3Core getCore() {
-        return PythonContext.get(null).getCore();
     }
 
     /**

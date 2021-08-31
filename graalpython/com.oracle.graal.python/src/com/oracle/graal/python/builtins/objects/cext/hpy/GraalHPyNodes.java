@@ -1361,7 +1361,7 @@ public class GraalHPyNodes {
         }
 
         Assumption noDebugModeAssumption() {
-            return PythonLanguage.get(null).noHPyDebugModeAssumption;
+            return PythonLanguage.get(this).noHPyDebugModeAssumption;
         }
     }
 

@@ -197,10 +197,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    private static int[] getIntLocalTimeStruct(long seconds) {
+    private static int[] getIntLocalTimeStruct(PythonContext context, long seconds) {
         int[] timeStruct = new int[9];
         Instant instant = Instant.ofEpochSecond(seconds);
-        ZoneId zone = PythonContext.get(null).getEnv().getTimeZone();
+        ZoneId zone = context.getEnv().getTimeZone();
         ZonedDateTime zonedDateTime = LocalDateTime.ofInstant(instant, zone).atZone(zone);
         timeStruct[TM_YEAR] = zonedDateTime.getYear();
         timeStruct[TM_MON] = zonedDateTime.getMonth().ordinal() + 1; /* Want January == 1 */
@@ -870,7 +870,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             if (format.indexOf(0) > -1) {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
             }
-            return format(format, getIntLocalTimeStruct((long) timeSeconds()));
+            return format(format, getIntLocalTimeStruct(PythonContext.get(this), (long) timeSeconds()));
         }
 
         @Specialization
@@ -932,7 +932,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         public String localtime(VirtualFrame frame, Object seconds,
                         @Cached ToLongTime toLongTime) {
-            return format(getIntLocalTimeStruct(toLongTime.execute(frame, seconds)));
+            return format(getIntLocalTimeStruct(PythonContext.get(this), toLongTime.execute(frame, seconds)));
         }
 
         protected static String format(int[] tm) {
@@ -955,7 +955,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public String localtime(@SuppressWarnings("unused") PNone time) {
-            return format(getIntLocalTimeStruct((long) timeSeconds()));
+            return format(getIntLocalTimeStruct(PythonContext.get(this), (long) timeSeconds()));
         }
 
         @Specialization

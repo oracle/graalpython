@@ -26,7 +26,6 @@
 // skip GIL
 package com.oracle.graal.python.runtime;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNode;
@@ -120,7 +119,7 @@ public interface PythonParser {
 
         void warn(PythonBuiltinClassType type, String format, Object... args);
 
-        PythonLanguage getLanguage();
+        PythonContext getContext();
     }
 
     /**

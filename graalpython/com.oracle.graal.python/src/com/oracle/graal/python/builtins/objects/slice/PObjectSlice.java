@@ -47,6 +47,7 @@ import java.math.BigInteger;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -135,7 +136,7 @@ public final class PObjectSlice extends PSlice {
         length = (BigInteger) lengthIn;
         if (pySign(length) < 0) {
             CompilerDirectives.transferToInterpreter();
-            throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
+            throw PythonContext.get(factory).getCore().raise(ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
         }
         if (slice.getStep() == PNone.NONE) {
             step = ONE;
@@ -145,7 +146,7 @@ public final class PObjectSlice extends PSlice {
             stepIsNegative = pySign(step) < 0;
             if (pySign(step) == 0) {
                 CompilerDirectives.transferToInterpreter();
-                throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                throw PythonContext.get(factory).getCore().raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
             }
         }
 

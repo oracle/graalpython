@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes;
 
 import java.util.ArrayList;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -215,7 +214,8 @@ public abstract class PRootNode extends RootNode {
     @TruffleBoundary
     private byte[] extractCode() {
         if (this instanceof PClosureRootNode) {
-            return PythonLanguage.getCore().getSerializer().serialize(this);
+            Python3Core core = PythonContext.get(this).getCore();
+            return core.getSerializer().serialize(core, this);
         }
         // no code for non-user functions
         return PythonUtils.EMPTY_BYTE_ARRAY;

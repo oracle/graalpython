@@ -71,7 +71,6 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -439,8 +438,8 @@ public class ZlibNodes {
 
         @SuppressWarnings("unused")
         @Fallback
-        static void fallback(Object zst, int function, int err, NFIZlibSupport zlibSupport, boolean deallocate) {
-            throw PythonLanguage.getCore().raise(SystemError, "Unhandled Error!");
+        void fallback(Object zst, int function, int err, NFIZlibSupport zlibSupport, boolean deallocate) {
+            throw PythonContext.get(this).getCore().raise(SystemError, "Unhandled Error!");
         }
     }
 

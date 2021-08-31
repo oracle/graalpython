@@ -564,7 +564,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             } else {
                 name = polib.lookupAttribute(category, null, SpecialAttributeNames.__NAME__);
             }
-            Object stderr = PythonLanguage.getCore().getStderr();
+            Object stderr = PythonContext.get(polib).getCore().getStderr();
 
             // tfel: I've inlined PyFile_WriteObject, which just calls the "write" method and
             // decides if we should use "repr" or "str" - in this case its always "str" for objects

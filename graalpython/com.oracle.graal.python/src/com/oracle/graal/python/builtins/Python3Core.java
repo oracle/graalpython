@@ -608,11 +608,11 @@ public final class Python3Core implements ParserErrorCallback {
         this.coreFiles = initializeCoreFiles();
     }
 
-    @Override
     public PythonLanguage getLanguage() {
         return singletonContext.getLanguage();
     }
 
+    @Override
     public PythonContext getContext() {
         return singletonContext;
     }
