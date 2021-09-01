@@ -229,6 +229,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -1875,7 +1876,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object make(PFunction func, Object errorResultObj) {
-            RootCallTarget originalCallTarget = func.getCallTargetUncached();
+            RootCallTarget originalCallTarget = GetCallTargetNode.getUncached().execute(func);
 
             // Replace the first expression node with the MayRaiseNode
             RootCallTarget wrapperCallTarget = getLanguage().createCachedCallTarget(

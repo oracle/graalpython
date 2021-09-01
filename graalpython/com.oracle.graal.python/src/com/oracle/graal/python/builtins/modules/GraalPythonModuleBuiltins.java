@@ -89,6 +89,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -479,15 +480,13 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public String doIt(PFunction func) {
-            return NodeUtil.printTreeToString(func.getCallTargetUncached().getRootNode());
+            return NodeUtil.printTreeToString(GetCallTargetNode.getUncached().execute(func).getRootNode());
         }
 
         @Specialization(guards = "isFunction(method.getFunction())")
         @TruffleBoundary
         public String doIt(PMethod method) {
-            // cast ensured by guard
-            PFunction fun = (PFunction) method.getFunction();
-            return NodeUtil.printTreeToString(fun.getCallTargetUncached().getRootNode());
+            return NodeUtil.printTreeToString(GetCallTargetNode.getUncached().execute(method).getRootNode());
         }
 
         @Specialization

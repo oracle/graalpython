@@ -68,6 +68,7 @@ import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillKwDefau
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FindKwDefaultNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.HandleTooManyArgumentsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyKeywordsNodeGen.SearchNamedParameterNodeGen;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
@@ -172,9 +173,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, signature, null, defaults, kwdefaults, false);
     }
 
-    @Specialization(guards = {"getCallTarget(callable) == cachedCallTarget", "cachedCallTarget != null"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = {"doMethodFunctionCached",
+    @Specialization(guards = {"getCt.execute(callable) == cachedCallTarget", "cachedCallTarget != null"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = {"doMethodFunctionCached",
                     "doFunctionCached"})
     Object[] doCallTargetCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
+                    @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
                     @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @SuppressWarnings("unused") @Cached GetSignatureNode getSignatureNode,
                     @Cached("getSignatureNode.execute(callable)") Signature signature, // signatures
@@ -185,7 +187,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     @Cached ConditionProfile gotMethod,
                     @Cached GetDefaultsNode getDefaultsNode,
                     @Cached GetKeywordDefaultsNode getKwDefaultsNode,
-                    @Cached("getCallTarget(callable)") @SuppressWarnings("unused") RootCallTarget cachedCallTarget) {
+                    @Cached("getCt.execute(callable)") @SuppressWarnings("unused") RootCallTarget cachedCallTarget) {
         Object[] defaults = getDefaultsNode.execute(callable);
         PKeyword[] kwdefaults = getKwDefaultsNode.execute(callable);
         Object self = null;
@@ -940,24 +942,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return ((PBuiltinMethod) callable).getFunction();
         } else if (callable instanceof PMethod) {
             return ((PMethod) callable).getFunction();
-        }
-        return null;
-    }
-
-    protected static RootCallTarget getCallTarget(Object callable) {
-        if (callable instanceof PBuiltinMethod) {
-            return ((PBuiltinMethod) callable).getFunction().getCallTarget();
-        } else if (callable instanceof PMethod) {
-            Object function = ((PMethod) callable).getFunction();
-            if (function instanceof PBuiltinFunction) {
-                return ((PBuiltinFunction) function).getCallTarget();
-            } else if (function instanceof PFunction) {
-                return ((PFunction) function).getCallTargetUncached();
-            }
-        } else if (callable instanceof PBuiltinFunction) {
-            return ((PBuiltinFunction) callable).getCallTarget();
-        } else if (callable instanceof PFunction) {
-            return ((PFunction) callable).getCallTargetUncached();
         }
         return null;
     }

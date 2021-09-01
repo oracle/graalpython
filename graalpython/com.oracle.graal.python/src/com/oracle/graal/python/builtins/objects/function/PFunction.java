@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -43,7 +44,6 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -93,13 +93,6 @@ public final class PFunction extends PythonObject {
         this.closure = closure;
         this.codeStableAssumption = codeStableAssumption;
         this.defaultsStableAssumption = defaultsStableAssumption;
-    }
-
-    /**
-     * Prefer to use a cached CodeNodes.GetCodeCallTargetNode on the fast path.
-     */
-    public RootCallTarget getCallTargetUncached() {
-        return GetCodeCallTargetNode.getUncached().execute(code);
     }
 
     public Assumption getCodeStableAssumption() {
@@ -177,7 +170,7 @@ public final class PFunction extends PythonObject {
 
     @TruffleBoundary
     String getSourceCode() {
-        RootNode rootNode = getCallTargetUncached().getRootNode();
+        RootNode rootNode = GetCallTargetNode.getUncached().execute(this).getRootNode();
         if (rootNode instanceof GeneratorFunctionRootNode) {
             rootNode = ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode();
         }
