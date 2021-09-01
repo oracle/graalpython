@@ -40,15 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.thread;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.ArgumentClinic;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -58,19 +59,18 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PythonContext.SharedMultiprocessingData;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import java.util.concurrent.Semaphore;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PSemLock})
 public class SemLockBuiltins extends PythonBuiltins {
@@ -214,26 +214,14 @@ public class SemLockBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "_rebuild", 4, "str", nameObj);
             }
 
-            Semaphore semaphore;
-            PythonLanguage lang = getLanguage();
-            if (semaphoreExists(lang, name)) {
-                semaphore = semaphoreGet(lang, name);
-            } else {
+            SharedMultiprocessingData multiprocessing = getContext().getSharedMultiprocessingData();
+            Semaphore semaphore = multiprocessing.getNamedSemaphore(name);
+            if (semaphore == null) {
                 // TODO can this even happen? cpython simply creates a semlock object with the
                 // provided handle
                 semaphore = newSemaphore(0);
             }
             return factory().createSemLock(PythonBuiltinClassType.PSemLock, name, kind, semaphore);
-        }
-
-        @TruffleBoundary
-        private static Semaphore semaphoreGet(PythonLanguage lang, String name) {
-            return lang.namedSemaphores.get(name);
-        }
-
-        @TruffleBoundary
-        private static boolean semaphoreExists(PythonLanguage lang, String name) {
-            return lang.namedSemaphores.containsKey(name);
         }
 
         @TruffleBoundary

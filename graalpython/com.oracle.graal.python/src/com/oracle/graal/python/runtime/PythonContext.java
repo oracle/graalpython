@@ -46,8 +46,14 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -128,11 +134,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.llvm.api.Toolchain;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class PythonContext {
     private static final Source IMPORT_WARNINGS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import warnings\n", "<internal>").internal(true).build();
@@ -603,7 +604,7 @@ public final class PythonContext {
         }
 
         @TruffleBoundary
-        public boolean addPipeData(int fd, byte[] bytes, Runnable noFDHandler, Runnable brokenPipeHandler) {
+        public void addPipeData(int fd, byte[] bytes, Runnable noFDHandler, Runnable brokenPipeHandler) {
             LinkedBlockingQueue<Object> q = null;
             synchronized (pipeData) {
                 q = pipeData.get(fd);
@@ -611,14 +612,13 @@ public final class PythonContext {
                     noFDHandler.run();
                     throw CompilerDirectives.shouldNotReachHere();
                 }
-                Integer fd2 = getPairFd(fd);
+                int fd2 = getPairFd(fd);
                 if (isClosed(fd2)) {
                     brokenPipeHandler.run();
                     throw CompilerDirectives.shouldNotReachHere();
                 }
             }
             q.add(bytes);
-            return true;
         }
 
         @TruffleBoundary
@@ -637,7 +637,7 @@ public final class PythonContext {
                     noFDHandler.run();
                     throw CompilerDirectives.shouldNotReachHere();
                 }
-                Integer fd2 = getPairFd(fd);
+                int fd2 = getPairFd(fd);
                 if (isClosed(fd2)) {
                     if (q.isEmpty()) {
                         return PythonUtils.EMPTY_BYTE_ARRAY;
@@ -659,21 +659,12 @@ public final class PythonContext {
                 if (q == null) {
                     return false;
                 }
-                Integer fd2 = getPairFd(fd);
+                int fd2 = getPairFd(fd);
                 if (isClosed(fd2)) {
                     return false;
                 }
             }
             return q.isEmpty();
-        }
-
-        @TruffleBoundary
-        public static void closeFDs(List<Integer> fds) {
-            synchronized (fds) {
-                for (Integer fd : fds) {
-                    fds.remove(fd);
-                }
-            }
         }
 
         private static int getPairFd(int fd) {
@@ -682,6 +673,57 @@ public final class PythonContext {
 
         private boolean isClosed(int fd) {
             return pipeData.get(fd) == null && fd >= fdCounter;
+        }
+
+        /**
+         * Named semaphores are shared between all processes in a system, and they persist until the
+         * system is shut down, unless explicitly removed. We interpret this as meaning they all
+         * exist globally per the main context and all its children.
+         */
+        private final ConcurrentHashMap<String, Semaphore> namedSemaphores = new ConcurrentHashMap<>();
+
+        @TruffleBoundary
+        public void putNamedSemaphore(String name, Semaphore sem) {
+            namedSemaphores.put(name, sem);
+        }
+
+        @TruffleBoundary
+        public Semaphore getNamedSemaphore(String name) {
+            return namedSemaphores.get(name);
+        }
+
+        @TruffleBoundary
+        public Semaphore removeNamedSemaphore(String name) {
+            return namedSemaphores.remove(name);
+        }
+
+        private final Map<Long, Thread> childContextThreads = new ConcurrentHashMap<>();
+
+        private final Map<Long, ChildContextData> childContextData = new ConcurrentHashMap<>();
+
+        @TruffleBoundary
+        public Thread getChildContextThread(long tid) {
+            return childContextThreads.get(tid);
+        }
+
+        @TruffleBoundary
+        public void putChildContextThread(long id, Thread thread) {
+            childContextThreads.put(id, thread);
+        }
+
+        @TruffleBoundary
+        public void removeChildContextThread(long id) {
+            childContextThreads.remove(id);
+        }
+
+        @TruffleBoundary
+        public ChildContextData getChildContextData(long tid) {
+            return childContextData.get(tid);
+        }
+
+        @TruffleBoundary
+        public void putChildContextData(long id, ChildContextData data) {
+            childContextData.put(id, data);
         }
     }
 
@@ -737,8 +779,8 @@ public final class PythonContext {
 
         // TODO always force java posix in spawned
         long tid = thread.getId();
-        language.putChildContextThread(tid, thread);
-        language.putChildContextData(tid, data);
+        getSharedMultiprocessingData().putChildContextThread(tid, thread);
+        getSharedMultiprocessingData().putChildContextData(tid, data);
         for (int fdToKeep : fdsToKeep) {
             // prevent file descriptors from being closed when passed to another "process",
             // equivalent to fds_to_keep arg in posix fork_exec
@@ -1861,7 +1903,7 @@ public final class PythonContext {
         threadStateMapping.remove(thread);
         ts.dispose();
         releaseSentinelLock(ts.sentinelLock);
-        language.removeChildContextThread(thread.getId());
+        getSharedMultiprocessingData().removeChildContextThread(thread.getId());
     }
 
     private static void releaseSentinelLock(WeakReference<PLock> sentinelLockWeakref) {

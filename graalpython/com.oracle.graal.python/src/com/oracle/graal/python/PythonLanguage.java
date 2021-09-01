@@ -27,9 +27,7 @@ package com.oracle.graal.python;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
 import org.graalvm.options.OptionDescriptors;
@@ -59,7 +57,6 @@ import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.ChildContextData;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
@@ -196,14 +193,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @CompilationFinal(dimensions = 1) private static final Object[] CONTEXT_INSENSITIVE_SINGLETONS = new Object[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE, PNotImplemented.NOT_IMPLEMENTED};
 
-    /**
-     * Named semaphores are shared between all processes in a system, and they persist until the
-     * system is shut down, unless explicitly removed. We interpret this as meaning they all exist
-     * globally per language instance, that is, they are shared between different Contexts in the
-     * same engine.
-     */
-    public final ConcurrentHashMap<String, Semaphore> namedSemaphores = new ConcurrentHashMap<>();
-
     @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
     @CompilationFinal private volatile OptionValues engineOptions;
 
@@ -220,35 +209,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public final ConcurrentHashMap<String, HiddenKey> typeHiddenKeys = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_KEYS);
 
     private final MroShape mroShapeRoot = MroShape.createRoot();
-
-    private final Map<Long, Thread> childContextThreads = new ConcurrentHashMap<>();
-
-    private final Map<Long, ChildContextData> childContextData = new ConcurrentHashMap<>();
-
-    @TruffleBoundary
-    public Thread getChildContextThread(long tid) {
-        return childContextThreads.get(tid);
-    }
-
-    @TruffleBoundary
-    public void putChildContextThread(long id, Thread thread) {
-        childContextThreads.put(id, thread);
-    }
-
-    @TruffleBoundary
-    public void removeChildContextThread(long id) {
-        childContextThreads.remove(id);
-    }
-
-    @TruffleBoundary
-    public ChildContextData getChildContextData(long tid) {
-        return childContextData.get(tid);
-    }
-
-    @TruffleBoundary
-    public void putChildContextData(long id, ChildContextData data) {
-        childContextData.put(id, data);
-    }
 
     public static PythonLanguage get(Node node) {
         return REFERENCE.get(node);
