@@ -85,6 +85,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -326,7 +327,7 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public boolean equalsWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
         if (this == other) {
             return true;
         }
@@ -340,7 +341,7 @@ public abstract class HashingStorage {
     protected abstract static class HasKeyNodeForSubsetKeys extends InjectIntoNode {
         @Specialization
         HashingStorage[] doit(HashingStorage[] other, Object key,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             if (!lib.hasKey(other[0], key)) {
                 throw AbortIteration.INSTANCE;
             }
@@ -355,7 +356,7 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public int compareKeys(HashingStorage other,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                     @Cached HasKeyNodeForSubsetKeys hasKeyNode) {
         if (this == other) {
             return 0;
@@ -404,7 +405,7 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public int compareEntriesWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                     @Cached TestKeyValueEqual testNode) {
         if (this == other) {
             return 0;
@@ -483,7 +484,7 @@ public abstract class HashingStorage {
     @ExportMessage
     public boolean isDisjointWithState(HashingStorage other, ThreadState state,
                     @CachedLibrary("this") HashingStorageLibrary libSelf,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary libOther,
+                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary libOther,
                     @Exclusive @Cached ConditionProfile selfIsShorterProfile,
                     @Cached IsDisjointForEachNode isDisjointForEachNode) {
         try {
@@ -505,7 +506,7 @@ public abstract class HashingStorage {
     protected abstract static class DiffInjectNode extends InjectIntoNode {
         @Specialization
         HashingStorage[] doit(HashingStorage[] accumulator, Object key,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage self = accumulator[0];
             HashingStorage other = accumulator[1];
             HashingStorage output = accumulator[2];
@@ -523,8 +524,8 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public HashingStorage xor(HashingStorage other,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached DiffInjectNode injectNode) {
+                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Shared("diffInjectNode") @Cached DiffInjectNode injectNode) {
         // could also be done with lib.union(lib.diff(self, other),
         // lib.diff(other, self)), but that uses one more iteration.
         HashingStorage newStore = EmptyStorage.INSTANCE;
@@ -536,7 +537,7 @@ public abstract class HashingStorage {
 
     @ExportMessage
     public HashingStorage union(HashingStorage other,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+                    @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
         HashingStorage newStore = lib.copy(this);
         return lib.addAllToOther(other, newStore);
     }
@@ -544,7 +545,7 @@ public abstract class HashingStorage {
     @ExportMessage
     public HashingStorage diffWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
                     @CachedLibrary("this") HashingStorageLibrary libSelf,
-                    @Exclusive @Cached DiffInjectNode diffNode) {
+                    @Shared("diffInjectNode") @Cached DiffInjectNode diffNode) {
         HashingStorage newStore = EmptyStorage.INSTANCE;
         return libSelf.injectInto(this, new HashingStorage[]{this, other, newStore}, diffNode)[2];
     }
