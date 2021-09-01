@@ -271,7 +271,7 @@ public abstract class FunctionNodes {
                         @Bind("method.getFunction()") Object function,
                         @Shared("getCode") @Cached GetFunctionCodeNode getFunctionCodeNode,
                         @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
-            return getCt.execute(getFunctionCodeNode.execute((PFunction)function));
+            return getCt.execute(getFunctionCodeNode.execute((PFunction) function));
         }
 
         @Specialization(guards = "isPBuiltinFunction(method.getFunction())")
@@ -286,7 +286,7 @@ public abstract class FunctionNodes {
         }
 
         @Fallback
-        static RootCallTarget fallback(Object callable) {
+        static RootCallTarget fallback(@SuppressWarnings("unused") Object callable) {
             return null;
         }
 
