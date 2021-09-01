@@ -27,6 +27,7 @@ from __future__ import print_function
 import contextlib
 import datetime
 import glob
+import itertools
 import json
 import os
 import pathlib
@@ -34,8 +35,6 @@ import platform
 import re
 import shlex
 import shutil
-
-import itertools
 import sys
 
 HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"

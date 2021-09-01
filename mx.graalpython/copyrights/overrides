@@ -3,7 +3,9 @@ graalpython/com.oracle.graal.python.benchmarks/python/host_interop/image-magix-j
 graalpython/com.oracle.graal.python.benchmarks/python/host_interop/image-magix.py,pypy-image-demo.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/macro/gcbench.py,pypy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/chaos.py,pypy.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/meso/chaos-sized2.py,pypy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/go.py,pypy.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/meso/go-sized2.py,pypy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/raytrace-simple.py,pypy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/ai-nqueen.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/binarytrees3.py,benchmarks.copyright
@@ -13,6 +15,7 @@ graalpython/com.oracle.graal.python.benchmarks/python/meso/euler31.py,benchmarks
 graalpython/com.oracle.graal.python.benchmarks/python/meso/fannkuchredux3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/fasta3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/image-magix.py,pypy-image-demo.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/meso/image-magix-sized2.py,pypy-image-demo.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/knucleotide.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/mandelbrot3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/meteor3.py,benchmarks.copyright
@@ -24,6 +27,7 @@ graalpython/com.oracle.graal.python.benchmarks/python/meso/pads-lyndon.py,benchm
 graalpython/com.oracle.graal.python.benchmarks/python/meso/parrot-b2.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/pidigits.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/regexdna.py,benchmarks.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/meso/regexdna-sized2.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/richards3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/spectralnorm3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/threadring.py,benchmarks.copyright
