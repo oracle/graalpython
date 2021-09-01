@@ -755,7 +755,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         iterations_count = -1
         iteration_times = []
         gc_times = []
-        late_compilation = False
+        late_compilation = -1
         for i in range(len(lines)):
             line = lines[i]
 
@@ -779,7 +779,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
                         mx.warn("Benchmark checkup: %s: excessive GC pause of %.8f (on %d iteration)" % (benchmark_name, gc_times[i], i))
                 if warmup > iterations_count / 2:
                     mx.warn("Benchmark checkup: %s: warmup detected too late (on %d iteration)" % (benchmark_name, warmup))
-                if late_compilation:
+                if late_compilation > 0:
                     mx.warn("Benchmark checkup: %s: compilation detected too late (on %d iteration)" % (benchmark_name, late_compilation))
                 iteration_times = []
                 gc_times = []
