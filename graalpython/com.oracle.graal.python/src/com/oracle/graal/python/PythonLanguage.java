@@ -28,6 +28,7 @@ package com.oracle.graal.python;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
 import org.graalvm.options.OptionDescriptors;
@@ -192,6 +193,20 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @CompilationFinal(dimensions = 1) private final Shape[] builtinTypeInstanceShapes = new Shape[PythonBuiltinClassType.VALUES.length];
 
     @CompilationFinal(dimensions = 1) private static final Object[] CONTEXT_INSENSITIVE_SINGLETONS = new Object[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE, PNotImplemented.NOT_IMPLEMENTED};
+
+    /**
+     * Named semaphores are shared between all processes in a system, and they persist until the
+     * system is shut down, unless explicitly removed. We interpret this as meaning they all exist
+     * globally per language instance, that is, they are shared between different Contexts in the
+     * same engine.
+     *
+     * Top level contexts use this map to initialize their shared multiprocessing data. Inner
+     * children contexts created for the multiprocessing module ignore this map in
+     * {@link PythonLanguage} and instead inherit it in the shared multiprocessing data from their
+     * parent context. This way, the child inner contexts do not have to run in the same engine
+     * (have the same language instance), but can still share the named semaphores.
+     */
+    public final ConcurrentHashMap<String, Semaphore> namedSemaphores = new ConcurrentHashMap<>();
 
     @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
     @CompilationFinal private volatile OptionValues engineOptions;

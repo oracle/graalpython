@@ -554,6 +554,10 @@ public final class PythonContext {
          */
         private final Map<Integer, Integer> fdRefCount = new HashMap<>();
 
+        public SharedMultiprocessingData(ConcurrentHashMap<String, Semaphore> namedSemaphores) {
+            this.namedSemaphores = namedSemaphores;
+        }
+
         /**
          * Increases reference count for the given file descriptor.
          */
@@ -676,11 +680,9 @@ public final class PythonContext {
         }
 
         /**
-         * Named semaphores are shared between all processes in a system, and they persist until the
-         * system is shut down, unless explicitly removed. We interpret this as meaning they all
-         * exist globally per the main context and all its children.
+         * @see PythonLanguage#namedSemaphores
          */
-        private final ConcurrentHashMap<String, Semaphore> namedSemaphores = new ConcurrentHashMap<>();
+        private final ConcurrentHashMap<String, Semaphore> namedSemaphores;
 
         @TruffleBoundary
         public void putNamedSemaphore(String name, Semaphore sem) {
@@ -732,7 +734,7 @@ public final class PythonContext {
         this.core = core;
         this.env = env;
         this.childContextData = (ChildContextData) env.getConfig().get(CHILD_CONTEXT_DATA);
-        this.sharedMultiprocessingData = this.childContextData == null ? new SharedMultiprocessingData() : childContextData.parentCtx.sharedMultiprocessingData;
+        this.sharedMultiprocessingData = this.childContextData == null ? new SharedMultiprocessingData(language.namedSemaphores) : childContextData.parentCtx.sharedMultiprocessingData;
         this.handler = new AsyncHandler(this);
         this.sharedFinalizer = new AsyncHandler.SharedFinalizer(this);
         this.optionValues = PythonOptions.createOptionValuesStorage(env);
