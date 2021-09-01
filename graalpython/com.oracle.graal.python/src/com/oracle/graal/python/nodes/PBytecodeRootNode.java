@@ -134,6 +134,7 @@ import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.BytecodeOSRNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -384,6 +385,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object[] celllocals = (Object[])FrameUtil.getObjectSafe(frame, CELL_SLOT);
         Object[] freelocals = (Object[])FrameUtil.getObjectSafe(frame, FREE_SLOT);
 
+        int loopCount = 0;
         int stackTop = (short)target;
         int i = (target >> Short.SIZE) & 0xffff;
         int oparg = Byte.toUnsignedInt(bytecode[i + 1]);
@@ -663,6 +665,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     break;
                 case RETURN_VALUE:
+                    if (CompilerDirectives.inInterpreter()) {
+                        LoopNode.reportLoopCount(this, loopCount);
+                    }
                     return stack[stackTop];
                 case GET_AITER:
                 case GET_ANEXT:
@@ -856,9 +861,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     break;
                 case JUMP_ABSOLUTE:
                     if (oparg < i) {
+                        if (CompilerDirectives.inInterpreter()) {
+                            loopCount++;
+                        }
                         if (BytecodeOSRNode.pollOSRBackEdge(this)) {
                             Object osrResult = BytecodeOSRNode.tryOSR(this, (oparg << Short.SIZE) | stackTop, originalArgs, null, frame);
                             if (osrResult != null) {
+                                if (CompilerDirectives.inInterpreter()) {
+                                    LoopNode.reportLoopCount(this, loopCount);
+                                }
                                 return osrResult;
                             }
                         }
