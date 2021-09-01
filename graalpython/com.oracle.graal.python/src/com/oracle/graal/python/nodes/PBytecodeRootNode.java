@@ -412,6 +412,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     break;
                 case LOAD_FAST:
                     {
+                        Object value = fastlocals[oparg];
+                        if (value == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            bytecode[i] = LOAD_FAST_WITH_ERROR;
+                            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
+                        }
+                        stack[++stackTop] = value;
+                    }
+                    break;
+                case LOAD_FAST_WITH_ERROR:
+                    {
                         PRaiseNode raiseNode = insertChildNode(() -> PRaiseNode.create(), i);
                         Object value = fastlocals[oparg];
                         if (value == null) {
@@ -1166,6 +1177,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final byte POP_JUMP_IF_TRUE =             115;
     private static final byte LOAD_GLOBAL =                  116;
     private static final byte SETUP_FINALLY =                122;
+    private static final byte LOAD_FAST_WITH_ERROR =         123; // Added by us
     private static final byte LOAD_FAST =                    124;
     private static final byte STORE_FAST =                   125;
     private static final byte DELETE_FAST =                  126;
