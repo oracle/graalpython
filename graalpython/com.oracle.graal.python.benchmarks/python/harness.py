@@ -439,6 +439,9 @@ def run_benchmark(args):
         elif arg == '--bc':
             mode = 'pyc'
 
+        elif arg == '--ast':
+            mode = 'exec'
+
         elif bench_file is None:
             bench_file = arg
         else:
