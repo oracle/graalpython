@@ -84,7 +84,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -485,12 +484,11 @@ public abstract class HashingStorage {
     public boolean isDisjointWithState(HashingStorage other, ThreadState state,
                     @CachedLibrary("this") HashingStorageLibrary libSelf,
                     @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary libOther,
-                    @Exclusive @Cached ConditionProfile selfIsShorterProfile,
                     @Cached IsDisjointForEachNode isDisjointForEachNode) {
         try {
             int selfLen = libSelf.length(this);
             int otherLen = libOther.length(other);
-            if (selfIsShorterProfile.profile(selfLen < otherLen)) {
+            if (selfLen < otherLen) {
                 libSelf.forEach(this, isDisjointForEachNode, new IsDisjoinForEachAcc(other, libOther, state));
             } else {
                 libOther.forEach(other, isDisjointForEachNode, new IsDisjoinForEachAcc(this, libSelf, state));
