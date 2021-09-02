@@ -25,18 +25,7 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.Truffle;
-
 public abstract class SequenceStorage {
-
-    // Mutations lock
-    private boolean lock;
-    private static final Assumption lockingNeverEnabledAssumption = Truffle.getRuntime().createAssumption("Seq storage locking");
-    private static final Assumption lockingNeverFailedAssumption = Truffle.getRuntime().createAssumption("Seq storage locking failure");
 
     public enum ListStorageType {
         Uninitialized,
@@ -63,31 +52,6 @@ public abstract class SequenceStorage {
                 default:
                     return true;
             }
-        }
-    }
-
-    public final void setLock() {
-        lockingNeverEnabledAssumption.invalidate();
-        this.lock = true;
-    }
-
-    public final void releaseLock() {
-        if (lockingNeverEnabledAssumption.isValid()) {
-            return;
-        }
-        this.lock = false;
-    }
-
-    protected final void checkLock() {
-        if (lockingNeverEnabledAssumption.isValid()) {
-            return;
-        }
-        if (lock) {
-            if (lockingNeverFailedAssumption.isValid()) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lockingNeverFailedAssumption.invalidate();
-            }
-            PRaiseNode.getUncached().raise(PythonBuiltinClassType.ValueError);
         }
     }
 
