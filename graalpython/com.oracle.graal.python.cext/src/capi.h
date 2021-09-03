@@ -132,7 +132,7 @@ int PyTruffle_Trace_Memory() {
 }
 
 /* upcall functions for calling into Python */
-void*(*pytruffle_decorate_function)(void *fun0, void* fun1);
+extern void*(*pytruffle_decorate_function)(void *fun0, void* fun1);
 extern PyObject*(*PY_TRUFFLE_LANDING_BORROWED)(void *rcv, void* name, ...);
 extern PyObject*(*PY_TRUFFLE_LANDING_NEWREF)(void *rcv, void* name, ...);
 extern void*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
