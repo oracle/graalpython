@@ -401,8 +401,6 @@ public class ObjectBuiltins extends PythonBuiltins {
         private static final int HAS_DATA_DESCR = 2;
         private static final int HAS_VALUE = 4;
         private static final int HAS_NO_VALUE = 8;
-        private final ConditionProfile typeIsObjectProfile = ConditionProfile.createBinaryProfile();
-        private final ConditionProfile getClassProfile = ConditionProfile.createBinaryProfile();
 
         @Child private LookupCallableSlotInMRONode lookupGetNode;
         @Child private LookupCallableSlotInMRONode lookupSetNode;
@@ -447,7 +445,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                     Object get = lookupGet(dataDescClass);
                     if (PGuards.isCallableOrDescriptor(get)) {
                         // Only override if __get__ is defined, too, for compatibility with CPython.
-                        return dispatch(frame, object, getPythonClass(type, getClassProfile), descr, get);
+                        return dispatch(frame, object, type, descr, get);
                     }
                 }
             }
@@ -477,7 +475,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 if (get == PNone.NO_VALUE) {
                     return descr;
                 } else if (PGuards.isCallableOrDescriptor(get)) {
-                    return dispatch(frame, object, getPythonClass(type, getClassProfile), descr, get);
+                    return dispatch(frame, object, type, descr, get);
                 }
             }
             throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
@@ -496,7 +494,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 dispatchGet = insert(CallTernaryMethodNode.create());
             }
-            return dispatchGet.execute(frame, get, descr, typeIsObjectProfile.profile(type == object) ? PNone.NONE : object, type);
+            return dispatchGet.execute(frame, get, descr, object, type);
         }
 
         private Object getDescClass(Object desc) {
