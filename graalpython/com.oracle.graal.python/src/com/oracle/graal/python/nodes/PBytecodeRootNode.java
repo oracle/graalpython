@@ -176,8 +176,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final FrameSlot CELL_SLOT = DESCRIPTOR.addFrameSlot("cell", FrameSlotKind.Object);
     private static final FrameSlot FREE_SLOT = DESCRIPTOR.addFrameSlot("free", FrameSlotKind.Object);
     private static final FrameSlot BLOCKSTACK_SLOT = DESCRIPTOR.addFrameSlot("blockstack", FrameSlotKind.Object);
-    private static final FrameSlot BLOCKSTACK_TOP_SLOT = DESCRIPTOR.addFrameSlot("blockstack_top", FrameSlotKind.Byte);
-    private static final int MAXBLOCKS = 20; // just like on CPython
+    private static final int MAXBLOCKS = 15; // 25% less than on CPython, shouldn't matter much
 
     private static final Object UNREIFIED_EXC_TYPE = new Object();
     private static final Object UNREIFIED_EXC_VALUE = new Object();
@@ -200,6 +199,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.filename = filename;
         this.name = name;
         this.firstlineno = firstlineno;
+        assert stacksize < Math.pow(2, 12) : "stacksize cannot be larger than 12-bit range";
+        assert bytecode.length < Math.pow(2, 16) : "bytecode cannot be longer than 16-bit range";
     }
 
     public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, byte[] bc,
@@ -246,9 +247,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PythonContext context = PythonContext.get(this);
         calleeContext.enter(frame);
         try {
-            assert stacksize < Short.MAX_VALUE : "stacksize cannot be larger than short range";
-            assert bytecode.length < Math.pow(2, Short.SIZE) : "bytecode cannot be longer than unsigned short range";
-
             // CPython has an array of object called "localsplus" with everything. We use separate
             // arrays.
             Object[] stack = new Object[stacksize];
@@ -275,9 +273,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             frame.setObject(CELL_SLOT, celllocals);
             frame.setObject(FREE_SLOT, freelocals);
             frame.setObject(BLOCKSTACK_SLOT, handlerBlocks);
-            frame.setByte(BLOCKSTACK_TOP_SLOT, (byte)-1);
 
-            return executeOSR(frame, 0xffff, args);
+            return executeOSR(frame, encodeBCI(0) | encodeStackTop(-1) | encodeBlockstackTop(-1), args);
         } finally {
             calleeContext.exit(frame, this);
         }
@@ -356,7 +353,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             copyCellvars(cell, (Object[])parentFrame.getObject(CELL_SLOT));
             copyFreevars(free, (Object[])parentFrame.getObject(FREE_SLOT));
             copyBlocks(blockstack, (long[])parentFrame.getObject(BLOCKSTACK_SLOT));
-            frame.setByte(BLOCKSTACK_TOP_SLOT, parentFrame.getByte(BLOCKSTACK_TOP_SLOT));
         } catch (FrameSlotTypeException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
@@ -380,7 +376,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             copyCellvars(cell, osrCell);
             copyFreevars(free, osrFree);
             copyBlocks(blockstack, osrBlockstack);
-            parentFrame.setByte(BLOCKSTACK_TOP_SLOT, osrFrame.getByte(BLOCKSTACK_TOP_SLOT));
         } catch (FrameSlotTypeException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
@@ -421,6 +416,33 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    private static final int decodeBCI(int target) {
+        return (target >> 16) & 0xffff; // unsigned
+    }
+
+    private static final int decodeStackTop(int target) {
+        return ((target >> 4) & 0xfff) - 1;
+    }
+
+    private static final int decodeBlockstackTop(int target) {
+        return ((target & 0xf) - 1);
+    }
+
+    private static final int encodeBCI(int bci) {
+        return bci << 16;
+    }
+
+    private static final int encodeStackTop(int stackTop) {
+        return (stackTop + 1) << 4;
+    }
+
+    private static final int encodeBlockstackTop(int blockstackTop) {
+        return blockstackTop + 1;
+    }
+
+    /**
+     * @param target - encodes bci (16bit), stackTop (12bit), and blockstackTop (4bit)
+     */
     @Override
     @BytecodeInterpreterSwitch
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
@@ -436,11 +458,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object[] freelocals = (Object[])FrameUtil.getObjectSafe(frame, FREE_SLOT);
         long[] blockstack = (long[])FrameUtil.getObjectSafe(frame, BLOCKSTACK_SLOT);
 
-        int blockstackTop = FrameUtil.getByteSafe(frame, BLOCKSTACK_TOP_SLOT);
-
         int loopCount = 0;
-        int stackTop = (short)target;
-        int bci = (target >> Short.SIZE) & 0xffff;
+        int stackTop = decodeStackTop(target);
+        int blockstackTop = decodeBlockstackTop(target);
+        int bci = decodeBCI(target);
         int oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
 
         CompilerAsserts.partialEvaluationConstant(bytecode);
@@ -1160,7 +1181,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                 loopCount++;
                             }
                             if (BytecodeOSRNode.pollOSRBackEdge(this)) {
-                                Object osrResult = BytecodeOSRNode.tryOSR(this, (oparg << Short.SIZE) | stackTop, originalArgs, null, frame);
+                                Object osrResult = BytecodeOSRNode.tryOSR(this, encodeBCI(oparg) | encodeStackTop(stackTop) | encodeBlockstackTop(blockstackTop), originalArgs, null, frame);
                                 if (osrResult != null) {
                                     if (CompilerDirectives.inInterpreter()) {
                                         LoopNode.reportLoopCount(this, loopCount);
