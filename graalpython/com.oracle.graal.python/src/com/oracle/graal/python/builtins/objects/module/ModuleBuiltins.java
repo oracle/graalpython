@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsClinicProvi
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -87,6 +88,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -273,25 +275,41 @@ public class ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ModuleGetattritbuteNode extends PythonBinaryBuiltinNode {
         @Specialization
+        Object getattributeString(VirtualFrame frame, PythonModule self, String key,
+                        @Shared("getattr") @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
+                        @Shared("handleException") @Cached HandleGetattrExceptionNode handleException) {
+            try {
+                return objectGetattrNode.call(frame, self, key);
+            } catch (PException e) {
+                return handleException.execute(frame, self, key, e);
+            }
+        }
+
+        @Specialization
         Object getattribute(VirtualFrame frame, PythonModule self, Object keyObj,
-                        @Cached IsBuiltinClassProfile isAttrError,
-                        @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
-                        @Cached ReadAttributeFromObjectNode readGetattr,
-                        @Cached ConditionProfile customGetAttr,
-                        @Cached CallNode callNode,
-                        @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                         @Cached CastToJavaStringNode castKeyToStringNode,
-                        @Cached CastToJavaStringNode castNameToStringNode) {
+                        @Shared("getattr") @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
+                        @Shared("handleException") @Cached HandleGetattrExceptionNode handleException) {
             String key;
             try {
                 key = castKeyToStringNode.execute(keyObj);
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
+            return getattributeString(frame, self, key, objectGetattrNode, handleException);
+        }
 
-            try {
-                return objectGetattrNode.call(frame, self, key);
-            } catch (PException e) {
+        protected static abstract class HandleGetattrExceptionNode extends PNodeWithRaise {
+            public abstract Object execute(VirtualFrame frame, PythonModule self, String key, PException e);
+
+            @Specialization
+            Object getattribute(VirtualFrame frame, PythonModule self, String key, PException e,
+                            @Cached IsBuiltinClassProfile isAttrError,
+                            @Cached ReadAttributeFromObjectNode readGetattr,
+                            @Cached ConditionProfile customGetAttr,
+                            @Cached CallNode callNode,
+                            @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
+                            @Cached CastToJavaStringNode castNameToStringNode) {
                 e.expect(PythonBuiltinClassType.AttributeError, isAttrError);
                 Object getAttr = readGetattr.execute(self, __GETATTR__);
                 if (customGetAttr.profile(getAttr != PNone.NO_VALUE)) {
