@@ -330,9 +330,15 @@ static int augment_ListCheck(HPyContext ctx, HPy obj) {
     }
 }
 
+#define MAX_UNICODE 0x10ffff
 
 static HPy augment_UnicodeFromWideChar(HPyContext ctx, const wchar_t *u, HPy_ssize_t size) {
     if (u == NULL && size != 0) {
+        return HPy_NULL;
+    }
+
+    if (sizeof(wchar_t) != sizeof(uint32_t)) {
+        HPyErr_SetString(ctx, ctx->h_SystemError, "unsupported size of type wchar_t");
         return HPy_NULL;
     }
 
@@ -341,58 +347,25 @@ static HPy augment_UnicodeFromWideChar(HPyContext ctx, const wchar_t *u, HPy_ssi
     }
 
     if (size > INT32_MAX) {
-        /* TODO(fa): error message */
+        HPyErr_SetString(ctx, ctx->h_SystemError, "wchar_t array is too large");
         return HPy_NULL;
     }
 
-    /* If the Unicode data is known at construction time, we can apply
-       some optimizations which share commonly used objects. */
-
-    /* Optimization for empty strings */
-    /* TODO(fa)
-    if (size == 0)
-        _Py_RETURN_UNICODE_EMPTY();
-    */
-
-    /* Single character Unicode objects in the Latin-1 range are
-       shared when using this constructor */
-    /* TODO(fa)
-    if (size == 1 && (Py_UCS4)*u < 256)
-        return get_latin1_char((unsigned char)*u);
-    */
-
-    /* If not empty and not single character, copy the Unicode data
-       into the new object */
     uint32_t maxchar = 0;
     wchar_t ch;
     HPy_ssize_t i;
     for (i = 0; i < size; i++) {
-#if SIZEOF_WCHAR_T == 2
-        if (Py_UNICODE_IS_HIGH_SURROGATE(iter[0])
-            && (iter+1) < end
-            && Py_UNICODE_IS_LOW_SURROGATE(iter[1]))
-        {
-            ch = Py_UNICODE_JOIN_SURROGATES(iter[0], iter[1]);
-            ++(*num_surrogates);
-            iter += 2;
-        }
-        else
-#endif
         ch = u[i];
         if (ch > maxchar) {
             maxchar = ch;
-            /* TODO(fa): error
-            if (*maxchar > MAX_UNICODE) {
-                PyErr_Format(PyExc_ValueError,
-                             "character U+%x is not in range [U+0000; U+10ffff]",
-                             ch);
-                return -1;
+            if (maxchar > MAX_UNICODE) {
+                HPyErr_SetString(ctx, ctx->h_ValueError, "character is not in range [U+0000; U+10ffff]");
+                return HPy_NULL;
             }
-            */
         }
     }
 
-    if (maxchar < 65536) {
+    if (maxchar < UINT16_MAX) {
         jarray jCharArray = (*jniEnv)->NewCharArray(jniEnv, (jsize) size);
         jchar *content = (*jniEnv)->GetPrimitiveArrayCritical(jniEnv, jCharArray, 0);
         HPy_ssize_t i;
