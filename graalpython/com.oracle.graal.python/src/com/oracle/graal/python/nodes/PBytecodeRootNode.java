@@ -252,7 +252,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             // CPython has an array of object called "localsplus" with everything. We use separate
             // arrays.
             Object[] stack = new Object[stacksize];
-            Block[] handlerBlocks = new Block[MAXBLOCKS];
+            long[] handlerBlocks = new long[MAXBLOCKS];
             Object[] args = frame.getArguments();
             Object[] fastlocals = new Object[varnames.length];
             System.arraycopy(args, PArguments.USER_ARGUMENTS_OFFSET, fastlocals, 0, PArguments.getUserArgumentLength(args));
@@ -344,7 +344,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object[] fast = new Object[varnames.length];
         Object[] cell = new Object[cellvars.length];
         Object[] free = new Object[freevars.length];
-        Block[] blockstack = new Block[MAXBLOCKS];
+        long[] blockstack = new long[MAXBLOCKS];
         frame.setObject(STACK_SLOT, stack);
         frame.setObject(FAST_SLOT, fast);
         frame.setObject(CELL_SLOT, cell);
@@ -355,7 +355,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             copyLocals(fast, (Object[])parentFrame.getObject(FAST_SLOT));
             copyCellvars(cell, (Object[])parentFrame.getObject(CELL_SLOT));
             copyFreevars(free, (Object[])parentFrame.getObject(FREE_SLOT));
-            copyBlocks(blockstack, (Block[])parentFrame.getObject(BLOCKSTACK_SLOT));
+            copyBlocks(blockstack, (long[])parentFrame.getObject(BLOCKSTACK_SLOT));
             frame.setByte(BLOCKSTACK_TOP_SLOT, parentFrame.getByte(BLOCKSTACK_TOP_SLOT));
         } catch (FrameSlotTypeException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
@@ -369,12 +369,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             Object[] fast = (Object[])parentFrame.getObject(FAST_SLOT);
             Object[] cell = (Object[])parentFrame.getObject(CELL_SLOT);
             Object[] free = (Object[])parentFrame.getObject(FREE_SLOT);
-            Block[] blockstack = (Block[])parentFrame.getObject(BLOCKSTACK_SLOT);
+            long[] blockstack = (long[])parentFrame.getObject(BLOCKSTACK_SLOT);
             Object[] osrStack = (Object[])osrFrame.getObject(STACK_SLOT);
             Object[] osrFast = (Object[])osrFrame.getObject(FAST_SLOT);
             Object[] osrCell = (Object[])osrFrame.getObject(CELL_SLOT);
             Object[] osrFree = (Object[])osrFrame.getObject(FREE_SLOT);
-            Block[] osrBlockstack = (Block[])osrFrame.getObject(BLOCKSTACK_SLOT);
+            long[] osrBlockstack = (long[])osrFrame.getObject(BLOCKSTACK_SLOT);
             copyStack(stack, osrStack);
             copyLocals(fast, osrFast);
             copyCellvars(cell, osrCell);
@@ -415,22 +415,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @ExplodeLoop
-    private final void copyBlocks(Block[] dst, Block[] src) {
+    private final void copyBlocks(long[] dst, long[] src) {
         for (int i = 0; i < MAXBLOCKS; i++) {
             dst[i] = src[i];
-        }
-    }
-
-    @ValueType
-    private static final class Block {
-        private final int type;
-        private final int handlerBCI;
-        private final int stackTop;
-
-        Block(int type, int handlerBCI, int stackTop) {
-            this.type = type;
-            this.handlerBCI = handlerBCI;
-            this.stackTop = stackTop;
         }
     }
 
@@ -447,7 +434,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object[] fastlocals = (Object[])FrameUtil.getObjectSafe(frame, FAST_SLOT);
         Object[] celllocals = (Object[])FrameUtil.getObjectSafe(frame, CELL_SLOT);
         Object[] freelocals = (Object[])FrameUtil.getObjectSafe(frame, FREE_SLOT);
-        Block[] blockstack = (Block[])FrameUtil.getObjectSafe(frame, BLOCKSTACK_SLOT);
+        long[] blockstack = (long[])FrameUtil.getObjectSafe(frame, BLOCKSTACK_SLOT);
 
         int blockstackTop = FrameUtil.getByteSafe(frame, BLOCKSTACK_TOP_SLOT);
 
@@ -862,8 +849,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         throw new RuntimeException("yield bytecodes");
                     case POP_EXCEPT:
                         {
-                            Block b = blockstack[blockstackTop--];
-                            assert b.type == EXCEPT_HANDLER;
+                            assert EXCEPT_HANDLER == (blockstack[blockstackTop] >> 32);
+                            blockstackTop--;
                             // pop the previous exception info (probably wasn't even materialized)
                             stack[stackTop--] = null;
                             stack[stackTop--] = null;
@@ -871,7 +858,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     case POP_BLOCK:
-                        blockstack[blockstackTop--] = null;
+                        blockstackTop--;
                         break;
                     case POP_FINALLY:
                         {
@@ -891,9 +878,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                 // first, pop the remaining two current exc_info entries
                                 stack[stackTop--] = null;
                                 stack[stackTop--] = null;
-                                assert blockstack[blockstackTop].type == EXCEPT_HANDLER;
-                                assert stackTop == blockstack[blockstackTop].stackTop + 3;
-                                blockstack[blockstackTop--] = null;
+                                assert EXCEPT_HANDLER == (blockstack[blockstackTop] >> 32);
+                                assert stackTop == (short)blockstack[blockstackTop] + 3;
+                                blockstackTop--;
                                 // just pop the previously handled exception also, since we can
                                 // recover it differently than CPython (I think...)
                                 stack[stackTop--] = null;
@@ -1214,8 +1201,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     case SETUP_FINALLY:
                         {
-                            // TODO: remember how many blocks we needed and pre-allocate?
-                            blockstack[++blockstackTop] = new Block(SETUP_FINALLY, i + oparg, stackTop);
+                            blockstack[++blockstackTop] = ((long)SETUP_FINALLY << 32) | ((i + oparg) << 16) | (short)stackTop;
                         }
                         break;
                     case BEFORE_ASYNC_WITH:
@@ -1223,7 +1209,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case SETUP_WITH:
                     case WITH_CLEANUP_START:
                     case WITH_CLEANUP_FINISH:
-                        throw new RuntimeException("loop / with / finally blocks");
+                        throw new RuntimeException("with blocks");
                     case LOAD_METHOD:
                     case CALL_METHOD:
                         throw new RuntimeException("_METHOD bytecodes");
@@ -1372,22 +1358,23 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             } catch (PException e) {
                 int handlerIdx = -1;
                 while (blockstackTop >= 0) {
-                    Block block = blockstack[blockstackTop--];
-
-                    if (block.type == EXCEPT_HANDLER) {
+                    long block = blockstack[blockstackTop--];
+                    int type = (int)(block >> 32);
+                    int blockStackTop = (short)block;
+                    if (type == EXCEPT_HANDLER) {
                         // unwind except handler
-                        while (stackTop > block.stackTop) {
+                        while (stackTop > blockStackTop) {
                             stack[stackTop--] = null;
                         }
                         continue;
                     }
                     // unwind block
-                    while (stackTop > block.stackTop) {
+                    while (stackTop > blockStackTop) {
                         stack[stackTop--] = null;
                     }
-                    if (block.type == SETUP_FINALLY) {
-                        handlerIdx = block.handlerBCI + 2;
-                        blockstack[++blockstackTop] = new Block(EXCEPT_HANDLER, -1, stackTop);
+                    if (type == SETUP_FINALLY) {
+                        handlerIdx = (((int)block >> 16) & 0xffff) + 2;
+                        blockstack[++blockstackTop] = ((long)EXCEPT_HANDLER << 32) | (short)stackTop;
                         // push the exception that is being handled
                         // would use GetCaughtExceptionNode to reify the currently handled exception.
                         // but we don't want to do that if it is not needed
@@ -1405,15 +1392,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 if (handlerIdx >= 0) {
                     i = handlerIdx;
                     oparg = Byte.toUnsignedInt(bytecode[i + 1]);
-                    continue;
+                    // continue;
                 } else {
                     throw e;
                 }
             } catch (AbstractTruffleException e) {
+                throw e;
             } catch (ControlFlowException | ThreadDeath e) {
                 // do not handle ThreadDeath, result of TruffleContext.closeCancelled()
                 throw e;
             } catch (Exception | StackOverflowError | AssertionError e) {
+                throw e;
             }
         }
     }
