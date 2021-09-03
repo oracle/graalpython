@@ -571,9 +571,7 @@ public class TypeBuiltins extends PythonBuiltins {
         private final BranchProfile isDescProfile = BranchProfile.create();
         private final BranchProfile hasValueProfile = BranchProfile.create();
         private final BranchProfile errorProfile = BranchProfile.create();
-        private final ConditionProfile getClassProfile = ConditionProfile.createBinaryProfile();
 
-        @Child private LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.create();
         @Child private LookupInheritedSlotNode valueGetLookup;
         @Child private LookupCallableSlotInMRONode lookupGetNode;
         @Child private LookupCallableSlotInMRONode lookupSetNode;
@@ -587,6 +585,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization
         protected Object doIt(VirtualFrame frame, Object object, Object keyObj,
                         @Cached GetClassNode getClassNode,
+                        @Cached LookupAttributeInMRONode.Dynamic lookup,
                         @Cached CastToJavaStringNode castToString) {
             String key;
             try {
@@ -615,7 +614,7 @@ public class TypeBuiltins extends PythonBuiltins {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             invokeGet = insert(CallTernaryMethodNode.create());
                         }
-                        return invokeGet.execute(frame, get, descr, object, getPythonClass(type, getClassProfile));
+                        return invokeGet.execute(frame, get, descr, object, type);
                     }
                 }
             }
@@ -642,7 +641,7 @@ public class TypeBuiltins extends PythonBuiltins {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         invokeGet = insert(CallTernaryMethodNode.create());
                     }
-                    return invokeGet.execute(frame, get, descr, object, getPythonClass(type, getClassProfile));
+                    return invokeGet.execute(frame, get, descr, object, type);
                 }
             }
             errorProfile.enter();

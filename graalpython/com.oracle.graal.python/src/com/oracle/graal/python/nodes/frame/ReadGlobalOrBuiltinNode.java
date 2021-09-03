@@ -64,11 +64,10 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "read_global")
 public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements ReadNode, GlobalNode {
-    @Child private ReadAttributeFromObjectNode readFromModuleNode = ReadAttributeFromObjectNode.create();
+    @CompilationFinal private boolean wasReadFromModule = false;
     @Child private ReadBuiltinNode readFromBuiltinsNode;
 
     protected final String attributeId;
-    protected final ConditionProfile isGlobalProfile = ConditionProfile.createBinaryProfile();
 
     protected ReadGlobalOrBuiltinNode(String attributeId) {
         this.attributeId = attributeId;
@@ -85,6 +84,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
 
     @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isModule(cachedGlobals)"}, assumptions = "singleContextAssumption()", limit = "1")
     protected Object readGlobalCached(@SuppressWarnings("unused") VirtualFrame frame,
+                    @Shared("readFromModule") @Cached ReadAttributeFromObjectNode readFromModuleNode,
                     @Cached(value = "getGlobals(frame)", weak = true) Object cachedGlobals) {
         Object result = readFromModuleNode.execute(cachedGlobals, attributeId);
         return returnGlobalOrBuiltin(result);
@@ -92,6 +92,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
 
     @Specialization(guards = "isModule(globals)", replaces = "readGlobalCached")
     protected Object readGlobal(@SuppressWarnings("unused") VirtualFrame frame,
+                    @Shared("readFromModule") @Cached ReadAttributeFromObjectNode readFromModuleNode,
                     @Bind("getGlobals(frame)") Object globals) {
         Object result = readFromModuleNode.execute(globals, attributeId);
         return returnGlobalOrBuiltin(result);
@@ -141,22 +142,9 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 
-    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isDict(cachedGlobals)"}, rewriteOn = PException.class, assumptions = "singleContextAssumption()", limit = "1")
-    protected Object readGlobalDictCached(VirtualFrame frame,
-                    @Cached(value = "getGlobals(frame)", weak = true) Object cachedGlobals,
-                    @Shared("getItemNode") @Cached GetItemNode getItemNode) {
-        return returnGlobalOrBuiltin(getItemNode.execute(frame, cachedGlobals, attributeId));
-    }
-
-    @Specialization(guards = "isDict(getGlobals(frame))", rewriteOn = PException.class, replaces = "readGlobalDictCached")
-    protected Object readGlobalDict(VirtualFrame frame,
-                    @Shared("getItemNode") @Cached GetItemNode getItemNode) {
-        return returnGlobalOrBuiltin(getItemNode.execute(frame, PArguments.getGlobals(frame), attributeId));
-    }
-
-    @Specialization(guards = "isDict(getGlobals(frame))", replaces = {"readGlobalDict", "readGlobalDictCached"})
-    protected Object readGlobalDictWithException(VirtualFrame frame,
-                    @Shared("getItemNode") @Cached GetItemNode getItemNode,
+    @Specialization(guards = "isDict(getGlobals(frame))")
+    protected Object readGlobalDictGeneric(VirtualFrame frame,
+                    @Cached GetItemNode getItemNode,
                     @Cached IsBuiltinClassProfile errorProfile) {
         try {
             Object result = getItemNode.execute(frame, PArguments.getGlobals(frame), attributeId);
@@ -168,7 +156,11 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     }
 
     private Object returnGlobalOrBuiltin(Object result) {
-        if (isGlobalProfile.profile(result != PNone.NO_VALUE)) {
+        if (result != PNone.NO_VALUE) {
+            if (!wasReadFromModule) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                wasReadFromModule = true;
+            }
             return result;
         } else {
             if (readFromBuiltinsNode == null) {
