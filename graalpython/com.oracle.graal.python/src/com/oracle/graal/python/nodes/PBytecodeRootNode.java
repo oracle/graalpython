@@ -1377,41 +1377,23 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 // TODO: avoid extra read
                 // if (bytecode[bci] >= HAVE_ARGUMENT) oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
             } catch (PException e) {
-                int handlerIdx = -1;
-                while (blockstackTop >= 0) {
-                    long block = blockstack[blockstackTop--];
-                    int type = (int)(block >> 32);
-                    int blockStackTop = (short)block;
-                    if (type == EXCEPT_HANDLER) {
-                        // unwind except handler
-                        while (stackTop > blockStackTop) {
-                            stack[stackTop--] = null;
-                        }
-                        continue;
-                    }
-                    // unwind block
-                    while (stackTop > blockStackTop) {
-                        stack[stackTop--] = null;
-                    }
-                    if (type == SETUP_FINALLY) {
-                        handlerIdx = (((int)block >> 16) & 0xffff) + 2;
-                        blockstack[++blockstackTop] = ((long)EXCEPT_HANDLER << 32) | (short)stackTop;
-                        // push the exception that is being handled
-                        // would use GetCaughtExceptionNode to reify the currently handled exception.
-                        // but we don't want to do that if it is not needed
-                        stack[++stackTop] = UNREIFIED_EXC_TRACEBACK;
-                        stack[++stackTop] = UNREIFIED_EXC_VALUE;
-                        stack[++stackTop] = UNREIFIED_EXC_TYPE;
-                        // push the exception currently being raised
-                        stack[++stackTop] = UNREIFIED_EXC_TRACEBACK;
-                        stack[++stackTop] = UNREIFIED_EXC_VALUE;
-                        stack[++stackTop] = e; // just push the exception, for the handler to look at
-                        // jump to handler
-                        break;
-                    }
-                }
-                if (handlerIdx >= 0) {
-                    bci = handlerIdx;
+                int newTarget = findHandler(stack, blockstack, stackTop, blockstackTop);
+                stackTop = decodeStackTop(newTarget);
+                blockstackTop = decodeBlockstackTop(newTarget);
+                int handlerBCI = decodeBCI(newTarget);
+                if (handlerBCI != 0) {
+                    // push the exception that is being handled
+                    // would use GetCaughtExceptionNode to reify the currently handled exception.
+                    // but we don't want to do that if it is not needed
+                    stack[++stackTop] = UNREIFIED_EXC_TRACEBACK;
+                    stack[++stackTop] = UNREIFIED_EXC_VALUE;
+                    stack[++stackTop] = UNREIFIED_EXC_TYPE;
+                    // push the exception currently being raised
+                    stack[++stackTop] = UNREIFIED_EXC_TRACEBACK;
+                    stack[++stackTop] = UNREIFIED_EXC_VALUE;
+                    stack[++stackTop] = e; // just push the exception, for the handler to look at
+
+                    bci = handlerBCI;
                     oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
                     // continue;
                 } else {
@@ -1426,6 +1408,55 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 throw e;
             }
         }
+    }
+
+    @ExplodeLoop
+    private static final int findHandler(Object[] stack, long[] blockstack, int stackTop, int blockstackTop) {
+        CompilerAsserts.partialEvaluationConstant(stackTop);
+        CompilerAsserts.partialEvaluationConstant(blockstackTop);
+        CompilerDirectives.ensureVirtualized(stack);
+        CompilerDirectives.ensureVirtualized(blockstack);
+        int newBlockstackTop = blockstackTop;
+        int newStackTop = stackTop;
+        for (int i = blockstackTop; i >= 0; i--) {
+            long block = blockstack[i];
+            int type = (int)(block >> 32);
+            int stackTopBeforeBlock = (short)block;
+            if (type == EXCEPT_HANDLER) {
+                newStackTop = unwindExceptHandler(stack, newStackTop, stackTopBeforeBlock);
+            } else {
+                newStackTop = unwindBlock(stack, newStackTop, stackTopBeforeBlock);
+                if (type == SETUP_FINALLY) {
+                    blockstack[i] = ((long)EXCEPT_HANDLER << 32) | (short)newStackTop;
+                    // return handler target bci
+                    int handlerBCI = (((int)block >> 16) & 0xffff) + 2;
+                    return encodeBCI(handlerBCI) | encodeStackTop(newStackTop) | encodeBlockstackTop(i);
+                }
+            }
+        }
+        return encodeBCI(0) | encodeStackTop(newStackTop) | encodeBlockstackTop(-1);
+    }
+
+    @ExplodeLoop
+    private static final int unwindExceptHandler(Object[] stack, int stackTop, int stackTopBeforeBlock) {
+        CompilerAsserts.partialEvaluationConstant(stackTop);
+        CompilerAsserts.partialEvaluationConstant(stackTopBeforeBlock);
+        CompilerDirectives.ensureVirtualized(stack);
+        for (int i = stackTopBeforeBlock; i > stackTop; i--) {
+            stack[i] = null;
+        }
+        return stackTopBeforeBlock;
+    }
+
+    @ExplodeLoop
+    private static final int unwindBlock(Object[] stack, int stackTop, int stackTopBeforeBlock) {
+        CompilerAsserts.partialEvaluationConstant(stackTop);
+        CompilerAsserts.partialEvaluationConstant(stackTopBeforeBlock);
+        CompilerDirectives.ensureVirtualized(stack);
+        for (int i = stackTopBeforeBlock; i > stackTop; i--) {
+            stack[i] = null;
+        }
+        return stackTopBeforeBlock;
     }
 
     private PKeyword[] dictToPKeywords(PDict kwDict, int nodeIndex) {
