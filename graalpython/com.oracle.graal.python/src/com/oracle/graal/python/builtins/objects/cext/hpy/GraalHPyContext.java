@@ -165,7 +165,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
 import com.oracle.graal.python.lib.CanBeDoubleNodeGen;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNodeGen;
 import com.oracle.graal.python.lib.PyIndexCheckNodeGen;
@@ -193,6 +192,7 @@ import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -761,6 +761,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     @CompilationFinal private RootCallTarget referenceCleanerCallTarget;
     private Thread hpyReferenceCleanerThread;
 
+    private PythonObjectSlowPathFactory slowPathFactory;
+
     public GraalHPyContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, GraalHPyConversionNodeSupplier.HANDLE);
         this.hpyContextMembers = createMembers(context, getName());
@@ -1284,6 +1286,17 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
     }
 
+    /**
+     * Returns a Python object factory that should only be used on the slow path. The factory object
+     * is initialized lazily.
+     */
+    private PythonObjectSlowPathFactory factory() {
+        if (slowPathFactory == null) {
+            slowPathFactory = new PythonObjectSlowPathFactory(getContext().getAllocationReporter());
+        }
+        return slowPathFactory;
+    }
+
     @SuppressWarnings("static-method")
     public final long ctxFloatFromDouble(double value) {
         Counter.UpcallFloatFromDouble.increment();
@@ -1353,14 +1366,17 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             long basicSize = clazz.basicSize;
             if (basicSize == -1) {
                 // create the managed Python object
-                pythonObject = new PythonObject(clazz, clazz.getInstanceShape());
+                pythonObject = factory().createPythonObject(clazz, clazz.getInstanceShape());
             } else {
+                /*
+                 * Since this is a JNI upcall method, we know that (1) we are not running in some
+                 * managed mode, and (2) the data will be used in real native code. Hence, we can
+                 * immediately allocate native memory via Unsafe.
+                 */
                 long dataPtr = unsafe.allocateMemory(basicSize);
                 unsafe.setMemory(dataPtr, basicSize, (byte) 0);
                 unsafe.putLong(dataOutVar, dataPtr);
-                // create the managed Python object
-                pythonObject = new PythonHPyObject(clazz, clazz.getInstanceShape(), dataPtr);
-                // we fully control this attribute; if it is there, it's always a long
+                pythonObject = factory().createPythonHPyObject(clazz, dataPtr);
                 Object destroyFunc = clazz.hpyDestroyFunc;
                 createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
             }
@@ -1370,7 +1386,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(this, 0, PythonBuiltinClassType.TypeError, "HPy_New arg 1 must be a type");
             }
             // TODO(fa): this should actually call __new__
-            pythonObject = new PythonObject(type, GetInstanceShapeNodeGen.getUncached().execute(type));
+            pythonObject = factory().createPythonObject(type);
         }
         return GraalHPyBoxing.boxHandle(createHandle(pythonObject).getId(this, ConditionProfile.getUncached()));
     }
@@ -1389,10 +1405,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 // allocate native space
                 long dataPtr = unsafe.allocateMemory(basicSize);
                 unsafe.setMemory(dataPtr, basicSize, (byte) 0);
-                pythonObject = new PythonHPyObject(clazz, clazz.getInstanceShape(), dataPtr);
+                pythonObject = factory().createPythonHPyObject(clazz, dataPtr);
             } else {
-                // create the managed Python object
-                pythonObject = new PythonObject(clazz, clazz.getInstanceShape());
+                pythonObject = factory().createPythonObject(clazz);
             }
             return GraalHPyBoxing.boxHandle(createHandle(pythonObject).getId(this, ConditionProfile.getUncached()));
         }
@@ -1416,14 +1431,14 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
     }
 
-    public final long ctxGetItemi(long handle, long lidx) {
+    public final long ctxGetItemi(long hCollection, long lidx) {
         Counter.UpcallGetItemI.increment();
         try {
-            // If handle 'hSequence' is a boxed int or double, the object is not subscriptable.
-            if (!GraalHPyBoxing.isBoxedHandle(handle)) {
+            // If handle 'hCollection' is a boxed int or double, the object is not subscriptable.
+            if (!GraalHPyBoxing.isBoxedHandle(hCollection)) {
                 throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, 0);
             }
-            Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
+            Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(hCollection)).getDelegate();
             Object clazz = GetClassNode.getUncached().execute(receiver);
             if (clazz == PythonBuiltinClassType.PList || clazz == PythonBuiltinClassType.PTuple) {
                 if (!PInt.isIntRange(lidx)) {
@@ -1577,7 +1592,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 return 1;
             }
             Object receiverType = GetClassNode.getUncached().execute(receiver);
-            return com.oracle.graal.python.builtins.objects.ints.PInt.intValue(LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.Int).execute(receiverType) != PNone.NO_VALUE);
+            return PInt.intValue(LookupCallableSlotInMRONode.getUncached(SpecialMethodSlot.Int).execute(receiverType) != PNone.NO_VALUE);
         } catch (PException e) {
             HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
             return 0;
@@ -1607,10 +1622,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     public final int ctxListCheck(long handle) {
         Counter.UpcallListCheck.increment();
         if (GraalHPyBoxing.isBoxedHandle(handle)) {
-
             Object obj = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
             Object clazz = GetClassNode.getUncached().execute(obj);
-            return com.oracle.graal.python.builtins.objects.ints.PInt.intValue(clazz == PythonBuiltinClassType.PList || IsSubtypeNodeGen.getUncached().execute(clazz, PythonBuiltinClassType.PList));
+            return PInt.intValue(clazz == PythonBuiltinClassType.PList || IsSubtypeNodeGen.getUncached().execute(clazz, PythonBuiltinClassType.PList));
         } else {
             return 0;
         }
