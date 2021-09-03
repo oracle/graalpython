@@ -396,14 +396,14 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetAttributeNode extends PythonBinaryBuiltinNode {
-        private final BranchProfile hasDescProfile = BranchProfile.create();
-        private final BranchProfile isDescProfile = BranchProfile.create();
-        private final BranchProfile hasValueProfile = BranchProfile.create();
-        private final BranchProfile errorProfile = BranchProfile.create();
+        @CompilationFinal private int profileFlags = 0;
+        private static final int HAS_DESCR = 1;
+        private static final int HAS_DATA_DESCR = 2;
+        private static final int HAS_VALUE = 4;
+        private static final int HAS_NO_VALUE = 8;
         private final ConditionProfile typeIsObjectProfile = ConditionProfile.createBinaryProfile();
         private final ConditionProfile getClassProfile = ConditionProfile.createBinaryProfile();
 
-        @Child private LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.create();
         @Child private LookupCallableSlotInMRONode lookupGetNode;
         @Child private LookupCallableSlotInMRONode lookupSetNode;
         @Child private LookupCallableSlotInMRONode lookupDeleteNode;
@@ -413,6 +413,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(VirtualFrame frame, Object object, Object keyObj,
+                        @Cached LookupAttributeInMRONode.Dynamic lookup,
                         @Cached GetClassNode getClassNode,
                         @Cached CastToJavaStringNode castKeyToStringNode) {
             String key;
@@ -425,16 +426,24 @@ public class ObjectBuiltins extends PythonBuiltins {
             Object type = getClassNode.execute(object);
             Object descr = lookup.execute(type, key);
             Object dataDescClass = null;
-            if (descr != PNone.NO_VALUE) {
-                // acts as a branch profile
+            boolean hasDescr = descr != PNone.NO_VALUE;
+            if (hasDescr && (profileFlags & HAS_DESCR) == 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                profileFlags |= HAS_DESCR;
+            }
+            if (hasDescr) {
                 dataDescClass = getDescClass(descr);
                 Object delete = PNone.NO_VALUE;
                 Object set = lookupSet(dataDescClass);
                 if (set == PNone.NO_VALUE) {
                     delete = lookupDelete(dataDescClass);
                 }
-                if (set != PNone.NO_VALUE || delete != PNone.NO_VALUE) {
-                    isDescProfile.enter();
+                boolean hasDataDescr = set != PNone.NO_VALUE || delete != PNone.NO_VALUE;
+                if (hasDataDescr && (profileFlags & HAS_DATA_DESCR) == 0) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    profileFlags |= HAS_DATA_DESCR;
+                }
+                if (hasDataDescr) {
                     Object get = lookupGet(dataDescClass);
                     if (PGuards.isCallableOrDescriptor(get)) {
                         // Only override if __get__ is defined, too, for compatibility with CPython.
@@ -443,12 +452,19 @@ public class ObjectBuiltins extends PythonBuiltins {
                 }
             }
             Object value = readAttribute(object, key);
-            if (value != PNone.NO_VALUE) {
-                hasValueProfile.enter();
+            boolean hasValue = value != PNone.NO_VALUE;
+            if (hasValue && (profileFlags & HAS_VALUE) == 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                profileFlags |= HAS_VALUE;
+            }
+            if (hasValue) {
                 return value;
             }
-            if (descr != PNone.NO_VALUE) {
-                hasDescProfile.enter();
+            if ((profileFlags & HAS_NO_VALUE) == 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                profileFlags |= HAS_NO_VALUE;
+            }
+            if (hasDescr) {
                 if (object == PNone.NONE) {
                     if (descr instanceof PBuiltinFunction) {
                         // Special case for None object. We cannot call function.__get__(None,
@@ -464,7 +480,6 @@ public class ObjectBuiltins extends PythonBuiltins {
                     return dispatch(frame, object, getPythonClass(type, getClassProfile), descr, get);
                 }
             }
-            errorProfile.enter();
             throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
 
