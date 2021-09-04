@@ -96,7 +96,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class ZlibNodes {
 
-    /*- Return codes for the compression/decompression functions. 
+    /*- Return codes for the compression/decompression functions.
         Negative values are errors, positive values are used for special but normal events. */
     public static final int Z_OK = 0;
     public static final int Z_STREAM_END = 1;
@@ -439,7 +439,7 @@ public class ZlibNodes {
         @SuppressWarnings("unused")
         @Fallback
         void fallback(Object zst, int function, int err, NFIZlibSupport zlibSupport, boolean deallocate) {
-            throw PythonContext.get(this).getCore().raise(SystemError, "Unhandled Error!");
+            throw PRaiseNode.raiseUncached(this, SystemError, "Unhandled Error!");
         }
     }
 

@@ -35,7 +35,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -134,13 +133,11 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
             setByteItemNormalized(idx, (byte) value);
         } else if (value instanceof Integer) {
             if ((int) value < 0 || (int) value >= 256) {
-                CompilerDirectives.transferToInterpreter();
-                throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
+                throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
             }
             setByteItemNormalized(idx, ((Integer) value).byteValue());
         } else {
-            CompilerDirectives.transferToInterpreter();
-            throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+            throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.INTEGER_REQUIRED);
         }
     }
 

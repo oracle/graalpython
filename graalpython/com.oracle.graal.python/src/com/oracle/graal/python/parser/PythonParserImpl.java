@@ -44,6 +44,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
@@ -131,7 +132,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             node.accept(new SSTSerializerVisitor(dos));
             dos.close();
         } catch (IOException e) {
-            throw errorCallback.getContext().getCore().raise(PythonBuiltinClassType.ValueError, "Error during serialization: %s", e.getMessage());
+            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.ValueError, "Error during serialization: %s", e.getMessage());
         }
 
         return baos.toByteArray();
@@ -195,7 +196,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             // Just to be sure that the serialization version is ok.
             byte version = dis.readByte();
             if (version != SerializationUtils.VERSION) {
-                throw errorCallback.raise(PythonBuiltinClassType.ValueError, "Bad data of serialization");
+                throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.ValueError, "Bad data of serialization");
             }
             String name = decodeHome(dis.readUTF()).intern();
             String path = decodeHome(dis.readUTF()).intern();
@@ -212,7 +213,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             }
             sstNode = new SSTDeserializer(dis, globalScope, offset).readNode();
         } catch (IOException e) {
-            throw errorCallback.raise(PythonBuiltinClassType.ValueError, "Is not possible get correct bytecode data %s, %s", e.getClass().getSimpleName(), e.getMessage());
+            throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.ValueError, "Is not possible get correct bytecode data %s, %s", e.getClass().getSimpleName(), e.getMessage());
         }
         if ((cellvars != null || freevars != null) && (sstNode instanceof SSTNodeWithScope)) {
             ScopeInfo rootScope = ((SSTNodeWithScope) sstNode).getScope();
@@ -418,7 +419,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         ParserErrorCallback collectWarnings = new ParserErrorCallback() {
 
             public RuntimeException raise(PythonBuiltinClassType type, String message, Object... args) {
-                return errors.raise(type, message, args);
+                return PRaiseNode.raiseUncached(null, type, message, args);
             }
 
             public RuntimeException raiseInvalidSyntax(ErrorType type, Source src, SourceSection section, String message, Object... arguments) {

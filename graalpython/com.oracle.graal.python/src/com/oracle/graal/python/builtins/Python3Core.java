@@ -732,18 +732,6 @@ public final class Python3Core implements ParserErrorCallback {
 
     @Override
     @TruffleBoundary
-    public PException raise(PythonBuiltinClassType type, String format, Object... args) {
-        PBaseException instance;
-        if (format != null) {
-            instance = objectFactory.createBaseException(type, format, args);
-        } else {
-            instance = objectFactory.createBaseException(type);
-        }
-        throw PException.fromObject(instance, null, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
-    }
-
-    @Override
-    @TruffleBoundary
     public void warn(PythonBuiltinClassType type, String format, Object... args) {
         WarningsModuleBuiltins.WarnNode.getUncached().warnFormat(null, null, type, 1, format, args);
     }

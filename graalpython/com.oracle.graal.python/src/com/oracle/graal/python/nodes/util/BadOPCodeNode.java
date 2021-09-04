@@ -43,8 +43,8 @@ package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
@@ -64,11 +64,7 @@ public class BadOPCodeNode extends PRootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        throw getContext().getCore().raise(PythonBuiltinClassType.SystemError, "unknown opcode");
-    }
-
-    private PythonContext getContext() {
-        return PythonContext.get(this);
+        throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, "unknown opcode");
     }
 
     @Override

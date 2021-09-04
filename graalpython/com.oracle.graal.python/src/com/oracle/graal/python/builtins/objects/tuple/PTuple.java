@@ -27,7 +27,7 @@ package com.oracle.graal.python.builtins.objects.tuple;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -119,7 +119,7 @@ public final class PTuple extends PSequence {
     @SuppressWarnings({"static-method", "unused"})
     public static void setItem(int idx, Object value) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        PythonContext.get(null).getCore().raise(PythonBuiltinClassType.PTuple, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT);
+        throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.PTuple, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT);
     }
 
     @ExportMessage

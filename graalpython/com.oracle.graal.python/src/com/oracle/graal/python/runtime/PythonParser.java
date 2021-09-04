@@ -99,8 +99,6 @@ public interface PythonParser {
     }
 
     public interface ParserErrorCallback {
-        RuntimeException raise(PythonBuiltinClassType type, String message, Object... args);
-
         default RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments) {
             return raiseInvalidSyntax(ErrorType.Generic, source, section, message, arguments);
         }

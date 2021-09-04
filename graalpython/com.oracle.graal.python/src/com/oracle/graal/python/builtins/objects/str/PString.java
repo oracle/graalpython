@@ -32,10 +32,10 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringMaterializeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -273,7 +273,7 @@ public final class PString extends PSequence {
     @SuppressWarnings({"static-method", "unused"})
     public static void setItem(int idx, Object value) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        PythonContext.get(null).getCore().raise(PythonBuiltinClassType.PString, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT);
+        throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.PString, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT);
     }
 
     @ExportMessage

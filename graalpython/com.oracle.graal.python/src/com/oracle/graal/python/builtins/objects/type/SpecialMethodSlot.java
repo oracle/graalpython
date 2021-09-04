@@ -760,7 +760,6 @@ public enum SpecialMethodSlot {
         }
         ReadAttributeFromDynamicObjectNode uncachedReadAttrNode = ReadAttributeFromDynamicObjectNode.getUncached();
         final Python3Core core = PythonContext.get(uncachedReadAttrNode).getCore();
-        PythonLanguage language = core.getLanguage();
         Object klass = klassIn;
         if (klass instanceof PythonBuiltinClassType) {
             PythonBuiltinClassType type = (PythonBuiltinClassType) klass;

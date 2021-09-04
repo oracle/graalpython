@@ -403,7 +403,7 @@ public final class BytesUtils {
 
             i++;
             if (i >= length) {
-                throw errors.raise(ValueError, ErrorMessages.TRAILING_S_IN_STR, "\\");
+                throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.TRAILING_S_IN_STR, "\\");
             }
 
             chr = string.charAt(i);
@@ -488,7 +488,7 @@ public final class BytesUtils {
                             // fall through
                         }
                     }
-                    throw errors.raise(ValueError, ErrorMessages.INVALID_ESCAPE_AT, "\\x", i);
+                    throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.INVALID_ESCAPE_AT, "\\x", i);
                 default:
                     if (regexMode) {
                         if (chr == 'g' || (chr >= '0' && chr <= '9')) {
@@ -497,7 +497,7 @@ public final class BytesUtils {
                             charList.append('\\');
                             charList.append(chr);
                         } else {
-                            throw errors.raise(ValueError, ErrorMessages.INVALID_ESCAPE_SEQ_AT, chr, i);
+                            throw PRaiseNode.raiseUncached(null, ValueError, ErrorMessages.INVALID_ESCAPE_SEQ_AT, chr, i);
                         }
                     } else {
                         charList.append('\\');

@@ -80,7 +80,7 @@ public final class EmptySequenceStorage extends SequenceStorage {
     public void setNewLength(int length) {
         if (length != 0) {
             CompilerDirectives.transferToInterpreter();
-            PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LIST_LENGTH_OUT_OF_RANGE);
+            throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LIST_LENGTH_OUT_OF_RANGE);
         }
     }
 

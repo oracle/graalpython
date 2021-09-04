@@ -415,7 +415,8 @@ public abstract class TypeNodes {
 
         @Specialization(replaces = {"doPythonClass", "doBuiltinClass", "doNativeClass"})
         @TruffleBoundary
-        static MroSequenceStorage doSlowPath(Object obj) {
+        static MroSequenceStorage doSlowPath(Object obj,
+                        @Cached PRaiseNode raise) {
             if (obj instanceof PythonManagedClass) {
                 return doPythonClass((PythonManagedClass) obj, ConditionProfile.getUncached(), ConditionProfile.getUncached(), PythonLanguage.get(null));
             } else if (obj instanceof PythonBuiltinClassType) {
@@ -429,7 +430,7 @@ public abstract class TypeNodes {
                         return (MroSequenceStorage) sequenceStorage;
                     }
                 }
-                throw PythonContext.get(getTypeMemeberNode).getCore().raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_MRO_OBJ);
+                throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_MRO_OBJ);
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
