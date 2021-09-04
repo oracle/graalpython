@@ -580,7 +580,7 @@ public final class PythonContext {
 
         /**
          * Decreases reference count for the given file descriptor.
-         * 
+         *
          * @return {@code true} if ref count was decreased, {@code false} if ref count isn't tracked
          *         anymore.
          */
@@ -1029,12 +1029,12 @@ public final class PythonContext {
 
     @TruffleBoundary
     public boolean reprEnter(Object item) {
-        return getThreadState(PythonLanguage.get(null)).reprEnter(item);
+        return getThreadState(language).reprEnter(item);
     }
 
     @TruffleBoundary
     public void reprLeave(Object item) {
-        getThreadState(PythonLanguage.get(null)).reprLeave(item);
+        getThreadState(language).reprLeave(item);
     }
 
     public long getPerfCounterStart() {

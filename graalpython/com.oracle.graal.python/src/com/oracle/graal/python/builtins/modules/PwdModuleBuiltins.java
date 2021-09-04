@@ -100,7 +100,7 @@ public class PwdModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
-        boolean hasGetpwentries = posixLib.hasGetpwentries(PythonContext.get(posixLib).getPosixSupport());
+        boolean hasGetpwentries = posixLib.hasGetpwentries(PythonContext.get(null).getPosixSupport());
         if (hasGetpwentries) {
             return PwdModuleBuiltinsFactory.getFactories();
         } else {

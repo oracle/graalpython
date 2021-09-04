@@ -950,8 +950,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
-            // get a new ID every time we deserialize the same filename in the same context
-            PythonContext context = PythonContext.get(factory);
+            // get a new ID every time we deserialize the same filename in the same context. We use
+            // slow-path context lookup, since this code is likely dominated by the deserialization
+            // time
+            PythonContext context = PythonContext.get(null);
             ByteBuffer.wrap(codeString).putLong(codeLen, context.getDeserializationId(fileName));
             int firstLineNo = readInt();
             byte[] lnoTab = readBytes();

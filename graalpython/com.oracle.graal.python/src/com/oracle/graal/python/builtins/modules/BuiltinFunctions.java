@@ -2119,7 +2119,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         private static Object buildJavaClass(Object func, String name, Object base) {
             PythonObjectLibrary factory = PythonObjectLibrary.getUncached();
-            Object module = PythonContext.get(factory).getCore().lookupBuiltinModule(BuiltinNames.__GRAALPYTHON__);
+            // uncached PythonContext get, since this code path is slow in any case
+            Object module = PythonContext.get(null).getCore().lookupBuiltinModule(BuiltinNames.__GRAALPYTHON__);
             Object buildFunction = factory.lookupAttribute(module, null, "build_java_class");
             return CallNode.getUncached().execute(buildFunction, func, name, base);
         }

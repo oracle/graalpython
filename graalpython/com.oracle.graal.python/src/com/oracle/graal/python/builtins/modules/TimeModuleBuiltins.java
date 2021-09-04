@@ -175,10 +175,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     private static final int TM_ISDST = 8; /* daylight saving time */
 
     @TruffleBoundary
-    private static Object[] getTimeStruct(long seconds, boolean local) {
+    private static Object[] getTimeStruct(PythonContext context, long seconds, boolean local) {
         Object[] timeStruct = new Object[11];
         Instant instant = Instant.ofEpochSecond(seconds);
-        ZoneId zone = (local) ? PythonContext.get(null).getEnv().getTimeZone() : ZoneId.of("GMT");
+        ZoneId zone = (local) ? context.getEnv().getTimeZone() : ZoneId.of("GMT");
         ZonedDateTime zonedDateTime = LocalDateTime.ofInstant(instant, zone).atZone(zone);
         timeStruct[TM_YEAR] = zonedDateTime.getYear();
         timeStruct[TM_MON] = zonedDateTime.getMonth().ordinal() + 1; /* Want January == 1 */
@@ -278,7 +278,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         public PTuple gmtime(VirtualFrame frame, Object seconds,
                         @Cached ToLongTime toLongTime) {
-            return factory().createStructSeq(STRUCT_TIME_DESC, getTimeStruct(toLongTime.execute(frame, seconds), false));
+            return factory().createStructSeq(STRUCT_TIME_DESC, getTimeStruct(PythonContext.get(this), toLongTime.execute(frame, seconds), false));
         }
     }
 
@@ -291,7 +291,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         public PTuple localtime(VirtualFrame frame, Object seconds,
                         @Cached ToLongTime toLongTime) {
-            return factory().createStructSeq(STRUCT_TIME_DESC, getTimeStruct(toLongTime.execute(frame, seconds), true));
+            return factory().createStructSeq(STRUCT_TIME_DESC, getTimeStruct(PythonContext.get(this), toLongTime.execute(frame, seconds), true));
         }
     }
 
@@ -913,13 +913,13 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < ELEMENT_COUNT; i++) {
                 integers[i] = asSizeNode.executeExact(frame, items[i]);
             }
-            return op(integers);
+            return op(getContext(), integers);
         }
 
         @TruffleBoundary
-        private static long op(int[] integers) {
+        private static long op(PythonContext context, int[] integers) {
             LocalDateTime localtime = LocalDateTime.of(integers[0], integers[1], integers[2], integers[3], integers[4], integers[5]);
-            ZoneId timeZone = PythonContext.get(null).getEnv().getTimeZone();
+            ZoneId timeZone = context.getEnv().getTimeZone();
             return localtime.toEpochSecond(timeZone.getRules().getOffset(localtime));
         }
     }

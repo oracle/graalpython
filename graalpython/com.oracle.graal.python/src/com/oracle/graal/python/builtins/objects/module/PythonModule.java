@@ -45,6 +45,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -100,9 +101,10 @@ public final class PythonModule extends PythonObject {
     /**
      * Only to be used during context creation
      */
+    @TruffleBoundary
     public static PythonModule createInternal(String moduleName) {
         PythonObjectFactory factory = PythonObjectFactory.getUncached();
-        PythonModule pythonModule = new PythonModule(PythonLanguage.get(factory), moduleName);
+        PythonModule pythonModule = new PythonModule(PythonLanguage.get(null), moduleName);
         PDict dict = factory.createDictFixedStorage(pythonModule);
         try {
             PythonObjectLibrary.getUncached().setDict(pythonModule, dict);

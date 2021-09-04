@@ -38,6 +38,8 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -73,9 +75,9 @@ public class JSONScannerBuiltins extends PythonBuiltins {
 
         @Child private HashingStorageLibrary mapLib = HashingStorageLibrary.getFactory().createDispatched(6);
 
-        private Shape tupleInstanceShape;
-        private Shape listInstanceShape;
-        private Shape dictInstanceShape;
+        @CompilationFinal private Shape tupleInstanceShape;
+        @CompilationFinal private Shape listInstanceShape;
+        @CompilationFinal private Shape dictInstanceShape;
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -83,16 +85,18 @@ public class JSONScannerBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         protected PTuple call(PJSONScanner self, String string, int idx) {
             if (tupleInstanceShape == null) {
-                tupleInstanceShape = PythonLanguage.get(null).getBuiltinTypeInstanceShape(PythonBuiltinClassType.PTuple);
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                tupleInstanceShape = PythonLanguage.get(this).getBuiltinTypeInstanceShape(PythonBuiltinClassType.PTuple);
             }
             if (listInstanceShape == null) {
-                listInstanceShape = PythonLanguage.get(null).getBuiltinTypeInstanceShape(PythonBuiltinClassType.PList);
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                listInstanceShape = PythonLanguage.get(this).getBuiltinTypeInstanceShape(PythonBuiltinClassType.PList);
             }
             if (dictInstanceShape == null) {
-                dictInstanceShape = PythonLanguage.get(null).getBuiltinTypeInstanceShape(PythonBuiltinClassType.PDict);
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                dictInstanceShape = PythonLanguage.get(this).getBuiltinTypeInstanceShape(PythonBuiltinClassType.PDict);
             }
             IntRef nextIdx = new IntRef();
             Object result = scanOnceUnicode(self, string, idx, nextIdx);
@@ -358,6 +362,7 @@ public class JSONScannerBuiltins extends PythonBuiltins {
             }
         }
 
+        @TruffleBoundary
         private Object scanOnceUnicode(PJSONScanner scanner, String string, int idx, IntRef nextIdx) {
             /*
              * Read one JSON term (of any kind) from PyUnicode pystr. idx is the index of the first

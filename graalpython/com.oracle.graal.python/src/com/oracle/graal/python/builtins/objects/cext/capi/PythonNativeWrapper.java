@@ -123,17 +123,16 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         return handleValidAssumption;
     }
 
-    protected static Assumption singleContextAssumption(Node node) {
-        return PythonLanguage.get(node).singleContextAssumption;
+    protected static Assumption singleContextAssumption() {
+        return PythonLanguage.get(null).singleContextAssumption;
     }
 
     @ExportMessage(name = "getDelegate")
     protected static class GetDelegate {
-        @Specialization(guards = {"cachedWrapper == wrapper", "delegate != null"}, assumptions = "singleContextAssumption(lib)")
+        @Specialization(guards = {"cachedWrapper == wrapper", "delegate != null"}, assumptions = "singleContextAssumption()")
         protected static Object getCachedDel(@SuppressWarnings("unused") PythonNativeWrapper wrapper,
                         @SuppressWarnings("unused") @Cached(value = "wrapper", weak = true) PythonNativeWrapper cachedWrapper,
-                        @Cached(value = "wrapper.getDelegatePrivate()", weak = true) Object delegate,
-                        @SuppressWarnings("unused") @CachedLibrary("delegate") InteropLibrary lib) {
+                        @Cached(value = "wrapper.getDelegatePrivate()", weak = true) Object delegate) {
             return delegate;
         }
 
@@ -154,12 +153,11 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
     @ExportMessage(name = "getNativePointer")
     protected static class GetNativePointer {
-        @Specialization(guards = {"cachedWrapper == wrapper", "nativePointer != null"}, assumptions = {"singleContextAssumption(lib)", "cachedAssumption"})
+        @Specialization(guards = {"cachedWrapper == wrapper", "nativePointer != null"}, assumptions = {"singleContextAssumption()", "cachedAssumption"})
         protected static Object getCachedPtr(@SuppressWarnings("unused") PythonNativeWrapper wrapper,
                         @SuppressWarnings("unused") @Cached(value = "wrapper", weak = true) PythonNativeWrapper cachedWrapper,
                         @SuppressWarnings("unused") @Cached("wrapper.getHandleValidAssumption()") Assumption cachedAssumption,
-                        @Cached(value = "wrapper.getNativePointerPrivate()", weak = true) Object nativePointer,
-                        @SuppressWarnings("unused") @CachedLibrary("nativePointer") InteropLibrary lib) {
+                        @Cached(value = "wrapper.getNativePointerPrivate()", weak = true) Object nativePointer) {
             return nativePointer;
         }
 
@@ -184,12 +182,11 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
     @ExportMessage(name = "isNative")
     protected static class IsNative {
-        @Specialization(guards = {"cachedWrapper == wrapper", "nativePointer != null"}, assumptions = {"singleContextAssumption(lib)", "cachedAssumption"})
+        @Specialization(guards = {"cachedWrapper == wrapper", "nativePointer != null"}, assumptions = {"singleContextAssumption()", "cachedAssumption"})
         protected static boolean isCachedNative(@SuppressWarnings("unused") PythonNativeWrapper wrapper,
                         @SuppressWarnings("unused") @Cached(value = "wrapper", weak = true) PythonNativeWrapper cachedWrapper,
                         @SuppressWarnings("unused") @Cached("wrapper.getHandleValidAssumption()") Assumption cachedAssumption,
-                        @SuppressWarnings("unused") @Cached(value = "wrapper.getNativePointerPrivate()", weak = true) Object nativePointer,
-                        @SuppressWarnings("unused") @CachedLibrary("nativePointer") InteropLibrary lib) {
+                        @SuppressWarnings("unused") @Cached(value = "wrapper.getNativePointerPrivate()", weak = true) Object nativePointer) {
             return true;
         }
 
