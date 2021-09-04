@@ -148,6 +148,7 @@ import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import java.util.Arrays;
 
 public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNode {
 
@@ -163,6 +164,25 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @CompilationFinal(dimensions = 1) private final String[] varnames;
     @CompilationFinal(dimensions = 1) private final String[] freevars;
     @CompilationFinal(dimensions = 1) private final String[] cellvars;
+
+    /*
+     * Our approach to exceptions is as follows: in the interpreter, it pretty much works as in
+     * CPython, using the current blockstack. However, that blockstack cannot easily be made PE
+     * constant including its contents. When we encounter an exception, we save the current
+     * blockstack into the exceptionBlockStacks; we also record a mapping from the current bci to
+     * this exception blockstack. During PE, we will look at this and thus be able to know which
+     * blockstack to use when an exception occurs at a certain point.
+     *
+     * There are some potential pitfalls with this approach. First, the mapping may grow quite
+     * large - in the worst case, we might be saving the blockstack for each bci. Second, while the
+     * Python compiler will not generate code (tfel: I think!) that would end with different
+     * blockstacks for the same bci depending on execution path, artificially created bytecode
+     * might, and in that case, we'd produce wrong results. We could add assertions to at least
+     * catch this properly.
+     */
+    @CompilationFinal(dimensions = 4) private Object[][][][] exceptionBlockStackIndices = null;
+    @CompilationFinal(dimensions = 1) private short[] shortExceptionBlockStackIndices = new short[32];
+    @CompilationFinal(dimensions = 2) private long[][] exceptionBlockStacks = new long[0][];
 
     @Children private final Node[] adoptedNodes;
     @Child private CalleeContext calleeContext = CalleeContext.create();
@@ -1377,11 +1397,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 // TODO: avoid extra read
                 // if (bytecode[bci] >= HAVE_ARGUMENT) oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
             } catch (PException e) {
-                int newTarget = findHandler(stack, blockstack, stackTop, blockstackTop);
-                stackTop = decodeStackTop(newTarget);
-                blockstackTop = decodeBlockstackTop(newTarget);
-                int handlerBCI = decodeBCI(newTarget);
-                if (handlerBCI != 0) {
+                int handlerBCI = findHandler(stackTop, stack, blockstack, blockstackTop, bci);
+                if (handlerBCI != -1) {
                     // push the exception that is being handled
                     // would use GetCaughtExceptionNode to reify the currently handled exception.
                     // but we don't want to do that if it is not needed
@@ -1410,31 +1427,149 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    /**
+     * Transfer exception block indices stored in the short lookup table to the prefix tree. This
+     * method is called the first time an exception is handled outside of the short lookup table
+     * range.
+     */
+    private final void transferExceptionBlockstacks() {
+        short[] lookupTbl = shortExceptionBlockStackIndices;
+        shortExceptionBlockStackIndices = null;
+        exceptionBlockStackIndices = new Object[0][][][];
+
+        for (int i = 0; i < 32; i++) {
+            short knownBlock = lookupTbl[i];
+            if (knownBlock != 0) {
+                saveExceptionBlockstack(i, exceptionBlockStacks[knownBlock], exceptionBlockStacks[knownBlock].length);
+            }
+        }
+    }
+
+    /**
+     * Save the blockstackToSave for the halfBci index. The halfBci index is assumed to be the
+     * bci>>1 (since each bytecode has a byte argument). The blockstackToSave is copied for saving.
+     */
+    private final long[] saveExceptionBlockstack(int halfBci, long[] blockstackToSave, int blockstackToSaveLength) {
+        CompilerAsserts.neverPartOfCompilation();
+        short newBlockstackIdx = (short)exceptionBlockStacks.length;
+        assert newBlockstackIdx < Short.MAX_VALUE : "we cannot have more blockstacks than bytecodes";
+        exceptionBlockStacks = Arrays.copyOf(exceptionBlockStacks, newBlockstackIdx + 1);
+        exceptionBlockStacks[newBlockstackIdx] = Arrays.copyOf(blockstackToSave, blockstackToSaveLength);
+
+        if (shortExceptionBlockStackIndices != null) {
+            if (halfBci < 32) {
+                // we can save to the compact lookup table
+                shortExceptionBlockStackIndices[halfBci] = newBlockstackIdx;
+                return exceptionBlockStacks[newBlockstackIdx];
+            } else {
+                transferExceptionBlockstacks();
+            }
+        }
+
+        // save to the 4-level prefix tree
+        int prefix = (halfBci >> 11) & 0xf;
+
+        Object[][][] lvl1 = exceptionBlockStackIndices[prefix];
+        if (lvl1.length == 0) {
+            lvl1 = exceptionBlockStackIndices[prefix] = new Object[0xf + 1][][];
+        }
+
+        prefix = (halfBci >> 7) & 0xf;
+        Object[][] lvl2 = lvl1[prefix];
+        if (lvl2.length == 0) {
+            lvl2 = lvl1[prefix] = new Object[0xf + 1][];
+        }
+
+        prefix = (halfBci >> 3) & 0xf;
+        Short[] lvl3 = (Short[])lvl2[prefix];
+        if (lvl3.length == 0) {
+            // the lowest bci bit was already shifted out, so the last array is only 3 bits long
+            lvl3 = (Short[])(lvl2[prefix] = new Short[0b111 + 1]);
+        }
+
+        // 3-bits, like the Short array above
+        prefix = halfBci & 0b111;
+        lvl3[prefix] = (short)newBlockstackIdx;
+
+        return exceptionBlockStacks[newBlockstackIdx];
+    }
+
+    // exceptionBlockStackIndices is a prefix tree with 4-bit fan-out (seems to me a reasonable
+    // balance of constant memory consumption to lookup speed in the interpreter - tfel). This
+    // method returns -1 when no index was found, otherwise the index has to be interpreted as
+    // unsigned (this means we currently don't support caching all exception block stacks in a
+    // method that has 0xffff bytecodes and raises an each an every one of them... which is
+    // impossible in non-synthetic bytecode)
+    private final long[] getExceptionBlockstack(int bci, long[] blockstack, int blockstackTop) {
+        int bciIdx = bci >> 1;
+        short blockstackIdx;
+
+        if (shortExceptionBlockStackIndices != null) {
+            if (bciIdx < 32) {
+                blockstackIdx = shortExceptionBlockStackIndices[bciIdx];
+                if (blockstackIdx != 0) {
+                    return exceptionBlockStacks[blockstackIdx];
+                }
+            }
+        } else {
+            // we have already shifted out one byte...
+            int prefix = (bciIdx >> 11) & 0xf;
+            Object[][][] lvl1 = exceptionBlockStackIndices[prefix];
+            if (lvl1.length > 0) {
+                prefix = (bciIdx >> 7) & 0xf;
+                Object[][] lvl2 = lvl1[prefix];
+                if (lvl2.length > 0) {
+                    prefix = (bciIdx >> 3) & 0xf;
+                    Short[] lvl3 = (Short[])lvl2[prefix];
+                    if (lvl3.length > 0) {
+                        // 3 bits, like the Short[] array above
+                        prefix = bciIdx & 0b111;
+                        Short value = lvl3[prefix];
+                        if (value != null) {
+                            return exceptionBlockStacks[(short)value];
+                        }
+                    }
+                }
+            }
+        }
+
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        return saveExceptionBlockstack(bciIdx, blockstack, blockstackTop + 1);
+    }
+
     @ExplodeLoop
-    private static final int findHandler(Object[] stack, long[] blockstack, int stackTop, int blockstackTop) {
+    private final int findHandler(int stackTop, Object[] stack, long[] blockstack, int blockstackTop, int bci) {
         CompilerAsserts.partialEvaluationConstant(stackTop);
         CompilerAsserts.partialEvaluationConstant(blockstackTop);
         CompilerDirectives.ensureVirtualized(stack);
         CompilerDirectives.ensureVirtualized(blockstack);
-        int newBlockstackTop = blockstackTop;
-        int newStackTop = stackTop;
-        for (int i = blockstackTop; i >= 0; i--) {
-            long block = blockstack[i];
+
+        long[] savedBlockstack = getExceptionBlockstack(bci, blockstack, blockstackTop);
+        int savedBlockstackTop = savedBlockstack.length;
+        // TODO: the below comparison method does not exist prior to JDK9
+        // assert Arrays.equals(savedBlockstack, 0, savedBlockstackTop, blockstack, 0, savedBlockstackTop) : "odd bytecode pattern with non-constant blockstack for bci";
+
+        CompilerAsserts.partialEvaluationConstant(savedBlockstack);
+        CompilerAsserts.partialEvaluationConstant(savedBlockstackTop);
+
+        for (int i = savedBlockstackTop; i >= 0; i--) {
+            long block = savedBlockstack[i];
+            CompilerAsserts.partialEvaluationConstant(block);
             int type = (int)(block >> 32);
             int stackTopBeforeBlock = (short)block;
             if (type == EXCEPT_HANDLER) {
-                newStackTop = unwindExceptHandler(stack, newStackTop, stackTopBeforeBlock);
+                stackTop = unwindExceptHandler(stack, stackTop, stackTopBeforeBlock);
             } else {
-                newStackTop = unwindBlock(stack, newStackTop, stackTopBeforeBlock);
+                stackTop = unwindBlock(stack, stackTop, stackTopBeforeBlock);
                 if (type == SETUP_FINALLY) {
-                    blockstack[i] = ((long)EXCEPT_HANDLER << 32) | (short)newStackTop;
+                    blockstack[i] = ((long)EXCEPT_HANDLER << 32) | (short)stackTop;
                     // return handler target bci
                     int handlerBCI = (((int)block >> 16) & 0xffff) + 2;
-                    return encodeBCI(handlerBCI) | encodeStackTop(newStackTop) | encodeBlockstackTop(i);
+                    return handlerBCI;
                 }
             }
         }
-        return encodeBCI(0) | encodeStackTop(newStackTop) | encodeBlockstackTop(-1);
+        return -1;
     }
 
     @ExplodeLoop
