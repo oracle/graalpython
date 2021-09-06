@@ -902,37 +902,38 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         blockstackTop--;
                         break;
                     case POP_FINALLY:
-                        {
-                            // very similar to END_FINALLY, but with an argument
-                            Object result;
-                            if (oparg == 0) {
-                                result = null;
-                            } else {
-                                result = stack[stackTop];
-                                stack[stackTop--] = null;
-                            }
-                            Object exc = stack[stackTop];
-                            stack[stackTop--] = null;
-                            if (exc == null || exc instanceof Integer) {
-                                // nothing to do
-                            } else {
-                                // first, pop the remaining two current exc_info entries
-                                stack[stackTop--] = null;
-                                stack[stackTop--] = null;
-                                assert isBlockTypeExcept(blockstack[blockstackTop]);
-                                assert stackTop == decodeStackTop(blockstack[blockstackTop]) + 3;
-                                blockstackTop--;
-                                // just pop the previously handled exception also, since we can
-                                // recover it differently than CPython (I think...)
-                                stack[stackTop--] = null;
-                                stack[stackTop--] = null;
-                                stack[stackTop--] = null;
-                            }
-                            if (oparg != 0) {
-                                stack[++stackTop] = result;
-                            }
-                        }
-                        break;
+                        // {
+                        //     // very similar to END_FINALLY, but with an argument
+                        //     Object result;
+                        //     if (oparg == 0) {
+                        //         result = null;
+                        //     } else {
+                        //         result = stack[stackTop];
+                        //         stack[stackTop--] = null;
+                        //     }
+                        //     Object exc = stack[stackTop];
+                        //     stack[stackTop--] = null;
+                        //     if (exc == null || exc instanceof Integer) {
+                        //         // nothing to do
+                        //     } else {
+                        //         // first, pop the remaining two current exc_info entries
+                        //         stack[stackTop--] = null;
+                        //         stack[stackTop--] = null;
+                        //         assert isBlockTypeExcept(blockstack[blockstackTop]);
+                        //         assert stackTop == decodeStackTop(blockstack[blockstackTop]) + 3;
+                        //         blockstackTop--;
+                        //         // just pop the previously handled exception also, since we can
+                        //         // recover it differently than CPython (I think...)
+                        //         stack[stackTop--] = null;
+                        //         stack[stackTop--] = null;
+                        //         stack[stackTop--] = null;
+                        //     }
+                        //     if (oparg != 0) {
+                        //         stack[++stackTop] = result;
+                        //     }
+                        // }
+                        // break;
+                        throw new RuntimeException("POP FINALLY");
                     case CALL_FINALLY:
                         stack[++stackTop] = bci + 2;
                         bci = oparg + 2;
@@ -942,27 +943,28 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stack[++stackTop] = null;
                         break;
                     case END_FINALLY:
-                        {
-                            Object exc = stack[stackTop];
-                            stack[stackTop--] = null;
-                            if (exc == null) {
-                                // nothing, we just fall through
-                            } else if (exc instanceof Integer) {
-                                bci = (int)exc;
-                                oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
-                                continue;
-                            } else {
-                                // CPython expects 6 values, the current exc_info and the previous one
-                                // We usually just have placeholders, with a PException object in stackTop
+                        // {
+                        //     Object exc = stack[stackTop];
+                        //     stack[stackTop--] = null;
+                        //     if (exc == null) {
+                        //         // nothing, we just fall through
+                        //     } else if (exc instanceof Integer) {
+                        //         bci = (int)exc;
+                        //         oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
+                        //         continue;
+                        //     } else {
+                        //         // CPython expects 6 values, the current exc_info and the previous one
+                        //         // We usually just have placeholders, with a PException object in stackTop
 
-                                // first, pop the remaining two current exc_info entries
-                                stack[stackTop--] = null;
-                                stack[stackTop--] = null;
-                                // throw the exception again for the next handler to run
-                                throw (AbstractTruffleException)exc;
-                            }
-                        }
-                        break;
+                        //         // first, pop the remaining two current exc_info entries
+                        //         stack[stackTop--] = null;
+                        //         stack[stackTop--] = null;
+                        //         // throw the exception again for the next handler to run
+                        //         throw (AbstractTruffleException)exc;
+                        //     }
+                        // }
+                        // break;
+                        throw new RuntimeException("END FINALLY");
                     case END_ASYNC_FOR:
                         throw new RuntimeException("async bytecodes");
                     case LOAD_BUILD_CLASS:
@@ -1398,6 +1400,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 // if (bytecode[bci] >= HAVE_ARGUMENT) oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
             } catch (PException e) {
                 int handlerBCI = findHandler(stackTop, stack, blockstack, blockstackTop, bci);
+                CompilerAsserts.partialEvaluationConstant(handlerBCI);
                 if (handlerBCI != -1) {
                     // push the exception that is being handled
                     // would use GetCaughtExceptionNode to reify the currently handled exception.
@@ -1412,7 +1415,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
                     bci = handlerBCI;
                     oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
-                    // continue;
+                    continue;
                 } else {
                     throw e;
                 }
@@ -1545,6 +1548,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private final int findHandler(int stackTop, Object[] stack, int[] blockstack, int blockstackTop, int bci) {
         CompilerAsserts.partialEvaluationConstant(stackTop);
         CompilerAsserts.partialEvaluationConstant(blockstackTop);
+        CompilerAsserts.partialEvaluationConstant(bci);
         CompilerDirectives.ensureVirtualized(stack);
         CompilerDirectives.ensureVirtualized(blockstack);
 
@@ -1565,9 +1569,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             } else {
                 stackTop = unwindBlock(stack, stackTop, stackTopBeforeBlock);
                 assert isBlockTypeFinally(block);
+                CompilerAsserts.partialEvaluationConstant(stackTop);
                 blockstack[i] = encodeBlockTypeExcept() | encodeStackTop(stackTop);
                 // return handler target bci
-                return decodeBCI(block) + 2;
+                int handlerBCI = decodeBCI(block) + 2;
+                CompilerAsserts.partialEvaluationConstant(handlerBCI);
+                return handlerBCI;
             }
         }
         return -1;
