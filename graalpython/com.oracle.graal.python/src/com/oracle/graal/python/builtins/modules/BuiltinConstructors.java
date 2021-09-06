@@ -234,6 +234,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -2576,7 +2577,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     pythonClass.setAttribute(key, value);
                 } else {
                     // DynamicObjectStorage ignores non-string keys
-                    typeDict = lib.getDict(pythonClass);
+                    typeDict = GetDictIfExistsNode.getUncached().execute(pythonClass);
                     if (typeDict == null) {
                         // 1.) create DynamicObjectStorage based dict from pythonClass
                         typeDict = PythonObjectFactory.getUncached().createDictFixedStorage(pythonClass);

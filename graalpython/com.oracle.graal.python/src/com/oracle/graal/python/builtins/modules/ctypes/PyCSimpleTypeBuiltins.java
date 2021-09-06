@@ -74,8 +74,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttri
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
@@ -85,18 +83,17 @@ import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PyCSimpleType)
@@ -122,7 +119,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
         Object PyCSimpleType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
                         @Cached TypeNode typeNew,
                         @Cached InternStringNode internStringNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached GetOrCreateDictNode getDict,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @Cached("create(_type_)") LookupAttributeInMRONode lookupAttrId,
                         @Cached GetBaseClassNode getBaseClassNode,
@@ -174,16 +171,8 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
             stgdict.proto = proto_str;
 
             /* replace the class dict by our updated spam dict */
-            PDict resDict = lib.getDict(result);
-            if (resDict == null) {
-                resDict = factory().createDictFixedStorage((PythonObject) result);
-            }
+            PDict resDict = getDict.execute(result);
             stgdict.setDictStorage(hlib.addAllToOther(resDict.getDictStorage(), stgdict.getDictStorage()));
-            try {
-                lib.setDict(result, stgdict);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
 
             /*
              * Install from_param class methods in ctypes base classes. Overrides the
@@ -218,7 +207,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
                                 typeNew,
                                 internStringNode,
                                 toJavaStringNode,
-                                lib,
+                                getDict,
                                 hlib,
                                 factory());
                 StgDictObject sw_dict = pyTypeStgDictNode.execute(swapped);
@@ -238,7 +227,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
                     TypeNode typeNew,
                     InternStringNode internStringNode,
                     CastToJavaStringNode toString,
-                    PythonObjectLibrary lib,
+                    GetOrCreateDictNode getDict,
                     HashingStorageLibrary hlib,
                     PythonObjectFactory factory) {
         int argsLen = args.length;
@@ -265,16 +254,8 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
         stgdict.proto = proto;
 
         /* replace the class dict by our updated spam dict */
-        PDict resDict = lib.getDict(result);
-        if (resDict == null) {
-            resDict = factory.createDictFixedStorage((PythonObject) result);
-        }
+        PDict resDict = getDict.execute(result);
         stgdict.setDictStorage(hlib.addAllToOther(resDict.getDictStorage(), stgdict.getDictStorage()));
-        try {
-            lib.setDict(result, stgdict);
-        } catch (UnsupportedMessageException e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
-        }
 
         return result;
     }

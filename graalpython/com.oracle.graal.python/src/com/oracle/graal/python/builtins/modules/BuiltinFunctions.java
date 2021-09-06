@@ -100,8 +100,8 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
@@ -185,6 +185,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -553,6 +554,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child protected CompileNode compileNode;
         @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
         @Child private HasInheritedAttributeNode hasGetItemNode;
+        @Child private GetOrCreateDictNode getOrCreateDictNode;
 
         private HasInheritedAttributeNode getHasGetItemNode() {
             if (hasGetItemNode == null) {
@@ -607,18 +609,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PArguments.setCustomLocals(args, locals);
         }
 
-        private void setBuiltinsInGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins, PythonObjectLibrary lib) {
+        private void setBuiltinsInGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins) {
             if (builtins != null) {
-                PDict builtinsDict = lib.getDict(builtins);
-                if (builtinsDict == null) {
-                    builtinsDict = factory().createDictFixedStorage(builtins);
-                    try {
-                        lib.setDict(builtins, builtinsDict);
-                    } catch (UnsupportedMessageException e) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw new IllegalStateException(e);
-                    }
-                }
+                PDict builtinsDict = getOrCreateDictNode(builtins);
                 setBuiltins.execute(frame, globals, __BUILTINS__, builtinsDict);
             } else {
                 // This happens during context initialization
@@ -626,9 +619,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
         }
 
-        private void setCustomGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, Object[] args, PythonObjectLibrary lib) {
+        private void setCustomGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, Object[] args) {
             PythonModule builtins = getContext().getBuiltins();
-            setBuiltinsInGlobals(frame, globals, setBuiltins, builtins, lib);
+            setBuiltinsInGlobals(frame, globals, setBuiltins, builtins);
             PArguments.setGlobals(args, globals);
         }
 
@@ -648,12 +641,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         Object execCustomGlobalsGlobalLocals(VirtualFrame frame, Object source, PDict globals, @SuppressWarnings("unused") PNone locals,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached HashingCollectionNodes.SetItemNode setBuiltins,
                         @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
             PCode code = createAndCheckCode(frame, source);
             Object[] args = PArguments.create();
-            setCustomGlobals(frame, globals, setBuiltins, args, lib);
+            setCustomGlobals(frame, globals, setBuiltins, args);
             // here, we don't need to set any locals, since the {Write,Read,Delete}NameNodes will
             // fall back (like their CPython counterparts) to writing to the globals. We only need
             // to ensure that the `locals()` call still gives us the globals dict
@@ -681,12 +673,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = {"isMapping(locals)"})
         Object execCustomGlobalsCustomLocals(VirtualFrame frame, Object source, PDict globals, Object locals,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached HashingCollectionNodes.SetItemNode setBuiltins,
                         @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
             PCode code = createAndCheckCode(frame, source);
             Object[] args = PArguments.create();
-            setCustomGlobals(frame, globals, setBuiltins, args, lib);
+            setCustomGlobals(frame, globals, setBuiltins, args);
             setCustomLocals(args, locals);
 
             return invokeNode.execute(frame, getCt.execute(code), args);
@@ -708,6 +699,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 compileNode = insert(CompileNode.create(false, shouldStripLeadingWhitespace()));
             }
             return compileNode;
+        }
+
+        private PDict getOrCreateDictNode(PythonObject object) {
+            if (getOrCreateDictNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getOrCreateDictNode = insert(GetOrCreateDictNode.create());
+            }
+            return getOrCreateDictNode.execute(object);
         }
 
         protected boolean shouldStripLeadingWhitespace() {
@@ -1943,22 +1942,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public Object globals(VirtualFrame frame,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @Cached GetOrCreateDictNode getDict) {
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             PythonObject globals = callerFrame.getGlobals();
             if (condProfile.profile(globals instanceof PythonModule)) {
-                PDict dict = lib.getDict(globals);
-                if (dict == null) {
-                    CompilerDirectives.transferToInterpreter();
-                    dict = factory().createDictFixedStorage(globals);
-                    try {
-                        lib.setDict(globals, dict);
-                    } catch (UnsupportedMessageException e) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw new IllegalStateException(e);
-                    }
-                }
-                return dict;
+                return getDict.execute(globals);
             } else {
                 return globals;
             }

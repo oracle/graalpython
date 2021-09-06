@@ -82,6 +82,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -138,10 +139,10 @@ public class StgDictBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doit(VirtualFrame frame, StgDictObject self,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached GetDictIfExistsNode getDict,
                         @Cached ObjectBuiltins.SizeOfNode sizeOfNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
-            long size = asSizeNode.executeLossy(frame, sizeOfNode.call(frame, lib.getDict(self)));
+            long size = asSizeNode.executeLossy(frame, sizeOfNode.call(frame, getDict.execute(self)));
             // size += sizeof(StgDictObject) - sizeof(PyDictObject);
             if (self.format != null) {
                 size += PString.length(self.format) + 1;
@@ -234,11 +235,11 @@ public class StgDictBuiltins extends PythonBuiltins {
         @Specialization
         static StgDictObject PyType_stgdict(Object obj,
                         @Cached IsTypeNode isTypeNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Cached GetDictIfExistsNode getDict) {
             if (!isTypeNode.execute(obj)) {
                 return null;
             }
-            PDict dict = lib.getDict(obj);
+            PDict dict = getDict.execute(obj);
             if (!PGuards.isStgDict(dict)) {
                 return null;
             }
@@ -259,9 +260,9 @@ public class StgDictBuiltins extends PythonBuiltins {
         @Specialization
         static StgDictObject PyObject_stgdict(Object self,
                         @Cached GetClassNode getType,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Cached GetDictIfExistsNode getDict) {
             Object type = getType.execute(self);
-            PDict dict = lib.getDict(type);
+            PDict dict = getDict.execute(type);
             if (!PGuards.isStgDict(dict)) {
                 return null;
             }
