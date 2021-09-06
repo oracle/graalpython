@@ -42,6 +42,7 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -74,7 +75,7 @@ public final class GraalHPyHandle implements TruffleObject {
     private int id = -1;
 
     private GraalHPyHandle() {
-        this.delegate = null;
+        this.delegate = PNone.NO_VALUE;
         this.id = 0;
     }
 
