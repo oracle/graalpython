@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -1542,6 +1543,18 @@ public abstract class CExtNodes {
             return PythonUtils.newString(byteArray);
         }
 
+        @Specialization(limit = "1")
+        static String doSequenceArrayWrapper(PySequenceArrayWrapper obj,
+                        @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
+                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+            Object delegate = lib.getDelegate(obj);
+            if (delegate instanceof PBytesLike) {
+                byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
+                return PythonUtils.newString(bytes);
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
         @Specialization(guards = "!isCArrayWrapper(charPtr)")
         static PString doPointer(Object charPtr,
                         @Cached PythonObjectFactory factory) {
@@ -1549,7 +1562,7 @@ public abstract class CExtNodes {
         }
 
         static boolean isCArrayWrapper(Object object) {
-            return object instanceof CArrayWrapper;
+            return object instanceof CArrayWrapper || object instanceof PySequenceArrayWrapper;
         }
     }
 
