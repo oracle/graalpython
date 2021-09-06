@@ -243,8 +243,10 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -301,7 +303,9 @@ public final class Python3Core implements ParserErrorCallback {
                         "base_exception",
                         PythonCextBuiltins.PYTHON_CEXT,
                         "_collections",
-                        "_codecs",
+                        // TODO: see the encodings initialization before _codecs_truffle.py is
+                        // loaded in initializePython3Core;
+                        // once _codecs_truffle.py is gone, it should not be necessary
                         "_codecs_truffle",
                         "bytes",
                         "bytearray",
@@ -654,9 +658,24 @@ public final class Python3Core implements ParserErrorCallback {
     private void initializePython3Core(String coreHome) {
         loadFile(BuiltinNames.BUILTINS, coreHome);
         for (String s : coreFiles) {
+            // TODO: once _codecs_truffle.py is gone, this should not be necessary
+            if (s.equals("_codecs_truffle")) {
+                importEncoding();
+            }
             loadFile(s, coreHome);
         }
         initialized = true;
+    }
+
+    private void importEncoding() {
+        PythonModule sys = lookupBuiltinModule("sys");
+        Object sysPath = sys.getAttribute("path");
+        PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, "insert", 0, getContext().getStdlibHome());
+        try {
+            AbstractImportNode.importModule("encodings");
+        } finally {
+            PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, "pop");
+        }
     }
 
     /**
