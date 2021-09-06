@@ -116,7 +116,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                         null).antlrResult;
     }
 
-    public static byte[] serialize(ParserErrorCallback errorCallback, SourceSection section, SSTNode node, ScopeInfo scope, boolean isModule) {
+    public static byte[] serialize(SourceSection section, SSTNode node, ScopeInfo scope, boolean isModule) {
         Source source = section.getSource();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(baos);
@@ -167,13 +167,13 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         }
         if (rootNode instanceof ModuleRootNode) {
             // serialize whole module
-            return serialize(errorCallback, rootNode.getSourceSection(), lastParserResult.antlrResult, lastParserResult.globalScope, true);
+            return serialize(rootNode.getSourceSection(), lastParserResult.antlrResult, lastParserResult.globalScope, true);
         } else {
             // serialize just the part
             SSTNodeWithScopeFinder finder = new SSTNodeWithScopeFinder(rootNode.getSourceSection().getCharIndex(), rootNode.getSourceSection().getCharEndIndex());
             SSTNodeWithScope rootSST = lastParserResult.antlrResult.accept(finder);
             // store with parent scope
-            return serialize(errorCallback, rootNode.getSourceSection(), rootSST, rootSST.getScope().getParent(), false);
+            return serialize(rootNode.getSourceSection(), rootSST, rootSST.getScope().getParent(), false);
         }
     }
 
@@ -417,10 +417,6 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         ArrayList<String> warnings = new ArrayList<>();
         // this wrapper tracks the warnings in a list instead of raising them immediately
         ParserErrorCallback collectWarnings = new ParserErrorCallback() {
-
-            public RuntimeException raise(PythonBuiltinClassType type, String message, Object... args) {
-                return PRaiseNode.raiseUncached(null, type, message, args);
-            }
 
             public RuntimeException raiseInvalidSyntax(ErrorType type, Source src, SourceSection section, String message, Object... arguments) {
                 return errors.raiseInvalidSyntax(type, src, section, message, arguments);

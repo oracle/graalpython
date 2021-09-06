@@ -65,7 +65,7 @@ public class Serializing extends ParserBenchRunner {
         for (int n = 0; n < parsingCycles; n++) {
             for (PythonParserImpl.CacheItem item : ssts) {
                 SourceSection section = item.getSource().createSection(0, item.getSource().getLength());
-                bh.consume(PythonParserImpl.serialize(core, section, item.getAntlrResult(), item.getGlobalScope(), true));
+                bh.consume(PythonParserImpl.serialize(section, item.getAntlrResult(), item.getGlobalScope(), true));
             }
         }
     }

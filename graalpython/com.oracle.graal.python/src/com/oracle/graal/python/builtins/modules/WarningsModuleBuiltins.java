@@ -590,12 +590,11 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static void callShowWarning(Object category, Object text, Object message,
+        private static void callShowWarning(PythonContext context, Object category, Object text, Object message,
                         Object filename, int lineno, Object sourceline, Object sourceIn) {
             PythonObjectLibrary polib = PythonObjectLibrary.getUncached();
             PRaiseNode raise = PRaiseNode.getUncached();
 
-            PythonContext context = PythonContext.get(raise);
             Object showFn = getWarningsAttr(context, "_showwarnmsg", sourceIn != null);
             if (showFn == null) {
                 showWarning(filename, lineno, text, category, sourceline);
@@ -677,14 +676,15 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             // about performance when warnings are enabled.
             Object state = IndirectCallContext.enter(frame, getLanguage(), getContext(), this);
             try {
-                warnExplicitPart2(this, warnings, filename, lineno, registry, globals, source, category, message, text, key, item, action);
+                warnExplicitPart2(PythonContext.get(this), this, warnings, filename, lineno, registry, globals, source, category, message, text, key, item, action);
             } finally {
                 IndirectCallContext.exit(frame, getLanguage(), getContext(), state);
             }
         }
 
         @TruffleBoundary
-        private static void warnExplicitPart2(Node node, PythonModule warnings, Object filename, int lineno, Object registry, PDict globals, Object source, Object category, Object message,
+        private static void warnExplicitPart2(PythonContext context, Node node, PythonModule warnings, Object filename, int lineno, Object registry, PDict globals, Object source, Object category,
+                        Object message,
                         Object text,
                         Object key, Object[] item, String action) {
             PythonObjectLibrary polib = PythonObjectLibrary.getUncached();
@@ -706,7 +706,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 boolean alreadyWarned = false;
                 if (PString.equals("once", action)) {
                     if (registry == null || registry == PNone.NONE) {
-                        Object currentRegistry = getOnceRegistry(PythonContext.get(node), warnings);
+                        Object currentRegistry = getOnceRegistry(context, warnings);
                         alreadyWarned = updateRegistry(warnings, currentRegistry, text, category, false);
                     } else {
                         alreadyWarned = updateRegistry(warnings, registry, text, category, false);
@@ -732,7 +732,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 sourceline = getSourceLine(globals, lineno);
             }
 
-            callShowWarning(category, text, message, filename, lineno, sourceline, source);
+            callShowWarning(context, category, text, message, filename, lineno, sourceline, source);
         }
 
         /**

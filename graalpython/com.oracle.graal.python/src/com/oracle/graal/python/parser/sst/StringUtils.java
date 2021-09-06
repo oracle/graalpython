@@ -46,7 +46,6 @@ import java.util.Locale;
 import java.util.Map;
 
 import com.ibm.icu.lang.UCharacter;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
@@ -156,13 +155,13 @@ public class StringUtils {
                         continue;
                     // Hex Unicode: u????
                     case 'u':
-                        int code = getHexValue(errorCallback, st, i + 2, 4);
+                        int code = getHexValue(st, i + 2, 4);
                         sb.append(Character.toChars(code));
                         i += 5;
                         continue;
                     // Hex Unicode: U????????
                     case 'U':
-                        code = getHexValue(errorCallback, st, i + 2, 8);
+                        code = getHexValue(st, i + 2, 8);
                         if (Character.isValidCodePoint(code)) {
                             sb.append(Character.toChars(code));
                         } else {
@@ -172,13 +171,13 @@ public class StringUtils {
                         continue;
                     // Hex Unicode: x??
                     case 'x':
-                        code = getHexValue(errorCallback, st, i + 2, 2);
+                        code = getHexValue(st, i + 2, 2);
                         sb.append(Character.toChars(code));
                         i += 3;
                         continue;
                     case 'N':
                         // a character from Unicode Data Database
-                        i = doCharacterName(errorCallback.getContext().getCore(), st, sb, i + 2);
+                        i = doCharacterName(st, sb, i + 2);
                         continue;
                     default:
                         if (!wasDeprecationWarning) {
@@ -220,7 +219,7 @@ public class StringUtils {
     private static final String UNKNOWN_UNICODE_ERROR = " unknown Unicode character name";
     private static final String ILLEGAl_CHARACTER = "illegal Unicode character";
 
-    private static int getHexValue(ParserErrorCallback errors, String text, int start, int len) {
+    private static int getHexValue(String text, int start, int len) {
         int digit;
         int result = 0;
         for (int index = start; index < (start + len); index++) {
@@ -229,17 +228,17 @@ public class StringUtils {
                 if (digit == -1) {
                     // Like cpython, raise error with the wrong character first,
                     // even if there are not enough characters
-                    throw createTruncatedError(errors, start - 2, index - 1, len);
+                    throw createTruncatedError(start - 2, index - 1, len);
                 }
                 result = result * 16 + digit;
             } else {
-                throw createTruncatedError(errors, start - 2, index - 1, len);
+                throw createTruncatedError(start - 2, index - 1, len);
             }
         }
         return result;
     }
 
-    private static PException createTruncatedError(ParserErrorCallback errors, int startIndex, int endIndex, int len) {
+    private static PException createTruncatedError(int startIndex, int endIndex, int len) {
         String truncatedMessage = null;
         switch (len) {
             case 2:
@@ -264,7 +263,7 @@ public class StringUtils {
      * @return offset of the close brace
      */
     @CompilerDirectives.TruffleBoundary
-    private static int doCharacterName(Python3Core core, String text, StringBuilder sb, int offset) {
+    private static int doCharacterName(String text, StringBuilder sb, int offset) {
         if (offset >= text.length()) {
             throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + MALFORMED_ERROR, offset - 2, offset - 1);
         }
