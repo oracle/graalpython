@@ -957,6 +957,14 @@ HPyAPI_STORAGE void _HPy_IMPL_NAME(Err_Clear)(HPyContext *ctx)
 	UPCALL_VOID0(ctx_Err_Clear, ctx);
 }
 
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Err_NewException)(HPyContext *ctx, const char *name, HPy base, HPy dict) {
+    return UPCALL_HPY(ctx_Err_NewException, ctx, name, base, dict);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Err_NewExceptionWithDoc)(HPyContext *ctx, const char *name, const char *doc, HPy base, HPy dict) {
+    return UPCALL_HPY(ctx_Err_NewExceptionWithDoc, ctx, name, doc, base, dict);
+}
+
 HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(IsTrue)(HPyContext *ctx, HPy h)
 {
 	return UPCALL_HPY(ctx_IsTrue, ctx, h);
@@ -1413,6 +1421,8 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context) {
     HPY_CTX_UPCALL(ctx_Err_Occurred);
     HPY_CTX_UPCALL(ctx_Err_NoMemory);
     HPY_CTX_UPCALL(ctx_Err_Clear);
+    HPY_CTX_UPCALL(ctx_Err_NewException);
+    HPY_CTX_UPCALL(ctx_Err_NewExceptionWithDoc);
     HPY_CTX_UPCALL(ctx_IsTrue);
     HPY_CTX_UPCALL(ctx_Type_FromSpec);
     HPY_CTX_UPCALL(ctx_Type_GenericNew);

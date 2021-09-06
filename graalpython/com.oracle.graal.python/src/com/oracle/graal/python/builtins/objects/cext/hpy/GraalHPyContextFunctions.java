@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBaseException;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.CHAR_PTR;
@@ -122,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
@@ -926,7 +926,7 @@ public abstract class GraalHPyContextFunctions {
                 checkArity(arguments, 3);
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object errTypeObj = asPythonObjectNode.execute(context, arguments[1]);
-                if (!(PGuards.isClass(errTypeObj, interopLib) && isSubtypeNode.execute(errTypeObj, PBaseException))) {
+                if (!(PGuards.isClass(errTypeObj, interopLib) && isSubtypeNode.execute(errTypeObj, PythonBuiltinClassType.PBaseException))) {
                     return raiseNode.raise(SystemError, "exception %s not a BaseException subclass", errTypeObj);
                 }
                 try {
@@ -941,7 +941,7 @@ public abstract class GraalHPyContextFunctions {
                     } else {
                         Object valueObj = asPythonObjectNode.execute(context, arguments[2]);
                         // If the exception value is already an exception object, just take it.
-                        if (isExcValueSubtypeNode.execute(getClassNode.execute(valueObj), PBaseException)) {
+                        if (isExcValueSubtypeNode.execute(getClassNode.execute(valueObj), PythonBuiltinClassType.PBaseException)) {
                             exception = valueObj;
                         } else {
                             exception = callExceptionConstructorNode.execute(errTypeObj, valueObj);
@@ -2282,6 +2282,102 @@ public abstract class GraalHPyContextFunctions {
                 Object object = asPythonObjectNode.execute(context, arguments[1]);
                 Object expectedType = asPythonObjectNode.execute(context, arguments[2]);
                 return PInt.intValue(isSubtypeNode.execute(getClassNode.execute(object), expectedType));
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyNewException extends GraalHPyContextFunction {
+
+        private final boolean withDoc;
+
+        public GraalHPyNewException(boolean withDoc) {
+            this.withDoc = withDoc;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached PCallHPyFunction callFromStringNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary storageLibrary,
+                        @Cached CallNode callTypeConstructorNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                int docExtra = withDoc ? 1 : 0;
+                checkArity(arguments, 4 + docExtra);
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object nameObj = callFromStringNode.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_STRING, arguments[1], "utf-8");
+                Object doc = withDoc ? fromCharPointerNode.execute(arguments[2]) : null;
+                Object base = asPythonObjectNode.execute(context, arguments[2 + docExtra]);
+                Object dictObj = asPythonObjectNode.execute(context, arguments[3 + docExtra]);
+
+                String name;
+                try {
+                    name = castToJavaStringNode.execute(nameObj);
+                } catch (CannotCastException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+
+                try {
+                    int dotIdx = name.indexOf('.');
+                    if (dotIdx == -1) {
+                        throw raiseNode.raise(SystemError, "name must be module.class");
+                    }
+
+                    if (base == PNone.NO_VALUE) {
+                        base = PythonBuiltinClassType.Exception;
+                    }
+                    PDict dict;
+                    HashingStorage dictStorage;
+                    if (dictObj == PNone.NO_VALUE) {
+                        dictStorage = PDict.createNewStorage(true, 2);
+                        dict = factory.createDict(dictStorage);
+                    } else {
+                        if (!(dictObj instanceof PDict)) {
+                            /*
+                             * CPython expects a PyDictObject and if not, it raises a
+                             * "bad internal call".
+                             */
+                            throw raiseNode.raise(SystemError, "bad argument to internal function");
+                        }
+                        dict = (PDict) dictObj;
+                        dictStorage = dict.getDictStorage();
+                    }
+
+                    if (!storageLibrary.hasKey(dictStorage, SpecialAttributeNames.__MODULE__)) {
+                        dictStorage = storageLibrary.setItem(dictStorage, SpecialAttributeNames.__MODULE__, name.substring(0, dotIdx));
+                    }
+
+                    if (withDoc) {
+                        assert doc != null;
+                        dictStorage = storageLibrary.setItem(dictStorage, SpecialAttributeNames.__DOC__, doc);
+                    }
+
+                    dict.setDictStorage(dictStorage);
+
+                    PTuple bases;
+                    if (base instanceof PTuple) {
+                        bases = (PTuple) base;
+                    } else {
+                        bases = factory.createTuple(new Object[]{base});
+                    }
+
+                    Object newExceptionType = callTypeConstructorNode.execute(PythonBuiltinClassType.PythonClass, name.substring(dotIdx + 1), bases, dict);
+                    return asHandleNode.execute(context, newExceptionType);
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(context, e);
+                    return GraalHPyHandle.NULL_HANDLE;
+                }
             } finally {
                 gil.release(mustRelease);
             }

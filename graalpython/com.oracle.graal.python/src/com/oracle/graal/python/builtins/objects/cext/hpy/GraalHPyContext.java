@@ -180,6 +180,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongFromLong;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyModuleCreate;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNew;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNewException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyRichcompare;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetAttr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetItem;
@@ -531,6 +532,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_ERR_SETOBJECT("ctx_Err_SetObject"),
         CTX_ERR_OCCURRED("ctx_Err_Occurred"),
         CTX_ERR_CLEAR("ctx_Err_Clear"),
+        CTX_ERR_NEWEXCEPTION("ctx_Err_NewException"),
+        CTX_ERR_NEWEXCEPTIONWITHDOC("ctx_Err_NewExceptionWithDoc"),
         CTX_FATALERROR("ctx_FatalError"),
         CTX_ISTRUE("ctx_IsTrue"),
         CTX_TYPE_FROM_SPEC("ctx_Type_FromSpec"),
@@ -1254,6 +1257,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_ERR_SETOBJECT.ordinal()] = new GraalHPyErrSetString(false);
         members[HPyContextMember.CTX_ERR_OCCURRED.ordinal()] = new GraalHPyErrOccurred();
         members[HPyContextMember.CTX_ERR_CLEAR.ordinal()] = new GraalHPyErrClear();
+        members[HPyContextMember.CTX_ERR_NEWEXCEPTION.ordinal()] = new GraalHPyNewException(false);
+        members[HPyContextMember.CTX_ERR_NEWEXCEPTIONWITHDOC.ordinal()] = new GraalHPyNewException(true);
         members[HPyContextMember.CTX_FATALERROR.ordinal()] = new GraalHPyFatalError();
         members[HPyContextMember.CTX_FROMPYOBJECT.ordinal()] = new GraalHPyFromPyObject();
         members[HPyContextMember.CTX_UNICODE_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PString);
