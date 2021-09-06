@@ -54,12 +54,7 @@ import com.oracle.truffle.api.source.SourceSection;
 
 public class StringUtilsTests extends ParserTestBase {
     private static final ParserErrorCallback errorCallback = new ParserErrorCallback() {
-        @Override
-        public RuntimeException raise(PythonBuiltinClassType type, String message, Object... args) {
-            Assert.fail("Unexpected error: " + String.format(message, args));
-            return null;
-        }
-
+       
         @Override
         public RuntimeException raiseInvalidSyntax(ErrorType type, Source source, SourceSection section, String message, Object... arguments) {
             Assert.fail("Unexpected error: " + String.format(message, arguments));
