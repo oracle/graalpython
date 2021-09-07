@@ -740,9 +740,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     @CompilationFinal private long wcharSize = -1;
 
     /**
-     * The value of this field is computed using
-     * {@link PythonOptions#isHPyUseNativeFastPaths(PythonLanguage)}. We store it in this final
-     * field because the value is also used in non-PE code paths.
+     * This field mirrors value of {@link PythonOptions#HPyEnableJNIFastPaths}. We store it in this
+     * final field because the value is also used in non-PE code paths.
      */
     private final boolean useNativeFastPaths;
 
@@ -766,7 +765,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     public GraalHPyContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, GraalHPyConversionNodeSupplier.HANDLE);
         this.hpyContextMembers = createMembers(context, getName());
-        this.useNativeFastPaths = PythonOptions.isHPyUseNativeFastPaths(context.getLanguage());
+        this.useNativeFastPaths = context.getLanguage().getEngineOption(PythonOptions.HPyEnableJNIFastPaths);
     }
 
     protected String getName() {
