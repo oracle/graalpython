@@ -1459,9 +1459,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         // potentially need to re-sort the ranges
                         for (int j = 0; j < i; j += 3) {
                             if (bci < blockstackRanges[j]) {
-                                // shift 3 to the right, the re-insert the block we just modified
+                                // shift all ranges from j three places to the right, overwriting
+                                // the range starting at i, then the re-insert range i where range
+                                // j was
                                 int savedStop = blockstackRanges[i + 1];
-                                System.arraycopy(blockstackRanges, j, blockstackRanges, j + 3, blockstackRanges.length - j - 3);
+                                System.arraycopy(blockstackRanges, j, blockstackRanges, j + 3, i - j);
                                 blockstackRanges[j] = bci;
                                 blockstackRanges[j + 1] = savedStop;
                                 blockstackRanges[j + 2] = knownIndex;
