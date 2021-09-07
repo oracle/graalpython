@@ -1011,8 +1011,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     case DELETE_FAST:
+                        {
+                            Object value = fastlocals[oparg];
+                            if (value == null) {
+                                PRaiseNode raiseNode = insertChildNode(() -> PRaiseNode.create(), bci);
+                                throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
+                            }
+                            fastlocals[oparg] = null;
+                        }
+                        break;
                     case DELETE_DEREF:
-                        throw CompilerDirectives.shouldNotReachHere("delete locals");
+                        throw CompilerDirectives.shouldNotReachHere("DELETE_DEREF");
                     case LOAD_CLOSURE:
                         throw CompilerDirectives.shouldNotReachHere("LOAD_CLOSURE");
                     case LOAD_CLASSDEREF:
