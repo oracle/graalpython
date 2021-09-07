@@ -211,7 +211,13 @@ public final class PCode extends PythonBuiltinObject {
         }
         SourceSection src = funcRootNode.getSourceSection();
 
-        String filename = PythonContext.get(rootNode).getCodeFilename(funcRootNode.getCallTarget());
+        PythonContext context = PythonContext.get(rootNode);
+        String filename;
+        if (context != null) {
+            filename = context.getCodeFilename(funcRootNode.getCallTarget());
+        } else {
+            return funcRootNode.getName();
+        }
         if (filename != null) {
             // for compiled modules, _imp._fix_co_filename will set the filename
             return filename;
