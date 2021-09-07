@@ -902,38 +902,37 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         blockstackTop--;
                         break;
                     case POP_FINALLY:
-                        // {
-                        //     // very similar to END_FINALLY, but with an argument
-                        //     Object result;
-                        //     if (oparg == 0) {
-                        //         result = null;
-                        //     } else {
-                        //         result = stack[stackTop];
-                        //         stack[stackTop--] = null;
-                        //     }
-                        //     Object exc = stack[stackTop];
-                        //     stack[stackTop--] = null;
-                        //     if (exc == null || exc instanceof Integer) {
-                        //         // nothing to do
-                        //     } else {
-                        //         // first, pop the remaining two current exc_info entries
-                        //         stack[stackTop--] = null;
-                        //         stack[stackTop--] = null;
-                        //         assert isBlockTypeExcept(blockstack[blockstackTop]);
-                        //         assert stackTop == decodeStackTop(blockstack[blockstackTop]) + 3;
-                        //         blockstackTop--;
-                        //         // just pop the previously handled exception also, since we can
-                        //         // recover it differently than CPython (I think...)
-                        //         stack[stackTop--] = null;
-                        //         stack[stackTop--] = null;
-                        //         stack[stackTop--] = null;
-                        //     }
-                        //     if (oparg != 0) {
-                        //         stack[++stackTop] = result;
-                        //     }
-                        // }
-                        // break;
-                        throw new RuntimeException("POP FINALLY");
+                        {
+                            // very similar to END_FINALLY, but with an argument
+                            Object result;
+                            if (oparg == 0) {
+                                result = null;
+                            } else {
+                                result = stack[stackTop];
+                                stack[stackTop--] = null;
+                            }
+                            Object exc = stack[stackTop];
+                            stack[stackTop--] = null;
+                            if (exc == null || exc instanceof Integer) {
+                                // nothing to do
+                            } else {
+                                // first, pop the remaining two current exc_info entries
+                                stack[stackTop--] = null;
+                                stack[stackTop--] = null;
+                                assert isBlockTypeExcept(blockstack[blockstackTop]);
+                                assert stackTop == decodeStackTop(blockstack[blockstackTop]) + 3;
+                                blockstackTop--;
+                                // just pop the previously handled exception also, since we can
+                                // recover it differently than CPython (I think...)
+                                stack[stackTop--] = null;
+                                stack[stackTop--] = null;
+                                stack[stackTop--] = null;
+                            }
+                            if (oparg != 0) {
+                                stack[++stackTop] = result;
+                            }
+                        }
+                        break;
                     case CALL_FINALLY:
                         stack[++stackTop] = bci + 2;
                         bci = oparg + 2;
