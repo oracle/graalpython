@@ -67,6 +67,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFileSystemEncodingNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
@@ -1139,6 +1140,28 @@ public abstract class GraalHPyContextFunctions {
                 } catch (OverflowException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyUnicodeDecodeFSDefault extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached PCallHPyFunction callFromStringNode,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                checkArity(arguments, 2);
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                String fileSystemEncoding = GetFileSystemEncodingNode.getFileSystemEncoding();
+                Object result = callFromStringNode.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_STRING, arguments[1], fileSystemEncoding);
+                return asHandleNode.execute(context, result);
             } finally {
                 gil.release(mustRelease);
             }
