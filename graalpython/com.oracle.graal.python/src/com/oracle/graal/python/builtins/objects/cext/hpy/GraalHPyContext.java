@@ -2080,9 +2080,6 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     private long nativeSpacePointers;
 
-    {
-    }
-
     @TruffleBoundary(allowInlining = true)
     private int allocateHandle() {
         int freeItem = freeStack.pop();
