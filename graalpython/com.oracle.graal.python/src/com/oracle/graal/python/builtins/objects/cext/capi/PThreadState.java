@@ -365,7 +365,7 @@ public class PThreadState extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
-        PythonClass doCurExcType(PythonThreadState threadState, @SuppressWarnings("unused") String key, Object value,
+        Object doCurExcType(PythonThreadState threadState, @SuppressWarnings("unused") String key, Object value,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             setCurrentException(getLanguage(), threadState, factory.createBaseException(value));
             return value;
