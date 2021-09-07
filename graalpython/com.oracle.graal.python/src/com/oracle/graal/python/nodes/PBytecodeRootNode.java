@@ -98,7 +98,6 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.RShiftNo
 import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.SubNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.TrueDivNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ContainsNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
@@ -131,8 +130,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.ValueType;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -386,77 +383,77 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @ExplodeLoop
-    private final void copyStack(Object[] dst, Object[] src) {
+    private void copyStack(Object[] dst, Object[] src) {
         for (int i = 0; i < stacksize; i++) {
             dst[i] = src[i];
         }
     }
 
     @ExplodeLoop
-    private final void copyLocals(Object[] dst, Object[] src) {
+    private void copyLocals(Object[] dst, Object[] src) {
         for (int i = 0; i < varnames.length; i++) {
             dst[i] = src[i];
         }
     }
 
     @ExplodeLoop
-    private final void copyCellvars(Object[] dst, Object[] src) {
+    private void copyCellvars(Object[] dst, Object[] src) {
         for (int i = 0; i < cellvars.length; i++) {
             dst[i] = src[i];
         }
     }
 
     @ExplodeLoop
-    private final void copyFreevars(Object[] dst, Object[] src) {
+    private void copyFreevars(Object[] dst, Object[] src) {
         for (int i = 0; i < freevars.length; i++) {
             dst[i] = src[i];
         }
     }
 
     @ExplodeLoop
-    private final void copyBlocks(int[] dst, int[] src) {
+    private void copyBlocks(int[] dst, int[] src) {
         for (int i = 0; i < MAXBLOCKS; i++) {
             dst[i] = src[i];
         }
     }
 
-    private static final int decodeBCI(int target) {
+    private static int decodeBCI(int target) {
         return (target >> 16) & 0xffff; // unsigned
     }
 
-    private static final int decodeStackTop(int target) {
+    private static int decodeStackTop(int target) {
         return ((target >> 4) & 0xfff) - 1;
     }
 
-    private static final int decodeBlockstackTop(int target) {
+    private static int decodeBlockstackTop(int target) {
         return ((target & 0xf) - 1);
     }
 
-    private static final boolean isBlockTypeFinally(int target) {
+    private static boolean isBlockTypeFinally(int target) {
         return (target & 1) == 1;
     }
 
-    private static final boolean isBlockTypeExcept(int target) {
+    private static boolean isBlockTypeExcept(int target) {
         return (target & 1) == 0;
     }
 
-    private static final int encodeBCI(int bci) {
+    private static int encodeBCI(int bci) {
         return bci << 16;
     }
 
-    private static final int encodeStackTop(int stackTop) {
+    private static int encodeStackTop(int stackTop) {
         return (stackTop + 1) << 4;
     }
 
-    private static final int encodeBlockstackTop(int blockstackTop) {
+    private static int encodeBlockstackTop(int blockstackTop) {
         return blockstackTop + 1;
     }
 
-    private static final int encodeBlockTypeFinally() {
+    private static int encodeBlockTypeFinally() {
         return 1;
     }
 
-    private static final int encodeBlockTypeExcept() {
+    private static int encodeBlockTypeExcept() {
         return 0;
     }
 
@@ -1437,7 +1434,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
      * range the block belongs to to include {@code bci}. The method ensures the ranges remain
      * sorted by known start index.
      */
-    private final int[] saveExceptionBlockstack(int bci, int[] blockstack, int blockstackTop) {
+    private int[] saveExceptionBlockstack(int bci, int[] blockstack, int blockstackTop) {
         CompilerAsserts.neverPartOfCompilation();
         int[] currentBlockstack = Arrays.copyOf(blockstack, blockstackTop + 1);
 
@@ -1503,7 +1500,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @ExplodeLoop
-    private final int[] getExceptionBlockstack(int bci, int[] blockstack, int blockstackTop) {
+    private int[] getExceptionBlockstack(int bci, int[] blockstack, int blockstackTop) {
         if (exceptionBlockStacks == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             exceptionBlockStacks = new int[0][];
@@ -1547,7 +1544,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @ExplodeLoop
-    private final int findHandler(int stackTop, Object[] stack, int[] blockstack, int blockstackTop, int bci) {
+    private int findHandler(int stackTop, Object[] stack, int[] blockstack, int blockstackTop, int bci) {
         CompilerAsserts.partialEvaluationConstant(stackTop);
         CompilerAsserts.partialEvaluationConstant(blockstackTop);
         CompilerAsserts.partialEvaluationConstant(bci);
@@ -1583,7 +1580,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @ExplodeLoop
-    private static final int unwindExceptHandler(Object[] stack, int stackTop, int stackTopBeforeBlock) {
+    private static int unwindExceptHandler(Object[] stack, int stackTop, int stackTopBeforeBlock) {
         CompilerAsserts.partialEvaluationConstant(stackTop);
         CompilerAsserts.partialEvaluationConstant(stackTopBeforeBlock);
         CompilerDirectives.ensureVirtualized(stack);
@@ -1594,7 +1591,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @ExplodeLoop
-    private static final int unwindBlock(Object[] stack, int stackTop, int stackTopBeforeBlock) {
+    private static int unwindBlock(Object[] stack, int stackTop, int stackTopBeforeBlock) {
         CompilerAsserts.partialEvaluationConstant(stackTop);
         CompilerAsserts.partialEvaluationConstant(stackTopBeforeBlock);
         CompilerDirectives.ensureVirtualized(stack);
