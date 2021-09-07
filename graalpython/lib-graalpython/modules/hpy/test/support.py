@@ -225,7 +225,7 @@ class ExtensionCompiler:
         We don't want to unnecessarily modify the global state inside tests:
         if you are writing a test which needs a proper import, you should not
         use make_module but explicitly use compile_module and import it
-        manually as requied by your test.
+        manually as required by your test.
         """
         so_filename = self.compile_module(
             ExtensionTemplate, main_src, name, extra_sources)
