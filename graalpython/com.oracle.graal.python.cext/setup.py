@@ -426,7 +426,7 @@ def build_libhpy(capi_home):
     files = [os.path.abspath(os.path.join(src_dir, f)) for f in os.listdir(src_dir) if f.endswith(".c")]
     module = Extension(libhpy_name,
                        sources=files,
-                       define_macros=[("HPY_UNIVERSAL_ABI", None)],
+                       define_macros=[("HPY_UNIVERSAL_ABI", 1)],
                        extra_compile_args=cflags_warnings,
     )
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean"]

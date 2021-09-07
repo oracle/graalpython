@@ -413,7 +413,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 String buf = PythonUtils.format("LP_%s", name);
                 Object[] args = new Object[]{buf, PyCPointer, factory().createDict()};
                 result = callNode.execute(frame, PyCPointerType, args, PKeyword.EMPTY_KEYWORDS);
-                key = factory().createNativeVoidPtr((TruffleObject) result);
+                key = factory().createNativeVoidPtr(result);
             } else if (isTypeNode.execute(cls)) {
                 String buf = PythonUtils.format("LP_%s", getNameNode.execute(cls));
                 PTuple bases = factory().createTuple(new Object[]{PyCPointer});

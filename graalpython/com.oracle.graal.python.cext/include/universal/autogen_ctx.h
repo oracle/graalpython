@@ -37,10 +37,12 @@
 typedef HPy* _HPyPtr;
 typedef HPy _HPyConst;
 
+#ifdef GRAALVM_PYTHON_LLVM
 #define HPy void*
 #define HPyListBuilder void*
 #define HPyTupleBuilder void*
 #define HPyTracker void*
+#endif
 
 
 struct _HPyContext_s {
@@ -249,7 +251,9 @@ struct _HPyContext_s {
     void (*ctx_Dump)(HPyContext ctx, HPy h);
 };
 
+#ifdef GRAALVM_PYTHON_LLVM
 #undef HPy
 #undef HPyListBuilder
 #undef HPyTupleBuilder
 #undef HPyTracker
+#endif

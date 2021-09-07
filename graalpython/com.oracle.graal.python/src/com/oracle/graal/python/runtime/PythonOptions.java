@@ -31,6 +31,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,7 @@ import org.graalvm.options.OptionDescriptor;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionStability;
+import org.graalvm.options.OptionType;
 import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -59,6 +61,19 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 @Option.Group(PythonLanguage.ID)
 public final class PythonOptions {
     private static final String EXECUTABLE_LIST_SEPARATOR = "🏆";
+
+    public enum HPyBackendMode {
+        NFI,
+        JNI
+    }
+
+    static final OptionType<HPyBackendMode> HPY_BACKEND_TYPE = new OptionType<>("HPyBackend", s -> {
+        try {
+            return HPyBackendMode.valueOf(s.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Backend can be one of: " + Arrays.toString(HPyBackendMode.values()));
+        }
+    });
 
     private PythonOptions() {
         // no instances
@@ -151,6 +166,16 @@ public final class PythonOptions {
 
     @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Enable catching all Exceptions in generic try-catch statements.") //
     public static final OptionKey<Boolean> CatchAllExceptions = new OptionKey<>(false);
+
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Choose the backend for HPy binary mode.", stability = OptionStability.EXPERIMENTAL) //
+    public static final OptionKey<HPyBackendMode> HPyBackend = new OptionKey<>(HPyBackendMode.JNI, HPY_BACKEND_TYPE);
+
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "If {@code true}, code is enabled that tries to reduce expensive upcalls into the runtime" +
+                    "when HPy API functions are used. This is achieved by mirroring data in native memory.", stability = OptionStability.EXPERIMENTAL) //
+    public static final OptionKey<Boolean> HPyEnableJNIFastPaths = new OptionKey<>(true);
+
+    @Option(category = OptionCategory.INTERNAL, help = "Specify the directory where the JNI library is located.", stability = OptionStability.EXPERIMENTAL) //
+    public static final OptionKey<String> JNIHome = new OptionKey<>("");
 
     @Option(category = OptionCategory.EXPERT, help = "Prints path to parsed files") //
     public static final OptionKey<Boolean> ParserLogFiles = new OptionKey<>(false);
@@ -456,6 +481,5 @@ public final class PythonOptions {
         public <T> void set(OptionKey<T> optionKey, T value) {
             throw new UnsupportedOperationException();
         }
-
     }
 }

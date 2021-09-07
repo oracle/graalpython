@@ -38,50 +38,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.hpy;
+package com.oracle.graal.python.runtime.object;
 
-import java.util.Arrays;
+import java.util.Objects;
 
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
-import com.oracle.graal.python.util.OverflowException;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.instrumentation.AllocationReporter;
+import com.oracle.truffle.api.nodes.NodeCost;
+import com.oracle.truffle.api.object.Shape;
 
-public final class GraalHPyTracker {
-    private static final int HPYTRACKER_INITIAL_SIZE = 5;
+/**
+ * A subclass of {@link PythonObjectFactory} which is basically an uncached version of it but
+ * directly stores a reference to the {@link AllocationReporter} instead of doing a context lookup
+ * and getting it from the context. This class is meant to be used on slow path where the context is
+ * explicitly available.
+ */
+public final class PythonObjectSlowPathFactory extends PythonObjectFactory {
 
-    private GraalHPyHandle[] handles;
-    private int cursor;
+    private final AllocationReporter reporter;
 
-    public GraalHPyTracker(int capacity) {
-        int size = capacity == 0 ? HPYTRACKER_INITIAL_SIZE : capacity;
-        this.handles = new GraalHPyHandle[size];
-    }
-
-    public void add(GraalHPyHandle h) throws OverflowException {
-        handles[cursor++] = h;
-        if (handles.length <= cursor) {
-            resize();
-        }
+    public PythonObjectSlowPathFactory(AllocationReporter reporter) {
+        this.reporter = Objects.requireNonNull(reporter);
     }
 
     @TruffleBoundary
-    private void resize() throws OverflowException {
-        handles = Arrays.copyOf(handles, PythonUtils.multiplyExact(handles.length, 2) - 1);
+    @Override
+    protected AllocationReporter executeTrace(Object arg0Value, long arg1Value) {
+        assert PythonContext.get(null).getAllocationReporter() == reporter;
+        return PythonObjectFactory.doTrace(arg0Value, arg1Value, reporter);
     }
 
-    public void free(GraalHPyContext nativeContext, HPyCloseHandleNode closeHandleNode) {
-        assert cursor <= handles.length;
-        for (int i = 0; i < cursor; i++) {
-            closeHandleNode.execute(nativeContext, handles[i]);
-        }
-        cursor = 0;
+    @TruffleBoundary
+    @Override
+    protected Shape executeGetShape(Object arg0Value, boolean arg1Value) {
+        return PythonObjectFactory.getShape(arg0Value, arg1Value, (GetInstanceShapeNodeGen.getUncached()));
     }
 
-    public void removeAll() {
-        for (int i = 0; i < handles.length; i++) {
-            handles[i] = null;
-        }
-        cursor = 0;
+    @Override
+    public NodeCost getCost() {
+        return NodeCost.MEGAMORPHIC;
     }
+
+    @Override
+    public boolean isAdoptable() {
+        return false;
+    }
+
 }

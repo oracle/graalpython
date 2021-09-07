@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
  * Represents the value of a native pointer as Python int.<br/>
@@ -55,17 +54,17 @@ import com.oracle.truffle.api.interop.TruffleObject;
  * this eager transformation using this wrapper.
  */
 public class PythonNativeVoidPtr extends PythonAbstractObject {
-    private final TruffleObject object;
+    private final Object object;
     private final long nativePointerValue;
     private final boolean hasNativePointer;
 
-    public PythonNativeVoidPtr(TruffleObject object) {
+    public PythonNativeVoidPtr(Object object) {
         this.object = object;
         this.nativePointerValue = 0;
         this.hasNativePointer = false;
     }
 
-    public PythonNativeVoidPtr(TruffleObject object, long nativePointerValue) {
+    public PythonNativeVoidPtr(Object object, long nativePointerValue) {
         this.object = object;
         this.nativePointerValue = nativePointerValue;
         this.hasNativePointer = true;

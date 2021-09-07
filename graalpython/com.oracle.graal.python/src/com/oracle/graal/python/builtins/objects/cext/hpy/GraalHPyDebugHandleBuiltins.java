@@ -88,9 +88,9 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
     public abstract static class HPyDebugHandleIdNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object doGeneric(PDebugHandle self,
+        long doGeneric(PDebugHandle self,
                         @Cached ConditionProfile profile) {
-            return self.getHandle().getId(getContext().getHPyDebugContext(), profile);
+            return GraalHPyBoxing.boxHandle(self.getHandle().getId(getContext().getHPyDebugContext(), profile));
         }
     }
 
@@ -132,10 +132,10 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static Object format(GraalHPyDebugContext hpyDebugContext, PDebugHandle self) {
-            int id = self.getHandle().getId(hpyDebugContext, ConditionProfile.getUncached());
+            long id = GraalHPyBoxing.boxHandle(self.getHandle().getId(hpyDebugContext, ConditionProfile.getUncached()));
             Object objRepr = LookupAndCallUnaryDynamicNode.getUncached().executeObject(self.getHandle().getDelegate(), SpecialMethodNames.__REPR__);
             String reprStr = CastToJavaStringNode.getUncached().execute(objRepr);
-            return String.format("<DebugHandle 0x%s for %s>", Integer.toHexString(id), reprStr);
+            return String.format("<DebugHandle 0x%s for %s>", Long.toHexString(id), reprStr);
         }
     }
 }

@@ -518,7 +518,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             } else {
-                return factory.createNativeVoidPtr((TruffleObject) p);
+                return factory.createNativeVoidPtr(p);
             }
         }
 

@@ -71,8 +71,8 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.ReleaseHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
@@ -140,6 +140,15 @@ public final class PythonContext {
     private static final Source FORCE_IMPORTS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import site\n", "<internal>").internal(true).build();
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
     private volatile boolean finalizing;
+
+    private static String getJniSoExt() {
+        if ("darwin".equals(PythonUtils.getPythonOSName())) {
+            return ".dylib";
+        }
+        return ".so";
+    }
+
+    public static final String PYTHON_JNI_LIBRARY_NAME = System.getProperty("python.jni.library", "libpythonjni" + getJniSoExt());
 
     /**
      * A class to store thread-local data mostly like CPython's {@code PyThreadState}.
@@ -394,6 +403,7 @@ public final class PythonContext {
     static final String NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
     static final String NO_STDLIB = "could not determine Graal.Python's standard library path. You need to pass --python.StdLibHome if you want to use the standard library.";
     static final String NO_CAPI = "could not determine Graal.Python's C API library path. You need to pass --python.CAPI if you want to use the C extension modules.";
+    static final String NO_JNI = "could not determine Graal.Python's JNI library. You need to pass --python.JNILibrary if you want to run, for example, binary HPy extension modules.";
 
     private final PythonLanguage language;
     private PythonModule mainModule;
@@ -1251,7 +1261,7 @@ public final class PythonContext {
         }
     }
 
-    private String sysPrefix, basePrefix, coreHome, stdLibHome, capiHome;
+    private String sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, jniHome;
 
     public void initializeHomeAndPrefixPaths(Env newEnv, String languageHome) {
         sysPrefix = newEnv.getOptions().get(PythonOptions.SysPrefix);
@@ -1259,6 +1269,7 @@ public final class PythonContext {
         coreHome = newEnv.getOptions().get(PythonOptions.CoreHome);
         stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
         capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
+        jniHome = newEnv.getOptions().get(PythonOptions.JNIHome);
 
         Python3Core.writeInfo(() -> MessageFormat.format("Initial locations:" +
                         "\n\tLanguage home: {0}" +
@@ -1266,7 +1277,8 @@ public final class PythonContext {
                         "\n\tBaseSysPrefix: {2}" +
                         "\n\tCoreHome: {3}" +
                         "\n\tStdLibHome: {4}" +
-                        "\n\tCAPI: {5}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome));
+                        "\n\tCAPI: {5}" +
+                        "\n\tJNI library: {6}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, jniHome));
 
         String envHome = null;
         try {
@@ -1330,6 +1342,10 @@ public final class PythonContext {
             if (capiHome.isEmpty()) {
                 capiHome = coreHome;
             }
+
+            if (jniHome.isEmpty()) {
+                jniHome = coreHome;
+            }
         }
 
         if (ImageInfo.inImageBuildtimeCode()) {
@@ -1344,6 +1360,7 @@ public final class PythonContext {
             coreHome = base.relativize(newEnv.getInternalTruffleFile(coreHome)).getPath();
             stdLibHome = base.relativize(newEnv.getInternalTruffleFile(stdLibHome)).getPath();
             capiHome = base.relativize(newEnv.getInternalTruffleFile(capiHome)).getPath();
+            jniHome = base.relativize(newEnv.getInternalTruffleFile(jniHome)).getPath();
         }
 
         Python3Core.writeInfo(() -> MessageFormat.format("Updated locations:" +
@@ -1353,7 +1370,9 @@ public final class PythonContext {
                         "\n\tCoreHome: {3}" +
                         "\n\tStdLibHome: {4}" +
                         "\n\tExecutable: {5}" +
-                        "\n\tCAPI: {6}", home != null ? home.getPath() : "", sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable), capiHome));
+                        "\n\tCAPI: {6}" +
+                        "\n\tJNI library: {7}", home != null ? home.getPath() : "", sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable), capiHome,
+                        jniHome));
     }
 
     @TruffleBoundary
@@ -1410,6 +1429,15 @@ public final class PythonContext {
             return coreHome;
         }
         return capiHome;
+    }
+
+    @TruffleBoundary
+    public String getJNIHome() {
+        if (jniHome.isEmpty()) {
+            writeWarning(NO_JNI);
+            return jniHome;
+        }
+        return jniHome;
     }
 
     public Object getTopScopeObject() {

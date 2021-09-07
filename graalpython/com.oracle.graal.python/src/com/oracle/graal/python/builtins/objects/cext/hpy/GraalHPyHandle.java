@@ -71,9 +71,10 @@ public final class GraalHPyHandle implements TruffleObject {
     public static final String I = "_i";
 
     private final Object delegate;
-    private int id = -1;
+    private int id;
 
     private GraalHPyHandle() {
+        // used only for the NULL handle
         this.delegate = null;
         this.id = 0;
     }
@@ -81,6 +82,7 @@ public final class GraalHPyHandle implements TruffleObject {
     GraalHPyHandle(Object delegate) {
         assert delegate != null : "HPy handles to Java null are not allowed";
         this.delegate = delegate;
+        this.id = -1;
     }
 
     /**
@@ -90,6 +92,16 @@ public final class GraalHPyHandle implements TruffleObject {
     public int getId(GraalHPyContext context, ConditionProfile hasIdProfile) {
         int result = id;
         if (!isPointer(hasIdProfile)) {
+            assert !GraalHPyBoxing.isBoxablePrimitive(delegate) : "allocating handle for value that could be boxed";
+            result = context.getHPyHandleForObject(this);
+            id = result;
+        }
+        return result;
+    }
+
+    public int getIdDebug(GraalHPyContext context) {
+        int result = id;
+        if (id == -1) {
             result = context.getHPyHandleForObject(this);
             id = result;
         }
@@ -99,7 +111,7 @@ public final class GraalHPyHandle implements TruffleObject {
     @ExportMessage
     boolean isPointer(
                     @Exclusive @Cached ConditionProfile isNativeProfile) {
-        return isNativeProfile.profile(id != -1);
+        return isNativeProfile.profile(id != -1 || delegate instanceof Integer || delegate instanceof Double);
     }
 
     @ExportMessage
@@ -110,7 +122,14 @@ public final class GraalHPyHandle implements TruffleObject {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnsupportedMessageException.create();
         }
-        return id;
+        if (id != -1) {
+            return GraalHPyBoxing.boxHandle(id);
+        } else if (delegate instanceof Integer) {
+            return GraalHPyBoxing.boxInt((Integer) delegate);
+        } else if (delegate instanceof Double) {
+            return GraalHPyBoxing.boxDouble((Double) delegate);
+        }
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     /**
@@ -121,6 +140,7 @@ public final class GraalHPyHandle implements TruffleObject {
     void toNative(@Exclusive @Cached ConditionProfile isNativeProfile,
                     @CachedLibrary("this") InteropLibrary lib) {
         if (!isPointer(isNativeProfile)) {
+            assert !GraalHPyBoxing.isBoxablePrimitive(delegate) : "allocating handle for value that could be boxed";
             id = PythonContext.get(lib).getHPyContext().getHPyHandleForObject(this);
         }
     }
@@ -166,7 +186,7 @@ public final class GraalHPyHandle implements TruffleObject {
     @ExportMessage
     Object getNativePointer(
                     @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile) {
-        return isPointer(isAllocatedProfile) ? id : null;
+        return isPointer(isAllocatedProfile) ? GraalHPyBoxing.boxHandle(id) : null;
     }
 
     @ExportMessage
@@ -206,19 +226,17 @@ public final class GraalHPyHandle implements TruffleObject {
         return id == 0;
     }
 
-    public GraalHPyHandle copy() {
-        return new GraalHPyHandle(delegate);
+    boolean isAllocated() {
+        return id > 0;
     }
 
-    public void close(GraalHPyContext hpyContext, ConditionProfile isAllocatedProfile) {
-        if (isPointer(isAllocatedProfile)) {
-            try {
-                hpyContext.releaseHPyHandleForObject((int) asPointer());
-                id = -1;
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere("trying to release non-native handle that claims to be native");
-            }
-        }
-        // nothing to do if the handle never got 'toNative'
+    void closeAndInvalidate(GraalHPyContext hpyContext) {
+        assert id != -1;
+        hpyContext.releaseHPyHandleForObject(id);
+        id = -1;
+    }
+
+    public GraalHPyHandle copy() {
+        return new GraalHPyHandle(delegate);
     }
 }

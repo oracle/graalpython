@@ -79,7 +79,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
  * between Python and Sulong.
  */
 public abstract class CArrayWrappers {
-    private static final Unsafe UNSAFE = getUnsafe();
+    public static final Unsafe UNSAFE = getUnsafe();
     private static final long SIZEOF_INT64 = 8;
 
     private static Unsafe getUnsafe() {

@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PDebugHandle;
+import com.oracle.graal.python.builtins.objects.cext.hpy.PythonHPyObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
@@ -258,6 +259,14 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     /**
+     * Creates a PythonObject for the given class. This is potentially slightly slower than if the
+     * shape had been cached, due to the additional shape lookup.
+     */
+    public final PythonObject createPythonHPyObject(Object cls, Object hpyNativeSpace) {
+        return trace(new PythonHPyObject(cls, getShape(cls), hpyNativeSpace));
+    }
+
+    /**
      * Creates a Python object with the given shape. Python object shapes store the class in the
      * shape if possible.
      */
@@ -265,7 +274,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonObject(klass, instanceShape));
     }
 
-    public final PythonNativeVoidPtr createNativeVoidPtr(TruffleObject obj) {
+    public final PythonNativeVoidPtr createNativeVoidPtr(Object obj) {
         return trace(new PythonNativeVoidPtr(obj));
     }
 

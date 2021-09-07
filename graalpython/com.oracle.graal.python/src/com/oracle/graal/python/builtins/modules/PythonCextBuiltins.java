@@ -926,7 +926,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 if (value != PNone.NO_VALUE) {
                     Object[] tuple = (Object[]) value;
                     assert tuple.length == 2;
-                    l.add(new PythonAbstractNativeObject((TruffleObject) tuple[idx]));
+                    l.add(new PythonAbstractNativeObject(tuple[idx]));
                 }
             }
             return l.toArray();

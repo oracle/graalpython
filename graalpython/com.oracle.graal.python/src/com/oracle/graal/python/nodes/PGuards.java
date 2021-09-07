@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -424,6 +425,14 @@ public abstract class PGuards {
         return obj instanceof PTraceback;
     }
 
+    public static boolean isInt(Object obj) {
+        return obj instanceof Integer;
+    }
+
+    public static boolean isLong(Object obj) {
+        return obj instanceof Long;
+    }
+
     public static boolean isInteger(Object obj) {
         return obj instanceof Long || obj instanceof Integer;
     }
@@ -490,6 +499,10 @@ public abstract class PGuards {
 
     public static boolean isCDataObject(Object obj) {
         return obj instanceof CDataObject;
+    }
+
+    public static boolean isHPyHandle(Object obj) {
+        return obj instanceof GraalHPyHandle;
     }
 
     public static boolean expectBoolean(Object result) throws UnexpectedResultException {

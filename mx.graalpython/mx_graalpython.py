@@ -93,6 +93,10 @@ def _get_capi_home():
     return mx.dependency("com.oracle.graal.python.cext").get_output_root()
 
 
+def _get_jni_home():
+    return mx.distribution("GRAALPYTHON_JNI").get_output()
+
+
 def _extract_graalpython_internal_options(args):
     non_internal = []
     additional_dists = []
@@ -133,10 +137,17 @@ def python(args, **kwargs):
 
 
 def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, main_class=GRAALPYTHON_MAIN_CLASS, **kwargs):
+    experimental_opt_added = False
     if not any(arg.startswith("--python.CAPI") for arg in args):
         capi_home = _get_capi_home()
-        args.insert(0, "--experimental-options")
         args.insert(0, "--python.CAPI=%s" % capi_home)
+        args.insert(0, "--experimental-options")
+        experimental_opt_added = True
+
+    if not any(arg.startswith("--python.JNIHome") for arg in args):
+        args.insert(0, "--python.JNIHome=" + _get_jni_home())
+        if not experimental_opt_added:
+            args.insert(0, "--experimental-options")
 
     if not env:
         env = os.environ.copy()
@@ -2121,7 +2132,7 @@ def update_hpy_import_cmd(args):
         return lambda relpath: relpath.startswith(subdir)
 
     # headers go into 'com.oracle.graal.python.cext/include'
-    header_dest = join(mx.dependency("com.oracle.graal.python.cext").dir, "include")
+    header_dest = join(mx.project("com.oracle.graal.python.cext").dir, "include")
 
     # 'version.py' goes to 'lib-graalpython/module/hpy/devel/'
     dest_version_file = join(_get_core_home(), "modules", "hpy", "devel", "version.py")
@@ -2137,10 +2148,18 @@ def update_hpy_import_cmd(args):
     import_files(hpy_repo_include_dir, header_dest)
     remove_inexistent_files(hpy_repo_include_dir, header_dest)
 
+
     # runtime sources go into 'lib-graalpython/module/hpy/devel/src'
     runtime_files_dest = join(_get_core_home(), "modules", "hpy", "devel", "src")
     import_files(hpy_repo_runtime_dir, runtime_files_dest)
     remove_inexistent_files(hpy_repo_runtime_dir, runtime_files_dest)
+
+    # 'ctx_tracker.c' also goes to 'com.oracle.graal.python.jni/src/ctx_tracker.c'
+    tracker_file_src = join(hpy_repo_runtime_dir, "ctx_tracker.c")
+    if not os.path.exists(tracker_file_src):
+        mx.abort("File '{}' is missing but required.".format(tracker_file_src))
+    tracker_file_dest = join(mx.project("com.oracle.graal.python.jni").dir, "src", "ctx_tracker.c")
+    import_file(tracker_file_src, tracker_file_dest)
 
     # tests go to 'lib-graalpython/module/hpy/tests'
     test_files_dest = _hpy_test_root()
@@ -2159,7 +2178,7 @@ def update_hpy_import_cmd(args):
     spec.loader.exec_module(version_module)
     imported_version = version_module.__version__
 
-    SUITE.vc.git_command(SUITE.dir, ["add", header_dest, runtime_files_dest, test_files_dest])
+    SUITE.vc.git_command(SUITE.dir, ["add", header_dest, test_files_dest, runtime_files_dest, tracker_file_dest])
     input("Check that the updated files look as intended, then press RETURN...")
     SUITE.vc.commit(SUITE.dir, "Update HPy inlined files: %s" % import_version)
     SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])

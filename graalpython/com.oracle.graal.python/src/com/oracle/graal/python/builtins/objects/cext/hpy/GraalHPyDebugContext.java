@@ -44,12 +44,12 @@ import java.util.ArrayList;
 
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class GraalHPyDebugContext extends GraalHPyContext {
 
     private int currentGeneration;
-    private int[] generationTable = new int[]{0};
+    private int age;
+    private long[] debugHandleInfo = new long[]{0};
 
     public GraalHPyDebugContext(GraalHPyContext context) {
         super(context.getContext(), context.getLLVMLibrary());
@@ -57,14 +57,13 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
         setHPyContextNativeType(context.getNativeType());
         setHPyNativeType(context.getHPyNativeType());
         setHPyArrayNativeType(context.getHPyArrayNativeType());
-        setNullHandle(context.getNullHandle());
         setWcharSize(context.getWcharSize());
     }
 
     /**
      * Since the initialization of the context members cannot use {@link #createHandle(Object)}, we
      * track the constants of the debug mode separately here. The reason why we can't use
-     * {@link #createHandle(Object)} is that the {@link #generationTable} will be initialized after
+     * {@link #createHandle(Object)} is that the {@link #debugHandleInfo} will be initialized after
      * the context members and that would cause an NPE.
      */
     private void trackConstants() {
@@ -83,8 +82,8 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
     @TruffleBoundary
     public ArrayList<GraalHPyHandle> getOpenHandles(int generation) {
         ArrayList<GraalHPyHandle> openHandles = new ArrayList<>();
-        for (int i = 0; i < generationTable.length; i++) {
-            if (generationTable[i] >= generation) {
+        for (int i = 0; i < debugHandleInfo.length; i++) {
+            if (getGeneration(debugHandleInfo[i]) >= generation) {
                 openHandles.add(getObjectForHPyHandle(i));
             }
         }
@@ -95,17 +94,22 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
         return currentGeneration;
     }
 
+    public long getDebugHandleInfo(GraalHPyHandle handle) {
+        return debugHandleInfo[handle.getIdDebug(this)];
+    }
+
     public int newGeneration() {
+        age = 0;
         return ++currentGeneration;
     }
 
     private void trackHandle(GraalHPyHandle handle) {
-        int id = handle.getId(this, ConditionProfile.getUncached());
-        if (id >= generationTable.length) {
-            int newSize = Math.max(16, generationTable.length * 2);
-            generationTable = PythonUtils.arrayCopyOf(generationTable, newSize);
+        int id = handle.getIdDebug(this);
+        if (id >= debugHandleInfo.length) {
+            int newSize = Math.max(16, debugHandleInfo.length * 2);
+            debugHandleInfo = PythonUtils.arrayCopyOf(debugHandleInfo, newSize);
         }
-        generationTable[id] = currentGeneration;
+        debugHandleInfo[id] = toBits(currentGeneration, age++);
     }
 
     @Override
@@ -118,6 +122,14 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
     @Override
     public synchronized void releaseHPyHandleForObject(int handle) {
         super.releaseHPyHandleForObject(handle);
-        generationTable[handle] = -1;
+        debugHandleInfo[handle] = -1;
+    }
+
+    private static int getGeneration(long bits) {
+        return (int) (bits >>> Integer.SIZE);
+    }
+
+    private static long toBits(int generation, int age) {
+        return ((long) generation << Integer.SIZE) | age;
     }
 }

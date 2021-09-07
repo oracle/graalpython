@@ -75,7 +75,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -89,9 +88,9 @@ import com.oracle.truffle.api.utilities.TriState;
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
-    public final TruffleObject object;
+    public final Object object;
 
-    public PythonAbstractNativeObject(TruffleObject object) {
+    public PythonAbstractNativeObject(Object object) {
         this.object = object;
     }
 
@@ -105,7 +104,8 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         throw new UnsupportedOperationException("not yet implemented");
     }
 
-    public TruffleObject getPtr() {
+    @Override
+    public Object getPtr() {
         return object;
     }
 

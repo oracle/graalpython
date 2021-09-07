@@ -202,6 +202,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         mod.setAttribute("core_home", coreHome);
         mod.setAttribute("stdlib_home", stdlibHome);
         mod.setAttribute("capi_home", capiHome);
+        mod.setAttribute("jni_home", context.getJNIHome());
         mod.setAttribute("platform_id", toolchain.getIdentifier());
         Object[] arr = convertToObjectArray(PythonOptions.getExecutableList(context));
         PList executableList = PythonObjectFactory.getUncached().createList(arr);
