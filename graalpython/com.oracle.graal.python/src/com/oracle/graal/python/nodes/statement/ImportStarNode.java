@@ -44,6 +44,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
@@ -72,6 +73,7 @@ public class ImportStarNode extends AbstractImportNode {
     @Child private PyObjectSizeNode sizeNode;
     @Child private PythonObjectLibrary pol;
     @Child private PyObjectGetAttr getAllNode;
+    @Child private GetDictNode getDictNode;
 
     @Child private IsBuiltinClassProfile isAttributeErrorProfile;
     @Child private IsBuiltinClassProfile isStopIterationProfile;
@@ -143,7 +145,7 @@ public class ImportStarNode extends AbstractImportNode {
             } catch (PException e) {
                 e.expectAttributeError(ensureIsAttributeErrorProfile());
                 assert importedModule instanceof PythonModule;
-                Object keysIterator = ensurePol().getIterator(ensurePol().getDict(importedModule));
+                Object keysIterator = ensurePol().getIterator(ensureGetDictNode().execute(importedModule));
                 while (true) {
                     try {
                         Object key = ensureGetNextNode().execute(frame, keysIterator);
@@ -235,5 +237,13 @@ public class ImportStarNode extends AbstractImportNode {
             pol = insert(PythonObjectLibrary.getFactory().createDispatched(2));
         }
         return pol;
+    }
+
+    private GetDictNode ensureGetDictNode() {
+        if (getDictNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getDictNode = insert(GetDictNode.create());
+        }
+        return getDictNode;
     }
 }

@@ -159,7 +159,10 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -676,18 +679,18 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(lookupAttrNode.execute(object, __REPR__));
         }
 
-        @Specialization(guards = "eq(TP_DICT, key)", limit = "1")
+        @Specialization(guards = "eq(TP_DICT, key)")
         static Object doTpDict(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Shared("factory") @Cached PythonObjectFactory factory,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
+                        @Cached GetOrCreateDictNode getDict,
                         @CachedLibrary(limit = "2") HashingStorageLibrary storageLib,
-                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) throws UnsupportedMessageException {
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
             // TODO(fa): we could cache the dict instance on the class' native wrapper
-            PDict dict = lib.getDict(object);
+            PDict dict = getDict.execute(object);
             if (dict instanceof StgDictObject) {
                 return dict.getNativeWrapper();
             }
-            HashingStorage dictStorage = dict != null ? dict.getDictStorage() : null;
+            HashingStorage dictStorage = dict.getDictStorage();
             if (dictStorage instanceof DynamicObjectStorage) {
                 // reuse the existing and modifiable storage
                 return toSulongNode.execute(factory.createDict(dict.getDictStorage()));
@@ -697,9 +700,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 // copy all mappings to the new storage
                 storage = storageLib.addAllToOther(dictStorage, storage);
             }
-            PDict newDict = factory.createDict(storage);
-            lib.setDict(object, newDict);
-            return toSulongNode.execute(newDict);
+            dict.setDictStorage(storage);
+            return toSulongNode.execute(dict);
         }
 
         @Specialization(guards = "eq(TP_TRAVERSE, key) || eq(TP_CLEAR, key)")
@@ -914,17 +916,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(getDictNode.execute(object, SpecialAttributeNames.__DICT__));
         }
 
-        @Specialization(guards = "eq(TP_DICT, key)", limit = "1")
+        @Specialization(guards = "eq(TP_DICT, key)")
         static Object doTpDict(PythonClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
-                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) throws UnsupportedMessageException {
-            PDict dict = lib.getDict(object);
-            if (dict == null) {
-                dict = factory.createDictFixedStorage(object);
-                lib.setDict(object, dict);
-            }
-            return toSulongNode.execute(dict);
+                        @Cached GetOrCreateDictNode getDict,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(getDict.execute(object));
         }
 
         @Specialization(guards = "eq(MD_DEF, key)")
@@ -1440,12 +1436,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                                                 isPrimitiveDictProfile.profileObject(value, PythonBuiltinClassType.StgDict));
             }
 
-            @Specialization(guards = "eq(TP_DICT, key)", limit = "1")
+            @Specialization(guards = "eq(TP_DICT, key)")
             static void doTpDict(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object nativeValue,
-                            @CachedLibrary("object") PythonObjectLibrary lib,
+                            @Cached GetDictIfExistsNode getDict,
+                            @Cached SetDictNode setDict,
                             @Cached AsPythonObjectNode asPythonObjectNode,
                             @Cached WriteAttributeToObjectNode writeAttrNode,
-                            @Cached IsBuiltinClassProfile isPrimitiveDictProfile) throws UnsupportedMessageException {
+                            @Cached IsBuiltinClassProfile isPrimitiveDictProfile) {
                 Object value = asPythonObjectNode.execute(nativeValue);
                 if (isBuiltinDict(isPrimitiveDictProfile, value)) {
                     // special and fast case: commit items and change store
@@ -1453,13 +1450,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     for (HashingStorage.DictEntry entry : d.entries()) {
                         writeAttrNode.execute(object, entry.getKey(), entry.getValue());
                     }
-                    PDict existing = lib.getDict(object);
+                    PDict existing = getDict.execute(object);
                     if (existing != null) {
                         d.setDictStorage(existing.getDictStorage());
                     } else {
                         d.setDictStorage(new DynamicObjectStorage(object.getStorage()));
                     }
-                    lib.setDict(object, d);
+                    setDict.execute(object, d);
                 } else {
                     // TODO custom mapping object
                 }

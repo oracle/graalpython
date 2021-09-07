@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -62,12 +61,14 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectNotTypeNodeGen;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectTpDictNodeGen;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -126,22 +127,22 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         }
     }
 
-    protected static boolean writeToDynamicStorageNoTypeGuard(Object obj, Object key, BranchProfile isNotHidden, PythonObjectLibrary lib) {
+    protected static boolean writeToDynamicStorageNoTypeGuard(Object obj, Object key, BranchProfile isNotHidden, GetDictIfExistsNode getDict) {
         if (isHiddenKey(key)) {
             return true;
         }
         isNotHidden.enter();
-        return !lib.hasDict(obj) && !PythonManagedClass.isInstance(obj);
+        return getDict.execute(obj) == null && !PythonManagedClass.isInstance(obj);
     }
 
     // Specialization for cases that have no special handling and can just delegate to
     // WriteAttributeToDynamicObjectNode. Note that the fast-path for String keys and the inline
     // cache in WriteAttributeToDynamicObjectNode perform better in some configurations than if we
     // cast the key here and used DynamicObjectLibrary directly
-    @Specialization(guards = {"isAttrWritable(object, key)", "writeToDynamicStorageNoTypeGuard(object, key, isNotHidden, lib)"}, limit = "1")
+    @Specialization(guards = {"isAttrWritable(object, key)", "writeToDynamicStorageNoTypeGuard(object, key, isNotHidden, getDict)"}, limit = "1")
     static boolean writeToDynamicStorageNoType(PythonObject object, Object key, Object value,
+                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @SuppressWarnings("unused") @Cached BranchProfile isNotHidden,
-                    @CachedLibrary("object") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached WriteAttributeToDynamicObjectNode writeNode) {
         // Objects w/o dict that are not classes do not have any special handling
         writeNode.execute(object, key, value);
@@ -149,9 +150,9 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     // Specializations for no dict & PythonManagedClass -> requires calling onAttributeUpdate
-    @Specialization(guards = {"isAttrWritable(klass, key)", "!isHiddenKey(key)", "!lib.hasDict(klass)"}, limit = "1")
+    @Specialization(guards = {"isAttrWritable(klass, key)", "!isHiddenKey(key)", "getDict.execute(klass) == null"}, limit = "1")
     boolean writeToDynamicStorageBuiltinType(PythonBuiltinClass klass, Object key, Object value,
-                    @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
+                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Cached CastToJavaStringNode castToStrNode,
                     @Cached BranchProfile callAttrUpdate,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
@@ -162,9 +163,9 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         }
     }
 
-    @Specialization(guards = {"isAttrWritable(klass, key)", "!isHiddenKey(key)", "!lib.hasDict(klass)"}, limit = "1")
+    @Specialization(guards = {"isAttrWritable(klass, key)", "!isHiddenKey(key)", "getDict.execute(klass) == null"}, limit = "1")
     static boolean writeToDynamicStoragePythonClass(PythonClass klass, Object key, Object value,
-                    @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
+                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Cached CastToJavaStringNode castToStrNode,
                     @Cached BranchProfile callAttrUpdate,
                     @Cached BranchProfile updateFlags,
@@ -192,45 +193,48 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     // write to the dict: the basic specialization for non-classes
-    @Specialization(guards = {"!isHiddenKey(key)", "lib.hasDict(object)", "!isManagedClass(object)"}, limit = "1")
-    static boolean writeToDictNoType(PythonObject object, Object key, Object value,
-                    @CachedLibrary("object") PythonObjectLibrary lib,
+    @Specialization(guards = {"!isHiddenKey(key)", "dict != null", "!isManagedClass(object)"}, limit = "1")
+    static boolean writeToDictNoType(@SuppressWarnings("unused") PythonObject object, Object key, Object value,
+                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
+                    @Bind("getDict.execute(object)") PDict dict,
                     @Cached BranchProfile updateStorage,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
-        return writeToDict(lib.getDict(object), key, value, updateStorage, hlib);
+        return writeToDict(dict, key, value, updateStorage, hlib);
     }
 
     // write to the dict & PythonManagedClass -> requires calling onAttributeUpdate
-    @Specialization(guards = {"!isHiddenKey(key)", "lib.hasDict(klass)"}, limit = "1")
+    @Specialization(guards = {"!isHiddenKey(key)", "dict != null"}, limit = "1")
     boolean writeToDictBuiltinType(PythonBuiltinClass klass, Object key, Object value,
+                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
+                    @Bind("getDict.execute(klass)") PDict dict,
                     @Cached CastToJavaStringNode castToStrNode,
                     @Cached BranchProfile callAttrUpdate,
-                    @CachedLibrary("klass") PythonObjectLibrary lib,
                     @Cached BranchProfile updateStorage,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
         if (PythonContext.get(this).isInitialized()) {
             throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, klass);
         } else {
-            return writeToDictManagedClass(klass, key, value, castToStrNode, callAttrUpdate, lib, updateStorage, hlib);
+            return writeToDictManagedClass(klass, dict, key, value, castToStrNode, callAttrUpdate, updateStorage, hlib);
         }
     }
 
-    @Specialization(guards = {"!isHiddenKey(key)", "lib.hasDict(klass)"}, limit = "1")
+    @Specialization(guards = {"!isHiddenKey(key)", "dict != null"}, limit = "1")
     static boolean writeToDictClass(PythonClass klass, Object key, Object value,
+                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
+                    @Bind("getDict.execute(klass)") PDict dict,
                     @Cached CastToJavaStringNode castToStrNode,
                     @Cached BranchProfile callAttrUpdate,
-                    @CachedLibrary("klass") PythonObjectLibrary lib,
                     @Cached BranchProfile updateStorage,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
-        return writeToDictManagedClass(klass, key, value, castToStrNode, callAttrUpdate, lib, updateStorage, hlib);
+        return writeToDictManagedClass(klass, dict, key, value, castToStrNode, callAttrUpdate, updateStorage, hlib);
     }
 
-    private static boolean writeToDictManagedClass(PythonManagedClass klass, Object key, Object value, CastToJavaStringNode castToStrNode, BranchProfile callAttrUpdate, PythonObjectLibrary lib,
+    private static boolean writeToDictManagedClass(PythonManagedClass klass, PDict dict, Object key, Object value, CastToJavaStringNode castToStrNode, BranchProfile callAttrUpdate,
                     BranchProfile updateStorage, HashingStorageLibrary hlib) {
         CompilerAsserts.partialEvaluationConstant(klass.getClass());
         String strKey = castKey(castToStrNode, key);
         try {
-            return writeToDict(lib.getDict(klass), strKey, value, updateStorage, hlib);
+            return writeToDict(dict, strKey, value, updateStorage, hlib);
         } finally {
             if (!klass.canSkipOnAttributeUpdate(strKey, value)) {
                 callAttrUpdate.enter();
@@ -252,9 +256,9 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return true;
     }
 
-    @Specialization(guards = "isErrorCase(lib, object, key)")
+    @Specialization(guards = "isErrorCase(getDict, object, key)", limit = "1")
     static boolean doError(Object object, Object key, @SuppressWarnings("unused") Object value,
-                    @CachedLibrary(limit = "1") @SuppressWarnings("unused") PythonObjectLibrary lib,
+                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Cached PRaiseNode raiseNode) {
         throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
     }
@@ -265,13 +269,13 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return recursive.execute(PythonContext.get(recursive).getCore().lookupType(object), key, value);
     }
 
-    protected static boolean isErrorCase(PythonObjectLibrary lib, Object object, Object key) {
+    protected static boolean isErrorCase(GetDictIfExistsNode getDict, Object object, Object key) {
         if (object instanceof PythonObject) {
             PythonObject self = (PythonObject) object;
-            if (isAttrWritable(self, key) && (isHiddenKey(key) || !lib.hasDict(self))) {
+            if (isAttrWritable(self, key) && (isHiddenKey(key) || getDict.execute(self) == null)) {
                 return false;
             }
-            if (!isHiddenKey(key) && lib.hasDict(self)) {
+            if (!isHiddenKey(key) && getDict.execute(self) != null) {
                 return false;
             }
         }
@@ -286,9 +290,9 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     @GenerateUncached
     protected abstract static class WriteAttributeToObjectNotTypeNode extends WriteAttributeToObjectNode {
-        @Specialization(guards = {"!isHiddenKey(key)"}, limit = "1")
+        @Specialization(guards = {"!isHiddenKey(key)"})
         static boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
+                        @Cached GetDictIfExistsNode getDict,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @Cached BranchProfile updateStorage,
                         @Cached PRaiseNode raiseNode) {
@@ -297,7 +301,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
              * + Py_TYPE(objectPtr)->tp_dictoffset'. 'PythonObjectLibrary.getDict' will exactly load
              * the dict from there.
              */
-            PDict dict = lib.getDict(object);
+            PDict dict = getDict.execute(object);
             if (dict != null) {
                 return writeToDict(dict, key, value, updateStorage, hlib);
             }

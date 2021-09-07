@@ -98,12 +98,12 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
@@ -232,17 +232,18 @@ public class LZMANodes {
             return storage;
         }
 
-        @Specialization(guards = "!isDict(dict)")
-        HashingStorage slow(VirtualFrame frame, Object dict,
+        @Specialization(guards = "!isDict(object)")
+        HashingStorage slow(VirtualFrame frame, Object object,
                         @Shared("id") @Cached ConditionProfile idErrorProfile,
                         @Shared("k") @Cached ConditionProfile hasKeyErrorProfile,
                         @Cached ConditionProfile dictErrorProfile,
                         @Shared("h") @CachedLibrary(limit = "2") HashingStorageLibrary hlib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary getDictLib) {
-            if (dictErrorProfile.profile(!getDictLib.hasDict(dict))) {
+                        @Cached GetDictIfExistsNode getDict) {
+            PDict dict = getDict.execute(object);
+            if (dictErrorProfile.profile(dict == null)) {
                 throw raise(TypeError, FILTER_SPEC_MUST_BE_DICT);
             }
-            return fast(frame, getDictLib.getDict(dict), idErrorProfile, hasKeyErrorProfile, hlib);
+            return fast(frame, dict, idErrorProfile, hasKeyErrorProfile, hlib);
         }
     }
 

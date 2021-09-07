@@ -234,7 +234,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -266,7 +266,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -2576,20 +2575,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 } else if (key instanceof String && typeDict == null) {
                     pythonClass.setAttribute(key, value);
                 } else {
-                    // DynamicObjectStorage ignores non-string keys
-                    typeDict = GetDictIfExistsNode.getUncached().execute(pythonClass);
-                    if (typeDict == null) {
-                        // 1.) create DynamicObjectStorage based dict from pythonClass
-                        typeDict = PythonObjectFactory.getUncached().createDictFixedStorage(pythonClass);
-                        try {
-                            lib.setDict(pythonClass, typeDict);
-                        } catch (UnsupportedMessageException ex) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            throw new IllegalStateException("can't set dict into " + pythonClass, ex);
-                        }
-                    }
-                    // 2.) writing a non string key converts DynamicObjectStorage to
-                    // EconomicMapStorage
+                    // Creates DynamicObjectStorage which ignores non-string keys
+                    typeDict = GetOrCreateDictNode.getUncached().execute(pythonClass);
+                    // Writing a non string key converts DynamicObjectStorage to EconomicMapStorage
                     HashingStorage updatedStore = hashingStorageLib.setItem(typeDict.getDictStorage(), key, value);
                     typeDict.setDictStorage(updatedStore);
                 }

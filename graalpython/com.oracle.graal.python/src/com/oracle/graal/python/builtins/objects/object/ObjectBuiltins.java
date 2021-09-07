@@ -111,7 +111,10 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
@@ -128,10 +131,10 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -690,7 +693,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached GetBaseClassNode getBaseNode,
                         @Cached("createForLookupOfUnmanagedClasses(__DICT__)") LookupAttributeInMRONode getDescrNode,
                         @Cached DescrGetNode getNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached GetOrCreateDictNode getDict,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib,
                         @Cached BranchProfile branchProfile) {
             // typeobject.c#subtype_getdict()
@@ -700,17 +703,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 return getNode.execute(frame, func, self);
             }
 
-            PDict dict = lib.getDict(self);
-            if (dict == null) {
-                dict = factory().createDictFixedStorage(self);
-                try {
-                    lib.setDict(self, dict);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException(e);
-                }
-            }
-            return dict;
+            return getDict.execute(self);
         }
 
         @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isExactObjectInstance(self)", "!isPythonModule(self)"})
@@ -719,7 +712,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached GetBaseClassNode getBaseNode,
                         @Cached("createForLookupOfUnmanagedClasses(__DICT__)") LookupAttributeInMRONode getDescrNode,
                         @Cached DescrSetNode setNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached SetDictNode setDict,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib,
                         @Cached BranchProfile branchProfile) {
             // typeobject.c#subtype_setdict()
@@ -729,19 +722,14 @@ public class ObjectBuiltins extends PythonBuiltins {
                 return setNode.execute(frame, func, self, dict);
             }
 
-            try {
-                lib.setDict(self, dict);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
-            }
+            setDict.execute(self, dict);
             return PNone.NONE;
         }
 
-        @Specialization(guards = "isNoValue(none)", limit = "1")
+        @Specialization(guards = "isNoValue(none)")
         Object dict(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            PDict dict = lib.getDict(self);
+                        @Cached GetDictIfExistsNode getDict) {
+            PDict dict = getDict.execute(self);
             if (dict == null) {
                 raise(self, none);
             }
@@ -754,7 +742,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached GetBaseClassNode getBaseNode,
                         @Cached("createForLookupOfUnmanagedClasses(__DICT__)") LookupAttributeInMRONode getDescrNode,
                         @Cached DescrDeleteNode deleteNode,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @CachedLibrary("self") DynamicObjectLibrary dylib,
                         @Cached BranchProfile branchProfile) {
             // typeobject.c#subtype_setdict()
             Object func = getDescrFromBuiltinBase(getClassNode.execute(self), getBaseNode, getDescrNode);
@@ -762,11 +750,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 branchProfile.enter();
                 return deleteNode.execute(frame, func, self);
             }
-            try {
-                lib.deleteDict(self);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+            dylib.put(self, PythonObject.DICT, null);
             return PNone.NONE;
         }
 

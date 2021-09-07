@@ -42,8 +42,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -51,7 +51,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -106,11 +105,7 @@ public final class PythonModule extends PythonObject {
         PythonObjectFactory factory = PythonObjectFactory.getUncached();
         PythonModule pythonModule = new PythonModule(PythonLanguage.get(null), moduleName);
         PDict dict = factory.createDictFixedStorage(pythonModule);
-        try {
-            PythonObjectLibrary.getUncached().setDict(pythonModule, dict);
-        } catch (UnsupportedMessageException e) {
-            throw CompilerDirectives.shouldNotReachHere("BuiltinModule: could not set __dict__");
-        }
+        SetDictNode.getUncached().execute(pythonModule, dict);
         return pythonModule;
     }
 

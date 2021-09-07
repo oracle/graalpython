@@ -42,17 +42,12 @@ package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @ImportStatic(PGuards.class)
 @GenerateUncached
@@ -65,21 +60,10 @@ public abstract class GetDictNode extends PNodeWithContext {
         return self;
     }
 
-    @Specialization(limit = "1")
+    @Specialization
     PDict dict(PythonModule self,
-                    @CachedLibrary("self") PythonObjectLibrary lib,
-                    @Cached PythonObjectFactory factory) {
-        PDict dict = lib.getDict(self);
-        if (dict == null) {
-            dict = factory.createDictFixedStorage(self);
-            try {
-                lib.setDict(self, dict);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
-            }
-        }
-        return dict;
+                    @Cached GetOrCreateDictNode getDict) {
+        return getDict.execute(self);
     }
 
     public static GetDictNode create() {

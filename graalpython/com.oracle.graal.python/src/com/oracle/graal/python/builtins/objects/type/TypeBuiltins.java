@@ -122,6 +122,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -819,14 +820,14 @@ public class TypeBuiltins extends PythonBuiltins {
     abstract static class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doType(PythonBuiltinClassType self,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            return doManaged(getCore().lookupType(self), lib);
+                        @Cached GetDictIfExistsNode getDict) {
+            return doManaged(getCore().lookupType(self), getDict);
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         Object doManaged(PythonManagedClass self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            PDict dict = lib.getDict(self);
+                        @Cached GetDictIfExistsNode getDict) {
+            PDict dict = getDict.execute(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self, self.getMethodResolutionOrder());
                 // The mapping is unmodifiable, so we don't have to assign it back

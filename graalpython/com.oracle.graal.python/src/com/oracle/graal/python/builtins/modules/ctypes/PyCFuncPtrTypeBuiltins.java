@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
@@ -72,7 +73,8 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -112,7 +114,8 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                         @Cached CastToJavaIntExactNode asNumber,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
                         @Cached GetInternalObjectArrayNode getArray,
-                        @Cached GetOrCreateDictNode getDict,
+                        @Cached GetDictIfExistsNode getDict,
+                        @Cached SetDictNode setDict,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
             StgDictObject stgdict = factory().createStgDictObject(PythonBuiltinClassType.StgDict);
@@ -132,7 +135,11 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
 
             /* replace the class dict by our updated storage dict */
             PDict resDict = getDict.execute(result);
+            if (resDict == null) {
+                resDict = factory().createDictFixedStorage((PythonObject) result);
+            }
             stgdict.setDictStorage(hlib.addAllToOther(resDict.getDictStorage(), stgdict.getDictStorage()));
+            setDict.execute((PythonObject) result, stgdict);
             stgdict.align = FieldDesc.P.pffi_type.alignment;
             stgdict.length = 1;
             stgdict.size = StgDictObject.VOID_PTR_SIZE;
