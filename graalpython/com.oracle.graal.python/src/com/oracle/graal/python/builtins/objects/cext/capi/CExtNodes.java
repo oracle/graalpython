@@ -3748,7 +3748,6 @@ public abstract class CExtNodes {
 
         @Specialization
         static int doGeneric(CApiContext capiContext, PythonModule module, Object moduleDef,
-                        @Cached PythonObjectFactory factory,
                         @Cached ConditionProfile errOccurredProfile,
                         @Cached ModuleGetNameNode getNameNode,
                         @Cached PCallCapiFunction callGetterNode,
