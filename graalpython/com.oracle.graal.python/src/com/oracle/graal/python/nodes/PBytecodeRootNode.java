@@ -852,9 +852,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     case DELETE_SUBSCR:
-                        throw new RuntimeException("DELETE_SUBSCR");
+                        throw CompilerDirectives.shouldNotReachHere("DELETE_SUBSCR");
                     case PRINT_EXPR:
-                        throw new RuntimeException("PRINT_EXPR");
+                        throw CompilerDirectives.shouldNotReachHere("PRINT_EXPR");
                     case RAISE_VARARGS:
                         {
                             RaiseNode raiseNode = insertChildNode(() -> RaiseNode.create(null, null), bci);
@@ -884,10 +884,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case GET_AITER:
                     case GET_ANEXT:
                     case GET_AWAITABLE:
-                        throw new RuntimeException("async bytecodes");
+                        throw CompilerDirectives.shouldNotReachHere("async bytecodes");
                     case YIELD_FROM:
                     case YIELD_VALUE:
-                        throw new RuntimeException("yield bytecodes");
+                        throw CompilerDirectives.shouldNotReachHere("yield bytecodes");
                     case POP_EXCEPT:
                         {
                             assert isBlockTypeExcept(blockstack[blockstackTop]);
@@ -965,7 +965,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         // break;
                         throw new RuntimeException("END FINALLY");
                     case END_ASYNC_FOR:
-                        throw new RuntimeException("async bytecodes");
+                        throw CompilerDirectives.shouldNotReachHere("async bytecodes");
                     case LOAD_BUILD_CLASS:
                         {
                             ReadGlobalOrBuiltinNode read = insertChildNode(() -> ReadGlobalOrBuiltinNode.create(__BUILD_CLASS__), bci);
@@ -989,7 +989,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     case UNPACK_SEQUENCE:
                     case UNPACK_EX:
-                        throw new RuntimeException("unpack bytecodes");
+                        throw CompilerDirectives.shouldNotReachHere("unpack bytecodes");
                     case STORE_ATTR:
                         {
                             String varname = names[oparg];
@@ -997,13 +997,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             stack[stackTop--] = null;
                             Object value = stack[stackTop];
                             stack[stackTop--] = null;
-                            throw new RuntimeException("store attr");
+                            throw CompilerDirectives.shouldNotReachHere("store attr");
                         }
                     case DELETE_ATTR:
-                        throw new RuntimeException("delete attr");
+                        throw CompilerDirectives.shouldNotReachHere("delete attr");
                     case STORE_GLOBAL:
                     case DELETE_GLOBAL:
-                        throw new RuntimeException("global writes");
+                        throw CompilerDirectives.shouldNotReachHere("global writes");
                     case LOAD_NAME: // TODO: check custom locals first
                     case LOAD_GLOBAL:
                         {
@@ -1014,18 +1014,18 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     case DELETE_FAST:
                     case DELETE_DEREF:
-                        throw new RuntimeException("delete locals");
+                        throw CompilerDirectives.shouldNotReachHere("delete locals");
                     case LOAD_CLOSURE:
-                        throw new RuntimeException("LOAD_CLOSURE");
+                        throw CompilerDirectives.shouldNotReachHere("LOAD_CLOSURE");
                     case LOAD_CLASSDEREF:
-                        throw new RuntimeException("LOAD_CLASSDEREF");
+                        throw CompilerDirectives.shouldNotReachHere("LOAD_CLASSDEREF");
                     case LOAD_DEREF:
                     case STORE_DEREF:
-                        throw new RuntimeException("deref load/store");
+                        throw CompilerDirectives.shouldNotReachHere("deref load/store");
                     case BUILD_STRING:
-                        throw new RuntimeException("build string");
+                        throw CompilerDirectives.shouldNotReachHere("build string");
                     case BUILD_TUPLE:
-                        throw new RuntimeException("build tuple");
+                        throw CompilerDirectives.shouldNotReachHere("build tuple");
                     case BUILD_LIST:
                         {
                             Object[] list = new Object[oparg];
@@ -1047,9 +1047,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case BUILD_CONST_KEY_MAP:
                     case BUILD_MAP_UNPACK:
                     case BUILD_MAP_UNPACK_WITH_CALL:
-                        throw new RuntimeException("build bytecodes");
+                        throw CompilerDirectives.shouldNotReachHere("build bytecodes");
                     case MAP_ADD:
-                        throw new RuntimeException("MAP_ADD");
+                        throw CompilerDirectives.shouldNotReachHere("MAP_ADD");
                     case LOAD_ATTR:
                         {
                             PyObjectGetAttr getAttr = insertChildNode(() -> PyObjectGetAttr.create(), bci);
@@ -1141,7 +1141,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     case IMPORT_STAR:
                     case IMPORT_FROM:
-                        throw new RuntimeException("import start / import from");
+                        throw CompilerDirectives.shouldNotReachHere("import start / import from");
                     case JUMP_FORWARD:
                         bci += oparg;
                         oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
@@ -1251,10 +1251,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case SETUP_WITH:
                     case WITH_CLEANUP_START:
                     case WITH_CLEANUP_FINISH:
-                        throw new RuntimeException("with blocks");
+                        throw CompilerDirectives.shouldNotReachHere("with blocks");
                     case LOAD_METHOD:
                     case CALL_METHOD:
-                        throw new RuntimeException("_METHOD bytecodes");
+                        throw CompilerDirectives.shouldNotReachHere("_METHOD bytecodes");
                     case CALL_FUNCTION:
                         {
                             Object func = stack[stackTop - oparg];
@@ -1382,15 +1382,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     case BUILD_SLICE:
-                        throw new RuntimeException("BUILD_SLICE");
+                        throw CompilerDirectives.shouldNotReachHere("BUILD_SLICE");
                     case FORMAT_VALUE:
-                        throw new RuntimeException("FORMAT_VALUE");
+                        throw CompilerDirectives.shouldNotReachHere("FORMAT_VALUE");
                     case EXTENDED_ARG:
                         bci += 2;
                         oparg = Byte.toUnsignedInt(bytecode[bci + 1]) | (oparg << 8);
                         continue;
                     default:
-                        throw new RuntimeException("not implemented bytecode");
+                        throw CompilerDirectives.shouldNotReachHere("not implemented bytecode");
                 }
                 // prepare next loop
                 bci += 2;
