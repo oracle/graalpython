@@ -3624,7 +3624,12 @@ public abstract class CExtNodes {
             int mSize;
             try {
                 // do not eagerly read the doc string; this turned out to be unnecessarily expensive
-                mDoc = fromCharPointerNode.execute(interopLib.readMember(moduleDef, M_DOC));
+                Object docPtr = interopLib.readMember(moduleDef, M_DOC);
+                if (interopLib.isNull(docPtr)) {
+                    mDoc = PNone.NO_VALUE;
+                } else {
+                    mDoc = fromCharPointerNode.execute(docPtr);
+                }
 
                 Object mSizeObj = interopLib.readMember(moduleDef, M_SIZE);
                 mSize = interopLib.asInt(mSizeObj);
