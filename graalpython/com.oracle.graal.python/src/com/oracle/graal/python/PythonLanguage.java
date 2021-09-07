@@ -58,7 +58,6 @@ import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.ChildContextData;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
@@ -100,7 +99,6 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
-import java.util.Map;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
@@ -158,6 +156,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
 
+    @CompilationFinal public boolean singleContext = true;
+    private boolean firstContextInitialized;
+
     /**
      * This assumption will be valid if all contexts are single-threaded. Hence, it will be
      * invalidated as soon as at least one context has been initialized for multi-threading.
@@ -198,6 +199,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * system is shut down, unless explicitly removed. We interpret this as meaning they all exist
      * globally per language instance, that is, they are shared between different Contexts in the
      * same engine.
+     *
+     * Top level contexts use this map to initialize their shared multiprocessing data. Inner
+     * children contexts created for the multiprocessing module ignore this map in
+     * {@link PythonLanguage} and instead inherit it in the shared multiprocessing data from their
+     * parent context. This way, the child inner contexts do not have to run in the same engine
+     * (have the same language instance), but can still share the named semaphores.
      */
     public final ConcurrentHashMap<String, Semaphore> namedSemaphores = new ConcurrentHashMap<>();
 
@@ -217,35 +224,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public final ConcurrentHashMap<String, HiddenKey> typeHiddenKeys = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_KEYS);
 
     private final MroShape mroShapeRoot = MroShape.createRoot();
-
-    private final Map<Long, Thread> childContextThreads = new ConcurrentHashMap<>();
-
-    private final Map<Long, ChildContextData> childContextData = new ConcurrentHashMap<>();
-
-    @TruffleBoundary
-    public Thread getChildContextThread(long tid) {
-        return childContextThreads.get(tid);
-    }
-
-    @TruffleBoundary
-    public void putChildContextThread(long id, Thread thread) {
-        childContextThreads.put(id, thread);
-    }
-
-    @TruffleBoundary
-    public void removeChildContextThread(long id) {
-        childContextThreads.remove(id);
-    }
-
-    @TruffleBoundary
-    public ChildContextData getChildContextData(long tid) {
-        return childContextData.get(tid);
-    }
-
-    @TruffleBoundary
-    public void putChildContextData(long id, ChildContextData data) {
-        childContextData.put(id, data);
-    }
 
     public static PythonLanguage get(Node node) {
         return REFERENCE.get(node);
@@ -293,12 +271,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
+        if (singleContext) {
+            return false;
+        }
         return PythonOptions.areOptionsCompatible(firstOptions, newOptions);
     }
 
     @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
-        if (!areOptionsCompatible(context.getEnv().getOptions(), newEnv.getOptions())) {
+        // We intentionally bypass the singleContext check in PythonLanguage#areOptionsCompatible
+        if (!PythonOptions.areOptionsCompatible(context.getEnv().getOptions(), newEnv.getOptions())) {
             Python3Core.writeInfo("Cannot use preinitialized context.");
             return false;
         }
@@ -327,6 +309,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         } else {
             assert areOptionsCompatible(options, PythonOptions.createEngineOptions(env)) : "invalid engine options";
         }
+        firstContextInitialized = true;
         return context;
     }
 
@@ -738,6 +721,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected void initializeMultipleContexts() {
         super.initializeMultipleContexts();
+        // We want to make sure that initializeMultipleContexts is always called before the first
+        // context is created.
+        // This would not be the case with inner contexts, but we achieve that by returning false
+        // from areOptionsCompatible when it is invoked for the first inner context, then Truffle
+        // creates a new PythonLanguage instance, calls initializeMultipleContexts on it, and only
+        // then uses it to create the inner contexts.
+        assert !firstContextInitialized;
+        singleContext = false;
         singleContextAssumption.invalidate();
     }
 

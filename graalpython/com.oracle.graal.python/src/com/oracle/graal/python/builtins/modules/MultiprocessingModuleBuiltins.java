@@ -141,24 +141,14 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                 // have to explicitly link it, so we do that here if we
                 // must. CPython always uses O_CREAT | O_EXCL for creating named
                 // semaphores, so a conflict raises.
-                PythonLanguage lang = getLanguage();
-                if (semaphoreExists(lang, name)) {
+                SharedMultiprocessingData multiprocessing = getContext().getSharedMultiprocessingData();
+                if (multiprocessing.getNamedSemaphore(name) != null) {
                     throw raise(PythonBuiltinClassType.FileExistsError, ErrorMessages.SEMAPHORE_NAME_TAKEN, name);
                 } else {
-                    semaphorePut(lang, semaphore, name);
+                    multiprocessing.putNamedSemaphore(name, semaphore);
                 }
             }
             return factory().createSemLock(cls, name, kind, semaphore);
-        }
-
-        @TruffleBoundary
-        private static Object semaphorePut(PythonLanguage lang, Semaphore semaphore, String name) {
-            return lang.namedSemaphores.put(name, semaphore);
-        }
-
-        @TruffleBoundary
-        private static boolean semaphoreExists(PythonLanguage lang, String name) {
-            return lang.namedSemaphores.containsKey(name);
         }
 
         @TruffleBoundary
@@ -172,16 +162,11 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     abstract static class SemUnlink extends PythonUnaryBuiltinNode {
         @Specialization
         PNone doit(String name) {
-            Semaphore prev = semaphoreRemove(name, getLanguage());
+            Semaphore prev = getContext().getSharedMultiprocessingData().removeNamedSemaphore(name);
             if (prev == null) {
                 throw raise(PythonBuiltinClassType.FileNotFoundError, ErrorMessages.NO_SUCH_FILE_OR_DIR, "semaphores", name);
             }
             return PNone.NONE;
-        }
-
-        @TruffleBoundary
-        private static Semaphore semaphoreRemove(String name, PythonLanguage lang) {
-            return lang.namedSemaphores.remove(name);
         }
     }
 
@@ -220,15 +205,15 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     abstract static class WaitTidNode extends PythonBinaryBuiltinNode {
         @Specialization
         PTuple waittid(long id, @SuppressWarnings("unused") int options) {
-            PythonLanguage lang = getLanguage();
             long tid = convertTid(id);
             // TODO implement for options - WNOHANG and 0
-            Thread thread = lang.getChildContextThread(tid);
+            final SharedMultiprocessingData multiprocessing = getContext().getSharedMultiprocessingData();
+            Thread thread = multiprocessing.getChildContextThread(tid);
             if (thread != null && thread.isAlive()) {
                 return factory().createTuple(new Object[]{0, 0, 0});
             }
 
-            PythonContext.ChildContextData data = lang.getChildContextData(tid);
+            PythonContext.ChildContextData data = multiprocessing.getChildContextData(tid);
             return factory().createTuple(new Object[]{id, data.wasSignaled() ? data.getExitCode() : 0, data.getExitCode()});
         }
     }
@@ -239,10 +224,10 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object terminate(long id, PInt sig) {
-            PythonLanguage language = getLanguage();
-            Thread thread = language.getChildContextThread(convertTid(id));
+            final SharedMultiprocessingData multiprocessing = getContext().getSharedMultiprocessingData();
+            Thread thread = multiprocessing.getChildContextThread(convertTid(id));
             if (thread != null && thread.isAlive()) {
-                PythonContext.ChildContextData data = language.getChildContextData(convertTid(id));
+                PythonContext.ChildContextData data = multiprocessing.getChildContextData(convertTid(id));
                 try {
                     data.awaitRunning();
                     TruffleContext truffleCtx = data.getTruffleContext();
