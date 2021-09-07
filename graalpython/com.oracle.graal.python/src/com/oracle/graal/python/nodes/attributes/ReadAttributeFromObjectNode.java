@@ -170,8 +170,8 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)", "!isForeignObjectNode.execute(object)"}, limit = "1")
     protected static PNone readUnboxed(Object object, Object key,
                     @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode,
-                    // We want to share hlib with subclasses, this is to make Truffle shut up about
-                    // not being able to share it in the base class
+                    // We want to share "hlib" with subclasses, this is to make Truffle shut up
+                    // about not being able to share it in the base class
                     @SuppressWarnings("unused") @Shared("hlib") @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
         return PNone.NO_VALUE;
     }

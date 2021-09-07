@@ -40,53 +40,40 @@
  */
 package com.oracle.graal.python.nodes.object;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @GenerateUncached
-public abstract class GetOrCreateDictNode extends PNodeWithContext {
-    public abstract PDict execute(Object object);
+public abstract class DeleteDictNode extends PNodeWithContext {
+    public abstract void execute(PythonObject object);
 
     @Specialization
-    static PDict doPythonObject(PythonObject object,
-                    @Shared("getDict") @Cached GetDictIfExistsNode getDictIfExistsNode,
-                    @Cached SetDictNode setDictNode,
-                    @Cached PythonObjectFactory factory) {
-        PDict dict = getDictIfExistsNode.execute(object);
-        if (dict == null) {
-            dict = factory.createDictFixedStorage(object);
-            setDictNode.execute(object, dict);
-        }
-        return dict;
+    static void doPythonClass(PythonClass object,
+                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
+                    @Cached BranchProfile hasMroShapeProfile) {
+        object.setDictHiddenProp(dylib, hasMroShapeProfile, null);
     }
 
     @Fallback
-    PDict doOther(Object object,
-                    @Shared("getDict") @Cached GetDictIfExistsNode getDict) {
-        PDict dict = getDict.execute(object);
-        if (dict == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(this, SystemError, "Unable to set dict of object of type %p", object);
-        }
-        return dict;
+    static void doPythonObjectNotClass(PythonObject object,
+                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
+        dylib.put(object, PythonObject.DICT, null);
     }
 
-    public static GetOrCreateDictNode create() {
-        return GetOrCreateDictNodeGen.create();
+    public static DeleteDictNode create() {
+        return DeleteDictNodeGen.create();
     }
 
-    public static GetOrCreateDictNode getUncached() {
-        return GetOrCreateDictNodeGen.getUncached();
+    public static DeleteDictNode getUncached() {
+        return DeleteDictNodeGen.getUncached();
     }
 }

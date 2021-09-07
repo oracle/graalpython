@@ -40,36 +40,34 @@
  */
 package com.oracle.graal.python.nodes.object;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @GenerateUncached
 public abstract class SetDictNode extends PNodeWithContext {
-    public abstract void execute(Object object, PDict dict);
-
     public abstract void execute(PythonObject object, PDict dict);
 
     @Specialization
-    static void doPythonObject(PythonObject object, PDict dict,
-                    @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        dylib.put(object, PythonObject.DICT, dict);
+    static void doPythonClass(PythonClass object, PDict dict,
+                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
+                    @Cached BranchProfile hasMroShapeProfile) {
+        object.setDictHiddenProp(dylib, hasMroShapeProfile, dict);
     }
 
     @Fallback
-    @SuppressWarnings("unused")
-    void error(Object object, PDict dict) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw PRaiseNode.getUncached().raise(SystemError, "Unable to set dict of object of type %p", object);
+    static void doPythonObjectNotClass(PythonObject object, PDict dict,
+                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
+        dylib.put(object, PythonObject.DICT, dict);
     }
 
     public static SetDictNode create() {

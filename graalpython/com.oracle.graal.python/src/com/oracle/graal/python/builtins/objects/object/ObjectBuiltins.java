@@ -110,6 +110,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.DeleteDictNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
@@ -134,7 +135,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -736,13 +736,13 @@ public class ObjectBuiltins extends PythonBuiltins {
             return dict;
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         static Object dict(VirtualFrame frame, @SuppressWarnings("unused") PythonObject self, @SuppressWarnings("unused") DescriptorDeleteMarker marker,
                         @Cached GetClassNode getClassNode,
                         @Cached GetBaseClassNode getBaseNode,
                         @Cached("createForLookupOfUnmanagedClasses(__DICT__)") LookupAttributeInMRONode getDescrNode,
                         @Cached DescrDeleteNode deleteNode,
-                        @CachedLibrary("self") DynamicObjectLibrary dylib,
+                        @Cached DeleteDictNode deleteDictNode,
                         @Cached BranchProfile branchProfile) {
             // typeobject.c#subtype_setdict()
             Object func = getDescrFromBuiltinBase(getClassNode.execute(self), getBaseNode, getDescrNode);
@@ -750,7 +750,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 branchProfile.enter();
                 return deleteNode.execute(frame, func, self);
             }
-            dylib.put(self, PythonObject.DICT, null);
+            deleteDictNode.execute(self);
             return PNone.NONE;
         }
 

@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -50,7 +49,6 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -234,20 +232,7 @@ public final class PythonClass extends PythonManagedClass {
         }
     }
 
-    @ExportMessage(name = "setDict")
-    void setDictOverride(PDict dict,
-                    @Shared("hasMroShape") @Cached BranchProfile hasMroShapeProfile,
-                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        setDictHiddenProp(dylib, hasMroShapeProfile, dict);
-    }
-
-    @ExportMessage(name = "deleteDict")
-    void deleteDictOverride(@Shared("hasMroShape") @Cached BranchProfile hasMroShapeProfile,
-                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        setDictHiddenProp(dylib, hasMroShapeProfile, null);
-    }
-
-    private void setDictHiddenProp(DynamicObjectLibrary dylib, BranchProfile hasMroShapeProfile, Object value) {
+    public void setDictHiddenProp(DynamicObjectLibrary dylib, BranchProfile hasMroShapeProfile, Object value) {
         dylib.put(this, DICT, value);
         if (mroShapeSubTypes != null) {
             hasMroShapeProfile.enter();

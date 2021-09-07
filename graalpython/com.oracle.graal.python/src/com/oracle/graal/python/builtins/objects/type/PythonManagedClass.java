@@ -36,9 +36,7 @@ import java.util.WeakHashMap;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ComputeMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -50,16 +48,8 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonObjectLibrary.class)
 public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
     @CompilationFinal(dimensions = 1) private PythonAbstractClass[] baseClasses;
 
@@ -391,27 +381,5 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @TruffleBoundary
     public void setHasSlotsButNoDictFlag() {
         instanceShape = PythonLanguage.getShapeForClassWithoutDict(this);
-    }
-
-    @ExportMessage
-    static class GetDict {
-        protected static boolean dictExists(Object dict) {
-            return dict instanceof PDict;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"self == cachedManagedClass", "dictExists(dict)"}, assumptions = "singleContextAssumption()", limit = "1")
-        static PDict getConstant(PythonManagedClass self,
-                        @Cached(value = "self", weak = true) PythonManagedClass cachedManagedClass,
-                        @Cached(value = "self.getAttribute(DICT)", weak = true) Object dict) {
-            // type.__dict__ is a read-only attribute
-            return (PDict) dict;
-        }
-
-        @Specialization(replaces = "getConstant")
-        static PDict getDict(PythonManagedClass self,
-                        @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-            return (PDict) dylib.getOrDefault(self, DICT, null);
-        }
     }
 }

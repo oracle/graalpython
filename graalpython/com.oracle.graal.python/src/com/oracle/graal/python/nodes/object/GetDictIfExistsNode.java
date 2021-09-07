@@ -40,14 +40,16 @@
  */
 package com.oracle.graal.python.nodes.object;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GENERIC_GET_DICT;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -65,9 +67,22 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
 
     public abstract PDict execute(PythonObject object);
 
-    // FIXME thread local
+    @Specialization(guards = {"object == cached", "dictIsConstant(cached)", "dict != null"}, assumptions = "singleContextAssumption()", limit = "1")
+    static PDict getConstant(@SuppressWarnings("unused") PythonObject object,
+                    @SuppressWarnings("unused") @Cached(value = "object", weak = true) PythonObject cached,
+                    @Cached(value = "getDictUncached(object)", weak = true) PDict dict) {
+        return dict;
+    }
 
-    @Specialization
+    protected boolean dictIsConstant(PythonObject object) {
+        return object instanceof PythonModule || object instanceof PythonManagedClass;
+    }
+
+    protected PDict getDictUncached(PythonObject object) {
+        return (PDict) DynamicObjectLibrary.getUncached().getOrDefault(object, PythonObject.DICT, null);
+    }
+
+    @Specialization(replaces = "getConstant")
     static PDict doPythonObject(PythonObject object,
                     @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
         return (PDict) dylib.getOrDefault(object, PythonObject.DICT, null);
@@ -85,7 +100,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
             return null;
         } else {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, javaDict);
+            throw PRaiseNode.raiseUncached(this, SystemError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, javaDict);
         }
     }
 
