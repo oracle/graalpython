@@ -164,6 +164,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.Store;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeCallTargetNode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeSignatureNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -184,6 +186,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
@@ -4453,6 +4456,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached ToJavaNode elementToJavaNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached GetObjectArrayNode getObjectArrayNode,
+                        @Cached GetCodeSignatureNode getSignatureNode,
+                        @Cached GetCodeCallTargetNode getCallTargetNode,
                         @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                         @Cached ExpandKeywordStarargsNode expandKeywordStarargsNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -4486,7 +4491,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             // prepare Python frame arguments
             Object[] userArguments = unwrapArray(argumentArrayPtr, ptrLib, elementToJavaNode);
-            Object[] pArguments = createAndCheckArgumentsNode.execute(code, userArguments, keywords, code.getSignature(), null, defaults, kwdefaults, false);
+            Signature signature = getSignatureNode.execute(code);
+            Object[] pArguments = createAndCheckArgumentsNode.execute(code, userArguments, keywords, signature, null, defaults, kwdefaults, false);
 
             // set custom locals
             PArguments.setSpecialArgument(pArguments, locals);
@@ -4502,7 +4508,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
 
             try {
-                Object result = invokeNode.execute(frame, code.getRootCallTarget(), pArguments);
+                RootCallTarget rootCallTarget = getCallTargetNode.execute(code);
+                Object result = invokeNode.execute(frame, rootCallTarget, pArguments);
                 return toNewRefNode.execute(result);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
