@@ -3168,8 +3168,7 @@ public abstract class CExtNodes {
      * any PyVarObject usually returns the number of contained elements.
      */
     @GenerateUncached
-    @ImportStatic(PythonOptions.class)
-    abstract static class ObSizeNode extends Node {
+    abstract static class ObSizeNode extends PNodeWithContext {
 
         public abstract long execute(Object object);
 
@@ -3185,20 +3184,19 @@ public abstract class CExtNodes {
             int size = 0;
             while (t != 0) {
                 ++size;
-                t >>>= PythonContext.get(this).getCApiContext().getPyLongBitsInDigit();
+                t >>>= getContext().getCApiContext().getPyLongBitsInDigit();
             }
             return size * sign;
         }
 
         @Specialization
         long doPInt(PInt object) {
-            return ((PInt.bitLength(object.abs()) - 1) / PythonContext.get(this).getCApiContext().getPyLongBitsInDigit() + 1) * (object.isNegative() ? -1 : 1);
+            return ((PInt.bitLength(object.abs()) - 1) / getContext().getCApiContext().getPyLongBitsInDigit() + 1) * (object.isNegative() ? -1 : 1);
         }
 
         @Specialization
-        static long doPythonNativeVoidPtr(@SuppressWarnings("unused") PythonNativeVoidPtr object,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            return ((Long.SIZE - 1) / context.getCApiContext().getPyLongBitsInDigit() + 1);
+        long doPythonNativeVoidPtr(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
+            return ((Long.SIZE - 1) / getContext().getCApiContext().getPyLongBitsInDigit() + 1);
         }
 
         @Specialization(guards = "isFallback(object)")
