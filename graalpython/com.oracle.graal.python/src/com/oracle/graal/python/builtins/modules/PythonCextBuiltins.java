@@ -4547,4 +4547,32 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return lib.length(type.getDictStorage());
         }
     }
+
+    @Builtin(name = "PyUnicode_ReadChar", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyUnicodeReadChar extends PythonBinaryBuiltinNode {
+        @Specialization
+        int doGeneric(Object type, long lindex,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                try {
+                    String s = castToJavaStringNode.execute(type);
+                    int index = PInt.intValueExact(lindex);
+                    // avoid StringIndexOutOfBoundsException
+                    if (index < 0 || index >= PString.length(s)) {
+                        throw raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
+                    }
+                    return PString.charAt(s, index);
+                } catch (CannotCastException e) {
+                    throw raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+                } catch (OverflowException e) {
+                    throw raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
+                }
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+    }
 }
