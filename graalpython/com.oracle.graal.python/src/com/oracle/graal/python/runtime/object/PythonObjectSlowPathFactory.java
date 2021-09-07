@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime.object;
 import java.util.Objects;
 
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.nodes.NodeCost;
@@ -65,6 +66,7 @@ public final class PythonObjectSlowPathFactory extends PythonObjectFactory {
     @TruffleBoundary
     @Override
     protected AllocationReporter executeTrace(Object arg0Value, long arg1Value) {
+        assert PythonContext.get(null).getAllocationReporter() == reporter;
         return PythonObjectFactory.doTrace(arg0Value, arg1Value, reporter);
     }
 
