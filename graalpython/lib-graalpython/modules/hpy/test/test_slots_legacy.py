@@ -28,16 +28,19 @@ from .test_hpytype_legacy import LegacyPointTemplate
 from .test_slots import TestSlots as _TestSlots, TestSqSlots as _TestSqSlots
 
 
+@pytest.mark.usefixtures('skip_nfi')
 class TestLegacySlots(_TestSlots):
 
     ExtensionTemplate = LegacyPointTemplate
 
 
+@pytest.mark.usefixtures('skip_nfi')
 class TestLegacySqSlots(_TestSqSlots):
 
     ExtensionTemplate = LegacyPointTemplate
 
 
+@pytest.mark.usefixtures('skip_nfi')
 class TestCustomLegacySlotsFeatures(HPyTest):
 
     def test_legacy_slots(self):

@@ -46,3 +46,9 @@ def compiler(request, tmpdir, hpy_devel, hpy_abi):
     compiler_verbose = request.config.getoption('--compiler-v')
     return ExtensionCompiler(tmpdir, hpy_devel, hpy_abi,
                              compiler_verbose=compiler_verbose)
+
+@pytest.fixture()
+def skip_nfi(self, hpy_abi):
+    # skip all tests in this class for NFI mode
+    if hpy_abi == 'nfi':
+        pytest.skip()

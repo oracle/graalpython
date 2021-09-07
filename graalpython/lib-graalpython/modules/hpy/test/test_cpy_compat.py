@@ -37,12 +37,6 @@ class TestCPythonCompatibility(HPyTest):
     # really make sens on PyPy. We still run the functions to ensure they do
     # not crash, though.
 
-    @pytest.fixture()
-    def skip_nfi(self, hpy_abi):
-        # skip all tests in this class for NFI mode
-        if hpy_abi == 'nfi':
-            pytest.skip()
-
     def test_frompyobject(self):
         mod = self.make_module("""
             #include <Python.h>

@@ -27,6 +27,7 @@ from .support import HPyTest
 from .test_hpytype import PointTemplate, TestType as _TestType
 
 
+@pytest.mark.usefixtures('skip_nfi')
 class LegacyPointTemplate(PointTemplate):
     """
     Override PointTemplate to instead define a legacy point type that
@@ -47,11 +48,13 @@ class LegacyPointTemplate(PointTemplate):
     _IS_LEGACY = ".legacy = true,"
 
 
+@pytest.mark.usefixtures('skip_nfi')
 class TestLegacyType(_TestType):
 
     ExtensionTemplate = LegacyPointTemplate
 
 
+@pytest.mark.usefixtures('skip_nfi')
 class TestCustomLegacyFeatures(HPyTest):
 
     def test_legacy_methods(self):
