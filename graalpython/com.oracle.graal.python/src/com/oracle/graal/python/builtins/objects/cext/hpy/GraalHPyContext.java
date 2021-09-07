@@ -194,6 +194,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeFromSpec;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeGenericNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnaryArithmetic;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeAsUTF8AndSize;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeAsUTF8String;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
@@ -559,6 +560,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_UNICODE_FROMSTRING("ctx_Unicode_FromString"),
         CTX_UNICODE_CHECK("ctx_Unicode_Check"),
         CTX_UNICODE_ASUTF8STRING("ctx_Unicode_AsUTF8String"),
+        CTX_UNICODE_ASUTF8ANDSIZE("ctx_Unicode_AsUTF8AndSize"),
         CTX_UNICODE_FROMWIDECHAR("ctx_Unicode_FromWideChar"),
         CTX_LIST_NEW("ctx_List_New"),
         CTX_LIST_APPEND("ctx_List_Append"),
@@ -1264,6 +1266,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_UNICODE_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PString);
         members[HPyContextMember.CTX_ISTRUE.ordinal()] = new GraalHPyIsTrue();
         members[HPyContextMember.CTX_UNICODE_ASUTF8STRING.ordinal()] = new GraalHPyUnicodeAsUTF8String();
+        members[HPyContextMember.CTX_UNICODE_ASUTF8ANDSIZE.ordinal()] = new GraalHPyUnicodeAsUTF8AndSize();
         members[HPyContextMember.CTX_UNICODE_FROMSTRING.ordinal()] = new GraalHPyUnicodeFromString();
         members[HPyContextMember.CTX_UNICODE_FROMWIDECHAR.ordinal()] = new GraalHPyUnicodeFromWchar();
         members[HPyContextMember.CTX_TYPE_FROM_SPEC.ordinal()] = new GraalHPyTypeFromSpec();

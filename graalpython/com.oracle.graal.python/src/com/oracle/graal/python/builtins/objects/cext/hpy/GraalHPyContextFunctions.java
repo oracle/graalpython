@@ -73,15 +73,18 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSub
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
@@ -1035,6 +1038,46 @@ public abstract class GraalHPyContextFunctions {
                 try {
                     byte[] result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, unicodeObject, CodecsModuleBuiltins.STRICT);
                     return resultAsHandleNode.execute(context, factory.createBytes(result));
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(context, e);
+                    return GraalHPyHandle.NULL_HANDLE;
+                }
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyUnicodeAsUTF8AndSize extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached PCallHPyFunction callFromTyped,
+                        @Cached GetLLVMType getLLVMType,
+                        @Cached EncodeNativeStringNode encodeNativeStringNode,
+                        @CachedLibrary(limit = "3") InteropLibrary ptrLib,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                checkArity(arguments, 3);
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object unicodeObject = asPythonObjectNode.execute(context, arguments[1]);
+                Object sizePtr = arguments[2];
+                try {
+                    byte[] result = encodeNativeStringNode.execute(StandardCharsets.UTF_8, unicodeObject, CodecsModuleBuiltins.STRICT);
+                    if (!ptrLib.isNull(sizePtr)) {
+                        sizePtr = callFromTyped.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_TYPED, sizePtr, getLLVMType.execute(LLVMType.Py_ssize_ptr_t));
+                        try {
+                            ptrLib.writeArrayElement(sizePtr, 0, (long) result.length);
+                        } catch (InteropException e) {
+                            throw CompilerDirectives.shouldNotReachHere();
+                        }
+                    }
+                    return new CByteArrayWrapper(result);
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(context, e);
                     return GraalHPyHandle.NULL_HANDLE;

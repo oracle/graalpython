@@ -47,6 +47,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
 
     POLYGLOT_FROM_STRING("polyglot_from_string"),
+    POLYGLOT_FROM_TYPED("polyglot_from_typed"),
 
     GRAAL_HPY_ALLOCATE_BUFFER("graal_hpy_allocate_buffer"),
     GRAAL_HPY_BUFFER_TO_NATIVE("graal_hpy_buffer_to_native"),
