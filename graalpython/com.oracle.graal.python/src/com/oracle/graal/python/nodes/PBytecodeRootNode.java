@@ -942,28 +942,29 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stack[++stackTop] = null;
                         break;
                     case END_FINALLY:
-                        {
-                            Object exc = stack[stackTop];
-                            stack[stackTop--] = null;
-                            if (exc == null) {
-                                // nothing, we just fall through
-                            } else if (exc instanceof Integer) {
-                                throw CompilerDirectives.shouldNotReachHere("END_FINALLY with jump");
-                                // bci = (int)exc;
-                                // oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
-                                // continue;
-                            } else {
-                                throw CompilerDirectives.shouldNotReachHere("END_FINALLY with exception");
-                                // // CPython expects 6 values, the current exc_info and the previous one
-                                // // We usually just have placeholders, with a PException object in stackTop
-                                // // first, pop the remaining two current exc_info entries
-                                // stack[stackTop--] = null;
-                                // stack[stackTop--] = null;
-                                // // throw the exception again for the next handler to run
-                                // throw (AbstractTruffleException)exc;
-                            }
-                        }
-                        break;
+                        // {
+                        //     Object exc = stack[stackTop];
+                        //     stack[stackTop--] = null;
+                        //     if (exc == null) {
+                        //         // nothing, we just fall through
+                        //     } else if (exc instanceof Integer) {
+                        //         throw CompilerDirectives.shouldNotReachHere("END_FINALLY with jump");
+                        //         // bci = (int)exc;
+                        //         // oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
+                        //         // continue;
+                        //     } else {
+                        //         throw CompilerDirectives.shouldNotReachHere("END_FINALLY with exception");
+                        //         // // CPython expects 6 values, the current exc_info and the previous one
+                        //         // // We usually just have placeholders, with a PException object in stackTop
+                        //         // // first, pop the remaining two current exc_info entries
+                        //         // stack[stackTop--] = null;
+                        //         // stack[stackTop--] = null;
+                        //         // // throw the exception again for the next handler to run
+                        //         // throw (AbstractTruffleException)exc;
+                        //     }
+                        // }
+                        // break;
+                        throw CompilerDirectives.shouldNotReachHere("END_FINALLY");
                     case END_ASYNC_FOR:
                         throw CompilerDirectives.shouldNotReachHere("async bytecodes");
                     case LOAD_BUILD_CLASS:
