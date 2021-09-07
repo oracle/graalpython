@@ -41,31 +41,33 @@
 package com.oracle.graal.python.builtins.objects.thread;
 
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.object.Shape;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
-public final class PThreadLocal extends PythonBuiltinObject {
-    private final ThreadLocal<PDict> threadLocalDict;
-    private final Object[] args;
-    private final PKeyword[] keywords;
+public abstract class ThreadLocalNodes {
 
-    public PThreadLocal(Object cls, Shape instanceShape, Object[] args, PKeyword[] keywords) {
-        super(cls, instanceShape);
-        threadLocalDict = new ThreadLocal<>();
-        this.args = args;
-        this.keywords = keywords;
-    }
+    public abstract static class GetThreadLocalDict extends PNodeWithContext {
+        public abstract PDict execute(VirtualFrame frame, PThreadLocal self);
 
-    public ThreadLocal<PDict> getThreadLocalDict() {
-        return threadLocalDict;
-    }
-
-    public Object[] getArgs() {
-        return args;
-    }
-
-    public PKeyword[] getKeywords() {
-        return keywords;
+        @Specialization
+        PDict get(VirtualFrame frame, PThreadLocal self,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PyObjectLookupAttr lookup,
+                        @Cached CallNode callNode) {
+            PDict storage = self.getThreadLocalDict().get();
+            if (storage == null) {
+                storage = factory.createDict();
+                self.getThreadLocalDict().set(storage);
+                Object initMethod = lookup.execute(frame, self, SpecialMethodNames.__INIT__);
+                callNode.execute(frame, initMethod, self.getArgs(), self.getKeywords());
+            }
+            return storage;
+        }
     }
 }
