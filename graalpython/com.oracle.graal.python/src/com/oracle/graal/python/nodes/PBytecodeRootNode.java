@@ -942,23 +942,34 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             Object exc = stack[stackTop];
                             stack[stackTop--] = null;
                             if (exc == null) {
-                                // nothing, we just fall through
-                            } else if (exc instanceof Integer) {
                                 if (oparg == 0) {
                                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                                    bytecode[bci + 1] = (byte)exc;
-                                    assert (byte)exc == (int)exc;
+                                    oparg = stackTop;
                                 }
-                                assert oparg == (int)exc;
-                                bci = oparg;
-                                oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
-                                continue;
+                                stackTop = oparg;
+                                // nothing, we just fall through
+                            } else if (exc instanceof Integer) {
+                                throw CompilerDirectives.shouldNotReachHere("integer jump in END_FINALLY");
+                                // if (oparg == 0) {
+                                //     CompilerDirectives.transferToInterpreterAndInvalidate();
+                                //     bytecode[bci + 1] = (byte)exc;
+                                //     assert (exc & 0xffff) == (int)exc;
+                                // }
+                                // assert oparg == (int)exc;
+                                // bci = oparg;
+                                // oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
+                                // continue;
                             } else {
                                 // CPython expects 6 values, the current exc_info and the previous one
                                 // We usually just have placeholders, with a PException object in stackTop
                                 // first, pop the remaining two current exc_info entries
                                 stack[stackTop--] = null;
                                 stack[stackTop--] = null;
+                                if (oparg == 0) {
+                                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                                    oparg = stackTop;
+                                }
+                                stackTop = oparg;
                                 // throw the exception again for the next handler to run
                                 throw (AbstractTruffleException)exc;
                             }
