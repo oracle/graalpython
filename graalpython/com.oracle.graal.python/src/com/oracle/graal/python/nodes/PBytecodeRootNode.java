@@ -1428,12 +1428,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 } else {
                     throw e;
                 }
-            } catch (AbstractTruffleException e) {
+            } catch (AbstractTruffleException | StackOverflowError e) {
                 throw e;
             } catch (ControlFlowException | ThreadDeath e) {
                 // do not handle ThreadDeath, result of TruffleContext.closeCancelled()
-                throw e;
-            } catch (Exception | StackOverflowError | AssertionError e) {
                 throw e;
             }
         }
