@@ -153,9 +153,9 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {"isAttrWritable(klass, key)", "!isHiddenKey(key)", "getDict.execute(klass) == null"}, limit = "1")
     boolean writeToDynamicStorageBuiltinType(PythonBuiltinClass klass, Object key, Object value,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
-                    @Cached CastToJavaStringNode castToStrNode,
-                    @Cached BranchProfile callAttrUpdate,
-                    @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
+                    @Shared("castToStr") @Cached CastToJavaStringNode castToStrNode,
+                    @Shared("callAttrUpdate") @Cached BranchProfile callAttrUpdate,
+                    @Shared("dylib") @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
         if (PythonContext.get(this).isInitialized()) {
             throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, klass);
         } else {
@@ -166,10 +166,10 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {"isAttrWritable(klass, key)", "!isHiddenKey(key)", "getDict.execute(klass) == null"}, limit = "1")
     static boolean writeToDynamicStoragePythonClass(PythonClass klass, Object key, Object value,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
-                    @Cached CastToJavaStringNode castToStrNode,
-                    @Cached BranchProfile callAttrUpdate,
+                    @Shared("castToStr") @Cached CastToJavaStringNode castToStrNode,
+                    @Shared("callAttrUpdate") @Cached BranchProfile callAttrUpdate,
                     @Cached BranchProfile updateFlags,
-                    @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
+                    @Shared("dylib") @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
         if (value == PNone.NO_VALUE) {
             updateFlags.enter();
             dylib.setShapeFlags(klass, dylib.getShapeFlags(klass) | HAS_NO_VALUE_PROPERTIES);
@@ -197,8 +197,8 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     static boolean writeToDictNoType(@SuppressWarnings("unused") PythonObject object, Object key, Object value,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(object)") PDict dict,
-                    @Cached BranchProfile updateStorage,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                    @Shared("updateStorage") @Cached BranchProfile updateStorage,
+                    @Shared("hlib") @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
         return writeToDict(dict, key, value, updateStorage, hlib);
     }
 
@@ -207,10 +207,10 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     boolean writeToDictBuiltinType(PythonBuiltinClass klass, Object key, Object value,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(klass)") PDict dict,
-                    @Cached CastToJavaStringNode castToStrNode,
-                    @Cached BranchProfile callAttrUpdate,
-                    @Cached BranchProfile updateStorage,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                    @Shared("castToStr") @Cached CastToJavaStringNode castToStrNode,
+                    @Shared("callAttrUpdate") @Cached BranchProfile callAttrUpdate,
+                    @Shared("updateStorage") @Cached BranchProfile updateStorage,
+                    @Shared("hlib") @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
         if (PythonContext.get(this).isInitialized()) {
             throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, klass);
         } else {
@@ -222,10 +222,10 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     static boolean writeToDictClass(PythonClass klass, Object key, Object value,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(klass)") PDict dict,
-                    @Cached CastToJavaStringNode castToStrNode,
-                    @Cached BranchProfile callAttrUpdate,
-                    @Cached BranchProfile updateStorage,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                    @Shared("castToStr") @Cached CastToJavaStringNode castToStrNode,
+                    @Shared("callAttrUpdate") @Cached BranchProfile callAttrUpdate,
+                    @Shared("updateStorage") @Cached BranchProfile updateStorage,
+                    @Shared("hlib") @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
         return writeToDictManagedClass(klass, dict, key, value, castToStrNode, callAttrUpdate, updateStorage, hlib);
     }
 
@@ -254,13 +254,6 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
             dict.setDictStorage(hashingStorage);
         }
         return true;
-    }
-
-    @Specialization(guards = "isErrorCase(getDict, object, key)", limit = "1")
-    static boolean doError(Object object, Object key, @SuppressWarnings("unused") Object value,
-                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
-                    @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
     }
 
     @Specialization
@@ -292,10 +285,10 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     protected abstract static class WriteAttributeToObjectNotTypeNode extends WriteAttributeToObjectNode {
         @Specialization(guards = {"!isHiddenKey(key)"})
         static boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
-                        @Cached GetDictIfExistsNode getDict,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
-                        @Cached BranchProfile updateStorage,
-                        @Cached PRaiseNode raiseNode) {
+                        @Shared("getDict") @Cached GetDictIfExistsNode getDict,
+                        @Shared("hlib") @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Shared("updateStorage") @Cached BranchProfile updateStorage,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             /*
              * The dict of native objects that stores the object attributes is located at 'objectPtr
              * + Py_TYPE(objectPtr)->tp_dictoffset'. 'PythonObjectLibrary.getDict' will exactly load
@@ -305,6 +298,13 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
             if (dict != null) {
                 return writeToDict(dict, key, value, updateStorage, hlib);
             }
+            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
+        }
+
+        @Specialization(guards = "isErrorCase(getDict, object, key)", limit = "1")
+        static boolean doError(Object object, Object key, @SuppressWarnings("unused") Object value,
+                        @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
     }
@@ -342,7 +342,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                         @Shared("hlib") @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @Shared("updateStorage") @Cached BranchProfile updateStorage,
                         @Cached BranchProfile canBeSpecialSlot,
-                        @Cached CastToJavaStringNode castKeyNode,
+                        @Shared("castToStr") @Cached CastToJavaStringNode castKeyNode,
                         @Cached IsTypeNode isTypeNode,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
@@ -371,6 +371,13 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     // fall through; it cannot be a special method slot
                 }
             }
+        }
+
+        @Specialization(guards = "isErrorCase(getDict, object, key)", limit = "1")
+        static boolean doError(Object object, Object key, @SuppressWarnings("unused") Object value,
+                        @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
     }
 }
