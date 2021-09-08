@@ -153,8 +153,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isBuiltinFunction(self)")
         Object getGlobals(PFunction self,
                         @Cached GetOrCreateDictNode getDict,
-                        @Cached ConditionProfile moduleGlobals,
-                        @Cached ConditionProfile moduleHasNoDict) {
+                        @Cached ConditionProfile moduleGlobals) {
             // see the make_globals_function from lib-graalpython/functions.py
             PythonObject globals = self.getGlobals();
             if (moduleGlobals.profile(globals instanceof PythonModule)) {

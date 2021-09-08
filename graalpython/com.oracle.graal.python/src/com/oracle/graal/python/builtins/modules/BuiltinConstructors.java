@@ -2196,7 +2196,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 PDict namespace = factory().createDict();
                 PythonLanguage language = PythonLanguage.get(this);
                 namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
-                PythonClass newType = typeMetaclass(frame, language, name, bases, namespace, metaclass, lib, hashingStoragelib,
+                PythonClass newType = typeMetaclass(frame, language, name, bases, namespace, metaclass, hashingStoragelib,
                                 getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize, isIdentifier);
 
                 for (DictEntry entry : hashingStoragelib.entries(namespace.getDictStorage())) {
@@ -2300,7 +2300,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private PythonClass typeMetaclass(VirtualFrame frame, PythonLanguage language, String name, PTuple bases, PDict namespace, Object metaclass,
-                        PythonObjectLibrary lib, HashingStorageLibrary hashingStorageLib, LookupAttributeInMRONode getDictAttrNode,
+                        HashingStorageLibrary hashingStorageLib, LookupAttributeInMRONode getDictAttrNode,
                         LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize,
                         IsIdentifierNode isIdentifier) {
             Object[] array = ensureGetObjectArrayNode().execute(bases);
@@ -2342,7 +2342,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // 2.) copy the dictionary slots
             Object[] slots = new Object[1];
             boolean[] qualnameSet = new boolean[]{false};
-            copyDictSlots(pythonClass, namespace, lib, hashingStorageLib, slots, qualnameSet);
+            copyDictSlots(pythonClass, namespace, hashingStorageLib, slots, qualnameSet);
             if (!qualnameSet[0]) {
                 pythonClass.setQualName(name);
             }
@@ -2521,7 +2521,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return false;
         }
 
-        private void copyDictSlots(PythonClass pythonClass, PDict namespace, PythonObjectLibrary lib, HashingStorageLibrary hashingStorageLib, Object[] slots, boolean[] qualnameSet) {
+        private void copyDictSlots(PythonClass pythonClass, PDict namespace, HashingStorageLibrary hashingStorageLib, Object[] slots, boolean[] qualnameSet) {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
             // Also check for a __slots__ sequence variable in dict
             PDict typeDict = null;

@@ -353,187 +353,187 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object selfInArgs(VirtualFrame frame, @SuppressWarnings("unused") PNone self, Object[] arguments, PKeyword[] keywords,
-                        @Cached CallNodeInner callNode) {
+                        @Cached CallNodeHelper callNode) {
             return callNode.execute(frame, arguments[0], arguments, keywords, false);
         }
 
         @Fallback
         Object selfSeparate(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords,
-                        @Cached CallNodeInner callNode) {
+                        @Cached CallNodeHelper callNode) {
             return callNode.execute(frame, self, arguments, keywords, true);
         }
+    }
 
-        @ReportPolymorphism
-        protected abstract static class CallNodeInner extends PNodeWithRaise {
-            @Child private CallVarargsMethodNode dispatchNew = CallVarargsMethodNode.create();
-            @Child private LookupAndCallTernaryNode callNewGet = LookupAndCallTernaryNode.create(__GET__);
-            @Child private LookupAttributeInMRONode lookupNew = LookupAttributeInMRONode.create(__NEW__);
-            @Child private CallVarargsMethodNode dispatchInit;
-            @Child private LookupSpecialMethodNode lookupInit;
-            @Child private IsSubtypeNode isSubTypeNode;
-            @Child private TypeNodes.GetNameNode getNameNode;
-            @Child private GetClassNode getClassNode;
+    @ReportPolymorphism
+    protected abstract static class CallNodeHelper extends PNodeWithRaise {
+        @Child private CallVarargsMethodNode dispatchNew = CallVarargsMethodNode.create();
+        @Child private LookupAndCallTernaryNode callNewGet = LookupAndCallTernaryNode.create(__GET__);
+        @Child private LookupAttributeInMRONode lookupNew = LookupAttributeInMRONode.create(__NEW__);
+        @Child private CallVarargsMethodNode dispatchInit;
+        @Child private LookupSpecialMethodNode lookupInit;
+        @Child private IsSubtypeNode isSubTypeNode;
+        @Child private TypeNodes.GetNameNode getNameNode;
+        @Child private GetClassNode getClassNode;
 
-            @CompilationFinal private ConditionProfile hasNew = ConditionProfile.createBinaryProfile();
-            @CompilationFinal private ConditionProfile hasInit = ConditionProfile.createBinaryProfile();
-            @CompilationFinal private ConditionProfile gotInitResult = ConditionProfile.createBinaryProfile();
+        @CompilationFinal private ConditionProfile hasNew = ConditionProfile.createBinaryProfile();
+        @CompilationFinal private ConditionProfile hasInit = ConditionProfile.createBinaryProfile();
+        @CompilationFinal private ConditionProfile gotInitResult = ConditionProfile.createBinaryProfile();
 
-            @CompilationFinal private boolean newWasDescriptor = false;
+        @CompilationFinal private boolean newWasDescriptor = false;
 
-            abstract Object execute(VirtualFrame frame, Object self, Object[] args, PKeyword[] keywords, boolean doCreateArgs);
+        abstract Object execute(VirtualFrame frame, Object self, Object[] args, PKeyword[] keywords, boolean doCreateArgs);
 
-            @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"}, assumptions = "singleContextAssumption()")
-            protected Object doIt0BuiltinSingle(VirtualFrame frame, @SuppressWarnings("unused") PythonBuiltinClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs,
-                            @Cached("self") PythonBuiltinClass cachedSelf) {
-                PythonBuiltinClassType type = cachedSelf.getType();
-                if (!doCreateArgs) {
-                    arguments[0] = type;
-                }
-                return op(frame, type, arguments, keywords, doCreateArgs);
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"}, assumptions = "singleContextAssumption()")
+        protected Object doIt0BuiltinSingle(VirtualFrame frame, @SuppressWarnings("unused") PythonBuiltinClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs,
+                        @Cached("self") PythonBuiltinClass cachedSelf) {
+            PythonBuiltinClassType type = cachedSelf.getType();
+            if (!doCreateArgs) {
+                arguments[0] = type;
             }
+            return op(frame, type, arguments, keywords, doCreateArgs);
+        }
 
-            @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf", "isPythonClass(cachedSelf)",
-                            "!isPythonBuiltinClass(cachedSelf)"}, assumptions = "singleContextAssumption()")
-            protected Object doIt0User(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs,
-                            @Cached(value = "self", weak = true) Object cachedSelf) {
-                return op(frame, cachedSelf, arguments, keywords, doCreateArgs);
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf", "isPythonClass(cachedSelf)",
+                        "!isPythonBuiltinClass(cachedSelf)"}, assumptions = "singleContextAssumption()")
+        protected Object doIt0User(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs,
+                        @Cached(value = "self", weak = true) Object cachedSelf) {
+            return op(frame, cachedSelf, arguments, keywords, doCreateArgs);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self.getType() == cachedType"})
+        protected Object doIt0BuiltinMulti(VirtualFrame frame, @SuppressWarnings("unused") PythonBuiltinClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs,
+                        @Cached("self.getType()") PythonBuiltinClassType cachedType) {
+            if (!doCreateArgs) {
+                arguments[0] = cachedType;
             }
+            return op(frame, cachedType, arguments, keywords, doCreateArgs);
+        }
 
-            @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self.getType() == cachedType"})
-            protected Object doIt0BuiltinMulti(VirtualFrame frame, @SuppressWarnings("unused") PythonBuiltinClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs,
-                            @Cached("self.getType()") PythonBuiltinClassType cachedType) {
-                if (!doCreateArgs) {
-                    arguments[0] = cachedType;
-                }
-                return op(frame, cachedType, arguments, keywords, doCreateArgs);
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedType"})
+        protected Object doIt0BuiltinType(VirtualFrame frame, @SuppressWarnings("unused") PythonBuiltinClassType self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs,
+                        @Cached("self") PythonBuiltinClassType cachedType) {
+            return op(frame, cachedType, arguments, keywords, doCreateArgs);
+        }
+
+        @Specialization(replaces = {"doIt0BuiltinSingle", "doIt0BuiltinMulti"})
+        protected Object doItIndirect0Builtin(VirtualFrame frame, PythonBuiltinClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {
+            PythonBuiltinClassType type = self.getType();
+            if (!doCreateArgs) {
+                arguments[0] = type;
             }
+            return op(frame, type, arguments, keywords, doCreateArgs);
+        }
 
-            @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedType"})
-            protected Object doIt0BuiltinType(VirtualFrame frame, @SuppressWarnings("unused") PythonBuiltinClassType self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs,
-                            @Cached("self") PythonBuiltinClassType cachedType) {
-                return op(frame, cachedType, arguments, keywords, doCreateArgs);
-            }
+        @Specialization(replaces = "doIt0BuiltinType")
+        protected Object doItIndirect0BuiltinType(VirtualFrame frame, PythonBuiltinClassType self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {
+            return op(frame, self, arguments, keywords, doCreateArgs);
+        }
 
-            @Specialization(replaces = {"doIt0BuiltinSingle", "doIt0BuiltinMulti"})
-            protected Object doItIndirect0Builtin(VirtualFrame frame, PythonBuiltinClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {
-                PythonBuiltinClassType type = self.getType();
-                if (!doCreateArgs) {
-                    arguments[0] = type;
-                }
-                return op(frame, type, arguments, keywords, doCreateArgs);
-            }
+        @Specialization(replaces = {"doIt0User"}, guards = "!isPythonBuiltinClass(self)")
+        protected Object doItIndirect0User(VirtualFrame frame, PythonAbstractClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {
+            return op(frame, self, arguments, keywords, doCreateArgs);
+        }
 
-            @Specialization(replaces = "doIt0BuiltinType")
-            protected Object doItIndirect0BuiltinType(VirtualFrame frame, PythonBuiltinClassType self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {
-                return op(frame, self, arguments, keywords, doCreateArgs);
-            }
+        /* self is native */
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"}, assumptions = "singleContextAssumption()")
+        protected Object doIt1(VirtualFrame frame, @SuppressWarnings("unused") PythonNativeObject self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs,
+                        @Cached("self") PythonNativeObject cachedSelf) {
+            return op(frame, PythonNativeClass.cast(cachedSelf), arguments, keywords, doCreateArgs);
+        }
 
-            @Specialization(replaces = {"doIt0User"}, guards = "!isPythonBuiltinClass(self)")
-            protected Object doItIndirect0User(VirtualFrame frame, PythonAbstractClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {
-                return op(frame, self, arguments, keywords, doCreateArgs);
-            }
+        @Specialization(replaces = "doIt1")
+        protected Object doItIndirect1(VirtualFrame frame, PythonNativeObject self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {
+            return op(frame, PythonNativeClass.cast(self), arguments, keywords, doCreateArgs);
+        }
 
-            /* self is native */
-            @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"}, assumptions = "singleContextAssumption()")
-            protected Object doIt1(VirtualFrame frame, @SuppressWarnings("unused") PythonNativeObject self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs,
-                            @Cached("self") PythonNativeObject cachedSelf) {
-                return op(frame, PythonNativeClass.cast(cachedSelf), arguments, keywords, doCreateArgs);
-            }
-
-            @Specialization(replaces = "doIt1")
-            protected Object doItIndirect1(VirtualFrame frame, PythonNativeObject self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {
-                return op(frame, PythonNativeClass.cast(self), arguments, keywords, doCreateArgs);
-            }
-
-            private Object op(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {
-                Object newMethod = lookupNew.execute(self);
-                if (hasNew.profile(newMethod != PNone.NO_VALUE)) {
-                    CompilerAsserts.partialEvaluationConstant(doCreateArgs);
-                    Object[] newArgs = doCreateArgs ? PositionalArgumentsNode.prependArgument(self, arguments) : arguments;
-                    Object newInstance;
-                    if (!newWasDescriptor && (newMethod instanceof PFunction || newMethod instanceof PBuiltinFunction)) {
-                        newInstance = dispatchNew.execute(frame, newMethod, newArgs, keywords);
-                    } else {
-                        if (!newWasDescriptor) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            reportPolymorphicSpecialize();
-                            newWasDescriptor = true;
-                        }
-                        newInstance = dispatchNew.execute(frame, callNewGet.execute(frame, newMethod, PNone.NONE, self), newArgs, keywords);
-                    }
-
-                    // see typeobject.c#type_call()
-                    // Ugly exception: when the call was type(something),
-                    // don't call tp_init on the result.
-                    if (!(self == PythonBuiltinClassType.PythonClass && arguments.length == 2 && keywords.length == 0)) {
-                        callInit(newInstance, self, frame, doCreateArgs, arguments, keywords);
-                    }
-                    return newInstance;
+        private Object op(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {
+            Object newMethod = lookupNew.execute(self);
+            if (hasNew.profile(newMethod != PNone.NO_VALUE)) {
+                CompilerAsserts.partialEvaluationConstant(doCreateArgs);
+                Object[] newArgs = doCreateArgs ? PositionalArgumentsNode.prependArgument(self, arguments) : arguments;
+                Object newInstance;
+                if (!newWasDescriptor && (newMethod instanceof PFunction || newMethod instanceof PBuiltinFunction)) {
+                    newInstance = dispatchNew.execute(frame, newMethod, newArgs, keywords);
                 } else {
-                    throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, getTypeName(self));
+                    if (!newWasDescriptor) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        reportPolymorphicSpecialize();
+                        newWasDescriptor = true;
+                    }
+                    newInstance = dispatchNew.execute(frame, callNewGet.execute(frame, newMethod, PNone.NONE, self), newArgs, keywords);
                 }
-            }
 
-            private void callInit(Object newInstance, Object self, VirtualFrame frame, boolean doCreateArgs, Object[] arguments, PKeyword[] keywords) {
-                Object newInstanceKlass = getInstanceClass(newInstance);
-                if (isSubType(newInstanceKlass, self)) {
-                    Object initMethod = getInitNode().execute(frame, newInstanceKlass, newInstance);
-                    if (hasInit.profile(initMethod != PNone.NO_VALUE)) {
-                        Object[] initArgs;
-                        if (doCreateArgs) {
-                            initArgs = PositionalArgumentsNode.prependArgument(newInstance, arguments);
-                        } else {
-                            // XXX: (tfel) is this valid? I think it should be fine...
-                            arguments[0] = newInstance;
-                            initArgs = arguments;
-                        }
-                        Object initResult = getDispatchNode().execute(frame, initMethod, initArgs, keywords);
-                        if (gotInitResult.profile(initResult != PNone.NONE && initResult != PNone.NO_VALUE)) {
-                            throw raise(TypeError, ErrorMessages.SHOULD_RETURN_NONE, "__init__()");
-                        }
+                // see typeobject.c#type_call()
+                // Ugly exception: when the call was type(something),
+                // don't call tp_init on the result.
+                if (!(self == PythonBuiltinClassType.PythonClass && arguments.length == 2 && keywords.length == 0)) {
+                    callInit(newInstance, self, frame, doCreateArgs, arguments, keywords);
+                }
+                return newInstance;
+            } else {
+                throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, getTypeName(self));
+            }
+        }
+
+        private void callInit(Object newInstance, Object self, VirtualFrame frame, boolean doCreateArgs, Object[] arguments, PKeyword[] keywords) {
+            Object newInstanceKlass = getInstanceClass(newInstance);
+            if (isSubType(newInstanceKlass, self)) {
+                Object initMethod = getInitNode().execute(frame, newInstanceKlass, newInstance);
+                if (hasInit.profile(initMethod != PNone.NO_VALUE)) {
+                    Object[] initArgs;
+                    if (doCreateArgs) {
+                        initArgs = PositionalArgumentsNode.prependArgument(newInstance, arguments);
+                    } else {
+                        // XXX: (tfel) is this valid? I think it should be fine...
+                        arguments[0] = newInstance;
+                        initArgs = arguments;
+                    }
+                    Object initResult = getDispatchNode().execute(frame, initMethod, initArgs, keywords);
+                    if (gotInitResult.profile(initResult != PNone.NONE && initResult != PNone.NO_VALUE)) {
+                        throw raise(TypeError, ErrorMessages.SHOULD_RETURN_NONE, "__init__()");
                     }
                 }
             }
+        }
 
-            private LookupSpecialMethodNode getInitNode() {
-                if (lookupInit == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    lookupInit = insert(LookupSpecialMethodNode.create(__INIT__));
-                }
-                return lookupInit;
+        private LookupSpecialMethodNode getInitNode() {
+            if (lookupInit == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lookupInit = insert(LookupSpecialMethodNode.create(__INIT__));
             }
+            return lookupInit;
+        }
 
-            private CallVarargsMethodNode getDispatchNode() {
-                if (dispatchInit == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    dispatchInit = insert(CallVarargsMethodNode.create());
-                }
-                return dispatchInit;
+        private CallVarargsMethodNode getDispatchNode() {
+            if (dispatchInit == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                dispatchInit = insert(CallVarargsMethodNode.create());
             }
+            return dispatchInit;
+        }
 
-            private boolean isSubType(Object left, Object right) {
-                if (isSubTypeNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    isSubTypeNode = insert(IsSubtypeNode.create());
-                }
-                return isSubTypeNode.execute(left, right);
+        private boolean isSubType(Object left, Object right) {
+            if (isSubTypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSubTypeNode = insert(IsSubtypeNode.create());
             }
+            return isSubTypeNode.execute(left, right);
+        }
 
-            private String getTypeName(Object clazz) {
-                if (getNameNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getNameNode = insert(TypeNodes.GetNameNode.create());
-                }
-                return getNameNode.execute(clazz);
+        private String getTypeName(Object clazz) {
+            if (getNameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getNameNode = insert(TypeNodes.GetNameNode.create());
             }
+            return getNameNode.execute(clazz);
+        }
 
-            private Object getInstanceClass(Object object) {
-                if (getClassNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getClassNode = insert(GetClassNode.create());
-                }
-                return getClassNode.execute(object);
+        private Object getInstanceClass(Object object) {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
             }
+            return getClassNode.execute(object);
         }
     }
 

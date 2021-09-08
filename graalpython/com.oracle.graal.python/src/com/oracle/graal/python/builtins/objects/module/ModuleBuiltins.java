@@ -291,7 +291,7 @@ public class ModuleBuiltins extends PythonBuiltins {
             return getattributeString(frame, self, key, objectGetattrNode, handleException);
         }
 
-        protected static abstract class HandleGetattrExceptionNode extends PNodeWithRaise {
+        protected abstract static class HandleGetattrExceptionNode extends PNodeWithRaise {
             public abstract Object execute(VirtualFrame frame, PythonModule self, String key, PException e);
 
             @Specialization
