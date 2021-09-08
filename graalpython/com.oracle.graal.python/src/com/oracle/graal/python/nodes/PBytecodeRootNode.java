@@ -162,8 +162,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @CompilationFinal(dimensions = 1) private final String[] freevars;
     @CompilationFinal(dimensions = 1) private final String[] cellvars;
 
-    @CompilationFinal(dimensions = 1) private int[] blockstackRanges = null;
-    @CompilationFinal(dimensions = 2) private int[][] exceptionBlockStacks = null;
+    @CompilationFinal(dimensions = 1) private long[] blockstackRanges = null;
 
     @Children private final Node[] adoptedNodes;
     @Child private CalleeContext calleeContext = CalleeContext.create();
@@ -1408,9 +1407,25 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 // TODO: avoid extra read
                 // if (bytecode[bci] >= HAVE_ARGUMENT) oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
             } catch (PException e) {
-                int handlerBCI = findHandler(stackTop, stack, blockstack, blockstackTop, bci);
+                if (blockstackRanges == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    blockstackRanges = new long[0];
+                }
+                long blockstackThumbprint = findHandler(stackTop, stack, blockstack, blockstackTop, bci);
+
+                // now execute what the thumbprint tells us
+                int stackTopAfterExcepts = decodeExceptBlockStackTop(blockstackThumbprint);
+                unwindExceptHandler(stack, stackTop, stackTopAfterExcepts);
+                int stackTopAfterFinally = decodeFinallyBlockStackTop(blockstackThumbprint);
+                unwindBlock(stack, stackTopAfterExcepts, stackTopAfterFinally);
+                blockstackTop = decodeNewExceptBlockIndex(blockstackTop);
+                blockstack[blockstackTop] = encodeBlockTypeExcept() | encodeStackTop(stackTopAfterFinally);
+                int handlerBCI = decodeHandlerBCI(blockstackThumbprint);
+
                 CompilerAsserts.partialEvaluationConstant(handlerBCI);
-                if (handlerBCI != -1) {
+                CompilerAsserts.partialEvaluationConstant(blockstackTop);
+
+                if (handlerBCI != 0) {
                     // push the exception that is being handled
                     // would use GetCaughtExceptionNode to reify the currently handled exception.
                     // but we don't want to do that if it is not needed
@@ -1438,20 +1453,61 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     /**
-     * Record the current {@code blockstack} as the handlers for the current {@code bci}. This may
-     * insert a new blockstack range (in which case it starts out as [bci, bci]). If we already
-     * recorded this exact blockstack range, we assume proper nesting in which case we extend the
-     * range the block belongs to to include {@code bci}. The method ensures the ranges remain
-     * sorted by known start index.
+     * Record the current {@code blockstack} via it's "thumbprint" as the handlers for the current
+     * {@code bci}. This may insert a new blockstack range (in which case it starts out as [bci,
+     * bci]). If we already recorded this exact blockstack range, we assume proper nesting in which
+     * case we extend the range the block belongs to to include {@code bci}. The method ensures the
+     * ranges remain sorted by known start index.
+     *
+     * This is done to control the amount of code before PE when handling exceptions...  What does
+     * searching for the handler really do?  There are only two kinds of blocks - EXCEPT and
+     * FINALLY. The except blocks use unwindExceptHandler, the first FINALLY block that's found
+     * calls unwindBlock, inserts an EXCEPT block in its own position on the blockstack, and
+     * returns the jump target. We already assume that the blockstacks are properly nested and thus
+     * can be encoded PE safely as nested ranges. This we can just store the blockstack information
+     * more concisely:
+     *
+     *  1) How deep to unwind EXCEPT blocks. Only the last except block can win as being the
+     *     "new-old currently handled exception" that is restored and there cannot be any FINALLY
+     *     blocks in-between. So we just need the lowest stack level to pop to for EXCEPT blocks
+     *     ... that's 12 bits;
+     *
+     *  2) 16 bit - the handler BCI. It cannot be 0, we just don't generate that kind of code.
+     *
+     *  3) stackTop before FINALLY block was pushed ... that's another 12 bits.
+     *
+     *  4) which position in the blockstack is transformed into an EXCEPT block .. just 4 bits
+     *  needed for this due to MAXBLOCKS being 15
+     *
+     * So really, all we need is to store one long per bci range that raised and that tells use all
+     * we need.
      */
-    private int[] saveExceptionBlockstack(int bci, int[] blockstack, int blockstackTop) {
+    private long saveExceptionBlockstack(int bci, int stackTop, int[] blockstack, int blockstackTop) {
         CompilerAsserts.neverPartOfCompilation();
         int[] currentBlockstack = Arrays.copyOf(blockstack, blockstackTop + 1);
 
+        int stackTopAfterExceptUnwinding = stackTop;
+        int stackTopAfterFinally = stackTop;
+        int handlerBCI = 0;
+        for (int i = blockstackTop; i >= 0; i--) {
+            int block = blockstack[i];
+            int stackTopBeforeBlock = decodeStackTop(block);
+            if (isBlockTypeExcept(block)) {
+                stackTopAfterExceptUnwinding = stackTopBeforeBlock;
+            } else {
+                assert isBlockTypeFinally(block);
+                stackTopAfterFinally = stackTopBeforeBlock;
+                handlerBCI = decodeBCI(block) + 2;
+                break;
+            }
+        }
+        long currentThumbprint = encodeExceptBlockStackTop(stackTopAfterExceptUnwinding) |
+            encodeFinallyBlockStackTop(stackTopAfterFinally) |
+            encodeHandlerBCI(handlerBCI);
+
         int knownIndex = -1;
-        for (int i = 0; i < exceptionBlockStacks.length; i++) {
-            int[] savedUpcomingBlockstack = exceptionBlockStacks[i];
-            if (Arrays.equals(savedUpcomingBlockstack, currentBlockstack)) {
+        for (int i = 0; i < blockstackRanges.length; i += 3) {
+            if (blockstackRanges[i + 2] == currentThumbprint) {
                 knownIndex = i;
                 break;
             }
@@ -1459,29 +1515,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
         if (knownIndex >= 0) {
             // we already know of this blockstack, so there's a block we need to extend
-            for (int i = 0; i < blockstackRanges.length; i += 3) {
-                if (blockstackRanges[i + 2] == knownIndex) {
-                    if (bci < blockstackRanges[i]) {
-                        blockstackRanges[i] = bci;
-                        // potentially need to re-sort the ranges
-                        for (int j = 0; j < i; j += 3) {
-                            if (bci < blockstackRanges[j]) {
-                                // shift all ranges from j three places to the right, overwriting
-                                // the range starting at i, then the re-insert range i where range
-                                // j was
-                                int savedStop = blockstackRanges[i + 1];
-                                System.arraycopy(blockstackRanges, j, blockstackRanges, j + 3, i - j);
-                                blockstackRanges[j] = bci;
-                                blockstackRanges[j + 1] = savedStop;
-                                blockstackRanges[j + 2] = knownIndex;
-                            }
-                        }
-                    } else {
-                        assert bci > blockstackRanges[i + 1];
-                        blockstackRanges[i + 1] = bci;
+            if (bci < blockstackRanges[knownIndex]) {
+                blockstackRanges[knownIndex] = bci;
+                // potentially need to re-sort the ranges
+                for (int j = 0; j < knownIndex; j += 3) {
+                    if (bci < blockstackRanges[j]) {
+                        // shift all ranges from j three places to the right, overwriting the range
+                        // starting at knownIndex, then the re-insert range knownIndex where range
+                        // j was
+                        long savedStop = blockstackRanges[knownIndex + 1];
+                        System.arraycopy(blockstackRanges, j, blockstackRanges, j + 3, knownIndex - j);
+                        blockstackRanges[j] = bci;
+                        blockstackRanges[j + 1] = savedStop;
+                        blockstackRanges[j + 2] = knownIndex;
                     }
-                    break;
                 }
+            } else {
+                assert bci > blockstackRanges[knownIndex + 1];
+                blockstackRanges[knownIndex + 1] = bci;
             }
         } else {
             // we don't know this blockstack at all, insert a new range
@@ -1494,35 +1545,64 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     break;
                 }
             }
-            int[] newRanges = new int[blockstackRanges.length + 3];
-            int nextIndex = exceptionBlockStacks.length;
+            long[] newRanges = new long[blockstackRanges.length + 3];
             System.arraycopy(blockstackRanges, 0, newRanges, 0, insertionIndex);
             System.arraycopy(blockstackRanges, insertionIndex, newRanges, insertionIndex + 3, blockstackRanges.length - insertionIndex);
             blockstackRanges = newRanges;
             blockstackRanges[insertionIndex] = bci;
             blockstackRanges[insertionIndex + 1] = bci;
-            blockstackRanges[insertionIndex + 2] = nextIndex;
-            exceptionBlockStacks = Arrays.copyOf(exceptionBlockStacks, nextIndex + 1);
-            exceptionBlockStacks[nextIndex] = currentBlockstack;
+            blockstackRanges[insertionIndex + 2] = currentThumbprint;
         }
 
-        return currentBlockstack;
+        return currentThumbprint;
     }
 
+    private static final long encodeExceptBlockStackTop(int top) {
+        return (long)top << 48;
+    }
+
+    private static final long encodeFinallyBlockStackTop(int top) {
+        return (long)top << 32;
+    }
+
+    private static final long encodeNewExceptBlockIndex(int i) {
+        return (long)i << 16;
+    }
+
+    private static final long encodeHandlerBCI(int bci) {
+        return (long)bci;
+    }
+
+    private static final int decodeExceptBlockStackTop(long thumbprint) {
+        return (int)(thumbprint >> 48) & 0xffff;
+    }
+
+    private static final int decodeFinallyBlockStackTop(long thumbprint) {
+        return (int)(thumbprint >> 32) & 0xffff;
+    }
+
+    private static final int decodeNewExceptBlockIndex(long thumbprint) {
+        return (int)(thumbprint >> 16) & 0xff;
+    }
+
+    private static final int decodeHandlerBCI(long thumbprint) {
+        return (int)thumbprint & 0xffff;
+    }
+
+    /**
+     * @see #saveExceptionBlockstack
+     */
     @ExplodeLoop
-    private int[] getExceptionBlockstack(int bci, int[] blockstack, int blockstackTop) {
-        if (exceptionBlockStacks == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            exceptionBlockStacks = new int[0][];
-        }
-        if (blockstackRanges == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            blockstackRanges = new int[0];
-        }
+    private long findHandler(int stackTop, Object[] stack, int[] blockstack, int blockstackTop, int bci) {
+        CompilerAsserts.partialEvaluationConstant(stackTop);
+        CompilerAsserts.partialEvaluationConstant(blockstackTop);
+        CompilerAsserts.partialEvaluationConstant(bci);
+        CompilerDirectives.ensureVirtualized(stack);
+        CompilerDirectives.ensureVirtualized(blockstack);
 
         CompilerAsserts.partialEvaluationConstant(blockstackRanges.length);
 
-        int blockstackRange = -1;
+        long blockstackThumbprint = -1;
         for (int i = 0; i < blockstackRanges.length; i += 3) {
             CompilerAsserts.partialEvaluationConstant(blockstackRanges[i]);
             CompilerAsserts.partialEvaluationConstant(blockstackRanges[i + 1]);
@@ -1538,55 +1618,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 // block
                 break;
             } else {
-                blockstackRange = i;
+                blockstackThumbprint = blockstackRanges[i + 2];
             }
         }
 
-        CompilerAsserts.partialEvaluationConstant(blockstackRange);
-        if (blockstackRange == -1) {
+        CompilerAsserts.partialEvaluationConstant(blockstackThumbprint);
+        if (blockstackThumbprint == -1) {
+            // -1 cannot happen, since we're never setting all the bits in a real thumbprint
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            return saveExceptionBlockstack(bci, blockstack, blockstackTop);
-        } else {
-            int blockstackIdx = blockstackRanges[blockstackRange + 2];
-            CompilerAsserts.partialEvaluationConstant(blockstackIdx);
-            return exceptionBlockStacks[blockstackIdx];
+            blockstackThumbprint = saveExceptionBlockstack(bci, stackTop, blockstack, blockstackTop);
         }
-    }
-
-    @ExplodeLoop
-    private int findHandler(int stackTop, Object[] stack, int[] blockstack, int blockstackTop, int bci) {
-        CompilerAsserts.partialEvaluationConstant(stackTop);
-        CompilerAsserts.partialEvaluationConstant(blockstackTop);
-        CompilerAsserts.partialEvaluationConstant(bci);
-        CompilerDirectives.ensureVirtualized(stack);
-        CompilerDirectives.ensureVirtualized(blockstack);
-
-        int[] savedBlockstack = getExceptionBlockstack(bci, blockstack, blockstackTop);
-        int savedBlockstackTop = savedBlockstack.length - 1;
-        // TODO: the below comparison method does not exist prior to JDK9
-        // assert Arrays.equals(savedBlockstack, 0, savedBlockstackTop, blockstack, 0, savedBlockstackTop) : "odd bytecode pattern with non-constant blockstack for bci";
-
-        CompilerAsserts.partialEvaluationConstant(savedBlockstack);
-        CompilerAsserts.partialEvaluationConstant(savedBlockstackTop);
-
-        for (int i = savedBlockstackTop; i >= 0; i--) {
-            int block = savedBlockstack[i];
-            CompilerAsserts.partialEvaluationConstant(block);
-            int stackTopBeforeBlock = decodeStackTop(block);
-            if (isBlockTypeExcept(block)) {
-                stackTop = unwindExceptHandler(stack, stackTop, stackTopBeforeBlock);
-            } else {
-                stackTop = unwindBlock(stack, stackTop, stackTopBeforeBlock);
-                assert isBlockTypeFinally(block);
-                CompilerAsserts.partialEvaluationConstant(stackTop);
-                blockstack[i] = encodeBlockTypeExcept() | encodeStackTop(stackTop);
-                // return handler target bci
-                int handlerBCI = decodeBCI(block) + 2;
-                CompilerAsserts.partialEvaluationConstant(handlerBCI);
-                return handlerBCI;
-            }
-        }
-        return -1;
+        return blockstackThumbprint;
     }
 
     @ExplodeLoop
