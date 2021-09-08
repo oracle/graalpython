@@ -90,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -310,7 +311,7 @@ public abstract class PGuards {
     }
 
     public static boolean isPythonUserClass(Object klass) {
-        return !isPythonBuiltinClass(klass);
+        return klass instanceof PythonClass || PythonNativeClass.isInstance(klass);
     }
 
     public static boolean isPythonBuiltinClassType(Object klass) {
