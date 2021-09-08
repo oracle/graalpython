@@ -39,11 +39,9 @@ ModuleRootNode Name: <module 'lambda10'> SourceSection: [0,47]`def fn():↵  lam
                           Arguments:
                             ReadGlobalOrBuiltinNodeGen SourceSection: [23,26]`bar`
                               Identifier: bar
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             AddNodeGen SourceSection: [33,39]`blat+2`
                               ReadGlobalOrBuiltinNodeGen SourceSection: [33,37]`blat`
                                 Identifier: blat
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [38,39]`2`
                                 Value: 2
                           KwArguments: None

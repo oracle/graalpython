@@ -9,7 +9,6 @@ ModuleRootNode Name: <module 'dictCompr'> SourceSection: [0,28]`{i: i + 1 for i 
       CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: dict
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [1,27]`i: i + 1 for i in ra...`
         Name: <genexpr>
         FrameDescriptor: 2 slots [i, <return_val>]

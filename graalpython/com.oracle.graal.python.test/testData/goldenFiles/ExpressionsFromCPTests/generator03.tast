@@ -9,7 +9,6 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,43]`[x**3 for x in
       CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: list
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [1,42]`x**3 for x in range(...`
         Name: <genexpr>
         FrameDescriptor: 2 slots [x, <return_val>]

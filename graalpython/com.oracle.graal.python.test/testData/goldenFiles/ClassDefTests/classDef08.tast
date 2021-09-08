@@ -41,7 +41,6 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                         QualName: Test
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: __name__
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
                           Index: 0
                         SetItemIfNotPresentNodeGen SourceSection: None
@@ -87,7 +86,6 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                             Frame: [0,format,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [60,64]`args`
                                             Identifier: args
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Object]
                         SetItemNodeGen SourceSection: [70,129]`def fn2(*args, **kwd...`
@@ -144,7 +142,6 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                               Frame: [1,kwds,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [109,113]`self`
                                             Identifier: self
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                     Return Expresssion: ObjectLiteralNode SourceSection: None

@@ -55,7 +55,6 @@ ModuleRootNode Name: <module 'for04'> SourceSection: [0,59]`def fn():↵  for x 
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [21,27]`xrange`
                                 Identifier: xrange
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [28,29]`3`
                                 Value: 3
                         BlockNode SourceSection: None

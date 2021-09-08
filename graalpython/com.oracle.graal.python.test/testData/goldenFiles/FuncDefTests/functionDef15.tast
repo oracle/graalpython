@@ -85,7 +85,6 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
                           YesNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [98,107]`SOMETHING`
                               Identifier: SOMETHING
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ExpressionStatementNode SourceSection: [110,114]`pass`
                             EmptyNode SourceSection: [110,114]`pass`
                           BlockNode SourceSection: None

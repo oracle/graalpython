@@ -17,8 +17,6 @@ ModuleRootNode Name: <module 'annotationType03'> SourceSection: [0,39]`j = 1↵a
                   Key: __annotations__
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
-                  IsBuiltinClassProfile SourceSection: None
-                    GetClassNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [6,10]`ahoj`
                   Identifier: ahoj
                   IsBuiltinClassProfile SourceSection: None

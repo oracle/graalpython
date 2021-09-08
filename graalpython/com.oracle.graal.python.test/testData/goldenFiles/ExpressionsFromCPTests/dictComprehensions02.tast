@@ -9,7 +9,6 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
       CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: dict
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [1,39]`x**2:x[3] for x in s...`
         Name: <genexpr>
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -40,7 +39,6 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
                       CallUnaryMethodNodeGen SourceSection: None
                       ReadGlobalOrBuiltinNodeGen SourceSection: [27,36]`condition`
                         Identifier: condition
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadGeneratorFrameVariableNodeGen SourceSection: [37,38]`x`
                         Frame: [0,x,Illegal]
                   ExpressionStatementNode SourceSection: None

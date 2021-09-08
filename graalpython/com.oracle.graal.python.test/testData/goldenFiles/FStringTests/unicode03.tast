@@ -41,18 +41,15 @@ ModuleRootNode Name: <module 'unicode03'> SourceSection: [0,183]`def test():↵ 
                               EqNodeGen SourceSection: [70,79]`a == '𝒜'`
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [70,71]`a`
                                   Identifier: a
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [75,79]`'𝒜'`
                               EqNodeGen SourceSection: [84,93]`b == '𝒞'`
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [84,85]`b`
                                   Identifier: b
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [89,93]`'𝒞'`
                               YesNodeGen SourceSection: None
                             EqNodeGen SourceSection: [98,107]`c == '𝒵'`
                               ReadGlobalOrBuiltinNodeGen SourceSection: [98,99]`c`
                                 Identifier: c
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [103,107]`'𝒵'`
                             YesNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [110,183]`f'𝔘𝔫𝔦𝔠𝔬𝔡𝔢 res...`
@@ -62,18 +59,15 @@ ModuleRootNode Name: <module 'unicode03'> SourceSection: [0,183]`def test():↵ 
                           FormatStringExpressionNode SourceSection: [138,164]`result:{width}.{prec...`
                             ReadGlobalOrBuiltinNodeGen SourceSection: [1,7]`result`
                               Identifier: result
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             FormatStringLiteralNode SourceSection: [145,164]`{width}.{precision}`
                               Parts: 3
                               FormatStringExpressionNode SourceSection: [146,151]`width`
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [1,6]`width`
                                   Identifier: width
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [152,153]`.`
                               FormatStringExpressionNode SourceSection: [154,163]`precision`
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [1,10]`precision`
                                   Identifier: precision
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [165,182]` and this is true`
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [0,<return_val>,Object]

@@ -360,8 +360,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               Key: __dict__
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1999,2003]`type`
               Identifier: type
               IsBuiltinClassProfile SourceSection: None
@@ -573,8 +571,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                           Key: __mro__
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
-                          IsBuiltinClassProfile SourceSection: None
-                            GetClassNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [2374,2375]`C`
                           Frame: [0,C,Illegal]
                     ElseNode SourceSection: [2388,2633]`for method in method...`
@@ -604,8 +600,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Key: __dict__
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
-                                          IsBuiltinClassProfile SourceSection: None
-                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [2458,2459]`B`
                                           Frame: [3,B,Illegal]
                                   BlockNode SourceSection: None
@@ -618,8 +612,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Key: __dict__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [2489,2490]`B`
                                                 Frame: [3,B,Illegal]
                                             ReadLocalVariableNodeGen SourceSection: [2500,2506]`method`
@@ -628,7 +620,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       FrameReturnNode SourceSection: [2537,2558]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [2544,2558]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     BreakNode SourceSection: [2575,2580]`break`
                                   BlockNode SourceSection: None
@@ -638,7 +629,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             FrameReturnNode SourceSection: [2607,2628]`return NotImplemente...`
                               ReadGlobalOrBuiltinNodeGen SourceSection: [2614,2628]`NotImplemented`
                                 Identifier: NotImplemented
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [2402,2409]`methods`
                           ReadLocalVariableNodeGen SourceSection: [2402,2409]`methods`
                             Frame: [1,methods,Illegal]
@@ -677,7 +667,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Hashable
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -705,7 +694,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __hash__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -755,7 +743,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -799,13 +786,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,cls,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [2833,2841]`Hashable`
                                               Identifier: Hashable
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [2855,2891]`return _check_method...`
                                           PythonCallBinary SourceSection: [2862,2891]`_check_methods(C, "_...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [2862,2876]`_check_methods`
                                               Identifier: _check_methods
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [2877,2878]`C`
                                               Frame: [1,C,Illegal]
                                             StringLiteralNode SourceSection: [2880,2890]`"__hash__"`
@@ -813,7 +798,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       FrameReturnNode SourceSection: [2900,2921]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [2907,2921]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -858,7 +842,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Awaitable
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -886,7 +869,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorFunctionDefinitionNode Name: __await__ SourceSection: None
                             FrameDescriptor: 2 slots [self, <return_val>]
                             Active Flags: 2
@@ -944,7 +926,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -988,13 +969,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,cls,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [3110,3119]`Awaitable`
                                               Identifier: Awaitable
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [3133,3170]`return _check_method...`
                                           PythonCallBinary SourceSection: [3140,3170]`_check_methods(C, "_...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [3140,3154]`_check_methods`
                                               Identifier: _check_methods
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [3155,3156]`C`
                                               Frame: [1,C,Illegal]
                                             StringLiteralNode SourceSection: [3158,3169]`"__await__"`
@@ -1002,7 +981,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       FrameReturnNode SourceSection: [3179,3200]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [3186,3200]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -1049,7 +1027,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Coroutine
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -1077,7 +1054,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: send SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -1117,7 +1093,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       RaiseNodeGen SourceSection: [3421,3440]`raise StopIteration`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [3427,3440]`StopIteration`
                                           Identifier: StopIteration
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
@@ -1136,7 +1111,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: throw SourceSection: None
                             Arguments:
                               ObjectLiteralNode SourceSection: [3491,3495]`None`
@@ -1280,24 +1254,20 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [0,self,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [3931,3944]`GeneratorExit`
                                               Identifier: GeneratorExit
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ExceptNode SourceSection: None
                                           ExpressionStatementNode SourceSection: [4005,4009]`pass`
                                             EmptyNode SourceSection: [4005,4009]`pass`
                                           TupleLiteralNode SourceSection: [3961,3991]`(GeneratorExit, Stop...`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [3962,3975]`GeneratorExit`
                                               Identifier: GeneratorExit
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [3977,3990]`StopIteration`
                                               Identifier: StopIteration
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
                                         RaiseNodeGen SourceSection: [4036,4089]`raise RuntimeError("...`
                                           PythonCallUnary SourceSection: [4042,4089]`RuntimeError("corout...`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4042,4054]`RuntimeError`
                                               Identifier: RuntimeError
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [4055,4088]`"coroutine ignored G...`
                                           NoValueNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -1317,7 +1287,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -1361,7 +1330,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,cls,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4160,4169]`Coroutine`
                                               Identifier: Coroutine
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [4183,4246]`return _check_method...`
                                           PythonCallNodeGen SourceSection: [4190,4246]`_check_methods(C, '_...`
                                             CallNodeGen SourceSection: None
@@ -1373,12 +1341,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             StringLiteralNode SourceSection: [4238,4245]`'close'`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4190,4204]`_check_methods`
                                               Identifier: _check_methods
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                       FrameReturnNode SourceSection: [4255,4276]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [4262,4276]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -1429,7 +1395,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: AsyncIterable
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -1457,7 +1422,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __aiter__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -1492,7 +1456,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4432,4445]`AsyncIterator`
                                             Identifier: AsyncIterator
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Object]
                       SetItemNodeGen SourceSection: [4453,4615]`@classmethod↵    def...`
@@ -1510,7 +1473,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -1554,13 +1516,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,cls,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4518,4531]`AsyncIterable`
                                               Identifier: AsyncIterable
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [4545,4582]`return _check_method...`
                                           PythonCallBinary SourceSection: [4552,4582]`_check_methods(C, "_...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4552,4566]`_check_methods`
                                               Identifier: _check_methods
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [4567,4568]`C`
                                               Frame: [1,C,Illegal]
                                             StringLiteralNode SourceSection: [4570,4581]`"__aiter__"`
@@ -1568,7 +1528,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       FrameReturnNode SourceSection: [4591,4612]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [4598,4612]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -1615,7 +1574,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: AsyncIterator
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -1643,7 +1601,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __anext__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -1676,7 +1633,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       RaiseNodeGen SourceSection: [4810,4834]`raise StopAsyncItera...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [4816,4834]`StopAsyncIteration`
                                           Identifier: StopAsyncIteration
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Object]
@@ -1734,7 +1690,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -1778,13 +1733,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,cls,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4951,4964]`AsyncIterator`
                                               Identifier: AsyncIterator
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [4978,5028]`return _check_method...`
                                           PythonCallTernary SourceSection: [4985,5028]`_check_methods(C, "_...`
                                             CallTernaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4985,4999]`_check_methods`
                                               Identifier: _check_methods
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [5000,5001]`C`
                                               Frame: [1,C,Illegal]
                                             StringLiteralNode SourceSection: [5003,5014]`"__anext__"`
@@ -1793,7 +1746,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       FrameReturnNode SourceSection: [5037,5058]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [5044,5058]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -1834,7 +1786,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: AsyncGenerator
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -1905,7 +1856,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: asend SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -1945,7 +1895,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       RaiseNodeGen SourceSection: [5510,5534]`raise StopAsyncItera...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [5516,5534]`StopAsyncIteration`
                                           Identifier: StopAsyncIteration
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
@@ -1964,7 +1913,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: athrow SourceSection: None
                             Arguments:
                               ObjectLiteralNode SourceSection: [5592,5596]`None`
@@ -2108,24 +2056,20 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [0,self,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [6064,6077]`GeneratorExit`
                                               Identifier: GeneratorExit
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ExceptNode SourceSection: None
                                           ExpressionStatementNode SourceSection: [6143,6147]`pass`
                                             EmptyNode SourceSection: [6143,6147]`pass`
                                           TupleLiteralNode SourceSection: [6094,6129]`(GeneratorExit, Stop...`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [6095,6108]`GeneratorExit`
                                               Identifier: GeneratorExit
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [6110,6128]`StopAsyncIteration`
                                               Identifier: StopAsyncIteration
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
                                         RaiseNodeGen SourceSection: [6174,6240]`raise RuntimeError("...`
                                           PythonCallUnary SourceSection: [6180,6240]`RuntimeError("asynch...`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [6180,6192]`RuntimeError`
                                               Identifier: RuntimeError
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [6193,6239]`"asynchronous genera...`
                                           NoValueNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -2145,7 +2089,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2189,7 +2132,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,cls,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [6311,6325]`AsyncGenerator`
                                               Identifier: AsyncGenerator
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [6339,6452]`return _check_method...`
                                           PythonCallNodeGen SourceSection: [6346,6452]`_check_methods(C, '_...`
                                             CallNodeGen SourceSection: None
@@ -2202,12 +2144,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             StringLiteralNode SourceSection: [6443,6451]`'aclose'`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [6346,6360]`_check_methods`
                                               Identifier: _check_methods
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                       FrameReturnNode SourceSection: [6461,6482]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [6468,6482]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -2258,7 +2198,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Iterable
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -2286,7 +2225,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorFunctionDefinitionNode Name: __iter__ SourceSection: None
                             FrameDescriptor: 2 slots [self, <return_val>]
                             Active Flags: 3
@@ -2350,7 +2288,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2394,13 +2331,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,cls,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [6742,6750]`Iterable`
                                               Identifier: Iterable
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [6764,6800]`return _check_method...`
                                           PythonCallBinary SourceSection: [6771,6800]`_check_methods(C, "_...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [6771,6785]`_check_methods`
                                               Identifier: _check_methods
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [6786,6787]`C`
                                               Frame: [1,C,Illegal]
                                             StringLiteralNode SourceSection: [6789,6799]`"__iter__"`
@@ -2408,7 +2343,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       FrameReturnNode SourceSection: [6809,6830]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [6816,6830]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -2455,7 +2389,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Iterator
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -2483,7 +2416,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __next__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2516,7 +2448,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       RaiseNodeGen SourceSection: [7018,7037]`raise StopIteration`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [7024,7037]`StopIteration`
                                           Identifier: StopIteration
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Object]
@@ -2574,7 +2505,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2618,13 +2548,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,cls,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [7153,7161]`Iterator`
                                               Identifier: Iterator
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [7175,7223]`return _check_method...`
                                           PythonCallTernary SourceSection: [7182,7223]`_check_methods(C, '_...`
                                             CallTernaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [7182,7196]`_check_methods`
                                               Identifier: _check_methods
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [7197,7198]`C`
                                               Frame: [1,C,Illegal]
                                             StringLiteralNode SourceSection: [7200,7210]`'__iter__'`
@@ -2633,7 +2561,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       FrameReturnNode SourceSection: [7232,7253]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [7239,7253]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -2830,7 +2757,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Reversible
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -2858,7 +2784,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
                             FrameDescriptor: 2 slots [self, <return_val>]
                             Active Flags: 3
@@ -2922,7 +2847,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2966,13 +2890,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,cls,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [7964,7974]`Reversible`
                                               Identifier: Reversible
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [7988,8040]`return _check_method...`
                                           PythonCallTernary SourceSection: [7995,8040]`_check_methods(C, "_...`
                                             CallTernaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [7995,8009]`_check_methods`
                                               Identifier: _check_methods
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [8010,8011]`C`
                                               Frame: [1,C,Illegal]
                                             StringLiteralNode SourceSection: [8013,8027]`"__reversed__"`
@@ -2981,7 +2903,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       FrameReturnNode SourceSection: [8049,8070]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [8056,8070]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -3022,7 +2943,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Generator
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -3093,7 +3013,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: send SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3133,7 +3052,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       RaiseNodeGen SourceSection: [8455,8474]`raise StopIteration`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [8461,8474]`StopIteration`
                                           Identifier: StopIteration
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
@@ -3152,7 +3070,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: throw SourceSection: None
                             Arguments:
                               ObjectLiteralNode SourceSection: [8525,8529]`None`
@@ -3296,24 +3213,20 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [0,self,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [8965,8978]`GeneratorExit`
                                               Identifier: GeneratorExit
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ExceptNode SourceSection: None
                                           ExpressionStatementNode SourceSection: [9039,9043]`pass`
                                             EmptyNode SourceSection: [9039,9043]`pass`
                                           TupleLiteralNode SourceSection: [8995,9025]`(GeneratorExit, Stop...`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [8996,9009]`GeneratorExit`
                                               Identifier: GeneratorExit
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9011,9024]`StopIteration`
                                               Identifier: StopIteration
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
                                         RaiseNodeGen SourceSection: [9070,9123]`raise RuntimeError("...`
                                           PythonCallUnary SourceSection: [9076,9123]`RuntimeError("genera...`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9076,9088]`RuntimeError`
                                               Identifier: RuntimeError
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [9089,9122]`"generator ignored G...`
                                           NoValueNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -3333,7 +3246,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3377,7 +3289,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,cls,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9194,9203]`Generator`
                                               Identifier: Generator
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [9217,9325]`return _check_method...`
                                           PythonCallNodeGen SourceSection: [9224,9325]`_check_methods(C, '_...`
                                             CallNodeGen SourceSection: None
@@ -3390,12 +3301,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             StringLiteralNode SourceSection: [9317,9324]`'close'`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9224,9238]`_check_methods`
                                               Identifier: _check_methods
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                       FrameReturnNode SourceSection: [9334,9355]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [9341,9355]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -3446,7 +3355,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Sized
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -3474,7 +3382,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __len__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3524,7 +3431,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3568,13 +3474,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,cls,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9572,9577]`Sized`
                                               Identifier: Sized
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [9591,9626]`return _check_method...`
                                           PythonCallBinary SourceSection: [9598,9626]`_check_methods(C, "_...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9598,9612]`_check_methods`
                                               Identifier: _check_methods
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [9613,9614]`C`
                                               Frame: [1,C,Illegal]
                                             StringLiteralNode SourceSection: [9616,9625]`"__len__"`
@@ -3582,7 +3486,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       FrameReturnNode SourceSection: [9635,9656]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [9642,9656]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -3627,7 +3530,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Container
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -3655,7 +3557,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __contains__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3711,7 +3612,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3755,13 +3655,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,cls,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9858,9867]`Container`
                                               Identifier: Container
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [9881,9921]`return _check_method...`
                                           PythonCallBinary SourceSection: [9888,9921]`_check_methods(C, "_...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9888,9902]`_check_methods`
                                               Identifier: _check_methods
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [9903,9904]`C`
                                               Frame: [1,C,Illegal]
                                             StringLiteralNode SourceSection: [9906,9920]`"__contains__"`
@@ -3769,7 +3667,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       FrameReturnNode SourceSection: [9930,9951]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [9937,9951]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -3814,7 +3711,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Collection
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -3842,7 +3738,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3886,13 +3781,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,cls,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [10089,10099]`Collection`
                                               Identifier: Collection
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [10113,10177]`return _check_method...`
                                           PythonCallQuaternary SourceSection: [10120,10177]`_check_methods(C,  "...`
                                             CallQuaternaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [10120,10134]`_check_methods`
                                               Identifier: _check_methods
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [10135,10136]`C`
                                               Frame: [1,C,Illegal]
                                             StringLiteralNode SourceSection: [10139,10148]`"__len__"`
@@ -3902,7 +3795,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       FrameReturnNode SourceSection: [10186,10207]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [10193,10207]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -3951,7 +3843,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Callable
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -3979,7 +3870,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __call__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -4042,7 +3932,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -4086,13 +3975,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [0,cls,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [10415,10423]`Callable`
                                               Identifier: Callable
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [10437,10473]`return _check_method...`
                                           PythonCallBinary SourceSection: [10444,10473]`_check_methods(C, "_...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [10444,10458]`_check_methods`
                                               Identifier: _check_methods
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [10459,10460]`C`
                                               Frame: [1,C,Illegal]
                                             StringLiteralNode SourceSection: [10462,10472]`"__call__"`
@@ -4100,7 +3987,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       FrameReturnNode SourceSection: [10482,10503]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [10489,10503]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -4147,7 +4033,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Set
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -4213,16 +4098,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [10967,10977]`isinstance`
                                             Identifier: isinstance
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [10978,10983]`other`
                                             Frame: [1,other,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [10985,10988]`Set`
                                             Identifier: Set
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [11003,11024]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [11010,11024]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [11033,11093]`if len(self) > len(o...`
                                       YesNodeGen SourceSection: None
@@ -4231,14 +4113,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11036,11039]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [11040,11044]`self`
                                               Frame: [0,self,Illegal]
                                           PythonCallUnary SourceSection: [11048,11058]`len(other)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11048,11051]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [11052,11057]`other`
                                               Frame: [1,other,Illegal]
                                       FrameReturnNode SourceSection: [11072,11084]`return False`
@@ -4319,16 +4199,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11239,11249]`isinstance`
                                             Identifier: isinstance
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [11250,11255]`other`
                                             Frame: [1,other,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11257,11260]`Set`
                                             Identifier: Set
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [11275,11296]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [11282,11296]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [11305,11357]`return len(self) < l...`
                                       AndNode SourceSection: [11312,11357]`len(self) < len(othe...`
@@ -4337,14 +4214,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11312,11315]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [11316,11320]`self`
                                               Frame: [0,self,Illegal]
                                           PythonCallUnary SourceSection: [11324,11334]`len(other)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11324,11327]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [11328,11333]`other`
                                               Frame: [1,other,Illegal]
                                         PythonCallUnary SourceSection: [11339,11357]`self.__le__(other)`
@@ -4404,16 +4279,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11403,11413]`isinstance`
                                             Identifier: isinstance
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [11414,11419]`other`
                                             Frame: [1,other,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11421,11424]`Set`
                                             Identifier: Set
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [11439,11460]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [11446,11460]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [11469,11521]`return len(self) > l...`
                                       AndNode SourceSection: [11476,11521]`len(self) > len(othe...`
@@ -4422,14 +4294,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11476,11479]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [11480,11484]`self`
                                               Frame: [0,self,Illegal]
                                           PythonCallUnary SourceSection: [11488,11498]`len(other)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11488,11491]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [11492,11497]`other`
                                               Frame: [1,other,Illegal]
                                         PythonCallUnary SourceSection: [11503,11521]`self.__ge__(other)`
@@ -4489,16 +4359,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11567,11577]`isinstance`
                                             Identifier: isinstance
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [11578,11583]`other`
                                             Frame: [1,other,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11585,11588]`Set`
                                             Identifier: Set
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [11603,11624]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [11610,11624]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [11633,11693]`if len(self) < len(o...`
                                       YesNodeGen SourceSection: None
@@ -4507,14 +4374,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11636,11639]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [11640,11644]`self`
                                               Frame: [0,self,Illegal]
                                           PythonCallUnary SourceSection: [11648,11658]`len(other)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11648,11651]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [11652,11657]`other`
                                               Frame: [1,other,Illegal]
                                       FrameReturnNode SourceSection: [11672,11684]`return False`
@@ -4595,16 +4460,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11839,11849]`isinstance`
                                             Identifier: isinstance
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [11850,11855]`other`
                                             Frame: [1,other,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [11857,11860]`Set`
                                             Identifier: Set
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [11875,11896]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [11882,11896]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [11905,11958]`return len(self) == ...`
                                       AndNode SourceSection: [11912,11958]`len(self) == len(oth...`
@@ -4613,14 +4475,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11912,11915]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [11916,11920]`self`
                                               Frame: [0,self,Illegal]
                                           PythonCallUnary SourceSection: [11925,11935]`len(other)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11925,11928]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [11929,11934]`other`
                                               Frame: [1,other,Illegal]
                                         PythonCallUnary SourceSection: [11940,11958]`self.__le__(other)`
@@ -4648,7 +4508,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: _from_iterable SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -4742,16 +4601,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12282,12292]`isinstance`
                                             Identifier: isinstance
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [12293,12298]`other`
                                             Frame: [1,other,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12300,12308]`Iterable`
                                             Identifier: Iterable
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [12323,12344]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [12330,12344]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [12353,12422]`return self._from_it...`
                                       PythonCallUnary SourceSection: [12360,12422]`self._from_iterable(...`
@@ -4840,7 +4696,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __and__
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [12452,12653]`def isdisjoint(self,...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -4957,16 +4812,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12693,12703]`isinstance`
                                             Identifier: isinstance
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [12704,12709]`other`
                                             Frame: [1,other,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12711,12719]`Iterable`
                                             Identifier: Iterable
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [12734,12755]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [12741,12755]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [12764,12809]`chain = (e for s in ...`
                                       Identifier: chain
@@ -5061,7 +4913,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __or__
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [12879,13199]`def __sub__(self, ot...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -5110,14 +4961,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12920,12930]`isinstance`
                                             Identifier: isinstance
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [12931,12936]`other`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [1,other,Illegal]
                                             ReadFromCellNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12938,12941]`Set`
                                             Identifier: Set
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [12956,13042]`if not isinstance(ot...`
                                           NotNodeGen SourceSection: [12959,12990]`not isinstance(other...`
@@ -5125,18 +4974,15 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [12963,12973]`isinstance`
                                                 Identifier: isinstance
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [12974,12979]`other`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [1,other,Illegal]
                                                 ReadFromCellNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [12981,12989]`Iterable`
                                                 Identifier: Iterable
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           FrameReturnNode SourceSection: [13008,13029]`return NotImplemente...`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [13015,13029]`NotImplemented`
                                               Identifier: NotImplemented
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
                                         WriteLocalCellNodeGen SourceSection: [13042,13076]`other = self._from_i...`
                                           Identifier: other
@@ -5273,12 +5119,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [13241,13251]`isinstance`
                                             Identifier: isinstance
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [13252,13257]`other`
                                             Frame: [1,other,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [13259,13262]`Set`
                                             Identifier: Set
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [13277,13363]`if not isinstance(ot...`
                                           NotNodeGen SourceSection: [13280,13311]`not isinstance(other...`
@@ -5286,16 +5130,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [13284,13294]`isinstance`
                                                 Identifier: isinstance
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [13295,13300]`other`
                                                 Frame: [1,other,Illegal]
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [13302,13310]`Iterable`
                                                 Identifier: Iterable
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           FrameReturnNode SourceSection: [13329,13350]`return NotImplemente...`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [13336,13350]`NotImplemented`
                                               Identifier: NotImplemented
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [13363,13397]`other = self._from_i...`
                                           Identifier: other
@@ -5432,12 +5273,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [13561,13571]`isinstance`
                                             Identifier: isinstance
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [13572,13577]`other`
                                             Frame: [1,other,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [13579,13582]`Set`
                                             Identifier: Set
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                         IfNode SourceSection: [13597,13683]`if not isinstance(ot...`
                                           NotNodeGen SourceSection: [13600,13631]`not isinstance(other...`
@@ -5445,16 +5284,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [13604,13614]`isinstance`
                                                 Identifier: isinstance
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [13615,13620]`other`
                                                 Frame: [1,other,Illegal]
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [13622,13630]`Iterable`
                                                 Identifier: Iterable
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           FrameReturnNode SourceSection: [13649,13670]`return NotImplemente...`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [13656,13670]`NotImplemented`
                                               Identifier: NotImplemented
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [13683,13717]`other = self._from_i...`
                                           Identifier: other
@@ -5494,7 +5330,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __xor__
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [13794,14799]`def _hash(self):↵   ...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -5537,11 +5372,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Key: maxsize
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
-                                          IsBuiltinClassProfile SourceSection: None
-                                            GetClassNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [14395,14398]`sys`
                                           Identifier: sys
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [14415,14433]`MASK = 2 * MAX + 1`
                                       Identifier: MASK
                                       Frame: [2,MASK,Illegal]
@@ -5560,7 +5392,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [14446,14449]`len`
                                           Identifier: len
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [14450,14454]`self`
                                           Frame: [0,self,Illegal]
                                     WriteLocalVariableNodeGen SourceSection: [14464,14488]`h = 1927868237 * (n ...`
@@ -5598,7 +5429,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [14547,14551]`hash`
                                                   Identifier: hash
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [14552,14553]`x`
                                                   Frame: [6,x,Illegal]
                                             WriteLocalVariableNodeGen SourceSection: [14567,14614]`h ^= (hx ^ (hx << 16...`
@@ -5743,7 +5573,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: MutableSet
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -5777,7 +5606,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: add SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -5817,7 +5645,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       RaiseNodeGen SourceSection: [15355,15380]`raise NotImplemented...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [15361,15380]`NotImplementedError`
                                           Identifier: NotImplementedError
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
@@ -5836,7 +5663,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: discard SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -5876,7 +5702,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       RaiseNodeGen SourceSection: [15511,15536]`raise NotImplemented...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [15517,15536]`NotImplementedError`
                                           Identifier: NotImplementedError
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
@@ -5936,7 +5761,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [15683,15691]`KeyError`
                                             Identifier: KeyError
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [15692,15697]`value`
                                             Frame: [1,value,Illegal]
                                         NoValueNode SourceSection: None
@@ -5992,7 +5816,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [15825,15829]`iter`
                                           Identifier: iter
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [15830,15834]`self`
                                           Frame: [0,self,Illegal]
                                     TryFinallyNode SourceSection: [15844,15953]`try:↵            val...`
@@ -6004,18 +5827,15 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [15869,15873]`next`
                                               Identifier: next
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [15874,15876]`it`
                                               Frame: [1,it,Illegal]
                                         ExceptNode SourceSection: None
                                           RaiseNodeGen SourceSection: [15920,15944]`raise KeyError from ...`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [15926,15934]`KeyError`
                                               Identifier: KeyError
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ObjectLiteralNode SourceSection: [15940,15944]`None`
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [15893,15906]`StopIteration`
                                             Identifier: StopIteration
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                     ExpressionStatementNode SourceSection: [15953,15972]`self.discard(value)`
                                       PythonCallUnary SourceSection: [15953,15972]`self.discard(value)`
@@ -6083,7 +5903,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             EmptyNode SourceSection: [16186,16190]`pass`
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [16164,16172]`KeyError`
                                             Identifier: KeyError
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
@@ -6281,12 +6100,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [16517,16527]`isinstance`
                                                 Identifier: isinstance
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [16528,16530]`it`
                                                 Frame: [1,it,Illegal]
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [16532,16535]`Set`
                                                 Identifier: Set
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [16554,16582]`it = self._from_iter...`
                                             Identifier: it
                                             Frame: [1,it,Illegal]
@@ -6468,7 +6285,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Mapping
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -6498,7 +6314,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __getitem__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -6538,7 +6353,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       RaiseNodeGen SourceSection: [17306,17320]`raise KeyError`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [17312,17320]`KeyError`
                                           Identifier: KeyError
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
@@ -6604,7 +6418,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [2,default,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [17488,17496]`KeyError`
                                             Identifier: KeyError
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
@@ -6662,7 +6475,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             BooleanLiteralNode SourceSection: [17638,17643]`False`
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [17609,17617]`KeyError`
                                             Identifier: KeyError
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [17670,17681]`return True`
                                           BooleanLiteralNode SourceSection: [17677,17681]`True`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -6706,7 +6518,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [17787,17795]`KeysView`
                                           Identifier: KeysView
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [17796,17800]`self`
                                           Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -6750,7 +6561,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [17910,17919]`ItemsView`
                                           Identifier: ItemsView
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [17920,17924]`self`
                                           Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -6794,7 +6604,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [18029,18039]`ValuesView`
                                           Identifier: ValuesView
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [18040,18044]`self`
                                           Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -6846,16 +6655,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [18091,18101]`isinstance`
                                             Identifier: isinstance
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [18102,18107]`other`
                                             Frame: [1,other,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [18109,18116]`Mapping`
                                             Identifier: Mapping
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [18131,18152]`return NotImplemente...`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [18138,18152]`NotImplemented`
                                           Identifier: NotImplemented
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [18161,18209]`return dict(self.ite...`
                                       EqNodeGen SourceSection: [18168,18209]`dict(self.items()) =...`
@@ -6863,7 +6669,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [18168,18172]`dict`
                                             Identifier: dict
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [18173,18185]`self.items()`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -6873,7 +6678,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [18190,18194]`dict`
                                             Identifier: dict
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [18195,18208]`other.items()`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -6937,7 +6741,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: MappingView
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -7039,14 +6842,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [18429,18432]`len`
                                           Identifier: len
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         GetAttributeNode SourceSection: [18433,18446]`self._mapping`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _mapping
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [18433,18437]`self`
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -7132,7 +6932,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: KeysView
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -7160,7 +6959,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: _from_iterable SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -7202,7 +7000,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [18665,18668]`set`
                                             Identifier: set
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [18669,18671]`it`
                                             Frame: [1,it,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -7260,8 +7057,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Key: _mapping
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [18729,18733]`self`
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -7322,8 +7117,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Key: _mapping
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
-                                          IsBuiltinClassProfile SourceSection: None
-                                            GetClassNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [18787,18791]`self`
                                           Frame: [0,self,Illegal]
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
@@ -7390,7 +7183,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: ItemsView
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -7418,7 +7210,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: classmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: _from_iterable SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -7460,7 +7251,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [18955,18958]`set`
                                             Identifier: set
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [18959,18961]`it`
                                             Frame: [1,it,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -7536,8 +7326,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Key: _mapping
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [19053,19057]`self`
                                                 Frame: [0,self,Illegal]
                                             ReadLocalVariableNodeGen SourceSection: [19067,19070]`key`
@@ -7547,7 +7335,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             BooleanLiteralNode SourceSection: [19116,19121]`False`
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [19087,19095]`KeyError`
                                             Identifier: KeyError
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [19148,19179]`return v is value or...`
                                           OrNode SourceSection: [19155,19179]`v is value or v == v...`
                                             IsExpressionNodeGen SourceSection: [19155,19165]`v is value`
@@ -7609,8 +7396,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   Key: _mapping
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    GetClassNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: [19263,19267]`self`
                                                   Frame: [0,self,Illegal]
                                               ReadGeneratorFrameVariableNodeGen SourceSection: [19277,19280]`key`
@@ -7626,8 +7411,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Key: _mapping
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [19224,19228]`self`
                                             Frame: [0,self,Illegal]
                                       GetNextCached SourceSection: None
@@ -7701,7 +7484,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: ValuesView
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -7772,8 +7554,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     Key: _mapping
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [19466,19470]`self`
                                                     Frame: [0,self,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: [19480,19483]`key`
@@ -7801,8 +7581,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Key: _mapping
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [19435,19439]`self`
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -7853,8 +7631,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Key: _mapping
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNodeGen SourceSection: [19652,19656]`self`
                                                 Frame: [0,self,Illegal]
                                             ReadGeneratorFrameVariableNodeGen SourceSection: [19666,19669]`key`
@@ -7869,8 +7645,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Key: _mapping
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [19619,19623]`self`
                                             Frame: [0,self,Illegal]
                                       GetNextCached SourceSection: None
@@ -7944,7 +7718,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: MutableMapping
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -7974,7 +7747,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __setitem__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -8020,7 +7792,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       RaiseNodeGen SourceSection: [20074,20088]`raise KeyError`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [20080,20088]`KeyError`
                                           Identifier: KeyError
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [3,<return_val>,Object]
@@ -8039,7 +7810,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __delitem__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -8079,7 +7849,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       RaiseNodeGen SourceSection: [20150,20164]`raise KeyError`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [20156,20164]`KeyError`
                                           Identifier: KeyError
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
@@ -8098,7 +7867,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: object
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [20195,20645]`def pop(self, key, d...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -8114,7 +7882,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: _MutableMapping__marker
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           KwArguments: None
                           Documentation: StringLiteralNode: `D.pop(k[,d]) -> v, r...`
                           FreeVarSlots: None
@@ -8177,8 +7944,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                       Key: _MutableMapping__marker
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
-                                                      IsBuiltinClassProfile SourceSection: None
-                                                        GetClassNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [20511,20515]`self`
                                                       Frame: [0,self,Illegal]
                                               RaiseNodeGen SourceSection: [20542,20547]`raise`
@@ -8190,7 +7955,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [2,default,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [20475,20483]`KeyError`
                                             Identifier: KeyError
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                           DeleteItemNodeGen SourceSection: [20601,20614]`del self[key]`
                                             ReadLocalVariableNodeGen SourceSection: None
@@ -8245,23 +8009,19 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [20841,20845]`next`
                                               Identifier: next
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [20846,20856]`iter(self)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [20846,20850]`iter`
                                                 Identifier: iter
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [20851,20855]`self`
                                                 Frame: [0,self,Illegal]
                                         ExceptNode SourceSection: None
                                           RaiseNodeGen SourceSection: [20900,20924]`raise KeyError from ...`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [20906,20914]`KeyError`
                                               Identifier: KeyError
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ObjectLiteralNode SourceSection: [20920,20924]`None`
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [20873,20886]`StopIteration`
                                             Identifier: StopIteration
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [20933,20950]`value = self[key]`
                                       Identifier: value
@@ -8338,7 +8098,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             EmptyNode SourceSection: [21181,21185]`pass`
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [21159,21167]`KeyError`
                                             Identifier: KeyError
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
@@ -8392,7 +8151,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [21603,21612]`TypeError`
                                             Identifier: TypeError
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [21613,21710]`"descriptor 'update'...`
                                         NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
@@ -8422,7 +8180,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [21750,21753]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [21754,21758]`args`
                                               Frame: [0,args,Illegal]
                                           IntegerLiteralNode SourceSection: [21762,21763]`1`
@@ -8432,14 +8189,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [21783,21792]`TypeError`
                                             Identifier: TypeError
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ModNodeGen SourceSection: [21793,21878]`'update expected at ...`
                                             StringLiteralNode SourceSection: [21793,21838]`'update expected at ...`
                                             PythonCallUnary SourceSection: [21869,21878]`len(args)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [21869,21872]`len`
                                                 Identifier: len
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [21873,21877]`args`
                                                 Frame: [0,args,Illegal]
                                         NoValueNode SourceSection: None
@@ -8463,12 +8218,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [21940,21950]`isinstance`
                                                 Identifier: isinstance
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [21951,21956]`other`
                                                 Frame: [3,other,Illegal]
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [21958,21965]`Mapping`
                                                 Identifier: Mapping
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ElseNode SourceSection: [21984,22057]`for key in other:↵  ...`
                                             ForNode SourceSection: None
                                               ForRepeatingNode SourceSection: None
@@ -8496,7 +8249,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 CallBinaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [22062,22069]`hasattr`
                                                   Identifier: hasattr
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [22070,22075]`other`
                                                   Frame: [3,other,Illegal]
                                                 StringLiteralNode SourceSection: [22077,22083]`"keys"`
@@ -8660,7 +8412,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [2,default,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [22515,22523]`KeyError`
                                             Identifier: KeyError
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [22565,22579]`return default`
                                       ReadLocalVariableNodeGen SourceSection: [22572,22579]`default`
@@ -8717,7 +8468,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Sequence
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -8751,7 +8501,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __getitem__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -8791,7 +8540,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       RaiseNodeGen SourceSection: [22906,22922]`raise IndexError`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [22912,22922]`IndexError`
                                           Identifier: IndexError
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
@@ -8870,7 +8618,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           ReturnNode SourceSection: [23113,23119]`return`
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [23089,23099]`IndexError`
                                             Identifier: IndexError
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                         GeneratorAccessNode SourceSection: None
                                       GeneratorAccessNode SourceSection: None
@@ -9009,17 +8756,14 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [23315,23323]`reversed`
                                             Identifier: reversed
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [23324,23340]`range(len(self))`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [23324,23329]`range`
                                               Identifier: range
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [23330,23339]`len(self)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [23330,23333]`len`
                                                 Identifier: len
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNodeGen SourceSection: [23334,23338]`self`
                                                 Frame: [0,self,Illegal]
                                       GetNextCached SourceSection: None
@@ -9116,13 +8860,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [23727,23730]`max`
                                             Identifier: max
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           AddNodeGen SourceSection: [23731,23748]`len(self) + start`
                                             PythonCallUnary SourceSection: [23731,23740]`len(self)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [23731,23734]`len`
                                                 Identifier: len
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [23735,23739]`self`
                                                 Frame: [0,self,Illegal]
                                             ReadLocalVariableNodeGen SourceSection: [23743,23748]`start`
@@ -9154,7 +8896,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [23815,23818]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [23819,23823]`self`
                                               Frame: [0,self,Illegal]
                                           ObjectLiteralNode SourceSection: None
@@ -9213,7 +8954,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   BreakNode SourceSection: [24050,24055]`break`
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [24022,24032]`IndexError`
                                                     Identifier: IndexError
-                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 BlockNode SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [24068,24074]`i += 1`
                                               Identifier: i
@@ -9228,7 +8968,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     RaiseNodeGen SourceSection: [24083,24099]`raise ValueError`
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [24089,24099]`ValueError`
                                         Identifier: ValueError
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       NoValueNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [6,<return_val>,Object]
@@ -9279,7 +9018,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [24221,24224]`sum`
                                           Identifier: sum
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         GeneratorExpressionNode SourceSection: [24225,24268]`1 for v in self if v...`
                                           Name: <genexpr>
                                           FrameDescriptor: 3 slots [v, value, <return_val>]
@@ -9442,7 +9180,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: ByteString
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -9523,7 +9260,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: MutableSequence
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -9553,7 +9289,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __setitem__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -9599,7 +9334,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       RaiseNodeGen SourceSection: [24884,24900]`raise IndexError`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [24890,24900]`IndexError`
                                           Identifier: IndexError
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [3,<return_val>,Object]
@@ -9618,7 +9352,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: __delitem__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -9658,7 +9391,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       RaiseNodeGen SourceSection: [24964,24980]`raise IndexError`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [24970,24980]`IndexError`
                                           Identifier: IndexError
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
@@ -9677,7 +9409,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: abstractmethod
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: insert SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -9723,7 +9454,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       RaiseNodeGen SourceSection: [25108,25124]`raise IndexError`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [25114,25124]`IndexError`
                                           Identifier: IndexError
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [3,<return_val>,Object]
@@ -9778,7 +9508,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [25244,25247]`len`
                                             Identifier: len
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [25248,25252]`self`
                                             Frame: [0,self,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: [25255,25260]`value`
@@ -9838,7 +9567,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             EmptyNode SourceSection: [25442,25446]`pass`
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [25418,25428]`IndexError`
                                             Identifier: IndexError
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
@@ -9883,7 +9611,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [25527,25530]`len`
                                           Identifier: len
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [25531,25535]`self`
                                           Frame: [0,self,Illegal]
                                     ElseNode SourceSection: [25545,25628]`for i in range(n//2)...`
@@ -9943,7 +9670,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [25554,25559]`range`
                                               Identifier: range
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             FloorDivNodeGen SourceSection: [25560,25564]`n//2`
                                               ReadLocalVariableNodeGen SourceSection: [25560,25561]`n`
                                                 Frame: [1,n,Illegal]

@@ -42,7 +42,6 @@ ModuleRootNode Name: <module 'if01'> SourceSection: [0,52]`def gen():â†µ  if b:â
                       YesNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [16,17]`b`
                           Identifier: b
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [23,31]`yield 12`
                         YieldNode SourceSection: [23,31]`yield 12`
                           flagSlot: 0

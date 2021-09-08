@@ -98,7 +98,6 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                     QualName: fn.<locals>.get_nested_class.<locals>.Test
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                       Identifier: __name__
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     ReadIndexedArgumentNodeGen SourceSection: None
                                                       Index: 0
                                                     SetItemIfNotPresentNodeGen SourceSection: None
@@ -222,7 +221,6 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                       CallUnaryMethodNodeGen SourceSection: None
                                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [293,296]`str`
                                                                         Identifier: str
-                                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                       StringLiteralNode SourceSection: [297,305]`"global"`
                                                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                                 Frame: [1,<return_val>,Object]
@@ -265,7 +263,6 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                       CallUnaryMethodNodeGen SourceSection: None
                                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [357,360]`str`
                                                                         Identifier: str
-                                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                       ReadLocalVariableNodeGen SourceSection: [361,365]`self`
                                                                         Frame: [0,self,Illegal]
                                                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -274,7 +271,6 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                         StringLiteralNode SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [88,94]`object`
                                           Identifier: object
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     FrameReturnNode SourceSection: [375,388]`return Test()`
                                       PythonCallNodeGen SourceSection: [382,388]`Test()`
                                         CallNodeGen SourceSection: None

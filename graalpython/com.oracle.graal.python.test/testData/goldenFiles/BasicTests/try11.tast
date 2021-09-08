@@ -44,7 +44,6 @@ ModuleRootNode Name: <module 'try11'> SourceSection: [0,79]`def fn():↵    try:
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [69,74]`print`
                                   Identifier: print
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [75,78]`err`
                                   Frame: [0,err,Illegal]
                             WriteLocalVariableNodeGen SourceSection: None
@@ -52,7 +51,6 @@ ModuleRootNode Name: <module 'try11'> SourceSection: [0,79]`def fn():↵    try:
                               Frame: [0,err,Illegal]
                             ReadGlobalOrBuiltinNodeGen SourceSection: [43,52]`Exception`
                               Identifier: Exception
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [1,<return_val>,Object]

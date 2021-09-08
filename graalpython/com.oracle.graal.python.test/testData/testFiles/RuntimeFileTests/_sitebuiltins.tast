@@ -45,7 +45,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                       QualName: Quitter
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -155,8 +154,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                               Key: name
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [502,506]`self`
                                               Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [513,521]`self.eof`
@@ -164,8 +161,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                               Key: eof
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [513,517]`self`
                                               Frame: [0,self,Illegal]
                                           PythonObjectFactoryNodeGen SourceSection: None
@@ -224,11 +219,8 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   Key: stdin
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    GetClassNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [689,692]`sys`
                                                   Identifier: sys
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ExceptNode SourceSection: None
                                           ExpressionStatementNode SourceSection: [735,739]`pass`
                                             EmptyNode SourceSection: [735,739]`pass`
@@ -238,7 +230,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [754,764]`SystemExit`
                                           Identifier: SystemExit
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [765,769]`code`
                                           Frame: [1,code,Illegal]
                                       NoValueNode SourceSection: None
@@ -282,7 +273,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                       QualName: _Printer
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -397,7 +387,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: list
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         GeneratorExpressionNode SourceSection: [1121,1242]`os.path.join(dir, fi...`
                                           Name: <genexpr>
                                           FrameDescriptor: 5 slots [filename, dir, files, os, <return_val>]
@@ -433,8 +422,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                                 Key: path
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
-                                                                IsBuiltinClassProfile SourceSection: None
-                                                                  GetClassNodeGen SourceSection: None
                                                               ReadLocalCellNodeGen SourceSection: [1121,1123]`os`
                                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                                   Frame: [3,os,Illegal]
@@ -522,8 +509,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             Key: _Printer__lines
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [1279,1283]`self`
                                             Frame: [0,self,Illegal]
                                       ReturnNode SourceSection: [1305,1311]`return`
@@ -558,7 +543,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                     CallBinaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [1412,1416]`open`
                                                       Identifier: open
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [1417,1425]`filename`
                                                       Frame: [3,filename,Illegal]
                                                     StringLiteralNode SourceSection: [1427,1430]`"r"`
@@ -574,7 +558,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   EmptyNode SourceSection: [1542,1546]`pass`
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [1517,1524]`OSError`
                                                   Identifier: OSError
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [1356,1372]`self.__filenames`
                                           GetAttributeNode SourceSection: [1356,1372]`self.__filenames`
@@ -582,8 +565,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                               Key: _Printer__filenames
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [1356,1360]`self`
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -599,8 +580,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             Key: _Printer__data
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [1587,1591]`self`
                                             Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -622,14 +601,11 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [1664,1667]`len`
                                           Identifier: len
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         GetAttributeNode SourceSection: [1668,1680]`self.__lines`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _Printer__lines
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [1668,1672]`self`
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -681,14 +657,11 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [1741,1744]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [1745,1757]`self.__lines`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _Printer__lines
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [1745,1749]`self`
                                                 Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [1762,1775]`self.MAXLINES`
@@ -696,8 +669,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                               Key: MAXLINES
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [1762,1766]`self`
                                               Frame: [0,self,Illegal]
                                       FrameReturnNode SourceSection: [1789,1819]`return "\n".join(sel...`
@@ -710,8 +681,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                               Key: _Printer__lines
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [1806,1810]`self`
                                               Frame: [0,self,Illegal]
                                       FrameReturnNode SourceSection: [1846,1909]`return "Type %s() to...`
@@ -724,8 +693,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   Key: _Printer__name
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [1893,1897]`self`
                                                   Frame: [0,self,Illegal]
                                               PythonObjectFactoryNodeGen SourceSection: None
@@ -802,15 +769,12 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                         CallUnaryMethodNodeGen SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [2163,2168]`print`
                                                           Identifier: print
-                                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                         GetItemNodeGen SourceSection: [2169,2184]`self.__lines[i]`
                                                           GetAttributeNode SourceSection: None
                                                             GetFixedAttributeNodeGen SourceSection: None
                                                               Key: _Printer__lines
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
-                                                              IsBuiltinClassProfile SourceSection: None
-                                                                GetClassNodeGen SourceSection: None
                                                             ReadLocalVariableNodeGen SourceSection: [2169,2173]`self`
                                                               Frame: [0,self,Illegal]
                                                           ReadLocalVariableNodeGen SourceSection: [2182,2183]`i`
@@ -820,7 +784,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                       CallBinaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [2104,2109]`range`
                                                         Identifier: range
-                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [2110,2116]`lineno`
                                                         Frame: [2,lineno,Illegal]
                                                       AddNodeGen SourceSection: [2118,2140]`lineno + self.MAXLIN...`
@@ -831,8 +794,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                             Key: MAXLINES
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
-                                                            IsBuiltinClassProfile SourceSection: None
-                                                              GetClassNodeGen SourceSection: None
                                                           ReadLocalVariableNodeGen SourceSection: [2127,2131]`self`
                                                             Frame: [0,self,Illegal]
                                                 BlockNode SourceSection: None
@@ -840,7 +801,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                 BreakNode SourceSection: [2233,2238]`break`
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [2205,2215]`IndexError`
                                                   Identifier: IndexError
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: [2273,2296]`lineno += self.MAXLI...`
                                                   Identifier: lineno
@@ -853,8 +813,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                         Key: MAXLINES
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
-                                                        IsBuiltinClassProfile SourceSection: None
-                                                          GetClassNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [2283,2287]`self`
                                                         Frame: [0,self,Illegal]
                                                     ObjectLiteralNode SourceSection: None
@@ -878,7 +836,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                             CallUnaryMethodNodeGen SourceSection: None
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [2385,2390]`input`
                                                               Identifier: input
-                                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                             ReadLocalVariableNodeGen SourceSection: [2391,2397]`prompt`
                                                               Frame: [1,prompt,Illegal]
                                                         IfNode SourceSection: [2419,2495]`if key not in ('', '...`
@@ -952,7 +909,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                           QualName: _Helper
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None

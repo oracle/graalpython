@@ -109,13 +109,11 @@ ModuleRootNode Name: <module 'functionDef17'> SourceSection: [0,155]`def test():
                                                         EmptyNode SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [60,65]`print`
                                                         Identifier: print
-                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   ExpressionStatementNode SourceSection: [102,112]`print(end)`
                                                     PythonCallUnary SourceSection: [102,112]`print(end)`
                                                       CallUnaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [102,107]`print`
                                                         Identifier: print
-                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       ReadLocalCellNodeGen SourceSection: [108,111]`end`
                                                         ReadLocalVariableNodeGen SourceSection: None
                                                           Frame: [0,end,Illegal]

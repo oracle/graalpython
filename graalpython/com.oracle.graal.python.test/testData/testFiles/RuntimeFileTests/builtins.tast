@@ -128,8 +128,6 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2798]`# Copyright (c)
                             Key: modules
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [2313,2316]`sys`
                             Frame: [2,sys,Illegal]
                         ReadLocalVariableNodeGen SourceSection: [2325,2336]`module_name`
@@ -153,11 +151,8 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2798]`# Copyright (c)
                               Key: core_home
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2402,2417]`__graalpython__`
                               Identifier: __graalpython__
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [2432,2473]`fd = posix.open(file...`
                       Identifier: fd
@@ -174,8 +169,6 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2798]`# Copyright (c)
                             Key: O_RDONLY
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [2458,2463]`posix`
                             Frame: [3,posix,Illegal]
                     WriteLocalVariableNodeGen SourceSection: [2478,2515]`content = posix.read...`
@@ -193,8 +186,6 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2798]`# Copyright (c)
                             Key: maxsize
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [2503,2506]`sys`
                             Frame: [2,sys,Illegal]
                     ExpressionStatementNode SourceSection: [2520,2535]`posix.close(fd)`
@@ -212,7 +203,6 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2798]`# Copyright (c)
                         CallTernaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [2547,2554]`compile`
                           Identifier: compile
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [2555,2562]`content`
                           Frame: [6,content,Illegal]
                         ReadLocalVariableNodeGen SourceSection: [2564,2572]`filename`
@@ -223,7 +213,6 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2798]`# Copyright (c)
                         CallBinaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [2586,2590]`exec`
                           Identifier: exec
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [2591,2595]`code`
                           Frame: [7,code,Illegal]
                         GetAttributeNode SourceSection: [2597,2612]`module.__dict__`
@@ -231,8 +220,6 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2798]`# Copyright (c)
                             Key: __dict__
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [2597,2603]`module`
                             Frame: [4,module,Illegal]
                     FrameReturnNode SourceSection: [2618,2631]`return module`

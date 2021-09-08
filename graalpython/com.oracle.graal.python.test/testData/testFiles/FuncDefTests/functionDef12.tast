@@ -70,7 +70,6 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [39,44]`print`
                                           Identifier: print
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [45,46]`x`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [0,x,Illegal]

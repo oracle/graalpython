@@ -9,7 +9,6 @@ ModuleRootNode Name: <module 'list01'> SourceSection: [0,25]`[x**y for x in rang
       CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: list
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [1,24]`x**y for x in range(...`
         Name: <genexpr>
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -41,7 +40,6 @@ ModuleRootNode Name: <module 'list01'> SourceSection: [0,25]`[x**y for x in rang
                         Frame: [0,x,Illegal]
                       ReadGlobalOrBuiltinNodeGen SourceSection: [4,5]`y`
                         Identifier: y
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x

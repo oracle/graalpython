@@ -559,7 +559,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [1886,1890]`_abs`
                           Identifier: _abs
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [1891,1892]`a`
                           Frame: [0,a,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -1362,7 +1361,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [2996,3003]`hasattr`
                             Identifier: hasattr
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [3004,3005]`a`
                             Frame: [0,a,Illegal]
                           StringLiteralNode SourceSection: [3007,3020]`'__getitem__'`
@@ -1377,13 +1375,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 Key: __name__
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [3075,3082]`type(a)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [3075,3079]`type`
                                   Identifier: type
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [3080,3081]`a`
                                   Frame: [0,a,Illegal]
                         RaiseNodeGen SourceSection: [3100,3120]`raise TypeError(msg)...`
@@ -1391,7 +1386,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [3106,3115]`TypeError`
                               Identifier: TypeError
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [3116,3119]`msg`
                               Frame: [2,msg,Illegal]
                           NoValueNode SourceSection: None
@@ -1695,7 +1689,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [3570,3579]`enumerate`
                               Identifier: enumerate
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [3580,3581]`a`
                               Frame: [0,a,Illegal]
                       RaiseNodeGen SourceSection: [3642,3698]`raise ValueError('se...`
@@ -1703,7 +1696,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3648,3658]`ValueError`
                             Identifier: ValueError
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [3659,3697]`'sequence.index(x): ...`
                         NoValueNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -1807,12 +1799,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [4121,4131]`isinstance`
                             Identifier: isinstance
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [4132,4139]`default`
                             Frame: [1,default,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [4141,4144]`int`
                             Identifier: int
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [4155,4252]`msg = ("'%s' object ...`
                           Identifier: msg
@@ -1824,13 +1814,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 Key: __name__
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [4229,4242]`type(default)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4229,4233]`type`
                                   Identifier: type
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [4234,4241]`default`
                                   Frame: [1,default,Illegal]
                         RaiseNodeGen SourceSection: [4261,4281]`raise TypeError(msg)...`
@@ -1838,7 +1825,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [4267,4276]`TypeError`
                               Identifier: TypeError
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [4277,4280]`msg`
                               Frame: [2,msg,Illegal]
                           NoValueNode SourceSection: None
@@ -1850,7 +1836,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [4307,4310]`len`
                               Identifier: len
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [4311,4314]`obj`
                               Frame: [0,obj,Illegal]
                         ExceptNode SourceSection: None
@@ -1858,7 +1843,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             EmptyNode SourceSection: [4346,4350]`pass`
                           ReadGlobalOrBuiltinNodeGen SourceSection: [4327,4336]`TypeError`
                             Identifier: TypeError
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                     TryFinallyNode SourceSection: [4356,4457]`try:↵        hint = ...`
                       TryExceptNode SourceSection: None
@@ -1870,13 +1854,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                               Key: __length_hint__
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [4376,4385]`type(obj)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [4376,4380]`type`
                                 Identifier: type
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [4381,4384]`obj`
                                 Frame: [0,obj,Illegal]
                         ExceptNode SourceSection: None
@@ -1885,7 +1866,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                               Frame: [1,default,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [4413,4427]`AttributeError`
                             Identifier: AttributeError
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                     TryFinallyNode SourceSection: [4457,4535]`try:↵        val = h...`
                       TryExceptNode SourceSection: None
@@ -1904,7 +1884,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                               Frame: [1,default,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [4497,4506]`TypeError`
                             Identifier: TypeError
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                     IfNode SourceSection: [4535,4588]`if val is NotImpleme...`
                       YesNodeGen SourceSection: None
@@ -1913,7 +1892,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             Frame: [4,val,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [4545,4559]`NotImplemented`
                             Identifier: NotImplemented
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [4569,4583]`return default`
                         ReadLocalVariableNodeGen SourceSection: [4576,4583]`default`
                           Frame: [1,default,Illegal]
@@ -1924,12 +1902,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [4595,4605]`isinstance`
                             Identifier: isinstance
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [4606,4609]`val`
                             Frame: [4,val,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [4611,4614]`int`
                             Identifier: int
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [4625,4710]`msg = ('__length_hin...`
                           Identifier: msg
@@ -1941,13 +1917,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 Key: __name__
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [4691,4700]`type(val)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4691,4695]`type`
                                   Identifier: type
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [4696,4699]`val`
                                   Frame: [4,val,Illegal]
                         RaiseNodeGen SourceSection: [4719,4739]`raise TypeError(msg)...`
@@ -1955,7 +1928,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [4725,4734]`TypeError`
                               Identifier: TypeError
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [4735,4738]`msg`
                               Frame: [2,msg,Illegal]
                           NoValueNode SourceSection: None
@@ -1977,7 +1949,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [4823,4833]`ValueError`
                               Identifier: ValueError
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [4834,4837]`msg`
                               Frame: [2,msg,Illegal]
                           NoValueNode SourceSection: None
@@ -2019,7 +1990,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       QualName: attrgetter
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -2098,18 +2068,15 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [5424,5434]`isinstance`
                                                 Identifier: isinstance
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [5435,5439]`attr`
                                                 Frame: [1,attr,Illegal]
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [5441,5444]`str`
                                                 Identifier: str
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           RaiseNodeGen SourceSection: [5463,5513]`raise TypeError('att...`
                                             PythonCallUnary SourceSection: [5469,5513]`TypeError('attribute...`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [5469,5478]`TypeError`
                                                 Identifier: TypeError
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [5479,5512]`'attribute name must...`
                                             NoValueNode SourceSection: None
                                           BlockNode SourceSection: None
@@ -2177,7 +2144,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                 CallBinaryMethodNodeGen SourceSection: None
                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [5672,5679]`getattr`
                                                                   Identifier: getattr
-                                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                 ReadLocalVariableNodeGen SourceSection: [5680,5683]`obj`
                                                                   Frame: [0,obj,Illegal]
                                                                 ReadLocalVariableNodeGen SourceSection: [5685,5689]`name`
@@ -2219,22 +2185,17 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [5826,5831]`tuple`
                                               Identifier: tuple
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             PythonCallBinary SourceSection: [5832,5860]`map(attrgetter, self...`
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [5832,5835]`map`
                                                 Identifier: map
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [5836,5846]`attrgetter`
                                                 Identifier: attrgetter
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [5848,5859]`self._attrs`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _attrs
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [5848,5852]`self`
                                                   Frame: [0,self,Illegal]
                                         WriteLocalVariableNodeGen SourceSection: [5874,5965]`def func(obj):↵     ...`
@@ -2275,7 +2236,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                           CallUnaryMethodNodeGen SourceSection: None
                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [5912,5917]`tuple`
                                                             Identifier: tuple
-                                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                           GeneratorExpressionNode SourceSection: [5918,5951]`getter(obj) for gett...`
                                                             Name: <genexpr>
                                                             FrameDescriptor: 3 slots [getter, obj, <return_val>]
@@ -2438,15 +2398,11 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               Key: __module__
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [6099,6113]`self.__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [6099,6103]`self`
                                                 Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [6156,6183]`self.__class__.__qua...`
@@ -2454,15 +2410,11 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               Key: __qualname__
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [6156,6170]`self.__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [6156,6160]`self`
                                                 Frame: [0,self,Illegal]
                                           PythonCallUnary SourceSection: [6215,6248]`', '.join(map(repr, ...`
@@ -2473,17 +2425,13 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [6225,6228]`map`
                                                 Identifier: map
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [6229,6233]`repr`
                                                 Identifier: repr
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [6235,6246]`self._attrs`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _attrs
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [6235,6239]`self`
                                                   Frame: [0,self,Illegal]
                                           PythonObjectFactoryNodeGen SourceSection: None
@@ -2530,8 +2478,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Key: __class__
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [6292,6296]`self`
                                             Frame: [0,self,Illegal]
                                         GetAttributeNode SourceSection: [6308,6319]`self._attrs`
@@ -2539,8 +2485,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Key: _attrs
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [6308,6312]`self`
                                             Frame: [0,self,Illegal]
                                         PythonObjectFactoryNodeGen SourceSection: None
@@ -2580,7 +2524,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       QualName: itemgetter
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -2781,7 +2724,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                           CallUnaryMethodNodeGen SourceSection: None
                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [6901,6906]`tuple`
                                                             Identifier: tuple
-                                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                           GeneratorExpressionNode SourceSection: [6907,6928]`obj[i] for i in item...`
                                                             Name: <genexpr>
                                                             FrameDescriptor: 3 slots [i, obj, <return_val>]
@@ -2943,15 +2885,11 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               Key: __module__
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [7076,7090]`self.__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [7076,7080]`self`
                                                 Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [7133,7156]`self.__class__.__nam...`
@@ -2959,15 +2897,11 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               Key: __name__
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [7133,7147]`self.__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [7133,7137]`self`
                                                 Frame: [0,self,Illegal]
                                           PythonCallUnary SourceSection: [7188,7221]`', '.join(map(repr, ...`
@@ -2978,17 +2912,13 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [7198,7201]`map`
                                                 Identifier: map
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [7202,7206]`repr`
                                                 Identifier: repr
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [7208,7219]`self._items`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _items
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [7208,7212]`self`
                                                   Frame: [0,self,Illegal]
                                           PythonObjectFactoryNodeGen SourceSection: None
@@ -3035,8 +2965,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Key: __class__
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [7265,7269]`self`
                                             Frame: [0,self,Illegal]
                                         GetAttributeNode SourceSection: [7281,7292]`self._items`
@@ -3044,8 +2972,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Key: _items
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [7281,7285]`self`
                                             Frame: [0,self,Illegal]
                                         PythonObjectFactoryNodeGen SourceSection: None
@@ -3085,7 +3011,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       QualName: methodcaller
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -3155,7 +3080,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [7664,7667]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [7668,7672]`args`
                                               Frame: [0,args,Illegal]
                                           IntegerLiteralNode SourceSection: [7676,7677]`2`
@@ -3170,7 +3094,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [7775,7784]`TypeError`
                                               Identifier: TypeError
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [7785,7788]`msg`
                                               Frame: [2,msg,Illegal]
                                           NoValueNode SourceSection: None
@@ -3198,25 +3121,20 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [7857,7867]`isinstance`
                                             Identifier: isinstance
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [7868,7878]`self._name`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _name
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [7868,7872]`self`
                                               Frame: [3,self,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [7880,7883]`str`
                                             Identifier: str
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [7898,7945]`raise TypeError('met...`
                                         PythonCallUnary SourceSection: [7904,7945]`TypeError('method na...`
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [7904,7913]`TypeError`
                                             Identifier: TypeError
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [7914,7944]`'method name must be...`
                                         NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
@@ -3291,8 +3209,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               Key: _args
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [8077,8081]`self`
                                               Frame: [0,self,Illegal]
                                           ExecutePositionalStarargsNodeGen SourceSection: None
@@ -3303,15 +3219,12 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               Key: _kwargs
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [8091,8095]`self`
                                               Frame: [0,self,Illegal]
                                         PythonCallBinary SourceSection: [8051,8075]`getattr(obj, self._n...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [8051,8058]`getattr`
                                             Identifier: getattr
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [8059,8062]`obj`
                                             Frame: [1,obj,Illegal]
                                           GetAttributeNode SourceSection: [8064,8074]`self._name`
@@ -3319,8 +3232,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               Key: _name
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [8064,8068]`self`
                                               Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -3367,14 +3278,11 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [8146,8150]`repr`
                                             Identifier: repr
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [8151,8161]`self._name`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _name
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [8151,8155]`self`
                                               Frame: [0,self,Illegal]
                                         PythonObjectFactoryNodeGen SourceSection: None
@@ -3388,17 +3296,13 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [8184,8187]`map`
                                             Identifier: map
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [8188,8192]`repr`
                                             Identifier: repr
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [8194,8204]`self._args`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _args
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [8194,8198]`self`
                                               Frame: [0,self,Illegal]
                                     ExpressionStatementNode SourceSection: [8215,8277]`args.extend('%s=%r' ...`
@@ -3482,8 +3386,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     Key: _kwargs
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [8256,8260]`self`
                                                     Frame: [0,self,Illegal]
                                           PythonObjectFactoryNodeGen SourceSection: None
@@ -3496,15 +3398,11 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               Key: __module__
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [8308,8322]`self.__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [8308,8312]`self`
                                                 Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [8365,8388]`self.__class__.__nam...`
@@ -3512,15 +3410,11 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               Key: __name__
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [8365,8379]`self.__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [8365,8369]`self`
                                                 Frame: [0,self,Illegal]
                                           PythonCallUnary SourceSection: [8420,8435]`', '.join(args)`
@@ -3573,8 +3467,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Key: _kwargs
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [8479,8483]`self`
                                             Frame: [0,self,Illegal]
                                       FrameReturnNode SourceSection: [8505,8554]`return self.__class_...`
@@ -3584,8 +3476,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               Key: __class__
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [8512,8516]`self`
                                               Frame: [0,self,Illegal]
                                           AddNodeGen SourceSection: [8528,8554]`(self._name,) + self...`
@@ -3595,8 +3485,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   Key: _name
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [8529,8533]`self`
                                                   Frame: [0,self,Illegal]
                                               PythonObjectFactoryNodeGen SourceSection: None
@@ -3605,8 +3493,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 Key: _args
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [8544,8548]`self`
                                                 Frame: [0,self,Illegal]
                                           PythonObjectFactoryNodeGen SourceSection: None
@@ -3632,8 +3518,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [8638,8642]`self`
                                                   Frame: [0,self,Illegal]
                                               GetAttributeNode SourceSection: [8654,8664]`self._name`
@@ -3641,8 +3525,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   Key: _name
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [8654,8658]`self`
                                                   Frame: [0,self,Illegal]
                                               KeywordArgumentsNodeGen SourceSection: None
@@ -3652,8 +3534,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     Key: _kwargs
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [8668,8672]`self`
                                                     Frame: [0,self,Illegal]
                                               ReadLocalVariableNodeGen SourceSection: [8630,8637]`partial`
@@ -3663,8 +3543,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 Key: _args
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [8683,8687]`self`
                                                 Frame: [0,self,Illegal]
                                             PythonObjectFactoryNodeGen SourceSection: None
@@ -3820,7 +3698,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [8979,8986]`hasattr`
                             Identifier: hasattr
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [8987,8988]`a`
                             Frame: [0,a,Illegal]
                           StringLiteralNode SourceSection: [8990,9003]`'__getitem__'`
@@ -3835,13 +3712,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 Key: __name__
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [9058,9065]`type(a)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [9058,9062]`type`
                                   Identifier: type
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [9063,9064]`a`
                                   Frame: [0,a,Illegal]
                         RaiseNodeGen SourceSection: [9083,9103]`raise TypeError(msg)...`
@@ -3849,7 +3723,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [9089,9098]`TypeError`
                               Identifier: TypeError
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [9099,9102]`msg`
                               Frame: [2,msg,Illegal]
                           NoValueNode SourceSection: None

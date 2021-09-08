@@ -177,7 +177,6 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [225,229]`list`
                             Identifier: list
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [230,233]`gen`
                             Frame: [2,gen,Illegal]
                       FrameReturnNode SourceSection: [237,247]`return gen`

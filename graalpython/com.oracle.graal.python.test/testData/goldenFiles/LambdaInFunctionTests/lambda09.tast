@@ -39,7 +39,6 @@ ModuleRootNode Name: <module 'lambda09'> SourceSection: [0,34]`def fn():↵  lam
                           Arguments:
                             ReadGlobalOrBuiltinNodeGen SourceSection: [23,26]`bar`
                               Identifier: bar
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           KwArguments: None
                           Documentation: None
                           FreeVarSlots: None

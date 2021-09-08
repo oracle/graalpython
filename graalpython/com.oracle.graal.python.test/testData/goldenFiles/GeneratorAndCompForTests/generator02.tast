@@ -89,7 +89,6 @@ ModuleRootNode Name: <module 'generator02'> SourceSection: [0,36]`def fn():↵  
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [26,31]`range`
                                 Identifier: range
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [32,34]`10`
                                 Value: 10
                           PythonObjectFactoryNodeGen SourceSection: None

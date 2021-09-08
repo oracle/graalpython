@@ -9,7 +9,6 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
       CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: dict
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [1,51]`x:x for x in seq1 fo...`
         Name: <genexpr>
         FrameDescriptor: 3 slots [y, x, <return_val>]
@@ -41,7 +40,6 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                         CallBinaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [36,45]`condition`
                           Identifier: condition
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNodeGen SourceSection: [46,47]`x`
                           Frame: [1,x,Illegal]
                         ReadGeneratorFrameVariableNodeGen SourceSection: [49,50]`y`
@@ -63,7 +61,6 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                   GetIteratorExpressionNodeGen SourceSection: [28,32]`seq2`
                     ReadGlobalOrBuiltinNodeGen SourceSection: [28,32]`seq2`
                       Identifier: seq2
-                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   GetNextCached SourceSection: None
                     LookupAndCallUnaryNodeGen SourceSection: None
                       Op: __next__

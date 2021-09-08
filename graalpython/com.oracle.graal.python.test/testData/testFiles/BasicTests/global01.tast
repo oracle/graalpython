@@ -46,7 +46,6 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
                       AddNodeGen SourceSection: [57,62]`c + 2`
                         ReadGlobalOrBuiltinNodeGen SourceSection: [57,58]`c`
                           Identifier: c
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [61,62]`2`
                           Value: 2
                     ExpressionStatementNode SourceSection: [84,109]`print("Inside add():...`
@@ -54,11 +53,9 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
                         CallBinaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [84,89]`print`
                           Identifier: print
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [90,105]`"Inside add():"`
                         ReadGlobalOrBuiltinNodeGen SourceSection: [107,108]`c`
                           Identifier: c
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [0,<return_val>,Object]
       ExpressionStatementNode SourceSection: [111,116]`add()`
@@ -77,4 +74,3 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
         StringLiteralNode SourceSection: [123,133]`"In main:"`
         ReadGlobalOrBuiltinNodeGen SourceSection: [135,136]`c`
           Identifier: c
-          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

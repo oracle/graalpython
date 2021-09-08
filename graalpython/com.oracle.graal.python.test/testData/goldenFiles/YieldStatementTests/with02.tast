@@ -45,16 +45,12 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                             CallTernaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [26,29]`bla`
                               Identifier: bla
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [30,32]`p1`
                               Identifier: p1
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [34,36]`p2`
                               Identifier: p2
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [38,40]`p3`
                               Identifier: p3
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNodeGen SourceSection: [19,20]`a`
                           Frame: [0,a,Illegal]
                         CachedLookupNodeGen SourceSection: None
@@ -82,7 +78,6 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [49,51]`fn`
                             Identifier: fn
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         CachedLookupNodeGen SourceSection: None
                         CachedLookupNodeGen SourceSection: None
                         CallUnaryMethodNodeGen SourceSection: None

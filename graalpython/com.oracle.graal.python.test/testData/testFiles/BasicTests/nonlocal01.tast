@@ -82,7 +82,6 @@ ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():â†
                                         CallBinaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [101,106]`print`
                                           Identifier: print
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         StringLiteralNode SourceSection: [107,115]`"inner:"`
                                         ReadLocalCellNodeGen SourceSection: [117,118]`x`
                                           ReadLocalVariableNodeGen SourceSection: None
@@ -100,7 +99,6 @@ ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():â†
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [141,146]`print`
                             Identifier: print
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [147,155]`"outer:"`
                           ReadLocalCellNodeGen SourceSection: [157,158]`x`
                             ReadLocalVariableNodeGen SourceSection: None

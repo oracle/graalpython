@@ -19,15 +19,11 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
                   Key: to
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
-                  IsBuiltinClassProfile SourceSection: None
-                    GetClassNodeGen SourceSection: None
                 GetAttributeNode SourceSection: None
                   GetFixedAttributeNodeGen SourceSection: None
                     Key: path
                     LookupAndCallBinaryNodeGen SourceSection: None
                       Op: __getattribute__
-                    IsBuiltinClassProfile SourceSection: None
-                      GetClassNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: None
                     Identifier: some
                     IsBuiltinClassProfile SourceSection: None

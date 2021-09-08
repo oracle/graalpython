@@ -46,7 +46,6 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                             CallNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [44,45]`a`
                               Identifier: a
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorBlockNode SourceSection: None
                           ExpressionStatementNode SourceSection: [61,73]`yield "neco"`
                             YieldNode SourceSection: [61,73]`yield "neco"`
@@ -62,7 +61,6 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                           IsExpressionNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [104,111]`badline`
                               Identifier: badline
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ObjectLiteralNode SourceSection: [119,123]`None`
                         GeneratorBlockNode SourceSection: None
                           ExpressionStatementNode SourceSection: [137,147]`yield '\n'`
@@ -76,7 +74,6 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                               IsExpressionNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [163,169]`offset`
                                   Identifier: offset
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ObjectLiteralNode SourceSection: [177,181]`None`
                             GeneratorBlockNode SourceSection: None
                               WriteGeneratorFrameVariableNodeGen SourceSection: [199,245]`caretspace = (c.issp...`

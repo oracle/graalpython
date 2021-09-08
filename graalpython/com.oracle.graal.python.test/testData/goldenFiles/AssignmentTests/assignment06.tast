@@ -39,7 +39,6 @@ ModuleRootNode Name: <module 'assignment06'> SourceSection: [0,29]`def fn():↵ 
                         Frame: [4,<>temp4,Illegal]
                         ReadGlobalOrBuiltinNodeGen SourceSection: [28,29]`e`
                           Identifier: e
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: a
                         Frame: [0,a,Illegal]

@@ -38,8 +38,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
               Key: prefix
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [3152,3155]`sys`
               Identifier: sys
               IsBuiltinClassProfile SourceSection: None
@@ -49,8 +47,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
               Key: exec_prefix
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [3164,3167]`sys`
               Identifier: sys
               IsBuiltinClassProfile SourceSection: None
@@ -116,11 +112,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Key: path
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [3558,3560]`os`
                               Identifier: os
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     TryFinallyNode SourceSection: [3583,3660]`try:↵        dir = o...`
                       TryExceptNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [3596,3622]`dir = os.path.abspat...`
@@ -134,11 +127,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   Key: path
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
-                                  IsBuiltinClassProfile SourceSection: None
-                                    GetClassNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [3602,3604]`os`
                                   Identifier: os
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [3618,3621]`dir`
                               Frame: [1,dir,Illegal]
                         ExceptNode SourceSection: None
@@ -146,7 +136,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             EmptyNode SourceSection: [3651,3655]`pass`
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3634,3641]`OSError`
                             Identifier: OSError
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [3660,3693]`return dir, os.path....`
                       TupleLiteralNode SourceSection: [3667,3693]`dir, os.path.normcas...`
@@ -160,11 +149,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Key: path
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [3672,3674]`os`
                                 Identifier: os
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [3689,3692]`dir`
                             Frame: [1,dir,Illegal]
                         PythonObjectFactoryNodeGen SourceSection: None
@@ -214,12 +200,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       CallTernaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [3845,3852]`getattr`
                                         Identifier: getattr
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       PythonCallTernary SourceSection: [3853,3883]`getattr(m, '__loader...`
                                         CallTernaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [3853,3860]`getattr`
                                           Identifier: getattr
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [3861,3862]`m`
                                           Frame: [0,m,Illegal]
                                         StringLiteralNode SourceSection: [3864,3876]`'__loader__'`
@@ -246,18 +230,13 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             Key: path
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4089,4091]`os`
                                             Identifier: os
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       GetAttributeNode SourceSection: [4105,4115]`m.__file__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __file__
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
-                                          IsBuiltinClassProfile SourceSection: None
-                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [4105,4106]`m`
                                           Frame: [0,m,Illegal]
                                   ExceptNode SourceSection: None
@@ -266,13 +245,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     TupleLiteralNode SourceSection: [4132,4168]`(AttributeError, OSE...`
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [4133,4147]`AttributeError`
                                         Identifier: AttributeError
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [4149,4156]`OSError`
                                         Identifier: OSError
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [4158,4167]`TypeError`
                                         Identifier: TypeError
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       PythonObjectFactoryNodeGen SourceSection: None
                                   BlockNode SourceSection: None
                               TryFinallyNode SourceSection: [4195,4329]`try:↵            m._...`
@@ -289,18 +265,13 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             Key: path
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4227,4229]`os`
                                             Identifier: os
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       GetAttributeNode SourceSection: [4243,4255]`m.__cached__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __cached__
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
-                                          IsBuiltinClassProfile SourceSection: None
-                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [4243,4244]`m`
                                           Frame: [0,m,Illegal]
                                   ExceptNode SourceSection: None
@@ -309,13 +280,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     TupleLiteralNode SourceSection: [4272,4308]`(AttributeError, OSE...`
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [4273,4287]`AttributeError`
                                         Identifier: AttributeError
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [4289,4296]`OSError`
                                         Identifier: OSError
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [4298,4307]`TypeError`
                                         Identifier: TypeError
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       PythonObjectFactoryNodeGen SourceSection: None
                                   BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [3806,3831]`set(sys.modules.valu...`
@@ -323,7 +291,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [3806,3809]`set`
                               Identifier: set
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [3810,3830]`sys.modules.values()...`
                               CallNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
@@ -332,11 +299,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     Key: modules
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [3810,3813]`sys`
                                     Identifier: sys
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [1,<return_val>,Object]
@@ -377,7 +341,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [4623,4626]`set`
                           Identifier: set
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ElseNode SourceSection: [4633,4964]`for dir in sys.path:...`
                       ForNode SourceSection: None
                         ForRepeatingNode SourceSection: None
@@ -391,7 +354,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4844,4852]`makepath`
                                   Identifier: makepath
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [4853,4856]`dir`
                                   Frame: [2,dir,Illegal]
                               WriteLocalVariableNodeGen SourceSection: None
@@ -444,11 +406,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Key: path
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [4644,4647]`sys`
                               Identifier: sys
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     SetItemNodeGen SourceSection: [4964,4979]`sys.path[:] = L`
                       GetAttributeNode SourceSection: None
@@ -456,11 +415,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           Key: path
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
-                          IsBuiltinClassProfile SourceSection: None
-                            GetClassNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [4964,4967]`sys`
                           Identifier: sys
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SliceLiteralNodeGen SourceSection: [4973,4974]`:`
                         PythonObjectFactoryNodeGen SourceSection: None
                         EmptyNode SourceSection: None
@@ -505,7 +461,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [5115,5118]`set`
                           Identifier: set
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ElseNode SourceSection: [5125,5325]`for item in sys.path...`
                       ForNode SourceSection: None
                         ForRepeatingNode SourceSection: None
@@ -526,11 +481,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             Key: path
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [5175,5177]`os`
                                             Identifier: os
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: [5190,5194]`item`
                                         Frame: [3,item,Illegal]
                                   BlockNode SourceSection: None
@@ -539,7 +491,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [5227,5235]`makepath`
                                           Identifier: makepath
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [5236,5240]`item`
                                           Frame: [3,item,Illegal]
                                       WriteLocalVariableNodeGen SourceSection: None
@@ -571,7 +522,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   ContinueNode SourceSection: [5312,5320]`continue`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [5289,5298]`TypeError`
                                     Identifier: TypeError
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [5137,5145]`sys.path`
                           GetAttributeNode SourceSection: [5137,5145]`sys.path`
@@ -579,11 +529,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Key: path
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [5137,5140]`sys`
                               Identifier: sys
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [5325,5333]`return d`
                       ReadLocalVariableNodeGen SourceSection: [5332,5333]`d`
@@ -648,7 +595,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [5655,5669]`_init_pathinfo`
                               Identifier: _init_pathinfo
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [5680,5692]`reset = True`
                           Identifier: reset
                           Frame: [3,reset,Illegal]
@@ -668,11 +614,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Key: path
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [5740,5742]`os`
                               Identifier: os
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [5753,5760]`sitedir`
                           Frame: [0,sitedir,Illegal]
                         ReadLocalVariableNodeGen SourceSection: [5762,5766]`name`
@@ -686,7 +629,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [5789,5793]`open`
                               Identifier: open
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [5794,5802]`fullname`
                               Frame: [4,fullname,Illegal]
                             StringLiteralNode SourceSection: [5804,5807]`"r"`
@@ -694,7 +636,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ReturnNode SourceSection: [5837,5843]`return`
                           ReadGlobalOrBuiltinNodeGen SourceSection: [5820,5827]`OSError`
                             Identifier: OSError
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                     WithNode SourceSection: [5848,6809]`with f:↵        for ...`
                       BreakTargetNode SourceSection: [5864,6809]`for n, line in enume...`
@@ -750,7 +691,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [6053,6057]`exec`
                                                 Identifier: exec
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [6058,6062]`line`
                                                 Frame: [6,line,Illegal]
                                           ContinueNode SourceSection: [6084,6092]`continue`
@@ -768,7 +708,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [6161,6169]`makepath`
                                             Identifier: makepath
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [6170,6177]`sitedir`
                                             Frame: [0,sitedir,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: [6179,6183]`line`
@@ -809,11 +748,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                     Key: path
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      GetClassNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [6235,6237]`os`
                                                     Identifier: os
-                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [6250,6253]`dir`
                                                 Frame: [7,dir,Illegal]
                                             YesNodeGen SourceSection: None
@@ -827,11 +763,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                     Key: path
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      GetClassNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [6276,6279]`sys`
                                                     Identifier: sys
-                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [6292,6295]`dir`
                                                 Frame: [7,dir,Illegal]
                                           ExpressionStatementNode SourceSection: [6317,6341]`known_paths.add(dirc...`
@@ -867,15 +800,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                       Key: stderr
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
-                                                      IsBuiltinClassProfile SourceSection: None
-                                                        GetClassNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [6482,6485]`sys`
                                                       Identifier: sys
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               EmptyNode SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [6388,6393]`print`
                                               Identifier: print
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         WriteLocalVariableNodeGen SourceSection: [6517,6526]`traceback`
                                           Identifier: traceback
                                           Frame: [9,traceback,Illegal]
@@ -911,15 +840,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                                   Key: stderr
                                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                                     Op: __getattribute__
-                                                                  IsBuiltinClassProfile SourceSection: None
-                                                                    GetClassNodeGen SourceSection: None
                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [6701,6704]`sys`
                                                                   Identifier: sys
-                                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                           EmptyNode SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [6679,6684]`print`
                                                           Identifier: print
-                                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   GetIteratorExpressionNodeGen SourceSection: [6634,6653]`record.splitlines()`
                                                     PythonCallNodeGen SourceSection: [6634,6653]`record.splitlines()`
                                                       CallNodeGen SourceSection: None
@@ -936,7 +861,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [6585,6588]`sys`
                                                         Identifier: sys
-                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   ExecutePositionalStarargsNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [6557,6566]`traceback`
@@ -954,26 +878,20 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                       Key: stderr
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
-                                                      IsBuiltinClassProfile SourceSection: None
-                                                        GetClassNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [6771,6774]`sys`
                                                       Identifier: sys
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               EmptyNode SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [6729,6734]`print`
                                               Identifier: print
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BreakNode SourceSection: [6799,6804]`break`
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [6361,6370]`Exception`
                                         Identifier: Exception
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [5879,5891]`enumerate(f)`
                             PythonCallUnary SourceSection: [5879,5891]`enumerate(f)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [5879,5888]`enumerate`
                                 Identifier: enumerate
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [5889,5890]`f`
                                 Frame: [5,f,Illegal]
                         BlockNode SourceSection: None
@@ -1052,7 +970,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7059,7073]`_init_pathinfo`
                               Identifier: _init_pathinfo
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [7084,7096]`reset = True`
                           Identifier: reset
                           Frame: [2,reset,Illegal]
@@ -1066,7 +983,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [7156,7164]`makepath`
                           Identifier: makepath
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [7165,7172]`sitedir`
                           Frame: [0,sitedir,Illegal]
                       WriteLocalVariableNodeGen SourceSection: None
@@ -1105,11 +1021,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   Key: path
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
-                                  IsBuiltinClassProfile SourceSection: None
-                                    GetClassNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [7221,7224]`sys`
                                   Identifier: sys
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [7237,7244]`sitedir`
                               Frame: [0,sitedir,Illegal]
                         ExpressionStatementNode SourceSection: [7282,7310]`known_paths.add(site...`
@@ -1131,14 +1044,12 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             GetCallAttributeNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [7336,7338]`os`
                                 Identifier: os
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [7347,7354]`sitedir`
                               Frame: [0,sitedir,Illegal]
                         ExceptNode SourceSection: None
                           ReturnNode SourceSection: [7384,7390]`return`
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7367,7374]`OSError`
                             Identifier: OSError
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [7395,7452]`names = [name for na...`
                       Identifier: names
@@ -1147,7 +1058,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [7404,7451]`name for name in nam...`
                           Name: <genexpr>
                           FrameDescriptor: 2 slots [name, <return_val>]
@@ -1220,7 +1130,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               CallTernaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [7492,7502]`addpackage`
                                 Identifier: addpackage
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [7503,7510]`sitedir`
                                 Frame: [0,sitedir,Illegal]
                               ReadLocalVariableNodeGen SourceSection: [7512,7516]`name`
@@ -1232,7 +1141,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7469,7475]`sorted`
                               Identifier: sorted
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [7476,7481]`names`
                               Frame: [4,names,Illegal]
                       BlockNode SourceSection: None
@@ -1282,18 +1190,13 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Key: no_user_site
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           GetAttributeNode SourceSection: [7943,7952]`sys.flags`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: flags
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7943,7946]`sys`
                               Identifier: sys
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [7975,7987]`return False`
                         BooleanLiteralNode SourceSection: [7982,7987]`False`
                       BlockNode SourceSection: None
@@ -1304,19 +1207,15 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7996,8003]`hasattr`
                               Identifier: hasattr
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8004,8006]`os`
                               Identifier: os
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [8008,8016]`"getuid"`
                           PythonCallBinary SourceSection: [8022,8044]`hasattr(os, "geteuid...`
                             CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8022,8029]`hasattr`
                               Identifier: hasattr
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8030,8032]`os`
                               Identifier: os
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [8034,8043]`"geteuid"`
                           YesNodeGen SourceSection: None
                       IfNode SourceSection: [8099,8159]`if os.geteuid() != o...`
@@ -1327,13 +1226,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [8102,8104]`os`
                                   Identifier: os
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [8118,8129]`os.getuid()`
                               CallNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [8118,8120]`os`
                                   Identifier: os
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [8143,8154]`return None`
                           ObjectLiteralNode SourceSection: [8150,8154]`None`
                         BlockNode SourceSection: None
@@ -1345,19 +1242,15 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8162,8169]`hasattr`
                               Identifier: hasattr
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8170,8172]`os`
                               Identifier: os
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [8174,8182]`"getgid"`
                           PythonCallBinary SourceSection: [8188,8210]`hasattr(os, "getegid...`
                             CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8188,8195]`hasattr`
                               Identifier: hasattr
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8196,8198]`os`
                               Identifier: os
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [8200,8209]`"getegid"`
                           YesNodeGen SourceSection: None
                       IfNode SourceSection: [8265,8326]`if os.getegid() != o...`
@@ -1368,13 +1261,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [8268,8270]`os`
                                   Identifier: os
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [8284,8295]`os.getgid()`
                               CallNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [8284,8286]`os`
                                   Identifier: os
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [8309,8320]`return None`
                           ObjectLiteralNode SourceSection: [8316,8320]`None`
                         BlockNode SourceSection: None
@@ -1419,11 +1310,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Key: environ
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8615,8617]`os`
                               Identifier: os
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [8630,8646]`"PYTHONUSERBASE"`
                         ObjectLiteralNode SourceSection: [8648,8652]`None`
                     IfNode SourceSection: [8658,8700]`if env_base:↵       ...`
@@ -1474,11 +1362,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             Key: path
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [8736,8738]`os`
                                             Identifier: os
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       PythonCallNodeGen SourceSection: [8755,8774]`os.path.join(*args)`
                                         CallNodeGen SourceSection: None
                                         PositionalArgumentsNode SourceSection: None
@@ -1491,11 +1376,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               Key: path
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [8755,8757]`os`
                                               Identifier: os
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                 Frame: [1,<return_val>,Object]
                     IfNode SourceSection: [8781,8894]`if os.name == "nt":↵...`
@@ -1506,11 +1388,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Key: name
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8784,8786]`os`
                               Identifier: os
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [8795,8799]`"nt"`
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [8809,8848]`base = os.environ.ge...`
@@ -1525,11 +1404,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     Key: environ
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [8816,8818]`os`
                                     Identifier: os
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [8831,8840]`"APPDATA"`
                             StringLiteralNode SourceSection: [8845,8848]`"~"`
                             YesNodeGen SourceSection: None
@@ -1551,22 +1427,16 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Key: platform
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [8897,8900]`sys`
                                 Identifier: sys
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [8913,8921]`"darwin"`
                           GetAttributeNode SourceSection: [8926,8940]`sys._framework`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: _framework
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8926,8929]`sys`
                               Identifier: sys
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [8950,9053]`return joinuser("~",...`
                         PythonCallQuaternary SourceSection: [8957,9053]`joinuser("~", "Libra...`
@@ -1580,11 +1450,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Key: _framework
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8982,8985]`sys`
                               Identifier: sys
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ModNodeGen SourceSection: [9022,9052]`"%d.%d" % sys.versio...`
                             StringLiteralNode SourceSection: [9022,9029]`"%d.%d"`
                             GetItemNodeGen SourceSection: [9032,9052]`sys.version_info[:2]...`
@@ -1593,11 +1460,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   Key: version_info
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
-                                  IsBuiltinClassProfile SourceSection: None
-                                    GetClassNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [9032,9035]`sys`
                                   Identifier: sys
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               SliceLiteralNodeGen SourceSection: [9049,9051]`:2`
                                 PythonObjectFactoryNodeGen SourceSection: None
                                 EmptyNode SourceSection: None
@@ -1653,11 +1517,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           Key: version_info
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
-                          IsBuiltinClassProfile SourceSection: None
-                            GetClassNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [9188,9191]`sys`
                           Identifier: sys
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [9210,9319]`if os.name == 'nt':↵...`
                       YesNodeGen SourceSection: None
                         EqNodeGen SourceSection: [9213,9228]`os.name == 'nt'`
@@ -1666,11 +1527,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Key: name
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [9213,9215]`os`
                               Identifier: os
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [9224,9228]`'nt'`
                       FrameReturnNode SourceSection: [9238,9313]`return '%s\\Python%s...`
                         ModNodeGen SourceSection: [9245,9313]`'%s\\Python%s%s\\sit...`
@@ -1699,22 +1557,16 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Key: platform
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [9322,9325]`sys`
                                 Identifier: sys
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [9338,9346]`'darwin'`
                           GetAttributeNode SourceSection: [9351,9365]`sys._framework`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: _framework
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [9351,9354]`sys`
                               Identifier: sys
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [9375,9421]`return '%s/lib/pytho...`
                         ModNodeGen SourceSection: [9382,9421]`'%s/lib/python/site-...`
@@ -1773,7 +1625,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         IsExpressionNodeGen SourceSection: [9768,9785]`USER_BASE is None`
                           ReadGlobalOrBuiltinNodeGen SourceSection: [9768,9777]`USER_BASE`
                             Identifier: USER_BASE
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ObjectLiteralNode SourceSection: [9781,9785]`None`
                       WriteGlobalNodeGen SourceSection: [9795,9821]`USER_BASE = _getuser...`
                         Identifier: USER_BASE
@@ -1783,12 +1634,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [9807,9819]`_getuserbase`
                             Identifier: _getuserbase
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [9826,9842]`return USER_BASE`
                       ReadGlobalOrBuiltinNodeGen SourceSection: [9833,9842]`USER_BASE`
                         Identifier: USER_BASE
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [0,<return_val>,Object]
       WriteNameNodeGen SourceSection: [9845,10216]`def getusersitepacka...`
@@ -1825,13 +1674,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [10081,10092]`getuserbase`
                           Identifier: getuserbase
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [10131,10198]`if USER_SITE is None...`
                       YesNodeGen SourceSection: None
                         IsExpressionNodeGen SourceSection: [10134,10151]`USER_SITE is None`
                           ReadGlobalOrBuiltinNodeGen SourceSection: [10134,10143]`USER_SITE`
                             Identifier: USER_SITE
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ObjectLiteralNode SourceSection: [10147,10151]`None`
                       WriteGlobalNodeGen SourceSection: [10161,10192]`USER_SITE = _get_pat...`
                         Identifier: USER_SITE
@@ -1841,14 +1688,12 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [10173,10182]`_get_path`
                             Identifier: _get_path
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [10183,10191]`userbase`
                             Frame: [0,userbase,Illegal]
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [10198,10214]`return USER_SITE`
                       ReadGlobalOrBuiltinNodeGen SourceSection: [10205,10214]`USER_SITE`
                         Identifier: USER_SITE
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [1,<return_val>,Object]
       WriteNameNodeGen SourceSection: [10216,10668]`def addusersitepacka...`
@@ -1889,13 +1734,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [10524,10543]`getusersitepackages`
                           Identifier: getusersitepackages
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [10551,10648]`if ENABLE_USER_SITE ...`
                       YesNodeGen SourceSection: None
                         AndNode SourceSection: [10554,10599]`ENABLE_USER_SITE and...`
                           ReadGlobalOrBuiltinNodeGen SourceSection: [10554,10570]`ENABLE_USER_SITE`
                             Identifier: ENABLE_USER_SITE
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [10575,10599]`os.path.isdir(user_s...`
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
@@ -1904,11 +1747,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   Key: path
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
-                                  IsBuiltinClassProfile SourceSection: None
-                                    GetClassNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [10575,10577]`os`
                                   Identifier: os
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [10589,10598]`user_site`
                               Frame: [1,user_site,Illegal]
                           YesNodeGen SourceSection: None
@@ -1917,7 +1757,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [10609,10619]`addsitedir`
                             Identifier: addsitedir
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [10620,10629]`user_site`
                             Frame: [1,user_site,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [10631,10642]`known_paths`
@@ -1972,7 +1811,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [11034,11037]`set`
                           Identifier: set
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [11045,11099]`if prefixes is None:...`
                       YesNodeGen SourceSection: None
                         IsExpressionNodeGen SourceSection: [11048,11064]`prefixes is None`
@@ -1984,7 +1822,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         Frame: [0,prefixes,Illegal]
                         ReadGlobalOrBuiltinNodeGen SourceSection: [11085,11093]`PREFIXES`
                           Identifier: PREFIXES
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     ElseNode SourceSection: [11099,11841]`for prefix in prefix...`
                       ForNode SourceSection: None
@@ -2028,11 +1865,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         Key: sep
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
-                                        IsBuiltinClassProfile SourceSection: None
-                                          GetClassNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [11222,11224]`os`
                                         Identifier: os
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     StringLiteralNode SourceSection: [11232,11235]`'/'`
                                 BlockNode SourceSection: None
                                   ExpressionStatementNode SourceSection: [11249,11432]`sitepackages.append(...`
@@ -2049,11 +1883,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               Key: path
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11269,11271]`os`
                                               Identifier: os
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [11282,11288]`prefix`
                                           Frame: [3,prefix,Illegal]
                                         StringLiteralNode SourceSection: [11290,11295]`"lib"`
@@ -2065,11 +1896,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                 Key: version_info
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [11353,11356]`sys`
                                                 Identifier: sys
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             SliceLiteralNodeGen SourceSection: [11370,11372]`:2`
                                               PythonObjectFactoryNodeGen SourceSection: None
                                               EmptyNode SourceSection: None
@@ -2091,11 +1919,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               Key: path
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11544,11546]`os`
                                               Identifier: os
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [11557,11563]`prefix`
                                           Frame: [3,prefix,Illegal]
                                         StringLiteralNode SourceSection: [11565,11577]`"lib-python"`
@@ -2107,11 +1932,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                 Key: version_info
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [11626,11629]`sys`
                                                 Identifier: sys
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [11643,11644]`0`
                                               Value: 0
                                         StringLiteralNode SourceSection: [11687,11702]`"site-packages"`
@@ -2138,11 +1960,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               Key: path
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [11791,11793]`os`
                                               Identifier: os
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [11804,11810]`prefix`
                                           Frame: [3,prefix,Illegal]
                                         StringLiteralNode SourceSection: [11812,11817]`"lib"`
@@ -2212,11 +2031,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       Key: path
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
-                                      IsBuiltinClassProfile SourceSection: None
-                                        GetClassNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [12008,12010]`os`
                                       Identifier: os
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [12022,12029]`sitedir`
                                   Frame: [2,sitedir,Illegal]
                             ExpressionStatementNode SourceSection: [12044,12076]`addsitedir(sitedir, ...`
@@ -2224,7 +2040,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 CallBinaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [12044,12054]`addsitedir`
                                   Identifier: addsitedir
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [12055,12062]`sitedir`
                                   Frame: [2,sitedir,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: [12064,12075]`known_paths`
@@ -2235,7 +2050,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [11970,11985]`getsitepackages`
                               Identifier: getsitepackages
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [11986,11994]`prefixes`
                               Frame: [1,prefixes,Illegal]
                       BlockNode SourceSection: None
@@ -2277,11 +2091,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Key: sep
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [12308,12310]`os`
                               Identifier: os
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [12318,12322]`'\\'`
                       WriteLocalVariableNodeGen SourceSection: [12332,12358]`eof = 'Ctrl-Z plus R...`
                         Identifier: eof
@@ -2295,13 +2106,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       Attribute: quit
                       ReadGlobalOrBuiltinNodeGen SourceSection: [12408,12416]`builtins`
                         Identifier: builtins
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       PythonCallBinary SourceSection: [12424,12458]`_sitebuiltins.Quitte...`
                         CallBinaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12424,12437]`_sitebuiltins`
                             Identifier: _sitebuiltins
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [12446,12452]`'quit'`
                         ReadLocalVariableNodeGen SourceSection: [12454,12457]`eof`
                           Frame: [0,eof,Illegal]
@@ -2309,13 +2118,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       Attribute: exit
                       ReadGlobalOrBuiltinNodeGen SourceSection: [12463,12471]`builtins`
                         Identifier: builtins
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       PythonCallBinary SourceSection: [12479,12513]`_sitebuiltins.Quitte...`
                         CallBinaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12479,12492]`_sitebuiltins`
                             Identifier: _sitebuiltins
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [12501,12507]`'exit'`
                         ReadLocalVariableNodeGen SourceSection: [12509,12512]`eof`
                           Frame: [0,eof,Illegal]
@@ -2350,24 +2157,19 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       Attribute: copyright
                       ReadGlobalOrBuiltinNodeGen SourceSection: [12592,12600]`builtins`
                         Identifier: builtins
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       PythonCallBinary SourceSection: [12613,12663]`_sitebuiltins._Print...`
                         CallBinaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12613,12626]`_sitebuiltins`
                             Identifier: _sitebuiltins
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [12636,12647]`"copyright"`
                         GetAttributeNode SourceSection: [12649,12662]`sys.copyright`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: copyright
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12649,12652]`sys`
                             Identifier: sys
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [12668,13095]`if sys.platform[:4] ...`
                       YesNodeGen SourceSection: None
                         EqNodeGen SourceSection: [12671,12697]`sys.platform[:4] == ...`
@@ -2377,11 +2179,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Key: platform
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [12671,12674]`sys`
                                 Identifier: sys
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             SliceLiteralNodeGen SourceSection: [12684,12686]`:4`
                               PythonObjectFactoryNodeGen SourceSection: None
                               EmptyNode SourceSection: None
@@ -2393,26 +2192,22 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         Attribute: credits
                         ReadGlobalOrBuiltinNodeGen SourceSection: [12707,12715]`builtins`
                           Identifier: builtins
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         PythonCallBinary SourceSection: [12726,12851]`_sitebuiltins._Print...`
                           CallBinaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [12726,12739]`_sitebuiltins`
                               Identifier: _sitebuiltins
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [12762,12771]`"credits"`
                           StringLiteralNode SourceSection: [12785,12850]`"Jython is maintaine...`
                       SetAttributeNodeGen SourceSection: [12870,13090]`builtins.credits = _...`
                         Attribute: credits
                         ReadGlobalOrBuiltinNodeGen SourceSection: [12870,12878]`builtins`
                           Identifier: builtins
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         PythonCallBinary SourceSection: [12889,13090]`_sitebuiltins._Print...`
                           CallBinaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [12889,12902]`_sitebuiltins`
                               Identifier: _sitebuiltins
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [12912,12921]`"credits"`
                           StringLiteralNode SourceSection: [12923,13089]`"""\↵    Thanks to C...`
                     DestructuringAssignmentNodeGen SourceSection: [13095,13115]`files, dirs = [], []...`
@@ -2444,10 +2239,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [13225,13232]`hasattr`
                             Identifier: hasattr
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [13233,13235]`os`
                             Identifier: os
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [13237,13247]`'__file__'`
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [13258,13293]`here = os.path.dirna...`
@@ -2461,21 +2254,15 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   Key: path
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
-                                  IsBuiltinClassProfile SourceSection: None
-                                    GetClassNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [13265,13267]`os`
                                   Identifier: os
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             GetAttributeNode SourceSection: [13281,13292]`os.__file__`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: __file__
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [13281,13283]`os`
                                 Identifier: os
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [13302,13342]`files.extend(["LICEN...`
                           PythonCallUnary SourceSection: [13302,13342]`files.extend(["LICEN...`
                             CallUnaryMethodNodeGen SourceSection: None
@@ -2501,11 +2288,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       Key: path
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
-                                      IsBuiltinClassProfile SourceSection: None
-                                        GetClassNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [13364,13366]`os`
                                       Identifier: os
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [13377,13381]`here`
                                   Frame: [2,here,Illegal]
                                 GetAttributeNode SourceSection: [13383,13392]`os.pardir`
@@ -2513,11 +2297,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     Key: pardir
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [13383,13385]`os`
                                     Identifier: os
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [13395,13399]`here`
                                 Frame: [2,here,Illegal]
                               GetAttributeNode SourceSection: [13401,13410]`os.curdir`
@@ -2525,24 +2306,19 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   Key: curdir
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
-                                  IsBuiltinClassProfile SourceSection: None
-                                    GetClassNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [13401,13403]`os`
                                   Identifier: os
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               PythonObjectFactoryNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     SetAttributeNodeGen SourceSection: [13417,13550]`builtins.license = _...`
                       Attribute: license
                       ReadGlobalOrBuiltinNodeGen SourceSection: [13417,13425]`builtins`
                         Identifier: builtins
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       PythonCallQuaternary SourceSection: [13436,13550]`_sitebuiltins._Print...`
                         CallQuaternaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [13436,13449]`_sitebuiltins`
                             Identifier: _sitebuiltins
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [13468,13477]`"license"`
                         StringLiteralNode SourceSection: [13487,13528]`"See https://www.pyt...`
                         ReadLocalVariableNodeGen SourceSection: [13538,13543]`files`
@@ -2580,13 +2356,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       Attribute: help
                       ReadGlobalOrBuiltinNodeGen SourceSection: [13574,13582]`builtins`
                         Identifier: builtins
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       PythonCallNodeGen SourceSection: [13590,13613]`_sitebuiltins._Helpe...`
                         CallNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [13590,13603]`_sitebuiltins`
                             Identifier: _sitebuiltins
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [0,<return_val>,Object]
       WriteNameNodeGen SourceSection: [13615,15675]`def enablerlcomplete...`
@@ -2665,7 +2439,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         ReturnNode SourceSection: [14176,14182]`return`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [14151,14162]`ImportError`
                                           Identifier: ImportError
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: [14340,14387]`readline_doc = getat...`
                                     Identifier: readline_doc
@@ -2674,7 +2447,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       CallTernaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [14355,14362]`getattr`
                                         Identifier: getattr
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: [14363,14371]`readline`
                                         Frame: [1,readline,Illegal]
                                       StringLiteralNode SourceSection: [14373,14382]`'__doc__'`
@@ -2722,7 +2494,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                           EmptyNode SourceSection: [14948,14952]`pass`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [14648,14655]`OSError`
                                           Identifier: OSError
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                   IfNode SourceSection: [14962,15630]`if readline.get_curr...`
                                     YesNodeGen SourceSection: None
@@ -2746,11 +2517,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                 Key: path
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [15349,15351]`os`
                                                 Identifier: os
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [15362,15385]`os.path.expanduser('...`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -2759,11 +2527,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                   Key: path
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    GetClassNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [15362,15364]`os`
                                                   Identifier: os
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [15381,15384]`'~'`
                                           StringLiteralNode SourceSection: [15422,15439]`'.python_history'`
                                       TryFinallyNode SourceSection: [15453,15571]`try:↵               ...`
@@ -2781,7 +2546,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               EmptyNode SourceSection: [15554,15558]`pass`
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [15529,15536]`OSError`
                                               Identifier: OSError
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           BlockNode SourceSection: None
                                       ExpressionStatementNode SourceSection: [15571,15624]`atexit.register(read...`
                                         PythonCallBinary SourceSection: [15571,15624]`atexit.register(read...`
@@ -2794,8 +2558,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               Key: write_history_file
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [15587,15595]`readline`
                                               Frame: [1,readline,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: [15616,15623]`history`
@@ -2807,7 +2569,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       Attribute: __interactivehook__
                       ReadGlobalOrBuiltinNodeGen SourceSection: [15630,15633]`sys`
                         Identifier: sys
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadLocalVariableNodeGen SourceSection: [15656,15673]`register_readline`
                         Frame: [0,register_readline,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -2853,11 +2614,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           Key: environ
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
-                          IsBuiltinClassProfile SourceSection: None
-                            GetClassNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [15747,15749]`os`
                           Identifier: os
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [15762,15929]`if sys.platform == '...`
                       YesNodeGen SourceSection: None
                         AndNode SourceSection: [15765,15822]`sys.platform == 'dar...`
@@ -2867,11 +2625,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Key: platform
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [15765,15768]`sys`
                                 Identifier: sys
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [15781,15789]`'darwin'`
                           ContainsNodeGen SourceSection: [15794,15822]`'__PYVENV_LAUNCHER__...`
                             LookupAndCallBinaryNodeGen SourceSection: None
@@ -2890,11 +2645,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Key: environ
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [15845,15847]`os`
                               Identifier: os
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [15856,15877]`'__PYVENV_LAUNCHER__...`
                       WriteLocalVariableNodeGen SourceSection: [15897,15924]`executable = sys.exe...`
                         Identifier: executable
@@ -2904,11 +2656,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Key: executable
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [15910,15913]`sys`
                             Identifier: sys
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     DestructuringAssignmentNodeGen SourceSection: [15929,15984]`exe_dir, _ = os.path...`
                       PythonCallUnary SourceSection: [15942,15984]`os.path.split(os.pat...`
                         CallUnaryMethodNodeGen SourceSection: None
@@ -2918,11 +2667,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Key: path
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [15942,15944]`os`
                               Identifier: os
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         PythonCallUnary SourceSection: [15956,15983]`os.path.abspath(exec...`
                           CallUnaryMethodNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
@@ -2931,11 +2677,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Key: path
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [15956,15958]`os`
                                 Identifier: os
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [15972,15982]`executable`
                             Frame: [2,executable,Illegal]
                       WriteLocalVariableNodeGen SourceSection: None
@@ -2965,18 +2708,14 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Key: path
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [16003,16005]`os`
                               Identifier: os
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [16019,16026]`exe_dir`
                           Frame: [3,exe_dir,Illegal]
                     SetAttributeNodeGen SourceSection: [16032,16048]`sys._home = None`
                       Attribute: _home
                       ReadGlobalOrBuiltinNodeGen SourceSection: [16032,16035]`sys`
                         Identifier: sys
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ObjectLiteralNode SourceSection: [16044,16048]`None`
                     WriteLocalVariableNodeGen SourceSection: [16053,16081]`conf_basename = 'pyv...`
                       Identifier: conf_basename
@@ -2989,7 +2728,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [16114,16293]`conffile for conffil...`
                           Name: <genexpr>
                           FrameDescriptor: 2 slots [conffile, <return_val>]
@@ -3024,11 +2762,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               Key: path
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [16269,16271]`os`
                                               Identifier: os
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [16284,16292]`conffile`
                                           Frame: [0,conffile,Illegal]
                                     ExpressionStatementNode SourceSection: [16114,16122]`conffile`
@@ -3065,11 +2800,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       Key: path
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
-                                      IsBuiltinClassProfile SourceSection: None
-                                        GetClassNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [16153,16155]`os`
                                       Identifier: os
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [16166,16173]`exe_dir`
                                   Frame: [3,exe_dir,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: [16175,16188]`conf_basename`
@@ -3082,11 +2814,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       Key: path
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
-                                      IsBuiltinClassProfile SourceSection: None
-                                        GetClassNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [16203,16205]`os`
                                       Identifier: os
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [16216,16227]`site_prefix`
                                   Frame: [5,site_prefix,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: [16229,16242]`conf_basename`
@@ -3202,7 +2931,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                           Attribute: _home
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [16940,16943]`sys`
                                             Identifier: sys
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [16952,16957]`value`
                                             Frame: [11,value,Illegal]
                                         BlockNode SourceSection: None
@@ -3225,7 +2953,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               EmptyNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [16516,16520]`open`
                               Identifier: open
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           CachedLookupNodeGen SourceSection: None
                           CachedLookupNodeGen SourceSection: None
                           CallUnaryMethodNodeGen SourceSection: None
@@ -3242,14 +2969,12 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Attribute: prefix
                             ReadGlobalOrBuiltinNodeGen SourceSection: [16967,16970]`sys`
                               Identifier: sys
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [19,<>temp19,Illegal]
                           SetAttributeNodeGen SourceSection: None
                             Attribute: exec_prefix
                             ReadGlobalOrBuiltinNodeGen SourceSection: [16980,16983]`sys`
                               Identifier: sys
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [19,<>temp19,Illegal]
                         ExpressionStatementNode SourceSection: [17090,17132]`addsitepackages(know...`
@@ -3257,7 +2982,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [17090,17105]`addsitepackages`
                               Identifier: addsitepackages
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [17106,17117]`known_paths`
                               Frame: [0,known_paths,Illegal]
                             ListLiteralNode SourceSection: [17119,17131]`[sys.prefix]`
@@ -3266,11 +2990,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   Key: prefix
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
-                                  IsBuiltinClassProfile SourceSection: None
-                                    GetClassNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [17120,17123]`sys`
                                   Identifier: sys
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               PythonObjectFactoryNodeGen SourceSection: None
                         IfNode SourceSection: [17296,17457]`if system_site == "t...`
                           YesNodeGen SourceSection: None
@@ -3284,7 +3005,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [17334,17342]`PREFIXES`
                                   Identifier: PREFIXES
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [17350,17351]`0`
                                 Value: 0
                               GetAttributeNode SourceSection: [17353,17363]`sys.prefix`
@@ -3292,11 +3012,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   Key: prefix
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
-                                  IsBuiltinClassProfile SourceSection: None
-                                    GetClassNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [17353,17356]`sys`
                                   Identifier: sys
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
                             WriteGlobalNodeGen SourceSection: [17391,17414]`PREFIXES = [sys.pref...`
                               Identifier: PREFIXES
@@ -3308,11 +3025,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     Key: prefix
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [17403,17406]`sys`
                                     Identifier: sys
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 PythonObjectFactoryNodeGen SourceSection: None
                             WriteGlobalNodeGen SourceSection: [17427,17451]`ENABLE_USER_SITE = F...`
                               Identifier: ENABLE_USER_SITE
@@ -3369,8 +3083,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         Key: name
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
-                                        IsBuiltinClassProfile SourceSection: None
-                                          GetClassNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: [17663,17666]`exc`
                                         Frame: [1,exc,Illegal]
                                     StringLiteralNode SourceSection: [17675,17690]`'sitecustomize'`
@@ -3384,7 +3096,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Frame: [1,exc,Illegal]
                               ReadGlobalOrBuiltinNodeGen SourceSection: [17628,17639]`ImportError`
                                 Identifier: ImportError
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             BlockNode SourceSection: None
                         ExceptNode SourceSection: None
                           IfNode SourceSection: [17790,18055]`if sys.flags.verbose...`
@@ -3394,18 +3105,13 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   Key: verbose
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
-                                  IsBuiltinClassProfile SourceSection: None
-                                    GetClassNodeGen SourceSection: None
                                 GetAttributeNode SourceSection: [17793,17802]`sys.flags`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: flags
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [17793,17796]`sys`
                                     Identifier: sys
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [17824,17855]`sys.excepthook(*sys....`
                               PythonCallNodeGen SourceSection: [17824,17855]`sys.excepthook(*sys....`
                                 CallNodeGen SourceSection: None
@@ -3415,12 +3121,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     GetCallAttributeNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [17840,17843]`sys`
                                         Identifier: sys
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ExecutePositionalStarargsNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [17824,17827]`sys`
                                     Identifier: sys
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [17882,18052]`sys.stderr.write(↵  ...`
                               PythonCallUnary SourceSection: [17882,18052]`sys.stderr.write(↵  ...`
                                 CallUnaryMethodNodeGen SourceSection: None
@@ -3430,11 +3134,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       Key: stderr
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
-                                      IsBuiltinClassProfile SourceSection: None
-                                        GetClassNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [17882,17885]`sys`
                                       Identifier: sys
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ModNodeGen SourceSection: [17916,18051]`"Error in sitecustom...`
                                   StringLiteralNode SourceSection: [17916,18003]`"Error in sitecustom...`
                                   TupleLiteralNode SourceSection: [18022,18051]`(err.__class__.__nam...`
@@ -3443,15 +3144,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         Key: __name__
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
-                                        IsBuiltinClassProfile SourceSection: None
-                                          GetClassNodeGen SourceSection: None
                                       GetAttributeNode SourceSection: [18023,18036]`err.__class__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __class__
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
-                                          IsBuiltinClassProfile SourceSection: None
-                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [18023,18026]`err`
                                           Frame: [2,err,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: [18047,18050]`err`
@@ -3462,7 +3159,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Frame: [2,err,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [17764,17773]`Exception`
                             Identifier: Exception
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [3,<return_val>,Object]
@@ -3510,8 +3206,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         Key: name
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
-                                        IsBuiltinClassProfile SourceSection: None
-                                          GetClassNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: [18240,18243]`exc`
                                         Frame: [1,exc,Illegal]
                                     StringLiteralNode SourceSection: [18252,18267]`'usercustomize'`
@@ -3525,7 +3219,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Frame: [1,exc,Illegal]
                               ReadGlobalOrBuiltinNodeGen SourceSection: [18205,18216]`ImportError`
                                 Identifier: ImportError
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             BlockNode SourceSection: None
                         ExceptNode SourceSection: None
                           IfNode SourceSection: [18367,18632]`if sys.flags.verbose...`
@@ -3535,18 +3228,13 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   Key: verbose
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
-                                  IsBuiltinClassProfile SourceSection: None
-                                    GetClassNodeGen SourceSection: None
                                 GetAttributeNode SourceSection: [18370,18379]`sys.flags`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: flags
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [18370,18373]`sys`
                                     Identifier: sys
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [18401,18432]`sys.excepthook(*sys....`
                               PythonCallNodeGen SourceSection: [18401,18432]`sys.excepthook(*sys....`
                                 CallNodeGen SourceSection: None
@@ -3556,12 +3244,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     GetCallAttributeNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [18417,18420]`sys`
                                         Identifier: sys
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ExecutePositionalStarargsNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [18401,18404]`sys`
                                     Identifier: sys
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ExpressionStatementNode SourceSection: [18459,18629]`sys.stderr.write(↵  ...`
                               PythonCallUnary SourceSection: [18459,18629]`sys.stderr.write(↵  ...`
                                 CallUnaryMethodNodeGen SourceSection: None
@@ -3571,11 +3257,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       Key: stderr
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
-                                      IsBuiltinClassProfile SourceSection: None
-                                        GetClassNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [18459,18462]`sys`
                                       Identifier: sys
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ModNodeGen SourceSection: [18493,18628]`"Error in usercustom...`
                                   StringLiteralNode SourceSection: [18493,18580]`"Error in usercustom...`
                                   TupleLiteralNode SourceSection: [18599,18628]`(err.__class__.__nam...`
@@ -3584,15 +3267,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         Key: __name__
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
-                                        IsBuiltinClassProfile SourceSection: None
-                                          GetClassNodeGen SourceSection: None
                                       GetAttributeNode SourceSection: [18600,18613]`err.__class__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __class__
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
-                                          IsBuiltinClassProfile SourceSection: None
-                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [18600,18603]`err`
                                           Frame: [2,err,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: [18624,18627]`err`
@@ -3603,7 +3282,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Frame: [2,err,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [18341,18350]`Exception`
                             Identifier: Exception
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [3,<return_val>,Object]
@@ -3643,11 +3321,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Key: path
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [18907,18910]`sys`
                             Identifier: sys
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         SliceLiteralNodeGen SourceSection: [18916,18917]`:`
                           PythonObjectFactoryNodeGen SourceSection: None
                           EmptyNode SourceSection: None
@@ -3660,7 +3335,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [18937,18951]`removeduppaths`
                           Identifier: removeduppaths
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [18958,19137]`if orig_path != sys....`
                       YesNodeGen SourceSection: None
                         NeNodeGen SourceSection: [18961,18982]`orig_path != sys.pat...`
@@ -3671,17 +3345,13 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Key: path
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [18974,18977]`sys`
                               Identifier: sys
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [19120,19131]`abs_paths()`
                         PythonCallNodeGen SourceSection: [19120,19131]`abs_paths()`
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [19120,19129]`abs_paths`
                             Identifier: abs_paths
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [19137,19168]`known_paths = venv(k...`
                       Identifier: known_paths
@@ -3690,7 +3360,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [19151,19155]`venv`
                           Identifier: venv
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [19156,19167]`known_paths`
                           Frame: [1,known_paths,Illegal]
                     IfNode SourceSection: [19173,19257]`if ENABLE_USER_SITE ...`
@@ -3698,7 +3367,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         IsExpressionNodeGen SourceSection: [19176,19200]`ENABLE_USER_SITE is ...`
                           ReadGlobalOrBuiltinNodeGen SourceSection: [19176,19192]`ENABLE_USER_SITE`
                             Identifier: ENABLE_USER_SITE
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ObjectLiteralNode SourceSection: [19196,19200]`None`
                       WriteGlobalNodeGen SourceSection: [19210,19251]`ENABLE_USER_SITE = c...`
                         Identifier: ENABLE_USER_SITE
@@ -3708,7 +3376,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [19229,19249]`check_enableusersite...`
                             Identifier: check_enableusersite
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [19257,19303]`known_paths = adduse...`
                       Identifier: known_paths
@@ -3717,7 +3384,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [19271,19290]`addusersitepackages`
                           Identifier: addusersitepackages
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [19291,19302]`known_paths`
                           Frame: [1,known_paths,Illegal]
                     WriteLocalVariableNodeGen SourceSection: [19308,19350]`known_paths = addsit...`
@@ -3727,7 +3393,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [19322,19337]`addsitepackages`
                           Identifier: addsitepackages
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [19338,19349]`known_paths`
                           Frame: [1,known_paths,Illegal]
                     ExpressionStatementNode SourceSection: [19355,19364]`setquit()`
@@ -3735,19 +3400,16 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         CallNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [19355,19362]`setquit`
                           Identifier: setquit
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [19369,19383]`setcopyright()`
                       PythonCallNodeGen SourceSection: [19369,19383]`setcopyright()`
                         CallNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [19369,19381]`setcopyright`
                           Identifier: setcopyright
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [19388,19399]`sethelper()`
                       PythonCallNodeGen SourceSection: [19388,19399]`sethelper()`
                         CallNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [19388,19397]`sethelper`
                           Identifier: sethelper
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [19404,19463]`if not sys.flags.iso...`
                       NotNodeGen SourceSection: [19407,19429]`not sys.flags.isolat...`
                         GetAttributeNode SourceSection: [19411,19429]`sys.flags.isolated`
@@ -3755,42 +3417,33 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Key: isolated
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           GetAttributeNode SourceSection: [19411,19420]`sys.flags`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: flags
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [19411,19414]`sys`
                               Identifier: sys
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [19439,19458]`enablerlcompleter()`
                         PythonCallNodeGen SourceSection: [19439,19458]`enablerlcompleter()`
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [19439,19456]`enablerlcompleter`
                             Identifier: enablerlcompleter
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     ExpressionStatementNode SourceSection: [19463,19482]`execsitecustomize()`
                       PythonCallNodeGen SourceSection: [19463,19482]`execsitecustomize()`
                         CallNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [19463,19480]`execsitecustomize`
                           Identifier: execsitecustomize
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [19487,19631]`if ENABLE_USER_SITE:...`
                       YesNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [19490,19506]`ENABLE_USER_SITE`
                           Identifier: ENABLE_USER_SITE
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [19516,19535]`execusercustomize()`
                         PythonCallNodeGen SourceSection: [19516,19535]`execusercustomize()`
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [19516,19533]`execusercustomize`
                             Identifier: execusercustomize
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [2,<return_val>,Object]
@@ -3801,15 +3454,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
               Key: no_site
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             GetAttributeNode SourceSection: [19638,19647]`sys.flags`
               GetFixedAttributeNodeGen SourceSection: None
                 Key: flags
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __getattribute__
-                IsBuiltinClassProfile SourceSection: None
-                  GetClassNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [19638,19641]`sys`
                 Identifier: sys
                 IsBuiltinClassProfile SourceSection: None
@@ -3860,11 +3509,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Key: argv
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [20149,20152]`sys`
                             Identifier: sys
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         SliceLiteralNodeGen SourceSection: [20158,20160]`1:`
                           PythonObjectFactoryNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [20158,20159]`1`
@@ -3883,7 +3529,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [20199,20210]`getuserbase`
                               Identifier: getuserbase
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [20221,20254]`user_site = getusers...`
                           Identifier: user_site
                           Frame: [3,user_site,Illegal]
@@ -3891,13 +3536,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [20233,20252]`getusersitepackages`
                               Identifier: getusersitepackages
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [20263,20284]`print("sys.path = ["...`
                           PythonCallUnary SourceSection: [20263,20284]`print("sys.path = ["...`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [20263,20268]`print`
                               Identifier: print
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [20269,20283]`"sys.path = ["`
                         ElseNode SourceSection: [20293,20360]`for dir in sys.path:...`
                           ForNode SourceSection: None
@@ -3911,7 +3554,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [20326,20331]`print`
                                     Identifier: print
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ModNodeGen SourceSection: [20332,20350]`"    %r," % (dir,)`
                                     StringLiteralNode SourceSection: [20332,20341]`"    %r,"`
                                     TupleLiteralNode SourceSection: [20344,20350]`(dir,)`
@@ -3924,25 +3566,20 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   Key: path
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
-                                  IsBuiltinClassProfile SourceSection: None
-                                    GetClassNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [20304,20307]`sys`
                                   Identifier: sys
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
                         ExpressionStatementNode SourceSection: [20360,20370]`print("]")`
                           PythonCallUnary SourceSection: [20360,20370]`print("]")`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [20360,20365]`print`
                               Identifier: print
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [20366,20369]`"]"`
                         ExpressionStatementNode SourceSection: [20379,20491]`print("USER_BASE: %r...`
                           PythonCallUnary SourceSection: [20379,20491]`print("USER_BASE: %r...`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [20379,20384]`print`
                               Identifier: print
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ModNodeGen SourceSection: [20385,20490]`"USER_BASE: %r (%s)"...`
                               StringLiteralNode SourceSection: [20385,20405]`"USER_BASE: %r (%s)"...`
                               TupleLiteralNode SourceSection: [20408,20490]`(user_base,↵        ...`
@@ -3958,11 +3595,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             Key: path
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [20444,20446]`os`
                                             Identifier: os
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: [20458,20467]`user_base`
                                         Frame: [2,user_base,Illegal]
                                   StringLiteralNode SourceSection: [20432,20440]`"exists"`
@@ -3973,7 +3607,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [20500,20505]`print`
                               Identifier: print
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ModNodeGen SourceSection: [20506,20611]`"USER_SITE: %r (%s)"...`
                               StringLiteralNode SourceSection: [20506,20526]`"USER_SITE: %r (%s)"...`
                               TupleLiteralNode SourceSection: [20529,20611]`(user_site,↵        ...`
@@ -3989,11 +3622,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             Key: path
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [20565,20567]`os`
                                             Identifier: os
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: [20579,20588]`user_site`
                                         Frame: [3,user_site,Illegal]
                                   StringLiteralNode SourceSection: [20553,20561]`"exists"`
@@ -4004,19 +3634,16 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [20621,20626]`print`
                               Identifier: print
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ModNodeGen SourceSection: [20627,20669]`"ENABLE_USER_SITE: %...`
                               StringLiteralNode SourceSection: [20627,20649]`"ENABLE_USER_SITE: %...`
                               ReadGlobalOrBuiltinNodeGen SourceSection: [20653,20669]`ENABLE_USER_SITE`
                                 Identifier: ENABLE_USER_SITE
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [20679,20690]`sys.exit(0)`
                           PythonCallUnary SourceSection: [20679,20690]`sys.exit(0)`
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [20679,20682]`sys`
                                 Identifier: sys
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [20688,20689]`0`
                               Value: 0
                       BlockNode SourceSection: None
@@ -4042,7 +3669,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Frame: [5,buffer,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [20760,20769]`USER_BASE`
                             Identifier: USER_BASE
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [20775,20839]`if '--user-site' in ...`
                       YesNodeGen SourceSection: None
@@ -4061,7 +3687,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Frame: [5,buffer,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [20823,20832]`USER_SITE`
                             Identifier: USER_SITE
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [20839,21228]`if buffer:↵        p...`
                       YesNodeGen SourceSection: None
@@ -4073,7 +3698,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [20858,20863]`print`
                               Identifier: print
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [20864,20887]`os.pathsep.join(buff...`
                               CallUnaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
@@ -4082,25 +3706,20 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     Key: pathsep
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [20864,20866]`os`
                                     Identifier: os
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [20880,20886]`buffer`
                                 Frame: [5,buffer,Illegal]
                         IfNode SourceSection: [20897,21111]`if ENABLE_USER_SITE:...`
                           YesNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [20900,20916]`ENABLE_USER_SITE`
                               Identifier: ENABLE_USER_SITE
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ExpressionStatementNode SourceSection: [20930,20941]`sys.exit(0)`
                             PythonCallUnary SourceSection: [20930,20941]`sys.exit(0)`
                               CallUnaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [20930,20933]`sys`
                                   Identifier: sys
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [20939,20940]`0`
                                 Value: 0
                           IfNode SourceSection: [20950,21111]`elif ENABLE_USER_SIT...`
@@ -4108,7 +3727,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               IsExpressionNodeGen SourceSection: [20955,20980]`ENABLE_USER_SITE is ...`
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [20955,20971]`ENABLE_USER_SITE`
                                   Identifier: ENABLE_USER_SITE
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 BooleanLiteralNode SourceSection: [20975,20980]`False`
                             ExpressionStatementNode SourceSection: [20994,21005]`sys.exit(1)`
                               PythonCallUnary SourceSection: [20994,21005]`sys.exit(1)`
@@ -4116,7 +3734,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [20994,20997]`sys`
                                     Identifier: sys
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [21003,21004]`1`
                                   Value: 1
                             IfNode SourceSection: [21014,21111]`elif ENABLE_USER_SIT...`
@@ -4124,7 +3741,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 IsExpressionNodeGen SourceSection: [21019,21043]`ENABLE_USER_SITE is ...`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [21019,21035]`ENABLE_USER_SITE`
                                     Identifier: ENABLE_USER_SITE
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ObjectLiteralNode SourceSection: [21039,21043]`None`
                               ExpressionStatementNode SourceSection: [21057,21068]`sys.exit(2)`
                                 PythonCallUnary SourceSection: [21057,21068]`sys.exit(2)`
@@ -4132,7 +3748,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   GetCallAttributeNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [21057,21060]`sys`
                                       Identifier: sys
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [21066,21067]`2`
                                     Value: 2
                               ExpressionStatementNode SourceSection: [21095,21106]`sys.exit(3)`
@@ -4141,7 +3756,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   GetCallAttributeNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [21095,21098]`sys`
                                       Identifier: sys
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   IntegerLiteralNode SourceSection: [21104,21105]`3`
                                     Value: 3
                       BlockNode SourceSection: None
@@ -4156,7 +3770,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [21149,21154]`print`
                               Identifier: print
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [21155,21204]`textwrap.dedent(help...`
                               CallUnaryMethodNodeGen SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
@@ -4172,11 +3785,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         Key: argv
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
-                                        IsBuiltinClassProfile SourceSection: None
-                                          GetClassNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [21179,21182]`sys`
                                         Identifier: sys
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [21188,21189]`0`
                                       Value: 0
                                   GetAttributeNode SourceSection: [21192,21202]`os.pathsep`
@@ -4184,11 +3794,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       Key: pathsep
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
-                                      IsBuiltinClassProfile SourceSection: None
-                                        GetClassNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [21192,21194]`os`
                                       Identifier: os
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   PythonObjectFactoryNodeGen SourceSection: None
                         ExpressionStatementNode SourceSection: [21214,21226]`sys.exit(10)`
                           PythonCallUnary SourceSection: [21214,21226]`sys.exit(10)`
@@ -4196,7 +3803,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             GetCallAttributeNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [21214,21217]`sys`
                                 Identifier: sys
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [21223,21225]`10`
                               Value: 10
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None

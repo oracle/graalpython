@@ -57,7 +57,6 @@ ModuleRootNode Name: <module 'functionDef21'> SourceSection: [0,50]`c = 2↵def 
                             Frame: [1,b,Illegal]
                         ReadGlobalOrBuiltinNodeGen SourceSection: [39,40]`c`
                           Identifier: c
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [2,<return_val>,Object]
       PythonCallBinary SourceSection: [41,49]`foo(1,2)`

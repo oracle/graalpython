@@ -17,7 +17,6 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                 CallUnaryMethodNodeGen SourceSection: None
                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                   Identifier: dict
-                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 GeneratorExpressionNode SourceSection: [65,97]`k:v*2 for (k,v) in d...`
                   Name: <genexpr>
                   FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
