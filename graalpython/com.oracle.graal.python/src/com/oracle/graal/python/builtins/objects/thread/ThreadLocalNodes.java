@@ -46,6 +46,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -60,14 +61,24 @@ public abstract class ThreadLocalNodes {
                         @Cached PythonObjectFactory factory,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached CallNode callNode) {
-            PDict storage = self.getThreadLocalDict().get();
+            PDict storage = getStorage(self);
             if (storage == null) {
                 storage = factory.createDict();
-                self.getThreadLocalDict().set(storage);
+                setStorage(self, storage);
                 Object initMethod = lookup.execute(frame, self, SpecialMethodNames.__INIT__);
                 callNode.execute(frame, initMethod, self.getArgs(), self.getKeywords());
             }
             return storage;
+        }
+
+        @TruffleBoundary
+        private PDict getStorage(PThreadLocal self) {
+            return self.getThreadLocalDict().get();
+        }
+
+        @TruffleBoundary
+        private void setStorage(PThreadLocal self, PDict storage) {
+            self.getThreadLocalDict().set(storage);
         }
     }
 }
