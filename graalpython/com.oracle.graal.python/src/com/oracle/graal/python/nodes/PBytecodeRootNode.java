@@ -1178,7 +1178,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case IMPORT_FROM:
                         throw CompilerDirectives.shouldNotReachHere("import start / import from");
                     case JUMP_FORWARD:
-                        bci += oparg;
+                        bci += oparg + 2;
                         oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
                         continue;
                     case POP_JUMP_IF_FALSE:
