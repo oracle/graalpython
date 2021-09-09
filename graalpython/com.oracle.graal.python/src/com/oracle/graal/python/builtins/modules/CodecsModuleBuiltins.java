@@ -90,9 +90,11 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import static com.oracle.graal.python.nodes.BuiltinNames.ENCODE;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -827,7 +829,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile hasSearchPathProfile,
                         @Cached ConditionProfile hasTruffleEncodingProfile,
                         @Cached ConditionProfile isTupleProfile) {
-            String decoded = (String) ((PTuple) asciiDecodeNode.call(frame, encoding, PNone.NO_VALUE, PNone.NO_VALUE)).getSequenceStorage().getInternalArray()[0];
+            String decoded = (String) ((PTuple) asciiDecodeNode.call(frame, encoding, PNone.NO_VALUE)).getSequenceStorage().getInternalArray()[0];
             return lookup(frame, decoded, callMethodNode, callNode, lenNode, hasSearchPathProfile, hasTruffleEncodingProfile, isTupleProfile);
         }
 
@@ -937,7 +939,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object forget(VirtualFrame frame, PBytesLike encoding,
                         @Cached AsciiDecodeNode asciiDecodeNode) {
-            forget((String) ((PTuple) asciiDecodeNode.call(frame, encoding, PNone.NO_VALUE, PNone.NO_VALUE)).getSequenceStorage().getInternalArray()[0]);
+            forget((String) ((PTuple) asciiDecodeNode.call(frame, encoding, PNone.NO_VALUE)).getSequenceStorage().getInternalArray()[0]);
             return PNone.NONE;
         }
 
@@ -1264,12 +1266,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "unicode_internal_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors", "final"})
+    @Builtin(name = "unicode_internal_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors"})
     @GenerateNodeFactory
-    abstract static class UnicodeInternalDecodeNode extends PythonTernaryBuiltinNode {
+    abstract static class UnicodeInternalDecodeNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object encode(VirtualFrame frame, Object obj, Object errors, Object ffinal) {
+        Object encode(VirtualFrame frame, Object obj, Object errors) {
             throw raise(NotImplementedError, "unicode_internal_decode");
         }
     }
@@ -1284,13 +1286,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "raw_unicode_escape_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors", "final"})
+    @Builtin(name = "raw_unicode_escape_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors"})
     @GenerateNodeFactory
-    abstract static class RawUnicodeEscapeDecodeNode extends PythonTernaryBuiltinNode {
+    abstract static class RawUnicodeEscapeDecodeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object encode(VirtualFrame frame, Object obj, Object errors, Object ffinal,
+        Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsDecodeNode decode) {
-            return decode.call(frame, obj, "raw_unicode_escape", errors, ffinal);
+            return decode.call(frame, obj, "raw_unicode_escape", errors, true);
         }
     }
 
@@ -1304,13 +1306,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "unicode_escape_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors", "final"})
+    @Builtin(name = "unicode_escape_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors"})
     @GenerateNodeFactory
-    abstract static class UnicodeEscapeDecodeNode extends PythonTernaryBuiltinNode {
+    abstract static class UnicodeEscapeDecodeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object encode(VirtualFrame frame, Object obj, Object errors, Object ffinal,
+        Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsDecodeNode decode) {
-            return decode.call(frame, obj, "unicode_escape", errors, ffinal);
+            return decode.call(frame, obj, "unicode_escape", errors, true);
         }
     }
 
@@ -1320,17 +1322,17 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.call(frame, obj, "latin_1_encode", errors);
+            return encode.call(frame, obj, "latin_1", errors);
         }
     }
 
-    @Builtin(name = "latin_1_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors", "final"})
+    @Builtin(name = "latin_1_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors"})
     @GenerateNodeFactory
-    abstract static class Latin1EscapeDecodeNode extends PythonTernaryBuiltinNode {
+    abstract static class Latin1EscapeDecodeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object encode(VirtualFrame frame, Object obj, Object errors, Object ffinal,
+        Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsDecodeNode decode) {
-            return decode.call(frame, obj, "latin_1_decode", errors, ffinal);
+            return decode.call(frame, obj, "latin_1", errors, true);
         }
     }
 
@@ -1340,17 +1342,17 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.call(frame, obj, "ascii_encode", errors);
+            return encode.call(frame, obj, "ascii", errors);
         }
     }
 
-    @Builtin(name = "ascii_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors", "final"})
+    @Builtin(name = "ascii_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors"})
     @GenerateNodeFactory
-    abstract static class AsciiDecodeNode extends PythonTernaryBuiltinNode {
+    abstract static class AsciiDecodeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object encode(VirtualFrame frame, Object obj, Object errors, Object ffinal,
+        Object decode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsDecodeNode decode) {
-            return decode.call(frame, obj, "ascii_decode", errors, ffinal);
+            return decode.call(frame, obj, "ascii", errors, true);
         }
     }
 
@@ -1369,7 +1371,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class CharmapDecodeNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object encode(Object obj, Object errors, Object mapping) {
+        Object decode(Object obj, Object errors, Object mapping) {
             throw raise(NotImplementedError, "charmap_decode");
         }
     }
@@ -1394,12 +1396,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "mbcs_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors", "ffinaly"})
+    @Builtin(name = "mbcs_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors", "ffinal"})
     @GenerateNodeFactory
     abstract static class MBCSDecodeNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object encode(Object obj, Object errors, Object ffinaly) {
+        Object decode(Object obj, Object errors, Object ffinal) {
             throw raise(NotImplementedError, "mbcs_decode");
         }
     }
@@ -1414,32 +1416,32 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "oem_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors", "ffinaly"})
+    @Builtin(name = "oem_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "errors", "ffinal"})
     @GenerateNodeFactory
     abstract static class OEMDecodeNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object encode(Object obj, Object errors, Object ffinaly) {
+        Object decode(Object obj, Object errors, Object ffinal) {
             throw raise(NotImplementedError, "oem_decode");
         }
     }
 
-    @Builtin(name = "code_page_encode", minNumOfPositionalArgs = 1, parameterNames = {"code_page", "obj", "errors"})
+    @Builtin(name = "code_page_encode", minNumOfPositionalArgs = 1, parameterNames = {"code_page", "string", "errors"})
     @GenerateNodeFactory
     abstract static class CodePageEncodeNode extends PythonTernaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object encode(Object code_page, Object obj, Object errors) {
+        Object encode(Object code_page, Object string, Object errors) {
             throw raise(NotImplementedError, "code_page_encode");
         }
     }
 
-    @Builtin(name = "code_page_decode", minNumOfPositionalArgs = 1, parameterNames = {"code_page", "obj", "errors", "ffinaly"})
+    @Builtin(name = "code_page_decode", minNumOfPositionalArgs = 1, parameterNames = {"code_page", "string", "errors", "ffinal"})
     @GenerateNodeFactory
     abstract static class CodePageDecodeNode extends PythonQuaternaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object encode(Object code_page, Object obj, Object errors, Object ffinaly) {
+        Object decode(Object code_page, Object obj, Object errors, Object ffinal) {
             throw raise(NotImplementedError, "code_page_decode");
         }
     }
