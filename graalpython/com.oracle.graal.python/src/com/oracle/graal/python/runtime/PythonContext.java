@@ -778,7 +778,7 @@ public final class PythonContext {
         return sharedMultiprocessingData;
     }
 
-    public long spawnTruffleContext(PythonContext context, int fd, int sentinel, int[] fdsToKeep) {
+    public long spawnTruffleContext(int fd, int sentinel, int[] fdsToKeep) {
         ChildContextData data = new ChildContextData();
         if (!isChildContext()) {
             data.setParentContext(this);
