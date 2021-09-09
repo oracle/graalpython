@@ -72,12 +72,12 @@ public abstract class ThreadLocalNodes {
         }
 
         @TruffleBoundary
-        private PDict getStorage(PThreadLocal self) {
+        private static PDict getStorage(PThreadLocal self) {
             return self.getThreadLocalDict().get();
         }
 
         @TruffleBoundary
-        private void setStorage(PThreadLocal self, PDict storage) {
+        private static void setStorage(PThreadLocal self, PDict storage) {
             self.getThreadLocalDict().set(storage);
         }
     }
