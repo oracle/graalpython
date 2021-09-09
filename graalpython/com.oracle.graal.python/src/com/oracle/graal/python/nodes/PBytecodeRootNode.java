@@ -162,7 +162,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @CompilationFinal(dimensions = 1) private final String[] freevars;
     @CompilationFinal(dimensions = 1) private final String[] cellvars;
 
+    // PE-final store for blockstack effects to deal with exceptions
     @CompilationFinal(dimensions = 1) private long[] blockstackRanges = null;
+
+    // PE-final store for quickened bytecodes
+    @CompilationFinal(dimensions = 1) private final int[] extraArgs;
 
     @Children private final Node[] adoptedNodes;
     @Child private CalleeContext calleeContext = CalleeContext.create();
@@ -190,6 +194,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.signature = sign;
         this.bytecode = bc;
         this.adoptedNodes = new Node[bc.length];
+        this.extraArgs = new int[bc.length >> 1];
         this.consts = consts;
         this.names = names;
         this.varnames = varnames;
@@ -211,6 +216,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.signature = sign;
         this.bytecode = bc;
         this.adoptedNodes = new Node[bc.length];
+        this.extraArgs = new int[bc.length >> 1];
         this.consts = consts;
         this.names = names;
         this.varnames = varnames;
@@ -506,21 +512,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     case LOAD_FAST:
                         {
-                            Object value = fastlocals[oparg];
-                            if (value == null) {
-                                CompilerDirectives.transferToInterpreterAndInvalidate();
-                                bytecode[bci] = LOAD_FAST_WITH_ERROR;
-                                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
+                            PRaiseNode raiseNode = null;
+                            if (extraArgs[bci >> 1] != 0) {
+                                raiseNode = insertChildNode(() -> PRaiseNode.create(), bci);
                             }
-                            stack[++stackTop] = value;
-                        }
-                        break;
-                    case LOAD_FAST_WITH_ERROR:
-                        {
-                            PRaiseNode raiseNode = insertChildNode(() -> PRaiseNode.create(), bci);
                             Object value = fastlocals[oparg];
                             if (value == null) {
-                                throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
+                                if (extraArgs[bci >> 1] == 0) {
+                                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                                    extraArgs[bci >> 1] = 1;
+                                    throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
+                                } else {
+                                    throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
+                                }
                             }
                             stack[++stackTop] = value;
                         }
@@ -927,6 +931,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             if (oparg != 0) {
                                 stack[++stackTop] = result;
                             }
+                            int savedStackTop = extraArgs[bci >> 1];
+                            if (savedStackTop == 0) {
+                                CompilerDirectives.transferToInterpreterAndInvalidate();
+                                extraArgs[bci >> 1] = encodeStackTop(stackTop) | encodeBlockstackTop(1);
+                            } else {
+                                stackTop = decodeStackTop(savedStackTop);
+                            }
                         }
                         break;
                     case CALL_FINALLY:
@@ -941,35 +952,39 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         {
                             Object exc = stack[stackTop];
                             stack[stackTop--] = null;
+                            int savedStackTop = extraArgs[bci >> 1];
                             if (exc == null) {
-                                if (oparg == 0) {
+                                if (savedStackTop == 0) {
                                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                                    oparg = stackTop;
+                                    // don't care about blockstack top, but we want a bit set
+                                    extraArgs[bci >> 1] = encodeStackTop(stackTop) | encodeBlockstackTop(1);
+                                } else {
+                                    stackTop = decodeStackTop(savedStackTop);
                                 }
-                                stackTop = oparg;
-                                // nothing, we just fall through
+                                // nothing to do, we just fall through
                             } else if (exc instanceof Integer) {
-                                throw CompilerDirectives.shouldNotReachHere("integer jump in END_FINALLY");
-                                // if (oparg == 0) {
-                                //     CompilerDirectives.transferToInterpreterAndInvalidate();
-                                //     bytecode[bci + 1] = (byte)exc;
-                                //     assert (exc & 0xffff) == (int)exc;
-                                // }
-                                // assert oparg == (int)exc;
-                                // bci = oparg;
-                                // oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
-                                // continue;
+                                if (savedStackTop == 0) {
+                                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                                    extraArgs[bci >> 1] = encodeBCI((int)exc) | encodeStackTop(stackTop) | encodeBlockstackTop(1);
+                                    bci = (int)exc;
+                                } else {
+                                    bci = decodeBCI(savedStackTop);
+                                    stackTop = decodeStackTop(savedStackTop);
+                                }
+                                oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
+                                continue;
                             } else {
                                 // CPython expects 6 values, the current exc_info and the previous one
                                 // We usually just have placeholders, with a PException object in stackTop
                                 // first, pop the remaining two current exc_info entries
                                 stack[stackTop--] = null;
                                 stack[stackTop--] = null;
-                                if (oparg == 0) {
+                                if (savedStackTop == 0) {
                                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                                    oparg = stackTop;
+                                    extraArgs[bci >> 1] = encodeStackTop(stackTop) | encodeBlockstackTop(1);
+                                } else {
+                                    stackTop = decodeStackTop(savedStackTop);
                                 }
-                                stackTop = oparg;
                                 // throw the exception again for the next handler to run
                                 throw (AbstractTruffleException)exc;
                             }
@@ -1773,7 +1788,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final byte POP_JUMP_IF_TRUE =             115;
     private static final byte LOAD_GLOBAL =                  116;
     private static final byte SETUP_FINALLY =                122;
-    private static final byte LOAD_FAST_WITH_ERROR =         123; // Added by us
     private static final byte LOAD_FAST =                    124;
     private static final byte STORE_FAST =                   125;
     private static final byte DELETE_FAST =                  126;
