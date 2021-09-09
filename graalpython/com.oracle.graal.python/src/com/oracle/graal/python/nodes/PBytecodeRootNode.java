@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -469,11 +470,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @BytecodeInterpreterSwitch
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
     public Object executeOSR(VirtualFrame frame, int target, Object originalArgs) {
+        PythonLanguage lang = PythonLanguage.get(this);
         PythonContext context = PythonContext.get(this);
         PythonModule builtins = context.getBuiltins();
 
         Object globals = PArguments.getGlobals((Object[])originalArgs);
-        // Object locals = PArguments.getCustomLocals(frame); // TODO: deal with custom locals
+        Object locals = PArguments.getCustomLocals(frame);
         Object[] stack = (Object[])FrameUtil.getObjectSafe(frame, STACK_SLOT);
         Object[] fastlocals = (Object[])FrameUtil.getObjectSafe(frame, FAST_SLOT);
         Object[] celllocals = (Object[])FrameUtil.getObjectSafe(frame, CELL_SLOT);
@@ -1030,7 +1032,45 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case STORE_GLOBAL:
                     case DELETE_GLOBAL:
                         throw CompilerDirectives.shouldNotReachHere("global writes");
-                    case LOAD_NAME: // TODO: check custom locals first
+                    case LOAD_NAME:
+                        {
+                            String varname = names[oparg];
+                            Object result;
+                            if (locals != null) {
+                                Node helper = adoptedNodes[bci];
+                                if (helper instanceof HashingStorageLibrary) {
+                                    if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
+                                        HashingStorageLibrary lib = (HashingStorageLibrary) helper;
+                                        result = lib.getItem(((PDict) locals).getDictStorage(), varname);
+                                    } else { // generalize
+                                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                                        GetItemNode newNode = GetItemNode.create();
+                                        adoptedNodes[bci] = newNode;
+                                        result = newNode.execute(frame, locals, varname);
+                                    }
+                                } else if (helper instanceof GetItemNode) {
+                                    result = ((GetItemNode) helper).execute(frame, locals, varname);
+                                } else {
+                                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                                    assert helper == null;
+                                    if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
+                                        HashingStorageLibrary lib = HashingStorageLibrary.getFactory().createDispatched(2);
+                                        adoptedNodes[bci] = lib;
+                                        result = lib.getItem(((PDict) locals).getDictStorage(), varname);
+                                    } else {
+                                        GetItemNode newNode = GetItemNode.create();
+                                        adoptedNodes[bci] = newNode;
+                                        result = newNode.execute(frame, locals, varname);
+                                    }
+                                }
+                            }
+                            if (result == null) {
+                                ReadGlobalOrBuiltinNode read = insertChildNode((a) -> ReadGlobalOrBuiltinNode.create(a), bci + 1, varname);
+                                result = read.executeWithGlobals(frame, globals);
+                            }
+                            stack[++stackTop] = result;
+                        }
+                        break;
                     case LOAD_GLOBAL:
                         {
                             String varname = names[oparg];
