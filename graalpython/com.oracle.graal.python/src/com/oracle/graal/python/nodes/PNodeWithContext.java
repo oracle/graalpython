@@ -72,11 +72,11 @@ public abstract class PNodeWithContext extends Node {
         ExceptionUtils.printPythonLikeStackTrace();
     }
 
-    public PythonLanguage getLanguage() {
+    public final PythonLanguage getLanguage() {
         return PythonLanguage.get(this);
     }
 
-    public PythonContext getContext() {
+    public final PythonContext getContext() {
         return PythonContext.get(this);
     }
 }
