@@ -27,7 +27,6 @@ package com.oracle.graal.python.nodes.statement;
 
 import java.util.ArrayList;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -42,6 +41,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.InteropArray;
@@ -314,7 +314,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
                     ReadAttributeFromObjectNode readAttr = ReadAttributeFromObjectNode.getUncached();
 
                     for (String c : caughtClasses) {
-                        Object cls = readAttr.execute(PythonLanguage.getContext().getBuiltins(), c);
+                        Object cls = readAttr.execute(PythonContext.get(gil).getBuiltins(), c);
                         if (lib.isLazyPythonClass(cls)) {
                             if (isSubtype.execute(GetClassNode.getUncached().execute(exception), cls)) {
                                 return true;

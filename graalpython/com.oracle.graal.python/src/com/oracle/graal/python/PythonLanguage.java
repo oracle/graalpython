@@ -354,7 +354,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected CallTarget parse(ParsingRequest request) {
-        PythonContext context = getContext();
+        PythonContext context = PythonContext.get(null);
         Python3Core core = context.getCore();
         Source source = request.getSource();
         if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
@@ -386,7 +386,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (bytes.length == 0) {
                 return createCachedCallTarget(l -> new BadOPCodeNode(l), BadOPCodeNode.class);
             }
-            return PythonUtils.getOrCreateCallTarget(core.getSerializer().deserialize(bytes));
+            return PythonUtils.getOrCreateCallTarget(core.getSerializer().deserialize(core, bytes));
         }
         for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
             if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
@@ -449,7 +449,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             @Override
             @TruffleBoundary
             public Object execute(VirtualFrame frame) {
-                PythonContext context = getContext();
+                PythonContext context = PythonContext.get(callNode);
                 assert context != null;
                 if (!context.isInitialized()) {
                     context.initialize();
@@ -493,7 +493,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
             @Override
             public Object execute(VirtualFrame frame) {
-                PythonContext context = getContext();
+                PythonContext context = PythonContext.get(gilNode);
                 assert context != null && context.isInitialized();
                 PythonContext cachedCtx = cachedContext;
                 if (cachedCtx == null) {
@@ -606,18 +606,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public String getHome() {
         return getLanguageHome();
-    }
-
-    public static PythonLanguage getCurrent() {
-        return PythonLanguage.get(null);
-    }
-
-    public static PythonContext getContext() {
-        return PythonContext.get(null);
-    }
-
-    public static Python3Core getCore() {
-        return PythonContext.get(null).getCore();
     }
 
     /**

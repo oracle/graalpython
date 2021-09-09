@@ -45,10 +45,12 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -99,9 +101,11 @@ public final class PythonModule extends PythonObject {
     /**
      * Only to be used during context creation
      */
+    @TruffleBoundary
     public static PythonModule createInternal(String moduleName) {
-        PythonModule pythonModule = new PythonModule(PythonLanguage.getCurrent(), moduleName);
-        PDict dict = PythonObjectFactory.getUncached().createDictFixedStorage(pythonModule);
+        PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        PythonModule pythonModule = new PythonModule(PythonLanguage.get(null), moduleName);
+        PDict dict = factory.createDictFixedStorage(pythonModule);
         try {
             PythonObjectLibrary.getUncached().setDict(pythonModule, dict);
         } catch (UnsupportedMessageException e) {
@@ -131,10 +135,11 @@ public final class PythonModule extends PythonObject {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"self == cachedModule", "dictExists(dict)"}, assumptions = "singleContextAssumption()", limit = "1")
+        @Specialization(guards = {"self == cachedModule", "dictExists(dict)"}, assumptions = "singleContextAssumption(lib)", limit = "1")
         static PDict getConstant(PythonModule self,
                         @Cached(value = "self", weak = true) PythonModule cachedModule,
-                        @Cached(value = "self.getAttribute(DICT)", weak = true) Object dict) {
+                        @Cached(value = "self.getAttribute(DICT)", weak = true) Object dict,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") InteropLibrary lib) {
             // module.__dict__ is a read-only attribute
             return (PDict) dict;
         }

@@ -97,7 +97,7 @@ public class ParserTestBase {
     @Before
     public void setUp() {
         PythonTests.enterContext();
-        context = PythonLanguage.getContext();
+        context = PythonContext.get(null);
     }
 
     @After

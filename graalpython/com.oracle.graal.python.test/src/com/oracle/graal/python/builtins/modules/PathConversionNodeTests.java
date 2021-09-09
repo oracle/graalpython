@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.PythonLanguage.getContext;
-
 import java.math.BigInteger;
 import java.util.Collections;
 
@@ -61,6 +59,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.graal.python.util.Function;
@@ -355,6 +354,6 @@ public class PathConversionNodeTests extends ConversionNodeTests {
     }
 
     private static Object evalValue(String source) {
-        return getContext().getEnv().asGuestValue(Context.getCurrent().eval("python", source));
+        return PythonContext.get(null).getEnv().asGuestValue(Context.getCurrent().eval("python", source));
     }
 }

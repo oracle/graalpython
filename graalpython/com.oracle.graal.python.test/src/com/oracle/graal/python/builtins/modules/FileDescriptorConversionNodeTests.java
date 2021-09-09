@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.PythonLanguage.getContext;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
 
 import java.math.BigInteger;
@@ -53,6 +52,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.test.PythonTests;
 
@@ -166,6 +166,6 @@ public class FileDescriptorConversionNodeTests extends ConversionNodeTests {
     }
 
     private static Object evalValue(String source) {
-        return getContext().getEnv().asGuestValue(Context.getCurrent().eval("python", source));
+        return PythonContext.get(null).getEnv().asGuestValue(Context.getCurrent().eval("python", source));
     }
 }

@@ -178,8 +178,8 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             return getClassNode.execute(object);
         }
 
-        static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+        Assumption singleContextAssumption() {
+            return PythonLanguage.get(this).singleContextAssumption;
         }
     }
 

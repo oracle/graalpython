@@ -818,8 +818,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         @Override
         public void run() {
             try {
-                PythonLanguage language = PythonLanguage.getCurrent();
-                PythonContext pythonContext = PythonLanguage.getContext();
+                PythonContext pythonContext = PythonContext.get(null);
+                PythonLanguage language = pythonContext.getLanguage();
                 GraalHPyContext hPyContext = pythonContext.getHPyContext();
                 RootCallTarget callTarget = hPyContext.getReferenceCleanerCallTarget();
                 PDict dummyGlobals = PythonObjectFactory.getUncached().createDict();
@@ -1110,7 +1110,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         if (!isPointer()) {
             CompilerDirectives.transferToInterpreter();
             nativePointer = PCallHPyFunctionNodeGen.getUncached().call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this, new GraalHPyJNIContext(this));
-            PythonLanguage language = PythonLanguage.getCurrent();
+            PythonLanguage language = PythonLanguage.get(null);
             if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
                 loadJNIBackend();
                 if (initJNI(this, castLong(nativePointer)) != 0) {

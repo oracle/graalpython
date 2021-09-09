@@ -580,7 +580,7 @@ public final class PythonContext {
 
         /**
          * Decreases reference count for the given file descriptor.
-         * 
+         *
          * @return {@code true} if ref count was decreased, {@code false} if ref count isn't tracked
          *         anymore.
          */
@@ -831,16 +831,16 @@ public final class PythonContext {
         public void run() {
             try {
                 LOGGER.fine("starting spawned child context");
+                Source source = Source.newBuilder(PythonLanguage.ID,
+                                "from multiprocessing.spawn import spawn_truffleprocess; spawn_truffleprocess(" + fd + ", " + sentinel + ")",
+                                "<spawned-child-context>").internal(true).build();
+                CallTarget ct;
+                ct = data.parentCtx.getEnv().parsePublic(source);
                 TruffleContext ctx = builder.build();
                 data.setTruffleContext(ctx);
                 Object parent = ctx.enter(null);
                 try {
-                    Source source = Source.newBuilder(PythonLanguage.ID,
-                                    "from multiprocessing.spawn import spawn_truffleprocess; spawn_truffleprocess(" + fd + ", " + sentinel + ")",
-                                    "<spawned-child-context>").internal(true).build();
-                    CallTarget ct = PythonLanguage.getContext().getEnv().parsePublic(source);
                     data.running.countDown();
-
                     Object res = ct.call();
                     int exitCode = CastToJavaIntLossyNode.getUncached().execute(res);
                     data.setExitCode(exitCode);
@@ -1027,12 +1027,12 @@ public final class PythonContext {
 
     @TruffleBoundary
     public boolean reprEnter(Object item) {
-        return getThreadState(PythonLanguage.getCurrent()).reprEnter(item);
+        return getThreadState(language).reprEnter(item);
     }
 
     @TruffleBoundary
     public void reprLeave(Object item) {
-        getThreadState(PythonLanguage.getCurrent()).reprLeave(item);
+        getThreadState(language).reprLeave(item);
     }
 
     public long getPerfCounterStart() {

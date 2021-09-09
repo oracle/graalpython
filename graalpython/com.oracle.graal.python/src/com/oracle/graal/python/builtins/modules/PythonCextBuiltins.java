@@ -2430,7 +2430,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object doStrings(String prefix, String msg, int status) {
-            CExtCommonNodes.fatalError(this, PythonLanguage.getContext(), prefix, msg, status);
+            CExtCommonNodes.fatalError(this, PythonContext.get(this), prefix, msg, status);
             return PNone.NONE;
         }
 

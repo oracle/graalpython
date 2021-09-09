@@ -66,8 +66,8 @@ public class ConversionNodeTests {
     @Rule public ExpectedException expectedException = ExpectedException.none();
 
     protected static Object call(Object arg, ArgumentCastNodeWithRaise castNode) {
-        PythonLanguage language = PythonLanguage.getCurrent();
-        final PythonContext pythonContext = PythonLanguage.getContext();
+        PythonLanguage language = PythonLanguage.get(castNode);
+        final PythonContext pythonContext = PythonContext.get(castNode);
 
         RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new PRootNode(language) {
             @Child private CalleeContext calleeContext = CalleeContext.create();

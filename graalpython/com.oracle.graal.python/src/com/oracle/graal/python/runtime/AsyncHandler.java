@@ -243,7 +243,7 @@ public class AsyncHandler {
 
     void registerAction(Supplier<AsyncAction> actionSupplier) {
         CompilerAsserts.neverPartOfCompilation();
-        if (PythonLanguage.getContext().getOption(PythonOptions.NoAsyncActions)) {
+        if (PythonContext.get(null).getOption(PythonOptions.NoAsyncActions)) {
             return;
         }
         executorService.scheduleWithFixedDelay(new AsyncRunnable(actionSupplier), ASYNC_ACTION_DELAY, ASYNC_ACTION_DELAY, TimeUnit.MILLISECONDS);

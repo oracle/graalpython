@@ -64,9 +64,10 @@ public class PRangeTests {
     public void loopWithOnlyStop() throws UnexpectedResultException {
         PythonTests.enterContext();
         try {
-            PRange range = PythonObjectFactory.getUncached().createIntRange(10);
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            PRange range = factory.createIntRange(10);
             int index = 0;
-            TestRoot testRoot = new TestRoot(PythonLanguage.getCurrent());
+            TestRoot testRoot = new TestRoot(PythonLanguage.get(factory));
             Object iter = PythonObjectLibrary.getUncached().getIterator(range);
             GetNextNode next = GetNextNode.create();
             testRoot.doInsert(next);
@@ -91,9 +92,10 @@ public class PRangeTests {
     public void loopWithStep() throws UnexpectedResultException {
         PythonTests.enterContext();
         try {
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
             PRange range = PythonObjectFactory.getUncached().createIntRange(0, 10, 2, 5);
             int index = 0;
-            TestRoot testRoot = new TestRoot(PythonLanguage.getCurrent());
+            TestRoot testRoot = new TestRoot(PythonLanguage.get(factory));
             Object iter = PythonObjectLibrary.getUncached().getIterator(range);
             GetNextNode next = GetNextNode.create();
             testRoot.doInsert(next);

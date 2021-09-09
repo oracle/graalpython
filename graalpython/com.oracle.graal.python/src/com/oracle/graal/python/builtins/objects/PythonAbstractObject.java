@@ -175,7 +175,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     private DynamicObjectNativeWrapper nativeWrapper;
 
     public static final Assumption singleContextAssumption() {
-        return PythonLanguage.getCurrent().singleContextAssumption;
+        return PythonLanguage.get(null).singleContextAssumption;
+    }
+
+    public static final Assumption singleContextAssumption(Node node) {
+        return PythonLanguage.get(node).singleContextAssumption;
     }
 
     protected static final Shape ABSTRACT_SHAPE = Shape.newBuilder().build();
@@ -900,7 +904,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getSysModules();
+            PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE, plib))) {
@@ -933,7 +937,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getSysModules();
+            PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE, plib))) {
@@ -977,7 +981,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getSysModules();
+            PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtype.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
@@ -1009,7 +1013,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getSysModules();
+            PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
@@ -1055,7 +1059,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getSysModules();
+            PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib))) {
@@ -1119,7 +1123,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 throw UnsupportedMessageException.create();
             }
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getSysModules();
+            PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib))) {
@@ -1816,8 +1820,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
      */
     @ExportMessage
     public static class GetIteratorWithState {
-        public static ValueProfile createIterMethodProfile() {
-            if (singleContextAssumption().isValid()) {
+        public static ValueProfile createIterMethodProfile(Node node) {
+            if (singleContextAssumption(node).isValid()) {
                 return ValueProfile.createIdentityProfile();
             } else {
                 return ValueProfile.createClassProfile();
@@ -1826,9 +1830,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         @Specialization
         public static Object getIteratorWithState(PythonAbstractObject self, ThreadState state,
-                        @Cached("createIterMethodProfile()") ValueProfile iterMethodProfile,
                         @CachedLibrary("self") PythonObjectLibrary plib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                        @Cached("createIterMethodProfile(plib)") ValueProfile iterMethodProfile,
                         @Cached IteratorNodes.IsIteratorObjectNode isIteratorObjectNode,
                         @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {

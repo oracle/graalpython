@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -67,16 +67,16 @@ public final class LazyString implements PCharSequence {
      */
     @TruffleBoundary
     public static CharSequence createChecked(CharSequence left, CharSequence right, int length) {
-        assert assertChecked(left, right, length);
+        assert assertChecked(PythonContext.get(null), left, right, length);
         return new LazyString(left, right, length);
     }
 
-    private static boolean assertChecked(CharSequence left, CharSequence right, int length) {
-        assert PythonLanguage.getContext().getOption(PythonOptions.LazyStrings);
+    private static boolean assertChecked(PythonContext context, CharSequence left, CharSequence right, int length) {
+        assert context.getOption(PythonOptions.LazyStrings);
         assert (PGuards.isString(left) || left instanceof LazyString) && (PGuards.isString(right) || right instanceof LazyString);
         assert length == left.length() + right.length();
         assert left.length() > 0 && right.length() > 0;
-        assert length >= PythonLanguage.getContext().getOption(PythonOptions.MinLazyStringLength);
+        assert length >= context.getOption(PythonOptions.MinLazyStringLength);
         return true;
     }
 
@@ -88,7 +88,7 @@ public final class LazyString implements PCharSequence {
      */
     @TruffleBoundary
     public static CharSequence createCheckedShort(CharSequence left, CharSequence right, int length, int minLazyStringLength) {
-        assertChecked(left, right, length);
+        assertChecked(PythonContext.get(null), left, right, length);
         final int tinyLimit = 1;
         final int appendToLeafLimit = minLazyStringLength / 2;
         if (left instanceof LazyString && right instanceof String && right.length() <= tinyLimit) {

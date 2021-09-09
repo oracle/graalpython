@@ -294,7 +294,7 @@ public class PythonTests {
     public static RootNode getParseResult(com.oracle.truffle.api.source.Source source, PrintStream out, PrintStream err) {
         enterContext();
         try {
-            PythonContext ctx = PythonLanguage.getContext();
+            PythonContext ctx = PythonContext.get(null);
             ctx.setOut(out);
             ctx.setErr(err);
             return (RootNode) ctx.getCore().getParser().parse(ParserMode.File, 0, ctx.getCore(), source, null, null);

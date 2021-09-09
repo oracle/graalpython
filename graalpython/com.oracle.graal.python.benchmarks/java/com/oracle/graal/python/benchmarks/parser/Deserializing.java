@@ -76,7 +76,7 @@ public class Deserializing extends ParserBenchRunner {
     public void execute(Blackhole bh) {
         for (int n = 0; n < parsingCycles; n++) {
             for (Item serialization : serializations) {
-                bh.consume(parser.deserialize(serialization.data));
+                bh.consume(parser.deserialize(core, serialization.data));
             }
         }
     }

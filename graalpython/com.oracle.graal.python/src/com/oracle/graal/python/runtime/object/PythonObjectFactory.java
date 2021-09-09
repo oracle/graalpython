@@ -229,8 +229,8 @@ public abstract class PythonObjectFactory extends Node {
         return PythonContext.get(this).getAllocationReporter();
     }
 
-    public static final PythonLanguage getLanguage() {
-        return PythonLanguage.getCurrent();
+    public final PythonLanguage getLanguage() {
+        return PythonLanguage.get(this);
     }
 
     public final Shape getShape(PythonBuiltinClassType cls) {

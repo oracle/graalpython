@@ -353,8 +353,8 @@ public class NativeLibrary {
             }
         }
 
-        protected static Object getFunction(NativeLibrary lib, NativeFunction fun) {
-            return lib.getFunction(PythonLanguage.getContext(), fun);
+        protected Object getFunction(NativeLibrary lib, NativeFunction fun) {
+            return lib.getFunction(PythonContext.get(this), fun);
         }
 
         @TruffleBoundary

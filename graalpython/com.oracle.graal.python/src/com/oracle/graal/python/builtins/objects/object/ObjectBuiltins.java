@@ -130,6 +130,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -246,10 +247,10 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile overridesNew,
                         @Cached ConditionProfile overridesInit,
                         @Cached("create(Init)") LookupCallableSlotInMRONode lookupInit,
-                        @Cached("createLookupProfile()") ValueProfile profileInit,
+                        @Cached("createLookupProfile(getClassNode)") ValueProfile profileInit,
                         @Cached("createClassProfile()") ValueProfile profileInitFactory,
                         @Cached("create(New)") LookupCallableSlotInMRONode lookupNew,
-                        @Cached("createLookupProfile()") ValueProfile profileNew,
+                        @Cached("createLookupProfile(getClassNode)") ValueProfile profileNew,
                         @Cached("createClassProfile()") ValueProfile profileNewFactory) {
             if (arguments.length != 0 || keywords.length != 0) {
                 Object type = getClassNode.execute(self);
@@ -264,8 +265,8 @@ public class ObjectBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        protected static ValueProfile createLookupProfile() {
-            if (PythonLanguage.getCurrent().singleContextAssumption.isValid()) {
+        protected static ValueProfile createLookupProfile(Node node) {
+            if (PythonLanguage.get(node).singleContextAssumption.isValid()) {
                 return ValueProfile.createIdentityProfile();
             } else {
                 return ValueProfile.createClassProfile();

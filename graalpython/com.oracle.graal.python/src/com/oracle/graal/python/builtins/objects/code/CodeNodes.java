@@ -121,7 +121,7 @@ public abstract class CodeNodes {
             if (codedata.length == 0) {
                 ct = language.createCachedCallTarget(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, name);
             } else {
-                RootNode rootNode = context.getCore().getSerializer().deserialize(codedata, toStringArray(cellvars), toStringArray(freevars));
+                RootNode rootNode = context.getCore().getSerializer().deserialize(context.getCore(), codedata, toStringArray(cellvars), toStringArray(freevars));
                 ct = PythonUtils.getOrCreateCallTarget(rootNode);
                 if (filename != null) {
                     context.setCodeFilename(ct, filename);
@@ -133,9 +133,10 @@ public abstract class CodeNodes {
         }
 
         @TruffleBoundary
-        public static PCode createCode(PythonLanguage language, PythonContext context, int flags, byte[] codedata, String filename, int firstlineno, byte[] lnotab) {
+        public static PCode createCode(PythonContext context, int flags, byte[] codedata, String filename, int firstlineno, byte[] lnotab) {
             boolean isNotAModule = (flags & PCode.FLAG_MODULE) == 0;
 
+            PythonLanguage language = context.getLanguage();
             Supplier<CallTarget> createCode = () -> {
                 ByteSequence bytes = ByteSequence.create(codedata);
                 Source source = Source.newBuilder(PythonLanguage.ID, bytes, filename).mimeType(PythonLanguage.MIME_TYPE_BYTECODE).cached(!language.singleContextAssumption.isValid()).build();

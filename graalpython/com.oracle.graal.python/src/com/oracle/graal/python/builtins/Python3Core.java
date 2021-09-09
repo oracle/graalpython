@@ -608,11 +608,11 @@ public final class Python3Core implements ParserErrorCallback {
         this.coreFiles = initializeCoreFiles();
     }
 
-    @Override
     public PythonLanguage getLanguage() {
         return singletonContext.getLanguage();
     }
 
+    @Override
     public PythonContext getContext() {
         return singletonContext;
     }
@@ -728,18 +728,6 @@ public final class Python3Core implements ParserErrorCallback {
             throw new IllegalStateException("__import__ func cannot be registered more than once");
         }
         importFunc = func;
-    }
-
-    @Override
-    @TruffleBoundary
-    public PException raise(PythonBuiltinClassType type, String format, Object... args) {
-        PBaseException instance;
-        if (format != null) {
-            instance = objectFactory.createBaseException(type, format, args);
-        } else {
-            instance = objectFactory.createBaseException(type);
-        }
-        throw PException.fromObject(instance, null, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
     }
 
     @Override

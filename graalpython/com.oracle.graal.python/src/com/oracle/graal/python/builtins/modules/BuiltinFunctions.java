@@ -2118,8 +2118,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class BuildClassNode extends PythonVarargsBuiltinNode {
         @TruffleBoundary
         private static Object buildJavaClass(Object func, String name, Object base) {
-            Object module = PythonLanguage.getContext().getCore().lookupBuiltinModule(BuiltinNames.__GRAALPYTHON__);
-            Object buildFunction = PythonObjectLibrary.getUncached().lookupAttribute(module, null, "build_java_class");
+            PythonObjectLibrary factory = PythonObjectLibrary.getUncached();
+            // uncached PythonContext get, since this code path is slow in any case
+            Object module = PythonContext.get(null).getCore().lookupBuiltinModule(BuiltinNames.__GRAALPYTHON__);
+            Object buildFunction = factory.lookupAttribute(module, null, "build_java_class");
             return CallNode.getUncached().execute(buildFunction, func, name, base);
         }
 
@@ -2155,7 +2157,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object[] basesArray = Arrays.copyOfRange(arguments, 1, arguments.length);
             PTuple origBases = factory.createTuple(basesArray);
 
-            Env env = PythonLanguage.getContext().getEnv();
+            Env env = PythonContext.get(calculateMetaClass).getEnv();
             if (arguments.length == 2 && env.isHostObject(arguments[1]) && env.asHostObject(arguments[1]) instanceof Class<?>) {
                 // we want to subclass a Java class
                 return buildJavaClass(function, name, arguments[1]);
@@ -2189,7 +2191,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     if (meta == null) {
                         // if there are no bases, use type:
                         if (bases.getSequenceStorage().length() == 0) {
-                            meta = PythonLanguage.getContext().getCore().lookupType(PythonBuiltinClassType.PythonClass);
+                            meta = PythonContext.get(update).getCore().lookupType(PythonBuiltinClassType.PythonClass);
                         } else {
                             // else get the type of the first base
                             meta = getClass.execute(bases.getSequenceStorage().getItemNormalized(0));

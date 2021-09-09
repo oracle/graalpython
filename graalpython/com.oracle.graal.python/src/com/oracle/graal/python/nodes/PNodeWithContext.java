@@ -54,8 +54,7 @@ public abstract class PNodeWithContext extends Node {
 
     protected static Assumption singleContextAssumption() {
         CompilerAsserts.neverPartOfCompilation("the singleContextAssumption should only be retrieved in the interpreter");
-        PythonLanguage language = PythonLanguage.getCurrent();
-        return language.singleContextAssumption;
+        return PythonLanguage.get(null).singleContextAssumption;
     }
 
     /**

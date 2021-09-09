@@ -378,22 +378,22 @@ public final class PythonOptions {
 
     public static int getAttributeAccessInlineCacheMaxDepth() {
         CompilerAsserts.neverPartOfCompilation();
-        return PythonLanguage.getCurrent().getEngineOption(AttributeAccessInlineCacheMaxDepth);
+        return PythonLanguage.get(null).getEngineOption(AttributeAccessInlineCacheMaxDepth);
     }
 
     public static int getCallSiteInlineCacheMaxDepth() {
         CompilerAsserts.neverPartOfCompilation();
-        return PythonLanguage.getCurrent().getEngineOption(CallSiteInlineCacheMaxDepth);
+        return PythonLanguage.get(null).getEngineOption(CallSiteInlineCacheMaxDepth);
     }
 
     public static int getVariableArgumentInlineCacheLimit() {
         CompilerAsserts.neverPartOfCompilation();
-        return PythonLanguage.getCurrent().getEngineOption(VariableArgumentInlineCacheLimit);
+        return PythonLanguage.get(null).getEngineOption(VariableArgumentInlineCacheLimit);
     }
 
     public static int getNodeRecursionLimit() {
         CompilerAsserts.neverPartOfCompilation();
-        int result = PythonLanguage.getCurrent().getEngineOption(NodeRecursionLimit);
+        int result = PythonLanguage.get(null).getEngineOption(NodeRecursionLimit);
         // So that we can use byte counters and also Byte.MAX_VALUE as special placeholder
         assert result < Byte.MAX_VALUE;
         return result;

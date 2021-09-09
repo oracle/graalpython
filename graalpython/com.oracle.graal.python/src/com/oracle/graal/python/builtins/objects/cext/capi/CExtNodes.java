@@ -3154,8 +3154,8 @@ public abstract class CExtNodes {
             return lib.isIdentical(left, right, lib);
         }
 
-        static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+        Assumption singleContextAssumption() {
+            return PythonLanguage.get(this).singleContextAssumption;
         }
 
         static Assumption getHandleValidAssumption(PythonNativeWrapper nativeWrapper) {

@@ -131,7 +131,7 @@ abstract class CallSpecialMethodNode extends Node {
     }
 
     protected Assumption singleContextAssumption() {
-        return PythonLanguage.getCurrent().singleContextAssumption;
+        return PythonLanguage.get(this).singleContextAssumption;
     }
 
     protected static boolean frameIsUnused(PythonBuiltinBaseNode builtinNode) {

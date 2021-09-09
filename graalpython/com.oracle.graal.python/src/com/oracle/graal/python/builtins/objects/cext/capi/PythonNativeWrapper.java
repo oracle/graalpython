@@ -121,7 +121,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     }
 
     protected static Assumption singleContextAssumption() {
-        return PythonLanguage.getCurrent().singleContextAssumption;
+        return PythonLanguage.get(null).singleContextAssumption;
     }
 
     @ExportMessage(name = "getDelegate")
