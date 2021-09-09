@@ -787,7 +787,7 @@ public final class PythonContext {
         }
 
         Builder builder = data.parentCtx.env.newContextBuilder().config(PythonContext.CHILD_CONTEXT_DATA, data);
-        Thread thread = data.parentCtx.env.createThread(new ChildContextThread(context, fd, sentinel, data, builder));
+        Thread thread = data.parentCtx.env.createThread(new ChildContextThread(fd, sentinel, data, builder));
 
         // TODO always force java posix in spawned
         long tid = thread.getId();
@@ -819,30 +819,28 @@ public final class PythonContext {
         private final ChildContextData data;
         private final Builder builder;
         private final int sentinel;
-        private final PythonContext context;
 
-        public ChildContextThread(PythonContext context, int fd, int sentinel, ChildContextData data, Builder builder) {
+        public ChildContextThread(int fd, int sentinel, ChildContextData data, Builder builder) {
             this.fd = fd;
             this.data = data;
             this.builder = builder;
             this.sentinel = sentinel;
-            this.context = context;
         }
 
         @Override
         public void run() {
             try {
                 LOGGER.fine("starting spawned child context");
+                Source source = Source.newBuilder(PythonLanguage.ID,
+                                "from multiprocessing.spawn import spawn_truffleprocess; spawn_truffleprocess(" + fd + ", " + sentinel + ")",
+                                "<spawned-child-context>").internal(true).build();
+                CallTarget ct;
+                ct = data.parentCtx.getEnv().parsePublic(source);
                 TruffleContext ctx = builder.build();
                 data.setTruffleContext(ctx);
                 Object parent = ctx.enter(null);
                 try {
-                    Source source = Source.newBuilder(PythonLanguage.ID,
-                                    "from multiprocessing.spawn import spawn_truffleprocess; spawn_truffleprocess(" + fd + ", " + sentinel + ")",
-                                    "<spawned-child-context>").internal(true).build();
-                    CallTarget ct = context.getEnv().parsePublic(source);
                     data.running.countDown();
-
                     Object res = ct.call();
                     int exitCode = CastToJavaIntLossyNode.getUncached().execute(res);
                     data.setExitCode(exitCode);
