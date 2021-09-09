@@ -70,8 +70,7 @@ public abstract class DictConcatNode extends ExpressionNode {
     @Specialization
     public Object concat(VirtualFrame frame,
                     @Cached ConditionProfile hasFrame,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary firstlib,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary otherlib) {
+                    @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
         // TODO support mappings in general
         PDict first = null;
         PDict other;
@@ -80,19 +79,19 @@ public abstract class DictConcatNode extends ExpressionNode {
                 first = expectDict(n.execute(frame));
             } else {
                 other = expectDict(n.execute(frame));
-                addAllToDict(frame, first, other, hasFrame, firstlib, otherlib);
+                addAllToDict(frame, first, other, hasFrame, hlib);
             }
         }
         return first;
     }
 
     private static void addAllToDict(VirtualFrame frame, PDict dict, PDict other, ConditionProfile hasFrame,
-                    HashingStorageLibrary firstlib, HashingStorageLibrary otherlib) {
+                    HashingStorageLibrary hlib) {
         HashingStorage dictStorage = dict.getDictStorage();
         HashingStorage otherStorage = other.getDictStorage();
-        for (Object key : otherlib.keys(otherStorage)) {
-            Object value = otherlib.getItemWithFrame(otherStorage, key, hasFrame, frame);
-            dictStorage = firstlib.setItemWithFrame(dictStorage, key, value, hasFrame, frame);
+        for (Object key : hlib.keys(otherStorage)) {
+            Object value = hlib.getItemWithFrame(otherStorage, key, hasFrame, frame);
+            dictStorage = hlib.setItemWithFrame(dictStorage, key, value, hasFrame, frame);
         }
         dict.setDictStorage(dictStorage);
     }
@@ -107,11 +106,7 @@ public abstract class DictConcatNode extends ExpressionNode {
     protected final PRaiseNode getRaiseNode() {
         if (raiseNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            if (isAdoptable()) {
-                raiseNode = insert(PRaiseNode.create());
-            } else {
-                raiseNode = PRaiseNode.getUncached();
-            }
+            raiseNode = insert(PRaiseNode.create());
         }
         return raiseNode;
     }

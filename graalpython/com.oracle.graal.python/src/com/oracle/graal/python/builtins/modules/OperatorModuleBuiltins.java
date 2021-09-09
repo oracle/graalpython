@@ -209,7 +209,7 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
 
         // Comparison that's safe against timing attacks
         @TruffleBoundary
-        private boolean tscmp(String leftIn, String right) {
+        private static boolean tscmp(String leftIn, String right) {
             String left = leftIn;
             int result = 0;
             if (left.length() != right.length()) {
@@ -223,7 +223,7 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private boolean tscmp(byte[] leftIn, byte[] right) {
+        private static boolean tscmp(byte[] leftIn, byte[] right) {
             byte[] left = leftIn;
             int result = 0;
             if (left.length != right.length) {
