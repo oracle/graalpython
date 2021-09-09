@@ -42,35 +42,32 @@ package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@ImportStatic(PGuards.class)
 @GenerateUncached
-public abstract class GetDictNode extends PNodeWithContext {
+public abstract class GetDictFromGlobalsNode extends PNodeWithContext {
 
-    public abstract PDict execute(Object o);
+    public abstract PDict execute(Object globals);
 
     @Specialization
-    PDict dict(PDict self) {
-        return self;
+    PDict dict(PDict globals) {
+        return globals;
     }
 
     @Specialization
-    PDict dict(PythonModule self,
+    PDict dict(PythonModule globals,
                     @Cached GetOrCreateDictNode getDict) {
-        return getDict.execute(self);
+        return getDict.execute(globals);
     }
 
-    public static GetDictNode create() {
-        return GetDictNodeGen.create();
+    public static GetDictFromGlobalsNode create() {
+        return GetDictFromGlobalsNodeGen.create();
     }
 
-    public static GetDictNode getUncached() {
-        return GetDictNodeGen.getUncached();
+    public static GetDictFromGlobalsNode getUncached() {
+        return GetDictFromGlobalsNodeGen.getUncached();
     }
 }

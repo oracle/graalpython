@@ -48,6 +48,7 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltinsClinicProviders.WarnBuiltinNodeClinicProviderGen;
@@ -76,7 +77,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetDictNode;
+import com.oracle.graal.python.nodes.object.GetDictFromGlobalsNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -84,7 +86,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
@@ -169,7 +170,8 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Child PyObjectIsTrueNode isTrueNode;
         @Child PythonObjectFactory factory;
         @Child IsSubtypeNode isSubtype;
-        @Child GetDictNode getDictNode;
+        @Child GetOrCreateDictNode getDictNode;
+        @Child GetDictFromGlobalsNode getDictFromGlobalsNode;
         @Child ReadCallerFrameNode readCallerNode;
 
         static WarningsModuleNode create() {
@@ -281,21 +283,18 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             if (getDictNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 reportPolymorphicSpecialize();
-                getDictNode = insert(GetDictNode.create());
+                getDictNode = insert(GetOrCreateDictNode.create());
             }
             return getDictNode.execute(getContext().getCore().lookupBuiltinModule("sys"));
         }
 
         private Object getGlobalsDict(Object globals) {
-            if (globals instanceof PDict) {
-                return globals;
-            }
-            if (getDictNode == null) {
+            if (getDictFromGlobalsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 reportPolymorphicSpecialize();
-                getDictNode = insert(GetDictNode.create());
+                getDictFromGlobalsNode = insert(GetDictFromGlobalsNode.create());
             }
-            return getDictNode.execute(globals);
+            return getDictFromGlobalsNode.execute(globals);
         }
 
         private PFrame getCallerFrame(VirtualFrame frame, int stackLevel) {

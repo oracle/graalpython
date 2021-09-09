@@ -44,7 +44,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.object.GetDictNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
@@ -73,7 +73,7 @@ public class ImportStarNode extends AbstractImportNode {
     @Child private PyObjectSizeNode sizeNode;
     @Child private PythonObjectLibrary pol;
     @Child private PyObjectGetAttr getAllNode;
-    @Child private GetDictNode getDictNode;
+    @Child private GetOrCreateDictNode getDictNode;
 
     @Child private IsBuiltinClassProfile isAttributeErrorProfile;
     @Child private IsBuiltinClassProfile isStopIterationProfile;
@@ -239,10 +239,10 @@ public class ImportStarNode extends AbstractImportNode {
         return pol;
     }
 
-    private GetDictNode ensureGetDictNode() {
+    private GetOrCreateDictNode ensureGetDictNode() {
         if (getDictNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getDictNode = insert(GetDictNode.create());
+            getDictNode = insert(GetOrCreateDictNode.create());
         }
         return getDictNode;
     }
