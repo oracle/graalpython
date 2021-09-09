@@ -1438,20 +1438,18 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     blockstackRanges = new long[0];
                 }
                 long blockstackThumbprint = findHandler(stackTop, stack, blockstack, blockstackTop, bci);
-
+                CompilerAsserts.partialEvaluationConstant(blockstackThumbprint);
                 // now execute what the thumbprint tells us
                 int stackTopAfterExcepts = decodeExceptBlockStackTop(blockstackThumbprint);
                 unwindExceptHandler(stack, stackTop, stackTopAfterExcepts);
                 int stackTopAfterFinally = decodeFinallyBlockStackTop(blockstackThumbprint);
                 unwindBlock(stack, stackTopAfterExcepts, stackTopAfterFinally);
                 blockstackTop = decodeNewExceptBlockIndex(blockstackTop);
-                blockstack[blockstackTop] = encodeBlockTypeExcept() | encodeStackTop(stackTopAfterFinally);
-                int handlerBCI = decodeHandlerBCI(blockstackThumbprint);
 
-                CompilerAsserts.partialEvaluationConstant(handlerBCI);
-                CompilerAsserts.partialEvaluationConstant(blockstackTop);
+                if (blockstackTop < MAXBLOCKS) {
+                    blockstack[blockstackTop] = encodeBlockTypeExcept() | encodeStackTop(stackTopAfterFinally);
+                    int handlerBCI = decodeHandlerBCI(blockstackThumbprint);
 
-                if (handlerBCI != 0) {
                     // push the exception that is being handled
                     // would use GetCaughtExceptionNode to reify the currently handled exception.
                     // but we don't want to do that if it is not needed
@@ -1467,6 +1465,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
                     continue;
                 } else {
+                    // didn't find a finally block, we're done
                     throw e;
                 }
             } catch (AbstractTruffleException | StackOverflowError e) {
