@@ -426,11 +426,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private static int decodeBCI(int target) {
-        return (target >> 16) & 0xffff; // unsigned
+        return (target >>> 16) & 0xffff; // unsigned
     }
 
     private static int decodeStackTop(int target) {
-        return ((target >> 4) & 0xfff) - 1;
+        return ((target >>> 4) & 0xfff) - 1;
     }
 
     private static int decodeBlockstackTop(int target) {
@@ -1531,14 +1531,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 CompilerAsserts.partialEvaluationConstant(blockstackThumbprint);
                 // now execute what the thumbprint tells us
                 int stackTopAfterExcepts = decodeExceptBlockStackTop(blockstackThumbprint);
-                unwindExceptHandler(stack, stackTop, stackTopAfterExcepts);
-                int stackTopAfterFinally = decodeFinallyBlockStackTop(blockstackThumbprint);
-                unwindBlock(stack, stackTopAfterExcepts, stackTopAfterFinally);
-                blockstackTop = decodeNewExceptBlockIndex(blockstackTop);
+                stackTop = unwindExceptHandler(stack, stackTop, stackTopAfterExcepts);
+                int stackTopAfterFinally = decodeStackTop((int) blockstackThumbprint);
+                stackTop = unwindBlock(stack, stackTop, stackTopAfterFinally);
+                blockstackTop = decodeBlockstackTop((int) blockstackThumbprint);
+                int handlerBCI = decodeBCI((int) blockstackThumbprint);
 
-                if (blockstackTop >= 0) {
-                    blockstack[blockstackTop] = encodeBlockTypeExcept() | encodeStackTop(stackTopAfterFinally);
-                    int handlerBCI = decodeHandlerBCI(blockstackThumbprint);
+                if (handlerBCI > 0) {
+                    // handlerBCI cannot be 0, since +2 is always addeed to the jump target of the
+                    // finally block
+                    assert blockstackTop >= 0 && blockstackTop < MAXBLOCKS;
+                    blockstack[blockstackTop] = encodeBlockTypeExcept() | encodeStackTop(stackTop);
 
                     // push the exception that is being handled
                     // would use GetCaughtExceptionNode to reify the currently handled exception.
@@ -1619,9 +1622,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
         }
         long currentThumbprint = encodeExceptBlockStackTop(stackTopAfterExceptUnwinding) |
-            encodeFinallyBlockStackTop(stackTopAfterFinally) |
-            encodeNewExceptBlockIndex(newExceptBlockIndex) |
-            encodeHandlerBCI(handlerBCI);
+            encodeStackTop(stackTopAfterFinally) |
+            encodeBlockstackTop(newExceptBlockIndex) |
+            encodeBCI(handlerBCI);
 
         int knownIndex = -1;
         for (int i = 0; i < blockstackRanges.length; i += 3) {
@@ -1675,36 +1678,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return currentThumbprint;
     }
 
+    // Encoding for blockstack thumbprints is basically like for the target (since it is a target),
+    // but in addition there's the stackTop for any except blocks on top.
     private static final long encodeExceptBlockStackTop(int top) {
-        return (long)(top + 1) << 48;
-    }
-
-    private static final long encodeFinallyBlockStackTop(int top) {
-        return (long)(top + 1) << 32;
-    }
-
-    private static final long encodeNewExceptBlockIndex(int i) {
-        return (long)(i + 1) << 16;
-    }
-
-    private static final long encodeHandlerBCI(int bci) {
-        return (long)bci;
+        return (long)encodeStackTop(top) << 32;
     }
 
     private static final int decodeExceptBlockStackTop(long thumbprint) {
-        return (int)((thumbprint >> 48) & 0xffff) - 1;
-    }
-
-    private static final int decodeFinallyBlockStackTop(long thumbprint) {
-        return (int)((thumbprint >> 32) & 0xffff) - 1;
-    }
-
-    private static final int decodeNewExceptBlockIndex(long thumbprint) {
-        return (int)((thumbprint >> 16) & 0xff) - 1;
-    }
-
-    private static final int decodeHandlerBCI(long thumbprint) {
-        return (int)thumbprint & 0xffff;
+        return decodeStackTop((int)(thumbprint >>> 32));
     }
 
     /**
