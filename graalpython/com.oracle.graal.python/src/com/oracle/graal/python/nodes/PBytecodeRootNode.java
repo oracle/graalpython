@@ -496,6 +496,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         CompilerAsserts.partialEvaluationConstant(oparg);
 
         while (true) {
+            // System.out.println(java.util.Arrays.toString(stack));
+            // System.out.println(bci);
+
             final byte bc = bytecode[bci];
 
             CompilerAsserts.partialEvaluationConstant(bc);
