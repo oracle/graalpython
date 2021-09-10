@@ -477,7 +477,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PythonModule builtins = context.getBuiltins();
 
         Object globals = PArguments.getGlobals((Object[])originalArgs);
-        Object locals = PArguments.getCustomLocals(frame);
+        Object locals = PArguments.getSpecialArgument(frame);
         Object[] stack = (Object[])FrameUtil.getObjectSafe(frame, STACK_SLOT);
         Object[] fastlocals = (Object[])FrameUtil.getObjectSafe(frame, FAST_SLOT);
         Object[] celllocals = (Object[])FrameUtil.getObjectSafe(frame, CELL_SLOT);
