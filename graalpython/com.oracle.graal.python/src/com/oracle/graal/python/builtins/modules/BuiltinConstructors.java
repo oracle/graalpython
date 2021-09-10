@@ -189,6 +189,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatFromString;
+import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
@@ -3189,29 +3190,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "mappingproxy", constructsClass = PythonBuiltinClassType.PMappingproxy, isPublic = false, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
-        @Specialization(guards = "isMapping(obj, lib)", limit = "1")
+        @Specialization
         Object doMapping(Object klass, PythonObject obj,
-                        @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return factory().createMappingproxy(klass, obj);
+                        @Cached PyMappingCheckNode mappingCheckNode) {
+            if (mappingCheckNode.execute(obj)) {
+                return factory().createMappingproxy(klass, obj);
+            }
+            throw raise(TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);
         }
 
         @Specialization(guards = "isNoValue(none)")
         @SuppressWarnings("unused")
         Object doMissing(Object klass, PNone none) {
             throw raise(TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_POS, "mappingproxy()", "mapping", 1);
-        }
-
-        @Specialization(guards = {"!isMapping(obj, lib)", "!isNoValue(obj)"}, limit = "1")
-        Object doInvalid(@SuppressWarnings("unused") Object klass, Object obj,
-                        @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib) {
-            throw raise(TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);
-        }
-
-        protected static boolean isMapping(Object o, PythonObjectLibrary library) {
-            if (o instanceof PList || o instanceof PTuple) {
-                return false;
-            }
-            return library.isMapping(o);
         }
     }
 

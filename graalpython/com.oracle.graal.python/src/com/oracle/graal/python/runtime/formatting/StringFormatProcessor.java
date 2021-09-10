@@ -58,11 +58,6 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
         return formatText.substring(start, end);
     }
 
-    @Override
-    protected boolean useAsMapping(Object args1, Object lazyClass) {
-        return !isString(args1, lazyClass) && isMapping(args1);
-    }
-
     private static boolean isOneCharacter(String str) {
         return str.length() == 1 || (str.length() == 2 && str.codePointCount(0, 2) == 1);
     }

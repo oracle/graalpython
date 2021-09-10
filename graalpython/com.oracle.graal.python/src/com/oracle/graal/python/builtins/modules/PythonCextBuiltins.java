@@ -222,6 +222,7 @@ import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
+import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -233,7 +234,6 @@ import com.oracle.graal.python.nodes.argument.CreateArgumentsNode.CreateAndCheck
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
-import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -2187,29 +2187,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PySequence_Check", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PySequence_Check extends PythonUnaryBuiltinNode {
-        @Child private HasInheritedAttributeNode hasInheritedAttrNode;
-
-        @Specialization(guards = "isPSequence(object)")
-        int doSequence(@SuppressWarnings("unused") Object object) {
-            return 1;
-        }
-
         @Specialization
-        int doDict(@SuppressWarnings("unused") PDict object) {
-            return 0;
-        }
-
-        @Fallback
-        int doGeneric(Object object) {
-            if (hasInheritedAttrNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                hasInheritedAttrNode = insert(HasInheritedAttributeNode.create(__GETITEM__));
-            }
-            return hasInheritedAttrNode.execute(object) ? 1 : 0;
-        }
-
-        protected static boolean isPSequence(Object object) {
-            return object instanceof PList || object instanceof PTuple;
+        boolean check(Object object,
+                        @Cached PySequenceCheckNode check) {
+            return check.execute(object);
         }
     }
 
@@ -2480,17 +2461,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
             CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
             CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
             decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
-        }
-    }
-
-    @Builtin(name = "PyTruffle_IsSequence", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyTruffleIsSequence extends PythonUnaryBuiltinNode {
-
-        @Specialization(limit = "1")
-        static boolean doGeneric(Object object,
-                        @CachedLibrary("object") PythonObjectLibrary dataModelLibrary) {
-            return dataModelLibrary.isSequence(object);
         }
     }
 

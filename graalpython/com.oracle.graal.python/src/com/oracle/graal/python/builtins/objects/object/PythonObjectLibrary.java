@@ -615,33 +615,6 @@ public abstract class PythonObjectLibrary extends Library {
     public abstract Object lookupAndCallRegularMethodWithState(Object receiver, ThreadState state, String methodName, Object... arguments);
 
     /**
-     * Checks whether the receiver is a Python sequence. As described in the
-     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
-     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
-     * Containers</a>
-     *
-     * @param receiver the receiver Object
-     * @return True if object is a Python sequence object
-     */
-    public boolean isSequence(Object receiver) {
-        return lookupAttributeOnType(receiver, SpecialMethodNames.__LEN__) != PNone.NO_VALUE &&
-                        lookupAttributeOnType(receiver, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE;
-    }
-
-    /**
-     * Checks whether the receiver is a Python mapping. This message is supposed to be an equivalent
-     * of CPython's {@code PyCheck_Mapping}. Note that such object does not have to conform to the
-     * definition of mapping as described in
-     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a>.
-     *
-     * @param receiver the receiver Object
-     * @return True if object is a Python mapping object
-     */
-    public boolean isMapping(Object receiver) {
-        return lookupAttributeOnType(receiver, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE;
-    }
-
-    /**
      * Checks whether the reciever is a buffer, e.g. bytes-like, object storage.
      *
      * @return true if the receiver is a buffer, false otherwise.

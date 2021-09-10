@@ -68,18 +68,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Object.class)
 final class DefaultPythonObjectExports {
     @ExportMessage
-    static boolean isSequence(Object receiver,
-                    @CachedLibrary("receiver") InteropLibrary interopLib) {
-        return interopLib.hasArrayElements(receiver);
-    }
-
-    @ExportMessage
-    static boolean isMapping(Object receiver,
-                    @CachedLibrary("receiver") InteropLibrary interopLib) {
-        return interopLib.hasMembers(receiver);
-    }
-
-    @ExportMessage
     static boolean isSame(Object receiver, Object other,
                     @CachedLibrary("receiver") InteropLibrary receiverLib,
                     @CachedLibrary(limit = "3") InteropLibrary otherLib) {

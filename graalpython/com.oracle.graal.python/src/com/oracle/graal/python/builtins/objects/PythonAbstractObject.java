@@ -43,9 +43,7 @@ package com.oracle.graal.python.builtins.objects;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.FILENO;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
@@ -100,8 +98,11 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
+import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -114,8 +115,8 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
@@ -215,21 +216,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         nativeWrapper = null;
     }
 
-    /**
-     * Checks if the object is a Mapping as described in the
-     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a>. Mappings
-     * are treated differently to other containers in some interop messages.
-     */
-    private static boolean isAbstractMapping(Object receiver, PythonObjectLibrary lib) {
-        return lib.isSequence(receiver) && lib.lookupAttribute(receiver, null, KEYS) != PNone.NO_VALUE && //
-                        lib.lookupAttribute(receiver, null, ITEMS) != PNone.NO_VALUE && //
-                        lib.lookupAttribute(receiver, null, VALUES) != PNone.NO_VALUE;
-    }
-
-    private boolean isAbstractMapping(PythonObjectLibrary thisLib) {
-        return isAbstractMapping(this, thisLib);
-    }
-
     @ExportMessage
     public void writeMember(String key, Object value,
                     @Cached PInteropSetAttributeNode setAttributeNode,
@@ -267,11 +253,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean hasArrayElements(
-                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
+                    @Cached PySequenceCheckNode check,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return dataModelLibrary.isSequence(this) && !isAbstractMapping(dataModelLibrary);
+            return check.execute(this);
         } finally {
             gil.release(mustRelease);
         }
@@ -547,10 +533,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     @TruffleBoundary
     public Object getMembers(boolean includeInternal,
-                    @Exclusive @Cached LookupAndCallUnaryDynamicNode keysNode,
                     @Cached CastToListInteropNode castToList,
                     @Shared("getClassThis") @Cached GetClassNode getClass,
-                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
+                    @Cached PyMappingCheckNode checkMapping,
+                    @Cached PyObjectLookupAttr lookupKeys,
+                    @Cached CallUnaryMethodNode callKeys,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Cached SequenceNodes.LenNode lenNode,
                     @Cached TypeNodes.GetMroNode getMroNode,
@@ -570,15 +557,18 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             }
             if (includeInternal) {
                 // we use the internal flag to also return dictionary keys for mappings
-                if (isAbstractMapping(dataModelLibrary)) {
-                    PList mapKeys = castToList.executeWithGlobalState(keysNode.executeObject(this, KEYS));
-                    int len = lenNode.execute(mapKeys);
-                    for (int i = 0; i < len; i++) {
-                        Object key = getItemNode.execute(mapKeys, i);
-                        if (key instanceof String) {
-                            keys.add("[" + (String) key);
-                        } else if (key instanceof PString) {
-                            keys.add("[" + ((PString) key).getValue());
+                if (checkMapping.execute(this)) {
+                    Object keysMethod = lookupKeys.execute(null, this, KEYS);
+                    if (keysMethod != PNone.NO_VALUE) {
+                        PList mapKeys = castToList.executeWithGlobalState(callKeys.executeObject(keysMethod, this));
+                        int len = lenNode.execute(mapKeys);
+                        for (int i = 0; i < len; i++) {
+                            Object key = getItemNode.execute(mapKeys, i);
+                            if (key instanceof String) {
+                                keys.add("[" + (String) key);
+                            } else if (key instanceof PString) {
+                                keys.add("[" + ((PString) key).getValue());
+                            }
                         }
                     }
                 }

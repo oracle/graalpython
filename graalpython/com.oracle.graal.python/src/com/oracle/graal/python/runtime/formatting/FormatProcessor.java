@@ -17,13 +17,14 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -35,7 +36,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -226,18 +226,12 @@ abstract class FormatProcessor<T> {
         return fi;
     }
 
-    /**
-     * Should this argument be treated as a mapping or as a single argument. This logic differs
-     * between string and bytes formatting.
-     */
-    protected abstract boolean useAsMapping(Object args1, Object lazyClass);
-
     protected static boolean isString(Object args1, Object lazyClass) {
         return PGuards.isString(args1) || isSubtype(lazyClass, PythonBuiltinClassType.PString);
     }
 
     protected static boolean isMapping(Object args1) {
-        return PythonObjectLibrary.getUncached().isMapping(args1);
+        return PyMappingCheckNode.getUncached().execute(args1);
     }
 
     protected static boolean isSubtype(Object lazyClass, PythonBuiltinClassType clazz) {
@@ -271,7 +265,7 @@ abstract class FormatProcessor<T> {
         } else {
             // Not a tuple, but possibly still some kind of container: use
             // special argIndex values.
-            if (useAsMapping(args1, args1LazyClass)) {
+            if (isMapping(args1)) {
                 mapping = args1;
                 argIndex = -3;
             }
