@@ -1984,7 +1984,7 @@ def check_impl_detail(**guards):
 
 def no_tracing(func):
     """Decorator to temporarily turn off tracing for the duration of a test."""
-    if not hasattr(sys, 'gettrace'):
+    if not hasattr(sys, 'settrace'):
         return func
     else:
         @functools.wraps(func)

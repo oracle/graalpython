@@ -54,7 +54,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.nio.ByteBuffer;
@@ -193,17 +192,6 @@ public class BytesBuiltins extends PythonBuiltins {
             return action;
         }
         throw n.raise(PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errors);
-    }
-
-    @CompilerDirectives.TruffleBoundary
-    public static byte[] stringToByte(String source, String encoding, String error, PRaiseNode raiseNode) {
-        String encodingName = encoding.equals("latin-1") ? "ISO-8859-1" : encoding;
-        CodingErrorAction action = toCodingErrorAction(error, raiseNode);
-        try {
-            return doEncode(Charset.forName(encodingName), source, action);
-        } catch (CharacterCodingException e) {
-            throw raiseNode.raise(UnicodeEncodeError, "%m", e);
-        }
     }
 
     @CompilerDirectives.TruffleBoundary

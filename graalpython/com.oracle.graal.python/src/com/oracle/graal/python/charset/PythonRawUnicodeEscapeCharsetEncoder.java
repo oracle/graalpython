@@ -40,12 +40,13 @@
  */
 package com.oracle.graal.python.charset;
 
-import com.oracle.graal.python.util.PythonUtils;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
+
+import com.oracle.graal.python.util.PythonUtils;
 
 public class PythonRawUnicodeEscapeCharsetEncoder extends CharsetEncoder {
     protected PythonRawUnicodeEscapeCharsetEncoder(Charset cs) {
@@ -73,10 +74,9 @@ public class PythonRawUnicodeEscapeCharsetEncoder extends CharsetEncoder {
                 if (Character.isLowSurrogate(low)) {
                     codePoint = Character.toCodePoint(ch, low);
                 } else {
-                    // Unpaired surrogate, this shouldn't happen in any sanely constructed Java
-                    // String
-                    source.position(source.position() - 2);
-                    return CoderResult.malformedForLength(2);
+                    // Unpaired surrogate - emit the high surrogate as is and process the low in the
+                    // next iteration
+                    source.position(source.position() - 1);
                 }
             }
             if (codePoint <= 0xFF) {

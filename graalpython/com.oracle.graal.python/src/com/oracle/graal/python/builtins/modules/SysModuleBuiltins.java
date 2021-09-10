@@ -668,4 +668,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "gettrace")
+    @GenerateNodeFactory
+    abstract static class GetTrace extends PythonBuiltinNode {
+        @Specialization
+        static Object gettrace() {
+            return PNone.NONE;
+        }
+    }
 }
