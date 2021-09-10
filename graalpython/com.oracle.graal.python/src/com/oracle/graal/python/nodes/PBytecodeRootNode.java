@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
@@ -63,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgsNodeGen;
+import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -1006,16 +1008,49 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case STORE_NAME:
                         {
                             String varname = names[oparg];
-                            WriteGlobalNode writeGlobalNode = insertChildNode((a) -> WriteGlobalNode.create(a), bci, varname);
-                            writeGlobalNode.executeObjectWithGlobals(frame, globals, stack[stackTop]);
+                            Object value = stack[stackTop];
                             stack[stackTop--] = null;
+                            if (locals != null) {
+                                Node helper = adoptedNodes[bci];
+                                if (helper instanceof HashingCollectionNodes.SetItemNode) {
+                                    if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
+                                        HashingCollectionNodes.SetItemNode setItemNode = (HashingCollectionNodes.SetItemNode) helper;
+                                        setItemNode.execute(frame, (PDict) locals, varname, value);
+                                        break;
+                                    }
+                                }
+                                if (helper instanceof PyObjectSetItem) {
+                                    ((PyObjectSetItem) helper).execute(frame, locals, varname, value);
+                                    break;
+                                }
+                                CompilerDirectives.transferToInterpreterAndInvalidate();
+                                assert helper == null;
+                                if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
+                                    HashingCollectionNodes.SetItemNode newNode;
+                                    newNode = HashingCollectionNodes.SetItemNode.create();
+                                    adoptedNodes[bci] = newNode;
+                                    newNode.execute(frame, (PDict) locals, varname, value);
+                                } else {
+                                    PyObjectSetItem newNode = PyObjectSetItem.create();
+                                    adoptedNodes[bci] = newNode;
+                                    newNode.execute(frame, locals, varname, value);
+                                }
+                            } else {
+                                WriteGlobalNode writeGlobalNode = insertChildNode((a) -> WriteGlobalNode.create(a), bci + 1, varname);
+                                writeGlobalNode.executeObjectWithGlobals(frame, globals, value);
+                            }
                         }
                         break;
                     case DELETE_NAME:
                         {
                             String varname = names[oparg];
-                            DeleteGlobalNode deleteGlobalNode = insertChildNode((a) -> DeleteGlobalNode.create(a), bci, varname);
-                            deleteGlobalNode.executeWithGlobals(frame, globals);
+                            if (locals != null) {
+                                PyObjectDelItem delItemNode = insertChildNode(() -> PyObjectDelItem.create(), bci);
+                                delItemNode.execute(frame, locals, varname);
+                            } else {
+                                DeleteGlobalNode deleteGlobalNode = insertChildNode((a) -> DeleteGlobalNode.create(a), bci + 1, varname);
+                                deleteGlobalNode.executeWithGlobals(frame, globals);
+                            }
                         }
                         break;
                     case UNPACK_SEQUENCE:
@@ -1033,12 +1068,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case DELETE_ATTR:
                         throw CompilerDirectives.shouldNotReachHere("delete attr");
                     case STORE_GLOBAL:
+                        {
+                            String varname = names[oparg];
+                            WriteGlobalNode writeGlobalNode = insertChildNode((a) -> WriteGlobalNode.create(a), bci, varname);
+                            writeGlobalNode.executeObjectWithGlobals(frame, globals, stack[stackTop]);
+                            stack[stackTop--] = null;
+                        }
+                        break;
                     case DELETE_GLOBAL:
-                        throw CompilerDirectives.shouldNotReachHere("global writes");
+                        {
+                            String varname = names[oparg];
+                            DeleteGlobalNode deleteGlobalNode = insertChildNode((a) -> DeleteGlobalNode.create(a), bci, varname);
+                            deleteGlobalNode.executeWithGlobals(frame, globals);
+                        }
+                        break;
                     case LOAD_NAME:
                         {
                             String varname = names[oparg];
-                            Object result;
+                            Object result = null;
                             if (locals != null) {
                                 Node helper = adoptedNodes[bci];
                                 if (helper instanceof HashingStorageLibrary) {
