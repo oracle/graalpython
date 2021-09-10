@@ -48,15 +48,11 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -241,20 +237,6 @@ final class DefaultPythonLongExports {
             } else {
                 return oLib.equalsInternal(other, receiver, threadState) == 1;
             }
-        }
-    }
-
-    @ExportMessage
-    static int asFileDescriptorWithState(Long x, @SuppressWarnings("unused") ThreadState state,
-                    @Exclusive @Cached PRaiseNode raiseNode,
-                    @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
-                    @Exclusive @Cached IsBuiltinClassProfile errorProfile) {
-        try {
-            return PInt.asFileDescriptor(castToJavaIntNode.execute(x), raiseNode);
-        } catch (PException e) {
-            e.expect(PythonBuiltinClassType.TypeError, errorProfile);
-            // we need to convert the TypeError to an OverflowError
-            throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
         }
     }
 

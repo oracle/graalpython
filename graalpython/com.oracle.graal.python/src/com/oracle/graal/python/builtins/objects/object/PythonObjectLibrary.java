@@ -427,24 +427,6 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Coerces a given primitive or object to a file descriptor (i.e. Java {@code int}) just like
-     * {@code PyObject_AsFileDescriptor} does.
-     *
-     * Converted to int if possible, or if the object defines __fileno__(), then return the result
-     * of that method. Raise TypeError otherwise.
-     */
-    public int asFileDescriptorWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState) {
-        throw getDefaultNodes().getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
-    }
-
-    /**
-     * @see #asFileDescriptorWithState
-     */
-    public final int asFileDescriptor(Object receiver) {
-        return asFileDescriptorWithState(receiver, null);
-    }
-
-    /**
      * Looks up an attribute for the given receiver like {@code PyObject_LookupAttr}.
      *
      * @param receiver self

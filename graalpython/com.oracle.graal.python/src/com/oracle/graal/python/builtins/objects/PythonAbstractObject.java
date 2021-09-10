@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.FILENO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
@@ -79,7 +78,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -97,7 +95,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
-import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -164,7 +161,6 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.TriState;
@@ -695,34 +691,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             return castToJavaStringNode.execute(pathObject);
         } catch (CannotCastException e) {
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, this, pathObject);
-        }
-    }
-
-    @ExportMessage
-    public int asFileDescriptorWithState(ThreadState state,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Shared("raise") @Cached PRaiseNode raiseNode,
-                    @Exclusive @Cached BranchProfile noFilenoMethodProfile,
-                    @Exclusive @Cached PyLongCheckExactNode isInt,
-                    @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
-                    @Exclusive @Cached IsBuiltinClassProfile isAttrError) {
-        Object filenoFunc = lib.lookupAttributeWithState(this, state, FILENO);
-        if (filenoFunc == PNone.NO_VALUE) {
-            noFilenoMethodProfile.enter();
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
-        }
-
-        Object result = methodLib.callObjectWithState(filenoFunc, state);
-        if (isInt.execute(result)) {
-            try {
-                return PInt.asFileDescriptor(castToJavaIntNode.execute(result), raiseNode);
-            } catch (PException e) {
-                e.expect(PythonBuiltinClassType.TypeError, isAttrError);
-                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
-            }
-        } else {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.RETURNED_NON_INTEGER, "fileno()");
         }
     }
 
