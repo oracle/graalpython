@@ -108,7 +108,7 @@ def make_test_function(working_test):
         if append_out:
             message += LINE + "\n"
             message += "output:\n"
-            message += result.stdout.decode('ascii')
+            message += result.stdout.decode('utf-8')
             message += LINE + "\n"
         print(message)
         if result.returncode:

@@ -57,6 +57,7 @@ public abstract class ErrorMessages {
     public static final String ARG_MUST_BE_S_NOT_P = "%s argument must be a %s, not %p";
     public static final String S_BRACKETS_ARG_MUST_BE_S_NOT_P = "%s() argument must be a %s, not %p";
     public static final String S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P = "%s() argument must be read-write bytes-like object, not %p";
+    public static final String ARG_MUST_BE_CALLABLE = "argument must be callable";
     public static final String ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER = "%s argument must be a string, a bytes-like object or a number, not %p";
     public static final String ARG_MUST_BE_STRING_OR_NUMBER = "%s argument must be a string or a number, not '%p'";
     public static final String ARG_MUST_NOT_BE_ZERO = "%s arg %d must not be zero";
@@ -187,6 +188,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_SET_TO_S_NOT_P = "%s must be set to a %s, not a '%p'";
     public static final String CLASSPATH_ARG_MUST_BE_STRING = "classpath argument %d must be string, not %p";
     public static final String CODE_OBJ_NO_FREE_VARIABLES = "code object passed to %s may not contain free variables";
+    public static final String CODEC_SEARCH_MUST_RETURN_4 = "codec search functions must return 4-tuples";
     public static final String COMPILE_MUST_BE = "compile() mode must be 'exec', 'eval' or 'single'";
     public static final String COMPLEX_ARG_IS_MALFORMED_STR = "complex() arg is a malformed string";
     public static final String COMPLEX_CANT_TAKE_ARG = "complex() can't take second arg if first is a string";
@@ -277,6 +279,7 @@ public abstract class ErrorMessages {
     public static final String GOT_MULTIPLE_VALUES_FOR_ARG = "%s() got multiple values for keyword argument '%s'";
     public static final String GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD = "%s() got some positional-only arguments passed as keyword arguments: '%s'";
     public static final String GOT_UNEXPECTED_KEYWORD_ARG = "%s() got an unexpected keyword argument '%s'";
+    public static final String HANDLER_MUST_BE_CALLABLE = "handler must be callable";
     public static final String HAS_NO_ATTR = "%s has no attribute %s";
     public static final String HASH_SHOULD_RETURN_INTEGER = "__hash__ method should return an integer";
     public static final String HEX_VALUE_TOO_LARGE_AS_FLOAT = "hexadecimal value too large to represent as a float";
@@ -422,6 +425,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_STRINGS_NOT_P = "%s must be strings, not %p";
     public static final String MUST_BE_TUPLE_OF_CLASSES_NOT_P = "%s.%s must be tuple of classes, not '%p'";
     public static final String MUST_RETURN_2TUPLE = "%p.__divmod__() must return a 2-tuple, not %p";
+    public static final String S_MUST_RETURN_TUPLE = "%s must return a tuple (object, integer)";
     public static final String MUST_S_ITER_RETURN_2TUPLE = "%s iterator must return 2-tuples";
     public static final String S_MUST_RETURN_S_NOT_P = "%s must return a %s, not %p";
     public static final String S_MUST_RETURN_S_OR_S = "%s must return a %s or %s";
