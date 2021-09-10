@@ -42,9 +42,7 @@ package com.oracle.graal.python.processor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -87,8 +85,6 @@ public class ConverterFactory {
          */
         Extra,
     }
-
-    private static final Map<TypeElement, ConverterFactory[]> cache = new HashMap<>();
 
     private static ConverterFactory[] BuiltinBoolean;
     private static ConverterFactory[] BuiltinIntToBoolean;
@@ -167,10 +163,6 @@ public class ConverterFactory {
     }
 
     public static ConverterFactory[] getForClass(TypeElement conversionClass) throws ProcessingError {
-        ConverterFactory[] cached = cache.get(conversionClass);
-        if (cached != null) {
-            return cached;
-        }
         ArrayList<ConverterFactory> factories = new ArrayList<>();
         for (Element e : conversionClass.getEnclosedElements()) {
             ClinicConverterFactory annot = e.getAnnotation(ClinicConverterFactory.class);
@@ -212,7 +204,6 @@ public class ConverterFactory {
             throw new ProcessingError(conversionClass, "No ClinicConverterFactory annotation found.");
         }
         ConverterFactory[] result = factories.toArray(new ConverterFactory[0]);
-        cache.put(conversionClass, result);
         return result;
     }
 
