@@ -620,9 +620,6 @@ public abstract class PythonObjectLibrary extends Library {
      * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
      * Containers</a>
      *
-     * <br>
-     * See {@link #isSequenceType(Object)}
-     *
      * @param receiver the receiver Object
      * @return True if object is a Python sequence object
      */
@@ -642,30 +639,6 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public boolean isMapping(Object receiver) {
         return lookupAttributeOnType(receiver, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE;
-    }
-
-    /**
-     * Checks whether the receiver is a Python sequence type. As described in the
-     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
-     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
-     * Containers</a>
-     *
-     * <br>
-     * Specifically the default implementation checks for the implementation of the following
-     * special methods: <b>
-     * <ul>
-     * <li>__getitem__</li>
-     * <li>__len__</li>
-     * </ul>
-     * </b>
-     *
-     * @param receiver the receiver Object
-     * @return True if a sequence type
-     */
-    public boolean isSequenceType(Object receiver) {
-        return isLazyPythonClass(receiver) &&
-                        lookupAttribute(receiver, null, SpecialMethodNames.__LEN__) != PNone.NO_VALUE &&
-                        lookupAttribute(receiver, null, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE;
     }
 
     /**
