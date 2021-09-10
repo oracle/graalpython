@@ -55,7 +55,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.source.SourceSection;
 
 public class ClassBodyRootNode extends FunctionRootNode {
-    private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"namespace"}, PythonUtils.EMPTY_STRING_ARRAY);
+    private static final Signature SIGNATURE = new Signature(-1, false, -1, false, PythonUtils.EMPTY_STRING_ARRAY, PythonUtils.EMPTY_STRING_ARRAY);
 
     public ClassBodyRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, ExpressionNode body, ExecutionCellSlots executionCellSlots) {
         super(language, sourceSection, functionName, false, false, frameDescriptor, body, executionCellSlots, SIGNATURE, null);
@@ -70,15 +70,18 @@ public class ClassBodyRootNode extends FunctionRootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
+        Object customLocals = null;
+        if (cachedShape == null) {
+            customLocals = PArguments.getSpecialArgument(frame);
+        }
         try {
             return super.execute(frame);
         } finally {
             if (cachedShape == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 cachedShape = NO_CACHED_SHAPE;
-                Object arg = PArguments.getArgument(frame, 0);
-                if (arg instanceof PDict) {
-                    Object storage = ((PDict) arg).getDictStorage();
+                if (customLocals instanceof PDict) {
+                    Object storage = ((PDict) customLocals).getDictStorage();
                     if (storage instanceof DynamicObjectStorage) {
                         cachedShape = ((DynamicObjectStorage) storage).getStoreShape();
                     }

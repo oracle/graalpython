@@ -110,6 +110,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -159,10 +160,10 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
+import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
@@ -2109,7 +2110,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached GetClassNode getGetItemClass,
                         @Cached CallVarargsMethodNode callPrep,
                         @Cached CallVarargsMethodNode callType,
-                        @Cached CallUnaryMethodNode callBody,
+                        @Cached CallDispatchNode callBody,
                         @Cached UpdateBasesNode update,
                         @Cached SetItemNode setOrigBases,
                         @Cached GetClassNode getClass,
@@ -2200,7 +2201,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     throw raise(PythonErrorType.TypeError, "<metaclass>.__prepare__() must return a mapping, not %p", ns);
                 }
             }
-            callBody.executeObject(frame, function, ns);
+            Object[] bodyArguments = PArguments.create(0);
+            PArguments.setCustomLocals(bodyArguments, ns);
+            PArguments.setSpecialArgument(bodyArguments, ns);
+            callBody.executeCall(frame, (PFunction) function, bodyArguments);
             if (init.bases != origBases) {
                 setOrigBases.executeWith(frame, ns, SpecialAttributeNames.__ORIG_BASES__, origBases);
             }

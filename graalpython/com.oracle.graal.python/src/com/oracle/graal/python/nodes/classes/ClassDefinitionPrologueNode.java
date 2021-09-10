@@ -44,16 +44,15 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 
-import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
+import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.nodes.subscript.SetItemIfNotPresentNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class ClassDefinitionPrologueNode extends StatementNode {
     @Child private ReadGlobalOrBuiltinNode readGlobalNameNode = ReadGlobalOrBuiltinNode.create(__NAME__);
-    @Child private ReadIndexedArgumentNode readPrimaryArgNode = ReadIndexedArgumentNode.create(0);
-    @Child private SetItemIfNotPresentNode setItemIfNotPresentNode = SetItemIfNotPresentNode.create();
+    @Child private WriteNameNode writeModuleNode = WriteNameNode.create(__MODULE__, null);
+    @Child private WriteNameNode writeQualnameNode = WriteNameNode.create(__QUALNAME__, null);
 
     private final String qualName;
 
@@ -72,9 +71,7 @@ public class ClassDefinitionPrologueNode extends StatementNode {
     @Override
     public void executeVoid(VirtualFrame frame) {
         Object moduleName = readGlobalNameNode.execute(frame);
-        Object primary = readPrimaryArgNode.execute(frame);
-
-        setItemIfNotPresentNode.execute(frame, primary, __MODULE__, moduleName);
-        setItemIfNotPresentNode.execute(frame, primary, __QUALNAME__, qualName);
+        writeModuleNode.executeObject(frame, moduleName);
+        writeQualnameNode.executeObject(frame, qualName);
     }
 }

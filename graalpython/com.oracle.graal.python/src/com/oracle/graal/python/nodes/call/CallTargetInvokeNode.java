@@ -110,7 +110,6 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
                     @Cached ConditionProfile classBodyProfile,
                     @Cached ConditionProfile generatorFunctionProfile) {
         RootCallTarget ct = (RootCallTarget) callNode.getCurrentCallTarget();
-        optionallySetClassBodySpecial(arguments, ct, classBodyProfile);
         optionallySetGeneratorFunction(arguments, ct, generatorFunctionProfile, callee);
         // If the frame is 'null', we expect the execution state (i.e. caller info and exception
         // state) in the context. There are two common reasons for having a 'null' frame:

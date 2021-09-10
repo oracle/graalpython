@@ -120,7 +120,6 @@ public abstract class GenericInvokeNode extends InvokeNode {
                     PythonLanguage language, PythonContext context,
                     IndirectCallNode callNode, CallContext callContext,
                     ConditionProfile isNullFrameProfile, ConditionProfile isClassBodyProfile, ConditionProfile isGeneratorFunctionProfile) {
-        optionallySetClassBodySpecial(arguments, callTarget, isClassBodyProfile);
         optionallySetGeneratorFunction(arguments, callTarget, isGeneratorFunctionProfile, callee);
         if (isNullFrameProfile.profile(frame == null)) {
             PythonThreadState threadState = context.getThreadState(language);
@@ -139,7 +138,6 @@ public abstract class GenericInvokeNode extends InvokeNode {
 
     private Object doCallWithFrame(Frame frame, PFunction callee, RootCallTarget callTarget, Object[] arguments,
                     IndirectCallNode callNode, CallContext callContext, ConditionProfile isClassBodyProfile, ConditionProfile isGeneratorFunctionProfile) {
-        optionallySetClassBodySpecial(arguments, callTarget, isClassBodyProfile);
         optionallySetGeneratorFunction(arguments, callTarget, isGeneratorFunctionProfile, callee);
         assert frame instanceof VirtualFrame : "GenericInvokeNode should not be executed with non-virtual frames";
         callContext.prepareIndirectCall((VirtualFrame) frame, arguments, this);
