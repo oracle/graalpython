@@ -1536,7 +1536,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 unwindBlock(stack, stackTopAfterExcepts, stackTopAfterFinally);
                 blockstackTop = decodeNewExceptBlockIndex(blockstackTop);
 
-                if (blockstackTop < MAXBLOCKS) {
+                if (blockstackTop >= 0) {
                     blockstack[blockstackTop] = encodeBlockTypeExcept() | encodeStackTop(stackTopAfterFinally);
                     int handlerBCI = decodeHandlerBCI(blockstackThumbprint);
 
@@ -1604,6 +1604,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         int stackTopAfterExceptUnwinding = stackTop;
         int stackTopAfterFinally = stackTop;
         int handlerBCI = 0;
+        int newExceptBlockIndex = -1;
         for (int i = blockstackTop; i >= 0; i--) {
             int block = blockstack[i];
             int stackTopBeforeBlock = decodeStackTop(block);
@@ -1613,11 +1614,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 assert isBlockTypeFinally(block);
                 stackTopAfterFinally = stackTopBeforeBlock;
                 handlerBCI = decodeBCI(block) + 2;
+                newExceptBlockIndex = i;
                 break;
             }
         }
         long currentThumbprint = encodeExceptBlockStackTop(stackTopAfterExceptUnwinding) |
             encodeFinallyBlockStackTop(stackTopAfterFinally) |
+            encodeNewExceptBlockIndex(newExceptBlockIndex) |
             encodeHandlerBCI(handlerBCI);
 
         int knownIndex = -1;
@@ -1673,15 +1676,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private static final long encodeExceptBlockStackTop(int top) {
-        return (long)top << 48;
+        return (long)(top + 1) << 48;
     }
 
     private static final long encodeFinallyBlockStackTop(int top) {
-        return (long)top << 32;
+        return (long)(top + 1) << 32;
     }
 
     private static final long encodeNewExceptBlockIndex(int i) {
-        return (long)i << 16;
+        return (long)(i + 1) << 16;
     }
 
     private static final long encodeHandlerBCI(int bci) {
@@ -1689,15 +1692,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private static final int decodeExceptBlockStackTop(long thumbprint) {
-        return (int)(thumbprint >> 48) & 0xffff;
+        return (int)((thumbprint >> 48) & 0xffff) - 1;
     }
 
     private static final int decodeFinallyBlockStackTop(long thumbprint) {
-        return (int)(thumbprint >> 32) & 0xffff;
+        return (int)((thumbprint >> 32) & 0xffff) - 1;
     }
 
     private static final int decodeNewExceptBlockIndex(long thumbprint) {
-        return (int)(thumbprint >> 16) & 0xff;
+        return (int)((thumbprint >> 16) & 0xff) - 1;
     }
 
     private static final int decodeHandlerBCI(long thumbprint) {
@@ -1751,7 +1754,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         CompilerAsserts.partialEvaluationConstant(stackTop);
         CompilerAsserts.partialEvaluationConstant(stackTopBeforeBlock);
         CompilerDirectives.ensureVirtualized(stack);
-        for (int i = stackTopBeforeBlock; i > stackTop; i--) {
+        for (int i = stackTop; i > stackTopBeforeBlock; i--) {
             stack[i] = null;
         }
         return stackTopBeforeBlock;
@@ -1762,7 +1765,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         CompilerAsserts.partialEvaluationConstant(stackTop);
         CompilerAsserts.partialEvaluationConstant(stackTopBeforeBlock);
         CompilerDirectives.ensureVirtualized(stack);
-        for (int i = stackTopBeforeBlock; i > stackTop; i--) {
+        for (int i = stackTop; i > stackTopBeforeBlock; i--) {
             stack[i] = null;
         }
         return stackTopBeforeBlock;
