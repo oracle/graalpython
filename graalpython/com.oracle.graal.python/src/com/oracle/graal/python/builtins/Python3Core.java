@@ -288,7 +288,6 @@ public final class Python3Core implements ParserErrorCallback {
                         "_descriptor",
                         "object",
                         "sys",
-                        "str",
                         "type",
                         "_imp",
                         "function",

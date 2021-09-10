@@ -1009,7 +1009,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"", useDefaultForNone = true)
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
-    abstract static class EncodeNode extends PythonTernaryClinicBuiltinNode {
+    public abstract static class EncodeNode extends PythonTernaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {

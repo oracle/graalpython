@@ -73,6 +73,11 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
+
+    public static PyObjectReprAsObjectNode getUncached() {
+        return PyObjectReprAsObjectNodeGen.getUncached();
+    }
+
     public abstract Object execute(Frame frame, Object object);
 
     @Specialization
