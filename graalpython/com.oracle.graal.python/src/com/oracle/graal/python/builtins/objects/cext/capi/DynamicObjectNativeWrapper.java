@@ -789,7 +789,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
             DynamicObjectStorage nativeMemberStore = nativeWrapper.getNativeMemberStore();
             if (nativeMemberStore == null) {
-                nativeMemberStore = nativeWrapper.createNativeMemberStore(PythonLanguage.getCurrent());
+                nativeMemberStore = nativeWrapper.createNativeMemberStore(PythonLanguage.get(null));
             }
             HashingStorageLibrary uncached = HashingStorageLibrary.getFactory().getUncached(nativeMemberStore);
             Object item = uncached.getItem(nativeMemberStore, MA_VERSION_TAG.getMemberName());
