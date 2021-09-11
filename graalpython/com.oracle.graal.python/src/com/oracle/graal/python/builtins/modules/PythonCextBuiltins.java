@@ -4473,7 +4473,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object closureObj = closureAsPythonObjectNode.execute(closureWrapper);
             if (closureObj != PNone.NO_VALUE) {
                 // CPython also just accesses the object as tuple without further checks.
-                closure = PCell.castToCellArray(getObjectArrayNode.execute(closureObj));
+                closure = PCell.toCellArray(getObjectArrayNode.execute(closureObj));
             }
             Object[] keywordNames = unwrapArray(kwnamesPtr, ptrLib, elementToJavaNode);
             Object[] keywordArguments = unwrapArray(keywordArrayPtr, ptrLib, elementToJavaNode);

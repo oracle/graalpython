@@ -64,7 +64,7 @@ public final class PCell extends PythonAbstractObject {
         this.effectivelyFinal = effectivelyFinalAssumption;
     }
 
-    public static PCell[] castToCellArray(Object[] closure) {
+    public static PCell[] toCellArray(Object[] closure) {
         PCell[] cells = new PCell[closure.length];
         PythonUtils.arraycopy(closure, 0, cells, 0, closure.length);
         return cells;
