@@ -62,6 +62,8 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectGetMethod;
+import com.oracle.graal.python.lib.PyObjectGetMethodNodeGen;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgsNodeGen;
 import com.oracle.graal.python.lib.PyObjectDelItem;
@@ -1378,8 +1380,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case WITH_CLEANUP_FINISH:
                         throw CompilerDirectives.shouldNotReachHere("with blocks");
                     case LOAD_METHOD:
+                        {
+                            String name = names[oparg];
+                            PyObjectGetMethod getMethod = insertChildNode(() -> PyObjectGetMethodNodeGen.create(), bci);
+                            Object receiver = stack[stackTop];
+                            stack[stackTop] = getMethod.execute(frame, stack[stackTop], name);
+                            stack[++stackTop] = receiver;
+                        }
+                        break;
                     case CALL_METHOD:
-                        throw CompilerDirectives.shouldNotReachHere("_METHOD bytecodes");
+                        // Python's LOAD_METHOD/CALL_METHOD optimization is not useful for us, we
+                        // use BoundDescriptor as wrapper from LOAD_METHOD when it's not a normal
+                        // method call, and Call(Unary/.../)Node deal with that directly. However,
+                        // there's a different alignment, and to use the code below, we need to
+                        // increment oparg by 1, to account for the receiver.
+                        oparg += 1;
                     case CALL_FUNCTION:
                         {
                             Object func = stack[stackTop - oparg];
