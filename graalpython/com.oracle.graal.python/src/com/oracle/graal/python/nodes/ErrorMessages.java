@@ -286,6 +286,10 @@ public abstract class ErrorMessages {
     public static final String GOT_UNEXPECTED_KEYWORD_ARG = "%s() got an unexpected keyword argument '%s'";
     public static final String HANDLER_MUST_BE_CALLABLE = "handler must be callable";
     public static final String HAS_NO_ATTR = "%s has no attribute %s";
+    public static final String P_HAS_NO_ATTRS_S_TO_ASSIGN = "'%p' object has no attributes (assign to .%s)";
+    public static final String P_HAS_NO_ATTRS_S_TO_DELETE = "'%p' object has no attributes (del .%s)";
+    public static final String P_HAS_RO_ATTRS_S_TO_ASSIGN = "'%p' object has only read-only attributes (assign to .%s)";
+    public static final String P_HAS_RO_ATTRS_S_TO_DELETE = "'%p' object has only read-only attributes (del .%s)";
     public static final String HASH_SHOULD_RETURN_INTEGER = "__hash__ method should return an integer";
     public static final String HEX_VALUE_TOO_LARGE_AS_FLOAT = "hexadecimal value too large to represent as a float";
     public static final String HOST_ACCESS_NOT_ALLOWED = "host access is not allowed";
