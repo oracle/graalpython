@@ -70,6 +70,7 @@ import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -1060,15 +1061,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         throw CompilerDirectives.shouldNotReachHere("unpack bytecodes");
                     case STORE_ATTR:
                         {
+                            PyObjectSetAttr callNode = insertChildNode(() -> PyObjectSetAttr.create(), bci);
                             String varname = names[oparg];
                             Object owner = stack[stackTop];
                             stack[stackTop--] = null;
                             Object value = stack[stackTop];
                             stack[stackTop--] = null;
-                            throw CompilerDirectives.shouldNotReachHere("store attr");
+                            callNode.execute(frame, owner, varname, value);
                         }
+                        break;
                     case DELETE_ATTR:
-                        throw CompilerDirectives.shouldNotReachHere("delete attr");
+                        {
+                            PyObjectSetAttr callNode = insertChildNode(() -> PyObjectSetAttr.create(), bci);
+                            String varname = names[oparg];
+                            Object owner = stack[stackTop];
+                            stack[stackTop--] = null;
+                            callNode.delete(frame, owner, varname);
+                        }
+                        break;
                     case STORE_GLOBAL:
                         {
                             String varname = names[oparg];
