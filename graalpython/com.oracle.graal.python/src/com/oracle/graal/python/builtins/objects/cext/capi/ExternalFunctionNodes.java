@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToBor
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckInquiryResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckIterNextResultNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckPrimitiveFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
@@ -106,6 +107,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -144,10 +146,10 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ExternalFunctionNodes {
 
-    private static final String KW_CALLABLE = "$callable";
-    private static final String KW_CLOSURE = "$closure";
-    private static final String[] KEYWORDS_HIDDEN_CALLABLE = new String[]{KW_CALLABLE};
-    private static final String[] KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE = new String[]{KW_CALLABLE, KW_CLOSURE};
+    static final String KW_CALLABLE = "$callable";
+    static final String KW_CLOSURE = "$closure";
+    static final String[] KEYWORDS_HIDDEN_CALLABLE = new String[]{KW_CALLABLE};
+    static final String[] KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE = new String[]{KW_CALLABLE, KW_CLOSURE};
 
     public static PKeyword[] createKwDefaults(Object callable) {
         return new PKeyword[]{new PKeyword(ExternalFunctionNodes.KW_CALLABLE, callable)};
@@ -155,6 +157,15 @@ public abstract class ExternalFunctionNodes {
 
     public static PKeyword[] createKwDefaults(Object callable, Object closure) {
         return new PKeyword[]{new PKeyword(ExternalFunctionNodes.KW_CALLABLE, callable), new PKeyword(ExternalFunctionNodes.KW_CLOSURE, closure)};
+    }
+
+    public static Object getHiddenCallable(PKeyword[] kwDefaults) {
+        if (kwDefaults.length >= KEYWORDS_HIDDEN_CALLABLE.length) {
+            PKeyword kwDefault = kwDefaults[0];
+            assert KW_CALLABLE.equals(kwDefault.getName()) : "invalid keyword defaults";
+            return kwDefault.getValue();
+        }
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     /**
@@ -174,22 +185,34 @@ public abstract class ExternalFunctionNodes {
         SETATTR(11, TernaryFirstThirdToSulongNode::create),
         RICHCMP(12, TernaryFirstSecondToSulongNode::create),
         SETITEM(13, SSizeObjArgProcToSulongNode::create),
-        REVERSE(14),
-        POW(15),
-        REVERSE_POW(16),
-        LT(17, TernaryFirstSecondToSulongNode::create),
-        LE(18, TernaryFirstSecondToSulongNode::create),
-        EQ(19, TernaryFirstSecondToSulongNode::create),
-        NE(20, TernaryFirstSecondToSulongNode::create),
-        GT(21, TernaryFirstSecondToSulongNode::create),
-        GE(22, TernaryFirstSecondToSulongNode::create),
-        ITERNEXT(23, 0, AllToSulongNode::create, CheckIterNextResultNodeGen::create),
-        INQUIRY(24, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
-        DELITEM(25, 1, SSizeObjArgProcToSulongNode::create),
-        GETITEM(26, 0, SSizeArgProcToSulongNode::create),
-        GETTER(27, BinaryFirstToSulongNode::create),
-        SETTER(28, TernaryFirstSecondToSulongNode::create),
-        INITPROC(29, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create);
+        UNARYFUNC(14),
+        BINARYFUNC(15),
+        BINARYFUNC_L(16),
+        BINARYFUNC_R(17),
+        TERNARYFUNC(18),
+        TERNARYFUNC_R(19),
+        LT(20, TernaryFirstSecondToSulongNode::create),
+        LE(21, TernaryFirstSecondToSulongNode::create),
+        EQ(22, TernaryFirstSecondToSulongNode::create),
+        NE(23, TernaryFirstSecondToSulongNode::create),
+        GT(24, TernaryFirstSecondToSulongNode::create),
+        GE(25, TernaryFirstSecondToSulongNode::create),
+        ITERNEXT(26, 0, AllToSulongNode::create, CheckIterNextResultNodeGen::create),
+        INQUIRY(27, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
+        DELITEM(28, 1, SSizeObjArgProcToSulongNode::create),
+        GETITEM(29, 0, SSizeArgProcToSulongNode::create),
+        GETTER(30, BinaryFirstToSulongNode::create),
+        SETTER(31, TernaryFirstSecondToSulongNode::create),
+        INITPROC(32, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create),
+        HASHFUNC(33, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
+        CALL(34),
+        SETATTRO(35, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create),
+        DESCR_GET(36),
+        DESCR_SET(37, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create),
+        LENFUNC(38, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
+        OBJOBJPROC(39, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
+        OBJOBJARGPROC(40, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
+        NEW(41);
 
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = Arrays.copyOf(values(), values().length);
 
@@ -237,6 +260,16 @@ public abstract class ExternalFunctionNodes {
                     rootNodeFunction = doArgAndResultConversion ? l -> new AllocFuncRootNode(l, name, sig) : l -> new AllocFuncRootNode(l, name);
                     break;
                 case DIRECT:
+                case DESCR_GET:
+                case DESCR_SET:
+                case LENFUNC:
+                case HASHFUNC:
+                case SETATTRO:
+                case OBJOBJPROC:
+                case OBJOBJARGPROC:
+                case UNARYFUNC:
+                case BINARYFUNC:
+                case BINARYFUNC_L:
                     /*
                      * If no conversion is requested, this means we directly call a managed function
                      * (without argument conversion). Null indicates this
@@ -247,8 +280,10 @@ public abstract class ExternalFunctionNodes {
                     nodeKlass = MethDirectRoot.class;
                     rootNodeFunction = l -> MethDirectRoot.create(language, name);
                     break;
+                case CALL:
                 case INITPROC:
                 case KEYWORDS:
+                case NEW:
                     nodeKlass = MethKeywordsRoot.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new MethKeywordsRoot(l, name, sig) : l -> new MethKeywordsRoot(l, name);
                     break;
@@ -294,15 +329,15 @@ public abstract class ExternalFunctionNodes {
                     nodeKlass = GetItemRootNode.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new GetItemRootNode(l, name, sig) : l -> new GetItemRootNode(l, name);
                     break;
-                case REVERSE:
+                case BINARYFUNC_R:
                     nodeKlass = MethReverseRootNode.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new MethReverseRootNode(l, name, sig) : l -> new MethReverseRootNode(l, name);
                     break;
-                case POW:
+                case TERNARYFUNC:
                     nodeKlass = MethPowRootNode.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new MethPowRootNode(l, name, sig) : l -> new MethPowRootNode(l, name);
                     break;
-                case REVERSE_POW:
+                case TERNARYFUNC_R:
                     nodeKlass = MethRPowRootNode.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new MethRPowRootNode(l, name, sig) : l -> new MethRPowRootNode(l, name);
                     break;
@@ -390,7 +425,17 @@ public abstract class ExternalFunctionNodes {
                 defaults = PythonUtils.EMPTY_OBJECT_ARRAY;
             }
             Object type = SpecialMethodNames.__NEW__.equals(name) ? null : enclosingType;
-            return factory.createBuiltinFunction(name, type, defaults, ExternalFunctionNodes.createKwDefaults(callable), flags, callTarget);
+            // TODO(fa): this should eventually go away
+            switch (sig) {
+                case NOARGS:
+                case O:
+                case VARARGS:
+                case KEYWORDS:
+                case FASTCALL:
+                case FASTCALL_WITH_KEYWORDS:
+                    return factory.createBuiltinFunction(name, type, defaults, ExternalFunctionNodes.createKwDefaults(callable), flags, callTarget);
+            }
+            return factory.createWrapperDescriptor(name, type, defaults, ExternalFunctionNodes.createKwDefaults(callable), flags, callTarget);
         }
 
         private static int getCompareOpCode(PExternalFunctionWrapper sig) {
@@ -1707,60 +1752,48 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Specialization(guards = "!isPythonObjectNativeWrapper(result)")
-        static Object doPrimitiveWrapper(PythonContext context, String name, @SuppressWarnings("unused") PythonNativeWrapper result,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise,
+        Object doPrimitiveWrapper(PythonContext context, String name, @SuppressWarnings("unused") PythonNativeWrapper result,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
-            checkFunctionResult(name, false, false, context, raise, factory, errOccurredProfile);
+            checkFunctionResult(this, name, false, true, context, errOccurredProfile);
             return result;
         }
 
         @Specialization(guards = "isNoValue(result)")
-        static Object doNoValue(PythonContext context, String name, @SuppressWarnings("unused") PNone result,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise,
+        Object doNoValue(PythonContext context, String name, @SuppressWarnings("unused") PNone result,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
-            checkFunctionResult(name, true, false, context, raise, factory, errOccurredProfile);
+            checkFunctionResult(this, name, true, true, context, errOccurredProfile);
             return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "!isNoValue(result)")
-        static Object doPythonObject(PythonContext context, String name, @SuppressWarnings("unused") PythonAbstractObject result,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise,
+        Object doPythonObject(PythonContext context, String name, @SuppressWarnings("unused") PythonAbstractObject result,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
-            checkFunctionResult(name, false, false, context, raise, factory, errOccurredProfile);
+            checkFunctionResult(this, name, false, true, context, errOccurredProfile);
             return result;
         }
 
         @Specialization
-        static Object doPythonNativeNull(PythonContext context, String name, @SuppressWarnings("unused") PythonNativeNull result,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise,
+        Object doPythonNativeNull(PythonContext context, String name, @SuppressWarnings("unused") PythonNativeNull result,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
-            checkFunctionResult(name, true, false, context, raise, factory, errOccurredProfile);
+            checkFunctionResult(this, name, true, true, context, errOccurredProfile);
             return result;
         }
 
         @Specialization
-        static int doInteger(PythonContext context, String name, int result,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise,
+        int doInteger(PythonContext context, String name, int result,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
             // If the native functions returns a primitive int, only a value '-1' indicates an
             // error.
-            checkFunctionResult(name, result == -1, true, context, raise, factory, errOccurredProfile);
+            checkFunctionResult(this, name, result == -1, false, context, errOccurredProfile);
             return result;
         }
 
         @Specialization
-        static long doLong(PythonContext context, String name, long result,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise,
+        long doLong(PythonContext context, String name, long result,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
             // If the native functions returns a primitive int, only a value '-1' indicates an
             // error.
-            checkFunctionResult(name, result == -1, true, context, raise, factory, errOccurredProfile);
+            checkFunctionResult(this, name, result == -1, false, context, errOccurredProfile);
             return result;
         }
 
@@ -1771,38 +1804,34 @@ public abstract class ExternalFunctionNodes {
          * #doPythonObject
          */
         @Specialization(guards = {"!isPythonObjectNativeWrapper(result)", "!isPNone(result)"})
-        static Object doForeign(PythonContext context, String name, Object result,
+        Object doForeign(PythonContext context, String name, Object result,
                         @Exclusive @Cached ConditionProfile isNullProfile,
                         @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
-            checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), false, context, raise, factory, errOccurredProfile);
+            checkFunctionResult(this, name, isNullProfile.profile(lib.isNull(result)), true, context, errOccurredProfile);
             return result;
         }
 
-        private static void checkFunctionResult(String name, boolean indicatesError, boolean isPrimitiveResult, PythonContext context, PRaiseNode raise,
-                        PythonObjectFactory factory, ConditionProfile errOccurredProfile) {
-            checkFunctionResult(name, indicatesError, isPrimitiveResult, PythonLanguage.get(raise), context, raise, factory, errOccurredProfile,
-                            RETURNED_NULL_WO_SETTING_ERROR, RETURNED_RESULT_WITH_ERROR_SET);
+        private static void checkFunctionResult(Node node, String name, boolean indicatesError, boolean strict, PythonContext context, ConditionProfile errOccurredProfile) {
+            PythonLanguage language = PythonLanguage.get(node);
+            checkFunctionResult(node, name, indicatesError, strict, language, context, errOccurredProfile, RETURNED_NULL_WO_SETTING_ERROR, RETURNED_RESULT_WITH_ERROR_SET);
         }
 
         /**
          * Check the result of a C extension function.
          *
+         * @param node The processing node (needed for the source location if a {@code SystemError}
+         *            is raised).
          * @param name The name of the funciton (used for the error message).
          * @param indicatesError {@code true} if the function results indicates an error (e.g.
          *            {@code NULL} if the return type is a pointer or {@code -1} if the return type
          *            is an int).
-         * @param isPrimitiveResult If {@code true}, the function result is a C primitive value
-         *            (e.g. an integer). In this case, the error indication value (e.g. {@code -1}
-         *            if the type is an integer) does not necessarily impose an error. So, if the
-         *            the value indicates an error and this flag is {@code true}, we will also
-         *            accept that no exception is currently set.
+         * @param strict If {@code true}, a {@code SystemError} will be raised if the result value
+         *            indicates an error but no exception was set. Setting this to {@code false}
+         *            mostly makes sense for primitive return values with semantics
+         *            {@code if (res != -1 && PyErr_Occurred()}.
          * @param language The Python language.
          * @param context The Python context.
-         * @param raise A raise node to raise {@code SystemError}s.
-         * @param factory A factory to create a base exception object.
          * @param errOccurredProfile Profiles if a Python exception occurred and is set in the
          *            context.
          * @param nullButNoErrorMessage Error message used if the value indicates an error and is
@@ -1810,8 +1839,8 @@ public abstract class ExternalFunctionNodes {
          * @param resultWithErrorMessage Error message used if an error was set but the value does
          *            not indicate and error.
          */
-        static void checkFunctionResult(String name, boolean indicatesError, boolean isPrimitiveResult, PythonLanguage language, PythonContext context, PRaiseNode raise,
-                        PythonObjectFactory factory, ConditionProfile errOccurredProfile, String nullButNoErrorMessage, String resultWithErrorMessage) {
+        static void checkFunctionResult(Node node, String name, boolean indicatesError, boolean strict, PythonLanguage language, PythonContext context, ConditionProfile errOccurredProfile,
+                        String nullButNoErrorMessage, String resultWithErrorMessage) {
             PythonThreadState threadState = context.getThreadState(language);
             PException currentException = threadState.getCurrentException();
             boolean errOccurred = errOccurredProfile.profile(currentException != null);
@@ -1820,16 +1849,26 @@ public abstract class ExternalFunctionNodes {
                 threadState.setCurrentException(null);
                 if (errOccurred) {
                     throw currentException.getExceptionForReraise();
-                } else if (!isPrimitiveResult) {
-                    throw raise.raise(PythonErrorType.SystemError, nullButNoErrorMessage, name);
+                } else if (strict) {
+                    throw raiseNullButNoError(node, name, nullButNoErrorMessage);
                 }
             } else if (errOccurred) {
                 // consume exception
                 threadState.setCurrentException(null);
-                PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, resultWithErrorMessage, new Object[]{name});
-                sysExc.setCause(currentException.getEscapedException());
-                throw raise.raiseExceptionObject(sysExc);
+                throw raiseResultWithError(language, node, name, currentException, resultWithErrorMessage);
             }
+        }
+
+        @TruffleBoundary
+        static PException raiseNullButNoError(Node node, String name, String nullButNoErrorMessage) {
+            throw PRaiseNode.raiseUncached(node, PythonErrorType.SystemError, nullButNoErrorMessage, name);
+        }
+
+        @TruffleBoundary
+        static PException raiseResultWithError(PythonLanguage language, Node node, String name, PException currentException, String resultWithErrorMessage) {
+            PBaseException sysExc = PythonObjectFactory.getUncached().createBaseException(PythonErrorType.SystemError, resultWithErrorMessage, new Object[]{name});
+            sysExc.setCause(currentException.getEscapedException());
+            throw PRaiseNode.raise(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(language));
         }
 
         protected static boolean isNativeNull(TruffleObject object) {
@@ -1867,84 +1906,162 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
+    /**
+     * Processes the function result with CPython semantics:
+     * 
+     * <pre>
+     *     if (func(self, args, kwds) < 0)
+     *         return NULL;
+     *     Py_RETURN_NONE;
+     * </pre>
+     * 
+     * This is the case for {@code wrap_init}, {@code wrap_descr_delete}, {@code wrap_descr_set},
+     * {@code wrap_delattr}, {@code wrap_setattr}.
+     */
     @ImportStatic(PGuards.class)
     public abstract static class InitCheckFunctionResultNode extends CheckFunctionResultNode {
 
-        @Specialization(guards = "result == 0")
-        @SuppressWarnings("unused")
-        static Object fine(PythonContext context, String name, int result) {
+        @Specialization(guards = "result >= 0")
+        Object doNoError(PythonContext context, String name, @SuppressWarnings("unused") int result,
+                        @Shared("p") @Cached ConditionProfile errOccurredProfile) {
             // This is the most likely case
+            DefaultCheckFunctionResultNode.checkFunctionResult(this, name, false, true, context, errOccurredProfile);
             return PNone.NONE;
         }
 
-        @Specialization(guards = "result != 0")
+        @Specialization(guards = "result < 0")
         @SuppressWarnings("unused")
-        static Object error(PythonContext context, String name, int result,
-                        @Shared("p") @Cached ConditionProfile errOccurredProfile,
-                        @Shared("f") @Cached PythonObjectFactory factory,
-                        @Shared("r") @Cached PRaiseNode raise) {
-            DefaultCheckFunctionResultNode.checkFunctionResult(name, true, true, context, raise, factory, errOccurredProfile);
-            return result;
+        Object doError(PythonContext context, String name, int result,
+                        @Shared("p") @Cached ConditionProfile errOccurredProfile) {
+            DefaultCheckFunctionResultNode.checkFunctionResult(this, name, true, true, context, errOccurredProfile);
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
         // Slow path
-        @Specialization(replaces = {"fine", "error"})
-        static Object notNumber(PythonContext context, @SuppressWarnings("unused") String name, Object result,
-                        @CachedLibrary(limit = "2") InteropLibrary lib,
+        @Specialization(replaces = {"doNoError", "doError"})
+        Object notNumber(PythonContext context, @SuppressWarnings("unused") String name, Object result,
                         @Shared("p") @Cached ConditionProfile errOccurredProfile,
-                        @Shared("f") @Cached PythonObjectFactory factory,
-                        @Shared("r") @Cached PRaiseNode raise) {
+                        @CachedLibrary(limit = "2") InteropLibrary lib) {
             int ret = 0;
             if (lib.isNumber(result)) {
                 try {
                     ret = lib.asInt(result);
-                    if (ret == 0) {
+                    if (ret >= 0) {
                         return PNone.NONE;
                     }
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
-            DefaultCheckFunctionResultNode.checkFunctionResult(name, lib.isNull(result) || ret == -1,
-                            true, context, raise, factory, errOccurredProfile);
+            DefaultCheckFunctionResultNode.checkFunctionResult(this, name, ret < 0, true, context, errOccurredProfile);
             return result;
         }
     }
 
     /**
-     * Equivalent of the result processing part in {@code Object/typeobject.c: wrap_inquirypred}.
+     * Processes the function result with CPython semantics:
+     *
+     * <pre>
+     *     Py_ssize_t res = func(...);
+     *     if (res == -1 && PyErr_Occurred())
+     *         return NULL;
+     * </pre>
+     *
+     * This is the case for {@code wrap_delitem}, {@code wrap_objobjargproc},
+     * {@code wrap_sq_delitem}, {@code wrap_sq_setitem}, {@code asdf}.
+     */
+    @ImportStatic(PGuards.class)
+    public abstract static class CheckPrimitiveFunctionResultNode extends CheckFunctionResultNode {
+
+        @Specialization(guards = "!isMinusOne(result)")
+        long doLongNoError(PythonContext context, String name, long result,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
+            DefaultCheckFunctionResultNode.checkFunctionResult(this, name, false, false, context, errOccurredProfile);
+            return result;
+        }
+
+        @Specialization(guards = "isMinusOne(result)")
+        long doLongIndicatesError(PythonContext context, String name, long result,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
+            DefaultCheckFunctionResultNode.checkFunctionResult(this, name, true, false, context, errOccurredProfile);
+            return result;
+        }
+
+        @Specialization(replaces = {"doLongNoError", "doLongIndicatesError"})
+        long doLong(PythonContext context, String name, long result,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
+            DefaultCheckFunctionResultNode.checkFunctionResult(this, name, result == -1, false, context, errOccurredProfile);
+            return result;
+        }
+
+        @Specialization(replaces = {"doLongNoError", "doLongIndicatesError", "doLong"})
+        long doGeneric(PythonContext context, String name, Object result,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile,
+                        @CachedLibrary(limit = "2") InteropLibrary lib) {
+            if (lib.fitsInLong(result)) {
+                try {
+                    long ret = lib.asLong(result);
+                    DefaultCheckFunctionResultNode.checkFunctionResult(this, name, ret == -1, false, context, errOccurredProfile);
+                    return ret;
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere("expected primitive function result but does not fit into Java long");
+        }
+    }
+
+    /**
+     * Tests if the primitive result of the called function is {@code -1} and if an error occurred.
+     * In this case, the error is re-raised. Otherwise, it converts the result to a Boolean. This is
+     * equivalent to the result processing part in {@code Object/typeobject.c: wrap_inquirypred} and
+     * {@code Object/typeobject.c: wrap_objobjproc}.
      */
     abstract static class CheckInquiryResultNode extends CheckFunctionResultNode {
 
-        @Specialization
-        static boolean doLong(PythonContext context, @SuppressWarnings("unused") String name, long result,
-                        @Cached GetThreadStateNode getThreadStateNode) {
-            if (result == -1) {
-                PException currentException = getThreadStateNode.getCurrentException(context);
-                if (currentException != null) {
-                    // consume exception
-                    getThreadStateNode.setCurrentException(null);
-                    // re-raise exception
-                    throw currentException.getExceptionForReraise();
-                }
-            }
+        @Specialization(guards = "result > 0")
+        boolean doLongTrue(PythonContext context, String name, @SuppressWarnings("unused") long result,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
+            // the guard implies: result != -1
+            DefaultCheckFunctionResultNode.checkFunctionResult(this, name, false, false, context, errOccurredProfile);
+            return true;
+        }
+
+        @Specialization(guards = "result == 0")
+        boolean doLongFalse(PythonContext context, String name, @SuppressWarnings("unused") long result,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
+            // the guard implies: result != -1
+            DefaultCheckFunctionResultNode.checkFunctionResult(this, name, false, false, context, errOccurredProfile);
+            return false;
+        }
+
+        @Specialization(guards = "!isMinusOne(result)", replaces = {"doLongTrue", "doLongFalse"})
+        boolean doLongNoError(PythonContext context, String name, long result,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
+            DefaultCheckFunctionResultNode.checkFunctionResult(this, name, false, false, context, errOccurredProfile);
             return result != 0;
         }
 
-        @Specialization(replaces = "doLong", limit = "3")
-        static boolean doGeneric(PythonContext context, String name, Object result,
-                        @Cached GetThreadStateNode getThreadStateNode,
-                        @CachedLibrary("result") InteropLibrary lib,
-                        @Cached PRaiseNode raiseNode) {
+        @Specialization(replaces = {"doLongTrue", "doLongFalse", "doLongNoError"})
+        boolean doLong(PythonContext context, String name, long result,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
+            DefaultCheckFunctionResultNode.checkFunctionResult(this, name, result == -1, false, context, errOccurredProfile);
+            return result != 0;
+        }
+
+        @Specialization(replaces = {"doLongTrue", "doLongFalse", "doLongNoError", "doLong"})
+        boolean doGeneric(PythonContext context, String name, Object result,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile,
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             if (lib.fitsInLong(result)) {
                 try {
-                    return doLong(context, name, lib.asLong(result), getThreadStateNode);
+                    return doLong(context, name, lib.asLong(result), errOccurredProfile);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
             }
-            throw raiseNode.raise(SystemError, "Inquiry function '%s' did not return an integer.", name);
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw PRaiseNode.raiseUncached(this, SystemError, "function '%s' did not return an integer", name);
         }
     }
-
 }

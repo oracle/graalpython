@@ -146,6 +146,11 @@ def PyDict_Next(dictObj, pos):
     return native_null
 
 
+@may_raise
+def PyDict_Pop(dictObj, *args):
+    return dictObj.pop(*args)
+
+
 @may_raise(-1)
 def PyDict_Size(dictObj):
     if not isinstance(dictObj, dict):
@@ -238,6 +243,19 @@ def PySet_Contains(anyset, item):
     if not (isinstance(anyset, set) or isinstance(anyset, frozenset)):
         __bad_internal_call(None, None, anyset)
     return item in anyset
+
+
+@may_raise
+def PySet_NextEntry(anyset, pos):
+    curPos = 0
+    max = len(anyset)
+    if pos >= max:
+        return native_null
+    for key in anyset:
+        if curPos == pos:
+            return key, hash(key)
+        curPos = curPos + 1
+    return native_null
 
 
 @may_raise
@@ -368,6 +386,12 @@ def PyList_SetSlice(listObj, ilow, ihigh, s):
         __bad_internal_call(None, None, listObj)
     listObj[ilow:ihigh] = s
     return 0
+
+
+@may_raise
+def PyList_Extend(listObj, iterable):
+    listObj.extend(iterable)
+    return None
 
 
 @may_raise(-1)

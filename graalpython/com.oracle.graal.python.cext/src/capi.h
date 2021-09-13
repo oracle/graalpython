@@ -82,7 +82,7 @@ typedef struct {
 } PyBufferDecorator;
 
 /* Taken from CPython "Objects/descrobject.c".
- * This struct is actually private to 'descrobject.c' but we need to register 
+ * This struct is actually private to 'descrobject.c' but we need to register
  * it to the managed property type. */
 typedef struct {
     PyObject_HEAD
@@ -312,20 +312,34 @@ void initialize_hashes();
 #define JWRAPPER_SETATTR                     11
 #define JWRAPPER_RICHCMP                     12
 #define JWRAPPER_SETITEM                     13
-#define JWRAPPER_REVERSE                     14
-#define JWRAPPER_POW                         15
-#define JWRAPPER_REVERSE_POW                 16
-#define JWRAPPER_LT                          17
-#define JWRAPPER_LE                          18
-#define JWRAPPER_EQ                          19
-#define JWRAPPER_NE                          20
-#define JWRAPPER_GT                          21
-#define JWRAPPER_GE                          22
-#define JWRAPPER_ITERNEXT                    23
-#define JWRAPPER_INQUIRY                     24
-#define JWRAPPER_DELITEM                     25
-#define JWRAPPER_GETITEM                     26
-#define JWRAPPER_INITPROC                    29
+#define JWRAPPER_UNARYFUNC                   14
+#define JWRAPPER_BINARYFUNC                  15
+#define JWRAPPER_BINARYFUNC_L                16
+#define JWRAPPER_BINARYFUNC_R                17
+#define JWRAPPER_TERNARYFUNC                 18
+#define JWRAPPER_TERNARYFUNC_R               19
+#define JWRAPPER_LT                          20
+#define JWRAPPER_LE                          21
+#define JWRAPPER_EQ                          22
+#define JWRAPPER_NE                          23
+#define JWRAPPER_GT                          24
+#define JWRAPPER_GE                          25
+#define JWRAPPER_ITERNEXT                    26
+#define JWRAPPER_INQUIRY                     27
+#define JWRAPPER_DELITEM                     28
+#define JWRAPPER_GETITEM                     29
+#define JWRAPPER_GETTER                      30
+#define JWRAPPER_SETTER                      31
+#define JWRAPPER_INITPROC                    32
+#define JWRAPPER_HASHFUNC                    33
+#define JWRAPPER_CALL                        34
+#define JWRAPPER_SETATTRO                    35
+#define JWRAPPER_DESCR_GET                   36
+#define JWRAPPER_DESCR_SET                   37
+#define JWRAPPER_LENFUNC                     38
+#define JWRAPPER_OBJOBJPROC                  39
+#define JWRAPPER_OBJOBJARGPROC               40
+#define JWRAPPER_NEW                         41
 
 #define TDEBUG __builtin_debugtrap()
 #define get_method_flags_wrapper(flags)                                                  \

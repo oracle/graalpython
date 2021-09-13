@@ -66,6 +66,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(PythonObjectLibrary.class)
@@ -86,7 +87,11 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public PBuiltinFunction(PythonLanguage lang, String name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
-        super(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(lang));
+        this(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(lang), name, enclosingType, defaults, kwDefaults, flags, callTarget);
+    }
+
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, String name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
+        super(cls, shape);
         this.name = name;
         if (enclosingType != null) {
             this.qualname = PString.cat(GetNameNode.doSlowPath(enclosingType), ".", name);

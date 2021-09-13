@@ -63,6 +63,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.STR;
 import static com.oracle.graal.python.nodes.BuiltinNames.SUPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
+import static com.oracle.graal.python.nodes.BuiltinNames.WRAPPER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_NOT_BE_ZERO;
 import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_CALLING_SET_NAME;
@@ -2059,7 +2060,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public PFunction function(Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction("<lambda>", getTypeName(cls), code, globals, getClosure(getObjectArrayNode.execute(closure)));
+            return factory().createFunction("<lambda>", getTypeName(cls), code, globals, PCell.toCellArray(getObjectArrayNode.execute(closure)));
         }
 
         @Specialization
@@ -2072,7 +2073,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public PFunction function(Object cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction(name, getTypeName(cls), code, globals, getClosure(getObjectArrayNode.execute(closure)));
+            return factory().createFunction(name, getTypeName(cls), code, globals, PCell.toCellArray(getObjectArrayNode.execute(closure)));
         }
 
         @Specialization
@@ -2086,13 +2087,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public PFunction function(Object cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
             // TODO split defaults of positional args from kwDefaults
-            return factory().createFunction(name, getTypeName(cls), code, globals, getObjectArrayNode.execute(defaultArgs), null, getClosure(getObjectArrayNode.execute(closure)));
-        }
-
-        private static PCell[] getClosure(Object[] closure) {
-            PCell[] cells = new PCell[closure.length];
-            PythonUtils.arraycopy(closure, 0, cells, 0, closure.length);
-            return cells;
+            return factory().createFunction(name, getTypeName(cls), code, globals, getObjectArrayNode.execute(defaultArgs), null, PCell.toCellArray(getObjectArrayNode.execute(closure)));
         }
 
         @Fallback
@@ -3264,6 +3259,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @TruffleBoundary
         Object doGeneric(@SuppressWarnings("unused") Object clazz, Object get, Object set, String name, Object owner) {
             denyInstantiationAfterInitialization(MEMBER_DESCRIPTOR);
+            return PythonObjectFactory.getUncached().createGetSetDescriptor(ensure(get), ensure(set), name, owner);
+        }
+    }
+
+    @Builtin(name = WRAPPER_DESCRIPTOR, constructsClass = PythonBuiltinClassType.WrapperDescriptor, isPublic = false, minNumOfPositionalArgs = 1, //
+                    parameterNames = {"cls", "fget", "fset", "name", "owner"})
+    @GenerateNodeFactory
+    public abstract static class WrapperDescriptorNode extends DescriptorNode {
+        @Specialization(guards = "isPythonClass(owner)")
+        @TruffleBoundary
+        Object doGeneric(@SuppressWarnings("unused") Object clazz, Object get, Object set, String name, Object owner) {
+            denyInstantiationAfterInitialization(WRAPPER_DESCRIPTOR);
             return PythonObjectFactory.getUncached().createGetSetDescriptor(ensure(get), ensure(set), name, owner);
         }
     }

@@ -42,6 +42,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.FOREIGN;
 import static com.oracle.graal.python.nodes.BuiltinNames.MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.PROPERTY;
 import static com.oracle.graal.python.nodes.BuiltinNames.SIMPLE_QUEUE;
+import static com.oracle.graal.python.nodes.BuiltinNames.WRAPPER_DESCRIPTOR;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -84,6 +85,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     Boolean("bool", BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
     GetSetDescriptor("get_set_desc", Flags.PRIVATE_DERIVED_WODICT),
     MemberDescriptor(MEMBER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
+    WrapperDescriptor(WRAPPER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
     PArray("array", "array"),
     PArrayIterator("arrayiterator", Flags.PRIVATE_DERIVED_WODICT),
     PIterator("iterator", Flags.PRIVATE_DERIVED_WODICT),

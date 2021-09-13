@@ -66,6 +66,8 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
+
 @ExportLibrary(InteropLibrary.class)
 @ImportStatic(SpecialMethodNames.class)
 public class TryExceptNode extends ExceptionHandlingStatementNode implements TruffleObject {
@@ -179,6 +181,13 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
             for (ExceptNode exceptNode : exceptNodes) {
                 if (everMatched.profile(exceptNode.matchesTruffleException(frame, exception))) {
                     ExceptionState exceptionState = saveExceptionState(frame);
+                    /*
+                     * In this case, we are catching not a Python exception. While the exception can
+                     * usually not be accessed by the user, she can at least re-raise it. So, we
+                     * need to wrap the exception into a Python exception.
+                     */
+                    PException wrappedTruffleException = wrapJavaException(exception, this, factory().createBaseException(SystemError, "%m", new Object[]{exception}));
+                    SetCaughtExceptionNode.execute(frame, wrappedTruffleException);
                     try {
                         exceptNode.executeExcept(frame, exception);
                     } finally {

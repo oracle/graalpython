@@ -790,3 +790,16 @@ index 8b2ded1f2..8a9295a27 100755
          entry_points={
              'console_scripts': f2py_cmds
          },
+diff --git a/numpy/core/setup_common.py b/numpy/core/setup_common.py
+index d3ce70d..ef8bc9a 100644
+--- a/numpy/core/setup_common.py
++++ b/numpy/core/setup_common.py
+@@ -110,7 +110,7 @@ MANDATORY_FUNCS = ["sin", "cos", "tan", "sinh", "cosh", "tanh", "fabs",
+ OPTIONAL_STDFUNCS = ["expm1", "log1p", "acosh", "asinh", "atanh",
+         "rint", "trunc", "exp2", "log2", "hypot", "atan2", "pow",
+         "copysign", "nextafter", "ftello", "fseeko",
+-        "strtoll", "strtoull", "cbrt", "strtold_l", "fallocate",
++        "strtoll", "strtoull", "cbrt", "fallocate",
+         "backtrace", "madvise"]
+ 
+ 

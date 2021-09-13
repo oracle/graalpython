@@ -41,6 +41,11 @@
 #ifndef Py_PYCONFIG_H
 #define Py_PYCONFIG_H
 
+/* Enable GNU extensions on systems that have them. */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 // required for __UINT32_MAX__ etc.
 #include <limits.h>
 

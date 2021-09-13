@@ -179,7 +179,7 @@ declare_type(PyFloat_Type, float, PyFloatObject);
 declare_type(PySlice_Type, slice, PySliceObject);
 declare_type(PyByteArray_Type, bytearray, PyByteArrayObject);
 declare_type(PyCFunction_Type, builtin_function_or_method, PyCFunctionObject);
-declare_type(PyWrapperDescr_Type, method_descriptor, PyWrapperDescrObject); // LS: previously wrapper_descriptor
+declare_type(PyWrapperDescr_Type, wrapper_descriptor, PyWrapperDescrObject);
 // tfel: Both method_descriptor maps to both PyWrapperDescr_Type and
 // PyMethodDescr_Type. This reflects our interpreter, but we need to make sure
 // that the dynamic type for method_descriptor is always going to be
@@ -210,9 +210,78 @@ initialize_type(PyEllipsis_Type, ellipsis, _object);
 initialize_type(_PyWeakref_ProxyType, ProxyType, PyWeakReference);
 initialize_type(_PyWeakref_CallableProxyType, CallableProxyType, PyWeakReference);
 
-POLYGLOT_DECLARE_TYPE(PyThreadState);
 POLYGLOT_DECLARE_TYPE(newfunc);
 POLYGLOT_DECLARE_TYPE(Py_buffer);
+
+/* primitive and pointer type declarations */
+
+#define REGISTER_BASIC_TYPE(typename)                                     \
+    POLYGLOT_DECLARE_TYPE(typename);                                      \
+    NO_INLINE polyglot_typeid get_ ## typename ## _typeid(void)  {        \
+		return polyglot_ ## typename ## _typeid();                        \
+    }
+
+/* just a renaming to avoid name clash with Java types */
+typedef void*              void_ptr_t;
+typedef char               char_t;
+typedef float              float_t;
+typedef double             double_t;
+typedef int                int_t;
+typedef unsigned int       uint_t;
+typedef long               long_t;
+typedef unsigned long      ulong_t;
+typedef long long          longlong_t;
+typedef unsigned long long ulonglong_t;
+
+REGISTER_BASIC_TYPE(void_ptr_t);
+REGISTER_BASIC_TYPE(int_t);
+REGISTER_BASIC_TYPE(uint_t);
+REGISTER_BASIC_TYPE(long_t);
+REGISTER_BASIC_TYPE(ulong_t);
+REGISTER_BASIC_TYPE(longlong_t);
+REGISTER_BASIC_TYPE(ulonglong_t);
+REGISTER_BASIC_TYPE(int64_t);
+REGISTER_BASIC_TYPE(int32_t);
+REGISTER_BASIC_TYPE(int16_t);
+REGISTER_BASIC_TYPE(int8_t);
+REGISTER_BASIC_TYPE(uint64_t);
+REGISTER_BASIC_TYPE(uint32_t);
+REGISTER_BASIC_TYPE(uint16_t);
+REGISTER_BASIC_TYPE(uint8_t);
+REGISTER_BASIC_TYPE(Py_complex);
+REGISTER_BASIC_TYPE(char_t);
+REGISTER_BASIC_TYPE(PyObject);
+REGISTER_BASIC_TYPE(PyTypeObject);
+REGISTER_BASIC_TYPE(float_t);
+REGISTER_BASIC_TYPE(double_t);
+REGISTER_BASIC_TYPE(Py_ssize_t);
+REGISTER_BASIC_TYPE(size_t);
+REGISTER_BASIC_TYPE(PyThreadState);
+
+/* For pointers, make them look like an array of size 1 such that it is
+   possible to dereference the pointer by accessing element 0. */
+#define REGISTER_POINTER_TYPE(basetype, ptrtype)                                  \
+    typedef basetype* ptrtype;                                                    \
+    POLYGLOT_DECLARE_TYPE(ptrtype);                                               \
+    NO_INLINE polyglot_typeid get_ ## ptrtype ## _typeid(void)  {                \
+		return polyglot_array_typeid(polyglot_ ## basetype ## _typeid(), 1);      \
+    }
+
+REGISTER_POINTER_TYPE(int64_t, int64_ptr_t);
+REGISTER_POINTER_TYPE(int32_t, int32_ptr_t);
+REGISTER_POINTER_TYPE(int16_t, int16_ptr_t);
+REGISTER_POINTER_TYPE(int8_t, int8_ptr_t);
+REGISTER_POINTER_TYPE(char_t, char_ptr_t);
+REGISTER_POINTER_TYPE(uint64_t, uint64_ptr_t);
+REGISTER_POINTER_TYPE(uint32_t, uint32_ptr_t);
+REGISTER_POINTER_TYPE(uint16_t, uint16_ptr_t);
+REGISTER_POINTER_TYPE(uint8_t, uint8_ptr_t);
+REGISTER_POINTER_TYPE(Py_complex, Py_complex_ptr_t);
+REGISTER_POINTER_TYPE(PyObject, PyObject_ptr_t);
+REGISTER_POINTER_TYPE(PyObject_ptr_t, PyObject_ptr_ptr_t);
+REGISTER_POINTER_TYPE(float_t, float_ptr_t);
+REGISTER_POINTER_TYPE(double_t, double_ptr_t);
+REGISTER_POINTER_TYPE(Py_ssize_t, Py_ssize_ptr_t);
 
 
 static void initialize_globals() {
@@ -413,7 +482,6 @@ polyglot_typeid get_byte_array_typeid(uint64_t len) {
     return polyglot_array_typeid(polyglot_i8_typeid(), len);
 }
 
-POLYGLOT_DECLARE_TYPE(uint32_t);
 /** to be used from Java code only; returns the type ID for a uint32_t array */
 polyglot_typeid get_uint32_t_array_typeid(uint64_t len) {
     return polyglot_array_typeid(polyglot_uint32_t_typeid(), len);

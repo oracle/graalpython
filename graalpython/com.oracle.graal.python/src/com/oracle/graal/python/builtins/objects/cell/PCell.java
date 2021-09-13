@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -61,6 +62,12 @@ public final class PCell extends PythonAbstractObject {
 
     public PCell(Assumption effectivelyFinalAssumption) {
         this.effectivelyFinal = effectivelyFinalAssumption;
+    }
+
+    public static PCell[] toCellArray(Object[] closure) {
+        PCell[] cells = new PCell[closure.length];
+        PythonUtils.arraycopy(closure, 0, cells, 0, closure.length);
+        return cells;
     }
 
     public Object getRef() {

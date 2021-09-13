@@ -129,7 +129,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         @Specialization(guards = {"cachedWrapper == wrapper", "delegate != null"}, assumptions = "singleContextAssumption()")
         protected static Object getCachedDel(@SuppressWarnings("unused") PythonNativeWrapper wrapper,
                         @SuppressWarnings("unused") @Cached(value = "wrapper", weak = true) PythonNativeWrapper cachedWrapper,
-                        @Cached(value = "wrapper.getDelegatePrivate()", weak = true) Object delegate) {
+                        @Cached(value = "wrapper.getDelegateSlowPath()", weak = true) Object delegate) {
             return delegate;
         }
 
@@ -139,7 +139,11 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         }
     }
 
-    protected final Object getDelegatePrivate() {
+    /**
+     * Only use this method if acting behing a {@code TruffleBoundary}. It returns the delegate of
+     * this wrapper for uncached paths such that a uncached library lookup can be avoided.
+     */
+    public final Object getDelegateSlowPath() {
         return delegate;
     }
 

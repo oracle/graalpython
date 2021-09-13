@@ -847,7 +847,8 @@ public final class CApiContext extends CExtContext {
         PyObject_ptr_ptr_t,
         float_ptr_t,
         double_ptr_t,
-        Py_ssize_ptr_t;
+        Py_ssize_ptr_t,
+        PyThreadState;
 
         public static NativeCAPISymbol getGetterFunctionName(LLVMType llvmType) {
             CompilerAsserts.neverPartOfCompilation();

@@ -555,6 +555,11 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PBuiltinFunction(getLanguage(), name, type, defaults, kw, flags, callTarget));
     }
 
+    public final PBuiltinFunction createWrapperDescriptor(String name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {
+        return trace(new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(getLanguage()), name, type, defaults, kw, flags,
+                        callTarget));
+    }
+
     public final GetSetDescriptor createGetSetDescriptor(Object get, Object set, String name, Object type) {
         return trace(new GetSetDescriptor(getLanguage(), get, set, name, type));
     }

@@ -45,7 +45,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberTyp
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.POINTER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.PRIMITIVE;
 
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public enum NativeMember {
     // PyObject_VAR_HEAD
@@ -105,6 +106,7 @@ public enum NativeMember {
     TP_CLEAR("tp_clear"),
     _BASE("_base"),
     TP_VECTORCALL_OFFSET("tp_vectorcall_offset", PRIMITIVE),
+    TP_CALL("tp_call"),
 
     // PySequenceMethods
     SQ_ITEM("sq_item"),
@@ -112,6 +114,7 @@ public enum NativeMember {
 
     // PyDictObject
     MA_USED("ma_used", PRIMITIVE),
+    MA_VERSION_TAG("ma_version_tag", PRIMITIVE),
 
     // PyASCIIObject
     UNICODE_LENGTH("length", PRIMITIVE),
@@ -224,6 +227,7 @@ public enum NativeMember {
 
     // PyCFunctionObject
     M_ML("m_ml"),
+    M_SELF("m_self"),
 
     // PyDateTime_Date
     DATETIME_DATA("data"),
@@ -243,7 +247,37 @@ public enum NativeMember {
     PROP_SET("prop_set", OBJECT),
     PROP_DEL("prop_del", OBJECT),
     PROP_DOC("prop_doc", OBJECT),
-    PROP_GETTERDOC("getter_doc", PRIMITIVE);
+    PROP_GETTERDOC("getter_doc", PRIMITIVE),
+
+    // PyFunctionObject
+    FUNC_CODE("func_code", OBJECT),
+    FUNC_GLOBALS("func_globals", OBJECT),
+    FUNC_DEFAULTS("func_defaults", OBJECT),
+    FUNC_KWDEFAULTS("func_kwdefaults", OBJECT),
+    FUNC_CLOSURE("func_closure", OBJECT),
+    FUNC_DOC("func_doc", OBJECT),
+    FUNC_NAME("func_name", OBJECT),
+    FUNC_DICT("func_dict", OBJECT),
+    FUNC_WEAKREFLIST("func_weakreflist", OBJECT),
+    FUNC_MODULE("func_module", OBJECT),
+    FUNC_ANNOTATIONS("func_annotations", OBJECT),
+    FUNC_QUALNAME("func_qualname", OBJECT),
+    FUNC_VECTORCALL("vectorcall"),
+
+    // PyCodeObject
+    CO_ARGCOUNT("co_argcount", PRIMITIVE),
+    CO_POSONLYARGCOUNT("co_posonlyargcount", PRIMITIVE),
+    CO_KWONLYCOUNT("co_kwonlyargcount", PRIMITIVE),
+    CO_NLOCALS("co_nlocals", PRIMITIVE),
+    CO_STACKSIZE("co_stacksize", PRIMITIVE),
+    CO_FLAGS("co_flags", PRIMITIVE),
+    CO_FIRSTLINENO("co_firstlineno", PRIMITIVE),
+    CO_CODE("co_code", OBJECT),
+    CO_CONSTS("co_consts", OBJECT),
+    CO_NAMES("co_names", OBJECT),
+    CO_VARNAMES("co_varnames", OBJECT),
+    CO_FREEVARS("co_freevars", OBJECT),
+    CO_CELLVARS("co_cellvars", OBJECT);
 
     private final String memberName;
     private final NativeMemberType type;
@@ -266,13 +300,19 @@ public enum NativeMember {
         return type;
     }
 
-    public static boolean isValid(String name) {
-        CompilerAsserts.neverPartOfCompilation();
-        for (NativeMember nativeMember : NativeMember.values()) {
+    @CompilationFinal(dimensions = 1) private static final NativeMember[] VALUES = values();
+
+    @ExplodeLoop
+    public static NativeMember byName(String name) {
+        for (NativeMember nativeMember : VALUES) {
             if (nativeMember.memberName.equals(name)) {
-                return true;
+                return nativeMember;
             }
         }
-        return false;
+        return null;
+    }
+
+    public static boolean isValid(String name) {
+        return byName(name) != null;
     }
 }
