@@ -98,10 +98,16 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     static final int MAX_DICT_TYPES = 2;
 
     // read from the DynamicObject store
-    @Specialization(guards = "getDict.execute(object) == null || isHiddenKey(key)", limit = "1")
+    @Specialization(guards = "isHiddenKey(key)")
+    protected static Object readFromDynamicStorageHidden(PythonObject object, Object key,
+                    @Shared("readDynamic") @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
+        return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
+    }
+
+    @Specialization(guards = "getDict.execute(object) == null", limit = "1")
     protected static Object readFromDynamicStorage(PythonObject object, Object key,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
-                    @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
+                    @Shared("readDynamic") @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
         return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
     }
 

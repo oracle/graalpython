@@ -126,6 +126,7 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
                         @Cached GetClassNode getClassNode,
                         @Cached CastToJavaStringNode castKeyToStringNode) {
+            // Note: getting thread local dict has potential side-effects, don't move
             PDict localDict = getThreadLocalDict.execute(frame, object);
             String key;
             try {
@@ -239,13 +240,14 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
                         @Cached ThreadLocalNodes.GetThreadLocalDict getThreadLocalDict,
                         @Cached GetClassNode getClassNode,
                         @Cached LookupAttributeInMRONode.Dynamic getExisting) {
+            // Note: getting thread local dict has potential side-effects, don't move
+            PDict localDict = getThreadLocalDict.execute(frame, object);
             String key;
             try {
                 key = castKeyToStringNode.execute(keyObject);
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObject);
             }
-            PDict localDict = getThreadLocalDict.execute(frame, object);
             Object type = getClassNode.execute(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
@@ -314,13 +316,14 @@ public class ThreadLocalBuiltins extends PythonBuiltins {
                         @Cached CallBinaryMethodNode callDelete,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
                         @Cached CastToJavaStringNode castKeyToStringNode) {
+            // Note: getting thread local dict has potential side-effects, don't move
+            PDict localDict = getThreadLocalDict.execute(frame, object);
             String key;
             try {
                 key = castKeyToStringNode.execute(keyObj);
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
-            PDict localDict = getThreadLocalDict.execute(frame, object);
             Object type = getClassNode.execute(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {

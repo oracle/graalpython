@@ -353,13 +353,13 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object selfInArgs(VirtualFrame frame, @SuppressWarnings("unused") PNone self, Object[] arguments, PKeyword[] keywords,
-                        @Cached CallNodeHelper callNode) {
+                        @Shared("callNode") @Cached CallNodeHelper callNode) {
             return callNode.execute(frame, arguments[0], arguments, keywords, false);
         }
 
         @Fallback
         Object selfSeparate(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords,
-                        @Cached CallNodeHelper callNode) {
+                        @Shared("callNode") @Cached CallNodeHelper callNode) {
             return callNode.execute(frame, self, arguments, keywords, true);
         }
     }

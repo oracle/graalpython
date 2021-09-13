@@ -236,11 +236,10 @@ public class LZMANodes {
         HashingStorage slow(VirtualFrame frame, Object object,
                         @Shared("id") @Cached ConditionProfile idErrorProfile,
                         @Shared("k") @Cached ConditionProfile hasKeyErrorProfile,
-                        @Cached ConditionProfile dictErrorProfile,
                         @Shared("h") @CachedLibrary(limit = "2") HashingStorageLibrary hlib,
                         @Cached GetDictIfExistsNode getDict) {
             PDict dict = getDict.execute(object);
-            if (dictErrorProfile.profile(dict == null)) {
+            if (dict == null) {
                 throw raise(TypeError, FILTER_SPEC_MUST_BE_DICT);
             }
             return fast(frame, dict, idErrorProfile, hasKeyErrorProfile, hlib);

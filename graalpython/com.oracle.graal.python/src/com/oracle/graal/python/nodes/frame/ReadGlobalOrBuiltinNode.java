@@ -98,8 +98,8 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result);
     }
 
-    protected static HashingStorage getStorage(Object cachedGlobals) {
-        return ((PDict) cachedGlobals).getDictStorage();
+    protected static HashingStorage getStorage(Object globals) {
+        return ((PDict) globals).getDictStorage();
     }
 
     @Specialization(guards = "isBuiltinDictUnchangedStorage(frame, builtinProfile, cachedGlobals, cachedStorage)", assumptions = "singleContextAssumption()", limit = "1")
@@ -130,15 +130,13 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 
-    public static HashingStorage getGlobalStorage(VirtualFrame frame) {
-        return ((PDict) PArguments.getGlobals(frame)).getDictStorage();
-    }
-
-    @Specialization(guards = "isBuiltinDict(getGlobals(frame), builtinProfile)", replaces = {"readGlobalBuiltinDictCached", "readGlobalBuiltinDictCachedUnchangedStorage"})
-    protected Object readGlobalBuiltinDict(VirtualFrame frame,
-                    @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+    @Specialization(guards = "isBuiltinDict(globals, builtinProfile)", replaces = {"readGlobalBuiltinDictCached", "readGlobalBuiltinDictCachedUnchangedStorage"}, limit = "3")
+    protected Object readGlobalBuiltinDict(@SuppressWarnings("unused") VirtualFrame frame,
+                    @SuppressWarnings("unused") @Bind("getGlobals(frame)") Object globals,
+                    @Bind("getStorage(globals)") HashingStorage storage,
+                    @CachedLibrary("storage") HashingStorageLibrary hlib,
                     @Cached @SuppressWarnings("unused") IsBuiltinClassProfile builtinProfile) {
-        Object result = hlib.getItem(getGlobalStorage(frame), attributeId);
+        Object result = hlib.getItem(storage, attributeId);
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 

@@ -53,6 +53,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @GenerateUncached
 public abstract class GetOrCreateDictNode extends PNodeWithContext {
@@ -62,9 +63,11 @@ public abstract class GetOrCreateDictNode extends PNodeWithContext {
     static PDict doPythonObject(PythonObject object,
                     @Shared("getDict") @Cached GetDictIfExistsNode getDictIfExistsNode,
                     @Cached SetDictNode setDictNode,
+                    @Cached BranchProfile createDict,
                     @Cached PythonObjectFactory factory) {
         PDict dict = getDictIfExistsNode.execute(object);
         if (dict == null) {
+            createDict.enter();
             dict = factory.createDictFixedStorage(object);
             setDictNode.execute(object, dict);
         }
