@@ -1028,11 +1028,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                 if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
                                     HashingCollectionNodes.SetItemNode newNode;
                                     newNode = HashingCollectionNodes.SetItemNode.create();
-                                    adoptedNodes[bci] = newNode;
+                                    adoptedNodes[bci] = insert(newNode);
                                     newNode.execute(frame, (PDict) locals, varname, value);
                                 } else {
                                     PyObjectSetItem newNode = PyObjectSetItem.create();
-                                    adoptedNodes[bci] = newNode;
+                                    adoptedNodes[bci] = insert(newNode);
                                     newNode.execute(frame, locals, varname, value);
                                 }
                             } else {
@@ -1095,7 +1095,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                     } else { // generalize
                                         CompilerDirectives.transferToInterpreterAndInvalidate();
                                         GetItemNode newNode = GetItemNode.create();
-                                        adoptedNodes[bci] = newNode;
+                                        adoptedNodes[bci] = insert(newNode);
                                         result = newNode.execute(frame, locals, varname);
                                     }
                                 } else if (helper instanceof GetItemNode) {
@@ -1105,11 +1105,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                     assert helper == null;
                                     if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
                                         HashingStorageLibrary lib = HashingStorageLibrary.getFactory().createDispatched(2);
-                                        adoptedNodes[bci] = lib;
+                                        adoptedNodes[bci] = insert(lib);
                                         result = lib.getItem(((PDict) locals).getDictStorage(), varname);
                                     } else {
                                         GetItemNode newNode = GetItemNode.create();
-                                        adoptedNodes[bci] = newNode;
+                                        adoptedNodes[bci] = insert(newNode);
                                         result = newNode.execute(frame, locals, varname);
                                     }
                                 }
