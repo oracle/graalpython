@@ -40,11 +40,33 @@
  */
 package com.oracle.graal.python.builtins.objects.thread;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 
+@ExportLibrary(InteropLibrary.class)
+@ImportStatic(SpecialMethodSlot.class)
 public final class PThreadLocal extends PythonBuiltinObject {
     private final ThreadLocal<PDict> threadLocalDict;
     private final Object[] args;
@@ -57,8 +79,14 @@ public final class PThreadLocal extends PythonBuiltinObject {
         this.keywords = keywords;
     }
 
-    public ThreadLocal<PDict> getThreadLocalDict() {
-        return threadLocalDict;
+    @TruffleBoundary
+    public PDict getThreadLocalDict() {
+        return threadLocalDict.get();
+    }
+
+    @TruffleBoundary
+    public void setThreadLocalDict(PDict dict) {
+        threadLocalDict.set(dict);
     }
 
     public Object[] getArgs() {
@@ -67,5 +95,82 @@ public final class PThreadLocal extends PythonBuiltinObject {
 
     public PKeyword[] getKeywords() {
         return keywords;
+    }
+
+    @ExportMessage
+    Object getMembers(@SuppressWarnings("unused") boolean includeInternal,
+                    @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
+        List<String> keys = getLocalAttributes(hlib);
+        return new Keys(keys.toArray(PythonUtils.EMPTY_STRING_ARRAY));
+    }
+
+    @TruffleBoundary
+    private List<String> getLocalAttributes(HashingStorageLibrary hlib) {
+        PDict localDict = getThreadLocalDict();
+        List<String> keys = new ArrayList<>();
+        if (localDict != null) {
+            for (HashingStorage.DictEntry e : hlib.entries(localDict.getDictStorage())) {
+                if (e.getKey() instanceof String) {
+                    String strKey = (String) e.getKey();
+                    keys.add(strKey);
+                }
+            }
+        }
+        return keys;
+    }
+
+    @Ignore
+    private Object readMember(String member, HashingStorageLibrary hlib) {
+        PDict localDict = getThreadLocalDict();
+        return localDict == null ? null : hlib.getItem(localDict.getDictStorage(), member);
+    }
+
+    @ExportMessage
+    public boolean isMemberReadable(String member,
+                    @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
+        return readMember(member, hlib) != null;
+    }
+
+    @ExportMessage
+    public boolean isMemberModifiable(String member,
+                    @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
+        return readMember(member, hlib) != null;
+    }
+
+    @ExportMessage
+    public boolean isMemberInsertable(String member,
+                    @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
+        return !isMemberReadable(member, hlib);
+    }
+
+    @ExportMessage
+    public boolean isMemberInvocable(String member,
+                    @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
+        PDict localDict = getThreadLocalDict();
+        return localDict != null && PGuards.isCallable(hlib.getItem(localDict.getDictStorage(), member));
+    }
+
+    @ExportMessage
+    public boolean isMemberRemovable(String member,
+                    @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
+        return isMemberReadable(member, hlib);
+    }
+
+    @ExportMessage
+    public boolean hasMemberReadSideEffects(String member,
+                    @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet) {
+        Object attr = readMember(member, hlib);
+        return attr != null && lookupGet.execute(getClassNode.execute(attr)) != PNone.NO_VALUE;
+    }
+
+    @ExportMessage
+    public boolean hasMemberWriteSideEffects(String member,
+                    @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "Set") LookupCallableSlotInMRONode lookupSet) {
+        Object attr = readMember(member, hlib);
+        return attr != null && lookupSet.execute(getClassNode.execute(attr)) != PNone.NO_VALUE;
     }
 }
