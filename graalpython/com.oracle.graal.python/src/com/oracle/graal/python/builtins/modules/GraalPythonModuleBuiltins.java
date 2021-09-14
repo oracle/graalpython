@@ -669,10 +669,10 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "type_check", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class TypeCheckNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         boolean typeCheck(Object instance, Object cls,
-                        @CachedLibrary("instance") PythonObjectLibrary lib) {
-            return lib.typeCheck(instance, cls);
+                        @Cached PyObjectTypeCheck typeCheckNode) {
+            return typeCheckNode.execute(instance, cls);
         }
     }
 
