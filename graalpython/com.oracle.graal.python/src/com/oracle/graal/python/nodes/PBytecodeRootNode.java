@@ -123,6 +123,7 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode.ImportName;
 import com.oracle.graal.python.nodes.statement.ExceptNode.ExceptMatchNode;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
@@ -474,6 +475,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @Override
     @BytecodeInterpreterSwitch
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.MERGE_EXPLODE)
+    @SuppressWarnings("fallthrough")
     public Object executeOSR(VirtualFrame frame, int target, Object originalArgs) {
         PythonLanguage lang = PythonLanguage.get(this);
         PythonContext context = PythonContext.get(this);
@@ -862,7 +864,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     case DELETE_SUBSCR:
-                        throw CompilerDirectives.shouldNotReachHere("DELETE_SUBSCR");
+                        {
+                            DeleteItemNode delItem = insertChildNode(() -> DeleteItemNode.create(), bci);
+                            Object slice = stack[stackTop];
+                            stack[stackTop--] = null;
+                            Object container = stack[stackTop];
+                            stack[stackTop--] = null;
+                            delItem.executeWith(frame, container, slice);
+                        }
+                        break;
                     case PRINT_EXPR:
                         throw CompilerDirectives.shouldNotReachHere("PRINT_EXPR");
                     case RAISE_VARARGS:
