@@ -103,7 +103,6 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                       GetIteratorExpressionNodeGen SourceSection: [158,159]`a`
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [158,159]`a`
                                           Identifier: a
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     BlockNode SourceSection: None
                                   BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [35,39]`self`

@@ -52,7 +52,6 @@ ModuleRootNode Name: <module 'doc02'> SourceSection: [0,118]`def walk_stack(f):â
                             CallNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [73,74]`a`
                               Identifier: a
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                       ElseNode SourceSection: [81,118]`while f is not None:...`
                         GeneratorWhileNode SourceSection: None

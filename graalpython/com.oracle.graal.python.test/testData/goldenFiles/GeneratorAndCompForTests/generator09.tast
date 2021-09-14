@@ -51,7 +51,6 @@ ModuleRootNode Name: <module 'generator09'> SourceSection: [0,89]`def merge(h):â
                                 CallNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [46,50]`next`
                                   Identifier: next
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                       ElseNode SourceSection: [57,89]`while h > 1:â†µ       ...`
                         GeneratorWhileNode SourceSection: None

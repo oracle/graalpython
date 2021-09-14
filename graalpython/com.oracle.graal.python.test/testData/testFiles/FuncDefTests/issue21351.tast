@@ -97,8 +97,6 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
             Key: __code__
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
-            IsBuiltinClassProfile SourceSection: None
-              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [130,133]`fnc`
             Identifier: fnc
             IsBuiltinClassProfile SourceSection: None
@@ -116,8 +114,6 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
               Key: co_freevars
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [161,162]`c`
               Identifier: c
               IsBuiltinClassProfile SourceSection: None
@@ -134,8 +130,6 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
             Key: co_cellvars
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
-            IsBuiltinClassProfile SourceSection: None
-              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [193,194]`c`
             Identifier: c
             IsBuiltinClassProfile SourceSection: None

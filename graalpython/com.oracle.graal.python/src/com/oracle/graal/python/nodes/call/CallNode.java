@@ -66,8 +66,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
@@ -109,12 +107,25 @@ public abstract class CallNode extends PNodeWithContext {
         return executeInternal(frame, callableObject, arguments, PKeyword.EMPTY_KEYWORDS);
     }
 
-    @Specialization(guards = "!isCallable(callableObject) || isClass(callableObject, iLib)", limit = "3")
+    @Specialization
+    protected Object functionCall(VirtualFrame frame, PFunction callable, Object[] arguments, PKeyword[] keywords,
+                    @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
+                    @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
+        return dispatch.executeCall(frame, callable, createArgs.execute(callable, arguments, keywords));
+    }
+
+    @Specialization
+    protected Object builtinFunctionCall(VirtualFrame frame, PBuiltinFunction callable, Object[] arguments, PKeyword[] keywords,
+                    @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
+                    @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
+        return dispatch.executeCall(frame, callable, createArgs.execute(callable, arguments, keywords));
+    }
+
+    @Specialization(guards = "!isCallable(callableObject)")
     protected Object doObjectAndType(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
-                    @Cached PRaiseNode raise,
-                    @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                    @Cached CallVarargsMethodNode callCallNode,
-                    @SuppressWarnings("unused") @CachedLibrary("callableObject") InteropLibrary iLib) {
+                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Shared("lookupCall") @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
+                    @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
         Object call = callAttrGetterNode.execute(callableObject);
         return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
     }
@@ -159,36 +170,20 @@ public abstract class CallNode extends PNodeWithContext {
         return dispatch.executeCall(frame, callable.getFunction(), createArgs.execute(callable, arguments, keywords));
     }
 
-    @Specialization(guards = "!isFunction(callable.getFunction())", limit = "3")
+    @Specialization(guards = "!isFunction(callable.getFunction())")
     protected Object methodCall(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords,
-                    @Cached PRaiseNode raise,
-                    @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                    @Cached CallVarargsMethodNode callCallNode,
-                    @SuppressWarnings("unused") @CachedLibrary("callable") InteropLibrary iLib) {
-        return doObjectAndType(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode, iLib);
+                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Shared("lookupCall") @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
+                    @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
+        return doObjectAndType(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode);
     }
 
-    @Specialization(guards = "!isFunction(callable.getFunction())", limit = "3")
+    @Specialization(guards = "!isFunction(callable.getFunction())")
     protected Object builtinMethodCall(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
-                    @Cached PRaiseNode raise,
-                    @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                    @Cached CallVarargsMethodNode callCallNode,
-                    @SuppressWarnings("unused") @CachedLibrary("callable") InteropLibrary iLib) {
-        return doObjectAndType(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode, iLib);
-    }
-
-    @Specialization
-    protected Object functionCall(VirtualFrame frame, PFunction callable, Object[] arguments, PKeyword[] keywords,
-                    @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
-                    @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
-        return dispatch.executeCall(frame, callable, createArgs.execute(callable, arguments, keywords));
-    }
-
-    @Specialization
-    protected Object builtinFunctionCall(VirtualFrame frame, PBuiltinFunction callable, Object[] arguments, PKeyword[] keywords,
-                    @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
-                    @Shared("argsNode") @Cached CreateArgumentsNode createArgs) {
-        return dispatch.executeCall(frame, callable, createArgs.execute(callable, arguments, keywords));
+                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Shared("lookupCall") @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
+                    @Shared("callVarargs") @Cached CallVarargsMethodNode callCallNode) {
+        return doObjectAndType(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode);
     }
 
     @Specialization(replaces = {"doObjectAndType", "methodCallBuiltinDirect", "methodCallDirect", "builtinMethodCallBuiltinDirectCached",
@@ -197,9 +192,9 @@ public abstract class CallNode extends PNodeWithContext {
     protected Object doGeneric(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
                     @Shared("dispatchNode") @Cached CallDispatchNode dispatch,
                     @Shared("argsNode") @Cached CreateArgumentsNode createArgs,
-                    @Cached PRaiseNode raise,
+                    @Shared("raise") @Cached PRaiseNode raise,
                     @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode,
-                    @Cached CallVarargsMethodNode callCallNode) {
+                    @Shared("callVarargs") @Cached CallVarargsMethodNode callCallNode) {
         if (callableObject instanceof PFunction) {
             return functionCall(frame, (PFunction) callableObject, arguments, keywords, dispatch, createArgs);
         } else if (callableObject instanceof PBuiltinFunction) {

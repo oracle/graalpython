@@ -45,7 +45,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
@@ -85,42 +84,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @DefaultExport(DefaultPythonObjectExports.class)
 @SuppressWarnings("unused")
 public abstract class PythonObjectLibrary extends Library {
-    /**
-     * @return {@code true} if the object has a {@code __dict__} attribute
-     */
-    public boolean hasDict(Object receiver) {
-        return false;
-    }
-
-    /**
-     * Note that not returning a value from this message does not mean that the object cannot have a
-     * {@code __dict__}. It may be that the object has inlined the representation of its
-     * {@code __dict__} and thus no object is available, yet.
-     *
-     * @return the value in {@code __dict__} or {@code null}, if there is none.
-     * @see #hasDict
-     */
-    @Abstract(ifExported = "hasDict")
-    public PDict getDict(Object receiver) {
-        return null;
-    }
-
-    /**
-     * Set the {@code __dict__} attribute of the object
-     */
-    @Abstract(ifExported = "hasDict")
-    public void setDict(Object receiver, PDict dict) throws UnsupportedMessageException {
-        throw UnsupportedMessageException.create();
-    }
-
-    /**
-     * Delete the {@code __dict__} attribute of the object
-     */
-    @Abstract(ifExported = "hasDict")
-    public void deleteDict(Object receiver) throws UnsupportedMessageException {
-        throw UnsupportedMessageException.create();
-    }
-
     /**
      * @return true if the receiver of a Python type.<br>
      *         <br>

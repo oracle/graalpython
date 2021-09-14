@@ -51,7 +51,6 @@ ModuleRootNode Name: <module 'try01'> SourceSection: [0,60]`def gen(x):↵  try:
                               GeneratorAccessNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [37,47]`ValueError`
                             Identifier: ValueError
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                         GeneratorAccessNode SourceSection: None
                       GeneratorAccessNode SourceSection: None

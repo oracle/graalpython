@@ -49,7 +49,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PFileIO;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIOBase;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PStringIO;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PTextIOWrapper;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.getDict;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 
 import java.util.List;
@@ -59,13 +58,13 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = {PIOBase, PFileIO, PStringIO, PTextIOWrapper, PBytesIO,
                 PBufferedReader, PBufferedWriter, PBufferedRandom, PBufferedRWPair})
@@ -82,10 +81,10 @@ public class IOBaseDictBuiltins extends AbstractBufferedIOBuiltins {
     @GenerateNodeFactory
     public abstract static class DictNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "isNoValue(none)", limit = "2")
+        @Specialization(guards = "isNoValue(none)")
         protected Object doit(PythonObject self, @SuppressWarnings("unused") PNone none,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return getDict(self, lib, factory());
+                        @Cached GetOrCreateDictNode getDict) {
+            return getDict.execute(self);
         }
 
         @Specialization

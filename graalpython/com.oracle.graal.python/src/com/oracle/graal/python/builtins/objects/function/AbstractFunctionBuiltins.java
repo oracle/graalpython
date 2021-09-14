@@ -64,6 +64,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -73,7 +75,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -151,23 +152,12 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     public abstract static class GetGlobalsNode extends PythonBuiltinNode {
         @Specialization(guards = "!isBuiltinFunction(self)")
         Object getGlobals(PFunction self,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached ConditionProfile moduleGlobals,
-                        @Cached ConditionProfile moduleHasNoDict) {
+                        @Cached GetOrCreateDictNode getDict,
+                        @Cached ConditionProfile moduleGlobals) {
             // see the make_globals_function from lib-graalpython/functions.py
             PythonObject globals = self.getGlobals();
             if (moduleGlobals.profile(globals instanceof PythonModule)) {
-                PDict dict = lib.getDict(globals);
-                if (moduleHasNoDict.profile(dict == null)) {
-                    dict = factory().createDictFixedStorage(globals);
-                    try {
-                        lib.setDict(globals, dict);
-                    } catch (UnsupportedMessageException e) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw new IllegalStateException(e);
-                    }
-                }
-                return dict;
+                return getDict.execute(globals);
             } else {
                 return globals;
             }
@@ -255,32 +245,17 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class DictNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         static PNone dict(PFunction self, PDict mapping,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            try {
-                lib.setDict(self, mapping);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
-            }
+                        @Cached SetDictNode setDict) {
+            setDict.execute(self, mapping);
             return PNone.NONE;
         }
 
-        @Specialization(guards = "isNoValue(mapping)", limit = "1")
+        @Specialization(guards = "isNoValue(mapping)")
         Object dict(PFunction self, @SuppressWarnings("unused") PNone mapping,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            PDict dict = lib.getDict(self);
-            if (dict == null) {
-                dict = factory().createDictFixedStorage(self);
-                try {
-                    lib.setDict(self, dict);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException(e);
-                }
-            }
-            return dict;
+                        @Cached GetOrCreateDictNode getDict) {
+            return getDict.execute(self);
         }
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})

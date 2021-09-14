@@ -70,7 +70,6 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [61,71]`_tuple_new`
                             Identifier: _tuple_new
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [72,76]`_cls`
                             Frame: [0,_cls,Illegal]
                           TupleLiteralNode SourceSection: [78,111]`(hits, misses, maxsi...`

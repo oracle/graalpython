@@ -80,7 +80,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
@@ -92,19 +91,19 @@ import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = {
@@ -137,10 +136,11 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object StructUnionTypeNew(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @Cached TypeNode typeNew,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
+                        @Cached GetDictIfExistsNode getDict,
+                        @Cached SetDictNode setDict,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached("create(_fields_)") SetAttributeNode setFieldsAttributeNode) {
             /*
@@ -148,7 +148,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
              */
             Object result = typeNew.execute(frame, type, args[0], args[1], args[2], kwds);
 
-            PDict resDict = lib.getDict(result);
+            PDict resDict = getDict.execute(result);
             if (resDict == null) {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
@@ -166,11 +166,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
              * requirements of the instances
              */
             dict.setDictStorage(hlib.addAllToOther(resDict.getDictStorage(), dict.getDictStorage()));
-            try {
-                lib.setDict(result, dict);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+            setDict.execute((PythonObject) result, dict);
             dict.format = "B";
 
             dict.paramfunc = CArgObjectBuiltins.StructUnionTypeParamFunc;

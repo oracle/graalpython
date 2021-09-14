@@ -102,12 +102,12 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -440,7 +440,7 @@ public enum SpecialMethodSlot {
     }
 
     private static void setSlotsFromManaged(Object[] slots, PythonManagedClass source, PythonLanguage language) {
-        PDict dict = PythonObjectLibrary.getUncached().getDict(source);
+        PDict dict = GetDictIfExistsNode.getUncached().execute(source);
         if (dict == null) {
             DynamicObject storage = source.getStorage();
             DynamicObjectLibrary domLib = DynamicObjectLibrary.getFactory().getUncached(storage);

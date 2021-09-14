@@ -50,6 +50,5 @@ ModuleRootNode Name: <module 'issueGR28345'> SourceSection: [0,187]`def test_isi
                           GetCallAttributeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [48,52]`self`
                               Identifier: self
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [0,<return_val>,Object]

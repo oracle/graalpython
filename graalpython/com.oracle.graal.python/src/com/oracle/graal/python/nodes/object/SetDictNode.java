@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,52 +41,40 @@
 package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
-@ImportStatic(PGuards.class)
 @GenerateUncached
-public abstract class GetDictNode extends PNodeWithContext {
-
-    public abstract PDict execute(Object o);
+public abstract class SetDictNode extends PNodeWithContext {
+    public abstract void execute(PythonObject object, PDict dict);
 
     @Specialization
-    PDict dict(PDict self) {
-        return self;
+    static void doPythonClass(PythonClass object, PDict dict,
+                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
+                    @Cached BranchProfile hasMroShapeProfile) {
+        object.setDictHiddenProp(dylib, hasMroShapeProfile, dict);
     }
 
-    @Specialization(limit = "1")
-    PDict dict(PythonModule self,
-                    @CachedLibrary("self") PythonObjectLibrary lib,
-                    @Cached PythonObjectFactory factory) {
-        PDict dict = lib.getDict(self);
-        if (dict == null) {
-            dict = factory.createDictFixedStorage(self);
-            try {
-                lib.setDict(self, dict);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
-            }
-        }
-        return dict;
+    @Fallback
+    static void doPythonObjectNotClass(PythonObject object, PDict dict,
+                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
+        dylib.put(object, PythonObject.DICT, dict);
     }
 
-    public static GetDictNode create() {
-        return GetDictNodeGen.create();
+    public static SetDictNode create() {
+        return SetDictNodeGen.create();
     }
 
-    public static GetDictNode getUncached() {
-        return GetDictNodeGen.getUncached();
+    public static SetDictNode getUncached() {
+        return SetDictNodeGen.getUncached();
     }
 }

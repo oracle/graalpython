@@ -121,6 +121,7 @@ import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToL
 import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -636,14 +637,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @TruffleBoundary
     private static void addKeysFromObject(HashSet<String> keys, PythonObject o, boolean includeInternal) {
-        HashingStorage dict;
-        if (PythonObjectLibrary.getUncached().hasDict(o)) {
-            dict = PythonObjectLibrary.getUncached().getDict(o).getDictStorage();
+        HashingStorage dictStorage;
+        PDict dict = GetDictIfExistsNode.getUncached().execute(o);
+        if (dict != null) {
+            dictStorage = dict.getDictStorage();
         } else {
-            dict = new DynamicObjectStorage(o); // temporary wrapper makes the rest of the code
-                                                // easier
+            dictStorage = new DynamicObjectStorage(o); // temporary wrapper makes the rest of the
+                                                       // code easier
         }
-        for (HashingStorage.DictEntry e : HashingStorageLibrary.getUncached().entries(dict)) {
+        for (HashingStorage.DictEntry e : HashingStorageLibrary.getUncached().entries(dictStorage)) {
             String strKey;
             if (e.getKey() instanceof String) {
                 strKey = (String) e.getKey();

@@ -9,7 +9,6 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
       CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: set
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [1,34]`f(x) for x in seq if...`
         Name: <genexpr>
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -40,7 +39,6 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
                       CallUnaryMethodNodeGen SourceSection: None
                       ReadGlobalOrBuiltinNodeGen SourceSection: [22,31]`condition`
                         Identifier: condition
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadGeneratorFrameVariableNodeGen SourceSection: [32,33]`x`
                         Frame: [0,x,Illegal]
                   ExpressionStatementNode SourceSection: [1,5]`f(x)`
@@ -50,7 +48,6 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
                         CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [1,2]`f`
                           Identifier: f
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNodeGen SourceSection: [3,4]`x`
                           Frame: [0,x,Illegal]
                       GeneratorAccessNode SourceSection: None

@@ -39,16 +39,13 @@ ModuleRootNode Name: <module 'assert03'> SourceSection: [0,47]`def avg():↵    
                           NeNodeGen SourceSection: [22,30]`len != 0`
                             ReadGlobalOrBuiltinNodeGen SourceSection: [22,25]`len`
                               Identifier: len
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [29,30]`0`
                               Value: 0
                         PythonCallUnary SourceSection: [32,47]`getMessage(len)`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [32,42]`getMessage`
                             Identifier: getMessage
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [43,46]`len`
                             Identifier: len
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [0,<return_val>,Object]

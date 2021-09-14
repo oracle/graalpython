@@ -39,27 +39,13 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 
-@ImportStatic(HiddenAttributes.class)
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PythonModule extends PythonObject {
 
     @CompilationFinal(dimensions = 1) static final Object[] INITIAL_MODULE_ATTRS = new Object[]{__NAME__, __DOC__, __PACKAGE__, __LOADER__, __SPEC__, __CACHED__, __FILE__};
@@ -106,11 +92,7 @@ public final class PythonModule extends PythonObject {
         PythonObjectFactory factory = PythonObjectFactory.getUncached();
         PythonModule pythonModule = new PythonModule(PythonLanguage.get(null), moduleName);
         PDict dict = factory.createDictFixedStorage(pythonModule);
-        try {
-            PythonObjectLibrary.getUncached().setDict(pythonModule, dict);
-        } catch (UnsupportedMessageException e) {
-            throw CompilerDirectives.shouldNotReachHere("BuiltinModule: could not set __dict__");
-        }
+        SetDictNode.getUncached().execute(pythonModule, dict);
         return pythonModule;
     }
 
@@ -126,29 +108,6 @@ public final class PythonModule extends PythonObject {
     public String toString() {
         Object attribute = this.getAttribute(__NAME__);
         return "<module '" + (PGuards.isNoValue(attribute) ? "?" : attribute) + "'>";
-    }
-
-    @ExportMessage
-    static class GetDict {
-        protected static boolean dictExists(Object dict) {
-            return dict instanceof PDict;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"self == cachedModule", "dictExists(dict)"}, assumptions = "singleContextAssumption(lib)", limit = "1")
-        static PDict getConstant(PythonModule self,
-                        @Cached(value = "self", weak = true) PythonModule cachedModule,
-                        @Cached(value = "self.getAttribute(DICT)", weak = true) Object dict,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") InteropLibrary lib) {
-            // module.__dict__ is a read-only attribute
-            return (PDict) dict;
-        }
-
-        @Specialization(replaces = "getConstant")
-        static PDict getDict(PythonModule self,
-                        @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-            return (PDict) dylib.getOrDefault(self, DICT, null);
-        }
     }
 
     public Object getNativeModuleDef() {

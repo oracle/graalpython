@@ -234,6 +234,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -265,7 +266,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -2196,7 +2196,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 PDict namespace = factory().createDict();
                 PythonLanguage language = PythonLanguage.get(this);
                 namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
-                PythonClass newType = typeMetaclass(frame, language, name, bases, namespace, metaclass, lib, hashingStoragelib,
+                PythonClass newType = typeMetaclass(frame, language, name, bases, namespace, metaclass, hashingStoragelib,
                                 getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize, isIdentifier);
 
                 for (DictEntry entry : hashingStoragelib.entries(namespace.getDictStorage())) {
@@ -2300,7 +2300,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private PythonClass typeMetaclass(VirtualFrame frame, PythonLanguage language, String name, PTuple bases, PDict namespace, Object metaclass,
-                        PythonObjectLibrary lib, HashingStorageLibrary hashingStorageLib, LookupAttributeInMRONode getDictAttrNode,
+                        HashingStorageLibrary hashingStorageLib, LookupAttributeInMRONode getDictAttrNode,
                         LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize,
                         IsIdentifierNode isIdentifier) {
             Object[] array = ensureGetObjectArrayNode().execute(bases);
@@ -2342,7 +2342,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // 2.) copy the dictionary slots
             Object[] slots = new Object[1];
             boolean[] qualnameSet = new boolean[]{false};
-            copyDictSlots(pythonClass, namespace, lib, hashingStorageLib, slots, qualnameSet);
+            copyDictSlots(pythonClass, namespace, hashingStorageLib, slots, qualnameSet);
             if (!qualnameSet[0]) {
                 pythonClass.setQualName(name);
             }
@@ -2521,7 +2521,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return false;
         }
 
-        private void copyDictSlots(PythonClass pythonClass, PDict namespace, PythonObjectLibrary lib, HashingStorageLibrary hashingStorageLib, Object[] slots, boolean[] qualnameSet) {
+        private void copyDictSlots(PythonClass pythonClass, PDict namespace, HashingStorageLibrary hashingStorageLib, Object[] slots, boolean[] qualnameSet) {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
             // Also check for a __slots__ sequence variable in dict
             PDict typeDict = null;
@@ -2575,20 +2575,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 } else if (key instanceof String && typeDict == null) {
                     pythonClass.setAttribute(key, value);
                 } else {
-                    // DynamicObjectStorage ignores non-string keys
-                    typeDict = lib.getDict(pythonClass);
-                    if (typeDict == null) {
-                        // 1.) create DynamicObjectStorage based dict from pythonClass
-                        typeDict = PythonObjectFactory.getUncached().createDictFixedStorage(pythonClass);
-                        try {
-                            lib.setDict(pythonClass, typeDict);
-                        } catch (UnsupportedMessageException ex) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            throw new IllegalStateException("can't set dict into " + pythonClass, ex);
-                        }
-                    }
-                    // 2.) writing a non string key converts DynamicObjectStorage to
-                    // EconomicMapStorage
+                    // Creates DynamicObjectStorage which ignores non-string keys
+                    typeDict = GetOrCreateDictNode.getUncached().execute(pythonClass);
+                    // Writing a non string key converts DynamicObjectStorage to EconomicMapStorage
                     HashingStorage updatedStore = hashingStorageLib.setItem(typeDict.getDictStorage(), key, value);
                     typeDict.setDictStorage(updatedStore);
                 }

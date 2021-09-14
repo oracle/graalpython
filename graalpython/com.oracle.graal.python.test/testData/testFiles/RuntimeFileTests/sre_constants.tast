@@ -58,7 +58,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       QualName: error
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -181,12 +180,10 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [1183,1193]`isinstance`
                                                 Identifier: isinstance
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [1194,1201]`pattern`
                                                 Frame: [2,pattern,Illegal]
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [1203,1206]`str`
                                                 Identifier: str
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [1225,1239]`newline = '\n'`
                                             Identifier: newline
                                             Frame: [4,newline,Illegal]
@@ -255,8 +252,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                     Key: lineno
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [1504,1508]`self`
                                                     Frame: [0,self,Illegal]
                                                 GetAttributeNode SourceSection: [1517,1527]`self.colno`
@@ -264,8 +259,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                     Key: colno
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [1517,1521]`self`
                                                     Frame: [0,self,Illegal]
                                                 PythonObjectFactoryNodeGen SourceSection: None
@@ -295,7 +288,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                             CallNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [1595,1600]`super`
                                               Identifier: super
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [1612,1615]`msg`
                                           Frame: [1,msg,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -345,7 +337,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       QualName: _NamedIntConstant
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -408,10 +399,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [1699,1704]`super`
                                               Identifier: super
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [1705,1722]`_NamedIntConstant`
                                               Identifier: _NamedIntConstant
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [1724,1727]`cls`
                                               Frame: [0,cls,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: [1737,1740]`cls`
@@ -469,8 +458,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                           Key: name
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
-                                          IsBuiltinClassProfile SourceSection: None
-                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [1833,1837]`self`
                                           Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -488,7 +475,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __str__
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     SetItemNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
                         ReadIndexedArgumentNodeGen SourceSection: None
@@ -564,7 +550,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                         CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GeneratorExpressionNode SourceSection: [1993,2051]`_NamedIntConstant(i,...`
                           Name: <genexpr>
                           FrameDescriptor: 5 slots [i, name, <>temp2, <>temp3, <return_val>]
@@ -595,7 +580,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                         CallBinaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [1993,2010]`_NamedIntConstant`
                                           Identifier: _NamedIntConstant
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [2011,2012]`i`
                                           Frame: [0,i,Illegal]
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [2014,2018]`name`
@@ -637,7 +621,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [2035,2044]`enumerate`
                                 Identifier: enumerate
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [2045,2050]`names`
                                 Frame: [0,names,Illegal]
                           PythonObjectFactoryNodeGen SourceSection: None
@@ -649,12 +632,10 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             CallNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2057,2064]`globals`
                               Identifier: globals
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         PythonCallUnary SourceSection: [2075,2108]`item.name: item for ...`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: dict
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GeneratorExpressionNode SourceSection: [2075,2108]`item.name: item for ...`
                             Name: <genexpr>
                             FrameDescriptor: 2 slots [item, <return_val>]
@@ -687,8 +668,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                               Key: name
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNodeGen SourceSection: [2075,2079]`item`
                                               Frame: [0,item,Illegal]
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [2086,2090]`item`
@@ -1155,7 +1134,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [5652,5658]`sorted`
                                   Identifier: sorted
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [5659,5660]`d`
                                   Frame: [1,d,Illegal]
                             ElseNode SourceSection: [5670,5758]`for item in items:↵ ...`

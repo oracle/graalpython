@@ -73,15 +73,15 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCFuncPtrType)
@@ -114,6 +114,8 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                         @Cached CastToJavaIntExactNode asNumber,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
                         @Cached GetInternalObjectArrayNode getArray,
+                        @Cached GetDictIfExistsNode getDict,
+                        @Cached SetDictNode setDict,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
             StgDictObject stgdict = factory().createStgDictObject(PythonBuiltinClassType.StgDict);
@@ -132,16 +134,12 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             Object result = typeNew.execute(frame, type, args[0], args[1], args[2], kwds);
 
             /* replace the class dict by our updated storage dict */
-            PDict resDict = lib.getDict(result);
+            PDict resDict = getDict.execute(result);
             if (resDict == null) {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
             stgdict.setDictStorage(hlib.addAllToOther(resDict.getDictStorage(), stgdict.getDictStorage()));
-            try {
-                lib.setDict(result, stgdict);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+            setDict.execute((PythonObject) result, stgdict);
             stgdict.align = FieldDesc.P.pffi_type.alignment;
             stgdict.length = 1;
             stgdict.size = StgDictObject.VOID_PTR_SIZE;

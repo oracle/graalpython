@@ -116,7 +116,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       CallNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [384,387]`set`
                                         Identifier: set
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: [399,792]`def wrapper(self):↵ ...`
                                     Identifier: wrapper
                                     Frame: [2,wrapper,Illegal]
@@ -157,14 +156,12 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                       CallUnaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [436,438]`id`
                                                         Identifier: id
-                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [439,443]`self`
                                                         Frame: [0,self,Illegal]
                                                     PythonCallNodeGen SourceSection: [446,457]`get_ident()`
                                                       CallNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [446,455]`get_ident`
                                                         Identifier: get_ident
-                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     PythonObjectFactoryNodeGen SourceSection: None
                                                 IfNode SourceSection: [470,539]`if key in repr_runni...`
                                                   YesNodeGen SourceSection: None
@@ -231,7 +228,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       CallBinaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [813,820]`getattr`
                                         Identifier: getattr
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ReadLocalCellNodeGen SourceSection: [821,834]`user_function`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [0,user_function,Illegal]
@@ -245,7 +241,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       CallBinaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [876,883]`getattr`
                                         Identifier: getattr
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ReadLocalCellNodeGen SourceSection: [884,897]`user_function`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [0,user_function,Illegal]
@@ -259,7 +254,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       CallBinaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [937,944]`getattr`
                                         Identifier: getattr
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ReadLocalCellNodeGen SourceSection: [945,958]`user_function`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [0,user_function,Illegal]
@@ -273,7 +267,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       CallBinaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [1003,1010]`getattr`
                                         Identifier: getattr
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ReadLocalCellNodeGen SourceSection: [1011,1024]`user_function`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [0,user_function,Illegal]
@@ -287,7 +280,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       CallTernaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [1076,1083]`getattr`
                                         Identifier: getattr
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ReadLocalCellNodeGen SourceSection: [1084,1097]`user_function`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [0,user_function,Illegal]
@@ -337,7 +329,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                       QualName: Repr
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -499,8 +490,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Key: maxlevel
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [1557,1561]`self`
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -560,13 +549,10 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           Key: __name__
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
-                                          IsBuiltinClassProfile SourceSection: None
-                                            GetClassNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [1623,1630]`type(x)`
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [1623,1627]`type`
                                             Identifier: type
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [1628,1629]`x`
                                             Frame: [1,x,Illegal]
                                     IfNode SourceSection: [1648,1752]`if ' ' in typename:↵...`
@@ -603,7 +589,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           CallBinaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [1755,1762]`hasattr`
                                             Identifier: hasattr
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [1763,1767]`self`
                                             Frame: [0,self,Illegal]
                                           AddNodeGen SourceSection: [1769,1787]`'repr_' + typename`
@@ -617,7 +602,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [1809,1816]`getattr`
                                               Identifier: getattr
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [1817,1821]`self`
                                               Frame: [0,self,Illegal]
                                             AddNodeGen SourceSection: [1823,1841]`'repr_' + typename`
@@ -719,7 +703,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [2000,2003]`len`
                                           Identifier: len
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [2004,2005]`x`
                                           Frame: [1,x,Illegal]
                                     IfNode SourceSection: [2015,2360]`if level <= 0 and n:...`
@@ -756,8 +739,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Key: repr1
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [2125,2129]`self`
                                               Frame: [0,self,Illegal]
                                         WriteLocalVariableNodeGen SourceSection: [2148,2211]`pieces = [repr1(elem...`
@@ -767,7 +748,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                                               Identifier: list
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             GeneratorExpressionNode SourceSection: [2158,2210]`repr1(elem, newlevel...`
                                               Name: <genexpr>
                                               FrameDescriptor: 4 slots [elem, newlevel, repr1, <return_val>]
@@ -829,7 +809,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                   CallBinaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [2192,2198]`islice`
                                                     Identifier: islice
-                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [2199,2200]`x`
                                                     Frame: [1,x,Illegal]
                                                   ReadLocalVariableNodeGen SourceSection: [2202,2209]`maxiter`
@@ -953,8 +932,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Key: maxtuple
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [2487,2491]`self`
                                             Frame: [0,self,Illegal]
                                         StringLiteralNode SourceSection: [2502,2505]`','`
@@ -1024,8 +1001,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Key: maxlist
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [2598,2602]`self`
                                             Frame: [0,self,Illegal]
                                         GetCallAttributeNodeGen SourceSection: None
@@ -1092,8 +1067,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Key: typecode
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [2702,2703]`x`
                                               Frame: [1,x,Illegal]
                                       BlockNode SourceSection: None
@@ -1107,8 +1080,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Key: typecode
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [2748,2749]`x`
                                             Frame: [1,x,Illegal]
                                     FrameReturnNode SourceSection: [2767,2832]`return self._repr_it...`
@@ -1126,8 +1097,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Key: maxarray
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [2818,2822]`self`
                                             Frame: [0,self,Illegal]
                                         GetCallAttributeNodeGen SourceSection: None
@@ -1196,7 +1165,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [2925,2941]`_possibly_sorted`
                                           Identifier: _possibly_sorted
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [2942,2943]`x`
                                           Frame: [1,x,Illegal]
                                     FrameReturnNode SourceSection: [2953,3012]`return self._repr_it...`
@@ -1213,8 +1181,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Key: maxset
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [3000,3004]`self`
                                             Frame: [0,self,Illegal]
                                         GetCallAttributeNodeGen SourceSection: None
@@ -1283,7 +1249,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [3117,3133]`_possibly_sorted`
                                           Identifier: _possibly_sorted
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [3134,3135]`x`
                                           Frame: [1,x,Illegal]
                                     FrameReturnNode SourceSection: [3145,3256]`return self._repr_it...`
@@ -1300,8 +1265,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Key: maxfrozenset
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [3238,3242]`self`
                                             Frame: [0,self,Illegal]
                                         GetCallAttributeNodeGen SourceSection: None
@@ -1370,8 +1333,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Key: maxdeque
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [3356,3360]`self`
                                             Frame: [0,self,Illegal]
                                         GetCallAttributeNodeGen SourceSection: None
@@ -1433,7 +1394,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [3419,3422]`len`
                                           Identifier: len
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [3423,3424]`x`
                                           Frame: [1,x,Illegal]
                                     IfNode SourceSection: [3434,3456]`if n == 0: return '{...`
@@ -1472,8 +1432,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           Key: repr1
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
-                                          IsBuiltinClassProfile SourceSection: None
-                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [3540,3544]`self`
                                           Frame: [0,self,Illegal]
                                     WriteLocalVariableNodeGen SourceSection: [3559,3570]`pieces = []`
@@ -1533,12 +1491,10 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [3590,3596]`islice`
                                               Identifier: islice
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [3597,3616]`_possibly_sorted(x)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [3597,3613]`_possibly_sorted`
                                                 Identifier: _possibly_sorted
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [3614,3615]`x`
                                                 Frame: [1,x,Illegal]
                                             GetAttributeNode SourceSection: [3618,3630]`self.maxdict`
@@ -1546,8 +1502,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 Key: maxdict
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [3618,3622]`self`
                                                 Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -1561,8 +1515,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Key: maxdict
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [3794,3798]`self`
                                               Frame: [0,self,Illegal]
                                       ExpressionStatementNode SourceSection: [3808,3828]`pieces.append('...')...`
@@ -1646,7 +1598,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [3935,3943]`builtins`
                                             Identifier: builtins
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         GetItemNodeGen SourceSection: [3949,3967]`x[:self.maxstring]`
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [1,x,Illegal]
@@ -1658,8 +1609,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 Key: maxstring
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [3952,3956]`self`
                                                 Frame: [0,self,Illegal]
                                             EmptyNode SourceSection: None
@@ -1670,7 +1619,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [3980,3983]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [3984,3985]`s`
                                               Frame: [3,s,Illegal]
                                           GetAttributeNode SourceSection: [3989,4003]`self.maxstring`
@@ -1678,8 +1626,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Key: maxstring
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [3989,3993]`self`
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -1690,7 +1636,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4021,4024]`max`
                                               Identifier: max
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [4025,4026]`0`
                                               Value: 0
                                             FloorDivNodeGen SourceSection: [4028,4049]`(self.maxstring-3)//...`
@@ -1700,8 +1645,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     Key: maxstring
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [4029,4033]`self`
                                                     Frame: [0,self,Illegal]
                                                 IntegerLiteralNode SourceSection: [4044,4045]`3`
@@ -1715,7 +1658,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4067,4070]`max`
                                               Identifier: max
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [4071,4072]`0`
                                               Value: 0
                                             SubNodeGen SourceSection: [4074,4092]`self.maxstring-3-i`
@@ -1725,8 +1667,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     Key: maxstring
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [4074,4078]`self`
                                                     Frame: [0,self,Illegal]
                                                 IntegerLiteralNode SourceSection: [4089,4090]`3`
@@ -1741,7 +1681,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [4110,4118]`builtins`
                                                 Identifier: builtins
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             AddNodeGen SourceSection: [4124,4144]`x[:i] + x[len(x)-j:]...`
                                               GetItemNodeGen SourceSection: [4124,4129]`x[:i]`
                                                 ReadLocalVariableNodeGen SourceSection: None
@@ -1762,7 +1701,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                       CallUnaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [4134,4137]`len`
                                                         Identifier: len
-                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [4138,4139]`x`
                                                         Frame: [1,x,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: [4141,4142]`j`
@@ -1794,7 +1732,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [4180,4183]`len`
                                                       Identifier: len
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [4184,4185]`s`
                                                       Frame: [3,s,Illegal]
                                                   ReadLocalVariableNodeGen SourceSection: [4187,4188]`j`
@@ -1862,7 +1799,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4255,4263]`builtins`
                                             Identifier: builtins
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [4269,4270]`x`
                                           Frame: [1,x,Illegal]
                                     IfNode SourceSection: [4314,4478]`if len(s) > self.max...`
@@ -1872,7 +1808,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4317,4320]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [4321,4322]`s`
                                               Frame: [3,s,Illegal]
                                           GetAttributeNode SourceSection: [4326,4338]`self.maxlong`
@@ -1880,8 +1815,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Key: maxlong
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [4326,4330]`self`
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -1892,7 +1825,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4356,4359]`max`
                                               Identifier: max
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [4360,4361]`0`
                                               Value: 0
                                             FloorDivNodeGen SourceSection: [4363,4382]`(self.maxlong-3)//2`
@@ -1902,8 +1834,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     Key: maxlong
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [4364,4368]`self`
                                                     Frame: [0,self,Illegal]
                                                 IntegerLiteralNode SourceSection: [4377,4378]`3`
@@ -1917,7 +1847,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4400,4403]`max`
                                               Identifier: max
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [4404,4405]`0`
                                               Value: 0
                                             SubNodeGen SourceSection: [4407,4423]`self.maxlong-3-i`
@@ -1927,8 +1856,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     Key: maxlong
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [4407,4411]`self`
                                                     Frame: [0,self,Illegal]
                                                 IntegerLiteralNode SourceSection: [4420,4421]`3`
@@ -1960,7 +1887,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [4459,4462]`len`
                                                       Identifier: len
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [4463,4464]`s`
                                                       Frame: [3,s,Illegal]
                                                   ReadLocalVariableNodeGen SourceSection: [4466,4467]`j`
@@ -2030,7 +1956,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [4556,4564]`builtins`
                                                 Identifier: builtins
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [4570,4571]`x`
                                               Frame: [1,x,Illegal]
                                         ExceptNode SourceSection: None
@@ -2043,28 +1968,22 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     Key: __name__
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      GetClassNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [4750,4761]`x.__class__`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __class__
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
-                                                      IsBuiltinClassProfile SourceSection: None
-                                                        GetClassNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [4750,4751]`x`
                                                       Frame: [1,x,Illegal]
                                                 PythonCallUnary SourceSection: [4772,4777]`id(x)`
                                                   CallUnaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [4772,4774]`id`
                                                     Identifier: id
-                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [4775,4776]`x`
                                                     Frame: [1,x,Illegal]
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4694,4703]`Exception`
                                             Identifier: Exception
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         BlockNode SourceSection: None
                                     IfNode SourceSection: [4787,4954]`if len(s) > self.max...`
                                       YesNodeGen SourceSection: None
@@ -2073,7 +1992,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4790,4793]`len`
                                               Identifier: len
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [4794,4795]`s`
                                               Frame: [3,s,Illegal]
                                           GetAttributeNode SourceSection: [4799,4812]`self.maxother`
@@ -2081,8 +1999,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Key: maxother
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [4799,4803]`self`
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -2093,7 +2009,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4830,4833]`max`
                                               Identifier: max
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [4834,4835]`0`
                                               Value: 0
                                             FloorDivNodeGen SourceSection: [4837,4857]`(self.maxother-3)//2...`
@@ -2103,8 +2018,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     Key: maxother
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [4838,4842]`self`
                                                     Frame: [0,self,Illegal]
                                                 IntegerLiteralNode SourceSection: [4852,4853]`3`
@@ -2118,7 +2031,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [4875,4878]`max`
                                               Identifier: max
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [4879,4880]`0`
                                               Value: 0
                                             SubNodeGen SourceSection: [4882,4899]`self.maxother-3-i`
@@ -2128,8 +2040,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     Key: maxother
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [4882,4886]`self`
                                                     Frame: [0,self,Illegal]
                                                 IntegerLiteralNode SourceSection: [4896,4897]`3`
@@ -2161,7 +2071,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [4935,4938]`len`
                                                       Identifier: len
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [4939,4940]`s`
                                                       Frame: [3,s,Illegal]
                                                   ReadLocalVariableNodeGen SourceSection: [4942,4943]`j`
@@ -2214,7 +2123,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [5178,5184]`sorted`
                               Identifier: sorted
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [5185,5186]`x`
                               Frame: [0,x,Illegal]
                         ExceptNode SourceSection: None
@@ -2223,12 +2131,10 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [5225,5229]`list`
                                 Identifier: list
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [5230,5231]`x`
                                 Frame: [0,x,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [5199,5208]`Exception`
                             Identifier: Exception
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [1,<return_val>,Object]
@@ -2251,8 +2157,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                 Key: repr
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __getattribute__
-                IsBuiltinClassProfile SourceSection: None
-                  GetClassNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [5256,5261]`aRepr`
                 Identifier: aRepr
                 IsBuiltinClassProfile SourceSection: None

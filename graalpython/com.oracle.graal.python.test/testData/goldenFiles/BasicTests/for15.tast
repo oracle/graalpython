@@ -60,7 +60,6 @@ ModuleRootNode Name: <module 'for15'> SourceSection: [0,87]`def formatyear():↵
                           GetIteratorExpressionNodeGen SourceSection: [42,51]`something`
                             ReadGlobalOrBuiltinNodeGen SourceSection: [42,51]`something`
                               Identifier: something
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                       FrameReturnNode SourceSection: [78,87]`return 10`
                         IntegerLiteralNode SourceSection: [85,87]`10`

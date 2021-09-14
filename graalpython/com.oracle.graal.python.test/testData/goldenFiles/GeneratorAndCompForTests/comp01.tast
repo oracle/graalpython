@@ -15,7 +15,6 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
             CallUnaryMethodNodeGen SourceSection: None
             ReadGlobalOrBuiltinNodeGen SourceSection: None
               Identifier: dict
-              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             GeneratorExpressionNode SourceSection: [10,93]`i: tuple(j for j in ...`
               Name: <genexpr>
               FrameDescriptor: 3 slots [i, t, <return_val>]
@@ -52,7 +51,6 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [13,18]`tuple`
                                   Identifier: tuple
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 GeneratorExpressionNode SourceSection: [19,41]`j for j in t if i !=...`
                                   Name: <genexpr>
                                   FrameDescriptor: 3 slots [j, i, <return_val>]

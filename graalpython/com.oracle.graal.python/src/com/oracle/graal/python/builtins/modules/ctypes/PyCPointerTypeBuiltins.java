@@ -70,23 +70,22 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCPointerType)
@@ -107,8 +106,9 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object PyCPointerType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached GetDictIfExistsNode getDict,
+                        @Cached SetDictNode setDict,
                         @Cached IsTypeNode isTypeNode,
                         @Cached TypeNode newType,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
@@ -148,16 +148,12 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
             Object /* type */ result = newType.execute(frame, type, args[0], args[1], typedict, kwds);
 
             /* replace the class dict by our updated spam dict */
-            PDict resDict = lib.getDict(result);
+            PDict resDict = getDict.execute(result);
             if (resDict == null) {
                 resDict = factory().createDictFixedStorage((PythonObject) result);
             }
             stgdict.setDictStorage(hlib.addAllToOther(resDict.getDictStorage(), stgdict.getDictStorage()));
-            try {
-                lib.setDict(result, stgdict);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+            setDict.execute((PythonObject) result, stgdict);
 
             return result;
         }

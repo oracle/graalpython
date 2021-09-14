@@ -115,6 +115,5 @@ ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():â
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [66,72]`locals`
                             Identifier: locals
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [3,<return_val>,Object]

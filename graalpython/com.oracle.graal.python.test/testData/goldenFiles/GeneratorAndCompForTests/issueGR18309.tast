@@ -9,7 +9,6 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
       CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: list
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [2,33]`b for a in d1 if d1 ...`
         Name: <genexpr>
         FrameDescriptor: 3 slots [b, a, <return_val>]
@@ -38,7 +37,6 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
                   YesNodeGen SourceSection: None
                     ReadGlobalOrBuiltinNodeGen SourceSection: [19,21]`d1`
                       Identifier: d1
-                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   GeneratorForNode SourceSection: [22,33]`for b in d2`
                     ExpressionStatementNode SourceSection: [2,3]`b`
                       YieldNode SourceSection: [2,3]`b`
@@ -52,7 +50,6 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
                     GetIteratorExpressionNodeGen SourceSection: [31,33]`d2`
                       ReadGlobalOrBuiltinNodeGen SourceSection: [31,33]`d2`
                         Identifier: d2
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     GetNextCached SourceSection: None
                       LookupAndCallUnaryNodeGen SourceSection: None
                         Op: __next__

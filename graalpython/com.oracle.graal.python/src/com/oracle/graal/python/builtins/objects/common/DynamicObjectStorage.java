@@ -160,7 +160,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(replaces = "cachedKeys")
         static int length(DynamicObjectStorage self,
-                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readNode) {
             return cachedKeys(self, self.store.getShape(), keyArray(self), readNode);
         }
 
@@ -185,7 +185,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         @Specialization
         static Object string(DynamicObjectStorage self, String key, ThreadState state,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
-                        @Exclusive @Cached ConditionProfile noValueProfile) {
+                        @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
             Object result = readKey.execute(self.store, key);
             return noValueProfile.profile(result == PNone.NO_VALUE) ? null : result;
         }
@@ -195,7 +195,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Shared("castStr") @Cached CastToJavaStringNode castStr,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
-                        @Exclusive @Cached ConditionProfile noValueProfile) {
+                        @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
             return string(self, castStr.execute(key), state, readKey, noValueProfile);
         }
 
@@ -206,10 +206,10 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Exclusive @Cached("self.store.getShape()") Shape cachedShape,
                         @Exclusive @Cached(value = "keyArray(cachedShape)", dimensions = 1) Object[] keyList,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Shared("equalsLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
-                        @Exclusive @Cached ConditionProfile gotState,
-                        @Exclusive @Cached ConditionProfile noValueProfile) {
+                        @Shared("gotState") @Cached ConditionProfile gotState,
+                        @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
             VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             long hash = hashNode.execute(frame, key);
             for (Object currentKey : keyList) {
@@ -233,10 +233,10 @@ public final class DynamicObjectStorage extends HashingStorage {
         static Object notStringLoop(DynamicObjectStorage self, Object key, ThreadState state,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Shared("equalsLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
-                        @Exclusive @Cached ConditionProfile gotState,
-                        @Exclusive @Cached ConditionProfile noValueProfile) {
+                        @Shared("gotState") @Cached ConditionProfile gotState,
+                        @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
             VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             long hash = hashNode.execute(frame, key);
             Iterator<Object> keys = getKeysIterator(self.store.getShape());
@@ -297,7 +297,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         @Specialization(guards = "!shouldTransition(self)")
         static HashingStorage string(DynamicObjectStorage self, String key, Object value, ThreadState state,
                         @Shared("hasMroprofile") @Cached BranchProfile profile,
-                        @Shared("setitemWrite") @Cached WriteAttributeToDynamicObjectNode writeNode) {
+                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeNode) {
             writeNode.execute(self.store, key, value);
             invalidateAttributeInMROFinalAssumptions(self.mro, key, profile);
             return self;
@@ -307,22 +307,21 @@ public final class DynamicObjectStorage extends HashingStorage {
         static HashingStorage pstring(DynamicObjectStorage self, PString key, Object value, ThreadState state,
                         @Shared("castStr") @Cached CastToJavaStringNode castStr,
                         @Shared("hasMroprofile") @Cached BranchProfile hasMro,
-                        @Shared("setitemWrite") @Cached WriteAttributeToDynamicObjectNode writeNode,
+                        @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeNode,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile) {
             return string(self, castStr.execute(key), value, state, hasMro, writeNode);
         }
 
         // n.b: do not replace the other two specializations here, because that would make the
         // uncached version pretty useless
-        @Specialization(guards = {"shouldTransition(self) || !isBuiltinString(key, profile)"})
+        @Specialization(guards = {"shouldTransition(self) || !isBuiltinString(key, profile)"}, limit = "1")
         static HashingStorage generalize(DynamicObjectStorage self, Object key, Object value, ThreadState state,
-                        @Exclusive @Cached IsBuiltinClassProfile profile,
+                        @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary("self") HashingStorageLibrary lib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary newLib,
-                        @Exclusive @Cached ConditionProfile isBuiltinKey,
-                        @Exclusive @Cached ConditionProfile gotState) {
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
             HashingStorage newStore;
-            if (isBuiltinKey.profile(PGuards.isBuiltinString(key, profile))) {
+            if (PGuards.isBuiltinString(key, profile)) {
                 // To avoid calling the costly length message we use SIZE_THRESHOLD
                 newStore = new HashMapStorage(SIZE_THRESHOLD);
             } else {
@@ -342,8 +341,8 @@ public final class DynamicObjectStorage extends HashingStorage {
     public HashingStorage delItemWithState(Object key, ThreadState state,
                     @CachedLibrary("this") HashingStorageLibrary lib,
                     @Shared("hasMroprofile") @Cached BranchProfile hasMro,
-                    @Exclusive @Cached WriteAttributeToDynamicObjectNode writeNode,
-                    @Exclusive @Cached ConditionProfile gotState) {
+                    @Shared("write") @Cached WriteAttributeToDynamicObjectNode writeNode,
+                    @Shared("gotState") @Cached ConditionProfile gotState) {
         // __hash__ call is done through hasKey, if necessary
         boolean hasKey;
         if (gotState.profile(state != null)) {
@@ -391,7 +390,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(replaces = "cachedKeys")
         static Object addAll(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
-                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
+                        @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readNode) {
             return cachedKeys(self, node, firstValue, self.store.getShape(), keyArray(self), readNode);
         }
 
@@ -407,7 +406,7 @@ public final class DynamicObjectStorage extends HashingStorage {
     }
 
     @ExportMessage
-    public HashingStorage clear(@CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+    public HashingStorage clear(@Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
         dylib.resetShape(store, PythonLanguage.get(dylib).getEmptyShape());
         return this;
     }
@@ -440,7 +439,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(replaces = "copy")
         public static HashingStorage copyGeneric(DynamicObjectStorage receiver,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+                        @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
             DynamicObject copy = new Store(PythonLanguage.get(dylib).getEmptyShape());
             Object[] keys = dylib.getKeyArray(receiver.store);
             for (Object key : keys) {
@@ -452,13 +451,13 @@ public final class DynamicObjectStorage extends HashingStorage {
 
     @ExportMessage
     public HashingStorageIterable<Object> keys(
-                    @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
+                    @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readNode) {
         return new HashingStorageIterable<>(new KeysIterator(store, readNode));
     }
 
     @ExportMessage
     public HashingStorageIterable<Object> reverseKeys(
-                    @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
+                    @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readNode) {
         return new HashingStorageIterable<>(new ReverseKeysIterator(store, readNode));
     }
 
@@ -549,7 +548,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
     @ExportMessage
     public HashingStorageIterable<DictEntry> entries(
-                    @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
+                    @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readNode) {
         return new HashingStorageIterable<>(new EntriesIterator(store, readNode));
     }
 
