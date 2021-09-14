@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -451,10 +452,10 @@ public class IONodes {
     public abstract static class HasRead1 extends Node {
         public abstract boolean execute(VirtualFrame frame, Object obj);
 
-        @Specialization(limit = "1")
+        @Specialization
         static boolean hasRead1(VirtualFrame frame, Object obj,
-                        @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return lib.lookupAttribute(obj, frame, READ1) != PNone.NO_VALUE;
+                        @Cached PyObjectLookupAttr lookup) {
+            return lookup.execute(frame, obj, READ1) != PNone.NO_VALUE;
         }
     }
 
@@ -693,40 +694,40 @@ public class IONodes {
     public abstract static class GetMode extends Node {
         public abstract Object execute(VirtualFrame frame, Object obj);
 
-        @Specialization(limit = "1")
+        @Specialization
         static Object mode(VirtualFrame frame, Object obj,
-                        @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return lib.lookupAttribute(obj, frame, MODE);
+                        @Cached PyObjectLookupAttr lookup) {
+            return lookup.execute(frame, obj, MODE);
         }
     }
 
     public abstract static class GetName extends Node {
         public abstract Object execute(VirtualFrame frame, Object obj);
 
-        @Specialization(limit = "1")
+        @Specialization
         static Object name(VirtualFrame frame, Object obj,
-                        @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return lib.lookupAttribute(obj, frame, NAME);
+                        @Cached PyObjectLookupAttr lookup) {
+            return lookup.execute(frame, obj, NAME);
         }
     }
 
     public abstract static class GetClosed extends Node {
         public abstract Object execute(VirtualFrame frame, Object obj);
 
-        @Specialization(limit = "1")
+        @Specialization
         static Object closed(VirtualFrame frame, Object obj,
-                        @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return lib.lookupAttribute(obj, frame, CLOSED);
+                        @Cached PyObjectLookupAttr lookup) {
+            return lookup.execute(frame, obj, CLOSED);
         }
     }
 
     public abstract static class GetNewlines extends Node {
         public abstract Object execute(VirtualFrame frame, Object obj);
 
-        @Specialization(limit = "1")
+        @Specialization
         static Object newlines(VirtualFrame frame, Object obj,
-                        @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return lib.lookupAttribute(obj, frame, NEWLINES);
+                        @Cached PyObjectLookupAttr lookup) {
+            return lookup.execute(frame, obj, NEWLINES);
         }
     }
 

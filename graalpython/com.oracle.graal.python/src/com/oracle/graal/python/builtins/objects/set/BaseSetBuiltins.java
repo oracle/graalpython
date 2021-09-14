@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
@@ -190,7 +191,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         public Object reduce(VirtualFrame frame, PBaseSet self,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
                         @Cached GetClassNode getClassNode,
-                        @CachedLibrary("self") PythonObjectLibrary plib) {
+                        @Cached PyObjectLookupAttr lookup) {
             HashingStorage storage = self.getDictStorage();
             int len = lib.length(storage);
             Iterator<Object> keys = lib.keys(storage).iterator();
@@ -199,7 +200,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                 keysArray[i] = keys.next();
             }
             PTuple contents = factory().createTuple(new Object[]{factory().createList(keysArray)});
-            Object dict = plib.lookupAttribute(self, frame, __DICT__);
+            Object dict = lookup.execute(frame, self, __DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }

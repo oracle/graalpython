@@ -23,10 +23,10 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -527,7 +527,7 @@ public class JSONScannerBuiltins extends PythonBuiltins {
     private static RuntimeException decodeError(Node raisingNode, String jsonString, int pos, String format) {
         CompilerAsserts.neverPartOfCompilation();
         Object module = AbstractImportNode.importModule("json.decoder");
-        Object errorClass = PythonObjectLibrary.getUncached().lookupAttribute(module, null, "JSONDecodeError");
+        Object errorClass = PyObjectLookupAttr.getUncached().execute(null, module, "JSONDecodeError");
         Object exception = CallNode.getUncached().execute(errorClass, format, jsonString, pos);
         throw PRaiseNode.raise(raisingNode, (PBaseException) exception, false);
     }

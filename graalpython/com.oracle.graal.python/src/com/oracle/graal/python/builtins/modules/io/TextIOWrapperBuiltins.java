@@ -122,6 +122,7 @@ import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -1148,7 +1149,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends InitCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "self.isOK()")
         Object doit(VirtualFrame frame, PTextIO self,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libSelf,
+                        @Cached PyObjectLookupAttr lookup,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode repr,
                         @Cached IONodes.ToStringNode toString,
                         @Cached IsBuiltinClassProfile isValueError) {
@@ -1160,7 +1161,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                     PythonUtils.append(sb, "<_io.TextIOWrapper");
                     Object nameobj = PNone.NO_VALUE;
                     try {
-                        nameobj = libSelf.lookupAttributeStrict(self, frame, NAME);
+                        nameobj = lookup.execute(frame, self, NAME);
                     } catch (PException e) {
                         e.expect(ValueError, isValueError);
                         /* Ignore ValueError raised if the underlying stream was detached */
@@ -1169,7 +1170,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         Object name = repr.executeObject(frame, nameobj);
                         PythonUtils.append(sb, PythonUtils.format(" name=%s", toString.execute(name)));
                     }
-                    Object modeobj = libSelf.lookupAttribute(self, frame, MODE);
+                    Object modeobj = lookup.execute(frame, self, MODE);
                     if (modeobj != PNone.NO_VALUE) {
                         PythonUtils.append(sb, PythonUtils.format(" mode='%s'", toString.execute(modeobj)));
                     }

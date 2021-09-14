@@ -77,8 +77,8 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -98,7 +98,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PBufferedReader, PBufferedWriter, PBufferedRandom})
@@ -370,7 +369,7 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object repr(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libSelf,
+                        @Cached PyObjectLookupAttr lookup,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetClassNode getClassNode,
                         @Cached IsBuiltinClassProfile isValueError,
@@ -378,7 +377,7 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
             Object clazz = getNameNode.execute(getClassNode.execute(self));
             Object nameobj = PNone.NO_VALUE;
             try {
-                nameobj = libSelf.lookupAttribute(self, frame, NAME);
+                nameobj = lookup.execute(frame, self, NAME);
             } catch (PException e) {
                 e.expect(ValueError, isValueError);
                 // ignore

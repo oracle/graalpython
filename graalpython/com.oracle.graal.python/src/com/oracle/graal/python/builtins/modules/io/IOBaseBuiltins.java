@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -129,10 +130,10 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ClosedNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(limit = "1")
+        @Specialization
         static boolean closed(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return isClosed(self, frame, lib);
+                        @Cached PyObjectLookupAttr lookup) {
+            return isClosed(self, frame, lookup);
         }
     }
 
@@ -232,9 +233,10 @@ public class IOBaseBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         PNone close(VirtualFrame frame, PythonObject self,
                         @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached PyObjectLookupAttr lookup,
                         @Cached("create(__IOBASE_CLOSED)") SetAttributeNode setAttributeNode,
                         @Cached BranchProfile errorProfile) {
-            if (!isClosed(self, frame, lib)) {
+            if (!isClosed(self, frame, lookup)) {
                 try {
                     lib.lookupAndCallRegularMethod(self, frame, FLUSH);
                 } catch (PException e) {
@@ -258,11 +260,10 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class FlushNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(limit = "1")
+        @Specialization
         PNone flush(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
-                        @Cached ConditionProfile closedProfile) {
-            if (closedProfile.profile(isClosed(self, frame, lib))) {
+                        @Cached PyObjectLookupAttr lookup) {
+            if (isClosed(self, frame, lookup)) {
                 throw raise(ValueError, ErrorMessages.IO_CLOSED);
             }
             return PNone.NONE;
@@ -407,11 +408,12 @@ public class IOBaseBuiltins extends PythonBuiltins {
         @Specialization(limit = "2")
         PBytes readline(VirtualFrame frame, Object self, int limit,
                         @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached PyObjectLookupAttr lookup,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached ConditionProfile hasPeek,
                         @Cached ConditionProfile isBytes) {
             /* For backwards compatibility, a (slowish) readline(). */
-            Object peek = lib.lookupAttribute(self, frame, "peek");
+            Object peek = lookup.execute(frame, self, "peek");
             ByteArrayOutputStream buffer = createOutputStream();
             while (limit < 0 || buffer.size() < limit) {
                 int nreadahead = 1;
@@ -505,8 +507,8 @@ public class IOBaseBuiltins extends PythonBuiltins {
      * @param self the IOBase instance
      * @return true if the {@link IONodes#__IOBASE_CLOSED} attribute exists
      */
-    private static boolean isClosed(PythonObject self, VirtualFrame frame, PythonObjectLibrary lib) {
-        return !PGuards.isNoValue(lib.lookupAttribute(self, frame, __IOBASE_CLOSED));
+    private static boolean isClosed(PythonObject self, VirtualFrame frame, PyObjectLookupAttr lookup) {
+        return !PGuards.isNoValue(lookup.execute(frame, self, __IOBASE_CLOSED));
     }
 
     /**

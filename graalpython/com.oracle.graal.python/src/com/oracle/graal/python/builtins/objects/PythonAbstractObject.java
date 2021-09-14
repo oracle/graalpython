@@ -232,12 +232,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object readMember(String key,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("lookup") @Cached PyObjectLookupAttr lookup,
                     @Exclusive @Cached GilNode gil) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
-        Object value = null;
+        Object value;
         try {
-            value = lib.lookupAttribute(this, null, key);
+            value = lookup.execute(null, this, key);
         } finally {
             gil.release(mustRelease);
         }
@@ -533,7 +533,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Cached CastToListInteropNode castToList,
                     @Shared("getClassThis") @Cached GetClassNode getClass,
                     @Cached PyMappingCheckNode checkMapping,
-                    @Cached PyObjectLookupAttr lookupKeys,
+                    @Shared("lookup") @Cached PyObjectLookupAttr lookupKeys,
                     @Cached CallUnaryMethodNode callKeys,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Cached SequenceNodes.LenNode lenNode,

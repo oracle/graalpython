@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -113,9 +114,9 @@ public class StgDictBuiltins extends PythonBuiltins {
 
         @Specialization
         Object init(VirtualFrame frame, StgDictObject self, Object[] args, PKeyword[] kwargs,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached PyObjectLookupAttr lookup,
                         @Cached CallNode callNode) {
-            Object initMethod = lib.lookupAttribute(PythonBuiltinClassType.PDict, frame, SpecialMethodNames.__INIT__);
+            Object initMethod = lookup.execute(frame, PythonBuiltinClassType.PDict, SpecialMethodNames.__INIT__);
             Object[] dictArgs;
             if (args.length > 0) {
                 dictArgs = new Object[args.length + 1];

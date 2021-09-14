@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -658,13 +659,13 @@ public class ArrayBuiltins extends PythonBuiltins {
             return ReduceExNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "protocol < 3", limit = "2")
+        @Specialization(guards = "protocol < 3")
         Object reduceLegacy(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
                         @Cached GetClassNode getClassNode,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached PyObjectLookupAttr lookup,
                         @Cached ToListNode toListNode) {
             Object cls = getClassNode.execute(self);
-            Object dict = lib.lookupAttribute(self, frame, __DICT__);
+            Object dict = lookup.execute(frame, self, __DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
@@ -675,17 +676,18 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "protocol >= 3")
         Object reduce(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
                         @Cached GetClassNode getClassNode,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @Cached PyObjectLookupAttr lookupDict,
+                        @Cached PyObjectLookupAttr lookupReconstructor,
                         @Cached ToBytesNode toBytesNode) {
             PythonModule arrayModule = getCore().lookupBuiltinModule("array");
             PArray.MachineFormat mformat = PArray.MachineFormat.forFormat(self.getFormat());
             assert mformat != null;
             Object cls = getClassNode.execute(self);
-            Object dict = lib.lookupAttribute(self, frame, __DICT__);
+            Object dict = lookupDict.execute(frame, self, __DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
-            Object reconstructor = lib.lookupAttributeStrict(arrayModule, frame, "_array_reconstructor");
+            Object reconstructor = lookupReconstructor.executeStrict(frame, this, arrayModule, "_array_reconstructor");
             PTuple args = factory().createTuple(new Object[]{cls, self.getFormatString(), mformat.code, toBytesNode.call(frame, self)});
             return factory().createTuple(new Object[]{reconstructor, args, dict});
         }

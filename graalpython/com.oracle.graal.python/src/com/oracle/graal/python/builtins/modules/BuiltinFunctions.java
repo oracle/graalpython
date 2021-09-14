@@ -132,6 +132,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
@@ -2108,10 +2109,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class BuildClassNode extends PythonVarargsBuiltinNode {
         @TruffleBoundary
         private static Object buildJavaClass(Object func, String name, Object base) {
-            PythonObjectLibrary factory = PythonObjectLibrary.getUncached();
             // uncached PythonContext get, since this code path is slow in any case
             Object module = PythonContext.get(null).getCore().lookupBuiltinModule(BuiltinNames.__GRAALPYTHON__);
-            Object buildFunction = factory.lookupAttribute(module, null, "build_java_class");
+            Object buildFunction = PyObjectLookupAttr.getUncached().execute(null, module, "build_java_class");
             return CallNode.getUncached().execute(buildFunction, func, name, base);
         }
 
