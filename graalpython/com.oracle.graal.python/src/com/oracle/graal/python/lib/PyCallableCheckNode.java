@@ -49,13 +49,15 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 
@@ -63,8 +65,9 @@ import com.oracle.truffle.api.library.CachedLibrary;
  * Equivalent of CPython's {@code PyCallable_Check} function.
  */
 @GenerateUncached
+@ImportStatic(SpecialMethodSlot.class)
 public abstract class PyCallableCheckNode extends PNodeWithContext {
-    public abstract boolean execute(Frame frame, Object object);
+    public abstract boolean execute(Object object);
 
     @Specialization
     static boolean doFunction(@SuppressWarnings("unused") PFunction o) {
@@ -101,15 +104,30 @@ public abstract class PyCallableCheckNode extends PNodeWithContext {
         return true;
     }
 
-    @Specialization(replaces = {"doFunction", "doMethod", "doBuiltinFunction", "doBuiltinMethod", "doClass", "doBuiltinClass", "doType"})
-    static boolean doObject(VirtualFrame frame, PythonAbstractObject o,
-                    @Cached PyObjectLookupAttr lookupCall) {
-        return lookupCall.execute(frame, o, SpecialMethodNames.__CALL__) != PNone.NO_VALUE;
+    @Specialization(replaces = {"doFunction", "doMethod", "doBuiltinFunction", "doBuiltinMethod", "doClass", "doBuiltinClass"})
+    static boolean doObject(PythonAbstractObject o,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Shared("lookupCall") @Cached(parameters = "Call") LookupCallableSlotInMRONode lookupCall) {
+        return lookupCall.execute(getClassNode.execute(o)) != PNone.NO_VALUE;
     }
 
-    @Specialization(replaces = {"doFunction", "doMethod", "doBuiltinFunction", "doBuiltinMethod", "doClass", "doBuiltinClass", "doType"}, limit = "3")
+    @Specialization(replaces = {"doFunction", "doMethod", "doBuiltinFunction", "doBuiltinMethod", "doClass", "doBuiltinClass", "doType", "doObject"})
     static boolean doGeneric(Object o,
-                    @CachedLibrary("o") InteropLibrary lib) {
-        return lib.isExecutable(o) || lib.isInstantiable(o);
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Shared("lookupCall") @Cached(parameters = "Call") LookupCallableSlotInMRONode lookupCall,
+                    @CachedLibrary(limit = "3") InteropLibrary lib) {
+        Object type = getClassNode.execute(o);
+        if (type == PythonBuiltinClassType.ForeignObject) {
+            return lib.isExecutable(o) || lib.isInstantiable(o);
+        }
+        return lookupCall.execute(type) != PNone.NO_VALUE;
+    }
+
+    public static PyCallableCheckNode create() {
+        return PyCallableCheckNodeGen.create();
+    }
+
+    public static PyCallableCheckNode getUncached() {
+        return PyCallableCheckNodeGen.getUncached();
     }
 }

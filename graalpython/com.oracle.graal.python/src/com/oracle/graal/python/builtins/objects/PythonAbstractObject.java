@@ -95,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -510,8 +511,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isExecutable(
-                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary) {
-        return dataModelLibrary.isCallable(this);
+                    @Cached PyCallableCheckNode callableCheck) {
+        return callableCheck.execute(this);
     }
 
     @ExportMessage
@@ -1176,7 +1177,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         static boolean access(Object object, String attrKeyName, int type,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readTypeAttrNode,
                         @Cached ReadAttributeFromObjectNode readObjectAttrNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary dataModelLibrary,
+                        @Cached PyCallableCheckNode callableCheck,
                         @Cached LookupInheritedAttributeNode.Dynamic getGetNode,
                         @Cached LookupInheritedAttributeNode.Dynamic getSetNode,
                         @Cached LookupInheritedAttributeNode.Dynamic getDeleteNode,
@@ -1237,7 +1238,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                                     return false;
                                 }
                             }
-                            return dataModelLibrary.isCallable(attr);
+                            return callableCheck.execute(attr);
                         }
                         return false;
                     case READ_SIDE_EFFECTS:
@@ -1339,12 +1340,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             return callVarargsMethodNode.execute(null, receiver, convertedArgs, PKeyword.EMPTY_KEYWORDS);
         }
 
-        @Specialization(limit = "1", replaces = "doVarargsBuiltinMethod")
+        @Specialization(replaces = "doVarargsBuiltinMethod")
         Object doExecute(Object receiver, Object[] arguments,
-                        @CachedLibrary("receiver") PythonObjectLibrary dataModelLibrary,
+                        @Cached PyCallableCheckNode callableCheck,
                         @Exclusive @Cached CallNode callNode,
                         @Exclusive @Cached ArgumentsFromForeignNode convertArgsNode) throws UnsupportedMessageException {
-            if (!dataModelLibrary.isCallable(receiver)) {
+            if (!callableCheck.execute(receiver)) {
                 throw UnsupportedMessageException.create();
             }
             Object[] convertedArgs = convertArgsNode.execute(arguments);

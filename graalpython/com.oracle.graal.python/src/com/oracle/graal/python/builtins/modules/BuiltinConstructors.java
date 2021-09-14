@@ -187,6 +187,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsAcceptableBaseNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatFromString;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
@@ -3016,8 +3017,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         Object methodGeneric(@SuppressWarnings("unused") Object cls, Object func, Object self,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary dataModelLibrary) {
-            if (dataModelLibrary.isCallable(func)) {
+                        @Cached PyCallableCheckNode callableCheck) {
+            if (callableCheck.execute(func)) {
                 return factory().createMethod(self, func);
             } else {
                 throw raise(TypeError, ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE);

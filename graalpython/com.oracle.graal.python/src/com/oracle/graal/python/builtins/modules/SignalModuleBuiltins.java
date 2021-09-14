@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -64,17 +64,20 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 
 import sun.misc.Signal;
@@ -227,14 +230,20 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "!idNumLib.isCallable(idNum)", limit = "1")
+        @Specialization(guards = "!callableCheck.execute(idNum)", limit = "1")
         Object signalId(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object signal, Object idNum,
-                        @SuppressWarnings("unused") @CachedLibrary("idNum") PythonObjectLibrary idNumLib,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
+                        @SuppressWarnings("unused") @Shared("callableCheck") @Cached PyCallableCheckNode callableCheck,
+                        @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached CastToJavaIntExactNode cast) {
             // Note: CPython checks if id is the same reference as SIG_IGN/SIG_DFL constants, which
             // are instances of Handlers enum
             // The -1 fallback will be correctly reported as an error later on
-            int id = idNum instanceof Integer ? (int) idNum : -1;
+            int id;
+            try {
+                id = cast.execute(idNum);
+            } catch (CannotCastException | PException e) {
+                id = -1;
+            }
             return signal(asSizeNode.executeExact(frame, signal), id);
         }
 
@@ -255,10 +264,10 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(guards = "handlerLib.isCallable(handler)", limit = "1")
+        @Specialization(guards = "callableCheck.execute(handler)", limit = "1")
         Object signalHandler(VirtualFrame frame, PythonModule self, Object signal, Object handler,
-                        @SuppressWarnings("unused") @CachedLibrary("handler") PythonObjectLibrary handlerLib,
-                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @SuppressWarnings("unused") @Shared("callableCheck") @Cached PyCallableCheckNode callableCheck,
+                        @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached ReadAttributeFromObjectNode readQueueNode,
                         @Cached ReadAttributeFromObjectNode readSemaNode) {
             return signal(self, asSizeNode.executeExact(frame, signal), handler, readQueueNode, readSemaNode);

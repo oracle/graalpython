@@ -127,6 +127,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
@@ -216,6 +217,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -1263,16 +1265,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return lib.getIteratorWithFrame(object, frame);
         }
 
-        @Specialization(guards = {"lib.isCallable(callable)", "!isNoValue(sentinel)"}, limit = "1")
+        @Specialization(guards = {"callableCheck.execute(callable)", "!isNoValue(sentinel)"}, limit = "1")
         Object iter(Object callable, Object sentinel,
-                        @SuppressWarnings("unused") @CachedLibrary("callable") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @Cached PyCallableCheckNode callableCheck) {
             return factory().createSentinelIterator(callable, sentinel);
         }
 
-        @Specialization(guards = {"!lib.isCallable(callable)", "!isNoValue(sentinel)"}, limit = "1")
+        @Fallback
         @SuppressWarnings("unused")
-        Object iterNotCallable(Object callable, Object sentinel,
-                        @CachedLibrary("callable") PythonObjectLibrary lib) {
+        Object iterNotCallable(Object callable, Object sentinel) {
             throw raise(TypeError, ErrorMessages.ITER_V_MUST_BE_CALLABLE);
         }
     }
