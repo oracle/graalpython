@@ -129,6 +129,7 @@ public class PyCPointerTypeBuiltins extends PythonBuiltins {
             if (proto != null) {
                 PyCPointerType_SetProto(stgdict, proto, isTypeNode, pyTypeStgDictNode, getRaiseNode());
                 StgDictObject itemdict = pyTypeStgDictNode.execute(proto);
+                stgdict.ffi_type_pointer = itemdict.ffi_type_pointer.getAsArray();
                 /* PyCPointerType_SetProto has verified proto has a stgdict. */
                 /*
                  * If itemdict.format is NULL, then this is a pointer to an incomplete type. We

@@ -709,6 +709,16 @@ public final class BytesUtils {
         return str.getBytes(StandardCharsets.UTF_8);
     }
 
+    @TruffleBoundary
+    public static char[] stringToChars(String str) {
+        return str.toCharArray();
+    }
+
+    @TruffleBoundary
+    public static String createString(char[] chars) {
+        return new String(chars);
+    }
+
     public static byte[] getBytes(PythonObjectLibrary lib, Object object) {
         try {
             return lib.getBufferBytes(object);

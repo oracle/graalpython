@@ -288,7 +288,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             CDataObject result = factory().createCDataObject(type);
             GenericPyCDataNew(dict, result);
             // memcpy(result.b_ptr, buffer.buf + offset, dict.size);
-            result.b_ptr = PtrValue.bytes(PythonUtils.arrayCopyOfRange(bytes, offset, dict.size));
+            result.b_ptr = PtrValue.bytes(dict.ffi_type_pointer, PythonUtils.arrayCopyOfRange(bytes, offset, dict.size + offset));
             return result;
         }
     }
@@ -342,7 +342,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
             CDataObject pd = factory.createCDataObject(type);
             assert pyTypeCheck.isCDataObject(pd);
-            pd.b_ptr = PtrValue.bytes(buf);
+            pd.b_ptr = PtrValue.bytes(stgdict.ffi_type_pointer, buf);
             pd.b_ptr.offset = offset;
             pd.b_length = stgdict.length;
             pd.b_size = stgdict.size;
@@ -368,7 +368,8 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             if (obj instanceof PMemoryView) {
                 pd.b_ptr = PtrValue.memoryView((PMemoryView) obj);
             } else {
-                throw raise(NotImplementedError); // TODO get Objects from numeric pointers.
+                // TODO get Objects from numeric pointers.
+                throw raise(NotImplementedError, "Storage is not implemented.");
             }
             pd.b_length = stgdict.length;
             pd.b_size = stgdict.size;
@@ -409,7 +410,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             if (dict != null && dict.getfunc != FieldGet.nil && !pyTypeCheck.ctypesSimpleInstance(type, getBaseClassNode, isSameTypeNode)) {
                 return getFuncNode.execute(dict.getfunc, adr, size, factory);
             }
-            return PyCData_FromBaseObj(type, src, index, adr, pyTypeCheck, factory, getRaiseNode(), pyTypeStgDictNode);
+            return PyCData_FromBaseObj(type, src, index, adr, factory, getRaiseNode(), pyTypeStgDictNode);
         }
     }
 
@@ -488,7 +489,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
                                     pyObjectStgDictNode,
                                     getName);
                 } else if (value instanceof PNone && pyTypeCheck.isPyCPointerTypeObject(type)) {
-                    // *(void **)ptr = NULL;
+                    ptr.toNil(); // *(void **)ptr = NULL;
                     return PNone.NONE;
                 } else {
                     throw raise(TypeError, EXPECTED_S_INSTANCE_GOT_S, getName.execute(type), getName.execute(value));
@@ -613,7 +614,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
     }
 
     static void PyCData_MallocBuffer(CDataObject obj, StgDictObject dict) {
-        obj.b_ptr = PtrValue.bytes(dict.size);
+        obj.b_ptr = PtrValue.allocate(dict.ffi_type_pointer, dict.size);
         /*- XXX: (mq) This might not be necessary in our end but will keep it until we fully support ctypes.
             if (dict.size <= sizeof(obj.b_value)) {
                 /* No need to call malloc, can use the default buffer * /
@@ -639,7 +640,6 @@ public class CDataTypeBuiltins extends PythonBuiltins {
     }
 
     static CDataObject PyCData_FromBaseObj(Object type, Object base, int index, PtrValue adr,
-                    PyTypeCheck pyTypeCheck,
                     PythonObjectFactory factory,
                     PRaiseNode raiseNode,
                     PyTypeStgDictNode pyTypeStgDictNode) {
@@ -647,17 +647,15 @@ public class CDataTypeBuiltins extends PythonBuiltins {
         StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, raiseNode);
         dict.flags |= DICTFLAG_FINAL;
         CDataObject cmem = factory.createCDataObject(type);
-        assert pyTypeCheck.isCDataObject(cmem);
 
         cmem.b_length = dict.length;
         cmem.b_size = dict.size;
         if (base != null) { /* use base's buffer */
-            assert pyTypeCheck.isCDataObject(base);
             cmem.b_ptr = adr;
             cmem.b_needsfree = 0;
             cmem.b_base = (CDataObject) base;
         } else { /* copy contents of adr */
-            // PyCData_MallocBuffer(cmem, dict); TODO
+            PyCData_MallocBuffer(cmem, dict);
             // memcpy(cmem.b_ptr, adr, dict.size); TODO
             cmem.b_ptr = adr;
         }

@@ -57,7 +57,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
@@ -91,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -418,6 +418,8 @@ public final class PythonContext {
 
     // ctypes' used native libraries/functions.
     private final ConcurrentHashMap<Long, Object> ptrAdrMap = new ConcurrentHashMap<>();
+    @CompilationFinal private Object strlenFunction; // ctypes NFI backend helper
+    @CompilationFinal private Object memcpyFunction; // ctypes NFI backend helper
 
     @CompilationFinal private PosixSupport posixSupport;
     @CompilationFinal private NFIZlibSupport nativeZlib;
@@ -965,6 +967,20 @@ public final class PythonContext {
 
     public ConcurrentHashMap<Long, Object> getCtypesAdrMap() {
         return ptrAdrMap;
+    }
+
+    public Object getStrlenFunction() {
+        return strlenFunction;
+    }
+
+    public Object getMemcpyFunction() {
+        return memcpyFunction;
+    }
+
+    public void setCtypesNFIHelpers(Object strlen, Object memcpy) {
+        assert strlenFunction == null && memcpyFunction == null : "Ctypes NFI helper should only be set once";
+        strlenFunction = strlen;
+        memcpyFunction = memcpy;
     }
 
     public TruffleLanguage.Env getEnv() {

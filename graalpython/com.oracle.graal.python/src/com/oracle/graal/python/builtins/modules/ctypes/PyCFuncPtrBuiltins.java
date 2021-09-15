@@ -188,7 +188,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             CDataObject ob = factory().createPyCFuncPtrObject(type);
             StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
             GenericPyCDataNew(dict, ob);
-            ob.b_ptr = PtrValue.create(dict.ffi_type_pointer, ptr);
+            ob.b_ptr = PtrValue.create(dict.ffi_type_pointer, dict.size, ptr, 0);
             return ob;
         }
 
@@ -221,7 +221,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 throw raise(TypeError, CANNOT_CONSTRUCT_INSTANCE_OF_THIS_CLASS_NO_ARGTYPES);
             }
 
-            throw raise(NotImplementedError);
+            throw raise(NotImplementedError, "callbacks aren't supported yet.");
             /*-
             CThunkObject thunk = _ctypes_alloc_callback(callable, dict.argtypes, dict.restype, dict.flags);
             PyCFuncPtrObject self = factory().createPyCFuncPtrObject(type);
@@ -233,6 +233,12 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             keepRefNode.execute(self, 0, thunk, factory());
             return self;
             */
+        }
+
+        @Specialization(guards = {"args.length != 1", "!isPTuple(args)", "isLong(args, longCheckNode)"})
+        Object error(@SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
+                        @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode) {
+            throw raise(TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
         }
 
         @SuppressWarnings("unused")
@@ -257,7 +263,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         CThunkObject _ctypes_alloc_callback(Object callable, Object[] converters, Object restype, int flags) {
-            throw raise(NotImplementedError);
+            throw raise(NotImplementedError, "callbacks aren't supported yet.");
             /*- TODO
             int nArgs = converters.length;
             CThunkObject p = CThunkObject_new(nArgs);
@@ -359,7 +365,9 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
             if (pyTypeStgDictNode.execute(value) != null && !lib.isCallable(value)) {
                 throw raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE);
             }
-            self.checker = lookupAttr.execute(value);
+            if (!PGuards.isPFunction(value)) {
+                self.checker = lookupAttr.execute(value);
+            }
             self.restype = value;
             return PNone.NONE;
         }

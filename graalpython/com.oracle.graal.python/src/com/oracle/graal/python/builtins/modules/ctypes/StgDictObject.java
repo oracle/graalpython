@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -79,11 +80,16 @@ public final class StgDictObject extends PDict {
     int ndim;
     int[] shape;
 
+    String[] fieldsNames;
+    int[] fieldsOffsets;
+    FFI_TYPES[] fieldsTypes;
+
     public StgDictObject(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
         format = null;
         ndim = 0;
         shape = null;
+        fieldsNames = null;
         paramfunc = -1;
         setfunc = FieldSet.nil;
         getfunc = FieldGet.nil;

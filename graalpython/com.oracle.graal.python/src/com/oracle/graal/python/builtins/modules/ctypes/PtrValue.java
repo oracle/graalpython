@@ -40,22 +40,17 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.memory.ByteArraySupport;
 
 final class PtrValue implements TruffleObject {
-    private static final ByteArraySupport SERIALIZE_LE = ByteArraySupport.littleEndian();
     private static final NullStorage NULL_STORAGE = new NullStorage();
     Storage ptr;
     int offset;
@@ -69,8 +64,8 @@ final class PtrValue implements TruffleObject {
         this(NULL_STORAGE, 0);
     }
 
-    protected void toBytes(byte[] bytes) {
-        ptr = new ByteArrayStorage(bytes);
+    protected void toBytes(FFIType type, byte[] bytes) {
+        ptr = new ByteArrayStorage(type.type, bytes);
         offset = 0;
     }
 
@@ -82,12 +77,97 @@ final class PtrValue implements TruffleObject {
         return ptr instanceof NativePointerStorage;
     }
 
+    protected boolean isNil() {
+        return ptr instanceof NullStorage;
+    }
+
+    protected Object getPrimitiveValue(FFIType type) {
+        if (ptr instanceof PrimitiveStorage) {
+            return ((PrimitiveStorage) ptr).value;
+        } else {
+            return readArrayElement(type, 0);
+        }
+    }
+
+    protected void ensureCapacity(int size) {
+        if (isManagedBytes()) {
+            ptr = ptr.resize(size);
+        }
+    }
+
+    protected Object readArrayElement(FFIType type, int idx) {
+        if (isManagedBytes()) {
+            return CtypesNodes.getValue(type.type, ((ByteArrayStorage) ptr).value, offset + idx);
+        } else if (ptr instanceof MemoryViewStorage) {
+            PMemoryView mem = ((MemoryViewStorage) ptr).value;
+            byte[] bytes = new byte[type.size];
+            for (int i = 0; i < bytes.length; i++) {
+                bytes[i] = PythonBufferAccessLibrary.getUncached().readByte(mem, offset + i);
+            }
+            return CtypesNodes.getValue(type.type, bytes, 0);
+        } else {
+            throw CompilerDirectives.shouldNotReachHere("not implemented");
+        }
+    }
+
+    protected void writeArrayElement(FFIType type, int idx, Object value) {
+        if (isManagedBytes()) {
+            CtypesNodes.setValue(type.type, ((ByteArrayStorage) ptr).value, offset + idx, value);
+        } else if (ptr instanceof MemoryViewStorage) {
+            PMemoryView mem = ((MemoryViewStorage) ptr).value;
+            byte[] bytes = new byte[type.size];
+            CtypesNodes.setValue(type.type, bytes, 0, value);
+            for (int i = 0; i < bytes.length; i++) {
+                PythonBufferAccessLibrary.getUncached().writeByte(mem, offset + idx + i, bytes[i]);
+            }
+        }
+    }
+
+    protected void writeBytesArrayElement(byte[] value) {
+        if (isManagedBytes()) {
+            ensureCapacity(offset + value.length);
+            PythonUtils.arraycopy(value, 0, ((ByteArrayStorage) ptr).value, offset, value.length);
+        } else if (ptr instanceof MemoryViewStorage) {
+            PMemoryView mem = ((MemoryViewStorage) ptr).value;
+            for (int i = 0; i < value.length; i++) {
+                PythonBufferAccessLibrary.getUncached().writeByte(mem, offset + i, value[i]);
+            }
+        }
+    }
+
+    protected void writePrimitive(FFIType type, Object val) {
+        if (!ptr.type.isArray()) {
+            if (isNil() || (ptr.type != type.type)) {
+                toPrimitive(type, val);
+            } else {
+                assert ptr instanceof PrimitiveStorage : " wrong storage type!";
+                ((PrimitiveStorage) ptr).value = val;
+            }
+        } else {
+            writeArrayElement(type, 0, val);
+        }
+    }
+
     protected static PtrValue nil() {
         return new PtrValue(NULL_STORAGE, 0);
     }
 
-    protected static PtrValue bytes(byte[] bytes) {
-        return new PtrValue(new ByteArrayStorage(bytes), 0);
+    protected static PtrValue allocate(FFIType type, int size) {
+        return new PtrValue(createStorageInternal(type, size, null), 0);
+    }
+
+    protected static PtrValue bytes(FFIType type, byte[] bytes) {
+        return new PtrValue(new ByteArrayStorage(type.type, bytes), 0);
+    }
+
+    protected void toPrimitive(FFIType type, Object v) {
+        assert !type.type.isArray() : "Cannot convert array to primitive";
+        ptr = new PrimitiveStorage(v, type.type);
+    }
+
+    protected void toNil() {
+        ptr = NULL_STORAGE;
+        offset = 0;
     }
 
     protected void toNativePointer(Object o) {
@@ -100,22 +180,16 @@ final class PtrValue implements TruffleObject {
         }
     }
 
-    protected void toPrimitive(FFIType type, Object v) {
-        assert !type.type.isArray() : "Cannot convert array to primitive";
-        ptr = new PrimitiveStorage(v, type.type);
-    }
-
-    private static final int DEFAULT_ARRAY_SIZE = 16;
-
-    protected void createStorage(FFIType type, Object value) {
-        if (ptr == NULL_STORAGE) {
-            ptr = createStorageInternal(type, value);
+    protected void createStorage(FFIType type, int size, Object value) {
+        if (isNil()) {
+            ptr = createStorageInternal(type, size, value);
             offset = 0;
         }
     }
 
-    private static Storage createStorageInternal(FFIType type, Object value) {
-        switch (type.type) {
+    private static Storage createStorageInternal(FFIType type, int size, Object value) {
+        FFI_TYPES t = type.type;
+        switch (t) {
             case FFI_TYPE_VOID:
                 return NULL_STORAGE;
 
@@ -129,31 +203,21 @@ final class PtrValue implements TruffleObject {
             case FFI_TYPE_SINT64:
             case FFI_TYPE_FLOAT:
             case FFI_TYPE_DOUBLE:
-                return new PrimitiveStorage(value, type.type);
+                return new PrimitiveStorage(value != null ? value : t.getInitValue(), type.type);
 
             case FFI_TYPE_STRUCT: // TODO
             case FFI_TYPE_STRING:
             case FFI_TYPE_UINT8_ARRAY:
             case FFI_TYPE_SINT8_ARRAY:
-                return new ByteArrayStorage(DEFAULT_ARRAY_SIZE);
-
             case FFI_TYPE_UINT16_ARRAY:
             case FFI_TYPE_SINT16_ARRAY:
-                return new ShortArrayStorage(DEFAULT_ARRAY_SIZE);
-
             case FFI_TYPE_UINT32_ARRAY:
             case FFI_TYPE_SINT32_ARRAY:
-                return new IntArrayStorage(DEFAULT_ARRAY_SIZE);
-
             case FFI_TYPE_UINT64_ARRAY:
             case FFI_TYPE_SINT64_ARRAY:
-                return new LongArrayStorage(DEFAULT_ARRAY_SIZE);
-
             case FFI_TYPE_FLOAT_ARRAY:
-                return new FloatArrayStorage(DEFAULT_ARRAY_SIZE);
-
             case FFI_TYPE_DOUBLE_ARRAY:
-                return new DoubleArrayStorage(DEFAULT_ARRAY_SIZE);
+                return new ByteArrayStorage(type.type, new byte[size]);
 
             case FFI_TYPE_POINTER:
                 return new NativePointerStorage(value);
@@ -163,16 +227,8 @@ final class PtrValue implements TruffleObject {
         }
     }
 
-    protected static PtrValue create(FFIType type, Object value, int offset) {
-        return new PtrValue(createStorageInternal(type, value), offset);
-    }
-
-    protected static PtrValue create(FFIType type, Object value) {
-        return create(type, value, 0);
-    }
-
-    protected static PtrValue bytes(int size) {
-        return new PtrValue(new ByteArrayStorage(size), 0);
+    protected static PtrValue create(FFIType type, int size, Object value, int offset) {
+        return new PtrValue(createStorageInternal(type, size, value), offset);
     }
 
     protected static PtrValue memoryView(PMemoryView mv) {
@@ -234,6 +290,8 @@ final class PtrValue implements TruffleObject {
         }
 
         protected abstract Storage resize(int length);
+
+        protected abstract Object getValue();
     }
 
     static final class NullStorage extends Storage {
@@ -255,6 +313,11 @@ final class PtrValue implements TruffleObject {
         @Override
         protected Storage resize(int length) {
             throw CompilerDirectives.shouldNotReachHere("Null Storage!");
+        }
+
+        @Override
+        protected Object getValue() {
+            return null;
         }
 
         @Override
@@ -288,6 +351,11 @@ final class PtrValue implements TruffleObject {
         }
 
         @Override
+        protected Object getValue() {
+            return value;
+        }
+
+        @Override
         protected Object getNativeObject(Env env) {
             return value;
         }
@@ -318,6 +386,11 @@ final class PtrValue implements TruffleObject {
         }
 
         @Override
+        protected Object getValue() {
+            return value;
+        }
+
+        @Override
         protected Object getNativeObject(Env env) {
             return env.asGuestValue(value);
         }
@@ -334,13 +407,12 @@ final class PtrValue implements TruffleObject {
     static class ByteArrayStorage extends ArrayStorage {
         byte[] value;
 
-        ByteArrayStorage(int size) {
-            super(FFI_TYPES.FFI_TYPE_SINT8);
-            this.value = new byte[size];
+        ByteArrayStorage(FFI_TYPES type, int size) {
+            this(type, new byte[size]);
         }
 
-        ByteArrayStorage(byte[] bytes) {
-            super(FFI_TYPES.FFI_TYPE_SINT8);
+        ByteArrayStorage(FFI_TYPES type, byte[] bytes) {
+            super(type);
             this.value = bytes;
         }
 
@@ -351,35 +423,12 @@ final class PtrValue implements TruffleObject {
 
         @Override
         protected void setValue(Object v, int idx) {
-            if (v instanceof Byte) {
-                value[idx] = (byte) v;
-                return;
-            } else if (v instanceof Short) {
-                SERIALIZE_LE.putShort(value, idx, (short) v);
-                return;
-            } else if (v instanceof Integer) {
-                SERIALIZE_LE.putInt(value, idx, (int) v);
-                return;
-            } else if (v instanceof Long) {
-                SERIALIZE_LE.putLong(value, idx, (long) v);
-                return;
-            } else if (v instanceof Double) {
-                SERIALIZE_LE.putDouble(value, idx, (double) v);
-                return;
-            } else if (v instanceof Boolean) {
-                value[idx] = (byte) (((boolean) v) ? 1 : 0);
-                return;
-            } else if (v instanceof Float) {
-                SERIALIZE_LE.putFloat(value, idx, (float) v);
-                return;
-            } else if (v instanceof String) {
-                String s = (String) v;
-                if (PString.length(s) == 1) {
-                    value[idx] = (byte) PString.charAt(s, 0);
-                    return;
-                }
-            }
-            throw CompilerDirectives.shouldNotReachHere("Incompatible value type for ByteArrayStorage");
+            CtypesNodes.setValue(value, v, idx);
+        }
+
+        @Override
+        protected Object getValue() {
+            return value;
         }
 
         @Override
@@ -390,9 +439,9 @@ final class PtrValue implements TruffleObject {
         @Override
         protected Storage resize(int length) {
             if (length > value.length) {
-                ByteArrayStorage storage = new ByteArrayStorage(length);
-                PythonUtils.arraycopy(value, 0, storage.value, 0, length);
-                return storage;
+                byte[] newStorage = new byte[length];
+                PythonUtils.arraycopy(value, 0, newStorage, 0, value.length);
+                this.value = newStorage;
             }
             return this;
         }
@@ -423,7 +472,7 @@ final class PtrValue implements TruffleObject {
 
         @Override
         ArrayStorage copy() {
-            return new ByteArrayStorage(PythonUtils.arrayCopyOf(value, value.length));
+            return new ByteArrayStorage(type, PythonUtils.arrayCopyOf(value, value.length));
         }
     }
 
@@ -433,7 +482,7 @@ final class PtrValue implements TruffleObject {
 
         @TruffleBoundary
         MemoryViewStorage(PMemoryView bytes) {
-            super(FFI_TYPES.FFI_TYPE_SINT8);
+            super(FFI_TYPES.FFI_TYPE_SINT8_ARRAY);
             this.value = bytes;
             this.length = PythonBufferAccessLibrary.getUncached().getBufferLength(bytes);
         }
@@ -451,6 +500,11 @@ final class PtrValue implements TruffleObject {
         }
 
         @Override
+        protected Object getValue() {
+            return value;
+        }
+
+        @Override
         protected Object getNativeObject(Env env) {
             if (value.getBuffer() instanceof PythonObject) {
                 byte[] bytes = PythonBufferAccessLibrary.getUncached().getInternalByteArray(value.getBuffer());
@@ -463,7 +517,7 @@ final class PtrValue implements TruffleObject {
         protected Storage resize(int len) {
             if (len > length) {
                 byte[] bytes = PythonBufferAccessLibrary.getUncached().getInternalOrCopiedByteArray(value);
-                ByteArrayStorage storage = new ByteArrayStorage(len);
+                ByteArrayStorage storage = new ByteArrayStorage(type, len);
                 PythonUtils.arraycopy(bytes, 0, storage.value, 0, len);
                 return storage;
             }
@@ -474,243 +528,7 @@ final class PtrValue implements TruffleObject {
         @Override
         ArrayStorage copy() {
             byte[] bytes = PythonBufferAccessLibrary.getUncached().getInternalOrCopiedByteArray(value);
-            return new ByteArrayStorage(bytes);
-        }
-    }
-
-    static class ShortArrayStorage extends ArrayStorage {
-        short[] value;
-
-        ShortArrayStorage(int size) {
-            super(FFI_TYPES.FFI_TYPE_SINT16);
-            this.value = new short[size];
-        }
-
-        @Override
-        protected final Object getValue(int idx) {
-            return (int) value[idx];
-        }
-
-        @Override
-        protected void setValue(Object v, int idx) {
-            assert v instanceof Short;
-            value[idx] = (short) v;
-        }
-
-        @Override
-        protected Object getNativeObject(Env env) {
-            return env.asGuestValue(value);
-        }
-
-        @Override
-        protected Storage resize(int length) {
-            if (length > value.length) {
-                ShortArrayStorage storage = new ShortArrayStorage(length);
-                PythonUtils.arraycopy(value, 0, storage.value, 0, length);
-                return storage;
-            }
-            return this;
-        }
-
-        @Override
-        ArrayStorage copy() {
-            ShortArrayStorage s = new ShortArrayStorage(0);
-            try {
-                s.value = Arrays.copyOf(value, value.length);
-            } catch (Throwable t) {
-                // Break exception edges
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw t;
-            }
-            return s;
-        }
-    }
-
-    static class IntArrayStorage extends ArrayStorage {
-        int[] value;
-
-        IntArrayStorage(int size) {
-            super(FFI_TYPES.FFI_TYPE_SINT32);
-            this.value = new int[size];
-        }
-
-        @Override
-        protected final Object getValue(int idx) {
-            return value[idx];
-        }
-
-        @Override
-        protected void setValue(Object v, int idx) {
-            assert v instanceof Integer;
-            value[idx] = (int) v;
-        }
-
-        @Override
-        protected Object getNativeObject(Env env) {
-            return env.asGuestValue(value);
-        }
-
-        @Override
-        protected Storage resize(int length) {
-            if (length > value.length) {
-                IntArrayStorage storage = new IntArrayStorage(length);
-                PythonUtils.arraycopy(value, 0, storage.value, 0, length);
-                return storage;
-            }
-            return this;
-        }
-
-        @Override
-        ArrayStorage copy() {
-            IntArrayStorage s = new IntArrayStorage(0);
-            s.value = PythonUtils.arrayCopyOf(value, value.length);
-            return s;
-        }
-    }
-
-    static class LongArrayStorage extends ArrayStorage {
-        long[] value;
-
-        LongArrayStorage(int size) {
-            super(FFI_TYPES.FFI_TYPE_SINT64);
-            this.value = new long[size];
-        }
-
-        @Override
-        protected final Object getValue(int idx) {
-            return value[idx];
-        }
-
-        @Override
-        protected void setValue(Object v, int idx) {
-            assert v instanceof Long || v instanceof Integer;
-            value[idx] = (long) v;
-        }
-
-        @Override
-        protected Object getNativeObject(Env env) {
-            return env.asGuestValue(value);
-        }
-
-        @Override
-        protected Storage resize(int length) {
-            if (length > value.length) {
-                LongArrayStorage storage = new LongArrayStorage(length);
-                PythonUtils.arraycopy(value, 0, storage.value, 0, length);
-                return storage;
-            }
-            return this;
-        }
-
-        @Override
-        ArrayStorage copy() {
-            LongArrayStorage s = new LongArrayStorage(0);
-            try {
-                s.value = Arrays.copyOf(value, value.length);
-            } catch (Throwable t) {
-                // Break exception edges
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw t;
-            }
-            return s;
-        }
-    }
-
-    static class FloatArrayStorage extends ArrayStorage {
-        float[] value;
-
-        FloatArrayStorage(int size) {
-            super(FFI_TYPES.FFI_TYPE_FLOAT);
-            this.value = new float[size];
-        }
-
-        @Override
-        protected final Object getValue(int idx) {
-            return (double) value[idx];
-        }
-
-        @Override
-        protected void setValue(Object v, int idx) {
-            assert v instanceof Float;
-            value[idx] = (float) v;
-        }
-
-        @Override
-        protected Object getNativeObject(Env env) {
-            return env.asGuestValue(value);
-        }
-
-        @Override
-        protected Storage resize(int length) {
-            if (length > value.length) {
-                FloatArrayStorage storage = new FloatArrayStorage(length);
-                PythonUtils.arraycopy(value, 0, storage.value, 0, length);
-                return storage;
-            }
-            return this;
-        }
-
-        @TruffleBoundary
-        @Override
-        ArrayStorage copy() {
-            FloatArrayStorage s = new FloatArrayStorage(0);
-            try {
-                s.value = Arrays.copyOf(value, value.length);
-            } catch (Throwable t) {
-                // this is really unexpected and we want to break exception edges in compiled code
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw t;
-            }
-            return s;
-        }
-    }
-
-    static class DoubleArrayStorage extends ArrayStorage {
-        double[] value;
-
-        DoubleArrayStorage(int size) {
-            super(FFI_TYPES.FFI_TYPE_DOUBLE);
-            this.value = new double[size];
-        }
-
-        @Override
-        protected final Object getValue(int idx) {
-            return value[idx];
-        }
-
-        @Override
-        protected void setValue(Object v, int idx) {
-            assert v instanceof Double;
-            value[idx] = (double) v;
-        }
-
-        @Override
-        protected Object getNativeObject(Env env) {
-            return env.asGuestValue(value);
-        }
-
-        @Override
-        protected Storage resize(int length) {
-            if (length > value.length) {
-                DoubleArrayStorage storage = new DoubleArrayStorage(length);
-                PythonUtils.arraycopy(value, 0, storage.value, 0, length);
-                return storage;
-            }
-            return this;
-        }
-
-        @TruffleBoundary
-        @Override
-        ArrayStorage copy() {
-            DoubleArrayStorage s = new DoubleArrayStorage(0);
-            try {
-                s.value = Arrays.copyOf(value, value.length);
-            } catch (Throwable t) {
-                // this is really unexpected and we want to break exception edges in compiled code
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw t;
-            }
-            return s;
+            return new ByteArrayStorage(type, bytes);
         }
     }
 }

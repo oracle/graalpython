@@ -183,7 +183,6 @@ public class PyCPointerBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object get_contents(CDataObject self, @SuppressWarnings("unused") PNone value,
-                        @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             if (PtrValue.isNull(self.b_ptr)) {
@@ -193,7 +192,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
             StgDictObject stgdict = pyObjectStgDictNode.execute(self);
             assert stgdict != null : "Cannot be NULL for pointer instances";
             return PyCData_FromBaseObj(stgdict.proto,
-                            self, 0, self.b_ptr, pyTypeCheck, factory(), getRaiseNode(), pyTypeStgDictNode);
+                            self, 0, self.b_ptr, factory(), getRaiseNode(), pyTypeStgDictNode);
         }
 
         @Specialization(guards = "!isNoValue(value)")

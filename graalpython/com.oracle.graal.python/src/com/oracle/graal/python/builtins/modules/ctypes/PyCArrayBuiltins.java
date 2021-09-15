@@ -151,7 +151,7 @@ public class PyCArrayBuiltins extends PythonBuiltins {
                 throw raise(IndexError, INVALID_INDEX);
             }
             int size = stgdict.size / stgdict.length;
-            self.b_ptr.createStorage(stgdict.ffi_type_pointer, value);
+            // self.b_ptr.createStorage(stgdict.ffi_type_pointer, stgdict.size, value);
             int offset = index * size;
 
             pyCDataSetNode.execute(frame, self, stgdict.proto, stgdict.setfunc, value, index, size, self.b_ptr.ref(offset), factory());

@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.modules.ctypes;
 import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.from_param;
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.ffi_type_pointer;
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.ffi_type_uint8_array;
-import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.nfi_type_string;
 import static com.oracle.graal.python.nodes.ErrorMessages.WRONG_TYPE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -122,7 +121,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
         String name = builtin.name();
         Object builtinDoc = PNone.NONE;
         RootCallTarget callTarget = language.createCachedCallTarget(
-                        l -> new BuiltinFunctionRootNode(l, builtin, factory, false),
+                        l -> new BuiltinFunctionRootNode(l, builtin, factory, true),
                         factory.getNodeClass(),
                         builtin.name());
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
@@ -155,9 +154,9 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached("create(_as_parameter_)") LookupAttributeInMRONode lookupAsParam) {
             if (PGuards.isString(value)) {
                 PyCArgObject parg = factory().createCArgObject();
-                parg.pffi_type = nfi_type_string;
+                parg.pffi_type = ffi_type_uint8_array;
                 parg.tag = 'Z';
-                parg.value = PtrValue.bytes(PythonUtils.EMPTY_BYTE_ARRAY);
+                parg.value = PtrValue.bytes(parg.pffi_type, PythonUtils.EMPTY_BYTE_ARRAY);
                 parg.obj = setFuncNode.execute(frame, FieldDesc.Z.setfunc, parg.value, value, 0);
                 return parg;
             }
@@ -230,7 +229,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.pffi_type = ffi_type_uint8_array;
             parg.tag = 'z';
-            parg.value = PtrValue.bytes(getBytes.execute(value.getSequenceStorage()));
+            parg.value = PtrValue.bytes(parg.pffi_type, getBytes.execute(value.getSequenceStorage()));
             parg.obj = value;
             return parg;
         }
@@ -239,9 +238,9 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
         Object string(@SuppressWarnings("unused") Object type, String value) { // PyUnicode_Check
             /* unicode */
             PyCArgObject parg = factory().createCArgObject();
-            parg.pffi_type = nfi_type_string;
+            parg.pffi_type = ffi_type_uint8_array;
             parg.tag = 'Z';
-            parg.value = PtrValue.bytes(BytesUtils.utf8StringToBytes(value));
+            parg.value = PtrValue.bytes(parg.pffi_type, BytesUtils.utf8StringToBytes(value));
             parg.obj = value;
             return parg;
         }
@@ -291,7 +290,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                     case 'z': /* c_char_p */
                     case 'Z': /* c_wchar_p */
                         PyCArgObject parg = factory().createCArgObject();
-                        parg.pffi_type = nfi_type_string;
+                        parg.pffi_type = ffi_type_uint8_array;
                         parg.tag = 'Z';
                         parg.obj = value;
                         /* Remember: b_ptr points to where the pointer is stored! */
@@ -310,7 +309,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
     }
 
     @ImportStatic(CDataTypeBuiltins.class)
-    @Builtin(name = from_param, minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @Builtin(name = from_param, minNumOfPositionalArgs = 2) // , declaresExplicitSelf = true)
     @GenerateNodeFactory
     protected abstract static class CCharPFromParamNode extends PythonBinaryBuiltinNode {
 
@@ -327,7 +326,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
             PyCArgObject parg = factory().createCArgObject();
             parg.pffi_type = ffi_type_uint8_array;
             parg.tag = 'z';
-            parg.value = PtrValue.bytes(getBytes.execute(value.getSequenceStorage()));
+            parg.value = PtrValue.bytes(parg.pffi_type, getBytes.execute(value.getSequenceStorage()));
             parg.obj = value;
             return parg;
         }

@@ -166,14 +166,14 @@ public class CDataBuiltins extends PythonBuiltins {
                 int offset = self.b_ptr.offset;
                 t1[1] = factory().createBytes(PythonUtils.arrayCopyOfRange(byteArrayStorage.value, offset, len), self.b_size);
             } else {
-                throw raise(NotImplementedError);
+                throw raise(NotImplementedError, "Storage is not covered yet.");
             }
             Object clazz = getClassNode.execute(self);
             Object[] t2 = new Object[]{clazz, factory().createTuple(t1)};
             PythonModule ctypes = getContext().getCore().lookupBuiltinModule("_ctypes");
             Object unpickle = dylib.getOrDefault(ctypes.getStorage(), UNPICKLE, null);
             if (unpickle == null) {
-                throw raise(NotImplementedError);
+                throw raise(NotImplementedError, "unpickle isn't supported yet.");
             }
             Object[] t3 = new Object[]{unpickle, factory().createTuple(t2)};
             return factory().createTuple(t3); // "O(O(NN))"
@@ -219,7 +219,7 @@ public class CDataBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         private void memmove(Object dest, Object src, int len) {
-            throw raise(NotImplementedError); // TODO
+            throw raise(NotImplementedError, "memmove is partially supported."); // TODO
         }
     }
 }

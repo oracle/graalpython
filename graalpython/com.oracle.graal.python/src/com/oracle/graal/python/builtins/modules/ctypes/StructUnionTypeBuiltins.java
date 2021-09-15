@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TypeNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.PyCFieldFromDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.PyTypeCheck;
+import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.MakeAnonFieldsNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
@@ -315,6 +316,9 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                  */
                 stgdict.format = "B";
             }
+            String[] fieldsNames = new String[len];
+            int[] fieldsOffsets = new int[len];
+            FFI_TYPES[] fieldsTypes = new FFI_TYPES[len];
 
             int bitofs = 0;
             boolean arrays_seen = false;
@@ -384,7 +388,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                     }
                 }
 
-                Object prop;
+                CFieldObject prop;
                 if (isStruct) {
                     int[] props = new int[]{field_size, bitofs, size, offset, align};
                     prop = cFieldFromDesc.execute(desc, i, bitsize, pack, big_endian, props, factory);
@@ -393,6 +397,9 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                     size = props[2];
                     offset = props[3];
                     align = props[4];
+                    fieldsNames[i] = name;
+                    fieldsOffsets[i] = prop.index;
+                    fieldsTypes[i] = dict.ffi_type_pointer.type;
                 } else /* union */ {
                     size = 0;
                     offset = 0;
@@ -411,6 +418,9 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
 
                 setAttr.execute(frame, type, name, prop);
             }
+            stgdict.fieldsNames = fieldsNames;
+            stgdict.fieldsOffsets = fieldsOffsets;
+            stgdict.fieldsTypes = fieldsTypes;
 
             if (isStruct && !isPacked) {
                 stgdict.format = PString.cat(stgdict.format, "}");
@@ -471,7 +481,8 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                  * as many fields as the array has elements, plus one NULL pointer.
                  */
 
-                /* first pass to see how much memory to allocate */
+                /*- (mq) XXX This is specific to cpython and not needed in our case
+                // first pass to see how much memory to allocate
                 for (int i = 0; i < len; ++i) {
                     Object pair = getItemNode.execute(frame, fields, i);
                     // PyArg_ParseTuple(pair, "UO|i", & name, &desc, &bitsize)
@@ -484,19 +495,20 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                         fieldsError();
                     }
                     Object desc = tuple[1];
-
+                
                     StgDictObject dict = pyTypeStgDictNode.execute(desc);
                     if (dict == null) {
                         throw raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
                     }
                     if (pyTypeCheck.isPyCArrayTypeObject(desc)) {
-                        /* It's an array. */
+                        // It's an array.
                         StgDictObject edict = pyTypeStgDictNode.execute(dict.proto);
                         if (edict == null) {
                             throw raise(TypeError, SECOND_ITEM_IN_FIELDS_TUPLE_INDEX_D_MUST_BE_A_C_TYPE, i);
                         }
                     }
                 }
+                */
 
                 /*
                  * the first block takes up ffi_ofs + len + 1 which is the pointers * for this
