@@ -28,8 +28,8 @@
  * These are not part of the HPy context or ABI, but are available for
  * HPy extensions to incorporate at compile time.
  *
- * API
- * ---
+ * Runtime Helpers API
+ * -------------------
  *
  */
 
