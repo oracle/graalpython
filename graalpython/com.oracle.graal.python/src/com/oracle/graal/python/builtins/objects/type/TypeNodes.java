@@ -472,12 +472,17 @@ public abstract class TypeNodes {
         public abstract Object execute(Object obj);
 
         @Specialization
-        static Object doManaged(PythonManagedClass obj) {
+        static Object doPythonClass(PythonClass obj) {
             return obj.getSuperClass();
         }
 
         @Specialization
-        static Object doBuiltin(PythonBuiltinClassType obj) {
+        static Object doBuiltin(PythonBuiltinClass obj) {
+            return obj.getType().getBase();
+        }
+
+        @Specialization
+        static Object doBuiltinType(PythonBuiltinClassType obj) {
             return obj.getBase();
         }
 
