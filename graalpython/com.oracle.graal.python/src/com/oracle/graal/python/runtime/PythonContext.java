@@ -47,13 +47,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -564,13 +565,20 @@ public final class PythonContext {
 
     public static final class SharedMultiprocessingData {
 
-        private int fdCounter = 0;
+        /**
+         * A sentinel object that remains in the {@link LinkedBlockingQueue} in the
+         * {@link #pipeData}. It is pushed there in #close so that any blocking #take calls can wake
+         * up and react to the end of the stream.
+         */
+        private static final Object SENTINEL = new Object();
+
+        private final AtomicInteger fdCounter = new AtomicInteger(0);
 
         /**
          * Maps the two fake file descriptors created in {@link #pipe()} to one
          * {@link LinkedBlockingQueue}
          */
-        private final SortedMap<Integer, LinkedBlockingQueue<Object>> pipeData = new TreeMap<>();
+        private final SortedMap<Integer, LinkedBlockingQueue<Object>> pipeData = new ConcurrentSkipListMap<>();
 
         /**
          * Holds ref count of file descriptors which were passed over to a spawned child context.
@@ -580,7 +588,7 @@ public final class PythonContext {
          * <li>real file descriptors coming from the posix implementation</li>
          * </ul>
          */
-        private final Map<Integer, Integer> fdRefCount = new HashMap<>();
+        private final Map<Integer, Integer> fdRefCount = new ConcurrentHashMap<>();
 
         public SharedMultiprocessingData(ConcurrentHashMap<String, Semaphore> namedSemaphores) {
             this.namedSemaphores = namedSemaphores;
@@ -591,9 +599,7 @@ public final class PythonContext {
          */
         @TruffleBoundary
         private void incrementFDRefCount(int fd) {
-            synchronized (fdRefCount) {
-                fdRefCount.compute(fd, (f, count) -> (count == null) ? 1 : count + 1);
-            }
+            fdRefCount.compute(fd, (f, count) -> (count == null) ? 1 : count + 1);
         }
 
         /**
@@ -604,19 +610,15 @@ public final class PythonContext {
          */
         @TruffleBoundary
         public boolean decrementFDRefCount(int fd) {
-            synchronized (fdRefCount) {
-                Integer c = fdRefCount.get(fd);
-                if (c == null) {
-                    return false;
-                }
-                if (c == 0) {
-                    fdRefCount.remove(fd);
-                    return false;
+            Integer cnt = fdRefCount.computeIfPresent(fd, (f, count) -> {
+                if (count == 0 || count == Integer.MIN_VALUE) {
+                    return Integer.MIN_VALUE;
                 } else {
-                    fdRefCount.put(fd, c - 1);
-                    return true;
+                    assert count > 0;
+                    return count - 1;
                 }
-            }
+            });
+            return cnt != null && !fdRefCount.remove(fd, Integer.MIN_VALUE);
         }
 
         /**
@@ -625,86 +627,122 @@ public final class PythonContext {
          */
         @TruffleBoundary
         public int[] pipe() {
-            synchronized (pipeData) {
-                LinkedBlockingQueue<Object> q = new LinkedBlockingQueue<>();
-                int readFD = --fdCounter;
-                pipeData.put(readFD, q);
-                int writeFD = --fdCounter;
-                pipeData.put(writeFD, q);
-                return new int[]{readFD, writeFD};
-            }
+            LinkedBlockingQueue<Object> q = new LinkedBlockingQueue<>();
+            int writeFD = fdCounter.addAndGet(-2);
+            assert isWriteFD(writeFD);
+            int readFD = getPairFd(writeFD);
+            pipeData.put(readFD, q);
+            pipeData.put(writeFD, q);
+            return new int[]{readFD, writeFD};
         }
 
+        /**
+         * Adding pipe data needs no special synchronization, since we guarantee there is only ever
+         * one or no queue registered for a given fd.
+         */
         @TruffleBoundary
         public void addPipeData(int fd, byte[] bytes, Runnable noFDHandler, Runnable brokenPipeHandler) {
-            LinkedBlockingQueue<Object> q = null;
-            synchronized (pipeData) {
-                q = pipeData.get(fd);
-                if (q == null) {
-                    noFDHandler.run();
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-                int fd2 = getPairFd(fd);
-                if (isClosed(fd2)) {
-                    brokenPipeHandler.run();
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
+            assert isWriteFD(fd);
+            LinkedBlockingQueue<Object> q = pipeData.get(fd);
+            if (q == null) {
+                // the write end is already closed
+                noFDHandler.run();
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+            int fd2 = getPairFd(fd);
+            if (isClosed(fd2)) {
+                // the read end is already closed
+                brokenPipeHandler.run();
+                throw CompilerDirectives.shouldNotReachHere();
             }
             q.add(bytes);
         }
 
+        /**
+         * Closing the read end of a pipe just removes the mapping from that fd to the queue.
+         * Closing the write end adds the {@link #SENTINEL} value as the last value. There is a
+         * potential race here for incorrect code that concurrently writes to the write end via
+         * {@link #addPipeData}, in that the sentinel may prevent writes from being visible.
+         */
         @TruffleBoundary
         public void closePipe(int fd) {
-            synchronized (pipeData) {
-                pipeData.remove(fd);
+            LinkedBlockingQueue<Object> q = pipeData.remove(fd);
+            if (q != null && isWriteFD(fd)) {
+                q.offer(SENTINEL);
             }
         }
 
+        /**
+         * This needs no additional synchronization, since if the write-end of the pipe is already
+         * closed, the {@link #take} call will return appropriately.
+         */
         @TruffleBoundary
         public Object takePipeData(Node node, int fd, Runnable noFDHandler) {
-            LinkedBlockingQueue<Object> q;
-            synchronized (pipeData) {
-                q = pipeData.get(fd);
-                if (q == null) {
-                    noFDHandler.run();
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-                int fd2 = getPairFd(fd);
-                if (isClosed(fd2)) {
-                    if (q.isEmpty()) {
-                        return PythonUtils.EMPTY_BYTE_ARRAY;
-                    }
-                }
+            LinkedBlockingQueue<Object> q = pipeData.get(fd);
+            if (q == null) {
+                noFDHandler.run();
+                throw CompilerDirectives.shouldNotReachHere();
             }
             Object[] o = new Object[]{PNone.NONE};
             TruffleSafepoint.setBlockedThreadInterruptible(node, (lbq) -> {
-                o[0] = lbq.take();
+                o[0] = take(lbq);
             }, q);
             return o[0];
         }
 
+        /**
+         * This uses LinkedBlockingQueue#compute to determine the blocking state. The runnable may
+         * be run multiple times, so we need to check and write all possible results to the result
+         * array. This ensures that if there is concurrent modification of the {@link #pipeData}, we
+         * will get a valid result.
+         */
         @TruffleBoundary
         public boolean isBlocking(int fd) {
-            LinkedBlockingQueue<Object> q;
-            synchronized (pipeData) {
-                q = pipeData.get(fd);
+            boolean[] result = new boolean[]{false};
+            pipeData.compute(fd, (f, q) -> {
                 if (q == null) {
-                    return false;
+                    result[0] = false;
+                } else {
+                    int fd2 = getPairFd(fd);
+                    if (isClosed(fd2)) {
+                        result[0] = false;
+                    } else {
+                        // this uses q.isEmpty() instead of our isEmpty(q), because we are not
+                        // interested in the race between closing fd2 and this runnable. If the
+                        // SENTINEL is pushed in the meantime, we should return false, just as if
+                        // we had observed fd2 to be closed already.
+                        result[0] = q.isEmpty();
+                    }
                 }
-                int fd2 = getPairFd(fd);
-                if (isClosed(fd2)) {
-                    return false;
-                }
-            }
-            return q.isEmpty();
+                return q;
+            });
+            return result[0];
         }
 
         private static int getPairFd(int fd) {
-            return fd % 2 == 0 ? fd + 1 : fd - 1;
+            return isWriteFD(fd) ? fd + 1 : fd - 1;
+        }
+
+        private static boolean isWriteFD(int fd) {
+            return fd % 2 == 0;
+        }
+
+        private static Object take(LinkedBlockingQueue<Object> q) throws InterruptedException {
+            Object v = q.take();
+            if (v == SENTINEL) {
+                q.offer(SENTINEL);
+                return PythonUtils.EMPTY_BYTE_ARRAY;
+            } else {
+                return v;
+            }
         }
 
         private boolean isClosed(int fd) {
-            return pipeData.get(fd) == null && fd >= fdCounter;
+            // since there is no way that any thread can be trying to read/write to this pipe FD
+            // legally before it was added to pipeData in #pipe above, we don't need to
+            // synchronize. If the FD is taken, and it's not in pipe data, this is a race in the
+            // program, because some thread is just arbitrarily probing FDs.
+            return fd >= fdCounter.get() && pipeData.get(fd) == null;
         }
 
         /**
