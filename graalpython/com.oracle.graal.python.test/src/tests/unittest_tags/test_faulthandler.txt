@@ -15,6 +15,8 @@
 *graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_register_fd
 *graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_register_file
 *graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_register_threads
+*graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_sigbus
+*graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_sigill
 *graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_stack_overflow
 *graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_sys_xoptions
 *graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_unregister
