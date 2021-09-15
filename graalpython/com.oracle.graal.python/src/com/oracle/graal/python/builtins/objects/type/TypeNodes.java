@@ -65,7 +65,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKREF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 
 import java.util.ArrayList;
@@ -94,14 +93,13 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
@@ -124,13 +122,12 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -836,12 +833,11 @@ public abstract class TypeNodes {
         @Child private GetBaseClassNode getBaseClassNode;
         @Child private LookupAttributeInMRONode lookupSlotsNode;
         @Child private LookupAttributeInMRONode lookupNewNode;
-        @Child private HashingStorageLibrary hashingStorageLib;
-        @Child private PythonObjectLibrary objectLibrary;
         @Child private PyObjectSizeNode sizeNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
         @Child private PRaiseNode raiseNode;
         @Child private GetNameNode getTypeNameNode;
+        @Child private ReadAttributeFromObjectNode readAttr;
 
         public abstract boolean execute(VirtualFrame frame, Object oldBase, Object newBase);
 
@@ -880,10 +876,7 @@ public abstract class TypeNodes {
                 oldParent = getBaseClassNode().execute(oldBase);
             }
 
-            if (newBase != oldBase && (newParent != oldParent || !sameSlotsAdded(frame, newBase, oldBase))) {
-                return false;
-            }
-            return true;
+            return newBase == oldBase || (newParent == oldParent && sameSlotsAdded(frame, newBase, oldBase));
         }
 
         /**
@@ -901,7 +894,7 @@ public abstract class TypeNodes {
             }
 
             // instead of child->tp_dictoffset == parent->tp_dictoffset
-            if (hasDict(frame, child) != hasDict(frame, parent)) {
+            if (instancesHaveDict(child) != instancesHaveDict(parent)) {
                 return false;
             }
 
@@ -914,19 +907,15 @@ public abstract class TypeNodes {
             }
 
             // instead of child->tp_itemsize == parent->tp_itemsize
-            Object childSlots = getSlotsFromDict(frame, child);
-            Object parentSlots = getSlotsFromDict(frame, parent);
+            Object childSlots = getSlotsFromType(child);
+            Object parentSlots = getSlotsFromType(parent);
             if (childSlots == null && parentSlots == null) {
                 return true;
             }
-            if (childSlots == null && parentSlots != null || childSlots != null && parentSlots == null) {
+            if (childSlots == null || parentSlots == null) {
                 return false;
             }
-            if (!compareSlots(frame, parent, child, parentSlots, childSlots)) {
-                return false;
-            }
-
-            return true;
+            return compareSlots(frame, parent, child, parentSlots, childSlots);
         }
 
         private boolean sameSlotsAdded(VirtualFrame frame, Object a, Object b) {
@@ -934,8 +923,8 @@ public abstract class TypeNodes {
             if (a instanceof PythonBuiltinClass || b instanceof PythonBuiltinClass) {
                 return false;
             }
-            Object aSlots = getSlotsFromDict(frame, a);
-            Object bSlots = getSlotsFromDict(frame, b);
+            Object aSlots = getSlotsFromType(a);
+            Object bSlots = getSlotsFromType(b);
             return compareSlots(frame, a, b, aSlots, bSlots);
         }
 
@@ -974,20 +963,9 @@ public abstract class TypeNodes {
             return getTypeNameNode.execute(clazz);
         }
 
-        private Object getSlotsFromDict(VirtualFrame frame, Object type) {
-            Object dict = getObjectLibrary().lookupAttribute(type, frame, __DICT__);
-            if (dict != PNone.NO_VALUE) {
-                if (dict instanceof PMappingproxy) {
-                    dict = ((PMappingproxy) dict).getMapping();
-                }
-                HashingStorage storage = ((PHashingCollection) dict).getDictStorage();
-                return getHashingStorageLibrary().getItem(storage, __SLOTS__);
-            }
-            return null;
-        }
-
-        private boolean hasDict(VirtualFrame frame, Object type) {
-            return getObjectLibrary().lookupAttribute(type, frame, __DICT__) != PNone.NO_VALUE;
+        private Object getSlotsFromType(Object type) {
+            Object slots = getReadAttr().execute(type, __SLOTS__);
+            return slots != PNone.NO_VALUE ? slots : null;
         }
 
         private GetObjectArrayNode getObjectArrayNode() {
@@ -998,12 +976,12 @@ public abstract class TypeNodes {
             return getObjectArrayNode;
         }
 
-        private PythonObjectLibrary getObjectLibrary() {
-            if (objectLibrary == null) {
+        private ReadAttributeFromObjectNode getReadAttr() {
+            if (readAttr == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                objectLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(4));
+                readAttr = insert(ReadAttributeFromObjectNode.createForceType());
             }
-            return objectLibrary;
+            return readAttr;
         }
 
         private PyObjectSizeNode getSizeNode() {
@@ -1012,14 +990,6 @@ public abstract class TypeNodes {
                 sizeNode = insert(PyObjectSizeNode.create());
             }
             return sizeNode;
-        }
-
-        private HashingStorageLibrary getHashingStorageLibrary() {
-            if (hashingStorageLib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                hashingStorageLib = insert(HashingStorageLibrary.getFactory().createDispatched(4));
-            }
-            return hashingStorageLib;
         }
 
         private LookupAttributeInMRONode getLookupSlots() {
@@ -1086,30 +1056,23 @@ public abstract class TypeNodes {
         @Specialization
         protected Object getSolid(Object type,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached LookupSpecialMethodNode.Dynamic lookupGetAttribute,
-                        @Cached CallBinaryMethodNode callGetAttr,
-                        @CachedLibrary(limit = "4") HashingStorageLibrary storageLibrary,
-                        @CachedLibrary(limit = "6") PythonObjectLibrary objectLibrary,
-                        @Cached GetClassNode getClassNode,
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttr,
                         @Cached GetInternalObjectArrayNode getArrayNode,
                         @Cached BranchProfile typeIsNotBase,
                         @Cached BranchProfile hasBase,
                         @Cached BranchProfile hasNoBase) {
-            return solidBase(type, getBaseClassNode, PythonContext.get(this), lookupGetAttribute, callGetAttr, storageLibrary, getClassNode, objectLibrary, getArrayNode, typeIsNotBase, hasBase,
+            return solidBase(type, getBaseClassNode, PythonContext.get(this), readAttr, getArrayNode, typeIsNotBase, hasBase,
                             hasNoBase, 0);
         }
 
         @TruffleBoundary
         protected Object solidBaseTB(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, GetInternalObjectArrayNode getArrayNode, int depth) {
-            return solidBase(type, getBaseClassNode, context, LookupSpecialMethodNode.Dynamic.getUncached(), CallBinaryMethodNode.getUncached(),
-                            HashingStorageLibrary.getUncached(), GetClassNode.getUncached(), PythonObjectLibrary.getUncached(), getArrayNode, BranchProfile.getUncached(), BranchProfile.getUncached(),
-                            BranchProfile.getUncached(),
-                            depth);
+            return solidBase(type, getBaseClassNode, context, ReadAttributeFromObjectNode.getUncachedForceType(), getArrayNode, BranchProfile.getUncached(),
+                            BranchProfile.getUncached(), BranchProfile.getUncached(), depth);
         }
 
-        protected Object solidBase(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, LookupSpecialMethodNode.Dynamic lookupGetAttribute,
-                        CallBinaryMethodNode callGetAttr, HashingStorageLibrary storageLibrary, GetClassNode getClassNode,
-                        PythonObjectLibrary objectLibrary, GetInternalObjectArrayNode getArrayNode, BranchProfile typeIsNotBase, BranchProfile hasBase, BranchProfile hasNoBase, int depth) {
+        protected Object solidBase(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, ReadAttributeFromObjectNode readAttr,
+                        GetInternalObjectArrayNode getArrayNode, BranchProfile typeIsNotBase, BranchProfile hasBase, BranchProfile hasNoBase, int depth) {
             CompilerAsserts.partialEvaluationConstant(depth);
             Object base = getBaseClassNode.execute(type);
             if (base != null) {
@@ -1117,7 +1080,7 @@ public abstract class TypeNodes {
                 if (depth > 3) {
                     base = solidBaseTB(base, getBaseClassNode, context, getArrayNode, depth);
                 } else {
-                    base = solidBase(base, getBaseClassNode, context, lookupGetAttribute, callGetAttr, storageLibrary, getClassNode, objectLibrary, getArrayNode, typeIsNotBase, hasBase,
+                    base = solidBase(base, getBaseClassNode, context, readAttr, getArrayNode, typeIsNotBase, hasBase,
                                     hasNoBase, depth + 1);
                 }
             } else {
@@ -1130,9 +1093,9 @@ public abstract class TypeNodes {
             }
             typeIsNotBase.enter();
 
-            Object typeSlots = getSlotsFromDict(type, lookupGetAttribute, callGetAttr, getClassNode, storageLibrary);
-            Object baseSlots = getSlotsFromDict(base, lookupGetAttribute, callGetAttr, getClassNode, storageLibrary);
-            if (extraivars(type, base, typeSlots, baseSlots, objectLibrary, getArrayNode)) {
+            Object typeSlots = getSlotsFromType(type, readAttr);
+            Object baseSlots = getSlotsFromType(base, readAttr);
+            if (extraivars(type, base, typeSlots, baseSlots, getArrayNode)) {
                 return type;
             } else {
                 return base;
@@ -1140,17 +1103,14 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private boolean extraivars(Object type, Object base, Object typeSlots, Object baseSlots, PythonObjectLibrary objectLibrary, GetInternalObjectArrayNode getArrayNode) {
+        private boolean extraivars(Object type, Object base, Object typeSlots, Object baseSlots, GetInternalObjectArrayNode getArrayNode) {
             if (typeSlots == null && baseSlots != null && length(((PSequence) baseSlots).getSequenceStorage(), getArrayNode) != 0 ||
                             baseSlots == null && typeSlots != null && length(((PSequence) typeSlots).getSequenceStorage(), getArrayNode) != 0) {
                 return true;
             }
             Object typeNewMethod = LookupAttributeInMRONode.lookup(type, __NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
             Object baseNewMethod = LookupAttributeInMRONode.lookup(base, __NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
-            if (typeNewMethod != baseNewMethod) {
-                return true;
-            }
-            return hasDict(base, objectLibrary) != hasDict(type, objectLibrary);
+            return typeNewMethod != baseNewMethod;
         }
 
         @TruffleBoundary
@@ -1168,22 +1128,9 @@ public abstract class TypeNodes {
             return result;
         }
 
-        private static Object getSlotsFromDict(Object type, LookupSpecialMethodNode.Dynamic lookupGetAttribute, CallBinaryMethodNode callGetAttr,
-                        GetClassNode getClassNode, HashingStorageLibrary lib) {
-            Object getAttr = lookupGetAttribute.execute(null, getClassNode.execute(type), __GETATTRIBUTE__, type);
-            Object dict = callGetAttr.executeObject(getAttr, type, __DICT__);
-            if (dict != PNone.NO_VALUE) {
-                if (dict instanceof PMappingproxy) {
-                    dict = ((PMappingproxy) dict).getMapping();
-                }
-                HashingStorage storage = ((PHashingCollection) dict).getDictStorage();
-                return lib.getItem(storage, __SLOTS__);
-            }
-            return null;
-        }
-
-        protected boolean hasDict(Object obj, PythonObjectLibrary objectLibrary) {
-            return objectLibrary.lookupAttribute(obj, null, __DICT__) != PNone.NO_VALUE;
+        private static Object getSlotsFromType(Object type, ReadAttributeFromObjectNode readAttr) {
+            Object slots = readAttr.execute(type, __SLOTS__);
+            return slots != PNone.NO_VALUE ? slots : null;
         }
     }
 
@@ -1696,5 +1643,19 @@ public abstract class TypeNodes {
                     return 0;
             }
         }
+    }
+
+    // Equivalent of checking type->tp_dictoffset != 0 in CPython
+    private static boolean instancesHaveDict(Object type) {
+        if (type instanceof PythonBuiltinClassType) {
+            return ((PythonBuiltinClassType) type).isBuiltinWithDict();
+        }
+        if (type instanceof PythonClass) {
+            return (((PythonClass) type).getInstanceShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) == 0;
+        }
+        if (type instanceof PythonAbstractNativeObject) {
+            return CastToJavaIntExactNode.getUncached().execute(GetTypeMemberNode.getUncached().execute(type, NativeMember.TP_DICTOFFSET)) != 0;
+        }
+        return true;
     }
 }
