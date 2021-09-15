@@ -94,6 +94,18 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "is_closed", minNumOfPositionalArgs = 1, isGetter = true, //
+                    doc = "Self-explanatory")
+    @GenerateNodeFactory
+    public abstract static class HPyDebugHandleIsClosedNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        static boolean doGeneric(PDebugHandle self) {
+            GraalHPyHandle handle = self.getHandle();
+            return !handle.isPointer(ConditionProfile.getUncached());
+        }
+    }
+
     @Builtin(name = SpecialMethodNames.__EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class HPyDebugHandleEqNode extends PythonBinaryBuiltinNode {
