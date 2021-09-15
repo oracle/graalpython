@@ -165,7 +165,7 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
                 } catch (InterruptedException e) {
                     CompilerDirectives.transferToInterpreter();
                     Thread.currentThread().interrupt();
-                    return PNone.NO_VALUE;
+                    return PNone.NONE;
                 } finally {
                     ensureGil().acquire();
                 }
