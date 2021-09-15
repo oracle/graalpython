@@ -126,8 +126,8 @@
  *     used as the error message instead of the default error message. : and ;
  *     are mutually exclusive and whichever occurs first takes precedence.
  *
- * API
- * ---
+ * Argument Parsing API
+ * --------------------
  *
  */
 
