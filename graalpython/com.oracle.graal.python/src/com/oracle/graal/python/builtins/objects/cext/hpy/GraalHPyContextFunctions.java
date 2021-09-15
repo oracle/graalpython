@@ -1263,7 +1263,7 @@ public abstract class GraalHPyContextFunctions {
                 if (withSize) {
                     size = castToJavaIntNode.execute(arguments[2]);
                     if (size == 0) {
-                        return factory.createBytes(new byte[size]);
+                        return asHandleNode.execute(context, factory.createBytes(new byte[size]));
                     }
                 } else {
                     size = castToJavaIntNode.execute(callHelperNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_STRLEN, charPtr));
