@@ -57,13 +57,11 @@ import com.oracle.graal.python.builtins.objects.thread.LockBuiltins.AcquireLockN
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext.SharedMultiprocessingData;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -201,19 +199,17 @@ public class SemLockBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "_rebuild", minNumOfPositionalArgs = 4, parameterNames = {"handle", "kind", "maxvalue", "name"})
+    @ArgumentClinic(name = "kind", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    abstract static class RebuildNode extends PythonQuaternaryBuiltinNode {
+    abstract static class RebuildNode extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SemLockBuiltinsClinicProviders.RebuildNodeClinicProviderGen.INSTANCE;
+        }
+
         @Specialization
-        Object doEnter(@SuppressWarnings("unused") Object handle, int kind, @SuppressWarnings("unused") Object maxvalue, Object nameObj,
-                        @Cached CastToJavaStringNode castNameNode) {
-
-            String name;
-            try {
-                name = castNameNode.execute(nameObj);
-            } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "_rebuild", 4, "str", nameObj);
-            }
-
+        Object doEnter(@SuppressWarnings("unused") Object handle, int kind, @SuppressWarnings("unused") Object maxvalue, String name) {
             SharedMultiprocessingData multiprocessing = getContext().getSharedMultiprocessingData();
             Semaphore semaphore = multiprocessing.getNamedSemaphore(name);
             if (semaphore == null) {
