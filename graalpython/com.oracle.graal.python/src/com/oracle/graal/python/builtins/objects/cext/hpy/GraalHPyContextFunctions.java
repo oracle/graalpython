@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
@@ -1261,9 +1262,15 @@ public abstract class GraalHPyContextFunctions {
             int size;
             try {
                 if (withSize) {
+                    if (interopLib.isNull(charPtr)) {
+                        return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, ValueError, "NULL char * passed to HPyBytes_FromStringAndSize");
+                    }
                     size = castToJavaIntNode.execute(arguments[2]);
                     if (size == 0) {
                         return asHandleNode.execute(context, factory.createBytes(new byte[size]));
+                    }
+                    if (size < 0) {
+                        return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, SystemError, "negative size passed");
                     }
                 } else {
                     size = castToJavaIntNode.execute(callHelperNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_STRLEN, charPtr));
@@ -1281,7 +1288,7 @@ public abstract class GraalHPyContextFunctions {
             } catch (InteropException e) {
                 return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, TypeError, "%m", e);
             } catch (OverflowException e) {
-                return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, SystemError, "negative size passed");
+                return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, OverflowError, ErrorMessages.BYTE_STR_IS_TOO_LARGE);
             }
         }
     }
