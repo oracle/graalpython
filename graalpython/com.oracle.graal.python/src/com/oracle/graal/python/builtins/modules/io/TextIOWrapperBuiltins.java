@@ -121,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -266,12 +267,12 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
             return true;
         }
 
-        @Specialization(guards = "isValid(self, encodingObj, errorsObj, newlineObj)", limit = "2")
+        @Specialization(guards = "isValid(self, encodingObj, errorsObj, newlineObj)")
         Object reconfigure(VirtualFrame frame, PTextIO self, Object encodingObj,
                         Object errorsObj, Object newlineObj,
                         Object lineBufferingObj, Object writeThroughObj,
                         @Cached IONodes.ToStringNode toStringNode,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached TextIOWrapperNodes.ChangeEncodingNode changeEncodingNode) {
             String newline = null;
@@ -291,7 +292,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
             } else {
                 writeThrough = isTrueNode.execute(frame, writeThroughObj);
             }
-            libSelf.lookupAndCallRegularMethod(self, frame, FLUSH);
+            callMethod.execute(frame, self, FLUSH);
             self.setB2cratio(0);
             if (!isNoValue(newlineObj)) {
                 setNewline(self, newline);

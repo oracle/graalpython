@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
@@ -56,6 +57,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -96,10 +98,10 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @Builtin(name = KEYS, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class KeysNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         public Object items(VirtualFrame frame, PMappingproxy self,
-                        @CachedLibrary("self.getMapping()") PythonObjectLibrary lib) {
-            return lib.lookupAndCallRegularMethod(self.getMapping(), frame, "keys");
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, self.getMapping(), "keys");
         }
     }
 
@@ -107,10 +109,10 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @Builtin(name = ITEMS, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ItemsNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         public Object items(VirtualFrame frame, PMappingproxy self,
-                        @CachedLibrary("self.getMapping()") PythonObjectLibrary lib) {
-            return lib.lookupAndCallRegularMethod(self.getMapping(), frame, ITEMS);
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, self.getMapping(), ITEMS);
         }
     }
 
@@ -118,10 +120,10 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @Builtin(name = VALUES, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ValuesNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         public Object values(VirtualFrame frame, PMappingproxy self,
-                        @CachedLibrary("self.getMapping()") PythonObjectLibrary lib) {
-            return lib.lookupAndCallRegularMethod(self.getMapping(), frame, VALUES);
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, self.getMapping(), VALUES);
         }
     }
 
@@ -129,16 +131,16 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @Builtin(name = "get", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonBuiltinNode {
-        @Specialization(guards = "isNoValue(defaultValue)", limit = "1")
+        @Specialization(guards = "isNoValue(defaultValue)")
         public Object get(VirtualFrame frame, PMappingproxy self, Object key, @SuppressWarnings("unused") PNone defaultValue,
-                        @CachedLibrary("self.getMapping()") PythonObjectLibrary lib) {
-            return lib.lookupAndCallRegularMethod(self.getMapping(), frame, "get", key);
+                        @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, self.getMapping(), "get", key);
         }
 
-        @Specialization(guards = "!isNoValue(defaultValue)", limit = "1")
+        @Specialization(guards = "!isNoValue(defaultValue)")
         public Object get(VirtualFrame frame, PMappingproxy self, Object key, Object defaultValue,
-                        @CachedLibrary("self.getMapping()") PythonObjectLibrary lib) {
-            return lib.lookupAndCallRegularMethod(self.getMapping(), frame, "get", key, defaultValue);
+                        @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, self.getMapping(), "get", key, defaultValue);
         }
     }
 
@@ -176,10 +178,10 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @Builtin(name = "copy", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         public Object copy(VirtualFrame frame, PMappingproxy self,
-                        @CachedLibrary("self.getMapping()") PythonObjectLibrary lib) {
-            return lib.lookupAndCallRegularMethod(self.getMapping(), frame, "copy");
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, self.getMapping(), "copy");
         }
     }
 

@@ -47,18 +47,18 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_codecs_truffle")
 public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
@@ -71,10 +71,10 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, String encoding, String alternateCommand);
 
         @Specialization
-        static Object lookup(VirtualFrame frame, String encoding, String alternateCommand,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            PythonModule codecs = PythonContext.get(lib).getCore().lookupBuiltinModule("_codecs_truffle");
-            return lib.lookupAndCallRegularMethod(codecs, frame, "_lookup_text_encoding", encoding, alternateCommand);
+        Object lookup(VirtualFrame frame, String encoding, String alternateCommand,
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            PythonModule codecs = PythonContext.get(this).getCore().lookupBuiltinModule("_codecs_truffle");
+            return callMethod.execute(frame, codecs, "_lookup_text_encoding", encoding, alternateCommand);
         }
     }
 
@@ -82,11 +82,11 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         public abstract String execute(VirtualFrame frame);
 
         @Specialization
-        static String getpreferredencoding(VirtualFrame frame,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+        String getpreferredencoding(VirtualFrame frame,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectStrAsJavaStringNode strNode) {
-            PythonModule codecs = PythonContext.get(lib).getCore().lookupBuiltinModule("_codecs_truffle");
-            Object e = lib.lookupAndCallRegularMethod(codecs, frame, "_getpreferredencoding");
+            PythonModule codecs = PythonContext.get(this).getCore().lookupBuiltinModule("_codecs_truffle");
+            Object e = callMethod.execute(frame, codecs, "_getpreferredencoding");
             return strNode.execute(frame, e);
         }
     }
@@ -98,14 +98,14 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getIncEncoder(VirtualFrame frame, Object codecInfo, @SuppressWarnings("unused") PNone errors, String attrName,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            return lib.lookupAndCallRegularMethod(codecInfo, frame, attrName);
+                        @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, codecInfo, attrName);
         }
 
         @Specialization(guards = "!isPNone(errors)")
         static Object getIncEncoder(VirtualFrame frame, Object codecInfo, Object errors, String attrName,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            return lib.lookupAndCallRegularMethod(codecInfo, frame, attrName, errors);
+                        @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, codecInfo, attrName, errors);
         }
     }
 

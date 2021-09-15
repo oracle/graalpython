@@ -88,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -95,6 +96,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -184,11 +186,11 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = _CHECKSEEKABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CheckSeekableNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         boolean doCheckSeekable(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @CachedLibrary(limit = "1") PythonObjectLibrary isSame) {
-            Object v = lib.lookupAndCallRegularMethod(self, frame, SEEKABLE);
+            Object v = callMethod.execute(frame, self, SEEKABLE);
             if (isSame.isSame(v, getCore().getTrue())) {
                 return true;
             }
@@ -199,11 +201,11 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = _CHECKREADABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CheckReadableNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         boolean doCheckReadable(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @CachedLibrary(limit = "1") PythonObjectLibrary isSame) {
-            Object v = lib.lookupAndCallRegularMethod(self, frame, READABLE);
+            Object v = callMethod.execute(frame, self, READABLE);
             if (isSame.isSame(v, getCore().getTrue())) {
                 return true;
             }
@@ -230,15 +232,15 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @ImportStatic(IONodes.class)
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         PNone close(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached("create(__IOBASE_CLOSED)") SetAttributeNode setAttributeNode,
                         @Cached BranchProfile errorProfile) {
             if (!isClosed(self, frame, lookup)) {
                 try {
-                    lib.lookupAndCallRegularMethod(self, frame, FLUSH);
+                    callMethod.execute(frame, self, FLUSH);
                 } catch (PException e) {
                     errorProfile.enter();
                     try {
@@ -291,10 +293,10 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = TELL, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TellNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         static Object tell(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return lib.lookupAndCallRegularMethod(self, frame, SEEK, 0, 1);
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, self, SEEK, 0, 1);
         }
     }
 
@@ -312,10 +314,10 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = __EXIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class ExitNode extends PythonBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         static Object exit(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return lib.lookupAndCallRegularMethod(self, frame, CLOSE);
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, self, CLOSE);
         }
     }
 
@@ -353,11 +355,11 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class NextNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         Object next(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary selfLib,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectSizeNode sizeNode) {
-            Object line = selfLib.lookupAndCallRegularMethod(self, frame, READLINE);
+            Object line = callMethod.execute(frame, self, READLINE);
             if (sizeNode.execute(frame, line) <= 0) {
                 throw raise(StopIteration);
             }
@@ -405,20 +407,21 @@ public class IOBaseBuiltins extends PythonBuiltins {
         /**
          * implementation of cpython/Modules/_io/iobase.c:_io__IOBase_readline_impl
          */
-        @Specialization(limit = "2")
+        @Specialization
         PBytes readline(VirtualFrame frame, Object self, int limit,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
-                        @Cached PyObjectLookupAttr lookup,
+                        @Cached PyObjectLookupAttr lookupPeek,
+                        @Cached CallNode callPeek,
+                        @Cached PyObjectCallMethodObjArgs callRead,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached ConditionProfile hasPeek,
                         @Cached ConditionProfile isBytes) {
             /* For backwards compatibility, a (slowish) readline(). */
-            Object peek = lookup.execute(frame, self, "peek");
+            Object peek = lookupPeek.execute(frame, self, PEEK);
             ByteArrayOutputStream buffer = createOutputStream();
             while (limit < 0 || buffer.size() < limit) {
                 int nreadahead = 1;
                 if (hasPeek.profile(peek != PNone.NO_VALUE)) {
-                    Object readahead = lib.lookupAndCallRegularMethod(self, frame, PEEK, 1);
+                    Object readahead = callPeek.execute(frame, peek, self, 1);
                     // TODO _PyIO_trap_eintr [GR-23297]
                     if (isBytes.profile(!(readahead instanceof PBytes))) {
                         throw raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "peek()", readahead);
@@ -436,7 +439,7 @@ public class IOBaseBuiltins extends PythonBuiltins {
                     }
                 }
 
-                Object b = lib.lookupAndCallRegularMethod(self, frame, READ, nreadahead);
+                Object b = callRead.execute(frame, self, READ, nreadahead);
                 if (isBytes.profile(!(b instanceof PBytes))) {
                     throw raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "read()", b);
                 }

@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -541,11 +542,11 @@ public abstract class ObjectNodes {
                 return names;
             }
 
-            @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+            @Specialization
             Object getCopyRegSlotNames(VirtualFrame frame, Object cls, Object copyReg, @SuppressWarnings("unused") PNone slotNames,
                             @Cached FastIsListSubClassNode isListSubClassNode,
-                            @CachedLibrary(value = "copyReg") PythonObjectLibrary pol) {
-                Object names = pol.lookupAndCallRegularMethod(copyReg, frame, "_slotnames", cls);
+                            @Cached PyObjectCallMethodObjArgs callMethod) {
+                Object names = callMethod.execute(frame, copyReg, "_slotnames", cls);
                 if (!PGuards.isNone(names) && !isListSubClassNode.execute(frame, names)) {
                     throw raise(TypeError, COPYREG_SLOTNAMES);
                 }
@@ -653,6 +654,7 @@ public abstract class ObjectNodes {
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
                         @Cached PyObjectSizeNode sizeNode,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             Object cls = pol.lookupAttribute(obj, frame, __CLASS__);
             if (pol.lookupAttribute(cls, frame, __NEW__) == PNone.NO_VALUE) {
@@ -694,7 +696,7 @@ public abstract class ObjectNodes {
 
             Object state = getStateNode.execute(frame, obj, required, copyReg);
             Object listitems = objIsList ? pol.getIterator(obj) : PNone.NONE;
-            Object dictitems = objIsDict ? pol.getIterator(pol.lookupAndCallRegularMethod(obj, frame, ITEMS)) : PNone.NONE;
+            Object dictitems = objIsDict ? pol.getIterator(callMethod.execute(frame, obj, ITEMS)) : PNone.NONE;
 
             return factory().createTuple(new Object[]{newobj, newargs, state, listitems, dictitems});
         }
@@ -702,9 +704,9 @@ public abstract class ObjectNodes {
         @Specialization(guards = "proto < 2")
         public Object reduceCopyReg(VirtualFrame frame, Object obj, int proto,
                         @Cached("createImportCopyReg()") ImportNode.ImportExpression importNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             Object copyReg = importNode.execute(frame);
-            return pol.lookupAndCallRegularMethod(copyReg, frame, "_reduce_ex", obj, proto);
+            return callMethod.execute(frame, copyReg, "_reduce_ex", obj, proto);
         }
     }
 

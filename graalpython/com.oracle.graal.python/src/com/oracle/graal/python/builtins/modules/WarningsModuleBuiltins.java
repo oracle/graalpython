@@ -186,6 +186,8 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Child PyObjectCallMethodObjArgs callMethodNode;
         @Child PyDictGetItem dictGetItemNode;
         @Child PyObjectSetItem setItemNode;
+        @Child PyObjectStrAsObjectNode strNode;
+        @Child CallNode callNode;
 
         static WarningsModuleNode create() {
             return new WarningsModuleNode();
@@ -254,6 +256,22 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 setItemNode = insert(PyObjectSetItem.create());
             }
             return setItemNode;
+        }
+
+        private PyObjectStrAsObjectNode getStrNode() {
+            if (strNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                strNode = insert(PyObjectStrAsObjectNode.create());
+            }
+            return strNode;
+        }
+
+        private CallNode getCallNode() {
+            if (callNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNode = insert(CallNode.create());
+            }
+            return callNode;
         }
 
         private PyObjectSizeNode getSizeNode() {
@@ -401,7 +419,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                     throw getRaise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CANT_COMPARE, obj, arg);
                 }
             } catch (CannotCastException e) {
-                Object result = getPyLib().lookupAndCallRegularMethod(obj, frame, "match", arg);
+                Object result = getCallMethodNode().execute(frame, obj, "match", arg);
                 return getIsTrueNode().execute(frame, result);
             }
         }
@@ -492,7 +510,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             } else {
                 filters = getStateFilters(_warnings);
             }
-            if (filters == null || !(filters instanceof PList)) {
+            if (!(filters instanceof PList)) {
                 throw getRaise().raise(PythonBuiltinClassType.ValueError, "warnings.filters must be a list");
             }
             for (int i = 0; i < getSizeNode().execute(frame, filters); i++) {
@@ -559,7 +577,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             Object versionObj = getItem.execute(frame, registry, "version");
             long stateFiltersVersion = getStateFiltersVersion(_warnings, warnLib);
             if (versionObj == null || !polib.equals(stateFiltersVersion, versionObj, polib)) {
-                callMethod.execute(registry, frame, "clear");
+                callMethod.execute(frame, registry, "clear");
                 setItem.execute(frame, registry, "version", stateFiltersVersion);
             } else {
                 Object alreadyWarned = getItem.execute(frame, registry, key);
@@ -699,11 +717,11 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             // what __instancecheck__ does
             Object text;
             if (getIsSubtype().execute(frame, getPythonClass(message), PythonBuiltinClassType.Warning)) {
-                text = getPyLib().lookupAndCallRegularMethod(message, frame, SpecialMethodNames.__STR__);
+                text = getStrNode().execute(frame, message);
                 category = getPythonClass(message);
             } else {
                 text = message;
-                message = getPyLib().callObject(category, frame, message);
+                message = getCallNode().execute(frame, category, message);
             }
 
             Object key = getFactory().createTuple(new Object[]{text, category, lineno});
@@ -869,7 +887,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             }
             Object source;
             try {
-                source = PyObjectCallMethodObjArgs.getUncached().execute(loader, null, "get_source", moduleName);
+                source = PyObjectCallMethodObjArgs.getUncached().execute(null, loader, "get_source", moduleName);
             } catch (PException e) {
                 return null;
             }

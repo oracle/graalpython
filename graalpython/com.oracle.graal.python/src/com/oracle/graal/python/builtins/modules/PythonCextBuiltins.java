@@ -222,6 +222,7 @@ import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -2797,7 +2798,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyObjectCallMethodNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object receiverObj, String methodName, Object argsObj, int singleArg,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary objectLib,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached CastArgsNode castArgsNode,
                         @Cached ToNewRefNode toNewRefNode,
@@ -2813,7 +2814,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 } else {
                     args = castArgsNode.execute(frame, argsObj);
                 }
-                return toNewRefNode.execute(objectLib.lookupAndCallRegularMethod(receiver, frame, methodName, args));
+                return toNewRefNode.execute(callMethod.execute(frame, receiver, methodName, args));
             } catch (PException e) {
                 // transformExceptionToNativeNode acts as a branch profile
                 transformExceptionToNativeNode.execute(frame, e);
@@ -4226,7 +4227,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             stderr.println("object repr     : ");
             stderr.flush();
             try {
-                Object reprObj = PythonObjectLibrary.getUncached().lookupAndCallRegularMethod(context.getBuiltins(), null, BuiltinNames.REPR, pythonObject);
+                Object reprObj = PyObjectCallMethodObjArgs.getUncached().execute(null, context.getBuiltins(), BuiltinNames.REPR, pythonObject);
                 stderr.println(CastToJavaStringNode.getUncached().execute(reprObj));
             } catch (PException | CannotCastException e) {
                 // errors are ignored at this point

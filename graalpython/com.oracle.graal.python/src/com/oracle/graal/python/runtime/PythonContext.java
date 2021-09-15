@@ -87,10 +87,10 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -1130,7 +1130,7 @@ public final class PythonContext {
             if (path0 != null) {
                 PythonModule sys = core.lookupBuiltinModule("sys");
                 Object path = sys.getAttribute("path");
-                PythonObjectLibrary.getUncached().lookupAndCallRegularMethod(path, null, "insert", 0, path0);
+                PyObjectCallMethodObjArgs.getUncached().execute(null, path, "insert", 0, path0);
             }
         }
     }

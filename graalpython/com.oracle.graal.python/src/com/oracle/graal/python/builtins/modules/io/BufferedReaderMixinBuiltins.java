@@ -76,8 +76,8 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -346,7 +346,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_bufferedreader_read_all
          */
-        @Specialization(guards = {"self.isOK()", "isReadAll(size)"}, limit = "2")
+        @Specialization(guards = {"self.isOK()", "isReadAll(size)"})
         Object bufferedreaderReadAll(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
                         @Cached BufferedIONodes.EnterBufferedNode lock,
                         @Cached BufferedIONodes.FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
@@ -354,8 +354,8 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached ConditionProfile hasReadallProfile,
                         @Cached CallUnaryMethodNode dispatchGetattribute,
                         @Cached GetClassNode getClassNode,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
+                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             checkIsClosedNode.execute(frame, self);
             try {
                 lock.enter(self);
@@ -405,7 +405,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                     }
 
                     /* Read until EOF or until read() would block. */
-                    Object r = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, READ);
+                    Object r = callMethod.execute(frame, self.getRaw(), READ);
                     if (r != PNone.NONE && !(r instanceof PBytes)) {
                         throw raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "read()");
                     }

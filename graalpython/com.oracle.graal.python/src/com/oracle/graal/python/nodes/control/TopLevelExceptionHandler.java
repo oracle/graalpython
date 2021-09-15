@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.control;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemExit;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -53,8 +52,9 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -263,10 +263,9 @@ public final class TopLevelExceptionHandler extends RootNode {
     private static boolean handleAlwaysRunExceptHook(PythonContext theContext, PBaseException pythonException) {
         if (theContext.getOption(PythonOptions.AlwaysRunExcepthook)) {
             // If we failed to dig out the exit code we just print and leave
-            PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
             Object stderr = theContext.getCore().getStderr();
-            Object message = lib.lookupAndCallSpecialMethod(pythonException, null, __STR__);
-            lib.lookupAndCallRegularMethod(stderr, null, "write", message);
+            Object message = PyObjectStrAsObjectNode.getUncached().execute(null, pythonException);
+            PyObjectCallMethodObjArgs.getUncached().execute(null, stderr, "write", message);
             return true;
         }
         return false;
