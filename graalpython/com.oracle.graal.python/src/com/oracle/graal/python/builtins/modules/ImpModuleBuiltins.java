@@ -357,6 +357,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ExecBuiltin extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         public Object exec(PythonModule pythonModule) {
             final Python3Core core = getCore();
             if (!ImageInfo.inImageBuildtimeCode()) {
