@@ -361,18 +361,18 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil) {
             ArrayBuilder<Integer> notEmpty = new ArrayBuilder<>();
             SharedMultiprocessingData sharedData = getContext().getSharedMultiprocessingData();
-            gil.release(true);
-            try {
-                PSequence pSequence = constructListNode.execute(frame, rlist);
-                for (int i = 0; i < sizeNode.execute(frame, pSequence); i++) {
-                    Object pythonObject = callGetItemNode.executeObject(frame, pSequence, i);
-                    int fd = toInt(castToJava, pythonObject);
+            PSequence pSequence = constructListNode.execute(frame, rlist);
+            for (int i = 0; i < sizeNode.execute(frame, pSequence); i++) {
+                Object pythonObject = callGetItemNode.executeObject(frame, pSequence, i);
+                int fd = toInt(castToJava, pythonObject);
+                gil.release(true);
+                try {
                     if (!sharedData.isBlocking(fd)) {
                         notEmpty.add(fd);
                     }
+                } finally {
+                    gil.acquire();
                 }
-            } finally {
-                gil.acquire();
             }
             return factory().createList(notEmpty.toObjectArray(new Object[0]));
         }
