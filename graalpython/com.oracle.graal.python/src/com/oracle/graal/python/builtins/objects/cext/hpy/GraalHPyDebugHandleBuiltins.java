@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
@@ -148,6 +149,17 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
             Object objRepr = LookupAndCallUnaryDynamicNode.getUncached().executeObject(self.getHandle().getDelegate(), SpecialMethodNames.__REPR__);
             String reprStr = CastToJavaStringNode.getUncached().execute(objRepr);
             return String.format("<DebugHandle 0x%s for %s>", Integer.toHexString(id), reprStr);
+        }
+    }
+
+    @Builtin(name = "_force_close", minNumOfPositionalArgs = 1, doc = "Close the underlying handle. FOR TESTS ONLY.")
+    @GenerateNodeFactory
+    public abstract static class HPyDebugHandleForceCloseNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        PNone doGeneric(PDebugHandle self) {
+            self.getHandle().close(getContext().getHPyContext(), ConditionProfile.getUncached());
+            return PNone.NONE;
         }
     }
 }
