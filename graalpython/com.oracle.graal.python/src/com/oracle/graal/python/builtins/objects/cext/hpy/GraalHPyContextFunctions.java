@@ -1800,7 +1800,7 @@ public abstract class GraalHPyContextFunctions {
                             @Cached HPyAsContextNode asContextNode,
                             @Cached HPyAsPythonObjectNode asPythonObjectNode,
                             @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
-                            @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                            @Cached CallNode callNode,
                             @Cached(value = "createToNativeNode(receiver)", uncached = "getUncachedToNativeNode(receiver)") CExtToNativeNode toNativeNode,
                             @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) throws ArityException {
@@ -1817,7 +1817,7 @@ public abstract class GraalHPyContextFunctions {
                     }
                     try {
                         Object builtinFunction = readAttributeFromObjectNode.execute(nativeContext.getContext().getBuiltins(), receiver.key);
-                        return toNativeNode.execute(nativeContext, lib.callObjectWithState(builtinFunction, null, pythonArguments));
+                        return toNativeNode.execute(nativeContext, callNode.execute(builtinFunction, pythonArguments, PKeyword.EMPTY_KEYWORDS));
                     } catch (PException e) {
                         transformExceptionToNativeNode.execute(nativeContext, e);
                         switch (receiver.returnType) {

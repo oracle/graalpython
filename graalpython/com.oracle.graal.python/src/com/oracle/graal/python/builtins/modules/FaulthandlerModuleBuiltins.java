@@ -50,8 +50,8 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -82,7 +82,7 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
                 f = PNone.NONE;
             }
             try {
-                PythonObjectLibrary.getUncached().callObject(callable, null, PNone.NONE, PNone.NONE, f);
+                CallNode.getUncached().execute(null, callable, PNone.NONE, PNone.NONE, f);
             } catch (RuntimeException e) {
                 ExceptionUtils.printPythonLikeStackTrace(e);
             }

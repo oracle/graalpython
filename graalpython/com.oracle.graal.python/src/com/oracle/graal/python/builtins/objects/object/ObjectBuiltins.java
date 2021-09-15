@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleFo
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.CheckCompatibleForAssigmentNodeGen;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -93,6 +94,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -915,15 +917,16 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object doit(VirtualFrame frame, Object obj, int proto,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached CallNode callNode,
                         @Cached ConditionProfile reduceProfile,
-                        @Cached ObjectNodes.CommonReduceNode commonReduceNode,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
-            Object _reduce = pol.lookupAttribute(obj, frame, __REDUCE__);
+                        @Cached ObjectNodes.CommonReduceNode commonReduceNode) {
+            Object _reduce = lookupAttr.execute(frame, obj, __REDUCE__);
             if (reduceProfile.profile(_reduce != PNone.NO_VALUE)) {
                 // Check if __reduce__ has been overridden:
                 // "type(obj).__reduce__ is not object.__reduce__"
                 if (!(_reduce instanceof PBuiltinMethod) || ((PBuiltinMethod) _reduce).getFunction().getBuiltinNodeFactory() != REDUCE_FACTORY) {
-                    return pol.callObject(_reduce, frame);
+                    return callNode.execute(frame, _reduce);
                 }
             }
             return commonReduceNode.execute(frame, obj, proto);

@@ -131,6 +131,7 @@ import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
@@ -1550,31 +1551,31 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @CompilationFinal private PythonModule cachedSys;
 
         @Specialization
-        PNone printNoKeywords(VirtualFrame frame, Object[] values, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone end, @SuppressWarnings("unused") PNone file,
-                        @SuppressWarnings("unused") PNone flush,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Cached PyObjectStrAsObjectNode strNode) {
+        @SuppressWarnings("unused")
+        PNone printNoKeywords(VirtualFrame frame, Object[] values, PNone sep, PNone end, PNone file, PNone flush,
+                        @Shared("callWrite") @Cached PyObjectCallMethodObjArgs callWrite,
+                        @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
+                        @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
             Object stdout = getStdout();
-            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, lib, strNode);
+            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, callWrite, callFlush, strNode);
         }
 
         @Specialization(guards = {"!isNone(file)", "!isNoValue(file)"})
         PNone printAllGiven(VirtualFrame frame, Object[] values, String sep, String end, Object file, boolean flush,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Cached PyObjectStrAsObjectNode strNode) {
+                        @Shared("callWrite") @Cached PyObjectCallMethodObjArgs callWrite,
+                        @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
+                        @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
             int lastValue = values.length - 1;
-            Object writeMethod = lib.lookupAttributeStrict(file, frame, "write");
             for (int i = 0; i < lastValue; i++) {
-                lib.callObject(writeMethod, frame, strNode.execute(frame, values[i]));
-                lib.callObject(writeMethod, frame, sep);
+                callWrite.execute(frame, file, "write", strNode.execute(frame, values[i]));
+                callWrite.execute(frame, file, "write", sep);
             }
             if (lastValue >= 0) {
-                lib.callObject(writeMethod, frame, strNode.execute(frame, values[lastValue]));
+                callWrite.execute(frame, file, "write", strNode.execute(frame, values[lastValue]));
             }
-            lib.callObject(writeMethod, frame, end);
+            callWrite.execute(frame, file, "write", end);
             if (flush) {
-                Object flushMethod = lib.lookupAttributeStrict(file, frame, "flush");
-                lib.callObject(flushMethod, frame);
+                callFlush.execute(frame, file, "flush");
             }
             return PNone.NONE;
         }
@@ -1585,8 +1586,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CastToJavaStringNode castEnd,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castFlush,
                         @Cached PRaiseNode raiseNode,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
-                        @Cached PyObjectStrAsObjectNode strNode) {
+                        @Shared("callWrite") @Cached PyObjectCallMethodObjArgs callWrite,
+                        @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
+                        @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
             String sep;
             try {
                 sep = sepIn instanceof PNone ? DEFAULT_SEPARATOR : castSep.execute(sepIn);
@@ -1613,7 +1615,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 flush = castFlush.executeBoolean(frame, flushIn);
             }
-            return printAllGiven(frame, values, sep, end, file, flush, lib, strNode);
+            return printAllGiven(frame, values, sep, end, file, flush, callWrite, callFlush, strNode);
         }
 
         private Object getStdout() {

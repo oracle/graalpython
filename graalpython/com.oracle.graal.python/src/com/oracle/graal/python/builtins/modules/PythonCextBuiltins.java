@@ -2696,7 +2696,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         static Object doFunction(VirtualFrame frame, Object callableObj, Object vaList,
                         @CachedLibrary("vaList") InteropLibrary argsArrayLib,
                         @Shared("argLib") @CachedLibrary(limit = "2") InteropLibrary argLib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary callableLib,
+                        @Cached CallNode callNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached CExtNodes.ToJavaNode toJavaNode,
                         @Cached GetLLVMType getLLVMType,
@@ -2706,7 +2706,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object callable = asPythonObjectNode.execute(callableObj);
-                return toNewRefNode.execute(callFunction(frame, callable, vaList, argsArrayLib, argLib, callableLib, toJavaNode, getLLVMType));
+                return toNewRefNode.execute(callFunction(frame, callable, vaList, argsArrayLib, argLib, callNode, toJavaNode, getLLVMType));
             } catch (PException e) {
                 // transformExceptionToNativeNode acts as a branch profile
                 transformExceptionToNativeNode.execute(frame, e);
@@ -2717,7 +2717,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         static Object callFunction(VirtualFrame frame, Object callable, Object vaList,
                         InteropLibrary argsArrayLib,
                         InteropLibrary argLib,
-                        PythonObjectLibrary callableLib,
+                        CallNode callNode,
                         CExtNodes.ToJavaNode toJavaNode,
                         GetLLVMType getLLVMType) {
             if (argsArrayLib.hasArrayElements(vaList)) {
@@ -2749,7 +2749,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     if (filled < args.length) {
                         args = PythonUtils.arrayCopyOf(args, filled);
                     }
-                    return callableLib.callObject(callable, frame, args);
+                    return callNode.execute(frame, callable, args);
                 } catch (UnsupportedMessageException | OverflowException e) {
                     // I think we can just assume that there won't be more than
                     // Integer.MAX_VALUE arguments.
@@ -2767,9 +2767,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         static Object doMethod(VirtualFrame frame, Object receiverObj, Object methodNameObj, Object vaList,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib,
                         @CachedLibrary("vaList") InteropLibrary argsArrayLib,
                         @Shared("argLib") @CachedLibrary(limit = "2") InteropLibrary argLib,
+                        @Cached CallNode callNode,
                         @Cached GetAnyAttributeNode getAnyAttributeNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached CExtNodes.ToJavaNode toJavaNode,
@@ -2783,7 +2783,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 Object receiver = asPythonObjectNode.execute(receiverObj);
                 Object methodName = asPythonObjectNode.execute(methodNameObj);
                 Object method = getAnyAttributeNode.executeObject(frame, receiver, methodName);
-                return toNewRefNode.execute(PyObjectCallFunctionObjArgsNode.callFunction(frame, method, vaList, argsArrayLib, argLib, methodLib, toJavaNode, getLLVMType));
+                return toNewRefNode.execute(PyObjectCallFunctionObjArgsNode.callFunction(frame, method, vaList, argsArrayLib, argLib, callNode, toJavaNode, getLLVMType));
             } catch (PException e) {
                 // transformExceptionToNativeNode acts as a branch profile
                 transformExceptionToNativeNode.execute(frame, e);

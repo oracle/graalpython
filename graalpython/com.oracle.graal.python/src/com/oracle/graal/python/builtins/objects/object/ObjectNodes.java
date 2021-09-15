@@ -107,6 +107,7 @@ import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
@@ -121,6 +122,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -459,13 +461,13 @@ public abstract class ObjectNodes {
 
             @Specialization(guards = "!isNoValue(getNewArgsExAttr)")
             Pair<Object, Object> doNewArgsEx(VirtualFrame frame, Object getNewArgsExAttr, @SuppressWarnings("unused") Object getNewArgsAttr,
-                            @Cached FastIsTupleSubClassNode isTupleSubClassNode,
+                            @Shared("callNode") @Cached CallNode callNode,
+                            @Shared("tupleCheck") @Cached FastIsTupleSubClassNode isTupleSubClassNode,
                             @Cached FastIsDictSubClassNode isDictSubClassNode,
                             @Cached SequenceStorageNodes.GetItemNode getItemNode,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                            @Cached PyObjectSizeNode sizeNode,
-                            @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
-                Object newargs = pol.callObject(getNewArgsExAttr, frame);
+                            @Cached PyObjectSizeNode sizeNode) {
+                Object newargs = callNode.execute(frame, getNewArgsExAttr);
                 if (!isTupleSubClassNode.execute(frame, newargs)) {
                     throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, __GETNEWARGS_EX__, "tuple", newargs);
                 }
@@ -488,11 +490,11 @@ public abstract class ObjectNodes {
                 return Pair.create(args, kwargs);
             }
 
-            @Specialization(guards = "!isNoValue(getNewArgsAttr)", limit = "getCallSiteInlineCacheMaxDepth()")
+            @Specialization(guards = "!isNoValue(getNewArgsAttr)")
             Pair<Object, Object> doNewArgs(VirtualFrame frame, @SuppressWarnings("unused") PNone getNewArgsExAttr, Object getNewArgsAttr,
-                            @Cached FastIsTupleSubClassNode isTupleSubClassNode,
-                            @CachedLibrary(value = "getNewArgsAttr") PythonObjectLibrary pol) {
-                Object args = pol.callObject(getNewArgsAttr, frame);
+                            @Shared("callNode") @Cached CallNode callNode,
+                            @Shared("tupleCheck") @Cached FastIsTupleSubClassNode isTupleSubClassNode) {
+                Object args = callNode.execute(frame, getNewArgsAttr);
                 if (!isTupleSubClassNode.execute(frame, args)) {
                     throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, __GETNEWARGS__, "tuple", args);
                 }
@@ -571,10 +573,10 @@ public abstract class ObjectNodes {
         abstract static class GetStateInternalNode extends PNodeWithState {
             public abstract Object execute(VirtualFrame frame, Object obj, boolean required, Object copyReg, Object getStateAttr);
 
-            @Specialization(guards = "!isNoValue(getStateAttr)", limit = "getCallSiteInlineCacheMaxDepth()")
+            @Specialization(guards = "!isNoValue(getStateAttr)")
             Object getState(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") boolean required, @SuppressWarnings("unused") Object copyReg, Object getStateAttr,
-                            @CachedLibrary(value = "getStateAttr") PythonObjectLibrary pol) {
-                return pol.callObject(getStateAttr, frame);
+                            @Cached CallNode callNode) {
+                return callNode.execute(frame, getStateAttr);
             }
 
             @Specialization
