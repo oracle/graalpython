@@ -395,6 +395,11 @@ def update_unittest_tags(args):
         # Disabled since code object comparison is not stable for us
         ('test_marshal.txt', '*graalpython.lib-python.3.test.test_marshal.InstancingTestCase.testModule'),
         ('test_marshal.txt', '*graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_code'),
+        # Disabled since signaling isn't stable during parallel tests
+        ('test_faulthandler.txt', '*graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_sigbus'),
+        ('test_faulthandler.txt', '*graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_sigill'),
+        # Disabled due to transient failure
+        ('test_multiprocessing_main_handling.txt', '*graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.test_module_in_package'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
