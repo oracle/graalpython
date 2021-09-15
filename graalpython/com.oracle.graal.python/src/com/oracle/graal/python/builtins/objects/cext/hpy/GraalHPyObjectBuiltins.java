@@ -48,19 +48,25 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltinsFactory.HPyObjectNewNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -117,48 +123,75 @@ public abstract class GraalHPyObjectBuiltins {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__NEW__, minNumOfPositionalArgs = 1, parameterNames = "$self", takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = SpecialMethodNames.__NEW__, takesVarArgs = true, takesVarKeywordArgs = true)
     abstract static class HPyObjectNewNode extends PythonVarargsBuiltinNode {
         private static final Builtin BUILTIN = HPyObjectNewNode.class.getAnnotation(Builtin.class);
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(HPyObjectNewNode.class);
 
         @Child private PCallHPyFunction callHPyFunctionNode;
+        @Child private LookupCallableSlotInMRONode lookupNewNode;
+        @Child private CallVarargsMethodNode callNewNode;
+        @Child private GetSuperClassNode getBaseClassNode;
         @Child private ReadAttributeFromObjectNode readBasicsizeNode;
         @Child private WriteAttributeToObjectNode writeNativeSpaceNode;
+        @Child private IsBuiltinClassProfile isObjectProfile;
 
         @Override
         public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             if (arguments.length >= 1) {
-                return doGeneric(frame, arguments[0], PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
+                return doGeneric(frame, self, arguments, keywords);
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new VarargsBuiltinDirectInvocationNotSupported();
         }
 
         @Specialization
-        @SuppressWarnings("unused")
-        PythonObject doGeneric(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
+        Object doGeneric(VirtualFrame frame, Object explicitSelf, Object[] arguments, PKeyword[] keywords) {
+            assert explicitSelf != null;
 
             // create the managed Python object
-            PythonObject pythonObject = factory().createPythonObject(self);
+
+            // delegate to the best base's constructor
+            Object self;
+            Object[] argsWithSelf;
+            if (explicitSelf == PNone.NO_VALUE) {
+                argsWithSelf = arguments;
+                self = argsWithSelf[0];
+            } else {
+                argsWithSelf = new Object[arguments.length + 1];
+                argsWithSelf[0] = explicitSelf;
+                PythonUtils.arraycopy(arguments, 0, argsWithSelf, 1, arguments.length);
+                self = explicitSelf;
+            }
+            Object baseClass = ensureGetBaseClassNode().execute(self);
+            Object pythonObject;
+            if (ensureIsObjectProfile().profileClass(baseClass, PythonBuiltinClassType.PythonObject)) {
+                // fast-path if the super class is 'object'
+                pythonObject = factory().createPythonObject(self);
+            } else {
+                Object superNew = ensureLookupNewNode().execute(baseClass);
+                pythonObject = ensureCallNewNode().execute(frame, superNew, argsWithSelf, keywords);
+            }
 
             // allocate native space
             Object attrObj = ensureReadBasicsizeNode().execute(self, TYPE_HPY_BASICSIZE);
             if (attrObj != PNone.NO_VALUE) {
                 // we fully control this attribute; if it is there, it's always a long
                 long basicsize = (long) attrObj;
-                /*
-                 * This is just calling 'calloc' which is a pure helper function. Therefore, we can
-                 * take any HPy context and don't need to attach a context to this __new__ function
-                 * for that since the helper function won't deal with handles.
-                 */
-                Object dataPtr = ensureCallHPyFunctionNode().call(getContext().getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicsize, 1L);
-                ensureWriteNativeSpaceNode().execute(pythonObject, OBJECT_HPY_NATIVE_SPACE, dataPtr);
+                if (basicsize > 0) {
+                    /*
+                     * This is just calling 'calloc' which is a pure helper function. Therefore, we
+                     * can take any HPy context and don't need to attach a context to this __new__
+                     * function for that since the helper function won't deal with handles.
+                     */
+                    Object dataPtr = ensureCallHPyFunctionNode().call(getContext().getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicsize, 1L);
+                    ensureWriteNativeSpaceNode().execute(pythonObject, OBJECT_HPY_NATIVE_SPACE, dataPtr);
 
-                if (LOGGER.isLoggable(Level.FINEST)) {
-                    LOGGER.finest(() -> String.format("Allocated HPy object with native space of size %d at %s", basicsize, dataPtr));
+                    if (LOGGER.isLoggable(Level.FINEST)) {
+                        LOGGER.finest(() -> String.format("Allocated HPy object with native space of size %d at %s", basicsize, dataPtr));
+                    }
+                    // TODO(fa): add memory tracing
                 }
-                // TODO(fa): add memory tracing
             }
             return pythonObject;
         }
@@ -185,6 +218,38 @@ public abstract class GraalHPyObjectBuiltins {
                 callHPyFunctionNode = insert(PCallHPyFunctionNodeGen.create());
             }
             return callHPyFunctionNode;
+        }
+
+        private CallVarargsMethodNode ensureCallNewNode() {
+            if (callNewNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNewNode = insert(CallVarargsMethodNode.create());
+            }
+            return callNewNode;
+        }
+
+        private LookupCallableSlotInMRONode ensureLookupNewNode() {
+            if (lookupNewNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lookupNewNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.New));
+            }
+            return lookupNewNode;
+        }
+
+        private GetSuperClassNode ensureGetBaseClassNode() {
+            if (getBaseClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getBaseClassNode = insert(GetSuperClassNodeGen.create());
+            }
+            return getBaseClassNode;
+        }
+
+        private IsBuiltinClassProfile ensureIsObjectProfile() {
+            if (isObjectProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isObjectProfile = insert(IsBuiltinClassProfile.create());
+            }
+            return isObjectProfile;
         }
 
         @TruffleBoundary
