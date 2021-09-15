@@ -264,6 +264,10 @@ HPyMember_FieldType graal_hpy_member_get_type(HPyMember *member_def) {
 
 /* getters for HPyType_SpecParam */
 
+HPyType_SpecParam_Kind graal_hpy_HPyType_SpecParam_get_kind(HPyType_SpecParam *def) {
+	return def->kind;
+}
+
 void* graal_hpy_HPyType_SpecParam_get_object(HPyType_SpecParam *def) {
 	return UNWRAP(def->object);
 }
