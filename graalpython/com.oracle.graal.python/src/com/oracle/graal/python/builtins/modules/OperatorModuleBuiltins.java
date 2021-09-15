@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -156,19 +157,20 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public Object doDict(PDict dict, Object item) {
-            return dict.getItem(item);
+        public static Object doDict(VirtualFrame frame, PDict dict, Object item,
+                        @Cached DictBuiltins.GetItemNode getItem) {
+            return getItem.execute(frame, dict, item);
         }
 
         @Specialization
-        public Object doSequence(VirtualFrame frame, PSequence value, Object index,
+        public static Object doSequence(VirtualFrame frame, PSequence value, Object index,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(frame, getStorage.execute(value), index);
         }
 
         @Specialization
-        public Object doObject(VirtualFrame frame, Object value, Object index,
+        public static Object doObject(VirtualFrame frame, Object value, Object index,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
             return getItemNode.executeObject(frame, value, index);
         }

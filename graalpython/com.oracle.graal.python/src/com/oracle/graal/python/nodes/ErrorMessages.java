@@ -114,6 +114,7 @@ public abstract class ErrorMessages {
     public static final String CALLING_ARG_CONVERTER_FAIL_UNEXPECTED_RETURN = "calling argument converter failed; unexpected return value %s";
     public static final String CALLING_NATIVE_FUNC_EXPECTED_ARGS = "Calling native function %s expected %d arguments but got %d.";
     public static final String CALLING_NATIVE_FUNC_FAILED = "Calling native function %s failed: %m";
+    public static final String ENCODER_RETURNED_P_INSTEAD_OF_BYTES = "'%s' encoder returned '%p' instead of 'bytes'; use codecs.encode() to encode to arbitrary types";
     public static final String EXPECTED_D_ARGS = "expected %d arguments";
     public static final String CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P = "can only assign %s to %s.%s, not %p";
     public static final String CAN_ONLY_ASSIGN_S_TO_P_S_NOT_P = "can only assign %s to %p.%s, not %p";
@@ -219,6 +220,7 @@ public abstract class ErrorMessages {
     public static final String SUPER_NO_CLASS = "super(): no arguments";
     public static final String SUPER_EMPTY_CLASS = "super(): empty __class__ cell";
     public static final String EMPTY_SEPARATOR = "empty separator";
+    public static final String EMPTY_ATTR_IN_FORMAT_STR = "Empty attribute in format string";
     public static final String S_MUST_BE_NONE_OR_STRING = "%s must be None or a string, not %p";
     public static final String ERROR_5_WHILE_DECOMPRESSING = "Error -5 while decompressing data: incomplete or truncated stream";
     public static final String ERROR_WRITING_FORKEXEC = "there was an error writing the fork_exec error to the error pipe";
@@ -235,11 +237,13 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_AT_MOST_D_ARGS_GOT_D = "%s expected at most %d arguments, got %d";
     public static final String EXPECTED_BYTESLIKE_GOT_P = "expected a bytes-like object, %p found";
     public static final String EXPECTED_CHARACTER_BUT_STRING_FOUND = "%s expected a character, but string of length %d found";
+    public static final String EXPECTED_CONVERSION = "expected conversion";
     public static final String EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES = "expected %p.__fspath__() to return str or bytes, not %p";
     public static final String EXPECTED_OBJ_TYPE_S_GOT_P = "expected object of type %s, got %p";
     public static final String EXPECTED_S_GOT_P = "expected %s, got %p";
     public static final String EXPECTED_S_NOT_P = "expected %s, not %p";
     public static final String EXPECTED_S_P_FOUND = "expected %s, %p found";
+    public static final String EXPECTED_S_AFTER_FORMAT_CONVERSION = "expected %s after format specifier";
     public static final String EXPECTED_STR_BYTE_OSPATHLIKE_OBJ = "expected str, bytes or os.PathLike object, not %p";
     public static final String S_EXPECTED_STRING_OF_LEN_BUT_P = "%s expected string of length %s, but %p found";
     public static final String EXPECTED_UNICODE_CHAR_NOT_P = "expected a unicode character, not %p";
@@ -263,6 +267,7 @@ public abstract class ErrorMessages {
     public static final String FOREIGN_OBJ_HAS_NO_ATTR_S = "foreign object has no attribute '%s'";
     public static final String FOREIGN_OBJ_ISNT_ITERABLE = "foreign object is not iterable";
     public static final String FORMAT_REQUIRES_MAPPING = "format requires a mapping";
+    public static final String FORMAT_STR_CONTAINS_POS_FIELDS = "Format string contains positional fields";
     public static final String FORMATED_S_TOO_LONG = "formatted %s is too long (precision too large?)";
     public static final String FREE_VAR_REFERENCED_BEFORE_ASSIGMENT = "free variable '%s' referenced before assignment in enclosing scope";
     public static final String FUNC_CONSTRUCTION_NOT_SUPPORTED = "function construction not supported for (%p, %p, %p, %p, %p, %p)";
@@ -322,6 +327,7 @@ public abstract class ErrorMessages {
     public static final String INVALID_BASE_TYPE_OBJ_FOR_CLASS = "Invalid base type object for class %s (base type was '%p' object).";
     public static final String INVALID_CAPI_FUNC = "invalid C API function: %s";
     public static final String INVALID_CONTAINER_FORMAT = "Invalid container format: %d";
+    public static final String INVALID_CONVERSION = "invalid conversion";
     public static final String INVALID_ESCAPE_AT = "invalid %s escape at position %d";
     public static final String INVALID_ESCAPE_SEQ_AT = "invalid escape sequence '\\%s' at position %d";
     public static final String INVALID_FILTER = "Invalid filter ID: %d";
@@ -402,6 +408,7 @@ public abstract class ErrorMessages {
     public static final String METHOD_NAME_MUST_BE = "method name must be string, not %p";
     public static final String MISSING_D_REQUIRED_S_ARGUMENT_S_POS = "%s() missing required argument '%s' (pos %d)";
     public static final String MISSING_D_REQUIRED_S_ARGUMENT_S_S = "%s() missing %d required %s argument%s: '%s'";
+    public static final String MISSING_S = "Missing %s";
     public static final String MMAP_INDEX_OUT_OF_RANGE = "mmap index out of range";
     public static final String MODULE_HAS_NO_ATTR_S = "module has no attribute '%s'";
     public static final String MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S = "partially initialized module '%s' has no attribute '%s' (most likely due to a circular import)";
@@ -480,6 +487,7 @@ public abstract class ErrorMessages {
     public static final String ODD_LENGTH_STRING = "Odd-length string";
     public static final String ONLY_ACCEPTS_INTEGRAL_VALUES = "%s only accepts integral values";
     public static final String ONLY_DEFLATED_ALLOWED_AS_METHOD = "only DEFLATED (%d) allowed as method, got %d";
+    public static final String ONLY_S_AND_S_AMY_FOLLOW_S = "Only %s and %s may follow %s";
     public static final String ORDER_MUST_BE_C_F_OR_A = "order must be 'C', 'F' or 'A'";
     public static final String PATH_SHOULD_BE_STR_BYTES_PATHLIKE_NOT_P = "path should be string, bytes, or os.PathLike, not %p";
     public static final String PACKED_IP_WRONG_LENGTH = "packed IP wrong length for %s";
@@ -500,6 +508,8 @@ public abstract class ErrorMessages {
     public static final String READ_ONLY_BYTELIKE_OBJ = "read-only bytes-like object";
     public static final String READ_WRITE_BYTELIKE_OBJ = "read-write bytes-like object";
     public static final String READONLY_ATTRIBUTE = "readonly attribute";
+    public static final String RECURSION_DEPTH_EXCEEDED = "Recursion depth exceeded";
+    public static final String REPLACEMENT_INDEX_S_OUT_OF_RANGE = "Replacement index %s out of range for positional args tuple";
     public static final String REQUIRES_CODE_OBJ = "%s() requires a code object with %d free vars, not %d";
     public static final String REQUIRES_INT_OR_CHAR = "%%%c requires int or char";
     public static final String ROUNDED_VALUE_TOO_LARGE = "rounded value too large to represent";
@@ -549,9 +559,12 @@ public abstract class ErrorMessages {
     public static final String SIGNED_INT_LESS_THAN_MIN = "signed integer is less than minimum";
     public static final String SIGNED_SHORT_INT_GREATER_THAN_MAX = "signed short integer is greater than maximum";
     public static final String SIGNED_SHORT_INT_LESS_THAN_MIN = "signed short integer is less than minimum";
+    public static final String SINGLE_S = "Single %s";
     public static final String SIZE_MUST_BE_D_OR_S = "size must be %d or %s";
     public static final String SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX = "slice indices must be integers or None or have an __index__ method";
     public static final String SLICE_STEP_CANNOT_BE_ZERO = "slice step cannot be zero";
+    public static final String SWITCHING_FROM_AUTOMATIC_TO_MANUAL_NUMBERING = "switching from automatic to manual numbering";
+    public static final String SWITCHING_FROM_MANUAL_TO_AUTOMATIC_NUMBERING = "switching from manual to automatic numbering";
     public static final String SRC_CODE_CANNOT_CONTAIN_NULL_BYTES = "source code string cannot contain null bytes";
     public static final String DICT_SLOT_DISALLOWED_WE_GOT_ONE = "__dict__ slot disallowed: we already got one";
     public static final String WEAKREF_SLOT_DISALLOWED_WE_GOT_ONE = "__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0";
@@ -583,6 +596,7 @@ public abstract class ErrorMessages {
     public static final String TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_POS_ARG_S = "%s() takes from %d to %d positional argument%s but %d positional argument%s (and %d keyword-only argument%s) were given%s";
     public static final String TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_S_GIVEN_S = "%s() takes from %d to %d positional argument%s but %d %s given%s";
     public static final String TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN = "%s() takes exactly %d arguments (%d given)";
+    public static final String TAKES_EXACTLY_S_ARGUMENTS_D_GIVEN = "%s() takes exactly %s arguments (%d given)";
     public static final String TAKES_NO_KEYWORD_ARGS = "%s takes no keyword arguments";
     public static final String THROW_THIRD_ARG_MUST_BE_TRACEBACK = "throw() third argument must be a traceback object";
     public static final String TIMED_OUT = "timed out";
@@ -609,6 +623,7 @@ public abstract class ErrorMessages {
     public static final String UNAVAILABLE_ON_THIS_PLATFORM = "%s: %s unavailable on this platform";
     public static final String UNAVAILABLE_ON_THIS_PLATFORM_NO_FUNC = "%s unavailable on this platform";
     public static final String UNEXPECTED_KEYWORD_ARGS = "%s: unexpected keyword arguments";
+    public static final String UNEXPECTED_S_IN_FIELD_NAME = "unexpected %s in field name";
     public static final String UNHASHABLE_TYPE_P = "unhashable type: '%p'";
     public static final String UNHASHABLE_TYPE = "unhashable type";
     public static final String UNINITIALIZED_S_OBJECT = "uninitialized classmethod object";
@@ -618,6 +633,7 @@ public abstract class ErrorMessages {
     public static final String UNKNOWN_ERROR_HANDLER = "unknown error handler name '%s'";
     public static final String UNKNOWN_FORMAT_CODE = "Unknown format code '%c' for object of type '%s'";
     public static final String UNKNOWN_S_TYPE = "unknown %s type";
+    public static final String UNMATCHED_S = "Unmatched %s";
     public static final String UNRECOGNIZED_FLAGS = "compile(): unrecognised flags";
     public static final String UNRECOGNIZED_FORMAT_CHAR = "unrecognized format char in arguments parsing: %c";
     public static final String UNRECOGNIZED_KIND = "unrecognized kind";
