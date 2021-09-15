@@ -56,7 +56,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 /**
  * Equivalent to use for the various PyDict_GetItem* functions available in CPython. Note that these
  * functions lead to places where there are hard casts to PyDictObject anyway, so we just accept
- * PDict.
+ * PDict. Returns {@code null} when the key is not present.
  */
 @GenerateUncached
 public abstract class PyDictGetItem extends Node {
@@ -82,5 +82,13 @@ public abstract class PyDictGetItem extends Node {
     static final Object getItem(PDict dict, Object item,
                     @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
         return lib.getItem(dict.getDictStorage(), item);
+    }
+
+    public static PyDictGetItem create() {
+        return PyDictGetItemNodeGen.create();
+    }
+
+    public static PyDictGetItem getUncached() {
+        return PyDictGetItemNodeGen.getUncached();
     }
 }

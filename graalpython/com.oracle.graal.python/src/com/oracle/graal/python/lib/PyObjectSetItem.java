@@ -92,6 +92,10 @@ public abstract class PyObjectSetItem extends Node {
         callSetitem.execute(null, setitem, primary, index, value);
     }
 
+    public static PyObjectSetItem create() {
+        return PyObjectSetItemNodeGen.create();
+    }
+
     public static PyObjectSetItem getUncached() {
         return PyObjectSetItemNodeGen.getUncached();
     }
