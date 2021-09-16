@@ -112,7 +112,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                       QualName: RegexFlag
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -128,8 +127,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Key: SRE_FLAG_ASCII
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7007,7018]`sre_compile`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -138,7 +135,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: sre_compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7062,7106]`IGNORECASE = sre_com...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -149,8 +145,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Key: SRE_FLAG_IGNORECASE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7075,7086]`sre_compile`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -159,7 +153,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: sre_compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7125,7161]`LOCALE = sre_compile...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -170,8 +163,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Key: SRE_FLAG_LOCALE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7134,7145]`sre_compile`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -180,7 +171,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: sre_compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7196,7234]`UNICODE = sre_compil...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -191,8 +181,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Key: SRE_FLAG_UNICODE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7206,7217]`sre_compile`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -201,7 +189,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: sre_compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7265,7307]`MULTILINE = sre_comp...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -212,8 +199,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Key: SRE_FLAG_MULTILINE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7277,7288]`sre_compile`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -222,7 +207,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: sre_compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7344,7380]`DOTALL = sre_compile...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -233,8 +217,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Key: SRE_FLAG_DOTALL
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7353,7364]`sre_compile`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -243,7 +225,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: sre_compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7410,7448]`VERBOSE = sre_compil...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -254,8 +235,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Key: SRE_FLAG_VERBOSE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7420,7431]`sre_compile`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -264,7 +243,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: sre_compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7486,7495]`A = ASCII`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -278,7 +256,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: ASCII
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7500,7514]`I = IGNORECASE`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -292,7 +269,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: IGNORECASE
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7519,7529]`L = LOCALE`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -306,7 +282,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: LOCALE
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7534,7545]`U = UNICODE`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -320,7 +295,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: UNICODE
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7550,7563]`M = MULTILINE`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -334,7 +308,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: MULTILINE
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7568,7578]`S = DOTALL`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -348,7 +321,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: DOTALL
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7583,7594]`X = VERBOSE`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -362,7 +334,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: VERBOSE
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7656,7696]`TEMPLATE = sre_compi...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -373,8 +344,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Key: SRE_FLAG_TEMPLATE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7667,7678]`sre_compile`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -383,7 +352,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: sre_compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7724,7736]`T = TEMPLATE`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -397,7 +365,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: TEMPLATE
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7741,7775]`DEBUG = sre_compile....`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -408,8 +375,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Key: SRE_FLAG_DEBUG
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7749,7760]`sre_compile`
                             GetItemNodeGen SourceSection: None
                               ArgumentExpressionNode SourceSection: None
@@ -418,7 +383,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: sre_compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           GetAttributeNode SourceSection: [6980,6992]`enum.IntFlag`
@@ -426,8 +390,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
               Key: IntFlag
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [6980,6984]`enum`
               Identifier: enum
               IsBuiltinClassProfile SourceSection: None
@@ -447,8 +409,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
               Key: __members__
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [7826,7835]`RegexFlag`
               Identifier: RegexFlag
               IsBuiltinClassProfile SourceSection: None
@@ -460,8 +420,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             Key: error
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
-            IsBuiltinClassProfile SourceSection: None
-              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [7874,7885]`sre_compile`
             Identifier: sre_compile
             IsBuiltinClassProfile SourceSection: None
@@ -520,7 +478,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8156,8164]`_compile`
                               Identifier: _compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [8165,8172]`pattern`
                               Frame: [0,pattern,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [8174,8179]`flags`
@@ -583,7 +540,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8366,8374]`_compile`
                               Identifier: _compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [8375,8382]`pattern`
                               Frame: [0,pattern,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [8384,8389]`flags`
@@ -646,7 +602,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8586,8594]`_compile`
                               Identifier: _compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [8595,8602]`pattern`
                               Frame: [0,pattern,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [8604,8609]`flags`
@@ -723,7 +678,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [9045,9053]`_compile`
                               Identifier: _compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [9054,9061]`pattern`
                               Frame: [0,pattern,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [9063,9068]`flags`
@@ -804,7 +758,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [9644,9652]`_compile`
                               Identifier: _compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [9653,9660]`pattern`
                               Frame: [0,pattern,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [9662,9667]`flags`
@@ -879,7 +832,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [10176,10184]`_compile`
                               Identifier: _compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [10185,10192]`pattern`
                               Frame: [0,pattern,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [10194,10199]`flags`
@@ -944,7 +896,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [10561,10569]`_compile`
                               Identifier: _compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [10570,10577]`pattern`
                               Frame: [0,pattern,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [10579,10584]`flags`
@@ -1007,7 +958,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [10836,10844]`_compile`
                               Identifier: _compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [10845,10852]`pattern`
                               Frame: [0,pattern,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [10854,10859]`flags`
@@ -1061,7 +1011,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         CallBinaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [10993,11001]`_compile`
                           Identifier: _compile
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [11002,11009]`pattern`
                           Frame: [0,pattern,Illegal]
                         ReadLocalVariableNodeGen SourceSection: [11011,11016]`flags`
@@ -1099,14 +1048,12 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [11078,11084]`_cache`
                             Identifier: _cache
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     ExpressionStatementNode SourceSection: [11097,11124]`_compile_repl.cache_...`
                       PythonCallNodeGen SourceSection: [11097,11124]`_compile_repl.cache_...`
                         CallNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [11097,11110]`_compile_repl`
                             Identifier: _compile_repl
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [0,<return_val>,Object]
       WriteNameNodeGen SourceSection: [11126,11439]`def template(pattern...`
@@ -1154,7 +1101,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         CallBinaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [11230,11238]`_compile`
                           Identifier: _compile
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [11239,11246]`pattern`
                           Frame: [0,pattern,Illegal]
                         BitOrNodeGen SourceSection: [11248,11255]`flags|T`
@@ -1162,7 +1108,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Frame: [1,flags,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [11254,11255]`T`
                             Identifier: T
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [2,<return_val>,Object]
       WriteNameNodeGen SourceSection: [11439,11521]`_special_chars_map =...`
@@ -1171,7 +1116,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
           CallUnaryMethodNodeGen SourceSection: None
           ReadGlobalOrBuiltinNodeGen SourceSection: None
             Identifier: dict
-            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           GeneratorExpressionNode SourceSection: [11461,11520]`i: '\\' + chr(i) for...`
             Name: <genexpr>
             FrameDescriptor: 2 slots [i, <return_val>]
@@ -1207,7 +1151,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [11471,11474]`chr`
                                 Identifier: chr
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadGeneratorFrameVariableNodeGen SourceSection: [11475,11476]`i`
                                 Frame: [0,i,Illegal]
                           PythonObjectFactoryNodeGen SourceSection: None
@@ -1270,12 +1213,10 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [11610,11620]`isinstance`
                             Identifier: isinstance
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [11621,11628]`pattern`
                             Frame: [0,pattern,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [11630,11633]`str`
                             Identifier: str
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [11644,11688]`return pattern.trans...`
                         PythonCallUnary SourceSection: [11651,11688]`pattern.translate(_s...`
                           CallUnaryMethodNodeGen SourceSection: None
@@ -1284,7 +1225,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               Frame: [0,pattern,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [11669,11687]`_special_chars_map`
                             Identifier: _special_chars_map
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [11707,11739]`pattern = str(patter...`
                           Identifier: pattern
@@ -1293,7 +1233,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [11717,11720]`str`
                               Identifier: str
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [11721,11728]`pattern`
                               Frame: [0,pattern,Illegal]
                             StringLiteralNode SourceSection: [11730,11738]`'latin1'`
@@ -1308,7 +1247,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                     Frame: [0,pattern,Illegal]
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [11773,11791]`_special_chars_map`
                                   Identifier: _special_chars_map
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [11800,11808]`'latin1'`
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                   Frame: [1,<return_val>,Object]
@@ -1404,12 +1342,10 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12100,12110]`isinstance`
                             Identifier: isinstance
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [12111,12116]`flags`
                             Frame: [1,flags,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12118,12127]`RegexFlag`
                             Identifier: RegexFlag
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [12138,12157]`flags = flags.value`
                         Identifier: flags
                         Frame: [1,flags,Illegal]
@@ -1418,8 +1354,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Key: value
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
-                            IsBuiltinClassProfile SourceSection: None
-                              GetClassNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [12146,12151]`flags`
                             Frame: [1,flags,Illegal]
                       BlockNode SourceSection: None
@@ -1429,13 +1363,11 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           GetItemNodeGen SourceSection: [12182,12219]`_cache[type(pattern)...`
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: _cache
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             TupleLiteralNode SourceSection: [12189,12218]`type(pattern), patte...`
                               PythonCallUnary SourceSection: [12189,12202]`type(pattern)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [12189,12193]`type`
                                   Identifier: type
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [12194,12201]`pattern`
                                   Frame: [0,pattern,Illegal]
                               ReadLocalVariableNodeGen SourceSection: [12204,12211]`pattern`
@@ -1448,7 +1380,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             EmptyNode SourceSection: [12249,12253]`pass`
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12231,12239]`KeyError`
                             Identifier: KeyError
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                     IfNode SourceSection: [12258,12439]`if isinstance(patter...`
                       YesNodeGen SourceSection: None
@@ -1456,12 +1387,10 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12261,12271]`isinstance`
                             Identifier: isinstance
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [12272,12279]`pattern`
                             Frame: [0,pattern,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12281,12288]`Pattern`
                             Identifier: Pattern
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                         IfNode SourceSection: [12299,12420]`if flags:↵          ...`
                           YesNodeGen SourceSection: None
@@ -1472,7 +1401,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [12327,12337]`ValueError`
                                 Identifier: ValueError
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [12355,12410]`"cannot process flag...`
                             NoValueNode SourceSection: None
                           BlockNode SourceSection: None
@@ -1487,7 +1415,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           GetCallAttributeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [12446,12457]`sre_compile`
                               Identifier: sre_compile
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [12467,12474]`pattern`
                             Frame: [0,pattern,Illegal]
                       RaiseNodeGen SourceSection: [12485,12553]`raise TypeError("fir...`
@@ -1495,7 +1422,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12491,12500]`TypeError`
                             Identifier: TypeError
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [12501,12552]`"first argument must...`
                         NoValueNode SourceSection: None
                       BlockNode SourceSection: None
@@ -1507,7 +1433,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12562,12573]`sre_compile`
                             Identifier: sre_compile
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [12582,12589]`pattern`
                           Frame: [0,pattern,Illegal]
                         ReadLocalVariableNodeGen SourceSection: [12591,12596]`flags`
@@ -1519,7 +1444,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Frame: [1,flags,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12618,12623]`DEBUG`
                             Identifier: DEBUG
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                         IfNode SourceSection: [12634,12851]`if len(_cache) >= _M...`
                           YesNodeGen SourceSection: None
@@ -1528,58 +1452,46 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [12637,12640]`len`
                                   Identifier: len
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [12641,12647]`_cache`
                                   Identifier: _cache
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [12652,12661]`_MAXCACHE`
                                 Identifier: _MAXCACHE
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           TryFinallyNode SourceSection: [12710,12851]`try:↵               ...`
                             TryExceptNode SourceSection: None
                               DeleteItemNodeGen SourceSection: [12731,12761]`del _cache[next(iter...`
                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                   Identifier: _cache
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 PythonCallUnary SourceSection: [12742,12760]`next(iter(_cache))`
                                   CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [12742,12746]`next`
                                     Identifier: next
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   PythonCallUnary SourceSection: [12747,12759]`iter(_cache)`
                                     CallUnaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [12747,12751]`iter`
                                       Identifier: iter
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [12752,12758]`_cache`
                                       Identifier: _cache
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ExceptNode SourceSection: None
                                 ExpressionStatementNode SourceSection: [12838,12842]`pass`
                                   EmptyNode SourceSection: [12838,12842]`pass`
                                 TupleLiteralNode SourceSection: [12781,12820]`(StopIteration, Runt...`
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [12782,12795]`StopIteration`
                                     Identifier: StopIteration
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [12797,12809]`RuntimeError`
                                     Identifier: RuntimeError
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [12811,12819]`KeyError`
                                     Identifier: KeyError
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   PythonObjectFactoryNodeGen SourceSection: None
                               BlockNode SourceSection: None
                           BlockNode SourceSection: None
                         SetItemNodeGen SourceSection: [12851,12892]`_cache[type(pattern)...`
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: _cache
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           TupleLiteralNode SourceSection: [12858,12887]`type(pattern), patte...`
                             PythonCallUnary SourceSection: [12858,12871]`type(pattern)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [12858,12862]`type`
                                 Identifier: type
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [12863,12870]`pattern`
                                 Frame: [0,pattern,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [12873,12880]`pattern`
@@ -1652,7 +1564,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           GetCallAttributeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [13028,13037]`sre_parse`
                               Identifier: sre_parse
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [13053,13057]`repl`
                             Frame: [0,repl,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [13059,13066]`pattern`
@@ -1711,7 +1622,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [13172,13181]`sre_parse`
                             Identifier: sre_parse
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [13197,13205]`template`
                           Frame: [2,template,Illegal]
                         ReadLocalVariableNodeGen SourceSection: [13207,13214]`pattern`
@@ -1722,7 +1632,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [13227,13236]`sre_parse`
                             Identifier: sre_parse
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [13253,13261]`template`
                           Frame: [2,template,Illegal]
                         ReadLocalVariableNodeGen SourceSection: [13263,13268]`match`
@@ -1774,7 +1683,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         CallBinaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [13371,13384]`_compile_repl`
                           Identifier: _compile_repl
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [13385,13393]`template`
                           Frame: [1,template,Illegal]
                         ReadLocalVariableNodeGen SourceSection: [13395,13402]`pattern`
@@ -1793,7 +1701,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [13431,13434]`len`
                                 Identifier: len
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               GetItemNodeGen SourceSection: [13435,13446]`template[1]`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,template,Illegal]
@@ -1859,7 +1766,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                       GetCallAttributeNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [13571,13580]`sre_parse`
                                           Identifier: sre_parse
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: [13597,13605]`template`
                                         Frame: [1,template,Illegal]
                                       ReadLocalVariableNodeGen SourceSection: [13607,13612]`match`
@@ -1911,15 +1817,12 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                       TupleLiteralNode SourceSection: [13708,13738]`_compile, (p.pattern...`
                         ReadGlobalOrBuiltinNodeGen SourceSection: [13708,13716]`_compile`
                           Identifier: _compile
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         TupleLiteralNode SourceSection: [13718,13738]`(p.pattern, p.flags)...`
                           GetAttributeNode SourceSection: [13719,13728]`p.pattern`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: pattern
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [13719,13720]`p`
                               Frame: [0,p,Illegal]
                           GetAttributeNode SourceSection: [13730,13737]`p.flags`
@@ -1927,8 +1830,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               Key: flags
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [13730,13731]`p`
                               Frame: [0,p,Illegal]
                           PythonObjectFactoryNodeGen SourceSection: None
@@ -1991,7 +1892,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           QualName: Scanner
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
                             Index: 0
                           SetItemIfNotPresentNodeGen SourceSection: None
@@ -2068,12 +1968,10 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [14039,14049]`isinstance`
                                                 Identifier: isinstance
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [14050,14055]`flags`
                                                 Frame: [2,flags,Illegal]
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [14057,14066]`RegexFlag`
                                                 Identifier: RegexFlag
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [14081,14100]`flags = flags.value`
                                             Identifier: flags
                                             Frame: [2,flags,Illegal]
@@ -2082,8 +1980,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                 Key: value
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [14089,14094]`flags`
                                                 Frame: [2,flags,Illegal]
                                           BlockNode SourceSection: None
@@ -2106,7 +2002,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [14209,14218]`sre_parse`
                                                 Identifier: sre_parse
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         SetAttributeNodeGen SourceSection: [14237,14252]`s.flags = flags`
                                           Attribute: flags
                                           ReadLocalVariableNodeGen SourceSection: [14237,14238]`s`
@@ -2154,7 +2049,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                       GetCallAttributeNodeGen SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [14345,14354]`sre_parse`
                                                           Identifier: sre_parse
-                                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [14366,14367]`s`
                                                         Frame: [6,s,Illegal]
                                                       ListLiteralNode SourceSection: [14369,14463]`[↵                (S...`
@@ -2173,7 +2067,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                               GetCallAttributeNodeGen SourceSection: None
                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [14412,14421]`sre_parse`
                                                                   Identifier: sre_parse
-                                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                               ReadLocalVariableNodeGen SourceSection: [14428,14434]`phrase`
                                                                 Frame: [8,phrase,Illegal]
                                                               ReadLocalVariableNodeGen SourceSection: [14436,14441]`flags`
@@ -2206,7 +2099,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [14515,14524]`sre_parse`
                                                 Identifier: sre_parse
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [14536,14537]`s`
                                               Frame: [6,s,Illegal]
                                             ListLiteralNode SourceSection: [14539,14560]`[(BRANCH, (None, p))...`
@@ -2229,7 +2121,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [14585,14596]`sre_compile`
                                                 Identifier: sre_compile
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [14605,14606]`p`
                                               Frame: [5,p,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -2288,8 +2179,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                               Key: append
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [14673,14679]`result`
                                               Frame: [2,result,Illegal]
                                         WriteLocalVariableNodeGen SourceSection: [14695,14737]`match = self.scanner...`
@@ -2300,8 +2189,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                               Key: match
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [14703,14731]`self.scanner.scanner...`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
@@ -2310,8 +2197,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                     Key: scanner
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [14703,14707]`self`
                                                     Frame: [0,self,Illegal]
                                               ReadLocalVariableNodeGen SourceSection: [14724,14730]`string`
@@ -2367,8 +2252,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                           Key: lexicon
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
-                                                          IsBuiltinClassProfile SourceSection: None
-                                                            GetClassNodeGen SourceSection: None
                                                         ReadLocalVariableNodeGen SourceSection: [14930,14934]`self`
                                                           Frame: [0,self,Illegal]
                                                       SubNodeGen SourceSection: [14943,14956]`m.lastindex-1`
@@ -2377,8 +2260,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                             Key: lastindex
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
-                                                            IsBuiltinClassProfile SourceSection: None
-                                                              GetClassNodeGen SourceSection: None
                                                           ReadLocalVariableNodeGen SourceSection: [14943,14944]`m`
                                                             Frame: [6,m,Illegal]
                                                         IntegerLiteralNode SourceSection: [14955,14956]`1`
@@ -2391,7 +2272,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                       CallUnaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [14976,14984]`callable`
                                                         Identifier: callable
-                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [14985,14991]`action`
                                                         Frame: [8,action,Illegal]
                                                   BlockNode SourceSection: None

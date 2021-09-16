@@ -101,7 +101,6 @@ ModuleRootNode Name: <module 'generator07'> SourceSection: [0,121]`def merge(h):
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [24,27]`len`
                                 Identifier: len
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadGeneratorFrameVariableNodeGen SourceSection: [28,29]`h`
                                 Frame: [0,h,Illegal]
                             IntegerLiteralNode SourceSection: [33,34]`1`

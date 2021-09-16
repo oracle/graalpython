@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -84,7 +85,9 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -118,7 +121,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class CExtCommonNodes {
@@ -784,7 +786,7 @@ public abstract class CExtCommonNodes {
      * If {@code exact} is {@code false}, then casting can be lossy without raising an error.
      */
     @GenerateUncached
-    @ImportStatic(PGuards.class)
+    @ImportStatic({PGuards.class, SpecialMethodSlot.class})
     public abstract static class AsNativePrimitiveNode extends Node {
 
         public final int toInt32(Object value, boolean exact) {
@@ -985,26 +987,40 @@ public abstract class CExtCommonNodes {
                                         "doVoidPtrToI64", //
                                         "doPIntTo32Bit", "doPIntTo64Bit", "doPIntToInt32Lossy", "doPIntToInt64Lossy"})
         static Object doGeneric(Object obj, int signed, int targetTypeSize, boolean exact,
-                        @Cached LookupAndCallUnaryDynamicNode callIndexNode,
-                        @Cached LookupAndCallUnaryDynamicNode callIntNode,
-                        @Cached AsNativePrimitiveNode recursive,
-                        @Exclusive @Cached BranchProfile noIntProfile,
+                        @Cached GetClassNode getClassNode,
+                        @Cached(parameters = "Index") LookupSpecialMethodSlotNode lookupIndex,
+                        @Cached(parameters = "Int") LookupSpecialMethodSlotNode lookupInt,
+                        @Cached CallUnaryMethodNode call,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
 
-            Object result = callIndexNode.executeObject(obj, SpecialMethodNames.__INDEX__);
-            if (result == PNone.NO_VALUE) {
-                result = callIntNode.executeObject(obj, SpecialMethodNames.__INT__);
-                if (result == PNone.NO_VALUE) {
-                    noIntProfile.enter();
-                    throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, result);
+            Object type = getClassNode.execute(obj);
+            Object indexDescr = lookupIndex.execute(null, type, obj);
+
+            Object result;
+            if (indexDescr != PNone.NO_VALUE) {
+                result = call.executeObject(null, indexDescr, obj);
+            } else {
+                Object intDescr = lookupInt.execute(null, type, obj);
+                if (intDescr != PNone.NO_VALUE) {
+                    result = call.executeObject(null, intDescr, obj);
+                } else {
+                    throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, obj);
                 }
             }
-            // n.b. this check is important to avoid endless recursions; it will ensure that
-            // 'doGeneric' is not triggered in the recursive node
-            if (!(isIntegerType(result))) {
-                throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
+
+            /*
+             * The easiest would be to recursively use this node and ensure that this generic case
+             * isn't taken but we cannot guarantee that because the uncached version will always try
+             * the generic case first. Hence, the 'toInt32' and 'toInt64' handle all cases in
+             * if-else style. This won't be as bad as it looks in source code because arguments
+             * 'signed', 'targetTypeSize', and 'exact' are usually constants.
+             */
+            if (targetTypeSize == 4) {
+                return toInt32(result, signed, exact, raiseNode);
+            } else if (targetTypeSize == 8) {
+                return toInt64(result, signed, exact, raiseNode);
             }
-            return recursive.execute(result, signed, targetTypeSize, exact);
+            throw raiseNode.raise(SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
         }
 
         @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
@@ -1014,14 +1030,71 @@ public abstract class CExtCommonNodes {
             throw raiseNode.raise(SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
         }
 
-        static boolean isIntegerType(Object obj) {
-            return PGuards.isInteger(obj) || PGuards.isPInt(obj) || obj instanceof PythonNativeVoidPtr;
-        }
-
         private static PException raiseNegativeValue(PRaiseNode raiseNativeNode) {
             throw raiseNativeNode.raise(OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
         }
 
+        /**
+         * Slow-path conversion of an object to a signed or unsigned 32-bit value.
+         */
+        private static int toInt32(Object object, int signed, boolean exact,
+                        PRaiseNode raiseNode) {
+            if (object instanceof Integer) {
+                int ival = (int) object;
+                if (signed != 0) {
+                    return ival;
+                }
+                return doIntToUInt32(ival, signed, 4, exact, raiseNode);
+            } else if (object instanceof Long) {
+                long lval = (long) object;
+                if (exact) {
+                    if (signed != 0) {
+                        return doLongToInt32Exact(lval, 1, 4, true, raiseNode);
+                    }
+                    return doLongToUInt32Exact(lval, signed, 4, true, raiseNode);
+                }
+                return doLongToInt32Lossy(lval, 0, 4, false);
+            } else if (object instanceof PInt) {
+                PInt pval = (PInt) object;
+                if (exact) {
+                    return doPIntTo32Bit(pval, signed, 4, true, raiseNode);
+                }
+                return doPIntToInt32Lossy(pval, signed, 4, false);
+            } else if (object instanceof PythonNativeVoidPtr) {
+                // that's just not possible
+                throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, 4);
+            }
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, object);
+        }
+
+        /**
+         * Slow-path conversion of an object to a signed or unsigned 64-bit value.
+         */
+        private static Object toInt64(Object object, int signed, boolean exact,
+                        PRaiseNode raiseNode) {
+            if (object instanceof Integer) {
+                Integer ival = (Integer) object;
+                if (signed != 0) {
+                    return ival.longValue();
+                }
+                return doIntToUInt64(ival, signed, 8, exact, raiseNode);
+            } else if (object instanceof Long) {
+                long lval = (long) object;
+                if (signed != 0) {
+                    return doLongToInt64(lval, 1, 8, exact);
+                }
+                return doLongToUInt64(lval, signed, 8, exact, raiseNode);
+            } else if (object instanceof PInt) {
+                PInt pval = (PInt) object;
+                if (exact) {
+                    return doPIntTo64Bit(pval, signed, 8, true, raiseNode);
+                }
+                return doPIntToInt64Lossy(pval, signed, 8, false);
+            } else if (object instanceof PythonNativeVoidPtr) {
+                return doVoidPtrToI64((PythonNativeVoidPtr) object, signed, 8, exact);
+            }
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, object);
+        }
     }
 
     /**

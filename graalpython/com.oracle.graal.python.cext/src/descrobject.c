@@ -48,7 +48,7 @@ typedef struct {
 
 PyTypeObject PyGetSetDescr_Type = PY_TRUFFLE_TYPE("getset_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyGetSetDescrObject));
 /* NOTE: we use the same Python type (namely 'PBuiltinFunction') for 'wrapper_descriptor' as for 'method_descriptor'; so the flags must be the same! */
-PyTypeObject PyWrapperDescr_Type = PY_TRUFFLE_TYPE("wrapper_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR| _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyWrapperDescrObject));
+PyTypeObject PyWrapperDescr_Type = PY_TRUFFLE_TYPE("wrapper_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR, sizeof(PyWrapperDescrObject));
 PyTypeObject PyMemberDescr_Type = PY_TRUFFLE_TYPE("member_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyMemberDescrObject));
 PyTypeObject PyMethodDescr_Type = PY_TRUFFLE_TYPE_WITH_VECTORCALL("method_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR| _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyMethodDescrObject), offsetof(PyMethodDescrObject, vectorcall));
 PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(mappingproxyobject));
@@ -67,11 +67,11 @@ int PyMethodDescr_Check(PyObject* method) {
     return UPCALL_CEXT_I(_jls_PyMethodDescr_Check, native_to_java(method));
 }
 
-typedef PyObject* (*PyDescr_NewClassMethod_fun_t)(void* name, 
+typedef PyObject* (*PyDescr_NewClassMethod_fun_t)(void* name,
                                                     const char* doc,
-                                                    int flags, 
-                                                    int wrapper, 
-                                                    void* methObj, 
+                                                    int flags,
+                                                    int wrapper,
+                                                    void* methObj,
                                                     void* primary);
 UPCALL_TYPED_ID(PyDescr_NewClassMethod, PyDescr_NewClassMethod_fun_t);
 PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
@@ -84,7 +84,7 @@ PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
                     type);
 }
 
-typedef PyObject* (*PyDescr_NewGetSet_fun_t)(void* name, 
+typedef PyObject* (*PyDescr_NewGetSet_fun_t)(void* name,
                                                     PyTypeObject *type,
                                                     void *get,
                                                     void *set,

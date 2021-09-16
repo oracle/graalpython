@@ -56,7 +56,7 @@ public final class PSemLock extends AbstractPythonLock {
     private final int kind;
     private final String name;
 
-    private int lastThreadID = -1;
+    private long lastThreadID = -1;
     private int count;
 
     public PSemLock(Object cls, Shape instanceShape, String name, int kind, Semaphore sharedSemaphore) {
@@ -69,7 +69,12 @@ public final class PSemLock extends AbstractPythonLock {
     @Override
     @TruffleBoundary
     protected boolean acquireNonBlocking() {
-        return semaphore.tryAcquire();
+        boolean ret = semaphore.tryAcquire();
+        if (ret) {
+            lastThreadID = Thread.currentThread().getId();
+            count++;
+        }
+        return ret;
     }
 
     @Override
@@ -80,6 +85,10 @@ public final class PSemLock extends AbstractPythonLock {
             s.acquire();
             b[0] = true;
         }, semaphore);
+        if (b[0]) {
+            lastThreadID = Thread.currentThread().getId();
+            count++;
+        }
         return b[0];
     }
 
@@ -88,6 +97,10 @@ public final class PSemLock extends AbstractPythonLock {
     protected boolean acquireTimeout(Node node, long timeout) {
         boolean[] b = new boolean[1];
         TruffleSafepoint.setBlockedThreadInterruptible(node, (s) -> b[0] = s.tryAcquire(timeout, TimeUnit.MILLISECONDS), semaphore);
+        if (b[0]) {
+            lastThreadID = Thread.currentThread().getId();
+            count++;
+        }
         return b[0];
     }
 
@@ -95,6 +108,7 @@ public final class PSemLock extends AbstractPythonLock {
     @TruffleBoundary
     public void release() {
         semaphore.release();
+        count--;
     }
 
     @Override
@@ -114,6 +128,7 @@ public final class PSemLock extends AbstractPythonLock {
 
     public void increaseCount() {
         count++;
+        lastThreadID = Thread.currentThread().getId();
     }
 
     public void decreaseCount() {
@@ -123,6 +138,10 @@ public final class PSemLock extends AbstractPythonLock {
     @TruffleBoundary
     public boolean isMine() {
         return count > 0 && lastThreadID == Thread.currentThread().getId();
+    }
+
+    public boolean isZero() {
+        return semaphore.availablePermits() == 0;
     }
 
     public int getKind() {

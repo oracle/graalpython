@@ -41,18 +41,15 @@ ModuleRootNode Name: <module 'unicode02'> SourceSection: [0,136]`def test():↵ 
                           FormatStringExpressionNode SourceSection: [91,117]`result:{width}.{prec...`
                             ReadGlobalOrBuiltinNodeGen SourceSection: [1,7]`result`
                               Identifier: result
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             FormatStringLiteralNode SourceSection: [98,117]`{width}.{precision}`
                               Parts: 3
                               FormatStringExpressionNode SourceSection: [99,104]`width`
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [1,6]`width`
                                   Identifier: width
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [105,106]`.`
                               FormatStringExpressionNode SourceSection: [107,116]`precision`
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [1,10]`precision`
                                   Identifier: precision
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [118,135]` and this is true`
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [0,<return_val>,Object]

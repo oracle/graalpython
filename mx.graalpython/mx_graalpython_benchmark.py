@@ -347,6 +347,13 @@ class GraalPythonVmBase(GuestVm):
             cp.append(self._cp_suffix)
         return cp
 
+    @staticmethod
+    def _remove_vm_prefix(argument):
+        if argument.startswith('--vm.'):
+            return '-' + argument.strip('--vm.')
+        else:
+            return argument
+
     def run(self, cwd, args):
         _check_vm_args(self.name(), args)
         extra_polyglot_args = self.get_extra_polyglot_args()
@@ -356,6 +363,7 @@ class GraalPythonVmBase(GuestVm):
             return self.run_in_graalvm(cwd, args, extra_polyglot_args, host_vm)
 
         # Otherwise, we're running from the source tree
+        args = [self._remove_vm_prefix(x) for x in args]
         truffle_options = [
             # "-Dpolyglot.engine.CompilationExceptionsAreFatal=true"
         ]
@@ -373,7 +381,10 @@ class GraalPythonVmBase(GuestVm):
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
 
-        extra_polyglot_args += ["--python.CAPI=%s" % SUITE.extensions._get_capi_home()]
+        extra_polyglot_args += [
+            "--python.CAPI=%s" % SUITE.extensions._get_capi_home(),
+            "--python.JNIHome=%s" % SUITE.extensions._get_jni_home()
+        ]
 
         vm_args = mx.get_runtime_jvm_args(dists, cp_suffix=self._cp_suffix, cp_prefix=self._cp_prefix)
         if isinstance(self._extra_vm_args, list):
@@ -476,6 +487,7 @@ python_java_embedding_vm_registry = mx_benchmark.VmRegistry(PYTHON_JAVA_EMBEDDIN
 class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def __init__(self, name, benchmarks):
         super(PythonBaseBenchmarkSuite, self).__init__()
+        self._checkup = 'GRAALPYTHON_BENCHMARKS_CHECKUP' in os.environ
         self._name = name
         self._benchmarks = benchmarks
         self._graph_dump_time = None
@@ -680,9 +692,15 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         _replace_host_vm('graalvm-ee')
         self.post_run_graph(benchmarks[0], dims['host-vm-config'], dims['guest-vm-config'])
 
+        if self._checkup:
+            self.checkup(out)
+
         return ret_code, out, dims
 
     def run(self, benchmarks, bm_suite_args):
+        if '--checkup' in bm_suite_args:
+            self._checkup = True
+            bm_suite_args.remove('--checkup')
         results = super(PythonBaseBenchmarkSuite, self).run(benchmarks, bm_suite_args)
         self.addAverageAcrossLatestResults(results)
         return results
@@ -708,6 +726,10 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
             if arg.startswith("-i"):
                 if len(run_args) >= i and run_args[i + 1] == "-1":
                     pass
+                elif self._checkup and len(run_args) >= i:
+                    iterations = int(run_args[i + 1]) * 2
+                    remaining = ["-i", str(iterations)] + run_args[i+2:]
+                    break
                 else:
                     remaining = run_args[i:]
                     break
@@ -717,12 +739,75 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
         if not (remaining and "-i" in remaining):
             iterations = DEFAULT_ITERATIONS + self.getExtraIterationCount(DEFAULT_ITERATIONS)
+            if self._checkup:
+                iterations *= 2
             remaining = ["-i", str(iterations)] + (remaining if remaining else [])
+
+        if self._checkup:
+            vm_options += ['--engine.TraceCompilation', '--vm.XX:+PrintGC']
 
         return vm_options, remaining
 
     def createCommandLineArgs(self, benchmarks, bmSuiteArgs):
         return self.createVmCommandLineArgs(benchmarks, bmSuiteArgs)
+
+    def checkup(self, out):
+        lines = out.split('\n')
+        benchmark_name = None
+        current_iteration = -1
+        iterations_count = -1
+        iteration_times = []
+        gc_times = []
+        late_compilation = -1
+        for i in range(len(lines)):
+            line = lines[i]
+
+            # this marks the beginning of an output of a benchmark
+            benchmark_info = re.search("### (.*), \\d+ warmup iterations, (\\d+) bench iterations", line)
+            if benchmark_name is None and benchmark_info:
+                benchmark_name = benchmark_info.group(1)
+                iterations_count = int(benchmark_info.group(2))
+                mx.log("Checking benchmark %s with %d iterations" % (benchmark_name, iterations_count))
+                continue
+
+            if benchmark_name is None:
+                continue
+
+            # this marks the end of the processing of a single benchmark
+            warmup_match = re.search("### WARMUP detected at iteration: (\\d+)", line)
+            if warmup_match:
+                warmup = int(warmup_match.group(1))
+                for i in range(warmup, len(iteration_times)):
+                    if gc_times[i] > iteration_times[i] / 10:
+                        mx.warn("Benchmark checkup: %s: excessive GC pause of %.8f (on %d iteration)" % (benchmark_name, gc_times[i], i))
+                if warmup > iterations_count / 2:
+                    mx.warn("Benchmark checkup: %s: warmup detected too late (on %d iteration)" % (benchmark_name, warmup))
+                if late_compilation > 0:
+                    mx.warn("Benchmark checkup: %s: compilation detected too late (on %d iteration)" % (benchmark_name, late_compilation))
+                iteration_times = []
+                gc_times = []
+                current_iteration = -1
+                benchmark_name = None
+                late_compilation = False
+                continue
+
+            # following is done only when we are inside benchmark output:
+            iteration_info = re.search("### iteration=(\\d+), name=.*, duration=([0-9.]*)", line)
+            if iteration_info:
+                current_iteration += 1
+                iteration_times += [float(iteration_info.group(2))]
+                gc_times += [0.0]
+                continue
+
+            if current_iteration == -1:
+                continue
+
+            gc_log = re.search("\\[GC .* ([0-9,]*) secs]", line)
+            if gc_log:
+                gc_times[len(gc_times) - 1] += float(gc_log.group(1).replace(',', '.'))
+
+            if current_iteration >= iterations_count / 2 and "[engine] opt done" in line:
+                late_compilation = current_iteration
 
 
 class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):

@@ -84,9 +84,6 @@ int graal_hpy_init(HPyContext *context, void *initObject) {
 	polyglot_invoke(initObject, "setHPyNativeType", polyglot_HPy_typeid());
 	polyglot_invoke(initObject, "setHPyArrayNativeType", polyglot_array_typeid(polyglot_HPy_typeid(), 0));
 
-	// register null handle
-	polyglot_invoke(initObject, "setHPyNullHandle", HPy_NULL);
-
 	// register size of wchar_t
 	polyglot_invoke(initObject, "setWcharSize", sizeof(wchar_t));
 
@@ -591,19 +588,19 @@ void graal_hpy_write_ptr(void* object, HPy_ssize_t offset, void* value) {
 
 typedef void (*destroyfunc)(void *);
 /* to be used from Java code only */
-int graal_hpy_bulk_free(void* ptrArray[], int64_t len) {
+int graal_hpy_bulk_free(uint64_t ptrArray[], int64_t len) {
 	int64_t i;
-	void* obj;
+	uint64_t obj;
 	destroyfunc func;
 
 	for (i=0; i < len; i+=2) {
 		obj = ptrArray[i];
-	    func = ptrArray[i+1];
-		if (obj != NULL) {
+	    func = (destroyfunc) ptrArray[i+1];
+		if (obj) {
 		    if (func != NULL) {
-		        func(obj);
+		        func((void *) obj);
 		    }
-			free(obj);
+			free((void *) obj);
 		}
 	}
     return 0;
@@ -1286,9 +1283,13 @@ HPyAPI_STORAGE void _HPy_IMPL_NAME(Dump)(HPyContext *ctx, HPy h) {
 #undef _HPy_IMPL_NAME_NOPREFIX
 #undef _HPy_IMPL_NAME
 
+#include "hpynative.h"
+
 /* Allocate a native HPy context structure and fill it. */
-HPyContext *graal_hpy_context_to_native(HPyContext *managed_context) {
-	HPyContext *native_context = (HPyContext *) malloc(sizeof(struct _HPyContext_s));
+HPyContext *graal_hpy_context_to_native(HPyContext *managed_context, HPyContext *overrides) {
+	GraalHPyContext *full_native_context = (GraalHPyContext *) malloc(sizeof(GraalHPyContext));
+
+	HPyContext *native_context = graal_native_context_get_hpy_context(full_native_context);
 
 #define COPY(__member) native_context->__member = managed_context->__member
 	COPY(name);
@@ -1370,7 +1371,7 @@ HPyContext *graal_hpy_context_to_native(HPyContext *managed_context) {
     COPY(h_ListType);
 #undef COPY
 
-#define HPY_CTX_UPCALL(__fun) native_context->__fun = __fun;
+#define HPY_CTX_UPCALL(__fun) { void* v = overrides->__fun; if (v != NULL) native_context->__fun = v; else native_context->__fun = __fun; }
     HPY_CTX_UPCALL(ctx_Module_Create);
     HPY_CTX_UPCALL(ctx_Dup);
     HPY_CTX_UPCALL(ctx_Close);

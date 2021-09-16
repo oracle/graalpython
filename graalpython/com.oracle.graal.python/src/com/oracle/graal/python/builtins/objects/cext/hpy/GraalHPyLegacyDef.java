@@ -174,7 +174,7 @@ public abstract class GraalHPyLegacyDef {
         Py_nb_negative(30, __NEG__),
         Py_nb_or(31, __OR__),
         Py_nb_positive(32, __POS__),
-        Py_nb_power(33, __POW__, PExternalFunctionWrapper.POW),
+        Py_nb_power(33, __POW__, PExternalFunctionWrapper.TERNARYFUNC),
         Py_nb_remainder(34, __MOD__),
         Py_nb_rshift(35, __RSHIFT__),
         Py_nb_subtract(36, __SUB__),

@@ -61,15 +61,14 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -104,32 +103,16 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class DictNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         protected Object getDict(PDecoratedMethod self, @SuppressWarnings("unused") PNone mapping,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
-                        @Cached PythonObjectFactory factory) {
-            PDict dict = lib.getDict(self);
-            if (dict == null) {
-                dict = factory.createDictFixedStorage(self);
-                try {
-                    lib.setDict(self, dict);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException(e);
-                }
-            }
-            return dict;
+                        @Cached GetOrCreateDictNode getDict) {
+            return getDict.execute(self);
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         protected Object setDict(PDecoratedMethod self, PDict mapping,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            try {
-                lib.setDict(self, mapping);
-            } catch (UnsupportedMessageException ex) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(ex);
-            }
+                        @Cached SetDictNode setDict) {
+            setDict.execute(self, mapping);
             return PNone.NONE;
         }
 

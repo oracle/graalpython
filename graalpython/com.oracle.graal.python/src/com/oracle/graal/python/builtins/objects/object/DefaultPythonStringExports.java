@@ -92,13 +92,13 @@ final class DefaultPythonStringExports {
         }
 
         @Specialization
-        static int sP(String receiver, PString other, @SuppressWarnings("unused") ThreadState threadState,
+        static int sP(String receiver, Object other, @SuppressWarnings("unused") ThreadState threadState,
                         @Cached CastToJavaStringNode castNode,
                         @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 // n.b.: subclassing is ignored in this direction in CPython
-                String otherString = null;
+                String otherString;
                 try {
                     otherString = castNode.execute(other);
                 } catch (CannotCastException e) {
@@ -108,12 +108,6 @@ final class DefaultPythonStringExports {
             } finally {
                 gil.release(mustRelease);
             }
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static int iO(String receiver, Object other, @SuppressWarnings("unused") ThreadState threadState) {
-            return -1;
         }
     }
 

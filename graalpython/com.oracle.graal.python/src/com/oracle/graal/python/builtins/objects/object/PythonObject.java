@@ -33,7 +33,6 @@ import java.util.List;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.HiddenAttributes;
@@ -41,7 +40,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -84,7 +82,7 @@ public class PythonObject extends PythonAbstractObject {
 
     @ExportMessage
     public void setLazyPythonClass(Object cls,
-                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
+                    @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
         // n.b.: the CLASS property is usually a constant property that is stored in the shape
         // in
         // single-context-mode. If we change it for the first time, there's an implicit shape
@@ -152,28 +150,6 @@ public class PythonObject extends PythonAbstractObject {
             className = "native";
         }
         return "<" + className + " object at 0x" + Integer.toHexString(hashCode()) + ">";
-    }
-
-    @ExportMessage
-    public boolean hasDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        return dylib.containsKey(this, DICT);
-    }
-
-    @ExportMessage
-    public PDict getDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        return (PDict) dylib.getOrDefault(this, DICT, null);
-    }
-
-    // Note: setDict and deleteDict are "overridden" in PythonClass
-    @ExportMessage
-    public final void setDict(PDict dict,
-                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        dylib.put(this, DICT, dict);
-    }
-
-    @ExportMessage
-    public final void deleteDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        dylib.put(this, DICT, null);
     }
 
     /* needed for some guards in exported messages of subclasses */

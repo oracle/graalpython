@@ -57,6 +57,11 @@ int _PyDict_SetItem_KnownHash(PyObject *d, PyObject *k, PyObject *v, Py_hash_t h
     return UPCALL_CEXT_I(_jls_PyDict_SetItem_KnownHash, native_to_java(d), native_to_java(k), native_to_java(v), hash);
 }
 
+PyObject* _PyDict_NewPresized(Py_ssize_t minused) {
+    /* we ignore requests to capacity for now */
+    return UPCALL_CEXT_O(_jls_PyDict_New);
+}
+
 UPCALL_ID(PyDict_GetItem);
 PyObject* PyDict_GetItem(PyObject* d, PyObject* k) {
     return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItem, native_to_java(d), native_to_java(k));
@@ -64,6 +69,15 @@ PyObject* PyDict_GetItem(PyObject* d, PyObject* k) {
 
 UPCALL_ID(PyDict_GetItemWithError);
 PyObject* PyDict_GetItemWithError(PyObject* d, PyObject* k) {
+    return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItemWithError, native_to_java(d), native_to_java(k));
+}
+
+/* Same as PyDict_GetItemWithError() but with hash supplied by caller.
+   This returns NULL *with* an exception set if an exception occurred.
+   It returns NULL *without* an exception set if the key wasn't present.
+*/
+PyObject * _PyDict_GetItem_KnownHash(PyObject *d, PyObject *k, Py_hash_t hash) {
+    /* we ignore the known hash for now */
     return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItemWithError, native_to_java(d), native_to_java(k));
 }
 
@@ -115,6 +129,16 @@ int _PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pval
     }
     return 1;
 
+}
+
+UPCALL_ID(PyDict_Pop);
+PyObject *
+_PyDict_Pop(PyObject *dict, PyObject *key, PyObject *deflt)
+{
+    if (deflt) {
+        return UPCALL_CEXT_O(_jls_PyDict_Pop, native_to_java(dict), native_to_java(key), native_to_java(deflt));
+    }
+    return UPCALL_CEXT_O(_jls_PyDict_Pop, native_to_java(dict), native_to_java(key));
 }
 
 UPCALL_ID(PyDict_Size);

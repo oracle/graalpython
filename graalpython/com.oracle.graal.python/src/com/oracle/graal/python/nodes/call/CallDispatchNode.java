@@ -31,8 +31,10 @@ import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeCallTarget
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -72,7 +74,7 @@ public abstract class CallDispatchNode extends Node {
     }
 
     protected Assumption singleContextAssumption() {
-        return PythonLanguage.getCurrent().singleContextAssumption;
+        return PythonLanguage.get(this).singleContextAssumption;
     }
 
     public final Object executeCall(VirtualFrame frame, PFunction callee, Object[] arguments) {
@@ -110,10 +112,15 @@ public abstract class CallDispatchNode extends Node {
         return invoke.execute(frame, arguments);
     }
 
+    protected static RootCallTarget getCallTargetUncached(PFunction callee) {
+        CompilerAsserts.neverPartOfCompilation();
+        return GetCallTargetNode.getUncached().execute(callee);
+    }
+
     // We have multiple contexts, don't cache the objects so that contexts can be cleaned up
     @Specialization(guards = {"getCt.execute(callee.getCode()) == ct"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCachedCode")
     protected Object callFunctionCachedCt(VirtualFrame frame, PFunction callee, Object[] arguments,
-                    @SuppressWarnings("unused") @Cached("callee.getCallTargetUncached()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("getCallTargetUncached(callee)") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached GetCodeCallTargetNode getCt,
                     @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
         return invoke.execute(frame, callee, callee.getGlobals(), callee.getClosure(), arguments);

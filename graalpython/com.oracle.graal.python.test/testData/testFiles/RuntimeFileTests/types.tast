@@ -102,8 +102,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               Key: __code__
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [469,471]`_f`
               Identifier: _f
               IsBuiltinClassProfile SourceSection: None
@@ -121,8 +119,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               Key: __dict__
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [506,510]`type`
               Identifier: type
               IsBuiltinClassProfile SourceSection: None
@@ -140,8 +136,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               Key: implementation
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [544,547]`sys`
               Identifier: sys
               IsBuiltinClassProfile SourceSection: None
@@ -346,7 +340,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       QualName: _C
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -405,8 +398,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               Key: _m
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             PythonCallNodeGen SourceSection: [832,836]`_C()`
               CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [832,834]`_C`
@@ -438,8 +429,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               Key: append
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             ListLiteralNode SourceSection: [899,901]`[]`
               PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [945,990]`WrapperDescriptorTyp...`
@@ -455,8 +444,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               Key: __init__
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [974,980]`object`
               Identifier: object
               IsBuiltinClassProfile SourceSection: None
@@ -474,8 +461,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               Key: __str__
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             PythonCallNodeGen SourceSection: [1016,1024]`object()`
               CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [1016,1022]`object`
@@ -495,8 +480,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               Key: join
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1062,1065]`str`
               Identifier: str
               IsBuiltinClassProfile SourceSection: None
@@ -515,8 +498,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 Key: __dict__
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __getattribute__
-                IsBuiltinClassProfile SourceSection: None
-                  GetClassNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [1105,1109]`dict`
                 Identifier: dict
                 IsBuiltinClassProfile SourceSection: None
@@ -581,8 +562,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       Key: tb_frame
                       LookupAndCallBinaryNodeGen SourceSection: None
                         Op: __getattribute__
-                      IsBuiltinClassProfile SourceSection: None
-                        GetClassNodeGen SourceSection: None
                     ReadNameNodeGen SourceSection: [1277,1279]`tb`
                       Identifier: tb
                       IsBuiltinClassProfile SourceSection: None
@@ -612,8 +591,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               Key: __code__
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1393,1405]`FunctionType`
               Identifier: FunctionType
               IsBuiltinClassProfile SourceSection: None
@@ -631,8 +608,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               Key: __globals__
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1444,1456]`FunctionType`
               Identifier: FunctionType
               IsBuiltinClassProfile SourceSection: None
@@ -719,7 +694,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [1757,1770]`resolve_bases`
                           Identifier: resolve_bases
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [1771,1776]`bases`
                           Frame: [1,bases,Illegal]
                     DestructuringAssignmentNodeGen SourceSection: [1782,1840]`meta, ns, kwds = pre...`
@@ -727,7 +701,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         CallTernaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [1799,1812]`prepare_class`
                           Identifier: prepare_class
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [1813,1817]`name`
                           Frame: [0,name,Illegal]
                         ReadLocalVariableNodeGen SourceSection: [1819,1833]`resolved_bases`
@@ -841,7 +814,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [2126,2130]`list`
                           Identifier: list
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [2131,2136]`bases`
                           Frame: [0,bases,Illegal]
                     WriteLocalVariableNodeGen SourceSection: [2142,2157]`updated = False`
@@ -882,12 +854,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2220,2230]`isinstance`
                                       Identifier: isinstance
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     ReadLocalVariableNodeGen SourceSection: [2231,2235]`base`
                                       Frame: [6,base,Illegal]
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2237,2241]`type`
                                       Identifier: type
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ContinueNode SourceSection: [2256,2264]`continue`
                                 BlockNode SourceSection: None
                               IfNode SourceSection: [2273,2343]`if not hasattr(base,...`
@@ -896,7 +866,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2280,2287]`hasattr`
                                       Identifier: hasattr
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     ReadLocalVariableNodeGen SourceSection: [2288,2292]`base`
                                       Frame: [6,base,Illegal]
                                     StringLiteralNode SourceSection: [2294,2311]`"__mro_entries__"`
@@ -922,18 +891,15 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2420,2430]`isinstance`
                                       Identifier: isinstance
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     ReadLocalVariableNodeGen SourceSection: [2431,2439]`new_base`
                                       Frame: [4,new_base,Illegal]
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2441,2446]`tuple`
                                       Identifier: tuple
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 RaiseNodeGen SourceSection: [2461,2515]`raise TypeError("__m...`
                                   PythonCallUnary SourceSection: [2467,2515]`TypeError("__mro_ent...`
                                     CallUnaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2467,2476]`TypeError`
                                       Identifier: TypeError
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     StringLiteralNode SourceSection: [2477,2514]`"__mro_entries__ mus...`
                                   NoValueNode SourceSection: None
                                 BlockNode SourceSection: None
@@ -969,7 +935,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [2603,2606]`len`
                                             Identifier: len
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [2607,2615]`new_base`
                                             Frame: [4,new_base,Illegal]
                                         IntegerLiteralNode SourceSection: [2619,2620]`1`
@@ -980,7 +945,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2191,2200]`enumerate`
                               Identifier: enumerate
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [2201,2206]`bases`
                               Frame: [0,bases,Illegal]
                       BlockNode SourceSection: None
@@ -997,7 +961,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [2673,2678]`tuple`
                           Identifier: tuple
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [2679,2688]`new_bases`
                           Frame: [1,new_bases,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -1067,7 +1030,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3190,3194]`dict`
                             Identifier: dict
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [3195,3199]`kwds`
                             Frame: [2,kwds,Illegal]
                     IfNode SourceSection: [3240,3405]`if 'metaclass' in kw...`
@@ -1099,7 +1061,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [3348,3352]`type`
                               Identifier: type
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             GetItemNodeGen SourceSection: [3353,3361]`bases[0]`
                               ReadLocalVariableNodeGen SourceSection: None
                                 Frame: [1,bases,Illegal]
@@ -1110,19 +1071,16 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           Frame: [3,meta,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3396,3400]`type`
                             Identifier: type
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     IfNode SourceSection: [3405,3618]`if isinstance(meta, ...`
                       YesNodeGen SourceSection: None
                         PythonCallBinary SourceSection: [3408,3430]`isinstance(meta, typ...`
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3408,3418]`isinstance`
                             Identifier: isinstance
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [3419,3423]`meta`
                             Frame: [3,meta,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3425,3429]`type`
                             Identifier: type
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [3578,3613]`meta = _calculate_me...`
                         Identifier: meta
                         Frame: [3,meta,Illegal]
@@ -1130,7 +1088,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3585,3600]`_calculate_meta`
                             Identifier: _calculate_meta
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [3601,3605]`meta`
                             Frame: [3,meta,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [3607,3612]`bases`
@@ -1142,7 +1099,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           CallBinaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3621,3628]`hasattr`
                             Identifier: hasattr
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [3629,3633]`meta`
                             Frame: [3,meta,Illegal]
                           StringLiteralNode SourceSection: [3635,3648]`'__prepare__'`
@@ -1237,7 +1193,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [3898,3902]`type`
                                     Identifier: type
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [3903,3907]`base`
                                     Frame: [4,base,Illegal]
                               IfNode SourceSection: [3917,3980]`if issubclass(winner...`
@@ -1246,7 +1201,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [3920,3930]`issubclass`
                                       Identifier: issubclass
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     ReadLocalVariableNodeGen SourceSection: [3931,3937]`winner`
                                       Frame: [2,winner,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: [3939,3948]`base_meta`
@@ -1259,7 +1213,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     CallBinaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [3983,3993]`issubclass`
                                       Identifier: issubclass
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     ReadLocalVariableNodeGen SourceSection: [3994,4003]`base_meta`
                                       Frame: [3,base_meta,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: [4005,4011]`winner`
@@ -1277,7 +1230,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   CallUnaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [4096,4105]`TypeError`
                                     Identifier: TypeError
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   StringLiteralNode SourceSection: [4106,4309]`"metaclass conflict:...`
                                 NoValueNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [3871,3876]`bases`
@@ -1321,7 +1273,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       QualName: DynamicClassAttribute
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -1426,8 +1377,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: __doc__
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [5135,5139]`fget`
                                             Frame: [1,fget,Illegal]
                                         YesNodeGen SourceSection: None
@@ -1447,12 +1396,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [5264,5268]`bool`
                                           Identifier: bool
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         PythonCallTernary SourceSection: [5269,5313]`getattr(fget, '__isa...`
                                           CallTernaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [5269,5276]`getattr`
                                             Identifier: getattr
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [5277,5281]`fget`
                                             Frame: [1,fget,Illegal]
                                           StringLiteralNode SourceSection: [5283,5305]`'__isabstractmethod_...`
@@ -1521,8 +1468,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                 Key: __isabstractmethod__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [5410,5414]`self`
                                                 Frame: [0,self,Illegal]
                                           FrameReturnNode SourceSection: [5453,5464]`return self`
@@ -1534,7 +1479,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             CallNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [5483,5497]`AttributeError`
                                               Identifier: AttributeError
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           NoValueNode SourceSection: None
                                       IfNode SourceSection: [5508,5597]`elif self.fget is No...`
                                         YesNodeGen SourceSection: None
@@ -1544,8 +1488,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                 Key: fget
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [5513,5517]`self`
                                                 Frame: [0,self,Illegal]
                                             ObjectLiteralNode SourceSection: [5526,5530]`None`
@@ -1554,7 +1496,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [5550,5564]`AttributeError`
                                               Identifier: AttributeError
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [5565,5587]`"unreadable attribut...`
                                           NoValueNode SourceSection: None
                                         BlockNode SourceSection: None
@@ -1623,8 +1564,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               Key: fset
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [5676,5680]`self`
                                               Frame: [0,self,Illegal]
                                           ObjectLiteralNode SourceSection: [5689,5693]`None`
@@ -1633,7 +1572,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [5713,5727]`AttributeError`
                                             Identifier: AttributeError
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [5728,5749]`"can't set attribute...`
                                         NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
@@ -1698,8 +1636,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               Key: fdel
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [5834,5838]`self`
                                               Frame: [0,self,Illegal]
                                           ObjectLiteralNode SourceSection: [5847,5851]`None`
@@ -1708,7 +1644,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [5871,5885]`AttributeError`
                                             Identifier: AttributeError
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [5886,5910]`"can't delete attrib...`
                                         NoValueNode SourceSection: None
                                       BlockNode SourceSection: None
@@ -1773,8 +1708,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               Key: overwrite_doc
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [6000,6004]`self`
                                               Frame: [0,self,Illegal]
                                         GetAttributeNode SourceSection: [5984,5996]`fget.__doc__`
@@ -1782,8 +1715,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: __doc__
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [5984,5988]`fget`
                                             Frame: [1,fget,Illegal]
                                         ObjectLiteralNode SourceSection: [6024,6028]`None`
@@ -1796,7 +1727,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [6046,6050]`type`
                                             Identifier: type
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [6051,6055]`self`
                                             Frame: [0,self,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: [6057,6061]`fget`
@@ -1806,8 +1736,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: fset
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [6063,6067]`self`
                                             Frame: [0,self,Illegal]
                                         GetAttributeNode SourceSection: [6074,6083]`self.fdel`
@@ -1815,8 +1743,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: fdel
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [6074,6078]`self`
                                             Frame: [0,self,Illegal]
                                         OrNode SourceSection: [6085,6105]`fdoc or self.__doc__...`
@@ -1827,8 +1753,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               Key: __doc__
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [6093,6097]`self`
                                               Frame: [0,self,Illegal]
                                           YesNodeGen SourceSection: None
@@ -1841,8 +1765,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           Key: overwrite_doc
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
-                                          IsBuiltinClassProfile SourceSection: None
-                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [6138,6142]`self`
                                           Frame: [0,self,Illegal]
                                     FrameReturnNode SourceSection: [6165,6178]`return result`
@@ -1900,7 +1822,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [6225,6229]`type`
                                             Identifier: type
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [6230,6234]`self`
                                             Frame: [0,self,Illegal]
                                         GetAttributeNode SourceSection: [6236,6245]`self.fget`
@@ -1908,8 +1829,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: fget
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [6236,6240]`self`
                                             Frame: [0,self,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: [6247,6251]`fset`
@@ -1919,8 +1838,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: fdel
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [6253,6257]`self`
                                             Frame: [0,self,Illegal]
                                         GetAttributeNode SourceSection: [6264,6276]`self.__doc__`
@@ -1928,8 +1845,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: __doc__
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [6264,6268]`self`
                                             Frame: [0,self,Illegal]
                                     SetAttributeNodeGen SourceSection: [6286,6327]`result.overwrite_doc...`
@@ -1941,8 +1856,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           Key: overwrite_doc
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
-                                          IsBuiltinClassProfile SourceSection: None
-                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [6309,6313]`self`
                                           Frame: [0,self,Illegal]
                                     FrameReturnNode SourceSection: [6336,6349]`return result`
@@ -2000,7 +1913,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [6397,6401]`type`
                                             Identifier: type
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [6402,6406]`self`
                                             Frame: [0,self,Illegal]
                                         GetAttributeNode SourceSection: [6408,6417]`self.fget`
@@ -2008,8 +1920,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: fget
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [6408,6412]`self`
                                             Frame: [0,self,Illegal]
                                         GetAttributeNode SourceSection: [6419,6428]`self.fset`
@@ -2017,8 +1927,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: fset
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [6419,6423]`self`
                                             Frame: [0,self,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: [6430,6434]`fdel`
@@ -2028,8 +1936,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: __doc__
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [6436,6440]`self`
                                             Frame: [0,self,Illegal]
                                     SetAttributeNodeGen SourceSection: [6458,6499]`result.overwrite_doc...`
@@ -2041,8 +1947,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           Key: overwrite_doc
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
-                                          IsBuiltinClassProfile SourceSection: None
-                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [6481,6485]`self`
                                           Frame: [0,self,Illegal]
                                     FrameReturnNode SourceSection: [6508,6521]`return result`
@@ -2084,7 +1988,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       QualName: _GeneratorWrapper
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -2147,13 +2050,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: __class__
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [6663,6666]`gen`
                                             Frame: [1,gen,Illegal]
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [6680,6693]`GeneratorType`
                                           Identifier: GeneratorType
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     SetAttributeNodeGen SourceSection: [6702,6748]`self.__name__ = geta...`
                                       Attribute: __name__
                                       ReadLocalVariableNodeGen SourceSection: [6702,6706]`self`
@@ -2162,7 +2062,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         CallTernaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [6718,6725]`getattr`
                                           Identifier: getattr
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [6726,6729]`gen`
                                           Frame: [1,gen,Illegal]
                                         StringLiteralNode SourceSection: [6731,6741]`'__name__'`
@@ -2175,7 +2074,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         CallTernaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [6777,6784]`getattr`
                                           Identifier: getattr
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [6785,6788]`gen`
                                           Frame: [1,gen,Illegal]
                                         StringLiteralNode SourceSection: [6790,6804]`'__qualname__'`
@@ -2232,8 +2130,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               Key: _GeneratorWrapper__wrapped
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [6852,6856]`self`
                                               Frame: [0,self,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: [6872,6875]`val`
@@ -2302,8 +2198,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               Key: _GeneratorWrapper__wrapped
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [6924,6928]`self`
                                               Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -2351,8 +2245,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               Key: _GeneratorWrapper__wrapped
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [6992,6996]`self`
                                               Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -2372,7 +2264,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: property
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: gi_code SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2408,15 +2299,11 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: gi_code
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [7067,7081]`self.__wrapped`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _GeneratorWrapper__wrapped
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [7067,7071]`self`
                                               Frame: [0,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -2436,7 +2323,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: property
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: gi_frame SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2472,15 +2358,11 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: gi_frame
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [7143,7157]`self.__wrapped`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _GeneratorWrapper__wrapped
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [7143,7147]`self`
                                               Frame: [0,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -2500,7 +2382,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: property
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: gi_running SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2536,15 +2417,11 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: gi_running
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [7222,7236]`self.__wrapped`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _GeneratorWrapper__wrapped
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [7222,7226]`self`
                                               Frame: [0,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -2564,7 +2441,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               StringLiteralNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: property
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: gi_yieldfrom SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2600,15 +2476,11 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: gi_yieldfrom
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [7305,7319]`self.__wrapped`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _GeneratorWrapper__wrapped
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [7305,7309]`self`
                                               Frame: [0,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -2626,7 +2498,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: gi_code
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7359,7378]`cr_frame = gi_frame`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2640,7 +2511,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: gi_frame
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7383,7406]`cr_running = gi_runn...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2654,7 +2524,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: gi_running
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7411,7434]`cr_await = gi_yieldf...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2668,7 +2537,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: gi_yieldfrom
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [7439,7499]`def __next__(self):↵...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2708,14 +2576,11 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [7474,7478]`next`
                                           Identifier: next
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         GetAttributeNode SourceSection: [7479,7493]`self.__wrapped`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _GeneratorWrapper__wrapped
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [7479,7483]`self`
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -2761,8 +2626,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: _GeneratorWrapper__isgen
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [7530,7534]`self`
                                             Frame: [0,self,Illegal]
                                       FrameReturnNode SourceSection: [7556,7577]`return self.__wrappe...`
@@ -2771,8 +2634,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             Key: _GeneratorWrapper__wrapped
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [7563,7567]`self`
                                             Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -2794,7 +2655,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __iter__
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [7624,9869]`def coroutine(func):...`
@@ -2835,7 +2695,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7718,7726]`callable`
                             Identifier: callable
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalCellNodeGen SourceSection: [7727,7731]`func`
                             ReadLocalVariableNodeGen SourceSection: None
                               Frame: [0,func,Illegal]
@@ -2845,7 +2704,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7748,7757]`TypeError`
                             Identifier: TypeError
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [7758,7796]`'types.coroutine() e...`
                         NoValueNode SourceSection: None
                       BlockNode SourceSection: None
@@ -2858,28 +2716,22 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 Key: __class__
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
                               ReadLocalCellNodeGen SourceSection: [7807,7811]`func`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [0,func,Illegal]
                                 ReadFromCellNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7825,7837]`FunctionType`
                               Identifier: FunctionType
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           IsExpressionNodeGen SourceSection: [7850,7903]`getattr(func, '__cod...`
                             GetAttributeNode SourceSection: [7850,7891]`getattr(func, '__cod...`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: __class__
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
                               PythonCallTernary SourceSection: [7850,7881]`getattr(func, '__cod...`
                                 CallTernaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [7850,7857]`getattr`
                                   Identifier: getattr
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [7858,7862]`func`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [0,func,Illegal]
@@ -2888,7 +2740,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 ObjectLiteralNode SourceSection: [7876,7880]`None`
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7895,7903]`CodeType`
                               Identifier: CodeType
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [7915,7948]`co_flags = func.__co...`
@@ -2899,15 +2750,11 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               Key: co_flags
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             GetAttributeNode SourceSection: [7926,7939]`func.__code__`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: __code__
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
                               ReadLocalCellNodeGen SourceSection: [7926,7930]`func`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [0,func,Illegal]
@@ -2941,8 +2788,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   Key: __code__
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
-                                  IsBuiltinClassProfile SourceSection: None
-                                    GetClassNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [8283,8287]`func`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [0,func,Illegal]
@@ -2960,8 +2805,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     Key: co_argcount
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [8351,8353]`co`
                                     Frame: [2,co,Illegal]
                                 GetAttributeNode SourceSection: [8367,8387]`co.co_kwonlyargcount...`
@@ -2969,8 +2812,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     Key: co_kwonlyargcount
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [8367,8369]`co`
                                     Frame: [2,co,Illegal]
                                 GetAttributeNode SourceSection: [8389,8402]`co.co_nlocals`
@@ -2978,8 +2819,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     Key: co_nlocals
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [8389,8391]`co`
                                     Frame: [2,co,Illegal]
                                 GetAttributeNode SourceSection: [8420,8435]`co.co_stacksize`
@@ -2987,8 +2826,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     Key: co_stacksize
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [8420,8422]`co`
                                     Frame: [2,co,Illegal]
                                 BitOrNodeGen SourceSection: [8453,8472]`co.co_flags | 0x100`
@@ -2997,8 +2834,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       Key: co_flags
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
-                                      IsBuiltinClassProfile SourceSection: None
-                                        GetClassNodeGen SourceSection: None
                                     ReadLocalVariableNodeGen SourceSection: [8453,8455]`co`
                                       Frame: [2,co,Illegal]
                                   IntegerLiteralNode SourceSection: [8467,8472]`0x100`
@@ -3008,8 +2843,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     Key: co_code
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [8524,8526]`co`
                                     Frame: [2,co,Illegal]
                                 GetAttributeNode SourceSection: [8552,8564]`co.co_consts`
@@ -3017,8 +2850,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     Key: co_consts
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [8552,8554]`co`
                                     Frame: [2,co,Illegal]
                                 GetAttributeNode SourceSection: [8566,8577]`co.co_names`
@@ -3026,8 +2857,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     Key: co_names
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [8566,8568]`co`
                                     Frame: [2,co,Illegal]
                                 GetAttributeNode SourceSection: [8579,8593]`co.co_varnames`
@@ -3035,8 +2864,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     Key: co_varnames
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [8579,8581]`co`
                                     Frame: [2,co,Illegal]
                                 GetAttributeNode SourceSection: [8595,8609]`co.co_filename`
@@ -3044,8 +2871,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     Key: co_filename
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [8595,8597]`co`
                                     Frame: [2,co,Illegal]
                                 GetAttributeNode SourceSection: [8627,8637]`co.co_name`
@@ -3053,8 +2878,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     Key: co_name
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [8627,8629]`co`
                                     Frame: [2,co,Illegal]
                                 GetAttributeNode SourceSection: [8639,8656]`co.co_firstlineno`
@@ -3062,8 +2885,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     Key: co_firstlineno
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [8639,8641]`co`
                                     Frame: [2,co,Illegal]
                                 GetAttributeNode SourceSection: [8658,8670]`co.co_lnotab`
@@ -3071,8 +2892,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     Key: co_lnotab
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [8658,8660]`co`
                                     Frame: [2,co,Illegal]
                                 GetAttributeNode SourceSection: [8672,8686]`co.co_freevars`
@@ -3080,8 +2899,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     Key: co_freevars
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [8672,8674]`co`
                                     Frame: [2,co,Illegal]
                                 GetAttributeNode SourceSection: [8704,8718]`co.co_cellvars`
@@ -3089,13 +2906,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     Key: co_cellvars
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [8704,8706]`co`
                                     Frame: [2,co,Illegal]
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [8325,8333]`CodeType`
                                   Identifier: CodeType
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             FrameReturnNode SourceSection: [8732,8743]`return func`
                               ReadLocalCellNodeGen SourceSection: [8739,8743]`func`
                                 ReadLocalVariableNodeGen SourceSection: None
@@ -3192,13 +3006,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                 Key: __class__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [9139,9143]`coro`
                                                 Frame: [2,coro,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9157,9170]`CoroutineType`
                                               Identifier: CoroutineType
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           AndNode SourceSection: [9186,9251]`coro.__class__ is Ge...`
                                             IsExpressionNodeGen SourceSection: [9186,9217]`coro.__class__ is Ge...`
                                               GetAttributeNode SourceSection: [9186,9200]`coro.__class__`
@@ -3206,28 +3017,21 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [9186,9190]`coro`
                                                   Frame: [2,coro,Illegal]
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [9204,9217]`GeneratorType`
                                                 Identifier: GeneratorType
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             BitAndNodeGen SourceSection: [9222,9251]`coro.gi_code.co_flag...`
                                               GetAttributeNode SourceSection: [9222,9243]`coro.gi_code.co_flag...`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: co_flags
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    GetClassNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [9222,9234]`coro.gi_code`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: gi_code
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
-                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [9222,9226]`coro`
                                                     Frame: [2,coro,Illegal]
                                               IntegerLiteralNode SourceSection: [9246,9251]`0x100`
@@ -3245,7 +3049,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9365,9375]`isinstance`
                                               Identifier: isinstance
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [9376,9380]`coro`
                                               Frame: [2,coro,Illegal]
                                             GetAttributeNode SourceSection: [9382,9408]`_collections_abc.Gen...`
@@ -3253,8 +3056,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                 Key: Generator
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [9382,9398]`_collections_abc`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [4,_collections_abc,Illegal]
@@ -3264,7 +3065,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               CallBinaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [9430,9440]`isinstance`
                                                 Identifier: isinstance
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [9441,9445]`coro`
                                                 Frame: [2,coro,Illegal]
                                               GetAttributeNode SourceSection: [9447,9473]`_collections_abc.Cor...`
@@ -3272,8 +3072,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                   Key: Coroutine
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalCellNodeGen SourceSection: [9447,9463]`_collections_abc`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [4,_collections_abc,Illegal]
@@ -3284,7 +3082,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [9684,9701]`_GeneratorWrapper`
                                             Identifier: _GeneratorWrapper
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [9702,9706]`coro`
                                             Frame: [2,coro,Illegal]
                                       BlockNode SourceSection: None
@@ -3308,7 +3105,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               CallUnaryMethodNodeGen SourceSection: None
               ReadGlobalOrBuiltinNodeGen SourceSection: None
                 Identifier: list
-                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
               GeneratorExpressionNode SourceSection: [9880,9916]`n for n in globals()...`
                 Name: <genexpr>
                 FrameDescriptor: 2 slots [n, <return_val>]

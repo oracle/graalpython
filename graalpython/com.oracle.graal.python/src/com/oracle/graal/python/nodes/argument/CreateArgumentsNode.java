@@ -45,6 +45,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -61,13 +62,14 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyKeywordsNodeGen;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyKeywordsNodeGen.SearchNamedParameterNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyPositionalArgumentsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.CreateAndCheckArgumentsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillDefaultsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillKwDefaultsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FindKwDefaultNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.HandleTooManyArgumentsNodeGen;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyKeywordsNodeGen.SearchNamedParameterNodeGen;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
@@ -172,9 +174,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, signature, null, defaults, kwdefaults, false);
     }
 
-    @Specialization(guards = {"getCallTarget(callable) == cachedCallTarget", "cachedCallTarget != null"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = {"doMethodFunctionCached",
+    @Specialization(guards = {"getCt.execute(callable) == cachedCallTarget", "cachedCallTarget != null"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = {"doMethodFunctionCached",
                     "doFunctionCached"})
     Object[] doCallTargetCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
+                    @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
                     @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @SuppressWarnings("unused") @Cached GetSignatureNode getSignatureNode,
                     @Cached("getSignatureNode.execute(callable)") Signature signature, // signatures
@@ -185,7 +188,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     @Cached ConditionProfile gotMethod,
                     @Cached GetDefaultsNode getDefaultsNode,
                     @Cached GetKeywordDefaultsNode getKwDefaultsNode,
-                    @Cached("getCallTarget(callable)") @SuppressWarnings("unused") RootCallTarget cachedCallTarget) {
+                    @Cached("getCt.execute(callable)") @SuppressWarnings("unused") RootCallTarget cachedCallTarget) {
         Object[] defaults = getDefaultsNode.execute(callable);
         PKeyword[] kwdefaults = getKwDefaultsNode.execute(callable);
         Object self = null;
@@ -213,7 +216,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     }
 
     @GenerateUncached
-    protected abstract static class CreateAndCheckArgumentsNode extends PNodeWithContext {
+    public abstract static class CreateAndCheckArgumentsNode extends PNodeWithContext {
         public static CreateAndCheckArgumentsNode create() {
             return CreateAndCheckArgumentsNodeGen.create();
         }
@@ -923,6 +926,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     }
 
     protected static String getName(Object callable) {
+        if (callable instanceof PCode) {
+            return ((PCode) callable).getName();
+        }
         return getProperty(callable, NameGetter.INSTANCE);
     }
 
@@ -940,24 +946,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return ((PBuiltinMethod) callable).getFunction();
         } else if (callable instanceof PMethod) {
             return ((PMethod) callable).getFunction();
-        }
-        return null;
-    }
-
-    protected static RootCallTarget getCallTarget(Object callable) {
-        if (callable instanceof PBuiltinMethod) {
-            return ((PBuiltinMethod) callable).getFunction().getCallTarget();
-        } else if (callable instanceof PMethod) {
-            Object function = ((PMethod) callable).getFunction();
-            if (function instanceof PBuiltinFunction) {
-                return ((PBuiltinFunction) function).getCallTarget();
-            } else if (function instanceof PFunction) {
-                return ((PFunction) function).getCallTargetUncached();
-            }
-        } else if (callable instanceof PBuiltinFunction) {
-            return ((PBuiltinFunction) callable).getCallTarget();
-        } else if (callable instanceof PFunction) {
-            return ((PFunction) callable).getCallTargetUncached();
         }
         return null;
     }

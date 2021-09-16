@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
@@ -1005,7 +1006,6 @@ public class ListBuiltins extends PythonBuiltins {
         /**
          * This is a fix for the bpo-38588 bug. See
          * {@code test_list.py: ListTest.test_equal_operator_modifying_operand}
-         *
          */
         @Specialization(guards = "isObjectStorage(left, right)")
         boolean doPListObjectStorage(VirtualFrame frame, PList left, PList right,
@@ -1159,6 +1159,18 @@ public class ListBuiltins extends PythonBuiltins {
         @Fallback
         static Object doGeneric(@SuppressWarnings("unused") Object self) {
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = __REVERSED__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ReverseNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object reverse(PList self,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
+            int len = lenNode.execute(getSequenceStorageNode.execute(self));
+            return factory().createSequenceReverseIterator(PythonBuiltinClassType.PReverseIterator, self, len);
         }
     }
 }

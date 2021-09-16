@@ -31,6 +31,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.IndirectCallNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -49,24 +50,20 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class InvokeNode extends Node implements IndirectCallNode {
     protected static boolean shouldInlineGenerators() {
         CompilerAsserts.neverPartOfCompilation();
-        return PythonLanguage.getCurrent().getEngineOption(PythonOptions.ForceInlineGeneratorCalls);
+        return PythonLanguage.get(null).getEngineOption(PythonOptions.ForceInlineGeneratorCalls);
     }
 
     protected static boolean forceSplitBuiltins() {
         CompilerAsserts.neverPartOfCompilation();
-        return PythonLanguage.getCurrent().getEngineOption(PythonOptions.EnableForcedSplits);
+        return PythonLanguage.get(null).getEngineOption(PythonOptions.EnableForcedSplits);
     }
 
     @TruffleBoundary
     protected static RootCallTarget getCallTarget(Object callee) {
-        RootCallTarget callTarget;
         Object actualCallee = callee;
-        if (actualCallee instanceof PFunction) {
-            callTarget = ((PFunction) actualCallee).getCallTargetUncached();
-        } else if (actualCallee instanceof PBuiltinFunction) {
-            callTarget = ((PBuiltinFunction) callee).getCallTarget();
-        } else {
-            throw new UnsupportedOperationException("Unsupported callee type " + actualCallee);
+        RootCallTarget callTarget = GetCallTargetNode.getUncached().execute(actualCallee);
+        if (callTarget == null) {
+            throw CompilerDirectives.shouldNotReachHere("Unsupported callee type " + actualCallee);
         }
         return callTarget;
     }

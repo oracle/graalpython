@@ -110,8 +110,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.DeleteDictNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
@@ -128,8 +132,8 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -246,10 +250,10 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile overridesNew,
                         @Cached ConditionProfile overridesInit,
                         @Cached("create(Init)") LookupCallableSlotInMRONode lookupInit,
-                        @Cached("createLookupProfile()") ValueProfile profileInit,
+                        @Cached("createLookupProfile(getClassNode)") ValueProfile profileInit,
                         @Cached("createClassProfile()") ValueProfile profileInitFactory,
                         @Cached("create(New)") LookupCallableSlotInMRONode lookupNew,
-                        @Cached("createLookupProfile()") ValueProfile profileNew,
+                        @Cached("createLookupProfile(getClassNode)") ValueProfile profileNew,
                         @Cached("createClassProfile()") ValueProfile profileNewFactory) {
             if (arguments.length != 0 || keywords.length != 0) {
                 Object type = getClassNode.execute(self);
@@ -264,8 +268,8 @@ public class ObjectBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        protected static ValueProfile createLookupProfile() {
-            if (PythonLanguage.getCurrent().singleContextAssumption.isValid()) {
+        protected static ValueProfile createLookupProfile(Node node) {
+            if (PythonLanguage.get(node).singleContextAssumption.isValid()) {
                 return ValueProfile.createIdentityProfile();
             } else {
                 return ValueProfile.createClassProfile();
@@ -395,14 +399,12 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetAttributeNode extends PythonBinaryBuiltinNode {
-        private final BranchProfile hasDescProfile = BranchProfile.create();
-        private final BranchProfile isDescProfile = BranchProfile.create();
-        private final BranchProfile hasValueProfile = BranchProfile.create();
-        private final BranchProfile errorProfile = BranchProfile.create();
-        private final ConditionProfile typeIsObjectProfile = ConditionProfile.createBinaryProfile();
-        private final ConditionProfile getClassProfile = ConditionProfile.createBinaryProfile();
+        @CompilationFinal private int profileFlags = 0;
+        private static final int HAS_DESCR = 1;
+        private static final int HAS_DATA_DESCR = 2;
+        private static final int HAS_VALUE = 4;
+        private static final int HAS_NO_VALUE = 8;
 
-        @Child private LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.create();
         @Child private LookupCallableSlotInMRONode lookupGetNode;
         @Child private LookupCallableSlotInMRONode lookupSetNode;
         @Child private LookupCallableSlotInMRONode lookupDeleteNode;
@@ -412,6 +414,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(VirtualFrame frame, Object object, Object keyObj,
+                        @Cached LookupAttributeInMRONode.Dynamic lookup,
                         @Cached GetClassNode getClassNode,
                         @Cached CastToJavaStringNode castKeyToStringNode) {
             String key;
@@ -424,30 +427,45 @@ public class ObjectBuiltins extends PythonBuiltins {
             Object type = getClassNode.execute(object);
             Object descr = lookup.execute(type, key);
             Object dataDescClass = null;
-            if (descr != PNone.NO_VALUE) {
-                // acts as a branch profile
+            boolean hasDescr = descr != PNone.NO_VALUE;
+            if (hasDescr && (profileFlags & HAS_DESCR) == 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                profileFlags |= HAS_DESCR;
+            }
+            if (hasDescr) {
                 dataDescClass = getDescClass(descr);
                 Object delete = PNone.NO_VALUE;
                 Object set = lookupSet(dataDescClass);
                 if (set == PNone.NO_VALUE) {
                     delete = lookupDelete(dataDescClass);
                 }
-                if (set != PNone.NO_VALUE || delete != PNone.NO_VALUE) {
-                    isDescProfile.enter();
+                boolean hasDataDescr = set != PNone.NO_VALUE || delete != PNone.NO_VALUE;
+                if (hasDataDescr && (profileFlags & HAS_DATA_DESCR) == 0) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    profileFlags |= HAS_DATA_DESCR;
+                }
+                if (hasDataDescr) {
                     Object get = lookupGet(dataDescClass);
                     if (PGuards.isCallableOrDescriptor(get)) {
                         // Only override if __get__ is defined, too, for compatibility with CPython.
-                        return dispatch(frame, object, getPythonClass(type, getClassProfile), descr, get);
+                        return dispatch(frame, object, type, descr, get);
                     }
                 }
             }
             Object value = readAttribute(object, key);
-            if (value != PNone.NO_VALUE) {
-                hasValueProfile.enter();
+            boolean hasValue = value != PNone.NO_VALUE;
+            if (hasValue && (profileFlags & HAS_VALUE) == 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                profileFlags |= HAS_VALUE;
+            }
+            if (hasValue) {
                 return value;
             }
-            if (descr != PNone.NO_VALUE) {
-                hasDescProfile.enter();
+            if ((profileFlags & HAS_NO_VALUE) == 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                profileFlags |= HAS_NO_VALUE;
+            }
+            if (hasDescr) {
                 if (object == PNone.NONE) {
                     if (descr instanceof PBuiltinFunction) {
                         // Special case for None object. We cannot call function.__get__(None,
@@ -460,10 +478,9 @@ public class ObjectBuiltins extends PythonBuiltins {
                 if (get == PNone.NO_VALUE) {
                     return descr;
                 } else if (PGuards.isCallableOrDescriptor(get)) {
-                    return dispatch(frame, object, getPythonClass(type, getClassProfile), descr, get);
+                    return dispatch(frame, object, type, descr, get);
                 }
             }
-            errorProfile.enter();
             throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
 
@@ -480,7 +497,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 dispatchGet = insert(CallTernaryMethodNode.create());
             }
-            return dispatchGet.execute(frame, get, descr, typeIsObjectProfile.profile(type == object) ? PNone.NONE : object, type);
+            return dispatchGet.execute(frame, get, descr, object, type);
         }
 
         private Object getDescClass(Object desc) {
@@ -676,7 +693,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached GetBaseClassNode getBaseNode,
                         @Cached("createForLookupOfUnmanagedClasses(__DICT__)") LookupAttributeInMRONode getDescrNode,
                         @Cached DescrGetNode getNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached GetOrCreateDictNode getDict,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib,
                         @Cached BranchProfile branchProfile) {
             // typeobject.c#subtype_getdict()
@@ -686,17 +703,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 return getNode.execute(frame, func, self);
             }
 
-            PDict dict = lib.getDict(self);
-            if (dict == null) {
-                dict = factory().createDictFixedStorage(self);
-                try {
-                    lib.setDict(self, dict);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException(e);
-                }
-            }
-            return dict;
+            return getDict.execute(self);
         }
 
         @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isExactObjectInstance(self)", "!isPythonModule(self)"})
@@ -705,7 +712,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached GetBaseClassNode getBaseNode,
                         @Cached("createForLookupOfUnmanagedClasses(__DICT__)") LookupAttributeInMRONode getDescrNode,
                         @Cached DescrSetNode setNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached SetDictNode setDict,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib,
                         @Cached BranchProfile branchProfile) {
             // typeobject.c#subtype_setdict()
@@ -715,32 +722,27 @@ public class ObjectBuiltins extends PythonBuiltins {
                 return setNode.execute(frame, func, self, dict);
             }
 
-            try {
-                lib.setDict(self, dict);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
-            }
+            setDict.execute(self, dict);
             return PNone.NONE;
         }
 
-        @Specialization(guards = "isNoValue(none)", limit = "1")
+        @Specialization(guards = "isNoValue(none)")
         Object dict(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            PDict dict = lib.getDict(self);
+                        @Cached GetDictIfExistsNode getDict) {
+            PDict dict = getDict.execute(self);
             if (dict == null) {
                 raise(self, none);
             }
             return dict;
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         static Object dict(VirtualFrame frame, @SuppressWarnings("unused") PythonObject self, @SuppressWarnings("unused") DescriptorDeleteMarker marker,
                         @Cached GetClassNode getClassNode,
                         @Cached GetBaseClassNode getBaseNode,
                         @Cached("createForLookupOfUnmanagedClasses(__DICT__)") LookupAttributeInMRONode getDescrNode,
                         @Cached DescrDeleteNode deleteNode,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached DeleteDictNode deleteDictNode,
                         @Cached BranchProfile branchProfile) {
             // typeobject.c#subtype_setdict()
             Object func = getDescrFromBuiltinBase(getClassNode.execute(self), getBaseNode, getDescrNode);
@@ -748,11 +750,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 branchProfile.enter();
                 return deleteNode.execute(frame, func, self);
             }
-            try {
-                lib.deleteDict(self);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+            deleteDictNode.execute(self);
             return PNone.NONE;
         }
 

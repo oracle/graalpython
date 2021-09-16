@@ -41,14 +41,13 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_THREAD_STATE_TYPE_ID;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
@@ -65,7 +64,6 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
@@ -95,11 +93,14 @@ public class PThreadState extends PythonNativeWrapper {
     public static final String CUR_EXC_TRACEBACK = "curexc_traceback";
     public static final String EXC_TYPE = "exc_type";
     public static final String EXC_VALUE = "exc_value";
+    public static final String EXC_INFO = "exc_info";
     public static final String EXC_TRACEBACK = "exc_traceback";
     public static final String DICT = "dict";
     public static final String PREV = "prev";
     public static final String RECURSION_DEPTH = "recursion_depth";
     public static final String OVERFLOWED = "overflowed";
+    public static final String INTERP = "interp";
+    public static final String USE_TRACING = "use_tracing";
 
     private final PythonThreadState threadState;
 
@@ -132,11 +133,14 @@ public class PThreadState extends PythonNativeWrapper {
             case CUR_EXC_TRACEBACK:
             case EXC_TYPE:
             case EXC_VALUE:
+            case EXC_INFO:
             case EXC_TRACEBACK:
             case DICT:
             case PREV:
             case RECURSION_DEPTH:
             case OVERFLOWED:
+            case INTERP:
+            case USE_TRACING:
                 return true;
             default:
                 return false;
@@ -145,7 +149,8 @@ public class PThreadState extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(new Object[]{CUR_EXC_TYPE, CUR_EXC_VALUE, CUR_EXC_TRACEBACK, EXC_TYPE, EXC_VALUE, EXC_TRACEBACK, DICT, PREV, RECURSION_DEPTH, OVERFLOWED});
+        return new PythonAbstractObject.Keys(
+                        new Object[]{CUR_EXC_TYPE, CUR_EXC_VALUE, CUR_EXC_TRACEBACK, EXC_TYPE, EXC_VALUE, EXC_TRACEBACK, DICT, PREV, RECURSION_DEPTH, OVERFLOWED, INTERP, USE_TRACING});
     }
 
     @ImportStatic(PThreadState.class)
@@ -183,7 +188,8 @@ public class PThreadState extends PythonNativeWrapper {
             PException currentException = receiver.threadState.getCurrentException();
             PTraceback result = null;
             if (currentException != null) {
-                result = getTracebackNode.execute(currentException.getTraceback());
+                LazyTraceback traceback = currentException.getTraceback();
+                result = traceback != null ? getTracebackNode.execute(traceback) : null;
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
@@ -239,7 +245,22 @@ public class PThreadState extends PythonNativeWrapper {
         @SuppressWarnings("unused")
         static Object doPrev(PThreadState receiver, String key,
                         @Cached GetNativeNullNode getNativeNullNode) {
-            return getNativeNullNode.execute(null);
+            return getNativeNullNode.execute();
+        }
+
+        @Specialization(guards = "eq(key, EXC_INFO)")
+        static Object doExcInfo(PThreadState receiver, @SuppressWarnings("unused") String key) {
+            PException currentException = receiver.threadState.getCaughtException();
+            PBaseException caughtExceptionObject = null;
+            if (currentException != null) {
+                caughtExceptionObject = currentException.getEscapedException();
+            }
+            /*
+             * CPython initializes 'PyThreadState->exc_info' with 'PyThreadState->exc_state' where
+             * the latter is always allocated but its the members may be NULL. So, we must always
+             * allow access to the stack item even if there is no exception.
+             */
+            return new PyErrStackItem(caughtExceptionObject);
         }
 
         private static class DepthCounter implements FrameInstanceVisitor<Object> {
@@ -262,6 +283,18 @@ public class PThreadState extends PythonNativeWrapper {
         @Specialization(guards = "eq(key, OVERFLOWED)")
         @SuppressWarnings("unused")
         static long doOverflowed(PThreadState receiver, String key) {
+            return 0;
+        }
+
+        @Specialization(guards = "eq(key, INTERP)")
+        @SuppressWarnings("unused")
+        static Object doInterpreterState(PThreadState receiver, String key) {
+            return 0xDEADBEEF;
+        }
+
+        @Specialization(guards = "eq(key, USE_TRACING)")
+        @SuppressWarnings("unused")
+        static long doUseTracing(PThreadState receiver, String key) {
             return 0;
         }
 
@@ -295,8 +328,8 @@ public class PThreadState extends PythonNativeWrapper {
 
     @ExportMessage
     protected void writeMember(String member, Object value,
-                    @Exclusive @Cached ThreadStateWriteNode writeNode,
-                    @Exclusive @Cached ToJavaNode toJavaNode) throws UnknownIdentifierException {
+                    @Cached ThreadStateWriteNode writeNode,
+                    @Cached ToJavaNode toJavaNode) throws UnknownIdentifierException {
         writeNode.execute(threadState, member, toJavaNode.execute(value));
     }
 
@@ -315,20 +348,24 @@ public class PThreadState extends PythonNativeWrapper {
     abstract static class ThreadStateWriteNode extends PNodeWithContext {
         public abstract Object execute(PythonThreadState threadState, Object key, Object value) throws UnknownIdentifierException;
 
-        @Specialization(guards = "isCurrentExceptionMember(key)")
-        static PNone doResetCurException(PythonThreadState threadState, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value) {
+        @Specialization(guards = {"isCurrentExceptionMember(key)", "isResetValue(value, lib)"})
+        @SuppressWarnings("unused")
+        static PNone doResetCurException(PythonThreadState threadState, String key, Object value,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             threadState.setCaughtException(null);
             return PNone.NO_VALUE;
         }
 
-        @Specialization(guards = "isCaughtExceptionMember(key)")
-        static PNone doResetCaughtException(PythonThreadState threadState, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value) {
+        @Specialization(guards = {"isCaughtExceptionMember(key)", "isResetValue(value, lib)"})
+        @SuppressWarnings("unused")
+        static PNone doResetCaughtException(PythonThreadState threadState, String key, PNone value,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             threadState.setCaughtException(PException.NO_EXCEPTION);
             return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
-        PythonClass doCurExcType(PythonThreadState threadState, @SuppressWarnings("unused") String key, PythonClass value,
+        Object doCurExcType(PythonThreadState threadState, @SuppressWarnings("unused") String key, Object value,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             setCurrentException(getLanguage(), threadState, factory.createBaseException(value));
             return value;
@@ -390,14 +427,16 @@ public class PThreadState extends PythonNativeWrapper {
 
         private static void setCurrentException(PythonLanguage language, PythonThreadState threadState, PBaseException exceptionObject) {
             boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
-            LazyTraceback traceback = threadState.getCurrentException().getTraceback();
+            PException currentException = threadState.getCurrentException();
+            LazyTraceback traceback = currentException != null ? currentException.getTraceback() : null;
             PException curException = PException.fromExceptionInfo(exceptionObject, traceback, withJavaStacktrace);
             threadState.setCurrentException(curException);
         }
 
         private static void setCaughtException(PythonLanguage language, PythonThreadState threadState, PBaseException exceptionObject) {
             boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
-            LazyTraceback traceback = threadState.getCaughtException().getTraceback();
+            PException oldCaughtException = threadState.getCaughtException();
+            LazyTraceback traceback = oldCaughtException != null ? oldCaughtException.getTraceback() : null;
             PException caughtException = PException.fromExceptionInfo(exceptionObject, traceback, withJavaStacktrace);
             threadState.setCaughtException(caughtException);
         }
@@ -412,6 +451,19 @@ public class PThreadState extends PythonNativeWrapper {
 
         protected static boolean isCaughtExceptionMember(Object key) {
             return eq(key, EXC_TYPE) || eq(key, EXC_VALUE) || eq(key, EXC_TRACEBACK);
+        }
+
+        protected static boolean isResetValue(Object value, InteropLibrary lib) {
+            // TODO(fa): workaround until Sulong supports this
+            if (lib.isNumber(value) && lib.fitsInLong(value)) {
+                try {
+                    long lvalue = lib.asLong(value);
+                    return lvalue == 0;
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            return value instanceof PNone;
         }
     }
 
@@ -450,26 +502,8 @@ public class PThreadState extends PythonNativeWrapper {
     }
 
     @ExportMessage(name = "getNativeType")
-    abstract static class GetTypeIDNode {
-        @Specialization(assumptions = "singleNativeContextAssumption()")
-        static Object doByteArray(@SuppressWarnings("unused") PThreadState receiver,
-                        @Exclusive @Cached("callGetThreadStateTypeIDUncached()") Object nativeType) {
-            // TODO(fa): use weak reference ?
-            return nativeType;
-        }
-
-        @Specialization(replaces = "doByteArray")
-        static Object doByteArrayMultiCtx(@SuppressWarnings("unused") PThreadState receiver,
-                        @Exclusive @Cached PCallCapiFunction callUnaryNode) {
-            return callUnaryNode.call(FUN_GET_THREAD_STATE_TYPE_ID);
-        }
-
-        protected static Object callGetThreadStateTypeIDUncached() {
-            return PCallCapiFunction.getUncached().call(FUN_GET_THREAD_STATE_TYPE_ID);
-        }
-
-        protected static Assumption singleNativeContextAssumption() {
-            return PythonContext.getSingleNativeContextAssumption();
-        }
+    Object getNativeType(
+                    @Cached GetLLVMType getLLVMType) {
+        return getLLVMType.execute(LLVMType.PyThreadState);
     }
 }

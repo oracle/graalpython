@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -65,7 +65,7 @@ public abstract class InvalidateNativeObjectsAllManagedNode extends PNodeWithCon
         // nothing to do
     }
 
-    static Assumption nativeObjectsAllManagedAssumption() {
-        return PythonLanguage.getContext().getNativeObjectsAllManagedAssumption();
+    Assumption nativeObjectsAllManagedAssumption() {
+        return PythonContext.get(this).getNativeObjectsAllManagedAssumption();
     }
 }

@@ -44,8 +44,8 @@
 
 // This file uses GNU extensions. Functions that require non-GNU versions (e.g. strerror_r)
 // need to go to posix_no_gnu.c
-#ifdef __gnu_linux__
-#define _GNU_SOURCE
+#if defined(__gnu_linux__) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE 1
 #endif
 
 #include <arpa/inet.h>

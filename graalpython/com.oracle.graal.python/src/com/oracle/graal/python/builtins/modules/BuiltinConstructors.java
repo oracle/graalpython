@@ -63,6 +63,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.STR;
 import static com.oracle.graal.python.nodes.BuiltinNames.SUPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
+import static com.oracle.graal.python.nodes.BuiltinNames.WRAPPER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_NOT_BE_ZERO;
 import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_CALLING_SET_NAME;
@@ -233,6 +234,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -264,7 +266,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -2059,7 +2060,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public PFunction function(Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction("<lambda>", getTypeName(cls), code, globals, getClosure(getObjectArrayNode.execute(closure)));
+            return factory().createFunction("<lambda>", getTypeName(cls), code, globals, PCell.toCellArray(getObjectArrayNode.execute(closure)));
         }
 
         @Specialization
@@ -2072,7 +2073,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public PFunction function(Object cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction(name, getTypeName(cls), code, globals, getClosure(getObjectArrayNode.execute(closure)));
+            return factory().createFunction(name, getTypeName(cls), code, globals, PCell.toCellArray(getObjectArrayNode.execute(closure)));
         }
 
         @Specialization
@@ -2086,13 +2087,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public PFunction function(Object cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
             // TODO split defaults of positional args from kwDefaults
-            return factory().createFunction(name, getTypeName(cls), code, globals, getObjectArrayNode.execute(defaultArgs), null, getClosure(getObjectArrayNode.execute(closure)));
-        }
-
-        private static PCell[] getClosure(Object[] closure) {
-            PCell[] cells = new PCell[closure.length];
-            PythonUtils.arraycopy(closure, 0, cells, 0, closure.length);
-            return cells;
+            return factory().createFunction(name, getTypeName(cls), code, globals, getObjectArrayNode.execute(defaultArgs), null, PCell.toCellArray(getObjectArrayNode.execute(closure)));
         }
 
         @Fallback
@@ -2145,7 +2140,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private GetObjectArrayNode getObjectArrayNode;
         @Child private IsAcceptableBaseNode isAcceptableBaseNode;
 
-        protected abstract Object execute(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);
+        public abstract Object execute(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);
 
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
@@ -2201,7 +2196,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 PDict namespace = factory().createDict();
                 PythonLanguage language = PythonLanguage.get(this);
                 namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
-                PythonClass newType = typeMetaclass(frame, language, name, bases, namespace, metaclass, lib, hashingStoragelib,
+                PythonClass newType = typeMetaclass(frame, language, name, bases, namespace, metaclass, hashingStoragelib,
                                 getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize, isIdentifier);
 
                 for (DictEntry entry : hashingStoragelib.entries(namespace.getDictStorage())) {
@@ -2224,7 +2219,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 Object moduleAttr = ensureReadAttrNode().execute(newType, __MODULE__);
                 if (moduleAttr == PNone.NO_VALUE) {
                     PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
-                    PythonObject globals = callerFrame.getGlobals();
+                    PythonObject globals = callerFrame != null ? callerFrame.getGlobals() : null;
                     if (globals != null) {
                         String moduleName = getModuleNameFromGlobals(globals, hashingStoragelib);
                         if (moduleName != null) {
@@ -2305,7 +2300,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private PythonClass typeMetaclass(VirtualFrame frame, PythonLanguage language, String name, PTuple bases, PDict namespace, Object metaclass,
-                        PythonObjectLibrary lib, HashingStorageLibrary hashingStorageLib, LookupAttributeInMRONode getDictAttrNode,
+                        HashingStorageLibrary hashingStorageLib, LookupAttributeInMRONode getDictAttrNode,
                         LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize,
                         IsIdentifierNode isIdentifier) {
             Object[] array = ensureGetObjectArrayNode().execute(bases);
@@ -2347,7 +2342,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // 2.) copy the dictionary slots
             Object[] slots = new Object[1];
             boolean[] qualnameSet = new boolean[]{false};
-            copyDictSlots(pythonClass, namespace, lib, hashingStorageLib, slots, qualnameSet);
+            copyDictSlots(pythonClass, namespace, hashingStorageLib, slots, qualnameSet);
             if (!qualnameSet[0]) {
                 pythonClass.setQualName(name);
             }
@@ -2526,7 +2521,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return false;
         }
 
-        private void copyDictSlots(PythonClass pythonClass, PDict namespace, PythonObjectLibrary lib, HashingStorageLibrary hashingStorageLib, Object[] slots, boolean[] qualnameSet) {
+        private void copyDictSlots(PythonClass pythonClass, PDict namespace, HashingStorageLibrary hashingStorageLib, Object[] slots, boolean[] qualnameSet) {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
             // Also check for a __slots__ sequence variable in dict
             PDict typeDict = null;
@@ -2580,20 +2575,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 } else if (key instanceof String && typeDict == null) {
                     pythonClass.setAttribute(key, value);
                 } else {
-                    // DynamicObjectStorage ignores non-string keys
-                    typeDict = lib.getDict(pythonClass);
-                    if (typeDict == null) {
-                        // 1.) create DynamicObjectStorage based dict from pythonClass
-                        typeDict = PythonObjectFactory.getUncached().createDictFixedStorage(pythonClass);
-                        try {
-                            lib.setDict(pythonClass, typeDict);
-                        } catch (UnsupportedMessageException ex) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            throw new IllegalStateException("can't set dict into " + pythonClass, ex);
-                        }
-                    }
-                    // 2.) writing a non string key converts DynamicObjectStorage to
-                    // EconomicMapStorage
+                    // Creates DynamicObjectStorage which ignores non-string keys
+                    typeDict = GetOrCreateDictNode.getUncached().execute(pythonClass);
+                    // Writing a non string key converts DynamicObjectStorage to EconomicMapStorage
                     HashingStorage updatedStore = hashingStorageLib.setItem(typeDict.getDictStorage(), key, value);
                     typeDict.setDictStorage(updatedStore);
                 }
@@ -2758,7 +2742,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return isSubtypeNode.execute(frame, subclass, superclass);
         }
 
-        protected static TypeNode create() {
+        public static TypeNode create() {
             return BuiltinConstructorsFactory.TypeNodeFactory.create(null);
         }
 
@@ -3264,6 +3248,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @TruffleBoundary
         Object doGeneric(@SuppressWarnings("unused") Object clazz, Object get, Object set, String name, Object owner) {
             denyInstantiationAfterInitialization(MEMBER_DESCRIPTOR);
+            return PythonObjectFactory.getUncached().createGetSetDescriptor(ensure(get), ensure(set), name, owner);
+        }
+    }
+
+    @Builtin(name = WRAPPER_DESCRIPTOR, constructsClass = PythonBuiltinClassType.WrapperDescriptor, isPublic = false, minNumOfPositionalArgs = 1, //
+                    parameterNames = {"cls", "fget", "fset", "name", "owner"})
+    @GenerateNodeFactory
+    public abstract static class WrapperDescriptorNode extends DescriptorNode {
+        @Specialization(guards = "isPythonClass(owner)")
+        @TruffleBoundary
+        Object doGeneric(@SuppressWarnings("unused") Object clazz, Object get, Object set, String name, Object owner) {
+            denyInstantiationAfterInitialization(WRAPPER_DESCRIPTOR);
             return PythonObjectFactory.getUncached().createGetSetDescriptor(ensure(get), ensure(set), name, owner);
         }
     }

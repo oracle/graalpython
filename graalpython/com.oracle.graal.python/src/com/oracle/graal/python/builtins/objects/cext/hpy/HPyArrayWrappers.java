@@ -45,11 +45,11 @@ import java.util.Arrays;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.InvalidateNativeObjectsAllManagedNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -309,7 +309,7 @@ public class HPyArrayWrappers {
                     // read the array element; this will return a pointer to an HPy struct
                     try {
                         Object element = lib.readArrayElement(receiver.getNativePointer(), index);
-                        return ensureHandleNode.execute(PythonContext.get(ensureHandleNode).getHPyContext(), lib.readMember(element, GraalHPyHandle.I));
+                        return ensureHandleNode.execute(receiver.hpyContext, lib.readMember(element, GraalHPyHandle.I));
                     } catch (UnknownIdentifierException e) {
                         throw CompilerDirectives.shouldNotReachHere();
                     }
@@ -336,7 +336,7 @@ public class HPyArrayWrappers {
                     }
                     try {
                         Object element = lib.readArrayElement(receiver.getNativePointer(), index);
-                        return ensureHandleNode.execute(PythonContext.get(ensureHandleNode).getHPyContext(), lib.readMember(element, GraalHPyHandle.I));
+                        return ensureHandleNode.execute(receiver.hpyContext, lib.readMember(element, GraalHPyHandle.I));
                     } catch (UnknownIdentifierException e) {
                         throw CompilerDirectives.shouldNotReachHere();
                     }
@@ -355,7 +355,7 @@ public class HPyArrayWrappers {
             try {
                 invalidateNode.execute();
                 if (!isPointer()) {
-                    setNativePointer(callToArrayNode.call(PythonContext.get(gil).getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_ARRAY_TO_NATIVE, this, (long) getDelegate().length));
+                    setNativePointer(callToArrayNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_ARRAY_TO_NATIVE, this, (long) getDelegate().length));
                     setDelegate(null);
                 }
             } finally {
@@ -370,34 +370,27 @@ public class HPyArrayWrappers {
         }
 
         @ExportMessage
-        @SuppressWarnings("static-method")
-        Object getNativeType(
-                        @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return PythonContext.get(gil).getHPyContext().getHPyArrayNativeType();
-            } finally {
-                gil.release(mustRelease);
-            }
+        Object getNativeType() {
+            return hpyContext.getHPyArrayNativeType();
         }
     }
 
     abstract static class HPyCloseArrayWrapperNode extends Node {
 
-        public abstract void execute(GraalHPyContext hPyContext, HPyArrayWrapper wrapper);
+        public abstract void execute(GraalHPyContext hpyContext, HPyArrayWrapper wrapper);
 
         @Specialization(guards = {"cachedLen == size(lib, wrapper)", "cachedLen <= 8"}, limit = "1")
         @ExplodeLoop
-        static void doCachedLen(GraalHPyContext hPyContext, HPyArrayWrapper wrapper,
+        static void doCachedLen(GraalHPyContext hpyContext, HPyArrayWrapper wrapper,
                         @CachedLibrary("wrapper") InteropLibrary lib,
                         @Cached("size(lib, wrapper)") int cachedLen,
-                        @Cached ConditionProfile isAllocatedProfile,
+                        @Cached HPyCloseHandleNode closeHandleNode,
                         @Cached(value = "createProfiles(cachedLen)", dimensions = 1) ConditionProfile[] profiles) {
             try {
                 for (int i = 0; i < cachedLen; i++) {
                     Object element = lib.readArrayElement(wrapper, i);
-                    if (profiles[i].profile(isAllocatedHandle(element))) {
-                        ((GraalHPyHandle) element).close(hPyContext, isAllocatedProfile);
+                    if (profiles[i].profile(element instanceof GraalHPyHandle)) {
+                        closeHandleNode.execute(hpyContext, element);
                     }
                 }
             } catch (InteropException e) {
@@ -406,16 +399,16 @@ public class HPyArrayWrappers {
         }
 
         @Specialization(replaces = "doCachedLen", limit = "1")
-        static void doLoop(GraalHPyContext hPyContext, HPyArrayWrapper wrapper,
+        static void doLoop(GraalHPyContext hpyContext, HPyArrayWrapper wrapper,
                         @CachedLibrary("wrapper") InteropLibrary lib,
-                        @Cached ConditionProfile isAllocatedProfile,
+                        @Cached HPyCloseHandleNode closeHandleNode,
                         @Cached ConditionProfile profile) {
             int n = size(lib, wrapper);
             try {
                 for (int i = 0; i < n; i++) {
                     Object element = lib.readArrayElement(wrapper, i);
-                    if (profile.profile(isAllocatedHandle(element))) {
-                        ((GraalHPyHandle) element).close(hPyContext, isAllocatedProfile);
+                    if (profile.profile(element instanceof GraalHPyHandle)) {
+                        closeHandleNode.execute(hpyContext, element);
                     }
                 }
             } catch (InteropException e) {
@@ -432,12 +425,6 @@ public class HPyArrayWrappers {
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
-        }
-
-        static boolean isAllocatedHandle(Object element) {
-            // n.b. we pass the uncached instance to 'isPointer' since we profile this whole
-            // condition
-            return element instanceof GraalHPyHandle && ((GraalHPyHandle) element).isPointer(ConditionProfile.getUncached());
         }
 
         static ConditionProfile[] createProfiles(int n) {
@@ -497,7 +484,7 @@ public class HPyArrayWrappers {
             boolean mustRelease = gil.acquire();
             try {
                 if (!isPointer()) {
-                    setNativePointer(callHPyFunction.call(PythonContext.get(gil).getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_POINTER_ARRAY_TO_NATIVE, this, (long) getDelegate().length));
+                    setNativePointer(callHPyFunction.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_POINTER_ARRAY_TO_NATIVE, this, (long) getDelegate().length));
                     setDelegate(null);
                 }
             } finally {

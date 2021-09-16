@@ -525,6 +525,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PNone close(VirtualFrame frame, int fd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
+                PythonContext ctx = getContext();
+                if (ctx.getSharedMultiprocessingData().decrementFDRefCount(fd)) {
+                    return PNone.NONE;
+                }
                 posixLib.close(getPosixSupport(), fd);
                 return PNone.NONE;
             } catch (PosixException e) {
@@ -2127,8 +2131,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     /**
      * Helper node that accepts either str or bytes and converts it to {@code PBytes}.
      */
-    abstract static class StringOrBytesToBytesNode extends PythonBuiltinBaseNode {
-        abstract PBytes execute(Object obj);
+    public abstract static class StringOrBytesToBytesNode extends PythonBuiltinBaseNode {
+        public abstract PBytes execute(Object obj);
 
         @Specialization
         PBytes doString(String str) {

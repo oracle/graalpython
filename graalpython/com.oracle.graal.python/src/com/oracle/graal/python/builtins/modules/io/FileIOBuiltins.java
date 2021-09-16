@@ -107,12 +107,12 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -687,12 +687,13 @@ public class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isClosed()", "self.isWritable()", "self.isUTF8Write()"})
         Object utf8write(VirtualFrame frame, PFileIO self, Object data,
+                        @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encode,
                         @Shared("p") @Cached PosixModuleBuiltins.WriteNode posixWrite,
                         @Cached CastToJavaStringNode castStr,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared("e") @Cached BranchProfile errorProfile,
                         @Shared("g") @Cached GilNode gil) {
-            byte[] bytes = BytesBuiltins.stringToByte(castStr.execute(data), "utf-8", STRICT, getRaiseNode());
+            byte[] bytes = encode.execute(castStr.execute(data), "utf-8", STRICT);
             try {
                 return posixWrite.write(self.getFD(), bytes, bytes.length, posixLib, errorProfile, gil);
             } catch (PosixSupportLibrary.PosixException e) {

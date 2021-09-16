@@ -44,21 +44,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
-import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -75,9 +66,14 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
+import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -85,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListReverseNode;
@@ -103,9 +100,17 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import static com.oracle.graal.python.nodes.BuiltinNames.ENCODE;
+import static com.oracle.graal.python.nodes.BuiltinNames.FORMAT;
+import static com.oracle.graal.python.nodes.BuiltinNames.FORMAT_MAP;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import static com.oracle.graal.python.nodes.ErrorMessages.ENCODER_RETURNED_P_INSTEAD_OF_BYTES;
+import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_NOT_SUBSCRIPTABLE;
+import static com.oracle.graal.python.nodes.ErrorMessages.TAKES_EXACTLY_S_ARGUMENTS_D_GIVEN;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -224,6 +229,76 @@ public final class StringBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SIGN_NOT_ALLOWED_FOR_STRING_FMT);
             }
             return spec;
+        }
+    }
+
+    @Builtin(name = FORMAT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class StrFormatNode extends PythonBuiltinNode {
+        @Specialization
+        String format(VirtualFrame frame, PString self, Object[] args, PKeyword[] kwargs,
+                        @Cached BuiltinFunctions.FormatNode format,
+                        @Cached OperatorModuleBuiltins.GetItemNode getItem) {
+            return format(frame, self.getValue(), args, kwargs, format, getItem);
+        }
+
+        @Specialization
+        String format(VirtualFrame frame, String self, Object[] args, PKeyword[] kwargs,
+                        @Cached BuiltinFunctions.FormatNode format,
+                        @Cached OperatorModuleBuiltins.GetItemNode getItem) {
+
+            TemplateFormatter template = new TemplateFormatter(self);
+
+            PythonLanguage language = PythonLanguage.get(this);
+            PythonContext context = PythonContext.get(this);
+            Object state = IndirectCallContext.enter(frame, language, context, this);
+            try {
+                return template.build(this, args, kwargs, format, getItem);
+            } finally {
+                IndirectCallContext.exit(frame, language, context, state);
+            }
+        }
+    }
+
+    @Builtin(name = FORMAT_MAP, minNumOfPositionalArgs = 1, declaresExplicitSelf = true, parameterNames = {"self", "mapping"})
+    @ArgumentClinic(name = "self", conversion = ArgumentClinic.ClinicConversion.String)
+    @GenerateNodeFactory
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class FormatMapNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringBuiltinsClinicProviders.FormatMapNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization(guards = "lib.isMapping(mapping)", limit = "1")
+        String format(VirtualFrame frame, String self, Object mapping,
+                        @Cached BuiltinFunctions.FormatNode format,
+                        @Cached OperatorModuleBuiltins.GetItemNode getItem,
+                        @SuppressWarnings("unused") @CachedLibrary("mapping") PythonObjectLibrary lib) {
+
+            TemplateFormatter template = new TemplateFormatter(self);
+
+            PythonLanguage language = PythonLanguage.get(this);
+            PythonContext context = PythonContext.get(this);
+            Object state = IndirectCallContext.enter(frame, language, context, this);
+            try {
+                return template.build(this, null, mapping, format, getItem);
+            } finally {
+                IndirectCallContext.exit(frame, language, context, state);
+            }
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!lib.isMapping(obj)", "!isNone(obj)"}, limit = "1")
+        String format(String self, Object obj,
+                        @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib) {
+            throw raise(TypeError, OBJ_NOT_SUBSCRIPTABLE, obj);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isNone(obj)")
+        String format(String self, PNone obj) {
+            throw raise(TypeError, TAKES_EXACTLY_S_ARGUMENTS_D_GIVEN, "format_map", "one", 0);
         }
     }
 
@@ -1743,8 +1818,15 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    // This is only used during bootstrap and then replaced with Python code
-    @Builtin(name = "encode", minNumOfPositionalArgs = 1, parameterNames = {"self", "encoding", "errors"})
+    @Builtin(name = ENCODE, minNumOfPositionalArgs = 1, parameterNames = {"self", "encoding", "errors"}, doc = "Decode the bytes using the codec registered for encoding.\n\n" +
+                    "    encoding\n" +
+                    "      The encoding with which to decode the bytes.\n" +
+                    "    errors\n" +
+                    "      The error handling scheme to use for the handling of decoding errors.\n" +
+                    "      The default is 'strict' meaning that decoding errors raise a\n" +
+                    "      UnicodeDecodeError. Other possible values are 'ignore' and 'replace'\n" +
+                    "      as well as any other name registered with codecs.register_error that\n" +
+                    "      can handle UnicodeDecodeErrors.")
     @ArgumentClinic(name = "encoding", conversion = ClinicConversion.String, defaultValue = "\"utf-8\"", useDefaultForNone = true)
     @ArgumentClinic(name = "errors", conversion = ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
@@ -1757,48 +1839,26 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doStringEncodingErrors(String self, String encoding, String errors) {
-            return encodeString(self, encoding, errors);
+        Object doStringEncoding(VirtualFrame frame, String self, String encoding, String errors,
+                        @Cached CodecsModuleBuiltins.EncodeNode encodeNode,
+                        @Cached SequenceStorageNodes.CopyNode copyNode) {
+            Object result = encodeNode.call(frame, self, encoding, errors);
+            if (!(result instanceof PBytes)) {
+                if (result instanceof PByteArray) {
+                    return factory().createBytes(copyNode.execute(((PByteArray) result).getSequenceStorage()));
+                }
+                throw raise(TypeError, ENCODER_RETURNED_P_INSTEAD_OF_BYTES, encoding, result);
+            }
+            return result;
         }
 
         @Specialization
-        Object doGeneric(Object self, String encoding, String errors,
-                        @Cached CastToJavaStringCheckedNode castSelfNode) {
+        Object doGeneric(VirtualFrame frame, Object self, String encoding, String errors,
+                        @Cached CastToJavaStringCheckedNode castSelfNode,
+                        @Cached CodecsModuleBuiltins.EncodeNode encodeNode,
+                        @Cached SequenceStorageNodes.CopyNode copyNode) {
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "index", self);
-            return encodeString(selfStr, encoding, errors);
-        }
-
-        @TruffleBoundary
-        private Object encodeString(String self, String encoding, String errors) {
-            // Note: to support custom actions, we can use CharsetEncoderICU from icu4j-charset
-            CodingErrorAction errorAction;
-            switch (errors) {
-                case "ignore":
-                    errorAction = CodingErrorAction.IGNORE;
-                    break;
-                case "replace":
-                    errorAction = CodingErrorAction.REPLACE;
-                    break;
-                default:
-                    errorAction = CodingErrorAction.REPORT;
-                    break;
-            }
-
-            Charset cs;
-            try {
-                cs = Charset.forName(encoding);
-            } catch (UnsupportedCharsetException | IllegalCharsetNameException e) {
-                throw raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
-            }
-            try {
-                ByteBuffer encoded = cs.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
-                int n = encoded.remaining();
-                byte[] data = new byte[n];
-                encoded.get(data);
-                return factory().createBytes(data);
-            } catch (CharacterCodingException e) {
-                throw raise(UnicodeEncodeError, e);
-            }
+            return doStringEncoding(frame, selfStr, encoding, errors, encodeNode, copyNode);
         }
     }
 

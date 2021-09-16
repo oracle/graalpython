@@ -62,7 +62,7 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.object.GetDictNode;
+import com.oracle.graal.python.nodes.object.GetDictFromGlobalsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNodeFactory.ImportNameNodeGen;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -158,7 +158,7 @@ public abstract class AbstractImportNode extends StatementNode {
                         @CachedLibrary("builtins") DynamicObjectLibrary builtinsDylib,
                         @Cached PConstructAndRaiseNode raiseNode,
                         @Cached CallNode importCallNode,
-                        @Cached GetDictNode getDictNode,
+                        @Cached GetDictFromGlobalsNode getDictNode,
                         @Cached PythonObjectFactory factory,
                         @Cached ImportModuleLevelObject importModuleLevel) {
             Object importFunc = builtinsDylib.getOrDefault(builtins, __IMPORT__, null);
@@ -397,7 +397,7 @@ public abstract class AbstractImportNode extends StatementNode {
 
         @Specialization
         String resolveName(VirtualFrame frame, String name, Object globals, int level,
-                        @Cached GetDictNode getDictNode,
+                        @Cached GetDictFromGlobalsNode getDictNode,
                         @Cached PyDictGetItem getPackageOrNameNode,
                         @Cached PyDictGetItem getSpecNode,
                         @Cached PyObjectGetAttr getParent,

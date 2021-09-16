@@ -51,11 +51,12 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.ReadAttributeFromObjectNotTypeNodeGen;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.ReadAttributeFromObjectTpDictNodeGen;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -97,12 +98,16 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     static final int MAX_DICT_TYPES = 2;
 
     // read from the DynamicObject store
-    @Specialization(guards = {
-                    "!lib.hasDict(object) || isHiddenKey(key)"
-    })
+    @Specialization(guards = "isHiddenKey(key)")
+    protected static Object readFromDynamicStorageHidden(PythonObject object, Object key,
+                    @Shared("readDynamic") @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
+        return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
+    }
+
+    @Specialization(guards = "getDict.execute(object) == null", limit = "1")
     protected static Object readFromDynamicStorage(PythonObject object, Object key,
-                    @SuppressWarnings("unused") @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
-                    @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
+                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
+                    @Shared("readDynamic") @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
         return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
     }
 
@@ -118,7 +123,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     protected static PDict getDict(Object object) {
-        return PythonObjectLibrary.getUncached().getDict(object);
+        return GetDictIfExistsNode.getUncached().execute(object);
     }
 
     // special case for the very common module read
@@ -129,7 +134,6 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }, assumptions = "singleContextAssumption()", limit = "1")
     @SuppressWarnings("unused")
     protected static Object readFromBuiltinModuleDict(PythonModule object, String key,
-                    @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached(value = "object", weak = true) PythonModule cachedObject,
                     @Cached(value = "getDict(object)", weak = true) PHashingCollection cachedDict,
                     @Cached(value = "getStorage(object, getDict(object))", weak = true) HashingStorage cachedStorage,
@@ -147,11 +151,14 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {
                     "!isHiddenKey(key)",
                     "dict != null"
-    }, replaces = "readFromBuiltinModuleDict")
+    }, replaces = "readFromBuiltinModuleDict", limit = "1")
     protected static Object readFromDict(@SuppressWarnings("unused") PythonObject object, Object key,
-                    @SuppressWarnings("unused") @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
-                    @Bind("lib.getDict(object)") PDict dict,
-                    @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
+                    @Shared("getDict") @SuppressWarnings("unused") @Cached GetDictIfExistsNode getDict,
+                    @Bind("getDict.execute(object)") PDict dict,
+                    @Shared("hlib") @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
+        if (dict == null) {
+            return PNone.NO_VALUE;
+        }
         Object value = hlib.getItem(dict.getDictStorage(), key);
         if (value == null) {
             return PNone.NO_VALUE;
@@ -163,25 +170,19 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     // foreign Object
     @Specialization(guards = "isForeignObjectNode.execute(object)", limit = "1")
     protected static Object readForeign(Object object, Object key,
-                    @Cached CastToJavaStringNode castNode,
                     @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode,
-                    @Cached PForeignToPTypeNode fromForeign,
-                    @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read) {
-        try {
-            String member = castNode.execute(key);
-            if (read.isMemberReadable(object, member)) {
-                return fromForeign.executeConvert(read.readMember(object, member));
-            }
-        } catch (CannotCastException | UnknownIdentifierException | UnsupportedMessageException ignored) {
-        }
-        return PNone.NO_VALUE;
+                    @Cached ReadAttributeFromForeign read) {
+        return read.execute(object, key);
     }
 
     // not a Python or Foreign Object
     @SuppressWarnings("unused")
     @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)", "!isForeignObjectNode.execute(object)"}, limit = "1")
     protected static PNone readUnboxed(Object object, Object key,
-                    @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode) {
+                    @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode,
+                    // We want to share "hlib" with subclasses, this is to make Truffle shut up
+                    // about not being able to share it in the base class
+                    @SuppressWarnings("unused") @Shared("hlib") @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
         return PNone.NO_VALUE;
     }
 
@@ -193,9 +194,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     protected abstract static class ReadAttributeFromObjectNotTypeNode extends ReadAttributeFromObjectNode {
         @Specialization(insertBefore = "readForeign")
         protected static Object readNativeObject(PythonAbstractNativeObject object, Object key,
-                        @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
-            return readNative(key, lib.getDict(object), hlib);
+                        @Shared("getDict") @Cached GetDictIfExistsNode getDict,
+                        @Shared("hlib") @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
+            return readNative(key, getDict.execute(object), hlib);
         }
     }
 
@@ -204,7 +205,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         @Specialization(insertBefore = "readForeign")
         protected static Object readNativeClass(PythonAbstractNativeObject object, Object key,
                         @Cached GetTypeMemberNode getNativeDict,
-                        @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
+                        @Shared("hlib") @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
             return readNative(key, getNativeDict.execute(object, NativeMember.TP_DICT), hlib);
         }
     }
@@ -217,5 +218,26 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
             }
         }
         return PNone.NO_VALUE;
+    }
+
+    @ImportStatic(PythonOptions.class)
+    @GenerateUncached
+    protected abstract static class ReadAttributeFromForeign extends PNodeWithContext {
+        public abstract Object execute(Object object, Object key);
+
+        @Specialization
+        static Object read(Object object, Object key,
+                        @Cached CastToJavaStringNode castNode,
+                        @Cached PForeignToPTypeNode fromForeign,
+                        @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read) {
+            try {
+                String member = castNode.execute(key);
+                if (read.isMemberReadable(object, member)) {
+                    return fromForeign.executeConvert(read.readMember(object, member));
+                }
+            } catch (CannotCastException | UnknownIdentifierException | UnsupportedMessageException ignored) {
+            }
+            return PNone.NO_VALUE;
+        }
     }
 }

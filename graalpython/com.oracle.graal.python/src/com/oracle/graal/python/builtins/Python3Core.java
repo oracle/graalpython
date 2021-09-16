@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ContextvarsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CryptModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.CtypesModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltins;
@@ -108,6 +107,25 @@ import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CDataBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeSequenceBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCArrayBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCArrayTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCPointerBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCSimpleTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCStructTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.SimpleCDataBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.StructureBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.UnionTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOMixinBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedRWPairBuiltins;
@@ -225,8 +243,10 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -268,7 +288,6 @@ public final class Python3Core implements ParserErrorCallback {
                         "_descriptor",
                         "object",
                         "sys",
-                        "str",
                         "type",
                         "_imp",
                         "function",
@@ -283,7 +302,9 @@ public final class Python3Core implements ParserErrorCallback {
                         "base_exception",
                         PythonCextBuiltins.PYTHON_CEXT,
                         "_collections",
-                        "_codecs",
+                        // TODO: see the encodings initialization before _codecs_truffle.py is
+                        // loaded in initializePython3Core;
+                        // once _codecs_truffle.py is gone, it should not be necessary
                         "_codecs_truffle",
                         "bytes",
                         "bytearray",
@@ -293,7 +314,6 @@ public final class Python3Core implements ParserErrorCallback {
                         "_sre",
                         "function",
                         "_sysconfig",
-                        "ctypes",
                         "termios",
                         "zipimport",
                         "mmap",
@@ -470,7 +490,6 @@ public final class Python3Core implements ParserErrorCallback {
                         new BinasciiModuleBuiltins(),
                         new PosixShMemModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),
-                        new CtypesModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
                         new PyExpatModuleBuiltins(),
                         new SysConfigModuleBuiltins(),
@@ -510,6 +529,27 @@ public final class Python3Core implements ParserErrorCallback {
                         // json
                         new JSONScannerBuiltins(),
                         new JSONEncoderBuiltins(),
+
+                        // ctypes
+                        new CArgObjectBuiltins(),
+                        new CDataTypeBuiltins(),
+                        new CDataTypeSequenceBuiltins(),
+                        new CFieldBuiltins(),
+                        new CtypesModuleBuiltins(),
+                        new PyCArrayTypeBuiltins(),
+                        new PyCFuncPtrBuiltins(),
+                        new PyCFuncPtrTypeBuiltins(),
+                        new PyCPointerTypeBuiltins(),
+                        new PyCSimpleTypeBuiltins(),
+                        new PyCStructTypeBuiltins(),
+                        new StgDictBuiltins(),
+                        new StructUnionTypeBuiltins(),
+                        new StructureBuiltins(),
+                        new UnionTypeBuiltins(),
+                        new SimpleCDataBuiltins(),
+                        new PyCArrayBuiltins(),
+                        new PyCPointerBuiltins(),
+                        new CDataBuiltins(),
 
                         // _hpy_universal
                         new GraalHPyUniversalModuleBuiltins(),
@@ -571,11 +611,11 @@ public final class Python3Core implements ParserErrorCallback {
         this.coreFiles = initializeCoreFiles();
     }
 
-    @Override
     public PythonLanguage getLanguage() {
         return singletonContext.getLanguage();
     }
 
+    @Override
     public PythonContext getContext() {
         return singletonContext;
     }
@@ -617,9 +657,24 @@ public final class Python3Core implements ParserErrorCallback {
     private void initializePython3Core(String coreHome) {
         loadFile(BuiltinNames.BUILTINS, coreHome);
         for (String s : coreFiles) {
+            // TODO: once _codecs_truffle.py is gone, this should not be necessary
+            if (s.equals("_codecs_truffle")) {
+                importEncoding();
+            }
             loadFile(s, coreHome);
         }
         initialized = true;
+    }
+
+    private void importEncoding() {
+        PythonModule sys = lookupBuiltinModule("sys");
+        Object sysPath = sys.getAttribute("path");
+        PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, "insert", 0, getContext().getStdlibHome());
+        try {
+            AbstractImportNode.importModule("encodings");
+        } finally {
+            PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, "pop");
+        }
     }
 
     /**
@@ -691,18 +746,6 @@ public final class Python3Core implements ParserErrorCallback {
             throw new IllegalStateException("__import__ func cannot be registered more than once");
         }
         importFunc = func;
-    }
-
-    @Override
-    @TruffleBoundary
-    public PException raise(PythonBuiltinClassType type, String format, Object... args) {
-        PBaseException instance;
-        if (format != null) {
-            instance = objectFactory.createBaseException(type, format, args);
-        } else {
-            instance = objectFactory.createBaseException(type);
-        }
-        throw PException.fromObject(instance, null, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
     }
 
     @Override

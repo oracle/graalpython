@@ -659,3 +659,8 @@ void* native_unicode_as_string(PyObject *string) {
     assert(kind == PyUnicode_4BYTE_KIND);
     return polyglot_from_string_n((const char *)data, sizeof(Py_UCS4) * len, "UTF-32LE");
 }
+
+UPCALL_ID(PyUnicode_ReadChar);
+Py_UCS4 PyUnicode_ReadChar(PyObject *unicode, Py_ssize_t index) {
+	return UPCALL_CEXT_I(_jls_PyUnicode_ReadChar, native_to_java(unicode), index);
+}

@@ -46,20 +46,25 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.PythonLanguage.SharedMultiprocessingData;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
@@ -90,6 +95,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -137,6 +143,15 @@ public final class PythonContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
     private volatile boolean finalizing;
 
+    private static String getJniSoExt() {
+        if ("darwin".equals(PythonUtils.getPythonOSName())) {
+            return ".dylib";
+        }
+        return ".so";
+    }
+
+    public static final String PYTHON_JNI_LIBRARY_NAME = System.getProperty("python.jni.library", "libpythonjni" + getJniSoExt());
+
     /**
      * A class to store thread-local data mostly like CPython's {@code PyThreadState}.
      */
@@ -162,6 +177,8 @@ public final class PythonContext {
 
         /* corresponds to 'PyThreadState.dict' */
         PDict dict;
+
+        CtypesThreadState ctypes;
 
         /*
          * This is the native wrapper object if we need to expose the thread state as PyThreadState
@@ -236,6 +253,14 @@ public final class PythonContext {
 
         public void setDict(PDict dict) {
             this.dict = dict;
+        }
+
+        public CtypesThreadState getCtypes() {
+            return ctypes;
+        }
+
+        public void setCtypes(CtypesThreadState ctypes) {
+            this.ctypes = ctypes;
         }
 
         public PThreadState getNativeWrapper() {
@@ -380,6 +405,7 @@ public final class PythonContext {
     static final String NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
     static final String NO_STDLIB = "could not determine Graal.Python's standard library path. You need to pass --python.StdLibHome if you want to use the standard library.";
     static final String NO_CAPI = "could not determine Graal.Python's C API library path. You need to pass --python.CAPI if you want to use the C extension modules.";
+    static final String NO_JNI = "could not determine Graal.Python's JNI library. You need to pass --python.JNILibrary if you want to run, for example, binary HPy extension modules.";
 
     private final PythonLanguage language;
     private PythonModule mainModule;
@@ -389,6 +415,9 @@ public final class PythonContext {
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
     private final IDUtils idUtils = new IDUtils();
+
+    // ctypes' used native libraries/functions.
+    private final ConcurrentHashMap<Long, Object> ptrAdrMap = new ConcurrentHashMap<>();
 
     @CompilationFinal private PosixSupport posixSupport;
     @CompilationFinal private NFIZlibSupport nativeZlib;
@@ -466,15 +495,34 @@ public final class PythonContext {
     public static final String CHILD_CONTEXT_DATA = "childContextData";
     @CompilationFinal private List<Integer> childContextFDs;
     private final ChildContextData childContextData;
+    private final SharedMultiprocessingData sharedMultiprocessingData;
+
+    private final List<Object> codecSearchPath = new ArrayList<>();
+    private final Map<String, PTuple> codecSearchCache = new HashMap<>();
+    private final Map<String, Object> codecErrorRegistry = new HashMap<>();
+
+    public List<Object> getCodecSearchPath() {
+        return codecSearchPath;
+    }
+
+    public Map<String, PTuple> getCodecSearchCache() {
+        return codecSearchCache;
+    }
+
+    public Map<String, Object> getCodecErrorRegistry() {
+        return codecErrorRegistry;
+    }
 
     public static final class ChildContextData {
         private int exitCode = 0;
-        private TruffleContext ctx;
+        private boolean signaled;
+        @CompilationFinal private TruffleContext ctx;
+        @CompilationFinal private PythonContext parentCtx;
 
         private final AtomicBoolean exiting = new AtomicBoolean(false);
         private final CountDownLatch running = new CountDownLatch(1);
 
-        private void setExitCode(int exitCode) {
+        public void setExitCode(int exitCode) {
             this.exitCode = exitCode;
         }
 
@@ -482,8 +530,27 @@ public final class PythonContext {
             return this.exitCode;
         }
 
-        public TruffleContext getCtx() {
+        public void setSignaled(int signaledCode) {
+            this.signaled = true;
+            this.exitCode = signaledCode;
+        }
+
+        public boolean wasSignaled() {
+            return this.signaled;
+        }
+
+        private void setTruffleContext(TruffleContext ctx) {
+            assert this.ctx == null;
+            this.ctx = ctx;
+        }
+
+        public TruffleContext getTruffleContext() {
             return ctx;
+        }
+
+        private void setParentContext(PythonContext parentCtx) {
+            assert this.parentCtx == null;
+            this.parentCtx = parentCtx;
         }
 
         public void awaitRunning() throws InterruptedException {
@@ -495,11 +562,207 @@ public final class PythonContext {
         }
     }
 
+    public static final class SharedMultiprocessingData {
+
+        private int fdCounter = 0;
+
+        /**
+         * Maps the two fake file descriptors created in {@link #pipe()} to one
+         * {@link LinkedBlockingQueue}
+         */
+        private final SortedMap<Integer, LinkedBlockingQueue<Object>> pipeData = new TreeMap<>();
+
+        /**
+         * Holds ref count of file descriptors which were passed over to a spawned child context.
+         * This can be either:<br>
+         * <ul>
+         * <li>fake file descriptors created via {@link #pipe()}</li>
+         * <li>real file descriptors coming from the posix implementation</li>
+         * </ul>
+         */
+        private final Map<Integer, Integer> fdRefCount = new HashMap<>();
+
+        public SharedMultiprocessingData(ConcurrentHashMap<String, Semaphore> namedSemaphores) {
+            this.namedSemaphores = namedSemaphores;
+        }
+
+        /**
+         * Increases reference count for the given file descriptor.
+         */
+        @TruffleBoundary
+        private void incrementFDRefCount(int fd) {
+            synchronized (fdRefCount) {
+                fdRefCount.compute(fd, (f, count) -> (count == null) ? 1 : count + 1);
+            }
+        }
+
+        /**
+         * Decreases reference count for the given file descriptor.
+         *
+         * @return {@code true} if ref count was decreased, {@code false} if ref count isn't tracked
+         *         anymore.
+         */
+        @TruffleBoundary
+        public boolean decrementFDRefCount(int fd) {
+            synchronized (fdRefCount) {
+                Integer c = fdRefCount.get(fd);
+                if (c == null) {
+                    return false;
+                }
+                if (c == 0) {
+                    fdRefCount.remove(fd);
+                    return false;
+                } else {
+                    fdRefCount.put(fd, c - 1);
+                    return true;
+                }
+            }
+        }
+
+        /**
+         * @return fake (negative) fd values to avoid clash with real file descriptors and to detect
+         *         potential usage by other python builtins
+         */
+        @TruffleBoundary
+        public int[] pipe() {
+            synchronized (pipeData) {
+                LinkedBlockingQueue<Object> q = new LinkedBlockingQueue<>();
+                int readFD = --fdCounter;
+                pipeData.put(readFD, q);
+                int writeFD = --fdCounter;
+                pipeData.put(writeFD, q);
+                return new int[]{readFD, writeFD};
+            }
+        }
+
+        @TruffleBoundary
+        public void addPipeData(int fd, byte[] bytes, Runnable noFDHandler, Runnable brokenPipeHandler) {
+            LinkedBlockingQueue<Object> q = null;
+            synchronized (pipeData) {
+                q = pipeData.get(fd);
+                if (q == null) {
+                    noFDHandler.run();
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                int fd2 = getPairFd(fd);
+                if (isClosed(fd2)) {
+                    brokenPipeHandler.run();
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            q.add(bytes);
+        }
+
+        @TruffleBoundary
+        public void closePipe(int fd) {
+            synchronized (pipeData) {
+                pipeData.remove(fd);
+            }
+        }
+
+        @TruffleBoundary
+        public Object takePipeData(Node node, int fd, Runnable noFDHandler) {
+            LinkedBlockingQueue<Object> q;
+            synchronized (pipeData) {
+                q = pipeData.get(fd);
+                if (q == null) {
+                    noFDHandler.run();
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                int fd2 = getPairFd(fd);
+                if (isClosed(fd2)) {
+                    if (q.isEmpty()) {
+                        return PythonUtils.EMPTY_BYTE_ARRAY;
+                    }
+                }
+            }
+            Object[] o = new Object[]{PNone.NONE};
+            TruffleSafepoint.setBlockedThreadInterruptible(node, (lbq) -> {
+                o[0] = lbq.take();
+            }, q);
+            return o[0];
+        }
+
+        @TruffleBoundary
+        public boolean isBlocking(int fd) {
+            LinkedBlockingQueue<Object> q;
+            synchronized (pipeData) {
+                q = pipeData.get(fd);
+                if (q == null) {
+                    return false;
+                }
+                int fd2 = getPairFd(fd);
+                if (isClosed(fd2)) {
+                    return false;
+                }
+            }
+            return q.isEmpty();
+        }
+
+        private static int getPairFd(int fd) {
+            return fd % 2 == 0 ? fd + 1 : fd - 1;
+        }
+
+        private boolean isClosed(int fd) {
+            return pipeData.get(fd) == null && fd >= fdCounter;
+        }
+
+        /**
+         * @see PythonLanguage#namedSemaphores
+         */
+        private final ConcurrentHashMap<String, Semaphore> namedSemaphores;
+
+        @TruffleBoundary
+        public void putNamedSemaphore(String name, Semaphore sem) {
+            namedSemaphores.put(name, sem);
+        }
+
+        @TruffleBoundary
+        public Semaphore getNamedSemaphore(String name) {
+            return namedSemaphores.get(name);
+        }
+
+        @TruffleBoundary
+        public Semaphore removeNamedSemaphore(String name) {
+            return namedSemaphores.remove(name);
+        }
+
+        private final Map<Long, Thread> childContextThreads = new ConcurrentHashMap<>();
+
+        private final Map<Long, ChildContextData> childContextData = new ConcurrentHashMap<>();
+
+        @TruffleBoundary
+        public Thread getChildContextThread(long tid) {
+            return childContextThreads.get(tid);
+        }
+
+        @TruffleBoundary
+        public void putChildContextThread(long id, Thread thread) {
+            childContextThreads.put(id, thread);
+        }
+
+        @TruffleBoundary
+        public void removeChildContextThread(long id) {
+            childContextThreads.remove(id);
+        }
+
+        @TruffleBoundary
+        public ChildContextData getChildContextData(long tid) {
+            return childContextData.get(tid);
+        }
+
+        @TruffleBoundary
+        public void putChildContextData(long id, ChildContextData data) {
+            childContextData.put(id, data);
+        }
+    }
+
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core) {
         this.language = language;
         this.core = core;
         this.env = env;
         this.childContextData = (ChildContextData) env.getConfig().get(CHILD_CONTEXT_DATA);
+        this.sharedMultiprocessingData = this.childContextData == null ? new SharedMultiprocessingData(language.namedSemaphores) : childContextData.parentCtx.sharedMultiprocessingData;
         this.handler = new AsyncHandler(this);
         this.sharedFinalizer = new AsyncHandler.SharedFinalizer(this);
         this.optionValues = PythonOptions.createOptionValuesStorage(env);
@@ -525,16 +788,34 @@ public final class PythonContext {
         return childContextData != null;
     }
 
-    public long spawnTruffleContext(int fd, int sentinel) {
-        ChildContextData data = new ChildContextData();
+    public ChildContextData getChildContextData() {
+        return childContextData;
+    }
 
-        Builder builder = env.newContextBuilder().config(PythonContext.CHILD_CONTEXT_DATA, data);
-        Thread thread = env.createThread(new ChildContextThread(fd, sentinel, data, language.getSharedMultiprocessingData(), builder));
+    public SharedMultiprocessingData getSharedMultiprocessingData() {
+        return sharedMultiprocessingData;
+    }
+
+    public long spawnTruffleContext(int fd, int sentinel, int[] fdsToKeep) {
+        ChildContextData data = new ChildContextData();
+        if (!isChildContext()) {
+            data.setParentContext(this);
+        } else {
+            data.setParentContext(childContextData.parentCtx);
+        }
+
+        Builder builder = data.parentCtx.env.newContextBuilder().config(PythonContext.CHILD_CONTEXT_DATA, data);
+        Thread thread = data.parentCtx.env.createThread(new ChildContextThread(fd, sentinel, data, builder));
 
         // TODO always force java posix in spawned
         long tid = thread.getId();
-        language.putChildContextThread(tid, thread);
-        language.putChildContextData(tid, data);
+        getSharedMultiprocessingData().putChildContextThread(tid, thread);
+        getSharedMultiprocessingData().putChildContextData(tid, data);
+        for (int fdToKeep : fdsToKeep) {
+            // prevent file descriptors from being closed when passed to another "process",
+            // equivalent to fds_to_keep arg in posix fork_exec
+            getSharedMultiprocessingData().incrementFDRefCount(fdToKeep);
+        }
         start(thread);
         return tid;
     }
@@ -556,30 +837,28 @@ public final class PythonContext {
         private final ChildContextData data;
         private final Builder builder;
         private final int sentinel;
-        private final SharedMultiprocessingData sharedData;
 
-        public ChildContextThread(int fd, int sentinel, ChildContextData data, SharedMultiprocessingData sharedData, Builder builder) {
+        public ChildContextThread(int fd, int sentinel, ChildContextData data, Builder builder) {
             this.fd = fd;
             this.data = data;
             this.builder = builder;
             this.sentinel = sentinel;
-            this.sharedData = sharedData;
         }
 
         @Override
         public void run() {
             try {
                 LOGGER.fine("starting spawned child context");
+                Source source = Source.newBuilder(PythonLanguage.ID,
+                                "from multiprocessing.spawn import spawn_truffleprocess; spawn_truffleprocess(" + fd + ", " + sentinel + ")",
+                                "<spawned-child-context>").internal(true).build();
+                CallTarget ct;
+                ct = data.parentCtx.getEnv().parsePublic(source);
                 TruffleContext ctx = builder.build();
-                data.ctx = ctx;
+                data.setTruffleContext(ctx);
                 Object parent = ctx.enter(null);
                 try {
-                    Source source = Source.newBuilder(PythonLanguage.ID,
-                                    "from multiprocessing.spawn import spawn_truffleprocess; spawn_truffleprocess(" + fd + ", " + sentinel + ")",
-                                    "<spawned-child-context>").internal(true).build();
-                    CallTarget ct = PythonLanguage.getContext().getEnv().parsePublic(source);
                     data.running.countDown();
-
                     Object res = ct.call();
                     int exitCode = CastToJavaIntLossyNode.getUncached().execute(res);
                     data.setExitCode(exitCode);
@@ -593,14 +872,10 @@ public final class PythonContext {
                             LOGGER.log(Level.FINE, t, () -> "exception while closing spawned child context");
                         }
                     }
-                    // read on an empty (pipe) fd passed to an external process stops blocking once
-                    // the process is closed
-                    sharedData.makeReadable(sentinel, () -> {
-                    });
+                    data.parentCtx.sharedMultiprocessingData.closePipe(sentinel);
                 }
             } catch (ThreadDeath td) {
                 // as a result of of TruffleContext.closeCancelled()
-                data.setExitCode(1);
                 throw td;
             }
         }
@@ -688,6 +963,10 @@ public final class PythonContext {
         return nativeLZMA;
     }
 
+    public ConcurrentHashMap<Long, Object> getCtypesAdrMap() {
+        return ptrAdrMap;
+    }
+
     public TruffleLanguage.Env getEnv() {
         return env;
     }
@@ -766,12 +1045,12 @@ public final class PythonContext {
 
     @TruffleBoundary
     public boolean reprEnter(Object item) {
-        return getThreadState(PythonLanguage.getCurrent()).reprEnter(item);
+        return getThreadState(language).reprEnter(item);
     }
 
     @TruffleBoundary
     public void reprLeave(Object item) {
-        getThreadState(PythonLanguage.getCurrent()).reprLeave(item);
+        getThreadState(language).reprLeave(item);
     }
 
     public long getPerfCounterStart() {
@@ -940,13 +1219,7 @@ public final class PythonContext {
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, getBuiltins());
         mainModule.setAttribute(__ANNOTATIONS__, core.factory().createDict());
-        try {
-            PythonObjectLibrary.getUncached().setDict(mainModule, core.factory().createDictFixedStorage(mainModule));
-        } catch (UnsupportedMessageException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("This cannot happen - the main module doesn't accept a __dict__", e);
-        }
-
+        SetDictNode.getUncached().execute(mainModule, core.factory().createDictFixedStorage(mainModule));
         getSysModules().setItem(__MAIN__, mainModule);
 
         final String stdLibPlaceholder = "!stdLibHome!";
@@ -1000,7 +1273,7 @@ public final class PythonContext {
         }
     }
 
-    private String sysPrefix, basePrefix, coreHome, stdLibHome, capiHome;
+    private String sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, jniHome;
 
     public void initializeHomeAndPrefixPaths(Env newEnv, String languageHome) {
         sysPrefix = newEnv.getOptions().get(PythonOptions.SysPrefix);
@@ -1008,6 +1281,7 @@ public final class PythonContext {
         coreHome = newEnv.getOptions().get(PythonOptions.CoreHome);
         stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
         capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
+        jniHome = newEnv.getOptions().get(PythonOptions.JNIHome);
 
         Python3Core.writeInfo(() -> MessageFormat.format("Initial locations:" +
                         "\n\tLanguage home: {0}" +
@@ -1015,7 +1289,8 @@ public final class PythonContext {
                         "\n\tBaseSysPrefix: {2}" +
                         "\n\tCoreHome: {3}" +
                         "\n\tStdLibHome: {4}" +
-                        "\n\tCAPI: {5}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome));
+                        "\n\tCAPI: {5}" +
+                        "\n\tJNI library: {6}", languageHome, sysPrefix, basePrefix, coreHome, stdLibHome, capiHome, jniHome));
 
         String envHome = null;
         try {
@@ -1079,6 +1354,10 @@ public final class PythonContext {
             if (capiHome.isEmpty()) {
                 capiHome = coreHome;
             }
+
+            if (jniHome.isEmpty()) {
+                jniHome = coreHome;
+            }
         }
 
         if (ImageInfo.inImageBuildtimeCode()) {
@@ -1093,6 +1372,7 @@ public final class PythonContext {
             coreHome = base.relativize(newEnv.getInternalTruffleFile(coreHome)).getPath();
             stdLibHome = base.relativize(newEnv.getInternalTruffleFile(stdLibHome)).getPath();
             capiHome = base.relativize(newEnv.getInternalTruffleFile(capiHome)).getPath();
+            jniHome = base.relativize(newEnv.getInternalTruffleFile(jniHome)).getPath();
         }
 
         Python3Core.writeInfo(() -> MessageFormat.format("Updated locations:" +
@@ -1102,7 +1382,9 @@ public final class PythonContext {
                         "\n\tCoreHome: {3}" +
                         "\n\tStdLibHome: {4}" +
                         "\n\tExecutable: {5}" +
-                        "\n\tCAPI: {6}", home != null ? home.getPath() : "", sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable), capiHome));
+                        "\n\tCAPI: {6}" +
+                        "\n\tJNI library: {7}", home != null ? home.getPath() : "", sysPrefix, basePrefix, coreHome, stdLibHome, newEnv.getOptions().get(PythonOptions.Executable), capiHome,
+                        jniHome));
     }
 
     @TruffleBoundary
@@ -1161,6 +1443,15 @@ public final class PythonContext {
         return capiHome;
     }
 
+    @TruffleBoundary
+    public String getJNIHome() {
+        if (jniHome.isEmpty()) {
+            writeWarning(NO_JNI);
+            return jniHome;
+        }
+        return jniHome;
+    }
+
     public Object getTopScopeObject() {
         return core.getTopScopeObject();
     }
@@ -1192,8 +1483,8 @@ public final class PythonContext {
     @TruffleBoundary
     @SuppressWarnings("try")
     public void finalizeContext() {
+        boolean cancelling = env.getContext().isCancelling();
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
-            boolean cancelling = env.getContext().isCancelling();
             if (!cancelling) {
                 // this uses the threading module and runs python code to join the threads
                 shutdownThreads();
@@ -1213,7 +1504,11 @@ public final class PythonContext {
             disposeThreadStates();
         }
         cleanupHPyResources();
-        language.getSharedMultiprocessingData().closeFDs(getChildContextFDs());
+        for (int fd : getChildContextFDs()) {
+            if (!getSharedMultiprocessingData().decrementFDRefCount(fd)) {
+                getSharedMultiprocessingData().closePipe(fd);
+            }
+        }
         mainThread = null;
     }
 
@@ -1650,7 +1945,7 @@ public final class PythonContext {
         threadStateMapping.remove(thread);
         ts.dispose();
         releaseSentinelLock(ts.sentinelLock);
-        language.removeChildContextThread(thread.getId());
+        getSharedMultiprocessingData().removeChildContextThread(thread.getId());
     }
 
     private static void releaseSentinelLock(WeakReference<PLock> sentinelLockWeakref) {

@@ -41,6 +41,8 @@
 #ifndef Py_PYTHON_H
 #define Py_PYTHON_H
 
+#include "pyconfig.h"
+
 #define HAVE_UTIME_H
 #define HAVE_UNISTD_H
 #define HAVE_SIGNAL_H
@@ -48,8 +50,22 @@
 #define HAVE_SYS_WAIT_H
 
 #define GRAALVM_PYTHON 1
-#define PYPY_VERSION 0
-#define PYPY_VERSION_NUM 0x07030000
+
+/* If Cython is involved, avoid accesses to internal structures. While we are
+ * supporting this in many cases, it still involves overhead. */
+#define CYTHON_USE_TYPE_SLOTS 0
+#define CYTHON_USE_PYTYPE_LOOKUP 0
+#define CYTHON_FAST_PYCCALL 0
+#define CYTHON_USE_DICT_VERSIONS 0
+#define CYTHON_AVOID_BORROWED_REFS 1
+#define CYTHON_USE_TP_FINALIZE 0
+#define CYTHON_USE_PYLIST_INTERNALS 0
+#define CYTHON_USE_UNICODE_INTERNALS 0
+#define CYTHON_USE_PYLONG_INTERNALS 0
+#define CYTHON_USE_ASYNC_SLOTS 0
+#define CYTHON_USE_UNICODE_WRITER 0
+#define CYTHON_USE_EXC_INFO_STACK 0
+#define CYTHON_FAST_THREAD_STATE 0
 
 #include <stdio.h>
 #include <string.h>
@@ -128,5 +144,7 @@
 #include "genobject.h"
 
 #include "abstract.h"
+
+#include "eval.h"
 
 #endif

@@ -282,7 +282,7 @@ public final class CApiContext extends CExtContext {
     private RootCallTarget getReferenceCleanerCallTarget() {
         if (referenceCleanerCallTarget == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            referenceCleanerCallTarget = PythonLanguage.getCurrent().createCachedCallTarget(l -> new CApiReferenceCleanerRootNode(l), CApiReferenceCleanerRootNode.class);
+            referenceCleanerCallTarget = PythonLanguage.get(null).createCachedCallTarget(l -> new CApiReferenceCleanerRootNode(l), CApiReferenceCleanerRootNode.class);
         }
         return referenceCleanerCallTarget;
     }
@@ -350,7 +350,7 @@ public final class CApiContext extends CExtContext {
         /**
          * The associated native pointer object that needs to be released if this reference dies.
          */
-        final TruffleObject ptrObject;
+        final Object ptrObject;
 
         /** The ID of this reference, i.e., the index of the ref in the global reference list. */
         final int id;
@@ -374,7 +374,7 @@ public final class CApiContext extends CExtContext {
             this.id = id;
         }
 
-        public TruffleObject getPtrObject() {
+        public Object getPtrObject() {
             return ptrObject;
         }
 
@@ -847,7 +847,8 @@ public final class CApiContext extends CExtContext {
         PyObject_ptr_ptr_t,
         float_ptr_t,
         double_ptr_t,
-        Py_ssize_ptr_t;
+        Py_ssize_ptr_t,
+        PyThreadState;
 
         public static NativeCAPISymbol getGetterFunctionName(LLVMType llvmType) {
             CompilerAsserts.neverPartOfCompilation();

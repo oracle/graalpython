@@ -117,7 +117,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
     abstract static class GetAttributeBaseNode extends Node {
 
         @Child protected LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
-        @Child protected IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile isBuiltinClassProfile;
 
         @Child private LookupSpecialMethodSlotNode lookupGetattrNode;
         @Child private CallBinaryMethodNode callBinaryMethodNode;
@@ -178,8 +178,16 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             return getClassNode.execute(object);
         }
 
-        static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+        Assumption singleContextAssumption() {
+            return PythonLanguage.get(this).singleContextAssumption;
+        }
+
+        protected IsBuiltinClassProfile getErrorProfile() {
+            if (isBuiltinClassProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isBuiltinClassProfile = insert(IsBuiltinClassProfile.create());
+            }
+            return isBuiltinClassProfile;
         }
     }
 
@@ -240,7 +248,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             try {
                 return dispatchNode.executeObject(frame, object, key);
             } catch (PException pe) {
-                pe.expect(AttributeError, isBuiltinClassProfile);
+                pe.expect(AttributeError, getErrorProfile());
                 return dispatchGetAttrOrRethrowObject(frame, object, getPythonClass(object), key, pe);
             }
         }
@@ -251,7 +259,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             try {
                 return getAttributeNode.execute(frame, object, key);
             } catch (PException pe) {
-                pe.expect(AttributeError, isBuiltinClassProfile);
+                pe.expect(AttributeError, getErrorProfile());
                 return dispatchGetAttrOrRethrowObject(frame, object, key, pe);
             }
         }
@@ -262,7 +270,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             try {
                 return getAttributeNode.execute(frame, object, key);
             } catch (PException pe) {
-                pe.expect(AttributeError, isBuiltinClassProfile);
+                pe.expect(AttributeError, getErrorProfile());
                 return dispatchGetAttrOrRethrowObject(frame, object, key, pe);
             }
         }
@@ -273,7 +281,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             try {
                 return getAttributeNode.execute(frame, object, key);
             } catch (PException pe) {
-                pe.expect(AttributeError, isBuiltinClassProfile);
+                pe.expect(AttributeError, getErrorProfile());
                 return dispatchGetAttrOrRethrowObject(frame, object, key, pe);
             }
         }
@@ -283,7 +291,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             try {
                 return dispatchNode.executeObject(frame, object, key);
             } catch (PException pe) {
-                pe.expect(AttributeError, isBuiltinClassProfile);
+                pe.expect(AttributeError, getErrorProfile());
                 return dispatchGetAttrOrRethrowObject(frame, object, getPythonClass(object), key, pe);
             }
         }
@@ -299,7 +307,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             try {
                 return dispatchNode.executeObject(frame, object, key);
             } catch (PException pe) {
-                pe.expect(AttributeError, isBuiltinClassProfile);
+                pe.expect(AttributeError, getErrorProfile());
                 return dispatchGetAttrOrRethrowObject(frame, object, key, pe);
             }
         }

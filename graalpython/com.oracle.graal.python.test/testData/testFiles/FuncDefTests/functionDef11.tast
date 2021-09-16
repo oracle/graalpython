@@ -49,7 +49,6 @@ ModuleRootNode Name: <module 'functionDef11'> SourceSection: [0,47]`↵def outer
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [30,35]`print`
                             Identifier: print
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [36,37]`x`
                             Frame: [0,x,Illegal]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None

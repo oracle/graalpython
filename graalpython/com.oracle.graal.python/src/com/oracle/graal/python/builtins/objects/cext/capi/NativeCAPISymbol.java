@@ -204,11 +204,19 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_GET_FLOAT_PTR_T_TYPEID("get_float_ptr_t_typeid"),
     FUN_GET_DOUBLE_PTR_T_TYPEID("get_double_ptr_t_typeid"),
     FUN_GET_PY_SSIZE_PTR_T_TYPEID("get_Py_ssize_ptr_t_typeid"),
+    FUN_GET_PYTHREADSTATE_TYPEID("get_PyThreadState_typeid"),
     FUN_TUPLE_SUBTYPE_NEW("tuple_subtype_new"),
     FUN_FLOAT_SUBTYPE_NEW("float_subtype_new"),
     FUN_SUBCLASS_CHECK("truffle_subclass_check"),
     FUN_MEMCPY_BYTES("truffle_memcpy_bytes"),
-    FUN_UNICODE_SUBTYPE_NEW("unicode_subtype_new");
+    FUN_UNICODE_SUBTYPE_NEW("unicode_subtype_new"),
+
+    // ctypes
+    FUN_MEMMOVE("memmove"),
+    FUN_MEMSET("memset"),
+    FUN_STRING_AT("string_at"),
+    FUN_CAST("cast"),
+    FUN_WSTRING_AT("wstring_at");
 
     private final String name;
 

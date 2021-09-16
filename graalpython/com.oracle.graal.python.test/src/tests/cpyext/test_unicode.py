@@ -84,6 +84,15 @@ def _reference_fromformat(args):
     return fmt % fmt_args
 
 
+def _reference_readchar(args):
+    s = args[0]
+    i = args[1]
+    if i < 0:
+        # just ensure that it is out of bounds
+        i = len(s) + 1
+    return ord(s[i])
+
+
 class CustomString(str):
     pass
 
@@ -599,6 +608,30 @@ class TestPyUnicode(CPyExtTestCase):
         argspec='ny*nO',
         arguments=["Py_ssize_t maxchar", "Py_buffer buffer", "Py_ssize_t nchars", "PyObject* dummy"],
         callfunction="wrap_PyUnicode_New",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_ReadChar = CPyExtFunction(
+        _reference_readchar,
+        lambda: (
+            ("hello", 0),
+            ("hello", 4),
+            ("hello", 100),
+            ("hello", -1),
+            ("höllö", 4),
+        ),
+        code='''PyObject* wrap_PyUnicode_ReadChar(PyObject* unicode, Py_ssize_t index) {
+            Py_UCS4 res = PyUnicode_ReadChar(unicode, index);
+            if (res == -1 && PyErr_Occurred()) {
+               return NULL;
+            }
+            return PyLong_FromLong((long) res);
+        }
+        ''',
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* str", "Py_ssize_t index"],
+        callfunction="wrap_PyUnicode_ReadChar",
         cmpfunc=unhandled_error_compare
     )
 

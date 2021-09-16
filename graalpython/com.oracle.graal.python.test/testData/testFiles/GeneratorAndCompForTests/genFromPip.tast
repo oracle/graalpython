@@ -47,7 +47,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [58,74]`_is_unpacked_egg`
                               Identifier: _is_unpacked_egg
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             ReadLocalCellNodeGen SourceSection: [75,84]`path_item`
                               ReadGeneratorFrameVariableNodeGen SourceSection: None
                                 Frame: [1,path_item,Illegal]
@@ -69,7 +68,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                         CallBinaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [161,173]`PathMetadata`
                                           Identifier: PathMetadata
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [191,200]`path_item`
                                           ReadGeneratorFrameVariableNodeGen SourceSection: None
                                             Frame: [1,path_item,Illegal]
@@ -82,11 +80,8 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                                 Key: path
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [202,204]`os`
                                                 Identifier: os
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [215,224]`path_item`
                                             ReadGeneratorFrameVariableNodeGen SourceSection: None
                                               Frame: [1,path_item,Illegal]
@@ -96,7 +91,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [101,113]`Distribution`
                                     Identifier: Distribution
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               GeneratorAccessNode SourceSection: None
                           ReturnNode SourceSection: [270,276]`return`
                           GeneratorAccessNode SourceSection: None
@@ -108,7 +102,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [292,304]`safe_listdir`
                             Identifier: safe_listdir
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalCellNodeGen SourceSection: [305,314]`path_item`
                             ReadGeneratorFrameVariableNodeGen SourceSection: None
                               Frame: [1,path_item,Illegal]
@@ -146,7 +139,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                         CallTernaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [388,400]`dist_factory`
                                           Identifier: dist_factory
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [401,410]`path_item`
                                           ReadGeneratorFrameVariableNodeGen SourceSection: None
                                             Frame: [1,path_item,Illegal]
@@ -192,7 +184,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [456,478]`_by_version_descendi...`
                             Identifier: _by_version_descending
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadGeneratorFrameVariableNodeGen SourceSection: [479,487]`filtered`
                             Frame: [4,filtered,Illegal]
                       ElseNode SourceSection: [493,692]`for entry in path_it...`
@@ -209,11 +200,8 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                       Key: path
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
-                                      IsBuiltinClassProfile SourceSection: None
-                                        GetClassNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [544,546]`os`
                                       Identifier: os
-                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [557,566]`path_item`
                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                     Frame: [1,path_item,Illegal]
@@ -227,7 +215,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                 CallTernaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [593,605]`dist_factory`
                                   Identifier: dist_factory
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [606,615]`path_item`
                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                     Frame: [1,path_item,Illegal]

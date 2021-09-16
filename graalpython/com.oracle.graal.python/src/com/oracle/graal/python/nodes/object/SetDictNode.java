@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,54 +38,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.nodes.object;
 
-import java.util.List;
-
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
-@CoreFunctions(defineModule = "ctypes")
-public class CtypesModuleBuiltins extends PythonBuiltins {
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return CtypesModuleBuiltinsFactory.getFactories();
+@GenerateUncached
+public abstract class SetDictNode extends PNodeWithContext {
+    public abstract void execute(PythonObject object, PDict dict);
+
+    @Specialization
+    static void doPythonClass(PythonClass object, PDict dict,
+                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
+                    @Cached BranchProfile hasMroShapeProfile) {
+        object.setDictHiddenProp(dylib, hasMroShapeProfile, dict);
     }
 
-    @Builtin(name = "c_char_p_", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class CCharP extends PythonUnaryBuiltinNode {
+    @Fallback
+    static void doPythonObjectNotClass(PythonObject object, PDict dict,
+                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
+        dylib.put(object, PythonObject.DICT, dict);
+    }
 
-        @Specialization
-        Object defaultValue(@SuppressWarnings("unused") PNone noValue,
-                        @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached ToSulongNode toSulongNode) {
-            return toSulongNode.execute(getNativeNullNode.execute()); // NULL
-        }
+    public static SetDictNode create() {
+        return SetDictNodeGen.create();
+    }
 
-        @Specialization
-        Object withValue(String value,
-                        @Shared("asCharPointer") @Cached AsCharPointerNode asCharPointer) {
-            return asCharPointer.execute(value);
-        }
-
-        @Specialization
-        Object withValue(PString value,
-                        @Shared("asCharPointer") @Cached AsCharPointerNode asCharPointer) {
-            return asCharPointer.execute(value.getValue());
-        }
+    public static SetDictNode getUncached() {
+        return SetDictNodeGen.getUncached();
     }
 }

@@ -50,6 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.nodes.Node;
@@ -92,7 +93,7 @@ public final class MroShape {
             PythonAbstractClass element = mro.getItemNormalized(i);
             if (PythonManagedClass.isInstance(element)) {
                 PythonManagedClass managedClass = PythonManagedClass.cast(element);
-                if (managedClass.hasDict(DynamicObjectLibrary.getUncached())) {
+                if (GetDictIfExistsNode.getUncached().execute(managedClass) != null) {
                     // On top of not having a shape, the dictionary may also contain items with side
                     // effecting __eq__ and/or __hash__
                     return null;
@@ -175,7 +176,7 @@ public final class MroShape {
      * over attribute lookup nodes and other relevant places.
      */
     @SuppressWarnings("unused")
-    public static boolean validate(Object obj) {
+    public static boolean validate(Object obj, PythonLanguage language) {
         if (!(obj instanceof PythonClass)) {
             return true;
         }
@@ -231,7 +232,7 @@ public final class MroShape {
             }
             currMroShape = currMroShape.parent;
         }
-        assert currMroShape == PythonLanguage.getCurrent().getMroShapeRoot() : mro.getClassName();
+        assert currMroShape == language.getMroShapeRoot() : mro.getClassName();
         return true;
     }
 }

@@ -39,7 +39,6 @@ ModuleRootNode Name: <module 'await03'> SourceSection: [0,39]`async def f():↵ 
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [33,37]`smth`
                             Identifier: smth
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <>temp2
                           Frame: [2,<>temp2,Illegal]

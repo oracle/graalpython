@@ -9,7 +9,6 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
       CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: list
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [1,30]`b for b in [a for a ...`
         Name: <genexpr>
         FrameDescriptor: 2 slots [b, <return_val>]
@@ -61,7 +60,6 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
             CallUnaryMethodNodeGen SourceSection: None
             ReadGlobalOrBuiltinNodeGen SourceSection: None
               Identifier: list
-              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             GeneratorExpressionNode SourceSection: [13,29]`a for a in (1,2)`
               Name: <genexpr>
               FrameDescriptor: 2 slots [a, <return_val>]

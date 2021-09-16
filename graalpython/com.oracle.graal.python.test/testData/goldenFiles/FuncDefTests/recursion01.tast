@@ -60,7 +60,6 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                           CallTernaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [42,46]`test`
                             Identifier: test
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [47,50]`msg`
                             Frame: [1,msg,Illegal]
                           GetAttributeNode SourceSection: [52,63]`self.string`
@@ -68,8 +67,6 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                               Key: string
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [52,56]`self`
                               Frame: [0,self,Illegal]
                           IntegerLiteralNode SourceSection: [65,66]`1`

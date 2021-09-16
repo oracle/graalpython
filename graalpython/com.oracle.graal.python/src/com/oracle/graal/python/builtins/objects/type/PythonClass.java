@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -50,7 +49,6 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -68,6 +66,11 @@ public final class PythonClass extends PythonManagedClass {
 
     private static final int MRO_SUBTYPES_MAX = 64;
     private static final int MRO_SHAPE_INVALIDATIONS_MAX = 5;
+
+    public long flags;
+    public long basicSize = -1;
+    public long itemSize = -1;
+    public Object hpyDestroyFunc;
 
     private final AtomicReference<Assumption> slotsFinalAssumption = new AtomicReference<>();
     private MroShape mroShape;
@@ -229,20 +232,7 @@ public final class PythonClass extends PythonManagedClass {
         }
     }
 
-    @ExportMessage(name = "setDict")
-    void setDictOverride(PDict dict,
-                    @Shared("hasMroShape") @Cached BranchProfile hasMroShapeProfile,
-                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        setDictHiddenProp(dylib, hasMroShapeProfile, dict);
-    }
-
-    @ExportMessage(name = "deleteDict")
-    void deleteDictOverride(@Shared("hasMroShape") @Cached BranchProfile hasMroShapeProfile,
-                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        setDictHiddenProp(dylib, hasMroShapeProfile, null);
-    }
-
-    private void setDictHiddenProp(DynamicObjectLibrary dylib, BranchProfile hasMroShapeProfile, Object value) {
+    public void setDictHiddenProp(DynamicObjectLibrary dylib, BranchProfile hasMroShapeProfile, Object value) {
         dylib.put(this, DICT, value);
         if (mroShapeSubTypes != null) {
             hasMroShapeProfile.enter();
@@ -323,7 +313,7 @@ public final class PythonClass extends PythonManagedClass {
                 invalidateMroShapeSubTypes();
             } else {
                 mroShapeInvalidationsCount++;
-                updateMroShapeSubTypes(PythonLanguage.getCurrent());
+                updateMroShapeSubTypes(PythonLanguage.get(null));
             }
         }
     }
@@ -366,7 +356,7 @@ public final class PythonClass extends PythonManagedClass {
     static void updateMroShapeSubTypes(PythonBuiltinClass klass) {
         ArrayDeque<Object> toProcess = new ArrayDeque<>();
         toProcess.add(klass);
-        PythonLanguage lang = PythonLanguage.getCurrent();
+        PythonLanguage lang = PythonLanguage.get(null);
         while (toProcess.size() > 0) {
             Object next = toProcess.pop();
             if (next instanceof PythonClass) {

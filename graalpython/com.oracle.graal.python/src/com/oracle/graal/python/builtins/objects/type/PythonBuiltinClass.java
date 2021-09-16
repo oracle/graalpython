@@ -38,6 +38,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -62,14 +63,14 @@ public final class PythonBuiltinClass extends PythonManagedClass {
 
     @TruffleBoundary
     public PythonBuiltinClass(PythonLanguage lang, PythonBuiltinClassType builtinClass, PythonAbstractClass base) {
-        super(lang, PythonBuiltinClassType.PythonClass, PythonBuiltinClassType.PythonClass.getInstanceShape(lang), builtinClass.getInstanceShape(lang), builtinClass.getName(), base);
+        super(lang, builtinClass.getType(), builtinClass.getType().getInstanceShape(lang), builtinClass.getInstanceShape(lang), builtinClass.getName(), base);
         this.type = builtinClass;
     }
 
     @Override
     public void setAttribute(Object name, Object value) {
         CompilerAsserts.neverPartOfCompilation();
-        if (name instanceof HiddenKey || !PythonLanguage.getCore().isInitialized()) {
+        if (name instanceof HiddenKey || !PythonContext.get(null).getCore().isInitialized()) {
             setAttributeUnsafe(name, value);
         } else {
             throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, this);
@@ -90,7 +91,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     @TruffleBoundary
     @Override
     public void onAttributeUpdate(String key, Object newValue) {
-        assert !PythonLanguage.getCore().isInitialized();
+        assert !PythonContext.get(null).getCore().isInitialized();
         // Ideally, startup code should not create ASTs that rely on assumptions of props of
         // builtins. So there should be no assumptions to invalidate yet
         assert !getMethodResolutionOrder().invalidateAttributeInMROFinalAssumptions(key);

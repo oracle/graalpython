@@ -41,8 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.OBJECT_HPY_NATIVE_SPACE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_NEW;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_GETSET;
@@ -78,6 +76,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMTyp
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyJNIContext.GraalHPyJNIFunctionPointer;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyJNIContext.JNIFunctionSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyLegacyDef.HPyLegacySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyWriteMemberNode;
@@ -96,21 +96,23 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorSetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorGetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorSetterRoot;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachJNIFunctionTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachNFIFunctionTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
-import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -122,6 +124,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
@@ -135,6 +138,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -149,10 +153,9 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
@@ -346,7 +349,7 @@ public class GraalHPyNodes {
 
     /**
      * Parses a pointer to a {@code PyGetSetDef} struct and creates the corresponding property.
-     * 
+     *
      * <pre>
      *     typedef struct PyGetSetDef {
      *         const char *name;
@@ -626,7 +629,7 @@ public class GraalHPyNodes {
 
     /**
      * Creates a get/set descriptor from an HPy get/set descriptor specification.
-     * 
+     *
      * <pre>
      * typedef struct {
      *     const char *name;
@@ -759,10 +762,6 @@ public class GraalHPyNodes {
             HPyProperty property = null;
             Object[] methodNames = slot.getAttributeKeys();
             HPySlotWrapper[] slotWrappers = slot.getSignatures();
-            if (methodNames == null || methodNames.length == 0) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "slot %s is not yet supported", slot.name());
-            }
 
             // read and check the function pointer
             Object methodFunctionPointer;
@@ -779,25 +778,31 @@ public class GraalHPyNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
             }
 
-            // create properties
-            for (int i = 0; i < methodNames.length; i++) {
-                Object methodName = methodNames[i];
-                HPySlotWrapper slotWrapper = slotWrappers[i];
-                String methodNameStr = methodName instanceof HiddenKey ? ((HiddenKey) methodName).getName() : (String) methodName;
-
-                Object function;
-                if (HPY_TP_DESTROY.equals(slot)) {
-                    /*
-                     * special case: DESTROYFUNC. This won't be usable from Python, so we just store
-                     * the bare pointer object into the hidden attribute.
-                     */
-                    function = methodFunctionPointer;
-                } else {
-                    Object effectiveEnclosingType = HPY_TP_NEW.equals(slot) ? null : enclosingType;
-                    function = HPyExternalFunctionNodes.createWrapperFunction(PythonLanguage.get(raiseNode), context, slotWrapper, methodNameStr, methodFunctionPointer, effectiveEnclosingType,
-                                    factory);
+            /*
+             * Special case: DESTROYFUNC. This won't be usable from Python, so we just store the
+             * bare pointer object into Java field.
+             */
+            if (HPY_TP_DESTROY.equals(slot)) {
+                assert enclosingType instanceof PythonClass : "HPy destroy functions are only possible for user classes";
+                if (enclosingType instanceof PythonClass) {
+                    ((PythonClass) enclosingType).hpyDestroyFunc = methodFunctionPointer;
                 }
-                property = new HPyProperty(methodName, function, property);
+            } else {
+                // create properties
+                for (int i = 0; i < methodNames.length; i++) {
+                    Object methodName = methodNames[i];
+                    HPySlotWrapper slotWrapper = slotWrappers[i];
+                    String methodNameStr = methodName instanceof HiddenKey ? ((HiddenKey) methodName).getName() : (String) methodName;
+
+                    Object function;
+                    PythonLanguage language = PythonLanguage.get(raiseNode);
+                    if (HPY_TP_NEW.equals(slot)) {
+                        function = HPyExternalFunctionNodes.createWrapperFunction(language, context, slotWrapper, methodNameStr, methodFunctionPointer, null, factory);
+                    } else {
+                        function = HPyExternalFunctionNodes.createWrapperFunction(language, context, slotWrapper, methodNameStr, methodFunctionPointer, enclosingType, factory);
+                    }
+                    property = new HPyProperty(methodName, function, property);
+                }
             }
             return property;
         }
@@ -817,11 +822,11 @@ public class GraalHPyNodes {
 
     /**
      * Parses a {@code PyType_Slot} structure
-     * 
+     *
      * <pre>
      * typedef struct{
      *     int slot;
-     *     void *pfunc; 
+     *     void *pfunc;
      * } PyType_Slot;
      * </pre>
      */
@@ -1002,113 +1007,332 @@ public class GraalHPyNodes {
             }
         }
 
-        static Assumption noDebugModeAssumption() {
-            return PythonLanguage.getCurrent().noHPyDebugModeAssumption;
+        Assumption noDebugModeAssumption() {
+            return PythonLanguage.get(this).noHPyDebugModeAssumption;
+        }
+    }
+
+    @ImportStatic(GraalHPyBoxing.class)
+    public abstract static class HPyWithContextNode extends PNodeWithContext {
+
+        protected final GraalHPyContext ensureContext(GraalHPyContext hpyContext) {
+            if (hpyContext == null) {
+                return getContext().getHPyContext();
+            } else {
+                return hpyContext;
+            }
+        }
+
+        static long asPointer(Object handle, InteropLibrary lib) {
+            try {
+                return lib.asPointer(handle);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
     }
 
     @GenerateUncached
-    public abstract static class HPyEnsureHandleNode extends PNodeWithContext {
+    @ImportStatic(GraalHPyBoxing.class)
+    public abstract static class HPyEnsureHandleNode extends HPyWithContextNode {
 
         public abstract GraalHPyHandle execute(GraalHPyContext hpyContext, Object object);
-
-        public abstract GraalHPyHandle executeInt(GraalHPyContext hpyContext, int l);
-
-        public abstract GraalHPyHandle executeLong(GraalHPyContext hpyContext, long l);
 
         @Specialization
         static GraalHPyHandle doHandle(@SuppressWarnings("unused") GraalHPyContext hpyContext, GraalHPyHandle handle) {
             return handle;
         }
 
-        @Specialization(guards = {"hpyContext != null", "interopLibrary.isPointer(handle)"}, limit = "2")
-        static GraalHPyHandle doPointer(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object handle,
-                        @CachedLibrary("handle") InteropLibrary interopLibrary) {
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
+        static GraalHPyHandle doOtherBoxedHandle(GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") long bits,
+                        @Bind("ensureContext(hpyContext)") GraalHPyContext context) {
+            return doLong(hpyContext, bits, context);
+        }
+
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedNullHandle(bits)"})
+        @SuppressWarnings("unused")
+        static GraalHPyHandle doOtherNull(GraalHPyContext hpyContext, Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") long bits) {
+            return GraalHPyHandle.NULL_HANDLE;
+        }
+
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedInt(bits) || isBoxedDouble(bits)"})
+        static GraalHPyHandle doOtherBoxedPrimitive(GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") long bits) {
+            return doBoxedPrimitive(hpyContext, bits);
+        }
+
+        @Specialization(guards = "isBoxedNullHandle(bits)")
+        @SuppressWarnings("unused")
+        static GraalHPyHandle doLongNull(GraalHPyContext hpyContext, long bits) {
+            return GraalHPyHandle.NULL_HANDLE;
+        }
+
+        @Specialization(guards = {"hpyContext == null", "isBoxedHandle(bits)"}, replaces = "doLongNull")
+        static GraalHPyHandle doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long bits,
+                        @Bind("ensureContext(hpyContext)") GraalHPyContext context) {
+            return context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
+        }
+
+        @Specialization(guards = "isBoxedInt(bits) || isBoxedDouble(bits)")
+        @SuppressWarnings("unused")
+        static GraalHPyHandle doBoxedPrimitive(GraalHPyContext hpyContext, long bits) {
+            /*
+             * In this case, the long value is a boxed primitive and we cannot resolve it to a
+             * GraalHPyHandle instance (because no instance has ever been created). We create a
+             * fresh GaalHPyHandle instance here.
+             */
+            Object delegate;
+            if (GraalHPyBoxing.isBoxedInt(bits)) {
+                delegate = GraalHPyBoxing.unboxInt(bits);
+            } else if (GraalHPyBoxing.isBoxedDouble(bits)) {
+                delegate = GraalHPyBoxing.unboxDouble(bits);
+            } else {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+            return hpyContext.createHandle(delegate);
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic(GraalHPyBoxing.class)
+    public abstract static class HPyCloseHandleNode extends HPyWithContextNode {
+
+        public abstract void execute(GraalHPyContext hpyContext, Object object);
+
+        @Specialization(guards = "!handle.isAllocated()")
+        @SuppressWarnings("unused")
+        static void doHandle(GraalHPyContext hpyContext, GraalHPyHandle handle) {
+            // nothing to do
+        }
+
+        @Specialization(guards = "handle.isAllocated()")
+        void doHandleAllocated(GraalHPyContext hpyContext, GraalHPyHandle handle) {
+            handle.closeAndInvalidate(ensureContext(hpyContext));
+        }
+
+        @Specialization(guards = "isBoxedNullHandle(bits)")
+        @SuppressWarnings("unused")
+        static void doNullLong(GraalHPyContext hpyContext, long bits) {
+            // nothing to do
+        }
+
+        @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
+        static void doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") long bits,
+                        @Bind("ensureContext(hpyContext)") GraalHPyContext context,
+                        @Bind("context.getObjectForHPyHandle(unboxHandle(bits))") GraalHPyHandle handle,
+                        @Cached ConditionProfile isAllocated) {
+            if (isAllocated.profile(handle.isAllocated())) {
+                handle.closeAndInvalidate(context);
+            }
+        }
+
+        @Specialization(guards = "!isBoxedHandle(bits)")
+        @SuppressWarnings("unused")
+        static void doLongDouble(GraalHPyContext hpyContext, long bits) {
+            // nothing to do
+        }
+
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedNullHandle(bits)"})
+        @SuppressWarnings("unused")
+        static void doNullOther(GraalHPyContext hpyContext, Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") long bits) {
+            // nothing to do
+        }
+
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
+        static void doOther(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") @SuppressWarnings("unused") long bits,
+                        @Bind("ensureContext(hpyContext)") GraalHPyContext context,
+                        @Bind("context.getObjectForHPyHandle(unboxHandle(bits))") GraalHPyHandle handle,
+                        @Cached ConditionProfile isAllocated) {
+            if (isAllocated.profile(handle.isAllocated())) {
+                handle.closeAndInvalidate(context);
+            }
+        }
+
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedHandle(bits)"})
+        @SuppressWarnings("unused")
+        static void doOtherDouble(GraalHPyContext hpyContext, Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") long bits) {
+            // nothing to do
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class HPyCloseAndGetHandleNode extends HPyWithContextNode {
+
+        public abstract Object execute(GraalHPyContext hpyContext, Object object);
+
+        public abstract Object execute(GraalHPyContext hpyContext, long object);
+
+        @Specialization(guards = "!handle.isAllocated()")
+        static Object doHandle(@SuppressWarnings("unused") GraalHPyContext hpyContext, GraalHPyHandle handle) {
+            return handle.getDelegate();
+        }
+
+        @Specialization(guards = "handle.isAllocated()")
+        Object doHandleAllocated(GraalHPyContext hpyContext, GraalHPyHandle handle) {
+            handle.closeAndInvalidate(ensureContext(hpyContext));
+            return handle.getDelegate();
+        }
+
+        @Specialization(guards = "isBoxedNullHandle(bits)")
+        @SuppressWarnings("unused")
+        static Object doNullLong(GraalHPyContext hpyContext, long bits) {
+            return null;
+        }
+
+        @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
+        static Object doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") long bits,
+                        @Bind("ensureContext(hpyContext)") GraalHPyContext context,
+                        @Bind("context.getObjectForHPyHandle(unboxHandle(bits))") GraalHPyHandle handle,
+                        @Cached ConditionProfile isAllocated) {
+            if (isAllocated.profile(handle.isAllocated())) {
+                handle.closeAndInvalidate(context);
+            }
+            return handle.getDelegate();
+        }
+
+        @Specialization(guards = "isBoxedDouble(bits)")
+        static double doLongDouble(@SuppressWarnings("unused") GraalHPyContext hpyContext, long bits) {
+            return GraalHPyBoxing.unboxDouble(bits);
+        }
+
+        @Specialization(guards = "isBoxedInt(bits)")
+        static int doLongInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, long bits) {
+            return GraalHPyBoxing.unboxInt(bits);
+        }
+
+        static long asPointer(Object handle, InteropLibrary lib) {
             try {
-                return doLongOvfWithContext(hpyContext, interopLibrary.asPointer(handle));
+                return lib.asPointer(handle);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
         }
 
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedNullHandle(bits)"})
         @SuppressWarnings("unused")
-        @Specialization(guards = "handle == 0")
-        static GraalHPyHandle doNullInt(GraalHPyContext hpyContext, int handle) {
-            return GraalHPyHandle.NULL_HANDLE;
+        static Object doNullOther(GraalHPyContext hpyContext, Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") long bits) {
+            return null;
         }
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = "handle == 0")
-        static GraalHPyHandle doNullLong(GraalHPyContext hpyContext, long handle) {
-            return GraalHPyHandle.NULL_HANDLE;
-        }
-
-        @Specialization(guards = "hpyContext == null", replaces = "doNullInt")
-        GraalHPyHandle doInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, int handle) {
-            return getContext().getHPyContext().getObjectForHPyHandle(handle);
-        }
-
-        @Specialization(guards = "hpyContext == null", rewriteOn = OverflowException.class, replaces = "doNullLong")
-        GraalHPyHandle doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle) throws OverflowException {
-            return getContext().getHPyContext().getObjectForHPyHandle(PInt.intValueExact(handle));
-        }
-
-        @Specialization(guards = "hpyContext == null", replaces = {"doLong", "doNullLong"})
-        GraalHPyHandle doLongOvf(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle) {
-            return doLongOvfWithContext(getContext().getHPyContext(), handle);
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"hpyContext != null", "handle == 0"})
-        static GraalHPyHandle doNullIntWithContext(GraalHPyContext hpyContext, int handle) {
-            return GraalHPyHandle.NULL_HANDLE;
-        }
-
-        @Specialization(guards = "hpyContext != null", replaces = "doNullInt")
-        static GraalHPyHandle doIntWithContext(GraalHPyContext hpyContext, int handle) {
-            return hpyContext.getObjectForHPyHandle(handle);
-        }
-
-        @Specialization(guards = "hpyContext != null", rewriteOn = OverflowException.class, replaces = "doNullLong")
-        static GraalHPyHandle doLongWithContext(GraalHPyContext hpyContext, long handle) throws OverflowException {
-            return hpyContext.getObjectForHPyHandle(PInt.intValueExact(handle));
-        }
-
-        @Specialization(guards = "hpyContext != null", replaces = {"doLongWithContext", "doNullLong"})
-        static GraalHPyHandle doLongOvfWithContext(GraalHPyContext hpyContext, long handle) {
-            try {
-                return hpyContext.getObjectForHPyHandle(PInt.intValueExact(handle));
-            } catch (OverflowException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw CompilerDirectives.shouldNotReachHere("unknown handle: " + handle);
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
+        static Object doOther(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") @SuppressWarnings("unused") long bits,
+                        @Bind("ensureContext(hpyContext)") GraalHPyContext context,
+                        @Bind("context.getObjectForHPyHandle(unboxHandle(bits))") GraalHPyHandle handle,
+                        @Cached ConditionProfile isAllocated) {
+            if (isAllocated.profile(handle.isAllocated())) {
+                handle.closeAndInvalidate(context);
             }
+            return handle.getDelegate();
+        }
+
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedDouble(bits)"})
+        static double doOtherDouble(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") long bits) {
+            return GraalHPyBoxing.unboxDouble(bits);
+        }
+
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedInt(bits)"})
+        static int doOtherInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") long bits) {
+            return GraalHPyBoxing.unboxInt(bits);
         }
     }
 
     @GenerateUncached
+    @ImportStatic(GraalHPyBoxing.class)
     public abstract static class HPyAsPythonObjectNode extends CExtToJavaNode {
+
+        protected final GraalHPyContext ensureContext(GraalHPyContext hpyContext) {
+            if (hpyContext == null) {
+                return getContext().getHPyContext();
+            } else {
+                return hpyContext;
+            }
+        }
+
+        public abstract Object execute(GraalHPyContext hpyContext, long bits);
 
         @Specialization
         static Object doHandle(@SuppressWarnings("unused") GraalHPyContext hpyContext, GraalHPyHandle handle) {
             return handle.getDelegate();
         }
 
-        @Specialization
-        static Object doInt(GraalHPyContext hpyContext, int handle,
-                        @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode) {
-            return ensureHandleNode.executeInt(hpyContext, handle).getDelegate();
+        @Specialization(guards = "isBoxedNullHandle(bits)")
+        @SuppressWarnings("unused")
+        static Object doNullLong(GraalHPyContext hpyContext, long bits) {
+            return PNone.NO_VALUE;
         }
 
-        @Specialization
-        static Object doLong(GraalHPyContext hpyContext, long handle,
-                        @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode) {
-            return ensureHandleNode.executeLong(hpyContext, handle).getDelegate();
+        @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
+        static Object doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") long bits,
+                        @Bind("ensureContext(hpyContext)") @SuppressWarnings("unused") GraalHPyContext context,
+                        @Bind("context.getObjectForHPyHandle(unboxHandle(bits))") GraalHPyHandle handle) {
+            return handle.getDelegate();
         }
 
-        @Specialization(replaces = "doHandle")
-        static Object doObject(GraalHPyContext hpyContext, Object object,
-                        @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode) {
-            return ensureHandleNode.execute(hpyContext, object).getDelegate();
+        @Specialization(guards = "isBoxedDouble(bits)")
+        static double doLongDouble(@SuppressWarnings("unused") GraalHPyContext hpyContext, long bits) {
+            return GraalHPyBoxing.unboxDouble(bits);
+        }
+
+        @Specialization(guards = "isBoxedInt(bits)")
+        static int doLongInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, long bits) {
+            return GraalHPyBoxing.unboxInt(bits);
+        }
+
+        static long asPointer(Object handle, InteropLibrary lib) {
+            try {
+                return lib.asPointer(handle);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedNullHandle(bits)"})
+        static Object doNullOther(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") @SuppressWarnings("unused") long bits) {
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
+        static Object doOther(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") @SuppressWarnings("unused") long bits,
+                        @Bind("ensureContext(hpyContext)") @SuppressWarnings("unused") GraalHPyContext context,
+                        @Bind("context.getObjectForHPyHandle(unboxHandle(bits))") GraalHPyHandle handle) {
+            return handle.getDelegate();
+        }
+
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedDouble(bits)"})
+        static double doOtherDouble(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") long bits) {
+            return GraalHPyBoxing.unboxDouble(bits);
+        }
+
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedInt(bits)"})
+        static int doOtherInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") long bits) {
+            return GraalHPyBoxing.unboxInt(bits);
         }
     }
 
@@ -1116,7 +1340,11 @@ public class GraalHPyNodes {
     @ImportStatic(PGuards.class)
     public abstract static class HPyAsHandleNode extends CExtToNativeNode {
 
-        // TODO(fa) implement handles for primitives that avoid boxing
+        /*
+         * NOTE: We *MUST NOT* box values here because we don't know where the handle will be given
+         * to. In case we give it to LLVM code, we must still have an object that emulates the HPy
+         * struct.
+         */
 
         @Specialization(guards = "isNoValue(object)")
         @SuppressWarnings("unused")
@@ -1124,35 +1352,19 @@ public class GraalHPyNodes {
             return GraalHPyHandle.NULL_HANDLE;
         }
 
-        @Specialization(guards = "!isNoValue(object)", assumptions = "noDebugModeAssumption()")
-        static GraalHPyHandle doObject(@SuppressWarnings("unused") CExtContext hpyContext, Object object) {
+        @Specialization(guards = {"!isNoValue(object)"}, assumptions = "noDebugModeAssumption()")
+        static GraalHPyHandle doObject(CExtContext hpyContext, Object object) {
             return CompilerDirectives.castExact(hpyContext, GraalHPyContext.class).createHandle(object);
         }
 
-        @Specialization(replaces = {"doNoValue", "doObject"}, assumptions = "noDebugModeAssumption()")
-        static GraalHPyHandle doGeneric(GraalHPyContext hpyContext, Object object) {
-            if (PGuards.isNoValue(object)) {
-                return GraalHPyHandle.NULL_HANDLE;
-            }
-            return CompilerDirectives.castExact(hpyContext, GraalHPyContext.class).createHandle(object);
-        }
-
-        @Specialization(guards = {"!isNoValue(object)", "hpyContext.getClass() == cachedContextClass"}, replaces = "doObject", limit = "3")
+        @Specialization(guards = {"!isNoValue(object)"})
         static GraalHPyHandle doDebugObject(GraalHPyContext hpyContext, Object object,
-                        @Cached("hpyContext.getClass()") Class<? extends GraalHPyContext> cachedContextClass) {
-            return CompilerDirectives.castExact(hpyContext, cachedContextClass).createHandle(object);
+                        @Cached("createClassProfile()") ValueProfile contextProfile) {
+            return contextProfile.profile(hpyContext).createHandle(object);
         }
 
-        @Specialization(replaces = {"doObject", "doGeneric", "doDebugObject"})
-        static GraalHPyHandle doDebugGeneric(GraalHPyContext hpyContext, Object object) {
-            if (PGuards.isNoValue(object)) {
-                return GraalHPyHandle.NULL_HANDLE;
-            }
-            return hpyContext.createHandle(object);
-        }
-
-        static Assumption noDebugModeAssumption() {
-            return PythonLanguage.getCurrent().noHPyDebugModeAssumption;
+        Assumption noDebugModeAssumption() {
+            return PythonLanguage.get(this).noHPyDebugModeAssumption;
         }
     }
 
@@ -1206,10 +1418,9 @@ public class GraalHPyNodes {
 
         @Specialization
         static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
-                        @Cached HPyEnsureHandleNode ensureHandleNode,
-                        @Cached ConditionProfile isAllocatedProfile,
+                        @Cached HPyCloseHandleNode closeHandleNode,
                         @Cached HPyCloseArrayWrapperNode closeArrayWrapperNode) {
-            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext, isAllocatedProfile);
+            closeHandleNode.execute(hpyContext, dest[destOffset]);
             closeArrayWrapperNode.execute(hpyContext, (HPyArrayWrapper) dest[destOffset + 1]);
         }
     }
@@ -1221,9 +1432,8 @@ public class GraalHPyNodes {
 
         @Specialization
         static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
-                        @Cached ConditionProfile isAllocatedProfile,
-                        @Cached HPyEnsureHandleNode ensureHandleNode) {
-            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext, isAllocatedProfile);
+                        @Cached HPyCloseHandleNode closeHandleNode) {
+            closeHandleNode.execute(hpyContext, dest[destOffset]);
         }
     }
 
@@ -1252,12 +1462,12 @@ public class GraalHPyNodes {
 
         @Specialization
         static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
-                        @Cached HPyEnsureHandleNode ensureHandleNode,
-                        @Cached ConditionProfile isAllocatedProfile,
+                        @Cached HPyCloseHandleNode closeFirstHandleNode,
+                        @Cached HPyCloseHandleNode closeSecondHandleNode,
                         @Cached HPyCloseArrayWrapperNode closeArrayWrapperNode) {
-            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext, isAllocatedProfile);
+            closeFirstHandleNode.execute(hpyContext, dest[destOffset]);
             closeArrayWrapperNode.execute(hpyContext, (HPyArrayWrapper) dest[destOffset + 1]);
-            ensureHandleNode.execute(hpyContext, dest[destOffset + 3]).close(hpyContext, isAllocatedProfile);
+            closeSecondHandleNode.execute(hpyContext, dest[destOffset + 3]);
         }
     }
 
@@ -1316,21 +1526,19 @@ public class GraalHPyNodes {
         @ExplodeLoop
         static void cachedLoop(GraalHPyContext hpyContext, Object[] dest, int destOffset,
                         @Cached("dest.length") int cachedLength,
-                        @Cached ConditionProfile isAllocatedProfile,
-                        @Cached HPyEnsureHandleNode ensureHandleNode) {
+                        @Cached HPyCloseHandleNode closeHandleNode) {
             CompilerAsserts.partialEvaluationConstant(destOffset);
             for (int i = 0; i < cachedLength - destOffset; i++) {
-                ensureHandleNode.execute(hpyContext, dest[destOffset + i]).close(hpyContext, isAllocatedProfile);
+                closeHandleNode.execute(hpyContext, dest[destOffset + i]);
             }
         }
 
         @Specialization(replaces = {"cached0", "cachedLoop"})
         static void uncached(GraalHPyContext hpyContext, Object[] dest, int destOffset,
-                        @Cached ConditionProfile isAllocatedProfile,
-                        @Cached HPyEnsureHandleNode ensureHandleNode) {
+                        @Cached HPyCloseHandleNode closeHandleNode) {
             int len = dest.length;
             for (int i = 0; i < len - destOffset; i++) {
-                ensureHandleNode.execute(hpyContext, dest[destOffset + i]).close(hpyContext, isAllocatedProfile);
+                closeHandleNode.execute(hpyContext, dest[destOffset + i]);
             }
         }
 
@@ -1385,10 +1593,10 @@ public class GraalHPyNodes {
 
         @Specialization
         static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
-                        @Cached ConditionProfile isAllocatedProfile,
-                        @Cached HPyEnsureHandleNode ensureHandleNode) {
-            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext, isAllocatedProfile);
-            ensureHandleNode.execute(hpyContext, dest[destOffset + 1]).close(hpyContext, isAllocatedProfile);
+                        @Cached HPyCloseHandleNode closeFirstHandleNode,
+                        @Cached HPyCloseHandleNode closeSecondHandleNode) {
+            closeFirstHandleNode.execute(hpyContext, dest[destOffset]);
+            closeSecondHandleNode.execute(hpyContext, dest[destOffset + 1]);
         }
     }
 
@@ -1478,13 +1686,10 @@ public class GraalHPyNodes {
 
         @Specialization
         static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
-                        @Cached ConditionProfile isAllocatedProfile,
-                        @Cached HPyEnsureHandleNode ensureHandleNode) {
-            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext, isAllocatedProfile);
-            GraalHPyHandle arg2Handle = ensureHandleNode.execute(hpyContext, dest[destOffset + 2]);
-            if (!arg2Handle.isNull()) {
-                arg2Handle.close(hpyContext, isAllocatedProfile);
-            }
+                        @Cached HPyCloseHandleNode closeFirstHandleNode,
+                        @Cached HPyCloseHandleNode closeSecondHandleNode) {
+            closeFirstHandleNode.execute(hpyContext, dest[destOffset]);
+            closeSecondHandleNode.execute(hpyContext, dest[destOffset + 2]);
         }
     }
 
@@ -1516,10 +1721,10 @@ public class GraalHPyNodes {
 
         @Specialization
         static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
-                        @Cached ConditionProfile isAllocatedProfile,
-                        @Cached HPyEnsureHandleNode ensureHandleNode) {
-            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext, isAllocatedProfile);
-            ensureHandleNode.execute(hpyContext, dest[destOffset + 1]).close(hpyContext, isAllocatedProfile);
+                        @Cached HPyCloseHandleNode closeFirstHandleNode,
+                        @Cached HPyCloseHandleNode closeSecondHandleNode) {
+            closeFirstHandleNode.execute(hpyContext, dest[destOffset]);
+            closeSecondHandleNode.execute(hpyContext, dest[destOffset + 1]);
         }
     }
 
@@ -1703,9 +1908,14 @@ public class GraalHPyNodes {
                 long flags = castToLong(valueLib, ptrLib.readMember(typeSpec, "flags"));
                 long basicSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "basicsize"));
                 long itemSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "itemsize"));
-                writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_BASICSIZE, basicSize);
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_ITEMSIZE, itemSize);
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_FLAGS, flags);
+                if (newType instanceof PythonClass) {
+                    PythonClass clazz = (PythonClass) newType;
+                    clazz.basicSize = basicSize;
+                    clazz.flags = flags;
+                    clazz.itemSize = itemSize;
+                }
 
                 // process defines
                 Object defines = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_GET_DEFINES, typeSpec);
@@ -1862,69 +2072,48 @@ public class GraalHPyNodes {
         }
     }
 
-    @ImportStatic(PythonOptions.class)
     @GenerateUncached
     public abstract static class HPyGetNativeSpacePointerNode extends Node {
 
         public abstract Object execute(Object object);
 
-        @Specialization(limit = "getVariableArgumentInlineCacheLimit()")
-        static Object doDynamicObject(DynamicObject object,
-                        @CachedLibrary("object") DynamicObjectLibrary lib) {
-            return lib.getOrDefault(object, OBJECT_HPY_NATIVE_SPACE, PNone.NO_VALUE);
+        @Specialization
+        static Object doPythonHPyObject(PythonHPyObject object) {
+            return object.getHPyNativeSpace();
+        }
+
+        @Specialization
+        static Object doPythonHPyObject(PythonObject object,
+                        @Cached ReadAttributeFromDynamicObjectNode readNativeSpaceNode) {
+            return readNativeSpaceNode.execute(object.getStorage(), GraalHPyDef.OBJECT_HPY_NATIVE_SPACE);
+        }
+
+        @Fallback
+        static Object doOther(Object object,
+                        @Cached ReadAttributeFromObjectNode readNativeSpaceNode) {
+            return readNativeSpaceNode.execute(object, GraalHPyDef.OBJECT_HPY_NATIVE_SPACE);
         }
     }
 
-    @GenerateUncached
-    public abstract static class HPyCastArgsNode extends Node {
+    abstract static class HPyAttachFunctionTypeNode extends PNodeWithContext {
+        public abstract Object execute(GraalHPyContext hpyContext, Object pointerObject, LLVMType llvmFunctionType);
 
-        public abstract Object[] execute(GraalHPyHandle argsHandle);
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "argsHandle.isNull()")
-        static Object[] doNull(GraalHPyHandle argsHandle) {
-            return PythonUtils.EMPTY_OBJECT_ARRAY;
-        }
-
-        @Specialization(guards = "!argsHandle.isNull()")
-        static Object[] doNotNull(GraalHPyHandle argsHandle,
-                        @Cached ExecutePositionalStarargsInteropNode expandArgsNode,
-                        @Cached PRaiseNode raiseNode) {
-            Object args = argsHandle.getDelegate();
-            if (PGuards.isPTuple(args)) {
-                return expandArgsNode.executeWithGlobalState(args);
+        public static HPyAttachFunctionTypeNode create() {
+            PythonLanguage language = PythonLanguage.get(null);
+            if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
+                return HPyAttachJNIFunctionTypeNodeGen.create();
             }
-            throw raiseNode.raise(TypeError, "HPy_CallTupleDict requires args to be a tuple or null handle");
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class HPyCastKwargsNode extends Node {
-
-        public abstract PKeyword[] execute(GraalHPyHandle kwargsHandle);
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "kwargsHandle.isNull() || isEmptyDict(lenNode, delegate)", limit = "1")
-        static PKeyword[] doNoKeywords(GraalHPyHandle kwargsHandle,
-                        @Bind("kwargsHandle.getDelegate()") Object delegate,
-                        @Shared("lenNode") @Cached HashingCollectionNodes.LenNode lenNode) {
-            return PKeyword.EMPTY_KEYWORDS;
+            assert language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.NFI;
+            return HPyAttachNFIFunctionTypeNodeGen.create();
         }
 
-        @Specialization(guards = {"!kwargsHandle.isNull()", "!isEmptyDict(lenNode, delegate)"}, limit = "1")
-        static PKeyword[] doKeywords(@SuppressWarnings("unused") GraalHPyHandle kwargsHandle,
-                        @Bind("kwargsHandle.getDelegate()") Object delegate,
-                        @Shared("lenNode") @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
-                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                        @Cached PRaiseNode raiseNode) {
-            if (PGuards.isDict(delegate)) {
-                return expandKwargsNode.execute(delegate);
+        public static HPyAttachFunctionTypeNode getUncached() {
+            PythonLanguage language = PythonLanguage.get(null);
+            if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
+                return HPyAttachJNIFunctionTypeNodeGen.getUncached();
             }
-            throw raiseNode.raise(TypeError, "HPy_CallTupleDict requires kw to be a dict or null handle");
-        }
-
-        static boolean isEmptyDict(HashingCollectionNodes.LenNode lenNode, Object delegate) {
-            return delegate instanceof PDict && lenNode.execute((PDict) delegate) == 0;
+            assert language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.NFI;
+            return HPyAttachNFIFunctionTypeNodeGen.getUncached();
         }
     }
 
@@ -1937,10 +2126,8 @@ public class GraalHPyNodes {
      * available. The node will return a typed function pointer that is then executable.
      */
     @GenerateUncached
-    public abstract static class HPyAttachFunctionTypeNode extends PNodeWithContext {
+    public abstract static class HPyAttachNFIFunctionTypeNode extends HPyAttachFunctionTypeNode {
         public static final String NFI_LANGUAGE = "nfi";
-
-        public abstract Object execute(GraalHPyContext hpyContext, Object pointerObject, LLVMType llvmFunctionType);
 
         @Specialization(guards = "llvmFunctionType == cachedType", limit = "3", assumptions = "singleContextAssumption()")
         static Object doCachedSingleContext(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object pointerObject, @SuppressWarnings("unused") LLVMType llvmFunctionType,
@@ -2035,6 +2222,81 @@ public class GraalHPyNodes {
                     return "(POINTER, POINTER, POINTER): VOID";
                 case HPyFunc_destroyfunc:
                     return "(POINTER): VOID";
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    /**
+     */
+    @GenerateUncached
+    public abstract static class HPyAttachJNIFunctionTypeNode extends HPyAttachFunctionTypeNode {
+
+        @Specialization
+        static GraalHPyJNIFunctionPointer doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object pointerObject, LLVMType llvmFunctionType,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
+            if (!interopLibrary.isPointer(pointerObject)) {
+                interopLibrary.toNative(pointerObject);
+            }
+            try {
+                return new GraalHPyJNIFunctionPointer(interopLibrary.asPointer(pointerObject), getJNISignature(llvmFunctionType));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        private static JNIFunctionSignature getJNISignature(LLVMType llvmFunctionType) {
+            switch (llvmFunctionType) {
+                case HPyModule_init:
+                    return JNIFunctionSignature.PRIMITIVE1;
+                case HPyFunc_noargs:
+                case HPyFunc_unaryfunc:
+                case HPyFunc_getiterfunc:
+                case HPyFunc_iternextfunc:
+                case HPyFunc_reprfunc:
+                case HPyFunc_lenfunc:
+                case HPyFunc_hashfunc:
+                    return JNIFunctionSignature.PRIMITIVE2;
+                case HPyFunc_binaryfunc:
+                case HPyFunc_o:
+                case HPyFunc_getter:
+                case HPyFunc_getattrfunc:
+                case HPyFunc_getattrofunc:
+                case HPyFunc_ssizeargfunc:
+                    return JNIFunctionSignature.PRIMITIVE3;
+                case HPyFunc_varargs:
+                case HPyFunc_ternaryfunc:
+                case HPyFunc_descrgetfunc:
+                case HPyFunc_ssizessizeargfunc:
+                    return JNIFunctionSignature.PRIMITIVE4;
+                case HPyFunc_keywords:
+                    return JNIFunctionSignature.PRIMITIVE5;
+                case HPyFunc_inquiry:
+                    return JNIFunctionSignature.INQUIRY;
+                case HPyFunc_ssizeobjargproc:
+                    return JNIFunctionSignature.SSIZEOBJARGPROC;
+                case HPyFunc_initproc:
+                    return JNIFunctionSignature.INITPROC;
+                case HPyFunc_ssizessizeobjargproc:
+                    return JNIFunctionSignature.SSIZESSIZEOBJARGPROC;
+                case HPyFunc_objobjargproc:
+                case HPyFunc_setter:
+                case HPyFunc_descrsetfunc:
+                case HPyFunc_setattrfunc:
+                case HPyFunc_setattrofunc:
+                    return JNIFunctionSignature.OBJOBJARGPROC;
+                case HPyFunc_freefunc:
+                    return JNIFunctionSignature.FREEFUNC;
+                case HPyFunc_richcmpfunc:
+                    return JNIFunctionSignature.RICHCOMPAREFUNC;
+                case HPyFunc_objobjproc:
+                    return JNIFunctionSignature.OBJOBJPROC;
+                case HPyFunc_getbufferproc:
+                    return JNIFunctionSignature.GETBUFFERPROC;
+                case HPyFunc_releasebufferproc:
+                    return JNIFunctionSignature.RELEASEBUFFERPROC;
+                case HPyFunc_destroyfunc:
+                    return JNIFunctionSignature.DESTROYFUNC;
             }
             throw CompilerDirectives.shouldNotReachHere();
         }

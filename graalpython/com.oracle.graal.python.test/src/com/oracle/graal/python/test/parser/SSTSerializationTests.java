@@ -1268,10 +1268,10 @@ public class SSTSerializationTests extends ParserTestBase {
         checkScopeSerialization(parserScope);
         Assert.assertNotNull("Parser result is null", parserResult);
         // serialize the source
-        byte[] serializeResult = serializer.serialize(parserResult);
+        byte[] serializeResult = serializer.serialize(context.getCore(), parserResult);
         Assert.assertNotNull("Serialized data are null", serializeResult);
         // and get the tree from serialized data
-        RootNode deserialize = serializer.deserialize(serializeResult);
+        RootNode deserialize = serializer.deserialize(context.getCore(), serializeResult);
 
         Assert.assertNotNull("Deserialized result is null", parserResult);
         // compare the tree from parser with the tree from serializer
@@ -1535,7 +1535,7 @@ public class SSTSerializationTests extends ParserTestBase {
 
         PythonCodeSerializer serializer = context.getCore().getSerializer();
         startFile = System.nanoTime();
-        byte[] serializeResult = serializer.serialize(parserResult);
+        byte[] serializeResult = serializer.serialize(context.getCore(), parserResult);
         end = System.nanoTime();
         result[1] = end - startFile;
         TruffleFile serFile = context.getEnv().getInternalTruffleFile(file.getAbsolutePath() + ".pyc");
@@ -1550,7 +1550,7 @@ public class SSTSerializationTests extends ParserTestBase {
         TruffleFile tFile = context.getEnv().getInternalTruffleFile(file.getAbsolutePath() + ".pyc");
         byte[] desbytes = tFile.readAllBytes();
         startMemory = System.nanoTime();
-        serializer.deserialize(desbytes);
+        serializer.deserialize(context.getCore(), desbytes);
         end = System.nanoTime();
         result[2] = end - startMemory;
         result[5] = end - startFile;

@@ -9,7 +9,6 @@ ModuleRootNode Name: <module 'issueGitHub_42_v2'> SourceSection: [0,35]`[e for e
       CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: list
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [1,34]`e for e in [s for s ...`
         Name: <genexpr>
         FrameDescriptor: 2 slots [e, <return_val>]
@@ -61,7 +60,6 @@ ModuleRootNode Name: <module 'issueGitHub_42_v2'> SourceSection: [0,35]`[e for e
             CallUnaryMethodNodeGen SourceSection: None
             ReadGlobalOrBuiltinNodeGen SourceSection: None
               Identifier: list
-              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             GeneratorExpressionNode SourceSection: [13,33]`s for s in (1, 2, 3)...`
               Name: <genexpr>
               FrameDescriptor: 2 slots [s, <return_val>]

@@ -268,7 +268,7 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
         }
 
         protected static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+            return PythonLanguage.get(null).singleContextAssumption;
         }
     }
 }

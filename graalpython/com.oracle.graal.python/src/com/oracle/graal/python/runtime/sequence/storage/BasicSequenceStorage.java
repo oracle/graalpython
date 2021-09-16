@@ -42,12 +42,10 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
 
     @Override
     public void setNewLength(int length) {
-        checkLock();
         this.length = length;
     }
 
     protected final void incLength() {
-        checkLock();
         this.length++;
     }
 

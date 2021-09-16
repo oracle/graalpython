@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsClinicProvi
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -80,19 +81,21 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -115,23 +118,16 @@ public class ModuleBuiltins extends PythonBuiltins {
             return ModuleNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         public PNone module(PythonModule self, String name, Object doc,
                         @Cached WriteAttributeToObjectNode writeName,
                         @Cached WriteAttributeToObjectNode writeDoc,
                         @Cached WriteAttributeToObjectNode writePackage,
                         @Cached WriteAttributeToObjectNode writeLoader,
                         @Cached WriteAttributeToObjectNode writeSpec,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
+                        @Cached GetOrCreateDictNode getDict) {
             // create dict if missing
-            if (lib.getDict(self) == null) {
-                try {
-                    lib.setDict(self, factory().createDictFixedStorage(self));
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException(e);
-                }
-            }
+            getDict.execute(self);
 
             // init
             writeName.execute(self, __NAME__, name);
@@ -156,6 +152,7 @@ public class ModuleBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile isDictProfile,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached CallNode callNode,
+                        @Cached GetDictIfExistsNode getDict,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hashLib,
                         @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             Object dict = pol.lookupAttribute(self, frame, __DICT__);
@@ -168,13 +165,13 @@ public class ModuleBuiltins extends PythonBuiltins {
                     return constructListNode.execute(frame, dict);
                 }
             } else {
-                String name = getName(self, pol, hashLib, castToJavaStringNode);
+                String name = getName(self, getDict, hashLib, castToJavaStringNode);
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_DICTIONARY, name);
             }
         }
 
-        private String getName(PythonModule self, PythonObjectLibrary pol, HashingStorageLibrary hashLib, CastToJavaStringNode castToJavaStringNode) {
-            PDict dict = pol.getDict(self);
+        private String getName(PythonModule self, GetDictIfExistsNode getDict, HashingStorageLibrary hashLib, CastToJavaStringNode castToJavaStringNode) {
+            PDict dict = getDict.execute(self);
             if (dict != null) {
                 Object name = hashLib.getItem(dict.getDictStorage(), __NAME__);
                 if (name != null) {
@@ -194,35 +191,37 @@ public class ModuleBuiltins extends PythonBuiltins {
     public abstract static class ModuleDictNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"isNoValue(none)"}, limit = "1")
         Object doManagedCachedShape(PythonModule self, @SuppressWarnings("unused") PNone none,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached GetDictIfExistsNode getDict,
+                        @Cached SetDictNode setDict,
                         @CachedLibrary("self") DynamicObjectLibrary dynamicObjectLibrary) {
-            PDict dict = lib.getDict(self);
+            PDict dict = getDict.execute(self);
             if (dict == null) {
                 if (hasInitialProperties(dynamicObjectLibrary, self)) {
                     return PNone.NONE;
                 }
-                dict = createDict(self, lib);
+                dict = createDict(self, setDict);
             }
             return dict;
         }
 
-        @Specialization(guards = "isNoValue(none)", limit = "1", replaces = "doManagedCachedShape")
+        @Specialization(guards = "isNoValue(none)", replaces = "doManagedCachedShape")
         Object doManaged(PythonModule self, @SuppressWarnings("unused") PNone none,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            PDict dict = lib.getDict(self);
+                        @Cached GetDictIfExistsNode getDict,
+                        @Cached SetDictNode setDict) {
+            PDict dict = getDict.execute(self);
             if (dict == null) {
                 if (hasInitialPropertiesUncached(self)) {
                     return PNone.NONE;
                 }
-                dict = createDict(self, lib);
+                dict = createDict(self, setDict);
             }
             return dict;
         }
 
-        @Specialization(guards = "isNoValue(none)", limit = "1")
+        @Specialization(guards = "isNoValue(none)")
         Object doNativeObject(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            PDict dict = lib.getDict(self);
+                        @Cached GetDictIfExistsNode getDict) {
+            PDict dict = getDict.execute(self);
             if (dict == null) {
                 doError(self, none);
             }
@@ -234,14 +233,9 @@ public class ModuleBuiltins extends PythonBuiltins {
             throw raise(PythonBuiltinClassType.TypeError, "descriptor '__dict__' for 'module' objects doesn't apply to a '%p' object", self);
         }
 
-        private PDict createDict(PythonModule self, @CachedLibrary("self") PythonObjectLibrary lib) {
-            PDict dict;
-            dict = factory().createDictFixedStorage(self);
-            try {
-                lib.setDict(self, dict);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
+        private PDict createDict(PythonModule self, SetDictNode setDict) {
+            PDict dict = factory().createDictFixedStorage(self);
+            setDict.execute(self, dict);
             return dict;
         }
 
@@ -273,25 +267,41 @@ public class ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ModuleGetattritbuteNode extends PythonBinaryBuiltinNode {
         @Specialization
+        Object getattributeString(VirtualFrame frame, PythonModule self, String key,
+                        @Shared("getattr") @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
+                        @Shared("handleException") @Cached HandleGetattrExceptionNode handleException) {
+            try {
+                return objectGetattrNode.call(frame, self, key);
+            } catch (PException e) {
+                return handleException.execute(frame, self, key, e);
+            }
+        }
+
+        @Specialization
         Object getattribute(VirtualFrame frame, PythonModule self, Object keyObj,
-                        @Cached IsBuiltinClassProfile isAttrError,
-                        @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
-                        @Cached ReadAttributeFromObjectNode readGetattr,
-                        @Cached ConditionProfile customGetAttr,
-                        @Cached CallNode callNode,
-                        @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                         @Cached CastToJavaStringNode castKeyToStringNode,
-                        @Cached CastToJavaStringNode castNameToStringNode) {
+                        @Shared("getattr") @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
+                        @Shared("handleException") @Cached HandleGetattrExceptionNode handleException) {
             String key;
             try {
                 key = castKeyToStringNode.execute(keyObj);
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
+            return getattributeString(frame, self, key, objectGetattrNode, handleException);
+        }
 
-            try {
-                return objectGetattrNode.call(frame, self, key);
-            } catch (PException e) {
+        protected abstract static class HandleGetattrExceptionNode extends PNodeWithRaise {
+            public abstract Object execute(VirtualFrame frame, PythonModule self, String key, PException e);
+
+            @Specialization
+            Object getattribute(VirtualFrame frame, PythonModule self, String key, PException e,
+                            @Cached IsBuiltinClassProfile isAttrError,
+                            @Cached ReadAttributeFromObjectNode readGetattr,
+                            @Cached ConditionProfile customGetAttr,
+                            @Cached CallNode callNode,
+                            @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
+                            @Cached CastToJavaStringNode castNameToStringNode) {
                 e.expect(PythonBuiltinClassType.AttributeError, isAttrError);
                 Object getAttr = readGetattr.execute(self, __GETATTR__);
                 if (customGetAttr.profile(getAttr != PNone.NO_VALUE)) {

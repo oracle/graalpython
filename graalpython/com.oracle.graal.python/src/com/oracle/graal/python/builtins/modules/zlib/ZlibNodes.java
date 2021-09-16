@@ -71,7 +71,6 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -97,7 +96,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class ZlibNodes {
 
-    /*- Return codes for the compression/decompression functions. 
+    /*- Return codes for the compression/decompression functions.
         Negative values are errors, positive values are used for special but normal events. */
     public static final int Z_OK = 0;
     public static final int Z_STREAM_END = 1;
@@ -439,8 +438,8 @@ public class ZlibNodes {
 
         @SuppressWarnings("unused")
         @Fallback
-        static void fallback(Object zst, int function, int err, NFIZlibSupport zlibSupport, boolean deallocate) {
-            throw PythonLanguage.getCore().raise(SystemError, "Unhandled Error!");
+        void fallback(Object zst, int function, int err, NFIZlibSupport zlibSupport, boolean deallocate) {
+            throw PRaiseNode.raiseUncached(this, SystemError, "Unhandled Error!");
         }
     }
 

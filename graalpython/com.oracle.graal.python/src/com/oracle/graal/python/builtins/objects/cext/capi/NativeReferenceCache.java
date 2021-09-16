@@ -129,7 +129,7 @@ public final class NativeReferenceCache implements TruffleObject {
 
         @Specialization(guards = {"!isResolved(pointerObject)", "ref != null", "isSame(interoplibrary, pointerObject, ref)"}, //
                         rewriteOn = {CannotCastException.class, InvalidCacheEntry.class}, //
-                        assumptions = "singleContextAssumption()", //
+                        assumptions = "singleContextAssumption(interoplibrary)", //
                         limit = "1")
         static PythonAbstractNativeObject doCachedPointer(@SuppressWarnings("unused") Object pointerObject, @SuppressWarnings("unused") Object refCnt, boolean steal,
                         @Shared("stealProfile") @Cached ConditionProfile stealProfile,
@@ -235,8 +235,8 @@ public final class NativeReferenceCache implements TruffleObject {
             return CApiGuards.isNativeWrapper(object) || object instanceof String;
         }
 
-        static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+        static Assumption singleContextAssumption(Node node) {
+            return PythonLanguage.get(node).singleContextAssumption;
         }
 
         static boolean isNoRefCnt(Object refCnt) {

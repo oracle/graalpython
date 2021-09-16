@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPoin
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -180,8 +181,31 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = {"eq(ML_METH, key)"})
+        static Object getMethFromBuiltinMethod(PBuiltinMethod object, String key,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return getMethFromBuiltinFunction(object.getFunction(), key, toSulongNode);
+        }
+
+        @Specialization(guards = {"eq(ML_METH, key)"})
+        static Object getMethFromBuiltinFunction(PBuiltinFunction object, @SuppressWarnings("unused") String key,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            PKeyword[] kwDefaults = object.getKwDefaults();
+            for (int i = 0; i < kwDefaults.length; i++) {
+                if (ExternalFunctionNodes.KW_CALLABLE.equals(kwDefaults[i].getName())) {
+                    return kwDefaults[i].getValue();
+                }
+            }
+            return toSulongNode.execute(object);
+        }
+
+        @Specialization(guards = {"eq(ML_METH, key)"}, replaces = {"getMethFromBuiltinMethod", "getMethFromBuiltinFunction"})
         static Object getMeth(PythonObject object, @SuppressWarnings("unused") String key,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            if (object instanceof PBuiltinMethod) {
+                return getMethFromBuiltinMethod((PBuiltinMethod) object, key, toSulongNode);
+            } else if (object instanceof PBuiltinFunction) {
+                return getMethFromBuiltinFunction((PBuiltinFunction) object, key, toSulongNode);
+            }
             return toSulongNode.execute(object);
         }
 

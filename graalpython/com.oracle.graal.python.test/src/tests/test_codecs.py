@@ -268,3 +268,16 @@ class EscapeDecodeTest(unittest.TestCase):
         self.assertRaises(ValueError, decode, br"[\x0]")
         self.assertEqual(decode(br"[\x0]\x0", "ignore"), (b"[]", 8))
         self.assertEqual(decode(br"[\x0]\x0", "replace"), (b"[?]?", 8))
+
+class LookupTest(unittest.TestCase):
+    def test_lookup(self):
+        self.assertEqual(codecs.lookup('UTF-8').name, "utf-8")
+
+    def test_lookup_error(self):
+        def errhandler():
+            pass
+        self.assertRaises(TypeError, codecs.register_error, 1)
+        self.assertRaises(TypeError, codecs.register_error, 'a', 1)
+        self.assertRaises(LookupError, codecs.lookup_error, 'a')
+        codecs.register_error('testhandler', errhandler)
+        self.assertEqual(codecs.lookup_error('testhandler'), errhandler)

@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
@@ -281,7 +282,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
             target = targets[0];
             if (!(target instanceof ReadNode || target instanceof TupleLiteralNode || target instanceof ListLiteralNode)) {
                 if (target instanceof StarredExpressionNode) {
-                    throw errors.raise(SyntaxError, ErrorMessages.STARRED_ASSIGMENT_MUST_BE_IN_LIST_OR_TUPLE);
+                    throw PRaiseNode.raiseUncached(null, SyntaxError, ErrorMessages.STARRED_ASSIGMENT_MUST_BE_IN_LIST_OR_TUPLE);
                 } else {
                     // TODO handle this???
                     // String text = ctx.getText();
@@ -289,7 +290,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
                     // throw errors.raise(SyntaxError, "no binding for nonlocal variable \"%s\"
                     // found", text);
                     // }
-                    throw errors.raise(SyntaxError, ErrorMessages.CANNOT_ASSIGN_TO, target);
+                    throw PRaiseNode.raiseUncached(null, SyntaxError, ErrorMessages.CANNOT_ASSIGN_TO, target);
                 }
             }
         } else {

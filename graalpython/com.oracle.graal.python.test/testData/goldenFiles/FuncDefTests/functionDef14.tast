@@ -87,6 +87,5 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
                             EmptyNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [13,20]`install`
                             Identifier: install
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [0,<return_val>,Object]

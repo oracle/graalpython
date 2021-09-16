@@ -58,7 +58,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [2061,2067]`object`
                             Identifier: object
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [2074,2122]`return getattr(obj, ...`
                         NotNodeGen SourceSection: [2081,2122]`getattr(obj, key, de...`
                           IsExpressionNodeGen SourceSection: None
@@ -66,7 +65,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               CallTernaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [2081,2088]`getattr`
                                 Identifier: getattr
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [2089,2092]`obj`
                                 Frame: [0,obj,Illegal]
                               ReadLocalVariableNodeGen SourceSection: [2094,2097]`key`
@@ -325,7 +323,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [2592,2597]`tuple`
                             Identifier: tuple
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [2598,2604]`result`
                             Frame: [2,result,Illegal]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -403,7 +400,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [2837,2840]`len`
                                 Identifier: len
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [2841,2847]`kwargs`
                                 Frame: [4,kwargs,Illegal]
                             IntegerLiteralNode SourceSection: [2851,2852]`0`
@@ -421,7 +417,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2884,2889]`print`
                               Identifier: print
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [2890,2969]`"Tried to use keywor...`
                         ExpressionStatementNode SourceSection: [2979,2994]`_posix.exit(-1)`
                           PythonCallUnary SourceSection: [2979,2994]`_posix.exit(-1)`
@@ -449,7 +444,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                         CallTernaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [3031,3035]`type`
                           Identifier: type
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [3036,3040]`name`
                           Frame: [1,name,Illegal]
                         ReadLocalVariableNodeGen SourceSection: [3042,3047]`bases`
@@ -490,7 +484,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                       QualName: map
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       ReadIndexedArgumentNodeGen SourceSection: None
                         Index: 0
                       SetItemIfNotPresentNodeGen SourceSection: None
@@ -563,7 +556,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [3169,3173]`iter`
                                             Identifier: iter
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [3174,3182]`iterable`
                                             Frame: [2,iterable,Illegal]
                                         PythonObjectFactoryNodeGen SourceSection: None
@@ -584,7 +576,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [3237,3241]`iter`
                                                   Identifier: iter
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [3242,3243]`i`
                                                   Frame: [5,i,Illegal]
                                         GetIteratorExpressionNodeGen SourceSection: [3202,3206]`args`
@@ -655,7 +646,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [3386,3390]`next`
                                                   Identifier: next
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [3391,3393]`it`
                                                   Frame: [2,it,Illegal]
                                         GetIteratorExpressionNodeGen SourceSection: [3344,3360]`self.__iterators`
@@ -664,8 +654,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                               Key: _map__iterators
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [3344,3348]`self`
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -787,8 +775,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                   Key: _map__func
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [3528,3532]`self`
                                                   Frame: [0,self,Illegal]
                                               GetAttributeNode SourceSection: [3542,3558]`self.__iterators`
@@ -796,14 +782,11 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                   Key: _map__iterators
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [3542,3546]`self`
                                                   Frame: [0,self,Illegal]
                                               ExecutePositionalStarargsNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [3524,3527]`map`
                                               Identifier: map
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [3620,3632]`return False`
                                       BooleanLiteralNode SourceSection: [3627,3632]`False`
@@ -870,7 +853,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [3880,3883]`len`
                                 Identifier: len
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [3884,3887]`obj`
                                 Frame: [0,obj,Illegal]
                             IntegerLiteralNode SourceSection: [3892,3893]`0`
@@ -881,13 +863,10 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               Key: f_locals
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [4021,4036]`__getframe__(1)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [4021,4033]`__getframe__`
                                 Identifier: __getframe__
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [4034,4035]`1`
                                 Value: 1
                         IfNode SourceSection: [4050,4134]`elif len(obj) != 1:↵...`
@@ -897,7 +876,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4055,4058]`len`
                                   Identifier: len
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [4059,4062]`obj`
                                   Frame: [0,obj,Illegal]
                               IntegerLiteralNode SourceSection: [4067,4068]`1`
@@ -907,7 +885,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [4084,4093]`TypeError`
                                 Identifier: TypeError
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [4094,4128]`"vars() takes at mos...`
                             NoValueNode SourceSection: None
                           BlockNode SourceSection: None
@@ -919,8 +896,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                 Key: __dict__
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
                               GetItemNodeGen SourceSection: [4154,4160]`obj[0]`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [0,obj,Illegal]
@@ -932,12 +907,10 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4211,4220]`TypeError`
                                   Identifier: TypeError
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 StringLiteralNode SourceSection: [4221,4267]`"vars() argument mus...`
                               NoValueNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [4181,4195]`AttributeError`
                               Identifier: AttributeError
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [1,<return_val>,Object]
@@ -995,7 +968,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [4530,4534]`type`
                                 Identifier: type
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [4535,4540]`value`
                                 Frame: [0,value,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [4553,4558]`value`
@@ -1068,7 +1040,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [4903,4907]`list`
                                 Identifier: list
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [4908,4916]`iterable`
                                 Frame: [0,iterable,Illegal]
                           ExpressionStatementNode SourceSection: [4922,4959]`result.sort(key=key,...`

@@ -173,9 +173,28 @@ public abstract class TypeNodes {
         static long doBuiltinClassType(PythonBuiltinClassType clazz) {
             long result;
             switch (clazz) {
+                case DictRemover:
+                case StructParam:
+                case CArgObject:
+                    result = DEFAULT;
+                    break;
                 case PythonObject:
+                case StgDict:
+                case PyCData:
+                case PyCArray:
+                case PyCPointer:
+                case PyCFuncPtr:
+                case Structure:
+                case Union:
+                case SimpleCData:
                     result = DEFAULT | BASETYPE;
                     break;
+                case PyCArrayType: // DEFAULT | BASETYPE | PythonClass.flags
+                case PyCSimpleType: // DEFAULT | BASETYPE | PythonClass.flags
+                case PyCFuncPtrType: // DEFAULT | BASETYPE | PythonClass.flags
+                case PyCStructType: // DEFAULT | HAVE_GC | BASETYPE | PythonClass.flags
+                case PyCPointerType: // DEFAULT | HAVE_GC | BASETYPE | PythonClass.flags
+                case UnionType: // DEFAULT | HAVE_GC | BASETYPE | PythonClass.flags
                 case PythonClass:
                     result = DEFAULT | HAVE_GC | BASETYPE | TYPE_SUBCLASS;
                     break;
@@ -199,6 +218,9 @@ public abstract class TypeNodes {
                 case PBuiltinFunction:
                     result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR | HAVE_VECTORCALL;
                     break;
+                case WrapperDescriptor:
+                    result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR;
+                    break;
                 case PMethod:
                 case PBuiltinMethod:
                     result = DEFAULT | HAVE_GC | HAVE_VECTORCALL;
@@ -214,6 +236,8 @@ public abstract class TypeNodes {
                 case PTraceback:
                 case PDequeIter:
                 case PDequeRevIter:
+                case CField:
+                case CThunkObject:
                     result = DEFAULT | HAVE_GC;
                     break;
                 case PDict:
@@ -394,20 +418,22 @@ public abstract class TypeNodes {
 
         @Specialization(replaces = {"doPythonClass", "doBuiltinClass", "doNativeClass"})
         @TruffleBoundary
-        static MroSequenceStorage doSlowPath(Object obj) {
+        static MroSequenceStorage doSlowPath(Object obj,
+                        @Cached PRaiseNode raise) {
             if (obj instanceof PythonManagedClass) {
-                return doPythonClass((PythonManagedClass) obj, ConditionProfile.getUncached(), ConditionProfile.getUncached(), PythonLanguage.getCurrent());
+                return doPythonClass((PythonManagedClass) obj, ConditionProfile.getUncached(), ConditionProfile.getUncached(), PythonLanguage.get(null));
             } else if (obj instanceof PythonBuiltinClassType) {
-                return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
+                return PythonContext.get(null).getCore().lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
             } else if (PGuards.isNativeClass(obj)) {
-                Object tupleObj = GetTypeMemberNode.getUncached().execute(obj, NativeMember.TP_MRO);
+                GetTypeMemberNode getTypeMemeberNode = GetTypeMemberNode.getUncached();
+                Object tupleObj = getTypeMemeberNode.execute(obj, NativeMember.TP_MRO);
                 if (tupleObj instanceof PTuple) {
                     SequenceStorage sequenceStorage = ((PTuple) tupleObj).getSequenceStorage();
                     if (sequenceStorage instanceof MroSequenceStorage) {
                         return (MroSequenceStorage) sequenceStorage;
                     }
                 }
-                throw PythonLanguage.getCore().raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_MRO_OBJ);
+                throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_MRO_OBJ);
             }
             throw new IllegalStateException("unknown type " + obj.getClass().getName());
         }
@@ -1639,6 +1665,7 @@ public abstract class TypeNodes {
                 case PHashInfo:
                 case PThreadInfo:
                 case PUnraisableHookArgs:
+                    // io
                 case PIOBase:
                 case PFileIO:
                 case PBufferedIOBase:
@@ -1648,6 +1675,20 @@ public abstract class TypeNodes {
                 case PBufferedRandom:
                 case PIncrementalNewlineDecoder:
                 case PTextIOWrapper:
+                    // ctypes
+                case CArgObject:
+                case CThunkObject:
+                case StgDict:
+                case Structure:
+                case Union:
+                case PyCPointer:
+                case PyCArray:
+                case PyCData:
+                case SimpleCData:
+                case PyCFuncPtr:
+                case CField:
+                case DictRemover:
+                case StructParam:
                     return 8;
                 case PythonClass:
                     return 40;

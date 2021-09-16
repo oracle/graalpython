@@ -64,7 +64,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.TRUNCATE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITELINES;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.getDict;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_WHENCE_D_SHOULD_BE_0_1_OR_2;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_CLOSED;
@@ -113,6 +112,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -709,13 +709,12 @@ public class BytesIOBuiltins extends PythonBuiltins {
     @Builtin(name = __GETSTATE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetStateNode extends ClosedCheckPythonUnaryBuiltinNode {
-        @Specialization(guards = "self.hasBuf()", limit = "1")
+        @Specialization(guards = "self.hasBuf()")
         Object doit(VirtualFrame frame, PBytesIO self,
                         @Cached GetValueNode getValueNode,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf) {
+                        @Cached GetOrCreateDictNode getDict) {
             Object initValue = getValueNode.call(frame, self);
-            PDict dict = getDict(self, libSelf, factory());
-            Object[] state = new Object[]{initValue, self.getPos(), dict};
+            Object[] state = new Object[]{initValue, self.getPos(), getDict.execute(self)};
             return factory().createTuple(state);
         }
     }
@@ -729,8 +728,8 @@ public class BytesIOBuiltins extends PythonBuiltins {
                         @Cached WriteNode writeNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+                        @Cached GetOrCreateDictNode getDict,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
             Object[] array = getArray.execute(state.getSequenceStorage());
             if (array.length < 3) {
                 return notTuple(self, state);
@@ -769,7 +768,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
                  * Alternatively, we could replace the internal dictionary completely. However, it
                  * seems more practical to just update it.
                  */
-                PDict dict = getDict(self, lib, factory());
+                PDict dict = getDict.execute(self);
                 hlib.addAllToOther(((PDict) array[2]).getDictStorage(), dict.getDictStorage());
             }
             return PNone.NONE;

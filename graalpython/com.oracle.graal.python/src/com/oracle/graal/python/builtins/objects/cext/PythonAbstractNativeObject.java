@@ -40,26 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GENERIC_GET_DICT;
-
 import java.util.Objects;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -75,7 +65,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -89,9 +78,9 @@ import com.oracle.truffle.api.utilities.TriState;
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
-    public final TruffleObject object;
+    public final Object object;
 
-    public PythonAbstractNativeObject(TruffleObject object) {
+    public PythonAbstractNativeObject(Object object) {
         this.object = object;
     }
 
@@ -105,7 +94,8 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         throw new UnsupportedOperationException("not yet implemented");
     }
 
-    public TruffleObject getPtr() {
+    @Override
+    public Object getPtr() {
         return object;
     }
 
@@ -144,40 +134,6 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return String.format("PythonAbstractNativeObject(%s)", object);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public boolean hasDict() {
-        return true;
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public void setDict(PDict value) throws UnsupportedMessageException {
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public void deleteDict() throws UnsupportedMessageException {
-        throw UnsupportedMessageException.create();
-    }
-
-    @ExportMessage
-    public PDict getDict(
-                    @Exclusive @Cached PRaiseNode raiseNode,
-                    @Exclusive @Cached ToSulongNode toSulong,
-                    @Exclusive @Cached ToJavaNode toJava,
-                    @Exclusive @Cached PCallCapiFunction callGetDictNode) {
-        Object javaDict = toJava.execute(callGetDictNode.call(FUN_PY_OBJECT_GENERIC_GET_DICT, toSulong.execute(this)));
-        if (javaDict instanceof PDict) {
-            return (PDict) javaDict;
-        } else if (javaDict == PNone.NO_VALUE) {
-            return null;
-        } else {
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, javaDict);
-        }
     }
 
     @ExportMessage

@@ -42,10 +42,10 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class GraalHPyTracker {
     private static final int HPYTRACKER_INITIAL_SIZE = 5;
@@ -70,10 +70,10 @@ public final class GraalHPyTracker {
         handles = Arrays.copyOf(handles, PythonUtils.multiplyExact(handles.length, 2) - 1);
     }
 
-    public void free(GraalHPyContext nativeContext, ConditionProfile profile) {
+    public void free(GraalHPyContext nativeContext, HPyCloseHandleNode closeHandleNode) {
         assert cursor <= handles.length;
         for (int i = 0; i < cursor; i++) {
-            handles[i].close(nativeContext, profile);
+            closeHandleNode.execute(nativeContext, handles[i]);
         }
         cursor = 0;
     }

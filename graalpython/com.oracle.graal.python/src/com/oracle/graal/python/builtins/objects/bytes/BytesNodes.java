@@ -54,6 +54,7 @@ import java.util.Arrays;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.ArgumentIndex;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -655,10 +656,17 @@ public abstract class BytesNodes {
         }
 
         @Specialization(guards = {"isString(source)", "isString(encoding)"})
+        byte[] fromString(Object source, Object encoding, @SuppressWarnings("unused") PNone errors,
+                        @Cached CastToJavaStringNode castStr,
+                        @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encodeNode) {
+            return encodeNode.execute(source, castStr.execute(encoding), "strict");
+        }
+
+        @Specialization(guards = {"isString(source)", "isString(encoding)", "isString(errors)"})
         byte[] fromString(Object source, Object encoding, Object errors,
-                        @Cached CastToJavaStringNode castStr) {
-            String e = errors instanceof String ? (String) errors : "strict";
-            return BytesBuiltins.stringToByte(castStr.execute(source), castStr.execute(encoding), e, getRaiseNode());
+                        @Cached CastToJavaStringNode castStr,
+                        @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encodeNode) {
+            return encodeNode.execute(source, castStr.execute(encoding), castStr.execute(errors));
         }
 
         @Specialization(guards = "isString(source)")

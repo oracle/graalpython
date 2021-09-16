@@ -42,12 +42,12 @@ package com.oracle.graal.python.nodes;
 
 import java.util.ArrayList;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -140,7 +140,7 @@ public abstract class PRootNode extends RootNode {
 
     @TruffleBoundary
     private void triggerDeprecationWarningsBoundary() {
-        Python3Core errors = PythonLanguage.getContext().getCore();
+        Python3Core errors = PythonContext.get(this).getCore();
         try {
             for (String warning : deprecationWarnings) {
                 errors.warn(PythonBuiltinClassType.DeprecationWarning, "%s", warning);
@@ -214,7 +214,8 @@ public abstract class PRootNode extends RootNode {
     @TruffleBoundary
     private byte[] extractCode() {
         if (this instanceof PClosureRootNode) {
-            return PythonLanguage.getCore().getSerializer().serialize(this);
+            Python3Core core = PythonContext.get(this).getCore();
+            return core.getSerializer().serialize(core, this);
         }
         // no code for non-user functions
         return PythonUtils.EMPTY_BYTE_ARRAY;

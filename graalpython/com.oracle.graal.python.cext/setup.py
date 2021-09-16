@@ -397,6 +397,7 @@ builtin_exts = (
     NativeBuiltinModule("_cpython_struct"),
     NativeBuiltinModule("_testcapi"),
     NativeBuiltinModule("_testmultiphase"),
+    NativeBuiltinModule("_ctypes_test"),
     # the above modules are more core, we need them first to deal with later, more complex modules with dependencies
     NativeBuiltinModule("_bz2", deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")], extra_link_args=["-Wl,-rpath,%s/../lib/%s/" % (relative_rpath, SOABI)]),
 )
@@ -425,7 +426,7 @@ def build_libhpy(capi_home):
     files = [os.path.abspath(os.path.join(src_dir, f)) for f in os.listdir(src_dir) if f.endswith(".c")]
     module = Extension(libhpy_name,
                        sources=files,
-                       define_macros=[("HPY_UNIVERSAL_ABI", None)],
+                       define_macros=[("HPY_UNIVERSAL_ABI", 1)],
                        extra_compile_args=cflags_warnings,
     )
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean"]
@@ -472,6 +473,9 @@ def build_nativelibsupport(capi_home, subdir, libname, deps=[], **kwargs):
 def build_libposix(capi_home):
     src_dir = os.path.join(__dir__, "posix")
     files = [os.path.abspath(os.path.join(src_dir, f)) for f in os.listdir(src_dir) if f.endswith(".c")]
+    no_gnu_source = get_config_var("USE_GNU_SOURCE")
+    if no_gnu_source:
+        get_config_vars()["CFLAGS"] = get_config_var("CFLAGS_DEFAULT")
     module = Extension(libposix_name,
                        sources=files,
                        libraries=['crypt'] if not darwin_native else [],
@@ -485,6 +489,8 @@ def build_libposix(capi_home):
         description="Graal Python's Native support for the POSIX library",
         ext_modules=[module],
     )
+    if no_gnu_source:
+        get_config_vars()["CFLAGS"] = get_config_var("CFLAGS_DEFAULT") + " " + get_config_var("USE_GNU_SOURCE")
 
 
 def build_builtin_exts(capi_home):

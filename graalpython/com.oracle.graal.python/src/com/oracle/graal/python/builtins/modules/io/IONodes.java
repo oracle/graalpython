@@ -55,8 +55,6 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
@@ -73,7 +71,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -439,19 +436,6 @@ public class IONodes {
                 throw raise(TypeError, EXPECTED_OBJ_TYPE_S_GOT_P, "str", s);
             }
         }
-    }
-
-    protected static PDict getDict(PythonObject self, PythonObjectLibrary lib, PythonObjectFactory factory) {
-        PDict dict = lib.getDict(self);
-        if (dict == null) {
-            try {
-                dict = factory.createDictFixedStorage(self);
-                lib.setDict(self, dict);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-        return dict;
     }
 
     public abstract static class CallWrite extends Node {

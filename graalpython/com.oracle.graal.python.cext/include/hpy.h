@@ -111,22 +111,39 @@
        - Debug mode: _i is a pointer to a DebugHandle, which contains a
          another HPy among other stuff
  */
+#ifndef GRAALVM_PYTHON_LLVM
+typedef struct _HPy_s { intptr_t _i; } HPy;
+typedef struct { intptr_t _lst; } HPyListBuilder;
+typedef struct { intptr_t _tup; } HPyTupleBuilder;
+typedef struct { intptr_t _i; } HPyTracker;
+#else
 typedef struct _HPy_s { void* _i; } HPy;
 typedef struct { void* _lst; } HPyListBuilder;
 typedef struct { void* _tup; } HPyTupleBuilder;
 typedef struct { void* _i; } HPyTracker;
+#endif
 
 
 /* A null handle is officially defined as a handle whose _i is 0. This is true
    in all ABI modes. */
+#ifndef GRAALVM_PYTHON_LLVM
+#define HPy_NULL ((HPy){0})
+#define HPy_IsNull(h) ((h)._i == 0)
+#else
 #define HPy_NULL ((HPy){NULL})
 #define HPy_IsNull(h) ((h)._i == NULL)
+#endif
 
 /* Convenience functions to cast between HPy and void*.  We need to decide
    whether these are part of the official API or not, and maybe introduce a
    better naming convetion. For now, they are needed for ujson. */
+#ifndef GRAALVM_PYTHON_LLVM
+static inline HPy HPy_FromVoidP(void *p) { return (HPy){(intptr_t)p}; }
+static inline void* HPy_AsVoidP(HPy h) { return (void*)h._i; }
+#else
 static inline HPy HPy_FromVoidP(void *p) { return (HPy){p}; }
 static inline void* HPy_AsVoidP(HPy h) { return h._i; }
+#endif
 
 
 /* ~~~~~~~~~~~~~~~~ Definition of other types ~~~~~~~~~~~~~~~~ */

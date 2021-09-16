@@ -3,7 +3,9 @@ graalpython/com.oracle.graal.python.benchmarks/python/host_interop/image-magix-j
 graalpython/com.oracle.graal.python.benchmarks/python/host_interop/image-magix.py,pypy-image-demo.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/macro/gcbench.py,pypy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/chaos.py,pypy.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/meso/chaos-sized2.py,pypy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/go.py,pypy.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/meso/go-sized2.py,pypy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/raytrace-simple.py,pypy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/ai-nqueen.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/binarytrees3.py,benchmarks.copyright
@@ -13,6 +15,7 @@ graalpython/com.oracle.graal.python.benchmarks/python/meso/euler31.py,benchmarks
 graalpython/com.oracle.graal.python.benchmarks/python/meso/fannkuchredux3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/fasta3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/image-magix.py,pypy-image-demo.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/meso/image-magix-sized2.py,pypy-image-demo.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/knucleotide.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/mandelbrot3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/meteor3.py,benchmarks.copyright
@@ -24,6 +27,7 @@ graalpython/com.oracle.graal.python.benchmarks/python/meso/pads-lyndon.py,benchm
 graalpython/com.oracle.graal.python.benchmarks/python/meso/parrot-b2.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/pidigits.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/regexdna.py,benchmarks.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/meso/regexdna-sized2.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/richards3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/spectralnorm3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/threadring.py,benchmarks.copyright
@@ -106,6 +110,7 @@ graalpython/com.oracle.graal.python.cext/include/cpython/unicodeobject.h,python.
 graalpython/com.oracle.graal.python.cext/include/datetime.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/descrobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/dictobject.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/eval.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/fileobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/fileutils.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/floatobject.h,python.copyright
@@ -165,6 +170,8 @@ graalpython/com.oracle.graal.python.cext/modules/_bz2.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_sre.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_struct.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_mmap.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testmultiphase.c,python.copyright
@@ -191,6 +198,7 @@ graalpython/com.oracle.graal.python.cext/src/pystrhex.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/sliceobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodectype.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodetype_db.h,python.copyright
+graalpython/com.oracle.graal.python.jni/src/ctx_tracker.c,hpy.copyright
 graalpython/com.oracle.graal.python.shell/src/com/oracle/graal/python/shell/GraalPythonMain.java,zippy.copyright
 graalpython/com.oracle.graal.python.tck/src/com/oracle/graal/python/tck/resources/euler31.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.tck/src/com/oracle/graal/python/tck/resources/mandelbrot3.py,benchmarks.copyright

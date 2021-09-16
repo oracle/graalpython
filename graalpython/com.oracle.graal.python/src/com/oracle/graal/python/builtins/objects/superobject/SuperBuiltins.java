@@ -110,8 +110,8 @@ public final class SuperBuiltins extends PythonBuiltins {
     }
 
     abstract static class GetTypeNode extends Node {
-        static final Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+        final Assumption singleContextAssumption() {
+            return PythonLanguage.get(this).singleContextAssumption;
         }
 
         abstract Object execute(SuperObject self);
@@ -130,8 +130,8 @@ public final class SuperBuiltins extends PythonBuiltins {
     }
 
     abstract static class GetObjectTypeNode extends Node {
-        static final Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+        final Assumption singleContextAssumption() {
+            return PythonLanguage.get(this).singleContextAssumption;
         }
 
         abstract Object execute(SuperObject self);
@@ -150,8 +150,8 @@ public final class SuperBuiltins extends PythonBuiltins {
     }
 
     abstract static class GetObjectNode extends Node {
-        static final Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+        final Assumption singleContextAssumption() {
+            return PythonLanguage.get(this).singleContextAssumption;
         }
 
         abstract Object execute(SuperObject self);

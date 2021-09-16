@@ -9,7 +9,6 @@ ModuleRootNode Name: <module 'genExpr02'> SourceSection: [0,48]`[ (s,c) for c in
       CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: list
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [2,47]`(s,c) for c in ('a',...`
         Name: <genexpr>
         FrameDescriptor: 3 slots [s, c, <return_val>]

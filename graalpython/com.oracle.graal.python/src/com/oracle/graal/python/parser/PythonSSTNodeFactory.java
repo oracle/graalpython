@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.control.ReturnNode;
@@ -109,7 +110,7 @@ public final class PythonSSTNodeFactory {
      * Service that allows parsing expressions found inside f-strings to SST nodes.
      */
     public interface FStringExprParser {
-        SSTNode parseExpression(String text, PythonSSTNodeFactory nodeFactory, boolean fromInteractiveSource);
+        SSTNode parseExpression(PythonParser.ParserErrorCallback errorCallback, String text, PythonSSTNodeFactory nodeFactory, boolean fromInteractiveSource);
     }
 
     private final RootNodeFactory rootNodeFactory;
@@ -120,7 +121,7 @@ public final class PythonSSTNodeFactory {
 
     public PythonSSTNodeFactory(PythonParser.ParserErrorCallback errors, Source source, FStringExprParser fStringExprParser) {
         this.errors = errors;
-        this.rootNodeFactory = RootNodeFactory.create(errors.getLanguage());
+        this.rootNodeFactory = RootNodeFactory.create(errors.getContext().getLanguage());
         this.scopeEnvironment = new ScopeEnvironment();
         this.source = source;
         this.fStringExprParser = fStringExprParser;
@@ -187,7 +188,7 @@ public final class PythonSSTNodeFactory {
             try {
                 return mangleName(scope.getScopeId(), name);
             } catch (OverflowException e) {
-                throw errors.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
+                throw PRaiseNode.raiseUncached(null, PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
             }
         }
         return name;
@@ -530,9 +531,9 @@ public final class PythonSSTNodeFactory {
             scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
         }
         scopeEnvironment.setFreeVarsInRootScope(useFrame);
-        FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, getScopeEnvironment(), errors.getLanguage().getNodeFactory(), source);
+        FactorySSTVisitor factoryVisitor = new FactorySSTVisitor(errors, getScopeEnvironment(), errors.getContext().getLanguage().getNodeFactory(), source);
         if (isGen) {
-            factoryVisitor = new GeneratorFactorySSTVisitor(errors, getScopeEnvironment(), errors.getLanguage().getNodeFactory(), source, factoryVisitor);
+            factoryVisitor = new GeneratorFactorySSTVisitor(errors, getScopeEnvironment(), errors.getContext().getLanguage().getNodeFactory(), source, factoryVisitor);
         }
         if (mode == PythonParser.ParserMode.Deserialization) {
             result = parserSSTResult.accept(factoryVisitor);

@@ -58,7 +58,6 @@ import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.ChildContextData;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
@@ -79,7 +78,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -101,11 +99,6 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.concurrent.LinkedBlockingQueue;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
@@ -163,6 +156,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
 
+    @CompilationFinal public boolean singleContext = true;
+    private boolean firstContextInitialized;
+
     /**
      * This assumption will be valid if all contexts are single-threaded. Hence, it will be
      * invalidated as soon as at least one context has been initialized for multi-threading.
@@ -203,6 +199,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * system is shut down, unless explicitly removed. We interpret this as meaning they all exist
      * globally per language instance, that is, they are shared between different Contexts in the
      * same engine.
+     *
+     * Top level contexts use this map to initialize their shared multiprocessing data. Inner
+     * children contexts created for the multiprocessing module ignore this map in
+     * {@link PythonLanguage} and instead inherit it in the shared multiprocessing data from their
+     * parent context. This way, the child inner contexts do not have to run in the same engine
+     * (have the same language instance), but can still share the named semaphores.
      */
     public final ConcurrentHashMap<String, Semaphore> namedSemaphores = new ConcurrentHashMap<>();
 
@@ -223,48 +225,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private final MroShape mroShapeRoot = MroShape.createRoot();
 
-    private final Map<Long, Thread> childContextThreads = new ConcurrentHashMap<>();
-
-    private final Map<Long, ChildContextData> childContextData = new ConcurrentHashMap<>();
-
-    private final SharedMultiprocessingData sharedMPData = new SharedMultiprocessingData();
-
-    @TruffleBoundary
-    public Thread getChildContextThread(long tid) {
-        return childContextThreads.get(tid);
-    }
-
-    @TruffleBoundary
-    public void putChildContextThread(long id, Thread thread) {
-        childContextThreads.put(id, thread);
-    }
-
-    @TruffleBoundary
-    public void removeChildContextThread(long id) {
-        childContextThreads.remove(id);
-    }
-
-    @TruffleBoundary
-    public ChildContextData getChildContextData(long tid) {
-        return childContextData.get(tid);
-    }
-
-    @TruffleBoundary
-    public void putChildContextData(long id, ChildContextData data) {
-        childContextData.put(id, data);
-    }
-
-    @TruffleBoundary
-    public void removeChildContextData(long id) {
-        childContextData.remove(id);
-    }
-
     public static PythonLanguage get(Node node) {
         return REFERENCE.get(node);
-    }
-
-    public synchronized SharedMultiprocessingData getSharedMultiprocessingData() {
-        return sharedMPData;
     }
 
     public static int getNumberOfSpecialSingletons() {
@@ -309,12 +271,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
+        if (singleContext) {
+            return false;
+        }
         return PythonOptions.areOptionsCompatible(firstOptions, newOptions);
     }
 
     @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
-        if (!areOptionsCompatible(context.getEnv().getOptions(), newEnv.getOptions())) {
+        // We intentionally bypass the singleContext check in PythonLanguage#areOptionsCompatible
+        if (!PythonOptions.areOptionsCompatible(context.getEnv().getOptions(), newEnv.getOptions())) {
             Python3Core.writeInfo("Cannot use preinitialized context.");
             return false;
         }
@@ -343,6 +309,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         } else {
             assert areOptionsCompatible(options, PythonOptions.createEngineOptions(env)) : "invalid engine options";
         }
+        firstContextInitialized = true;
         return context;
     }
 
@@ -387,7 +354,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected CallTarget parse(ParsingRequest request) {
-        PythonContext context = getContext();
+        PythonContext context = PythonContext.get(null);
         Python3Core core = context.getCore();
         Source source = request.getSource();
         if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
@@ -419,7 +386,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (bytes.length == 0) {
                 return createCachedCallTarget(l -> new BadOPCodeNode(l), BadOPCodeNode.class);
             }
-            return PythonUtils.getOrCreateCallTarget(core.getSerializer().deserialize(bytes));
+            return PythonUtils.getOrCreateCallTarget(core.getSerializer().deserialize(core, bytes));
         }
         for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
             if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
@@ -482,7 +449,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             @Override
             @TruffleBoundary
             public Object execute(VirtualFrame frame) {
-                PythonContext context = getContext();
+                PythonContext context = PythonContext.get(callNode);
                 assert context != null;
                 if (!context.isInitialized()) {
                     context.initialize();
@@ -526,7 +493,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
             @Override
             public Object execute(VirtualFrame frame) {
-                PythonContext context = getContext();
+                PythonContext context = PythonContext.get(gilNode);
                 assert context != null && context.isInitialized();
                 PythonContext cachedCtx = cachedContext;
                 if (cachedCtx == null) {
@@ -641,18 +608,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return getLanguageHome();
     }
 
-    public static PythonLanguage getCurrent() {
-        return PythonLanguage.get(null);
-    }
-
-    public static PythonContext getContext() {
-        return PythonContext.get(null);
-    }
-
-    public static Python3Core getCore() {
-        return PythonContext.get(null).getCore();
-    }
-
     /**
      * If this object can be cached in the AST.
      */
@@ -754,6 +709,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected void initializeMultipleContexts() {
         super.initializeMultipleContexts();
+        // We want to make sure that initializeMultipleContexts is always called before the first
+        // context is created.
+        // This would not be the case with inner contexts, but we achieve that by returning false
+        // from areOptionsCompatible when it is invoked for the first inner context, then Truffle
+        // creates a new PythonLanguage instance, calls initializeMultipleContexts on it, and only
+        // then uses it to create the inner contexts.
+        assert !firstContextInitialized;
+        singleContext = false;
         singleContextAssumption.invalidate();
     }
 
@@ -895,103 +858,4 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return callTarget;
     }
 
-    public static class SharedMultiprocessingData {
-
-        private final SortedMap<Integer, LinkedBlockingQueue<Object>> sharedContextData = new TreeMap<>();
-
-        /**
-         * @return fake (negative) fd values to avoid clash with real file descriptors and to detect
-         *         potential usage by other python builtins
-         */
-        @TruffleBoundary
-        public int[] pipe() {
-            synchronized (sharedContextData) {
-                LinkedBlockingQueue<Object> q = new LinkedBlockingQueue<>();
-                int readFD = nextFreeFd();
-                sharedContextData.put(readFD, q);
-                int writeFD = nextFreeFd();
-                sharedContextData.put(writeFD, q);
-                return new int[]{readFD, writeFD};
-            }
-        }
-
-        /**
-         * Must be called in a synchronized (sharedContextData) block which also writes the new fd
-         * into the sharedContextData map.
-         */
-        @TruffleBoundary
-        private int nextFreeFd() {
-            if (sharedContextData.isEmpty()) {
-                return -1;
-            }
-            return sharedContextData.firstKey() - 1;
-        }
-
-        @TruffleBoundary
-        public boolean hasFD(int fd) {
-            synchronized (sharedContextData) {
-                return sharedContextData.containsKey(fd);
-            }
-        }
-
-        @TruffleBoundary
-        public boolean addSharedContextData(int fd, byte[] bytes, Runnable noFDHandler) {
-            LinkedBlockingQueue<Object> q = getQueue(fd);
-            if (q == null) {
-                noFDHandler.run();
-                return false;
-            }
-            q.add(bytes);
-            return true;
-        }
-
-        @TruffleBoundary
-        public void makeReadable(int fd, Runnable noFDHandler) {
-            LinkedBlockingQueue<Object> q = getQueue(fd);
-            if (q == null) {
-                noFDHandler.run();
-                return;
-            }
-            q.add(PythonUtils.EMPTY_BYTE_ARRAY);
-        }
-
-        @TruffleBoundary
-        public Object takeSharedContextData(Node node, int fd, Runnable noFDHandler) {
-            LinkedBlockingQueue<Object> q = getQueue(fd);
-            if (q == null) {
-                noFDHandler.run();
-                return null;
-            }
-            Object[] o = new Object[]{PNone.NONE};
-            TruffleSafepoint.setBlockedThreadInterruptible(node, (lbq) -> {
-                o[0] = lbq.take();
-            }, q);
-            return o[0];
-        }
-
-        @TruffleBoundary
-        public boolean isEmpty(int fd, Runnable noFDHandler) {
-            LinkedBlockingQueue<Object> q = getQueue(fd);
-            if (q == null) {
-                noFDHandler.run();
-                return false;
-            }
-            return q.isEmpty();
-        }
-
-        @TruffleBoundary
-        public void closeFDs(List<Integer> fds) {
-            synchronized (sharedContextData) {
-                for (Integer fd : fds) {
-                    sharedContextData.remove(fd);
-                }
-            }
-        }
-
-        private LinkedBlockingQueue<Object> getQueue(int fd) {
-            synchronized (sharedContextData) {
-                return sharedContextData.get(fd);
-            }
-        }
-    }
 }

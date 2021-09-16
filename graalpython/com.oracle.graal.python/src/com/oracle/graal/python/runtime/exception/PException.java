@@ -232,6 +232,26 @@ public final class PException extends AbstractTruffleException {
         }
     }
 
+    public boolean expectTypeOrOverflowError(IsBuiltinClassProfile profile) {
+        boolean ofError = !profile.profileException(this, PythonBuiltinClassType.TypeError);
+        if (ofError && !profile.profileException(this, PythonBuiltinClassType.OverflowError)) {
+            throw this;
+        }
+        return ofError;
+    }
+
+    public void expectOverflowError(IsBuiltinClassProfile profile) {
+        if (!profile.profileException(this, PythonBuiltinClassType.OverflowError)) {
+            throw this;
+        }
+    }
+
+    public void expectTypeError(IsBuiltinClassProfile profile) {
+        if (!profile.profileException(this, PythonBuiltinClassType.TypeError)) {
+            throw this;
+        }
+    }
+
     public void expect(PythonBuiltinClassType error, IsBuiltinClassProfile profile) {
         if (!profile.profileException(this, error)) {
             throw this;

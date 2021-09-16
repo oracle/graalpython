@@ -98,7 +98,6 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                                     QualName: fn.<locals>.f.<locals>.C
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                       Identifier: __name__
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                     ReadIndexedArgumentNodeGen SourceSection: None
                                                       Index: 0
                                                     SetItemIfNotPresentNodeGen SourceSection: None
@@ -117,7 +116,6 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                                           StringLiteralNode SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                           Identifier: a_local_var
-                                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                         ReadLocalCellNodeGen SourceSection: None
                                                           ReadLocalVariableNodeGen SourceSection: None
                                                             Frame: [0,a_local_var,Illegal]
@@ -161,15 +159,12 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                         StringLiteralNode SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [72,78]`object`
                                           Identifier: object
-                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     FrameReturnNode SourceSection: [190,210]`return C.a_local_var...`
                                       GetAttributeNode SourceSection: [197,210]`C.a_local_var`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: a_local_var
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
-                                          IsBuiltinClassProfile SourceSection: None
-                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [197,198]`C`
                                           Frame: [0,C,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None

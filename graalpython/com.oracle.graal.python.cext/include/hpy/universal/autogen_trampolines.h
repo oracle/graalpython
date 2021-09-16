@@ -34,6 +34,7 @@
 
 */
 
+#ifdef GRAALVM_PYTHON_LLVM
 #define UNWRAP(_h) ((_h)._i)
 #define WRAP(_ptr) ((HPy){(_ptr)})
 #define UNWRAP_TUPLE_BUILDER(_h) ((_h)._tup)
@@ -42,6 +43,16 @@
 #define WRAP_LIST_BUILDER(_ptr) ((HPyListBuilder){(_ptr)})
 #define UNWRAP_TRACKER(_h) ((_h)._i)
 #define WRAP_TRACKER(_ptr) ((HPyTracker){(_ptr)})
+#else
+#define UNWRAP(_h) _h
+#define WRAP(_ptr) _ptr
+#define UNWRAP_TUPLE_BUILDER(_h) _h
+#define WRAP_TUPLE_BUILDER(_ptr) _ptr
+#define UNWRAP_LIST_BUILDER(_h) _h
+#define WRAP_LIST_BUILDER(_ptr) _ptr
+#define UNWRAP_TRACKER(_h) _h
+#define WRAP_TRACKER(_ptr) _ptr
+#endif
 
 HPyAPI_FUNC HPy HPyModule_Create(HPyContext *ctx, HPyModuleDef *def) {
      return WRAP(ctx->ctx_Module_Create ( ctx, def ));

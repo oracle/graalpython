@@ -3,8 +3,8 @@
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
-#ifdef __gnu_linux__
-#define _GNU_SOURCE
+#if defined(__gnu_linux__) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE 1
 #endif
 
 #include <unistd.h>

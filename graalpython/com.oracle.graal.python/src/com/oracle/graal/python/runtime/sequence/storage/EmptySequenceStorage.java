@@ -27,7 +27,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
@@ -81,7 +80,7 @@ public final class EmptySequenceStorage extends SequenceStorage {
     public void setNewLength(int length) {
         if (length != 0) {
             CompilerDirectives.transferToInterpreter();
-            PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LIST_LENGTH_OUT_OF_RANGE);
+            throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LIST_LENGTH_OUT_OF_RANGE);
         }
     }
 
@@ -108,13 +107,13 @@ public final class EmptySequenceStorage extends SequenceStorage {
     @Override
     public Object getItemNormalized(int idx) {
         CompilerDirectives.transferToInterpreter();
-        throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+        throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
     }
 
     @Override
     public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
         CompilerDirectives.transferToInterpreter();
-        throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.LIST_ASSIGMENT_INDEX_OUT_OF_RANGE);
+        throw PRaiseNode.getUncached().raise(ValueError, ErrorMessages.LIST_ASSIGMENT_INDEX_OUT_OF_RANGE);
     }
 
     @Override

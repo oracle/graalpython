@@ -42,12 +42,15 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -69,19 +72,20 @@ public abstract class WriteAttributeToBuiltinTypeNode extends ObjectAttributeNod
         return (self.getShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) == 0;
     }
 
-    @Specialization(guards = {"isAttrWritable(klass)", "!lib.hasDict(klass)"}, limit = "1")
+    @Specialization(guards = {"isAttrWritable(klass)", "getDict.execute(klass) == null"}, limit = "1")
     static void writeToDynamicStorage(PythonBuiltinClass klass, String key, Object value,
-                    @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
+                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
         dylib.put(klass, key, value);
     }
 
-    @Specialization(guards = "lib.hasDict(klass)", limit = "1")
-    static void writeToDictNoType(PythonBuiltinClass klass, String key, Object value,
-                    @CachedLibrary("klass") PythonObjectLibrary lib,
+    @Specialization(guards = "dict != null", limit = "1")
+    static void writeToDictNoType(@SuppressWarnings("unused") PythonBuiltinClass klass, String key, Object value,
+                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
+                    @Bind("getDict.execute(klass)") PDict dict,
                     @Cached BranchProfile updateStorage,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
-        WriteAttributeToObjectNode.writeToDict(lib.getDict(klass), key, value, updateStorage, hlib);
+        WriteAttributeToObjectNode.writeToDict(dict, key, value, updateStorage, hlib);
     }
 
     @Specialization

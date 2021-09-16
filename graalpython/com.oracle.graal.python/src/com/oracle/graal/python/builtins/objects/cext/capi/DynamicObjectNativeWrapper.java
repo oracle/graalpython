@@ -42,6 +42,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_DEREF_HANDLE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MA_VERSION_TAG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_DEF;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_STATE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MEMORYVIEW_EXPORTS;
@@ -82,11 +83,13 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AllToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
@@ -95,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.LookupNative
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MaterializeDelegateNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
@@ -104,6 +108,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeMRNode.DateT
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.SizeofWCharNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -113,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -133,6 +140,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
@@ -148,9 +156,13 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -612,7 +624,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_SUBCLASSES, key)")
         static Object doTpSubclasses(@SuppressWarnings("unused") PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper,
                         @SuppressWarnings("unused") String key,
-                        @Cached PythonObjectFactory factory,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
                         @Cached ConditionProfile noWrapperProfile) {
             // TODO create dict view on subclasses set
             return PythonObjectNativeWrapper.wrap(factory.createDict(), noWrapperProfile);
@@ -667,15 +679,18 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(lookupAttrNode.execute(object, __REPR__));
         }
 
-        @Specialization(guards = "eq(TP_DICT, key)", limit = "1")
+        @Specialization(guards = "eq(TP_DICT, key)")
         static Object doTpDict(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached PythonObjectFactory factory,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Cached GetOrCreateDictNode getDict,
                         @CachedLibrary(limit = "2") HashingStorageLibrary storageLib,
-                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) throws UnsupportedMessageException {
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
             // TODO(fa): we could cache the dict instance on the class' native wrapper
-            PDict dict = lib.getDict(object);
-            HashingStorage dictStorage = dict != null ? dict.getDictStorage() : null;
+            PDict dict = getDict.execute(object);
+            if (dict instanceof StgDictObject) {
+                return dict.getNativeWrapper();
+            }
+            HashingStorage dictStorage = dict.getDictStorage();
             if (dictStorage instanceof DynamicObjectStorage) {
                 // reuse the existing and modifiable storage
                 return toSulongNode.execute(factory.createDict(dict.getDictStorage()));
@@ -685,9 +700,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 // copy all mappings to the new storage
                 storage = storageLib.addAllToOther(dictStorage, storage);
             }
-            PDict newDict = factory.createDict(storage);
-            lib.setDict(object, newDict);
-            return toSulongNode.execute(newDict);
+            dict.setDictStorage(storage);
+            return toSulongNode.execute(dict);
         }
 
         @Specialization(guards = "eq(TP_TRAVERSE, key) || eq(TP_CLEAR, key)")
@@ -708,6 +722,27 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 return toSulongNode.execute(sequenceClearMethod);
             }
             return getNativeNullNode.execute();
+        }
+
+        @Specialization(guards = "eq(TP_CALL, key)")
+        @SuppressWarnings("unused")
+        static Object doTpCall(PythonManagedClass object, PythonNativeWrapper nativeWrapper, String key,
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            /*
+             * TODO(fa): For now, we just return NULL because that will usually cause a fallback to
+             * 'PyObject_Call' which is preferred from our point of view.
+             */
+            return toSulongNode.execute(getNativeNullNode.execute());
+        }
+
+        @Specialization(guards = "eq(TP_MRO, key)")
+        @SuppressWarnings("unused")
+        static Object doTpMro(PythonManagedClass object, PythonNativeWrapper nativeWrapper, String key,
+                        @Cached GetMroStorageNode getMroStorageNode,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(factory.createTuple(getMroStorageNode.execute(object)));
         }
 
         public static ReadTypeNativeMemberNode create() {
@@ -745,6 +780,27 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             } catch (PException e) {
                 return -1;
             }
+        }
+
+        @Specialization(guards = "eq(MA_VERSION_TAG, key)")
+        @TruffleBoundary
+        static long doMaVersionTag(PDict object, PythonObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            if (HashingStorageLibrary.getUncached().length(object.getDictStorage()) == 0) {
+                return 0;
+            }
+
+            DynamicObjectStorage nativeMemberStore = nativeWrapper.getNativeMemberStore();
+            if (nativeMemberStore == null) {
+                nativeMemberStore = nativeWrapper.createNativeMemberStore(PythonLanguage.get(null));
+            }
+            HashingStorageLibrary uncached = HashingStorageLibrary.getFactory().getUncached(nativeMemberStore);
+            Object item = uncached.getItem(nativeMemberStore, MA_VERSION_TAG.getMemberName());
+            long value = 1;
+            if (item != null) {
+                value = (long) item;
+            }
+            uncached.setItem(nativeMemberStore, MA_VERSION_TAG.getMemberName(), value + 1);
+            return value;
         }
 
         @Specialization(guards = "eq(OB_SVAL, key)")
@@ -860,17 +916,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(getDictNode.execute(object, SpecialAttributeNames.__DICT__));
         }
 
-        @Specialization(guards = "eq(TP_DICT, key)", limit = "1")
+        @Specialization(guards = "eq(TP_DICT, key)")
         static Object doTpDict(PythonClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached PythonObjectFactory factory,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
-                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) throws UnsupportedMessageException {
-            PDict dict = lib.getDict(object);
-            if (dict == null) {
-                dict = factory.createDictFixedStorage(object);
-                lib.setDict(object, dict);
-            }
-            return toSulongNode.execute(dict);
+                        @Cached GetOrCreateDictNode getDict,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(getDict.execute(object));
         }
 
         @Specialization(guards = "eq(MD_DEF, key)")
@@ -963,35 +1013,41 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(D_TYPE, key)")
         static Object doDType(PBuiltinFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
             Object enclosingType = object.getEnclosingType();
             return toSulongNode.execute(enclosingType != null ? enclosingType : getNativeNullNode.execute());
         }
 
         @Specialization(guards = "eq(D_METHOD, key)")
-        static Object doDBase(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+        static Object doDMethod(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return new PyMethodDefWrapper(object);
         }
 
-        @Specialization(guards = "eq(M_ML, key)")
+        @Specialization(guards = "eq(D_BASE, key)")
         static Object doDBase(PBuiltinFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return new StructWrapperBaseWrapper(object);
+        }
+
+        static boolean isAnyFunctionObject(Object object) {
+            return object instanceof PBuiltinFunction || object instanceof PBuiltinMethod || object instanceof PFunction || object instanceof PMethod;
+        }
+
+        @Specialization(guards = {"eq(M_ML, key)", "isAnyFunctionObject(object)"})
+        static Object doPyCFunctionObjectMMl(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return new PyMethodDefWrapper(object);
         }
 
-        @Specialization(guards = "eq(M_ML, key)")
-        static Object doDBase(PFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            return new PyMethodDefWrapper(object);
+        @Specialization(guards = "eq(M_SELF, key)")
+        static Object doPyCFunctionObjectMSelf(PBuiltinMethod object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(object.getSelf());
         }
 
-        @Specialization(guards = "eq(M_ML, key)")
-        static Object doDBase(PBuiltinMethod object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            return new PyMethodDefWrapper(object);
-        }
-
-        @Specialization(guards = "eq(M_ML, key)")
-        static Object doDBase(PMethod object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            return new PyMethodDefWrapper(object);
+        @Specialization(guards = "eq(M_SELF, key)")
+        static Object doPyCFunctionObjectMSelf(PMethod object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(object.getSelf());
         }
 
         @Specialization(guards = "eq(D_QUALNAME, key)")
@@ -1079,22 +1135,112 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(F_CODE, key)")
         static Object doFCode(PFrame object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached PythonObjectFactory factory,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
             RootCallTarget ct = object.getTarget();
             if (ct != null) {
                 return toSulongNode.execute(factory.createCode(ct));
             }
-            CompilerDirectives.transferToInterpreter();
-            throw new IllegalStateException("should not be reached");
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
-        // TODO fallback guard
+        @Specialization(guards = "eq(FUNC_CODE, key)")
+        static Object doPFunctionCode(PFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached GetFunctionCodeNode getFunctionCodeNode,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(getFunctionCodeNode.execute(object));
+        }
+
+        @Specialization(guards = "eq(FUNC_GLOBALS, key)")
+        static Object doPFunctionGlobals(PFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(object.getGlobals());
+        }
+
+        @Specialization(guards = "eq(FUNC_DEFAULTS, key)")
+        static Object doPFunctionDefaults(PFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            Object[] defaults = object.getDefaults();
+            if (defaults.length > 0) {
+                return toSulongNode.execute(factory.createTuple(defaults));
+            }
+            return toSulongNode.execute(getNativeNullNode.execute());
+        }
+
+        @Specialization(guards = "eq(FUNC_KWDEFAULTS, key)")
+        static Object doPFunctionKwDefaults(PFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            PKeyword[] kwDefaults = object.getKwDefaults();
+            if (kwDefaults.length > 0) {
+                return toSulongNode.execute(factory.createDict(kwDefaults));
+            }
+            return toSulongNode.execute(getNativeNullNode.execute());
+        }
+
+        @Specialization(guards = "eq(FUNC_CLOSURE, key)")
+        static Object doPFunctionClosure(PFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            PCell[] closure = object.getClosure();
+            if (closure != null) {
+                return toSulongNode.execute(factory.createTuple(closure));
+            }
+            return toSulongNode.execute(factory.createEmptyTuple());
+        }
+
+        @Specialization(guards = "eq(cachedMember, key)", limit = "1")
+        static Object doPCodeCached(PCode object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached("getNativeMember(key)") NativeMember cachedMember,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            switch (cachedMember) {
+                case CO_ARGCOUNT:
+                    return object.co_argcount();
+                case CO_POSONLYARGCOUNT:
+                    return object.co_posonlyargcount();
+                case CO_KWONLYCOUNT:
+                    return object.co_kwonlyargcount();
+                case CO_NLOCALS:
+                    return object.co_nlocals();
+                case CO_STACKSIZE:
+                    return object.co_stacksize();
+                case CO_FLAGS:
+                    return object.getFlags();
+                case CO_FIRSTLINENO:
+                    return toSulongNode.execute(object.co_firstlineno());
+                case CO_CODE:
+                    return toSulongNode.execute(object.co_code(factory));
+                case CO_CONSTS:
+                    return toSulongNode.execute(object.co_consts(factory));
+                case CO_NAMES:
+                    return toSulongNode.execute(object.co_names(factory));
+                case CO_VARNAMES:
+                    return toSulongNode.execute(object.co_varnames(factory));
+                case CO_FREEVARS:
+                    return toSulongNode.execute(object.co_freevars(factory));
+                case CO_CELLVARS:
+                    return toSulongNode.execute(object.co_cellvars(factory));
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        @Specialization(replaces = "doPCodeCached")
+        static Object doPCode(PCode object, PythonNativeWrapper nativeWrapper, String key,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return doPCodeCached(object, nativeWrapper, key, NativeMember.byName(key), factory, toSulongNode);
+        }
+
+        // TODO: fallback guard
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object object, DynamicObjectNativeWrapper nativeWrapper, String key,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Cached GetNativeNullNode getNativeNullNode) throws UnknownIdentifierException {
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) throws UnknownIdentifierException {
             // This is the preliminary generic case: There are native members we know that they
             // exist but we do currently not represent them. So, store them into a dynamic object
             // such that native code at least reads the value that was written before.
@@ -1112,6 +1258,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @TruffleBoundary(allowInlining = true)
         private static void logGeneric(String key) {
             LOGGER.log(Level.FINE, "read of Python struct native member " + key);
+        }
+
+        static NativeMember getNativeMember(String key) {
+            return NativeMember.byName(key);
         }
     }
 
@@ -1280,26 +1430,33 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 object.setNativeModuleDef(value);
             }
 
-            @Specialization(guards = "eq(TP_DICT, key)", limit = "1")
+            private static boolean isBuiltinDict(IsBuiltinClassProfile isPrimitiveDictProfile, Object value) {
+                return value instanceof PDict &&
+                                (isPrimitiveDictProfile.profileObject(value, PythonBuiltinClassType.PDict) ||
+                                                isPrimitiveDictProfile.profileObject(value, PythonBuiltinClassType.StgDict));
+            }
+
+            @Specialization(guards = "eq(TP_DICT, key)")
             static void doTpDict(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object nativeValue,
-                            @CachedLibrary("object") PythonObjectLibrary lib,
+                            @Cached GetDictIfExistsNode getDict,
+                            @Cached SetDictNode setDict,
                             @Cached AsPythonObjectNode asPythonObjectNode,
                             @Cached WriteAttributeToObjectNode writeAttrNode,
-                            @Cached IsBuiltinClassProfile isPrimitiveDictProfile) throws UnsupportedMessageException {
+                            @Cached IsBuiltinClassProfile isPrimitiveDictProfile) {
                 Object value = asPythonObjectNode.execute(nativeValue);
-                if (value instanceof PDict && isPrimitiveDictProfile.profileObject(value, PythonBuiltinClassType.PDict)) {
+                if (isBuiltinDict(isPrimitiveDictProfile, value)) {
                     // special and fast case: commit items and change store
                     PDict d = (PDict) value;
                     for (HashingStorage.DictEntry entry : d.entries()) {
                         writeAttrNode.execute(object, entry.getKey(), entry.getValue());
                     }
-                    PDict existing = lib.getDict(object);
+                    PDict existing = getDict.execute(object);
                     if (existing != null) {
                         d.setDictStorage(existing.getDictStorage());
                     } else {
                         d.setDictStorage(new DynamicObjectStorage(object.getStorage()));
                     }
-                    lib.setDict(object, d);
+                    setDict.execute(object, d);
                 } else {
                     // TODO custom mapping object
                 }
@@ -1447,25 +1604,36 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached PythonAbstractObject.PExecuteNode executeNode,
                     @Cached AllToJavaNode allToJavaNode,
+                    @Cached ToJavaNode selfToJava,
                     @Cached ToNewRefNode toNewRefNode,
                     @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                     @Cached GetNativeNullNode getNativeNullNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
-            Object[] converted = allToJavaNode.execute(arguments);
-            try {
-                Object result = executeNode.execute(lib.getDelegate(this), converted);
-
-                // If a native wrapper is executed, we directly wrap some managed function and
-                // assume
-                // that new references are returned. So, we increase the ref count for each native
-                // object here.
-                return toNewRefNode.execute(result);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return toNewRefNode.execute(getNativeNullNode.execute());
+            Object[] converted;
+            Object function = lib.getDelegate(this);
+            if (function instanceof PBuiltinFunction && CExtContext.isMethNoArgs(((PBuiltinFunction) function).getFlags()) && arguments.length == 2) {
+                /*
+                 * The C function signature for METH_NOARGS is: methNoArgs(PyObject* self, PyObject*
+                 * dummy); So we need to trim away the dummy argument, otherwise we will get an
+                 * error.
+                 */
+                converted = new Object[]{selfToJava.execute(arguments[0])};
+            } else {
+                converted = allToJavaNode.execute(arguments);
             }
+            Object result = executeNode.execute(function, converted);
+
+            /*
+             * If a native wrapper is executed, we directly wrap some managed function and assume
+             * that new references are returned. So, we increase the ref count for each native
+             * object here.
+             */
+            return toNewRefNode.execute(result);
+        } catch (PException e) {
+            transformExceptionToNativeNode.execute(e);
+            return toNewRefNode.execute(getNativeNullNode.execute());
         } finally {
             gil.release(mustRelease);
         }

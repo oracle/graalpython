@@ -84,7 +84,11 @@ def _get_posix_vars():
     g['OPT'] = "-stdlib=libc++ -DNDEBUG"
     g['CONFINCLUDEPY'] = get_python_inc()
     g['CPPFLAGS'] = '-I. -I' + get_python_inc()
-    g['CFLAGS'] = "-Wno-unused-command-line-argument -stdlib=libc++ -DNDEBUG"
+    gnu_source = "-D_GNU_SOURCE=1"
+    g['USE_GNU_SOURCE'] = gnu_source
+    cflags_default = "-Wno-unused-command-line-argument -stdlib=libc++ -DNDEBUG -DGRAALVM_PYTHON_LLVM"
+    g['CFLAGS_DEFAULT'] = cflags_default
+    g['CFLAGS'] = cflags_default + " " + gnu_source
     g['LDFLAGS'] = ""
     g['CCSHARED'] = "-fPIC"
     g['LDSHARED_LINUX'] = "%s -shared -fPIC" % __graalpython__.get_toolchain_tool_path('CC')

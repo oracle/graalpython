@@ -190,6 +190,19 @@ public final class PythonUtils {
     }
 
     /**
+     * Executes {@link Arrays#copyOf(long[], int)} and puts all exceptions on the slow path.
+     */
+    public static long[] arrayCopyOf(long[] original, int newLength) {
+        try {
+            return Arrays.copyOf(original, newLength);
+        } catch (Throwable t) {
+            // Break exception edges
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw t;
+        }
+    }
+
+    /**
      * Executes {@code String.getChars} and puts all exceptions on the slow path.
      */
     @TruffleBoundary
@@ -412,6 +425,11 @@ public final class PythonUtils {
     @TruffleBoundary(allowInlining = true)
     public static StringBuilder appendCodePoint(StringBuilder sb, int codePoint) {
         return sb.appendCodePoint(codePoint);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static int sbLength(StringBuilder sb) {
+        return sb.length();
     }
 
     @TruffleBoundary

@@ -42,7 +42,6 @@ ModuleRootNode Name: <module 'yeild13'> SourceSection: [0,26]`def f(): f((yield 
                         CallUnaryMethodNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [9,10]`f`
                           Identifier: f
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         YieldFromNode SourceSection: [12,24]`yield from 1`
                           CachedDispatchFirst SourceSection: None
                           GetNextCached SourceSection: None

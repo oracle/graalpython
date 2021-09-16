@@ -9,7 +9,6 @@ ModuleRootNode Name: <module 'setCompr'> SourceSection: [0,21]`{i for i in range
       CallUnaryMethodNodeGen SourceSection: None
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: set
-        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [1,20]`i for i in range(3)`
         Name: <genexpr>
         FrameDescriptor: 2 slots [i, <return_val>]

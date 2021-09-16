@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,55 +38,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.object;
+package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.truffle.api.object.Shape;
 
-@ImportStatic(PGuards.class)
-@GenerateUncached
-public abstract class GetDictNode extends PNodeWithContext {
+public final class PythonHPyObject extends PythonObject {
 
-    public abstract PDict execute(Object o);
+    private final Object hpyNativeSpace;
 
-    @Specialization
-    PDict dict(PDict self) {
-        return self;
+    public PythonHPyObject(Object pythonClass, Shape instanceShape, Object hpyNativeSpace) {
+        super(pythonClass, instanceShape);
+        this.hpyNativeSpace = hpyNativeSpace;
     }
 
-    @Specialization(limit = "1")
-    PDict dict(PythonModule self,
-                    @CachedLibrary("self") PythonObjectLibrary lib,
-                    @Cached PythonObjectFactory factory) {
-        PDict dict = lib.getDict(self);
-        if (dict == null) {
-            dict = factory.createDictFixedStorage(self);
-            try {
-                lib.setDict(self, dict);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
-            }
-        }
-        return dict;
-    }
-
-    public static GetDictNode create() {
-        return GetDictNodeGen.create();
-    }
-
-    public static GetDictNode getUncached() {
-        return GetDictNodeGen.getUncached();
+    public Object getHPyNativeSpace() {
+        return hpyNativeSpace;
     }
 }

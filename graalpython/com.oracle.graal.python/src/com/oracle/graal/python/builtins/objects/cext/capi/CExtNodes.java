@@ -1448,7 +1448,7 @@ public abstract class CExtNodes {
                         @Cached ConditionProfile isNullProfile) {
             // this branch is not a shortcut; it actually returns a different object
             if (isNullProfile.profile(interopLibrary.isNull(value))) {
-                return new PythonAbstractNativeObject((TruffleObject) value);
+                return new PythonAbstractNativeObject(value);
             }
             return asPythonObjectNode.execute(resolveHandleNode.execute(value));
         }
@@ -3167,8 +3167,8 @@ public abstract class CExtNodes {
             return lib.isIdentical(left, right, lib);
         }
 
-        static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+        Assumption singleContextAssumption() {
+            return PythonLanguage.get(this).singleContextAssumption;
         }
 
         static Assumption getHandleValidAssumption(PythonNativeWrapper nativeWrapper) {
@@ -3181,8 +3181,7 @@ public abstract class CExtNodes {
      * any PyVarObject usually returns the number of contained elements.
      */
     @GenerateUncached
-    @ImportStatic(PythonOptions.class)
-    abstract static class ObSizeNode extends Node {
+    abstract static class ObSizeNode extends PNodeWithContext {
 
         public abstract long execute(Object object);
 
@@ -3198,14 +3197,19 @@ public abstract class CExtNodes {
             int size = 0;
             while (t != 0) {
                 ++size;
-                t >>>= PythonContext.get(this).getCApiContext().getPyLongBitsInDigit();
+                t >>>= getContext().getCApiContext().getPyLongBitsInDigit();
             }
             return size * sign;
         }
 
         @Specialization
         long doPInt(PInt object) {
-            return ((PInt.bitLength(object.abs()) - 1) / PythonContext.get(this).getCApiContext().getPyLongBitsInDigit() + 1) * (object.isNegative() ? -1 : 1);
+            return ((PInt.bitLength(object.abs()) - 1) / getContext().getCApiContext().getPyLongBitsInDigit() + 1) * (object.isNegative() ? -1 : 1);
+        }
+
+        @Specialization
+        long doPythonNativeVoidPtr(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
+            return ((Long.SIZE - 1) / getContext().getCApiContext().getPyLongBitsInDigit() + 1);
         }
 
         @Specialization(guards = "isFallback(object)")
@@ -3219,7 +3223,7 @@ public abstract class CExtNodes {
         }
 
         static boolean isFallback(Object object) {
-            return !(object instanceof PInt || object instanceof Integer || object instanceof Long);
+            return !(object instanceof PInt || object instanceof Integer || object instanceof Long || object instanceof PythonNativeVoidPtr);
         }
     }
 
@@ -3633,7 +3637,12 @@ public abstract class CExtNodes {
             int mSize;
             try {
                 // do not eagerly read the doc string; this turned out to be unnecessarily expensive
-                mDoc = fromCharPointerNode.execute(interopLib.readMember(moduleDef, M_DOC));
+                Object docPtr = interopLib.readMember(moduleDef, M_DOC);
+                if (interopLib.isNull(docPtr)) {
+                    mDoc = PNone.NO_VALUE;
+                } else {
+                    mDoc = fromCharPointerNode.execute(docPtr);
+                }
 
                 Object mSizeObj = interopLib.readMember(moduleDef, M_SIZE);
                 mSize = interopLib.asInt(mSizeObj);
@@ -3686,29 +3695,28 @@ public abstract class CExtNodes {
                 Object[] cArguments = new Object[]{moduleSpecToNativeNode.execute(capiContext, moduleSpec.originalModuleSpec), moduleDef};
                 try {
                     Object result = interopLib.execute(createFunction, cArguments);
-                    DefaultCheckFunctionResultNode.checkFunctionResult(mName, interopLib.isNull(result), false, PythonLanguage.get(callGetterNode), capiContext.getContext(), raiseNode, factory,
-                                    errOccurredProfile,
-                                    CREATION_FAILD_WITHOUT_EXCEPTION, CREATION_RAISED_EXCEPTION);
+                    DefaultCheckFunctionResultNode.checkFunctionResult(raiseNode, mName, interopLib.isNull(result), true, PythonLanguage.get(callGetterNode), capiContext.getContext(),
+                                    errOccurredProfile, CREATION_FAILD_WITHOUT_EXCEPTION, CREATION_RAISED_EXCEPTION);
                     module = toJavaNode.execute(capiContext, result);
-
-                    /*
-                     * We are more strict than CPython and require this to be a PythonModule object.
-                     * This means, if the custom 'create' function uses a native subtype of the
-                     * module type, then we require it to call our new function.
-                     */
-                    if (!(module instanceof PythonModule)) {
-                        if (mSize > 0) {
-                            throw raiseNode.raise(SystemError, NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE, mName);
-                        }
-                        if (hasExecutionSlots) {
-                            throw raiseNode.raise(SystemError, "module %s specifies execution slots, but did not create a ModuleType instance", mName);
-                        }
-                        // otherwise CPython is just fine
-                    } else {
-                        ((PythonModule) module).setNativeModuleDef(moduleDef);
-                    }
                 } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
+                }
+
+                /*
+                 * We are more strict than CPython and require this to be a PythonModule object.
+                 * This means, if the custom 'create' function uses a native subtype of the module
+                 * type, then we require it to call our new function.
+                 */
+                if (!(module instanceof PythonModule)) {
+                    if (mSize > 0) {
+                        throw raiseNode.raise(SystemError, NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE, mName);
+                    }
+                    if (hasExecutionSlots) {
+                        throw raiseNode.raise(SystemError, "module %s specifies execution slots, but did not create a ModuleType instance", mName);
+                    }
+                    // otherwise CPython is just fine
+                } else {
+                    ((PythonModule) module).setNativeModuleDef(moduleDef);
                 }
             } else {
                 PythonModule pythonModule = factory.createPythonModule(mName);
@@ -3758,7 +3766,6 @@ public abstract class CExtNodes {
 
         @Specialization
         static int doGeneric(CApiContext capiContext, PythonModule module, Object moduleDef,
-                        @Cached PythonObjectFactory factory,
                         @Cached ConditionProfile errOccurredProfile,
                         @Cached ModuleGetNameNode getNameNode,
                         @Cached PCallCapiFunction callGetterNode,
@@ -3824,8 +3831,7 @@ public abstract class CExtNodes {
                              * and won't ignore this if no error is set. This is then the same
                              * behaviour if we would have a pointer return type and got 'NULL'.
                              */
-                            DefaultCheckFunctionResultNode.checkFunctionResult(mName, iResult != 0, false, PythonLanguage.get(callGetterNode), capiContext.getContext(), raiseNode, factory,
-                                            errOccurredProfile,
+                            DefaultCheckFunctionResultNode.checkFunctionResult(raiseNode, mName, iResult != 0, true, PythonLanguage.get(callGetterNode), capiContext.getContext(), errOccurredProfile,
                                             EXECUTION_FAILED_WITHOUT_EXCEPTION, EXECUTION_RAISED_EXCEPTION);
                             break;
                         default:

@@ -53,6 +53,12 @@ PyObject * PyFrozenSet_New(PyObject *iterable) {
     return UPCALL_CEXT_O(_jls_PyFrozenSet_New, native_to_java(iterable));
 }
 
+typedef Py_ssize_t (*set_size_fun_t)(PyObject *anyset);
+UPCALL_TYPED_ID(PySet_Size, set_size_fun_t);
+Py_ssize_t PySet_Size(PyObject *anyset) {
+    return PySet_GET_SIZE(anyset);
+}
+
 UPCALL_ID(PySet_Add);
 int PySet_Add(PyObject *set, PyObject *key) {
     return UPCALL_CEXT_I(_jls_PySet_Add, native_to_java(set), native_to_java(key));
@@ -61,6 +67,20 @@ int PySet_Add(PyObject *set, PyObject *key) {
 UPCALL_ID(PySet_Contains);
 int PySet_Contains(PyObject *anyset, PyObject *key) {
     return UPCALL_CEXT_I(_jls_PySet_Contains, native_to_java(anyset), native_to_java(key));
+}
+
+UPCALL_ID(PySet_NextEntry);
+int _PySet_NextEntry(PyObject *set, Py_ssize_t *pos, PyObject **key, Py_hash_t *hash) {
+    PyObject *tresult = UPCALL_CEXT_O(_jls_PySet_NextEntry, native_to_java(set), *pos);
+    if (tresult == NULL) {
+        *key = NULL;
+        *hash = 0;
+    	return 0;
+    }
+    (*pos)++;
+    *key = PyTuple_GetItem(tresult, 0);
+    *hash = PyLong_AsSsize_t(PyTuple_GetItem(tresult, 1));
+    return 1;
 }
 
 UPCALL_ID(PySet_Pop);

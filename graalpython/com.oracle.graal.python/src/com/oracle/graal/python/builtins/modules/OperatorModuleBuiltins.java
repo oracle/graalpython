@@ -41,6 +41,8 @@
 
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
 import java.math.BigInteger;
 import java.util.List;
 
@@ -48,8 +50,11 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -60,6 +65,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -70,6 +77,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = OperatorModuleBuiltins.MODULE_NAME)
 public class OperatorModuleBuiltins extends PythonBuiltins {
@@ -149,19 +157,20 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public Object doDict(PDict dict, Object item) {
-            return dict.getItem(item);
+        public static Object doDict(VirtualFrame frame, PDict dict, Object item,
+                        @Cached DictBuiltins.GetItemNode getItem) {
+            return getItem.execute(frame, dict, item);
         }
 
         @Specialization
-        public Object doSequence(VirtualFrame frame, PSequence value, Object index,
+        public static Object doSequence(VirtualFrame frame, PSequence value, Object index,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(frame, getStorage.execute(value), index);
         }
 
         @Specialization
-        public Object doObject(VirtualFrame frame, Object value, Object index,
+        public static Object doObject(VirtualFrame frame, Object value, Object index,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
             return getItemNode.executeObject(frame, value, index);
         }
@@ -174,10 +183,60 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
     public abstract static class CompareDigestNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public boolean doString(String arg1, String arg2) {
-            return arg1.equals(arg2);
+        public boolean compare(Object left, Object right,
+                        @Cached CastToJavaStringNode cast,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+            try {
+                String leftString = cast.execute(left);
+                String rightString = cast.execute(right);
+                return tscmp(leftString, rightString);
+            } catch (CannotCastException e) {
+                if (!bufferAcquireLib.hasBuffer(left) || !bufferAcquireLib.hasBuffer(right)) {
+                    throw raise(TypeError, "unsupported operand types(s) or combination of types: '%p' and '%p'", left, right);
+                }
+                Object leftBuffer = bufferAcquireLib.acquireReadonly(left);
+                try {
+                    Object rightBuffer = bufferAcquireLib.acquireReadonly(right);
+                    try {
+                        return tscmp(bufferLib.getCopiedByteArray(leftBuffer), bufferLib.getCopiedByteArray(rightBuffer));
+                    } finally {
+                        bufferLib.release(rightBuffer);
+                    }
+                } finally {
+                    bufferLib.release(leftBuffer);
+                }
+            }
         }
 
+        // Comparison that's safe against timing attacks
+        @TruffleBoundary
+        private static boolean tscmp(String leftIn, String right) {
+            String left = leftIn;
+            int result = 0;
+            if (left.length() != right.length()) {
+                left = right;
+                result = 1;
+            }
+            for (int i = 0; i < left.length(); i++) {
+                result |= left.charAt(i) ^ right.charAt(i);
+            }
+            return result == 0;
+        }
+
+        @TruffleBoundary
+        private static boolean tscmp(byte[] leftIn, byte[] right) {
+            byte[] left = leftIn;
+            int result = 0;
+            if (left.length != right.length) {
+                left = right;
+                result = 1;
+            }
+            for (int i = 0; i < left.length; i++) {
+                result |= left[i] ^ right[i];
+            }
+            return result == 0;
+        }
     }
 
     @Builtin(name = "index", minNumOfPositionalArgs = 1)

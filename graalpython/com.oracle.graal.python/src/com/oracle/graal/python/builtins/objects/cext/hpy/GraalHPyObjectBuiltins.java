@@ -40,9 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.OBJECT_HPY_NATIVE_SPACE;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.TYPE_HPY_BASICSIZE;
-
 import java.util.List;
 import java.util.logging.Level;
 
@@ -55,12 +52,12 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PC
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltinsFactory.HPyObjectNewNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSuperClassNodeGen;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -132,7 +129,6 @@ public abstract class GraalHPyObjectBuiltins {
         @Child private LookupCallableSlotInMRONode lookupNewNode;
         @Child private CallVarargsMethodNode callNewNode;
         @Child private GetSuperClassNode getBaseClassNode;
-        @Child private ReadAttributeFromObjectNode readBasicsizeNode;
         @Child private WriteAttributeToObjectNode writeNativeSpaceNode;
         @Child private IsBuiltinClassProfile isObjectProfile;
 
@@ -163,53 +159,48 @@ public abstract class GraalHPyObjectBuiltins {
                 PythonUtils.arraycopy(arguments, 0, argsWithSelf, 1, arguments.length);
                 self = explicitSelf;
             }
-            Object baseClass = ensureGetBaseClassNode().execute(self);
-            Object pythonObject;
-            if (ensureIsObjectProfile().profileClass(baseClass, PythonBuiltinClassType.PythonObject)) {
-                // fast-path if the super class is 'object'
-                pythonObject = factory().createPythonObject(self);
-            } else {
-                Object superNew = ensureLookupNewNode().execute(baseClass);
-                pythonObject = ensureCallNewNode().execute(frame, superNew, argsWithSelf, keywords);
-            }
-
-            // allocate native space
-            Object attrObj = ensureReadBasicsizeNode().execute(self, TYPE_HPY_BASICSIZE);
-            if (attrObj != PNone.NO_VALUE) {
-                // we fully control this attribute; if it is there, it's always a long
-                long basicsize = (long) attrObj;
-                if (basicsize > 0) {
+            Object dataPtr = PNone.NO_VALUE;
+            if (self instanceof PythonClass) {
+                // allocate native space
+                long basicSize = ((PythonClass) self).basicSize;
+                if (basicSize > 0) {
                     /*
                      * This is just calling 'calloc' which is a pure helper function. Therefore, we
                      * can take any HPy context and don't need to attach a context to this __new__
                      * function for that since the helper function won't deal with handles.
                      */
-                    Object dataPtr = ensureCallHPyFunctionNode().call(getContext().getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicsize, 1L);
-                    ensureWriteNativeSpaceNode().execute(pythonObject, OBJECT_HPY_NATIVE_SPACE, dataPtr);
+                    dataPtr = ensureCallHPyFunctionNode().call(getContext().getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
 
                     if (LOGGER.isLoggable(Level.FINEST)) {
-                        LOGGER.finest(() -> String.format("Allocated HPy object with native space of size %d at %s", basicsize, dataPtr));
+                        LOGGER.finest(PythonUtils.format("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
                     }
                     // TODO(fa): add memory tracing
                 }
             }
+
+            Object baseClass = ensureGetBaseClassNode().execute(self);
+            Object pythonObject;
+            if (ensureIsObjectProfile().profileClass(baseClass, PythonBuiltinClassType.PythonObject)) {
+                // fast-path if the super class is 'object'
+                pythonObject = factory().createPythonHPyObject(self, dataPtr);
+            } else {
+                Object superNew = ensureLookupNewNode().execute(baseClass);
+                pythonObject = ensureCallNewNode().execute(frame, superNew, argsWithSelf, keywords);
+
+                /*
+                 * Since we are creating an object with an unknown constructor, the Java type may be
+                 * anything (e.g. PInt, etc). So, we need to store the native space pointer into a
+                 * hidden key.
+                 */
+                if (dataPtr != PNone.NO_VALUE) {
+                    ensureWriteNativeSpaceNode().execute(pythonObject, GraalHPyDef.OBJECT_HPY_NATIVE_SPACE, dataPtr);
+                }
+            }
+
+            if (pythonObject == null) {
+                pythonObject = factory().createPythonObject(self);
+            }
             return pythonObject;
-        }
-
-        private ReadAttributeFromObjectNode ensureReadBasicsizeNode() {
-            if (readBasicsizeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readBasicsizeNode = insert(ReadAttributeFromObjectNode.createForceType());
-            }
-            return readBasicsizeNode;
-        }
-
-        private WriteAttributeToObjectNode ensureWriteNativeSpaceNode() {
-            if (writeNativeSpaceNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeNativeSpaceNode = insert(WriteAttributeToObjectNode.createForceType());
-            }
-            return writeNativeSpaceNode;
         }
 
         private PCallHPyFunction ensureCallHPyFunctionNode() {
@@ -242,6 +233,14 @@ public abstract class GraalHPyObjectBuiltins {
                 getBaseClassNode = insert(GetSuperClassNodeGen.create());
             }
             return getBaseClassNode;
+        }
+
+        private WriteAttributeToObjectNode ensureWriteNativeSpaceNode() {
+            if (writeNativeSpaceNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                writeNativeSpaceNode = insert(WriteAttributeToObjectNode.create());
+            }
+            return writeNativeSpaceNode;
         }
 
         private IsBuiltinClassProfile ensureIsObjectProfile() {
