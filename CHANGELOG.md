@@ -3,6 +3,18 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 21.3.0
+
+* Remove PYPY_VERSION from our C extension emulation, enabling PyGame 2.0 and other extensions to work out of the box.
+* Intrinsify and optimize more of the core language for better startup and reduced footprint.
+* Implement a new binary compatible backend for HPy 0.0.3, which allows binary HPy wheels to run unmodified on CPython and GraalPython
+* Support the `multiprocessing` module via in-process nested contexts, allowing execution on multiple cores within the same process using the Python multiprocessing API
+* Add support for the `ctypes` module, enabling more native extensions to run that use the ctypes API
+* Fix multiple REPL issues reported on Github, you can now paste blocks of code and use the numpad in the REPL.
+* Make our marshal format compatible with CPython, so binary data can now be exchanged between CPython and GraalPython processes.
+* Make most `socket` module tests pass in native mode by using a native extension, allowing usage of all POSIX socket APIs where before only those supported on Java could be used.
+* Various compatibility fixes to make the `psutil` package work.
+
 ## Version 21.2.0
 
 * Support the `dict` type properly in interop using the new hash interop messages.
