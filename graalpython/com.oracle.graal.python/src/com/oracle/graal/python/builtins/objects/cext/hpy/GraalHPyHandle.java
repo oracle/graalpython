@@ -121,9 +121,6 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     int getDebugId() {
-        if (id == UNINITIALIZED) {
-            throw CompilerDirectives.shouldNotReachHere();
-        }
         if (id >= 0) {
             return id;
         }

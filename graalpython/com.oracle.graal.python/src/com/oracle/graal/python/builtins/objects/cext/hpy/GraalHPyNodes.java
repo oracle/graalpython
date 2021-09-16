@@ -1282,7 +1282,6 @@ public class GraalHPyNodes {
         static Object doValidHandle(GraalHPyContext hpyContext, GraalHPyHandle handle) {
             if (!handle.isValid()) {
                 hpyContext.onInvalidHandle(handle.getDebugId());
-                return PNone.NO_VALUE;
             }
             return handle.getDelegate();
         }
