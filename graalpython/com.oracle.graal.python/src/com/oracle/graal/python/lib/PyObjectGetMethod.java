@@ -120,7 +120,7 @@ public abstract class PyObjectGetMethod extends Node {
                     @Cached BranchProfile returnBoundDescr) {
         boolean methodFound = false;
         Object descr = lookupNode.execute(lazyClass);
-        Object getMethod = null;
+        Object getMethod = PNone.NO_VALUE;
         if (descr != PNone.NO_VALUE) {
             hasDescr.enter();
             if (MaybeBindDescriptorNode.isMethodDescriptor(descr)) {
@@ -147,10 +147,13 @@ public abstract class PyObjectGetMethod extends Node {
             returnUnboundMethod.enter();
             return descr;
         }
-        if (getMethod != null) {
+        if (getMethod != PNone.NO_VALUE) {
             // callGet is used twice, and cannot act as the profile here
             returnBoundDescr.enter();
             return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));
+        }
+        if (descr != PNone.NO_VALUE) {
+            return new BoundDescriptor(descr);
         }
         throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
     }
@@ -169,7 +172,7 @@ public abstract class PyObjectGetMethod extends Node {
                     @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
         boolean methodFound = false;
         Object descr = lookupNode.execute(lazyClass, name);
-        Object getMethod = null;
+        Object getMethod = PNone.NO_VALUE;
         if (descr != PNone.NO_VALUE) {
             if (MaybeBindDescriptorNode.isMethodDescriptor(descr)) {
                 methodFound = true;
@@ -190,8 +193,11 @@ public abstract class PyObjectGetMethod extends Node {
         if (methodFound) {
             return descr;
         }
-        if (getMethod != null) {
+        if (getMethod != PNone.NO_VALUE) {
             return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));
+        }
+        if (descr != PNone.NO_VALUE) {
+            return new BoundDescriptor(descr);
         }
         throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
     }
