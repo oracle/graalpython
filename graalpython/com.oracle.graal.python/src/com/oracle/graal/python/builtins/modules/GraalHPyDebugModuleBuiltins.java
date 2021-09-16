@@ -144,9 +144,8 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
             openHandles.sort(Comparator.comparingLong(debugContext::getDebugHandleInfo));
             Object[] result = new Object[n];
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            // do reverse order to match order expected by HPy tests
             for (int i = 0; i < n; i++) {
-                result[n - 1 - i] = factory.createDebugHandle(openHandles.get(i));
+                result[i] = factory.createDebugHandle(openHandles.get(i));
             }
             return result;
         }
