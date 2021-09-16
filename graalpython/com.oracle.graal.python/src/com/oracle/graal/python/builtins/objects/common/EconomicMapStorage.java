@@ -328,6 +328,7 @@ public class EconomicMapStorage extends HashingStorage {
     }
 
     @ExportMessage
+    @Override
     HashingStorage clear() {
         map.clear();
         return this;

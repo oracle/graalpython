@@ -1103,7 +1103,7 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private boolean extraivars(Object type, Object base, Object typeSlots, Object baseSlots, GetInternalObjectArrayNode getArrayNode) {
+        private static boolean extraivars(Object type, Object base, Object typeSlots, Object baseSlots, GetInternalObjectArrayNode getArrayNode) {
             if (typeSlots == null && baseSlots != null && length(((PSequence) baseSlots).getSequenceStorage(), getArrayNode) != 0 ||
                             baseSlots == null && typeSlots != null && length(((PSequence) typeSlots).getSequenceStorage(), getArrayNode) != 0) {
                 return true;
