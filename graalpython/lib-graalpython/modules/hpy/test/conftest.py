@@ -59,7 +59,7 @@ def compiler(request, tmpdir, hpy_devel, hpy_abi, ExtensionTemplate):
                              ExtensionTemplate=ExtensionTemplate)
 
 @pytest.fixture()
-def skip_nfi(self, hpy_abi):
+def skip_nfi(hpy_abi):
     # skip all tests in this class for NFI mode
     if hpy_abi == 'nfi':
         pytest.skip()

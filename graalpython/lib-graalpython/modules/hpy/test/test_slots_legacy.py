@@ -22,6 +22,7 @@
 # SOFTWARE.
 
 """ HPyType slot tests on legacy types. """
+import pytest
 
 from .support import HPyTest
 from .test_hpytype_legacy import LegacyPointTemplate

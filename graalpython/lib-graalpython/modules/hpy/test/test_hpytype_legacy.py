@@ -23,11 +23,12 @@
 
 """ HPyType tests on legacy types. """
 
+import pytest
+
 from .support import HPyTest
 from .test_hpytype import PointTemplate, TestType as _TestType
 
 
-@pytest.mark.usefixtures('skip_nfi')
 class LegacyPointTemplate(PointTemplate):
     """
     Override PointTemplate to instead define a legacy point type that
