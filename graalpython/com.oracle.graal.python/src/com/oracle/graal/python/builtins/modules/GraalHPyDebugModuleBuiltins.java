@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PDebugHandle;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -224,4 +225,18 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "set_on_invalid_handle", //
+                    doc = "Set the function to call when we detect the usage of an invalid handle")
+    @GenerateNodeFactory
+    abstract static class HPyDebugSetOnInvalidHandleNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PNone doInt(VirtualFrame frame, Object callback) {
+            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this);
+            if (!PythonObjectLibrary.getUncached().isCallable(callback)) {
+                throw raise(TypeError, "Expected a callable object");
+            }
+            hpyDebugContext.setOnInvalidHandleCallback(callback);
+            return PNone.NONE;
+        }
+    }
 }

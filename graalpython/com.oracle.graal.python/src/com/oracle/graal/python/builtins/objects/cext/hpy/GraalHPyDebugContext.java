@@ -44,6 +44,8 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -55,6 +57,7 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
     private long[] debugHandleInfo = new long[]{0};
     private int closedHandlesQueueMaxSize = DEFAULT_CLOSED_HANDLES_QUEUE_MAX_SIZE;
     private final Queue<GraalHPyHandle> closedHandles = new LinkedList<>();
+    private Object onInvalidHandleCallback;
 
     public GraalHPyDebugContext(GraalHPyContext context) {
         super(context.getContext(), context.getLLVMLibrary());
@@ -71,6 +74,14 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
 
     public void setClosedHandlesQueueMaxSize(int closedHandlesQueueMaxSize) {
         this.closedHandlesQueueMaxSize = closedHandlesQueueMaxSize;
+    }
+
+    public Object getOnInvalidHandleCallback() {
+        return onInvalidHandleCallback;
+    }
+
+    public void setOnInvalidHandleCallback(Object onInvalidHandleCallback) {
+        this.onInvalidHandleCallback = onInvalidHandleCallback;
     }
 
     /**
@@ -136,16 +147,31 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
         return handle;
     }
 
+    public synchronized GraalHPyHandle getObjectForHPyHandle(int handle) {
+        try {
+            return super.getObjectForHPyHandle(handle);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            onInvalidHandle(handle);
+            return GraalHPyHandle.NULL_HANDLE;
+        }
+    }
+
     @Override
     @TruffleBoundary
-    public synchronized void releaseHPyHandleForObject(int handleId) {
-        GraalHPyHandle handle = super.getObjectForHPyHandle(handleId);
-        super.releaseHPyHandleForObject(handleId);
-        debugHandleInfo[handleId] = -1;
-        if (closedHandles.size() >= closedHandlesQueueMaxSize) {
-            closedHandles.poll();
+    public synchronized boolean releaseHPyHandleForObject(int handleId) {
+        if (handleId < 0) {
+            onInvalidHandle(handleId);
+            return false;
+        } else {
+            GraalHPyHandle handle = super.getObjectForHPyHandle(handleId);
+            super.releaseHPyHandleForObject(handleId);
+            debugHandleInfo[handleId] = -1;
+            if (closedHandles.size() >= closedHandlesQueueMaxSize) {
+                closedHandles.poll();
+            }
+            closedHandles.add(handle);
+            return true;
         }
-        closedHandles.add(handle);
     }
 
     private static int getGeneration(long bits) {
@@ -154,5 +180,15 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
 
     private static long toBits(int generation, int age) {
         return ((long) generation << Integer.SIZE) | age;
+    }
+
+    @TruffleBoundary
+    void onInvalidHandle(int id) {
+        assert GraalHPyHandle.wasAllocated(id);
+        if (onInvalidHandleCallback != null) {
+            CallNode.getUncached().execute(onInvalidHandleCallback);
+        } else {
+            CExtCommonNodes.fatalError(null, getContext(), null, "Invalid usage of already closed handle", -1);
+        }
     }
 }

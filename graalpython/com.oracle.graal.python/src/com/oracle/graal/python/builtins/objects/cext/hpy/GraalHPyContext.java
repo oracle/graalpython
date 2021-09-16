@@ -147,7 +147,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.ReturnType;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAttachFunctionTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
@@ -155,6 +154,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAttachFunctionTypeNode;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -2201,12 +2201,12 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
     }
 
-    public final synchronized GraalHPyHandle getObjectForHPyHandle(int handle) {
+    public synchronized GraalHPyHandle getObjectForHPyHandle(int handle) {
         assert !GraalHPyBoxing.isBoxedInt(handle) && !GraalHPyBoxing.isBoxedDouble(handle) : "trying to lookup boxed primitive";
         return hpyHandleTable[handle];
     }
 
-    synchronized void releaseHPyHandleForObject(int handle) {
+    synchronized boolean releaseHPyHandleForObject(int handle) {
         assert handle != 0 : "NULL handle cannot be released";
         assert hpyHandleTable[handle] != null : PythonUtils.format("releasing handle that has already been released: %d", handle);
         if (LOGGER.isLoggable(Level.FINER)) {
@@ -2214,6 +2214,11 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
         hpyHandleTable[handle] = null;
         freeStack.push(handle);
+        return true;
+    }
+
+    void onInvalidHandle(@SuppressWarnings("unused") int id) {
+        // nothing to do in the universal context
     }
 
     private static final class HandleStack {

@@ -82,6 +82,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyLegacyDef.HPyLe
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyWriteMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllHandleCloseNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachJNIFunctionTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachNFIFunctionTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetSetterHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyKeywordsHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRichcmptFuncArgsCloseNodeGen;
@@ -96,8 +98,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorSetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorGetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorSetterRoot;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachJNIFunctionTypeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachNFIFunctionTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -1259,6 +1259,10 @@ public class GraalHPyNodes {
     @ImportStatic(GraalHPyBoxing.class)
     public abstract static class HPyAsPythonObjectNode extends CExtToJavaNode {
 
+        static Assumption noDebugModeAssumption() {
+            return PythonLanguage.get(null).noHPyDebugModeAssumption;
+        }
+
         protected final GraalHPyContext ensureContext(GraalHPyContext hpyContext) {
             if (hpyContext == null) {
                 return getContext().getHPyContext();
@@ -1269,8 +1273,17 @@ public class GraalHPyNodes {
 
         public abstract Object execute(GraalHPyContext hpyContext, long bits);
 
-        @Specialization
+        @Specialization(assumptions = "noDebugModeAssumption()")
         static Object doHandle(@SuppressWarnings("unused") GraalHPyContext hpyContext, GraalHPyHandle handle) {
+            return handle.getDelegate();
+        }
+
+        @Specialization(replaces = "doHandle")
+        static Object doValidHandle(GraalHPyContext hpyContext, GraalHPyHandle handle) {
+            if (!handle.isValid()) {
+                hpyContext.onInvalidHandle(handle.getDebugId());
+                return PNone.NO_VALUE;
+            }
             return handle.getDelegate();
         }
 

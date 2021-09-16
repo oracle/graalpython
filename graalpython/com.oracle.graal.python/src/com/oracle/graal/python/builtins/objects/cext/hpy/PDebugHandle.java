@@ -59,7 +59,7 @@ public final class PDebugHandle extends PythonBuiltinObject {
     public boolean eq(PDebugHandle other) {
         return handle == other.handle;
     }
-    
+
     public Object getObj() {
         return handle.getDelegate();
     }
@@ -71,7 +71,7 @@ public final class PDebugHandle extends PythonBuiltinObject {
 
     @TruffleBoundary
     public void close(GraalHPyDebugContext debugContext) {
-            handle.closeAndInvalidate(debugContext);
+        handle.closeAndInvalidate(debugContext);
     }
 
     @TruffleBoundary

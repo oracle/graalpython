@@ -67,7 +67,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 @ExportLibrary(PythonNativeWrapperLibrary.class)
 public final class GraalHPyHandle implements TruffleObject {
-    public static final int UNINITIALIZED = Integer.MIN_VALUE;
+    private static final int UNINITIALIZED = Integer.MIN_VALUE;
 
     public static final GraalHPyHandle NULL_HANDLE = new GraalHPyHandle();
     public static final String I = "_i";
@@ -144,7 +144,7 @@ public final class GraalHPyHandle implements TruffleObject {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnsupportedMessageException.create();
         }
-        if (id != -1) {
+        if (id != UNINITIALIZED) {
             return GraalHPyBoxing.boxHandle(id);
         } else if (delegate instanceof Integer) {
             return GraalHPyBoxing.boxInt((Integer) delegate);
@@ -249,16 +249,25 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     boolean isAllocated() {
+        return id != UNINITIALIZED && id != 0;
+    }
+
+    boolean isValid() {
         return id > 0;
     }
 
     void closeAndInvalidate(GraalHPyContext hpyContext) {
-        assert id != -1;
-        hpyContext.releaseHPyHandleForObject(id);
-        id = -id;
+        assert id != UNINITIALIZED;
+        if (hpyContext.releaseHPyHandleForObject(id)) {
+            id = -id;
+        }
     }
 
     public GraalHPyHandle copy() {
         return new GraalHPyHandle(delegate);
+    }
+    
+    static boolean wasAllocated(int id) {
+        return id != UNINITIALIZED;
     }
 }
