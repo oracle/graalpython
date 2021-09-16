@@ -72,7 +72,7 @@ public final class GraalHPyHandle implements TruffleObject {
     public static final String I = "_i";
 
     private final Object delegate;
-    private int id = -1;
+    private int id = Integer.MIN_VALUE;
 
     private GraalHPyHandle() {
         this.delegate = PNone.NO_VALUE;
@@ -96,11 +96,21 @@ public final class GraalHPyHandle implements TruffleObject {
         }
         return result;
     }
+    
+    int getDebugId() {
+        if (id == Integer.MIN_VALUE) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+        if (id >= 0) {
+            return id;
+        }
+        return -id;
+    }
 
     @ExportMessage
     boolean isPointer(
                     @Exclusive @Cached ConditionProfile isNativeProfile) {
-        return isNativeProfile.profile(id != -1);
+        return isNativeProfile.profile(id >= 0);
     }
 
     @ExportMessage
@@ -215,7 +225,7 @@ public final class GraalHPyHandle implements TruffleObject {
         if (isPointer(isAllocatedProfile)) {
             try {
                 hpyContext.releaseHPyHandleForObject((int) asPointer());
-                id = -1;
+                id = -id;
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere("trying to release non-native handle that claims to be native");
             }

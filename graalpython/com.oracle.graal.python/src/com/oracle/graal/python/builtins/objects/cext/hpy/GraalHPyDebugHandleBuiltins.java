@@ -58,12 +58,10 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.DebugHandle)
 public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
@@ -79,7 +77,7 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doGeneric(PDebugHandle self) {
-            return self.getHandle().getDelegate();
+            return self.getObj();
         }
     }
 
@@ -89,9 +87,8 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
     public abstract static class HPyDebugHandleIdNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object doGeneric(PDebugHandle self,
-                        @Cached ConditionProfile profile) {
-            return self.getHandle().getId(getContext().getHPyDebugContext(), profile);
+        static int doGeneric(PDebugHandle self) {
+            return self.getId();
         }
     }
 
@@ -102,8 +99,7 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doGeneric(PDebugHandle self) {
-            GraalHPyHandle handle = self.getHandle();
-            return !handle.isPointer(ConditionProfile.getUncached());
+            return self.isClosed();
         }
     }
 
@@ -113,7 +109,7 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doDebugHandle(PDebugHandle self, PDebugHandle other) {
-            return self.getHandle() == other.getHandle();
+            return self.eq(other);
         }
 
         @Specialization(guards = "!isDebugHandle(other)")
@@ -145,10 +141,14 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static Object format(GraalHPyDebugContext hpyDebugContext, PDebugHandle self) {
-            int id = self.getHandle().getId(hpyDebugContext, ConditionProfile.getUncached());
-            Object objRepr = LookupAndCallUnaryDynamicNode.getUncached().executeObject(self.getHandle().getDelegate(), SpecialMethodNames.__REPR__);
-            String reprStr = CastToJavaStringNode.getUncached().execute(objRepr);
-            return String.format("<DebugHandle 0x%s for %s>", Integer.toHexString(id), reprStr);
+            int id = self.getId();
+            if (self.isClosed()) {
+                return String.format("<DebugHandle 0x%s CLOSED>", Integer.toHexString(id));
+            } else {
+                Object objRepr = LookupAndCallUnaryDynamicNode.getUncached().executeObject(self.getObj(), SpecialMethodNames.__REPR__);
+                String reprStr = CastToJavaStringNode.getUncached().execute(objRepr);
+                return String.format("<DebugHandle 0x%s for %s>", Integer.toHexString(id), reprStr);
+            }
         }
     }
 
@@ -158,7 +158,7 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone doGeneric(PDebugHandle self) {
-            self.getHandle().close(getContext().getHPyContext(), ConditionProfile.getUncached());
+            self.close(getContext().getHPyDebugContext());
             return PNone.NONE;
         }
     }

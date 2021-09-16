@@ -41,15 +41,20 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class GraalHPyDebugContext extends GraalHPyContext {
+    private static final int DEFAULT_CLOSED_HANDLES_QUEUE_MAX_SIZE = 1024;
 
     private int currentGeneration;
     private int[] generationTable = new int[]{0};
+    private int closedHandlesQueueMaxSize = DEFAULT_CLOSED_HANDLES_QUEUE_MAX_SIZE;
+    private final Queue<GraalHPyHandle> closedHandles = new LinkedList<>();
 
     public GraalHPyDebugContext(GraalHPyContext context) {
         super(context.getContext(), context.getLLVMLibrary());
@@ -59,6 +64,14 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
         setHPyArrayNativeType(context.getHPyArrayNativeType());
         setNullHandle(context.getNullHandle());
         setWcharSize(context.getWcharSize());
+    }
+
+    public int getClosedHandlesQueueMaxSize() {
+        return closedHandlesQueueMaxSize;
+    }
+
+    public void setClosedHandlesQueueMaxSize(int closedHandlesQueueMaxSize) {
+        this.closedHandlesQueueMaxSize = closedHandlesQueueMaxSize;
     }
 
     /**
@@ -91,6 +104,10 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
         return openHandles;
     }
 
+    public Queue<GraalHPyHandle> getClosedHandles() {
+        return closedHandles;
+    }
+
     public int getCurrentGeneration() {
         return currentGeneration;
     }
@@ -116,8 +133,14 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
     }
 
     @Override
-    public synchronized void releaseHPyHandleForObject(int handle) {
-        super.releaseHPyHandleForObject(handle);
-        generationTable[handle] = -1;
+    @TruffleBoundary
+    public synchronized void releaseHPyHandleForObject(int handleId) {
+        GraalHPyHandle handle = super.getObjectForHPyHandle(handleId);
+        super.releaseHPyHandleForObject(handleId);
+        generationTable[handleId] = -1;
+        if (closedHandles.size() >= closedHandlesQueueMaxSize) {
+            closedHandles.poll();
+        }
+        closedHandles.add(handle);
     }
 }

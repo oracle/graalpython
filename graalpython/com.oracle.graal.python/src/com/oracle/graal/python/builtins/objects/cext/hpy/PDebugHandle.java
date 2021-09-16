@@ -41,7 +41,9 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * A thin wrapper around {@link GraalHPyHandle} for exposing handles to the user space.
@@ -54,7 +56,26 @@ public final class PDebugHandle extends PythonBuiltinObject {
         this.handle = handle;
     }
 
-    public GraalHPyHandle getHandle() {
-        return handle;
+    public boolean eq(PDebugHandle other) {
+        return handle == other.handle;
+    }
+    
+    public Object getObj() {
+        return handle.getDelegate();
+    }
+
+    @TruffleBoundary
+    public int getId() {
+        return handle.getDebugId();
+    }
+
+    @TruffleBoundary
+    public void close(GraalHPyDebugContext debugContext) {
+        handle.close(debugContext, ConditionProfile.getUncached());
+    }
+
+    @TruffleBoundary
+    public boolean isClosed() {
+        return !handle.isPointer(ConditionProfile.getUncached());
     }
 }
