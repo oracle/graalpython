@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -678,7 +679,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         Object reduce(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectLookupAttr lookupDict,
-                        @Cached PyObjectLookupAttr lookupReconstructor,
+                        @Cached PyObjectGetAttr getReconstructor,
                         @Cached ToBytesNode toBytesNode) {
             PythonModule arrayModule = getCore().lookupBuiltinModule("array");
             PArray.MachineFormat mformat = PArray.MachineFormat.forFormat(self.getFormat());
@@ -688,7 +689,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
-            Object reconstructor = lookupReconstructor.executeStrict(frame, this, arrayModule, "_array_reconstructor");
+            Object reconstructor = getReconstructor.execute(frame, arrayModule, "_array_reconstructor");
             PTuple args = factory().createTuple(new Object[]{cls, self.getFormatString(), mformat.code, toBytesNode.call(frame, self)});
             return factory().createTuple(new Object[]{reconstructor, args, dict});
         }

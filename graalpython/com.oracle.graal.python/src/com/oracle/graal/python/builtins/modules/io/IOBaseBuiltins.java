@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -174,9 +175,9 @@ public class IOBaseBuiltins extends PythonBuiltins {
     abstract static class CheckClosedNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doCheckClosed(VirtualFrame frame, PythonObject self,
-                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            if (isTrueNode.execute(frame, lookupAttr.executeStrict(frame, this, self, CLOSED))) {
+            if (isTrueNode.execute(frame, getAttr.execute(frame, self, CLOSED))) {
                 throw raise(ValueError, ErrorMessages.IO_CLOSED);
             }
             return PNone.NONE;

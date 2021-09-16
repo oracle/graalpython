@@ -127,8 +127,9 @@ public abstract class PyObjectGetMethod extends Node {
                 methodFound = true;
             } else {
                 // lookupGet acts as branch profile for this branch
-                getMethod = lookupGet.execute(getDescrClass.execute(descr));
-                if (getMethod != PNone.NO_VALUE && lookupSet.execute(descr) != PNone.NO_VALUE) {
+                Object descrType = getDescrClass.execute(descr);
+                getMethod = lookupGet.execute(descrType);
+                if (getMethod != PNone.NO_VALUE && lookupSet.execute(descrType) != PNone.NO_VALUE) {
                     returnDataDescr.enter();
                     return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));
                 }
@@ -173,8 +174,9 @@ public abstract class PyObjectGetMethod extends Node {
             if (MaybeBindDescriptorNode.isMethodDescriptor(descr)) {
                 methodFound = true;
             } else {
-                getMethod = lookupGet.execute(getDescrClass.execute(descr));
-                if (getMethod != PNone.NO_VALUE && lookupSet.execute(descr) != PNone.NO_VALUE) {
+                Object descrType = getDescrClass.execute(descr);
+                getMethod = lookupGet.execute(descrType);
+                if (getMethod != PNone.NO_VALUE && lookupSet.execute(descrType) != PNone.NO_VALUE) {
                     return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));
                 }
             }

@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
@@ -52,10 +50,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
@@ -96,22 +91,6 @@ public abstract class PyObjectLookupAttr extends Node {
     private static final BuiltinMethodDescriptor TYPE_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(TypeBuiltinsFactory.GetattributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonClass);
 
     public abstract Object execute(Frame frame, Object receiver, Object name);
-
-    public final Object executeStrict(Frame frame, PRaiseNode raiseNode, Object receiver, Object name) {
-        Object attr = execute(frame, receiver, name);
-        if (attr == PNone.NO_VALUE) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, attr, name);
-        }
-        return attr;
-    }
-
-    public final Object executeStrict(Frame frame, PNodeWithRaise raiseNode, Object receiver, Object name) {
-        Object attr = execute(frame, receiver, name);
-        if (attr == PNone.NO_VALUE) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, attr, name);
-        }
-        return attr;
-    }
 
     protected static boolean hasNoGetattr(Object lazyClass) {
         Object slotValue = null;

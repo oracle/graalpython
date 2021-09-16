@@ -41,6 +41,7 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -97,7 +98,7 @@ public abstract class PyObjectAsFileDescriptor extends PNodeWithContext {
 
     private static int checkResult(int result, PRaiseNode raiseNode) {
         if (result < 0) {
-            throw raiseNode.raise(TypeError, ErrorMessages.S_CANNOT_BE_NEGATIVE_INTEGER_D, "file descriptor", result);
+            throw raiseNode.raise(ValueError, ErrorMessages.S_CANNOT_BE_NEGATIVE_INTEGER_D, "file descriptor", result);
         }
         return result;
     }

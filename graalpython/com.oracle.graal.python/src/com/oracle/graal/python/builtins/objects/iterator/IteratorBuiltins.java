@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -359,7 +359,7 @@ public class IteratorBuiltins extends PythonBuiltins {
     @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Child PyObjectLookupAttr lookupAttrNode;
+        @Child PyObjectGetAttr getAttrNode;
 
         @Specialization
         public Object reduce(VirtualFrame frame, PArrayIterator self,
@@ -470,7 +470,7 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         private PTuple reduceInternal(VirtualFrame frame, Object arg, Object state, PythonContext context) {
             PythonModule builtins = context.getCore().getBuiltins();
-            Object iter = getLookupAttrNode().executeStrict(frame, this, builtins, ITER);
+            Object iter = getGetAttrNode().execute(frame, builtins, ITER);
             PTuple args = factory().createTuple(new Object[]{arg});
             // callable, args, state (optional)
             if (state != null) {
@@ -480,12 +480,12 @@ public class IteratorBuiltins extends PythonBuiltins {
             }
         }
 
-        private PyObjectLookupAttr getLookupAttrNode() {
-            if (lookupAttrNode == null) {
+        private PyObjectGetAttr getGetAttrNode() {
+            if (getAttrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupAttrNode = insert(PyObjectLookupAttr.create());
+                getAttrNode = insert(PyObjectGetAttr.create());
             }
-            return lookupAttrNode;
+            return getAttrNode;
         }
     }
 

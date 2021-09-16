@@ -154,7 +154,7 @@ def PyDict_Pop(dictObj, *args):
 @may_raise(-1)
 def PyDict_Size(dictObj):
     if not isinstance(dictObj, dict):
-        raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
+        raise TypeError('expected dict, {!s} found'.format(type(dictObj).__name__))
     return len(dictObj)
 
 
@@ -177,14 +177,14 @@ def PyDict_GetItem(dictObj, key):
 @may_raise
 def PyDict_GetItemWithError(dictObj, key):
     if not isinstance(dictObj, dict):
-        raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
+        raise TypeError('expected dict, {!s} found'.format(type(dictObj).__name__))
     return dictObj.get(key, native_null)
 
 
 @may_raise(-1)
 def PyDict_SetItem(dictObj, key, value):
     if not isinstance(dictObj, dict):
-        raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
+        raise TypeError('expected dict, {!s} found'.format(type(dictObj).__name__))
     dictObj[key] = value
     return 0
 
@@ -192,7 +192,7 @@ def PyDict_SetItem(dictObj, key, value):
 @may_raise(-1)
 def PyDict_SetItem_KnownHash(dictObj, key, value, given_hash):
     if not isinstance(dictObj, dict):
-        raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
+        raise TypeError('expected dict, {!s} found'.format(type(dictObj).__name__))
     assert hash(key) == given_hash, "hash mismatch: known hash is different to computed hash"
     dictObj[key] = value
     return 0
@@ -201,7 +201,7 @@ def PyDict_SetItem_KnownHash(dictObj, key, value, given_hash):
 @may_raise(-1)
 def PyDict_DelItem(dictObj, key):
     if not isinstance(dictObj, dict):
-        raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
+        raise TypeError('expected dict, {!s} found'.format(type(dictObj).__name__))
     del dictObj[key]
     return 0
 
@@ -490,15 +490,15 @@ def PyNumber_Check(v):
 @may_raise
 def PyNumber_Index(v):
     if not hasattr(v, "__index__"):
-        raise TypeError("'%s' object cannot be interpreted as an integer" % type(v))
+        raise TypeError("'%s' object cannot be interpreted as an integer" % type(v).__name__)
     result = v.__index__()
     result_type = type(result)
     if not isinstance(result, int):
-        raise TypeError("__index__ returned non-int (type %s)" % result_type)
+        raise TypeError("__index__ returned non-int (type %s)" % result_type.__name__)
     if result_type is not int:
         from warnings import warn
         warn("__index__ returned non-int (type %s). The ability to return an instance of a strict subclass of int "
-             "is deprecated, and may be removed in a future version of Python." % result_type)
+             "is deprecated, and may be removed in a future version of Python." % result_type.__name__)
     return result
 
 
@@ -561,7 +561,7 @@ def PySequence_List(obj):
 @may_raise(-1)
 def PySequence_SetItem(obj, key, value):
     if not hasattr(obj, '__setitem__'):
-        raise TypeError("'%s' object does not support item assignment)" % repr(obj))
+        raise TypeError("'%s' object does not support item assignment)" % type(obj).__name__)
     if len(obj) < 0:
         return -1
     obj.__setitem__(key, value)
@@ -581,29 +581,29 @@ def PySequence_Contains(haystack, needle):
 @may_raise
 def PySequence_Repeat(obj, n):
     if not PySequence_Check(obj):
-        raise TypeError("'%s' object can't be repeated" % type(obj))
+        raise TypeError("'%s' object can't be repeated" % type(obj).__name__)
     return obj * n
 
 
 @may_raise
 def PySequence_InPlaceRepeat(obj, n):
     if not PySequence_Check(obj):
-        raise TypeError("'%s' object can't be repeated" % type(obj))
+        raise TypeError("'%s' object can't be repeated" % type(obj).__name__)
     obj *= n
     return obj
 
 
 @may_raise
 def PySequence_Concat(s, o):
-    if not (PySequence_Check(s) and PySequence_Check(o)):
-        raise TypeError("'%s' object can't be concatenated" % type(s))
+    if not PySequence_Check(s):
+        raise TypeError("'%s' object can't be concatenated" % type(s).__name__)
     return s + o
 
 
 @may_raise
 def PySequence_InPlaceConcat(s, o):
-    if not (PySequence_Check(s) and PySequence_Check(o)):
-        raise TypeError("'%s' object can't be concatenated" % type(s))
+    if not PySequence_Check(s):
+        raise TypeError("'%s' object can't be concatenated" % type(s).__name__)
     s += o
     return s
 
@@ -628,9 +628,9 @@ def PyUnicode_GetLength(o):
 @may_raise
 def PyUnicode_Concat(left, right):
     if not isinstance(left, str):
-        raise TypeError("must be str, not %s" % type(left));
+        raise TypeError("must be str, not %s" % type(left).__name__)
     if not isinstance(right, str):
-        raise TypeError("must be str, not %s" % type(right));
+        raise TypeError("must be str, not %s" % type(right).__name__)
     return left + right
 
 
@@ -1198,7 +1198,7 @@ def PyTruffle_GetBuiltin(name):
 
 def check_argtype(idx, obj, typ):
     if not isinstance(obj, typ):
-        raise TypeError("argument %d must be '%s', not '%s'" % (idx, str(typ), str(type(obj))))
+        raise TypeError("argument %d must be '%s', not '%s'" % (idx, str(typ), str(type(obj)).__name__))
 
 
 def initialize_capi(capi_library):

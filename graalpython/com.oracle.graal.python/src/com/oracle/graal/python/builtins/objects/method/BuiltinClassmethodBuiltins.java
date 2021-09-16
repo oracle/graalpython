@@ -55,8 +55,10 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -80,9 +82,9 @@ public class BuiltinClassmethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object name(VirtualFrame frame, PDecoratedMethod self,
-                        @Cached PyObjectLookupAttr lookupAttr) {
-            return lookupAttr.executeStrict(frame, this, self.getCallable(), __NAME__);
+        static Object name(VirtualFrame frame, PDecoratedMethod self,
+                        @Cached PyObjectGetAttr getAttr) {
+            return getAttr.execute(frame, self.getCallable(), __NAME__);
         }
     }
 
@@ -90,9 +92,9 @@ public class BuiltinClassmethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class QualnameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object qualname(VirtualFrame frame, PDecoratedMethod self,
-                        @Cached PyObjectLookupAttr lookupAttr) {
-            return lookupAttr.executeStrict(frame, this, self.getCallable(), __QUALNAME__);
+        static Object qualname(VirtualFrame frame, PDecoratedMethod self,
+                        @Cached PyObjectGetAttr getAttr) {
+            return getAttr.execute(frame, self.getCallable(), __QUALNAME__);
         }
     }
 
@@ -100,9 +102,9 @@ public class BuiltinClassmethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object objclass(VirtualFrame frame, PDecoratedMethod self,
-                        @Cached PyObjectLookupAttr lookupAttr) {
-            return lookupAttr.executeStrict(frame, this, self.getCallable(), __OBJCLASS__);
+        static Object objclass(VirtualFrame frame, PDecoratedMethod self,
+                        @Cached PyObjectGetAttr getAttr) {
+            return getAttr.execute(frame, self.getCallable(), __OBJCLASS__);
         }
     }
 
@@ -110,9 +112,9 @@ public class BuiltinClassmethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DocNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doc(VirtualFrame frame, PDecoratedMethod self,
-                        @Cached PyObjectLookupAttr lookupAttr) {
-            return lookupAttr.executeStrict(frame, this, self.getCallable(), __DOC__);
+        static Object doc(VirtualFrame frame, PDecoratedMethod self,
+                        @Cached PyObjectGetAttr getAttr) {
+            return getAttr.execute(frame, self.getCallable(), __DOC__);
         }
     }
 
@@ -120,9 +122,9 @@ public class BuiltinClassmethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TextSignatureNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object textSignature(VirtualFrame frame, PDecoratedMethod self,
-                        @Cached PyObjectLookupAttr lookupAttr) {
-            return lookupAttr.executeStrict(frame, this, self.getCallable(), __TEXT_SIGNATURE__);
+        static Object textSignature(VirtualFrame frame, PDecoratedMethod self,
+                        @Cached PyObjectGetAttr getAttr) {
+            return getAttr.execute(frame, self.getCallable(), __TEXT_SIGNATURE__);
         }
     }
 
@@ -130,12 +132,14 @@ public class BuiltinClassmethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object repr(VirtualFrame frame, PDecoratedMethod self,
+        static Object repr(VirtualFrame frame, PDecoratedMethod self,
                         @Cached PyObjectStrAsJavaStringNode asJavaStringNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
-                        @Cached PyObjectLookupAttr lookupAttr) {
-            Object name = asJavaStringNode.execute(frame, lookupAttr.executeStrict(frame, this, self.getCallable(), __NAME__));
-            Object typeName = getNameNode.execute(lookupAttr.executeStrict(frame, this, self.getCallable(), __OBJCLASS__));
+                        @Cached PyObjectLookupAttr lookupName,
+                        @Cached PyObjectGetAttr getObjClass) {
+            Object mayBeName = lookupName.execute(frame, self.getCallable(), __NAME__);
+            String name = mayBeName != PNone.NO_VALUE ? asJavaStringNode.execute(frame, mayBeName) : "?";
+            String typeName = getNameNode.execute(getObjClass.execute(frame, self.getCallable(), __OBJCLASS__));
             return PythonUtils.format("<method '%s' of '%s' objects>", name, typeName);
         }
     }
@@ -145,11 +149,11 @@ public class BuiltinClassmethodBuiltins extends PythonBuiltins {
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(VirtualFrame frame, PDecoratedMethod self,
-                        @Cached PyObjectLookupAttr lookupAttr) {
+                        @Cached PyObjectGetAttr getAttr) {
             PythonModule builtins = getContext().getCore().getBuiltins();
-            Object gettattr = lookupAttr.executeStrict(frame, this, builtins, GETATTR);
-            Object type = lookupAttr.executeStrict(frame, this, self, __OBJCLASS__);
-            Object name = lookupAttr.executeStrict(frame, this, self, __NAME__);
+            Object gettattr = getAttr.execute(frame, builtins, GETATTR);
+            Object type = getAttr.execute(frame, self, __OBJCLASS__);
+            Object name = getAttr.execute(frame, self, __NAME__);
             return factory().createTuple(new Object[]{gettattr, factory().createTuple(new Object[]{type, name})});
         }
     }

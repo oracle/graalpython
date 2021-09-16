@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -240,22 +241,22 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object getName(VirtualFrame frame, PBuiltinMethod method,
+        static Object getName(VirtualFrame frame, PBuiltinMethod method,
                         @Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Shared("lookupAttr") @Cached PyObjectLookupAttr lookupAttr) {
+                        @Shared("getAttr") @Cached PyObjectGetAttr getAttr) {
             try {
-                return toJavaStringNode.execute(lookupAttr.executeStrict(frame, this, method.getFunction(), __NAME__));
+                return toJavaStringNode.execute(getAttr.execute(frame, method.getFunction(), __NAME__));
             } catch (CannotCastException cce) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
         }
 
         @Specialization
-        Object getName(VirtualFrame frame, PMethod method,
+        static Object getName(VirtualFrame frame, PMethod method,
                         @Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Shared("lookupAttr") @Cached PyObjectLookupAttr lookupAttr) {
+                        @Shared("getAttr") @Cached PyObjectGetAttr getAttr) {
             try {
-                return toJavaStringNode.execute(lookupAttr.executeStrict(frame, this, method.getFunction(), __NAME__));
+                return toJavaStringNode.execute(getAttr.execute(frame, method.getFunction(), __NAME__));
             } catch (CannotCastException cce) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -279,46 +280,49 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         @Specialization(guards = "isSelfModuleOrNull(method)")
         static Object doSelfIsModule(VirtualFrame frame, PMethod method,
                         @Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Shared("lookup") @Cached PyObjectLookupAttr lookup) {
-            return getName(frame, method.getFunction(), toJavaStringNode, lookup);
+                        @Shared("lookupName") @Cached PyObjectLookupAttr lookupName) {
+            return getName(frame, method.getFunction(), toJavaStringNode, lookupName);
         }
 
         @Specialization(guards = "isSelfModuleOrNull(method)")
         static Object doSelfIsModule(VirtualFrame frame, PBuiltinMethod method,
                         @Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Shared("lookup") @Cached PyObjectLookupAttr lookup) {
-            return getName(frame, method.getFunction(), toJavaStringNode, lookup);
+                        @Shared("lookupName") @Cached PyObjectLookupAttr lookupName) {
+            return getName(frame, method.getFunction(), toJavaStringNode, lookupName);
         }
 
         @Specialization(guards = "!isSelfModuleOrNull(method)")
         Object doSelfIsObjet(VirtualFrame frame, PMethod method,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Shared("lookup") @Cached PyObjectLookupAttr lookup) {
-            return getQualName(frame, method.getSelf(), method.getFunction(), isTypeNode, toJavaStringNode, lookup);
+                        @Shared("getQualname") @Cached PyObjectGetAttr getQualname,
+                        @Shared("lookupName") @Cached PyObjectLookupAttr lookupName) {
+            return getQualName(frame, method.getSelf(), method.getFunction(), isTypeNode, toJavaStringNode, getQualname, lookupName);
         }
 
         @Specialization(guards = "!isSelfModuleOrNull(method)")
         Object doSelfIsObjet(VirtualFrame frame, PBuiltinMethod method,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Shared("lookup") @Cached PyObjectLookupAttr lookup) {
-            return getQualName(frame, method.getSelf(), method.getFunction(), isTypeNode, toJavaStringNode, lookup);
+                        @Shared("getQualname") @Cached PyObjectGetAttr getQualname,
+                        @Shared("lookupName") @Cached PyObjectLookupAttr lookupName) {
+            return getQualName(frame, method.getSelf(), method.getFunction(), isTypeNode, toJavaStringNode, getQualname, lookupName);
         }
 
-        private Object getQualName(VirtualFrame frame, Object self, Object func, TypeNodes.IsTypeNode isTypeNode, CastToJavaStringNode toJavaStringNode, PyObjectLookupAttr lookup) {
+        private Object getQualName(VirtualFrame frame, Object self, Object func, TypeNodes.IsTypeNode isTypeNode, CastToJavaStringNode toJavaStringNode, PyObjectGetAttr getQualname,
+                        PyObjectLookupAttr lookupName) {
             Object type = isTypeNode.execute(self) ? self : getPythonClass(self);
 
             try {
-                String typeQualName = toJavaStringNode.execute(lookup.executeStrict(frame, this, type, __QUALNAME__));
-                return PythonUtils.format("%s.%s", typeQualName, getName(frame, func, toJavaStringNode, lookup));
+                String typeQualName = toJavaStringNode.execute(getQualname.execute(frame, type, __QUALNAME__));
+                return PythonUtils.format("%s.%s", typeQualName, getName(frame, func, toJavaStringNode, lookupName));
             } catch (CannotCastException cce) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_UNICODE_OBJECT, __QUALNAME__);
             }
         }
 
-        private static String getName(VirtualFrame frame, Object func, CastToJavaStringNode toJavaStringNode, PyObjectLookupAttr lookup) {
-            return toJavaStringNode.execute(lookup.execute(frame, func, __NAME__));
+        private static String getName(VirtualFrame frame, Object func, CastToJavaStringNode toJavaStringNode, PyObjectLookupAttr lookupName) {
+            return toJavaStringNode.execute(lookupName.execute(frame, func, __NAME__));
         }
 
         private Object getPythonClass(Object desc) {
@@ -342,43 +346,43 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isSelfModuleOrNull(method)")
-        Object doSelfIsModule(VirtualFrame frame, PMethod method, @SuppressWarnings("unused") Object obj,
+        static Object doSelfIsModule(VirtualFrame frame, PMethod method, @SuppressWarnings("unused") Object obj,
                         @Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Shared("lookupName") @Cached PyObjectLookupAttr lookupName) {
-            return getName(frame, method.getFunction(), toJavaStringNode, lookupName);
+                        @Shared("getName") @Cached PyObjectGetAttr getName) {
+            return getName(frame, method.getFunction(), toJavaStringNode, getName);
         }
 
         @Specialization(guards = "isSelfModuleOrNull(method)")
-        Object doSelfIsModule(VirtualFrame frame, PBuiltinMethod method, @SuppressWarnings("unused") Object obj,
+        static Object doSelfIsModule(VirtualFrame frame, PBuiltinMethod method, @SuppressWarnings("unused") Object obj,
                         @Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Shared("lookupName") @Cached PyObjectLookupAttr lookupName) {
-            return getName(frame, method.getFunction(), toJavaStringNode, lookupName);
+                        @Shared("getName") @Cached PyObjectGetAttr getName) {
+            return getName(frame, method.getFunction(), toJavaStringNode, getName);
         }
 
         @Specialization(guards = "!isSelfModuleOrNull(method)")
         Object doSelfIsObjet(VirtualFrame frame, PMethod method, @SuppressWarnings("unused") Object obj,
                         @Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Shared("lookupGetattr") @Cached PyObjectLookupAttr lookupGetattr,
-                        @Shared("lookupName") @Cached PyObjectLookupAttr lookupName) {
+                        @Shared("getGetAttr") @Cached PyObjectGetAttr getGetAttr,
+                        @Shared("getName") @Cached PyObjectGetAttr getName) {
             PythonModule builtins = getCore().getBuiltins();
-            Object getattr = lookupGetattr.executeStrict(frame, this, builtins, GETATTR);
-            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, method.getFunction(), toJavaStringNode, lookupName)});
+            Object getattr = getGetAttr.execute(frame, builtins, GETATTR);
+            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, method.getFunction(), toJavaStringNode, getName)});
             return factory().createTuple(new Object[]{getattr, args});
         }
 
         @Specialization(guards = "!isSelfModuleOrNull(method)")
         Object doSelfIsObject(VirtualFrame frame, PBuiltinMethod method, @SuppressWarnings("unused") Object obj,
                         @Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Shared("lookupGetattr") @Cached PyObjectLookupAttr lookupGetattr,
-                        @Shared("lookupName") @Cached PyObjectLookupAttr lookupName) {
+                        @Shared("getGetAttr") @Cached PyObjectGetAttr getGetAttr,
+                        @Shared("getName") @Cached PyObjectGetAttr getName) {
             PythonModule builtins = getCore().getBuiltins();
-            Object getattr = lookupGetattr.executeStrict(frame, this, builtins, GETATTR);
-            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, method.getFunction(), toJavaStringNode, lookupName)});
+            Object getattr = getGetAttr.execute(frame, builtins, GETATTR);
+            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, method.getFunction(), toJavaStringNode, getName)});
             return factory().createTuple(new Object[]{getattr, args});
         }
 
-        private String getName(VirtualFrame frame, Object func, CastToJavaStringNode toJavaStringNode, PyObjectLookupAttr lookup) {
-            return toJavaStringNode.execute(lookup.executeStrict(frame, this, func, __NAME__));
+        private static String getName(VirtualFrame frame, Object func, CastToJavaStringNode toJavaStringNode, PyObjectGetAttr getName) {
+            return toJavaStringNode.execute(getName.execute(frame, func, __NAME__));
         }
     }
 }

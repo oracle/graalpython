@@ -3193,8 +3193,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "mappingproxy", constructsClass = PythonBuiltinClassType.PMappingproxy, isPublic = false, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
-        @Specialization
-        Object doMapping(Object klass, PythonObject obj,
+        @Specialization(guards = "!isNoValue(obj)")
+        Object doMapping(Object klass, Object obj,
                         @Cached PyMappingCheckNode mappingCheckNode) {
             if (mappingCheckNode.execute(obj)) {
                 return factory().createMappingproxy(klass, obj);

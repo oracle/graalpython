@@ -122,6 +122,7 @@ import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -1056,9 +1057,9 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NameNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
-        Object name(VirtualFrame frame, PTextIO self,
-                        @Cached PyObjectLookupAttr lookupAttr) {
-            return lookupAttr.executeStrict(frame, this, self.getBuffer(), NAME);
+        static Object name(VirtualFrame frame, PTextIO self,
+                        @Cached PyObjectGetAttr getAttr) {
+            return getAttr.execute(frame, self.getBuffer(), NAME);
         }
     }
 
@@ -1066,9 +1067,9 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ClosedNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
-        Object closed(VirtualFrame frame, PTextIO self,
-                        @Cached PyObjectLookupAttr lookupAttr) {
-            return lookupAttr.executeStrict(frame, this, self.getBuffer(), CLOSED);
+        static Object closed(VirtualFrame frame, PTextIO self,
+                        @Cached PyObjectGetAttr lookupAttr) {
+            return lookupAttr.execute(frame, self.getBuffer(), CLOSED);
         }
     }
 

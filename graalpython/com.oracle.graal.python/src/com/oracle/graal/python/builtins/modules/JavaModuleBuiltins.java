@@ -58,7 +58,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -271,7 +271,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         private Object getAttr(VirtualFrame frame, PythonModule mod) {
             if (getAttr == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                Object javaLoader = PyObjectLookupAttr.getUncached().executeStrict(frame, this, mod, JAVA_PKG_LOADER);
+                Object javaLoader = PyObjectGetAttr.getUncached().execute(frame, mod, JAVA_PKG_LOADER);
                 getAttr = PyObjectCallMethodObjArgs.getUncached().execute(frame, javaLoader, MAKE_GETATTR, JAVA);
             }
             return getAttr;

@@ -74,6 +74,11 @@ public abstract class PyMappingCheckNode extends PNodeWithContext {
     }
 
     @Specialization
+    static boolean doString(@SuppressWarnings("unused") String object) {
+        return false;
+    }
+
+    @Specialization
     static boolean doSequence(@SuppressWarnings("unused") PSequence object) {
         return false;
     }
@@ -94,7 +99,7 @@ public abstract class PyMappingCheckNode extends PNodeWithContext {
     }
 
     protected static boolean cannotBeMapping(Object object) {
-        return object instanceof PSequence || object instanceof PArray || object instanceof PMemoryView || object instanceof PRange;
+        return object instanceof String || object instanceof PSequence || object instanceof PArray || object instanceof PMemoryView || object instanceof PRange;
     }
 
     @Specialization(guards = "!cannotBeMapping(object)")

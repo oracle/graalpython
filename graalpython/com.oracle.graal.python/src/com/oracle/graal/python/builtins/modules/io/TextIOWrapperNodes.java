@@ -70,8 +70,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -168,10 +168,10 @@ public class TextIOWrapperNodes {
 
         @Specialization(guards = "!self.isFileIO()")
         void checkGeneric(VirtualFrame frame, PTextIO self,
-                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached ConditionProfile isError) {
-            Object res = lookupAttr.executeStrict(frame, this, self.getBuffer(), CLOSED);
+            Object res = getAttr.execute(frame, self.getBuffer(), CLOSED);
             if (isError.profile(isTrueNode.execute(frame, res))) {
                 error(self);
             }

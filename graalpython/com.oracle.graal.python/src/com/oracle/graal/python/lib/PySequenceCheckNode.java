@@ -43,6 +43,7 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -71,30 +72,42 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
     }
 
     @Specialization
+    static boolean doString(@SuppressWarnings("unused") String object) {
+        return true;
+    }
+
+    @Specialization
     static boolean doDict(@SuppressWarnings("unused") PDict object) {
         return false;
     }
 
-    @Specialization(guards = {"!isPSequence(object)"})
-    boolean doPythonObject(PythonObject object,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
-                    @Shared("lookupLen") @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen,
-                    @Shared("lookupGetItem") @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetItem) {
-        Object type = getClassNode.execute(object);
-        return lookupLen.execute(type) != PNone.NO_VALUE && lookupGetItem.execute(type) != PNone.NO_VALUE;
+    @Specialization
+    static boolean doMappingproxy(@SuppressWarnings("unused") PMappingproxy object) {
+        return false;
     }
 
-    @Specialization(guards = {"!isPSequence(object)"}, replaces = "doPythonObject")
+    protected static boolean cannotBeSequence(Object object) {
+        return object instanceof PDict || object instanceof PMappingproxy;
+    }
+
+    @Specialization(guards = {"!cannotBeSequence(object)"})
+    boolean doPythonObject(PythonObject object,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Shared("lookupGetItem") @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetItem) {
+        Object type = getClassNode.execute(object);
+        return lookupGetItem.execute(type) != PNone.NO_VALUE;
+    }
+
+    @Specialization(guards = {"!cannotBeSequence(object)"}, replaces = "doPythonObject")
     boolean doGeneric(Object object,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
-                    @Shared("lookupLen") @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen,
                     @Shared("lookupGetItem") @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetItem,
                     @CachedLibrary(limit = "3") InteropLibrary lib) {
         Object type = getClassNode.execute(object);
         if (type == PythonBuiltinClassType.ForeignObject) {
             return lib.hasArrayElements(object);
         }
-        return lookupLen.execute(type) != PNone.NO_VALUE && lookupGetItem.execute(type) != PNone.NO_VALUE;
+        return lookupGetItem.execute(type) != PNone.NO_VALUE;
     }
 
     public static PySequenceCheckNode create() {

@@ -132,6 +132,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
@@ -1553,24 +1554,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         PNone printNoKeywords(VirtualFrame frame, Object[] values, PNone sep, PNone end, PNone file, PNone flush,
-                        @Shared("lookupWrite") @Cached PyObjectLookupAttr lookupWrite,
+                        @Shared("getWriteMethod") @Cached PyObjectGetAttr getWriteMethod,
                         @Shared("callWrite") @Cached CallNode callWrite,
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
                         @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
             Object stdout = getStdout();
-            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, lookupWrite, callWrite, callFlush, strNode);
+            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, getWriteMethod, callWrite, callFlush, strNode);
         }
 
         @Specialization(guards = {"!isNone(file)", "!isNoValue(file)"})
-        PNone printAllGiven(VirtualFrame frame, Object[] values, String sep, String end, Object file, boolean flush,
-                        @Shared("lookupWrite") @Cached PyObjectLookupAttr lookupWrite,
+        static PNone printAllGiven(VirtualFrame frame, Object[] values, String sep, String end, Object file, boolean flush,
+                        @Shared("getWriteMethod") @Cached PyObjectGetAttr getWriteMethod,
                         @Shared("callWrite") @Cached CallNode callWrite,
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
                         @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
             int lastValue = values.length - 1;
             // Note: the separate lookup is necessary due to different __getattr__ treatment than
             // method lookup
-            Object writeMethod = lookupWrite.executeStrict(frame, this, file, "write");
+            Object writeMethod = getWriteMethod.execute(frame, file, "write");
             for (int i = 0; i < lastValue; i++) {
                 callWrite.execute(frame, writeMethod, strNode.execute(frame, values[i]));
                 callWrite.execute(frame, writeMethod, sep);
@@ -1591,7 +1592,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CastToJavaStringNode castEnd,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castFlush,
                         @Cached PRaiseNode raiseNode,
-                        @Shared("lookupWrite") @Cached PyObjectLookupAttr lookupWrite,
+                        @Shared("getWriteMethod") @Cached PyObjectGetAttr getWriteMethod,
                         @Shared("callWrite") @Cached CallNode callWrite,
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
                         @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
@@ -1621,7 +1622,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 flush = castFlush.executeBoolean(frame, flushIn);
             }
-            return printAllGiven(frame, values, sep, end, file, flush, lookupWrite, callWrite, callFlush, strNode);
+            return printAllGiven(frame, values, sep, end, file, flush, getWriteMethod, callWrite, callFlush, strNode);
         }
 
         private Object getStdout() {

@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleFo
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.CheckCompatibleForAssigmentNodeGen;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -866,22 +867,23 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class SizeOfNode extends PythonUnaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object doit(VirtualFrame frame, Object obj,
+        static Object doit(VirtualFrame frame, Object obj,
                         @Cached GetClassNode getClassNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PyObjectSizeNode sizeNode,
-                        @Cached PyObjectLookupAttr lookup) {
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PyObjectGetAttr getAttr) {
             Object cls = getClassNode.execute(obj);
             long size = 0;
-            Object itemsize = lookup.execute(frame, obj, __ITEMSIZE__);
+            Object itemsize = lookupAttr.execute(frame, obj, __ITEMSIZE__);
             if (itemsize != PNone.NO_VALUE) {
-                Object clsItemsize = lookup.execute(frame, cls, __ITEMSIZE__);
-                Object objLen = lookup.execute(frame, obj, __LEN__);
+                Object clsItemsize = lookupAttr.execute(frame, cls, __ITEMSIZE__);
+                Object objLen = lookupAttr.execute(frame, obj, __LEN__);
                 if (clsItemsize != PNone.NO_VALUE && objLen != PNone.NO_VALUE) {
                     size = asLongNode.execute(frame, clsItemsize) * sizeNode.execute(frame, obj);
                 }
             }
-            size += asLongNode.execute(frame, lookup.executeStrict(frame, this, cls, __BASICSIZE__));
+            size += asLongNode.execute(frame, getAttr.execute(frame, cls, __BASICSIZE__));
             return size;
         }
     }
