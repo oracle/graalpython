@@ -67,11 +67,23 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 @ExportLibrary(PythonNativeWrapperLibrary.class)
 public final class GraalHPyHandle implements TruffleObject {
+    public static final int UNINITIALIZED = Integer.MIN_VALUE;
 
     public static final GraalHPyHandle NULL_HANDLE = new GraalHPyHandle();
     public static final String I = "_i";
 
     private final Object delegate;
+    /**
+     * The ID of the handle if it was allocated in the handle table.
+     * <p>
+     * The value also encodes the state:<br/>
+     * (1) If the value is {@link #UNINITIALIZED}, then the handle was never allocated in the handle
+     * table.<br/>
+     * (2) If the value is zero or positive then this is the index for the handle table. If the<br/>
+     * (3) If the value is negative but not {@link #UNINITIALIZED} then the handle was already
+     * closed (only used in HPy debug mode)<br/>
+     * </p>
+     */
     private int id;
 
     private GraalHPyHandle() {
@@ -82,7 +94,7 @@ public final class GraalHPyHandle implements TruffleObject {
     GraalHPyHandle(Object delegate) {
         assert delegate != null : "HPy handles to Java null are not allowed";
         this.delegate = delegate;
-        this.id = Integer.MIN_VALUE;
+        this.id = UNINITIALIZED;
     }
 
     /**
@@ -101,7 +113,7 @@ public final class GraalHPyHandle implements TruffleObject {
 
     public int getIdDebug(GraalHPyContext context) {
         int result = id;
-        if (id == -1) {
+        if (id == UNINITIALIZED) {
             result = context.getHPyHandleForObject(this);
             id = result;
         }
@@ -109,7 +121,7 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     int getDebugId() {
-        if (id == Integer.MIN_VALUE) {
+        if (id == UNINITIALIZED) {
             throw CompilerDirectives.shouldNotReachHere();
         }
         if (id >= 0) {
