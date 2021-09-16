@@ -1353,7 +1353,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         return createHandle(l).getId(this, ConditionProfile.getUncached());
     }
 
-    public final long ctxCast(long handle) {
+    public final long ctxAsStruct(long handle) {
         Counter.UpcallCast.increment();
 
         Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
