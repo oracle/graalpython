@@ -120,7 +120,7 @@ public abstract class GraalHPyObjectBuiltins {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__NEW__, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = SpecialMethodNames.__NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     abstract static class HPyObjectNewNode extends PythonVarargsBuiltinNode {
         private static final Builtin BUILTIN = HPyObjectNewNode.class.getAnnotation(Builtin.class);
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(HPyObjectNewNode.class);
