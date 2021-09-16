@@ -422,7 +422,7 @@ public class IOBaseBuiltins extends PythonBuiltins {
             while (limit < 0 || buffer.size() < limit) {
                 int nreadahead = 1;
                 if (hasPeek.profile(peek != PNone.NO_VALUE)) {
-                    Object readahead = callPeek.execute(frame, peek, self, 1);
+                    Object readahead = callPeek.execute(frame, peek, 1);
                     // TODO _PyIO_trap_eintr [GR-23297]
                     if (isBytes.profile(!(readahead instanceof PBytes))) {
                         throw raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "peek()", readahead);
