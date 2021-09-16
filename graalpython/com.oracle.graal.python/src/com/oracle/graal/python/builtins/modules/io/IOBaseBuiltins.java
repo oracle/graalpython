@@ -172,11 +172,11 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = _CHECKCLOSED, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CheckClosedNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         Object doCheckClosed(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary selfLib,
+                        @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            if (isTrueNode.execute(frame, selfLib.lookupAttributeStrict(self, frame, CLOSED))) {
+            if (isTrueNode.execute(frame, lookupAttr.executeStrict(frame, this, self, CLOSED))) {
                 throw raise(ValueError, ErrorMessages.IO_CLOSED);
             }
             return PNone.NONE;

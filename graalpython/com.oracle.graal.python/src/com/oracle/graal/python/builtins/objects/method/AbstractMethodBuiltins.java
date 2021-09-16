@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -241,22 +240,22 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object getName(VirtualFrame frame, PBuiltinMethod method,
+        Object getName(VirtualFrame frame, PBuiltinMethod method,
                         @Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+                        @Shared("lookupAttr") @Cached PyObjectLookupAttr lookupAttr) {
             try {
-                return toJavaStringNode.execute(pol.lookupAttributeStrict(method.getFunction(), frame, __NAME__));
+                return toJavaStringNode.execute(lookupAttr.executeStrict(frame, this, method.getFunction(), __NAME__));
             } catch (CannotCastException cce) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
         }
 
         @Specialization
-        static Object getName(VirtualFrame frame, PMethod method,
+        Object getName(VirtualFrame frame, PMethod method,
                         @Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+                        @Shared("lookupAttr") @Cached PyObjectLookupAttr lookupAttr) {
             try {
-                return toJavaStringNode.execute(pol.lookupAttributeStrict(method.getFunction(), frame, __NAME__));
+                return toJavaStringNode.execute(lookupAttr.executeStrict(frame, this, method.getFunction(), __NAME__));
             } catch (CannotCastException cce) {
                 throw CompilerDirectives.shouldNotReachHere();
             }

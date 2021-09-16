@@ -1056,9 +1056,9 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NameNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
-        static Object name(VirtualFrame frame, PTextIO self,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libBuffer) {
-            return libBuffer.lookupAttributeStrict(self.getBuffer(), frame, NAME);
+        Object name(VirtualFrame frame, PTextIO self,
+                        @Cached PyObjectLookupAttr lookupAttr) {
+            return lookupAttr.executeStrict(frame, this, self.getBuffer(), NAME);
         }
     }
 
@@ -1066,9 +1066,9 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ClosedNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
-        static Object closed(VirtualFrame frame, PTextIO self,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libBuffer) {
-            return libBuffer.lookupAttributeStrict(self.getBuffer(), frame, CLOSED);
+        Object closed(VirtualFrame frame, PTextIO self,
+                        @Cached PyObjectLookupAttr lookupAttr) {
+            return lookupAttr.executeStrict(frame, this, self.getBuffer(), CLOSED);
         }
     }
 

@@ -56,14 +56,17 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBuiltinClassMethod)
 public class BuiltinClassmethodBuiltins extends PythonBuiltins {
@@ -76,60 +79,64 @@ public class BuiltinClassmethodBuiltins extends PythonBuiltins {
     @Builtin(name = __NAME__, maxNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class NameNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
-        static Object name(VirtualFrame frame, PDecoratedMethod self,
-                        @CachedLibrary("self.getCallable()") PythonObjectLibrary lib) {
-            return lib.lookupAttributeStrict(self.getCallable(), frame, __NAME__);
+        @Specialization
+        Object name(VirtualFrame frame, PDecoratedMethod self,
+                        @Cached PyObjectLookupAttr lookupAttr) {
+            return lookupAttr.executeStrict(frame, this, self.getCallable(), __NAME__);
         }
     }
 
     @Builtin(name = __QUALNAME__, maxNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class QualnameNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
-        static Object name(VirtualFrame frame, PDecoratedMethod self,
-                        @CachedLibrary("self.getCallable()") PythonObjectLibrary lib) {
-            return lib.lookupAttributeStrict(self.getCallable(), frame, __QUALNAME__);
+        @Specialization
+        Object qualname(VirtualFrame frame, PDecoratedMethod self,
+                        @Cached PyObjectLookupAttr lookupAttr) {
+            return lookupAttr.executeStrict(frame, this, self.getCallable(), __QUALNAME__);
         }
     }
 
     @Builtin(name = __OBJCLASS__, maxNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
-        static Object name(VirtualFrame frame, PDecoratedMethod self,
-                        @CachedLibrary("self.getCallable()") PythonObjectLibrary lib) {
-            return lib.lookupAttributeStrict(self.getCallable(), frame, __OBJCLASS__);
+        @Specialization
+        Object objclass(VirtualFrame frame, PDecoratedMethod self,
+                        @Cached PyObjectLookupAttr lookupAttr) {
+            return lookupAttr.executeStrict(frame, this, self.getCallable(), __OBJCLASS__);
         }
     }
 
     @Builtin(name = __DOC__, maxNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class DocNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
-        static Object name(VirtualFrame frame, PDecoratedMethod self,
-                        @CachedLibrary("self.getCallable()") PythonObjectLibrary lib) {
-            return lib.lookupAttributeStrict(self.getCallable(), frame, __DOC__);
+        @Specialization
+        Object doc(VirtualFrame frame, PDecoratedMethod self,
+                        @Cached PyObjectLookupAttr lookupAttr) {
+            return lookupAttr.executeStrict(frame, this, self.getCallable(), __DOC__);
         }
     }
 
     @Builtin(name = __TEXT_SIGNATURE__, maxNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class TextSignatureNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
-        static Object name(VirtualFrame frame, PDecoratedMethod self,
-                        @CachedLibrary("self.getCallable()") PythonObjectLibrary lib) {
-            return lib.lookupAttributeStrict(self.getCallable(), frame, __TEXT_SIGNATURE__);
+        @Specialization
+        Object textSignature(VirtualFrame frame, PDecoratedMethod self,
+                        @Cached PyObjectLookupAttr lookupAttr) {
+            return lookupAttr.executeStrict(frame, this, self.getCallable(), __TEXT_SIGNATURE__);
         }
     }
 
-    @Builtin(name = __REPR__, maxNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __REPR__, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
-        static Object name(VirtualFrame frame, PDecoratedMethod self,
-                        @CachedLibrary("self.getCallable()") PythonObjectLibrary lib) {
-            return lib.lookupAttributeStrict(self.getCallable(), frame, __REPR__);
+        @Specialization
+        Object repr(VirtualFrame frame, PDecoratedMethod self,
+                        @Cached PyObjectStrAsJavaStringNode asJavaStringNode,
+                        @Cached TypeNodes.GetNameNode getNameNode,
+                        @Cached PyObjectLookupAttr lookupAttr) {
+            Object name = asJavaStringNode.execute(frame, lookupAttr.executeStrict(frame, this, self.getCallable(), __NAME__));
+            Object typeName = getNameNode.execute(lookupAttr.executeStrict(frame, this, self.getCallable(), __OBJCLASS__));
+            return PythonUtils.format("<method '%s' of '%s' objects>", name, typeName);
         }
     }
 
@@ -137,12 +144,12 @@ public class BuiltinClassmethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object name(VirtualFrame frame, PDecoratedMethod self,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        Object reduce(VirtualFrame frame, PDecoratedMethod self,
+                        @Cached PyObjectLookupAttr lookupAttr) {
             PythonModule builtins = getContext().getCore().getBuiltins();
-            Object gettattr = lib.lookupAttributeStrict(builtins, frame, GETATTR);
-            Object type = lib.lookupAttributeStrict(self, frame, __OBJCLASS__);
-            Object name = lib.lookupAttributeStrict(self, frame, __NAME__);
+            Object gettattr = lookupAttr.executeStrict(frame, this, builtins, GETATTR);
+            Object type = lookupAttr.executeStrict(frame, this, self, __OBJCLASS__);
+            Object name = lookupAttr.executeStrict(frame, this, self, __NAME__);
             return factory().createTuple(new Object[]{gettattr, factory().createTuple(new Object[]{type, name})});
         }
     }
