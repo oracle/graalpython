@@ -99,13 +99,13 @@ public class FileDescriptorConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void longTooBig() {
-        expectPythonMessage("OverflowError: Python int too large to convert to int");
+        expectPythonMessage("OverflowError: Python int too large to convert to Java int");
         call(1L << 40);
     }
 
     @Test
     public void longTooSmall() {
-        expectPythonMessage("OverflowError: Python int too large to convert to int");
+        expectPythonMessage("OverflowError: Python int too large to convert to Java int");
         call(-1L << 40);
     }
 
@@ -116,13 +116,13 @@ public class FileDescriptorConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void pintTooBig() {
-        expectPythonMessage("OverflowError: Python int too large to convert to int");
+        expectPythonMessage("OverflowError: Python int too large to convert to Java int");
         call(factory().createInt(BigInteger.ONE.shiftLeft(100)));
     }
 
     @Test
     public void pintTooSmall() {
-        expectPythonMessage("OverflowError: Python int too large to convert to int");
+        expectPythonMessage("OverflowError: Python int too large to convert to Java int");
         call(factory().createInt(BigInteger.ONE.shiftLeft(100).negate()));
     }
 
@@ -145,7 +145,7 @@ public class FileDescriptorConversionNodeTests extends ConversionNodeTests {
 
     @Test
     public void filenoTooBig() {
-        expectPythonMessage("OverflowError: Python int too large to convert to int");
+        expectPythonMessage("OverflowError: Python int too large to convert to Java int");
         call(evalValue("class C:\n  def fileno(self):\n    return 1 << 40\nC()"));
     }
 
