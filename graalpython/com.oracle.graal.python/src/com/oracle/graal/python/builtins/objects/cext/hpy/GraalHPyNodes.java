@@ -1187,7 +1187,7 @@ public class GraalHPyNodes {
         @Specialization(guards = "isBoxedNullHandle(bits)")
         @SuppressWarnings("unused")
         static Object doNullLong(GraalHPyContext hpyContext, long bits) {
-            return null;
+            return GraalHPyHandle.NULL_HANDLE_DELEGATE;
         }
 
         @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
@@ -1224,7 +1224,7 @@ public class GraalHPyNodes {
         static Object doNullOther(GraalHPyContext hpyContext, Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") long bits) {
-            return null;
+            return GraalHPyHandle.NULL_HANDLE_DELEGATE;
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
@@ -1289,7 +1289,7 @@ public class GraalHPyNodes {
         @Specialization(guards = "isBoxedNullHandle(bits)")
         @SuppressWarnings("unused")
         static Object doNullLong(GraalHPyContext hpyContext, long bits) {
-            return PNone.NO_VALUE;
+            return GraalHPyHandle.NULL_HANDLE_DELEGATE;
         }
 
         @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
@@ -1321,7 +1321,7 @@ public class GraalHPyNodes {
         static Object doNullOther(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") @SuppressWarnings("unused") long bits) {
-            return PNone.NO_VALUE;
+            return GraalHPyHandle.NULL_HANDLE_DELEGATE;
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})

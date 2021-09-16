@@ -69,6 +69,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 public final class GraalHPyHandle implements TruffleObject {
     private static final int UNINITIALIZED = Integer.MIN_VALUE;
 
+    public static final Object NULL_HANDLE_DELEGATE = PNone.NO_VALUE;
     public static final GraalHPyHandle NULL_HANDLE = new GraalHPyHandle();
     public static final String I = "_i";
 
@@ -87,7 +88,7 @@ public final class GraalHPyHandle implements TruffleObject {
     private int id;
 
     private GraalHPyHandle() {
-        this.delegate = PNone.NO_VALUE;
+        this.delegate = NULL_HANDLE_DELEGATE;
         this.id = 0;
     }
 

@@ -1087,7 +1087,7 @@ public abstract class HPyExternalFunctionNodes {
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode) {
             Object delegate = closeAndGetHandleNode.execute(nativeContext, value);
-            checkFunctionResult(name, isNullProfile.profile(delegate == null), pythonThreadState, raiseNode, factory);
+            checkFunctionResult(name, isNullProfile.profile(delegate == GraalHPyHandle.NULL_HANDLE_DELEGATE), pythonThreadState, raiseNode, factory);
             return delegate;
         }
     }
