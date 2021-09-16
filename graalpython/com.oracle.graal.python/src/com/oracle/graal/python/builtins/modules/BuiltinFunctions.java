@@ -102,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
@@ -2204,7 +2205,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 ns = callPrep.execute(frame, prep, new Object[]{name, init.bases}, init.mkw);
             } catch (PException p) {
                 p.expectAttributeError(noAttributeProfile);
-                ns = factory.createDict();
+                ns = factory().createDict(new DynamicObjectStorage(PythonLanguage.get(this)));
             }
             if (PGuards.isNoValue(getGetItem.execute(getGetItemClass.execute(ns)))) {
                 if (init.isClass) {
