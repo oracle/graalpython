@@ -122,6 +122,7 @@ class PosixConstantsDarwin {
         constants.put("AF_UNSPEC", 0);
         constants.put("AF_INET", 2);
         constants.put("AF_INET6", 30);
+        constants.put("AF_UNIX", 1);
         constants.put("SOCK_DGRAM", 2);
         constants.put("SOCK_STREAM", 1);
         constants.put("INADDR_ANY", 0x00000000);
