@@ -47,13 +47,13 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -70,7 +70,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMethod)
 public class MethodBuiltins extends PythonBuiltins {
@@ -144,22 +143,22 @@ public class MethodBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reprMethod(VirtualFrame frame, PMethod method,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode callReprNode,
+                        @Cached PyObjectReprAsJavaStringNode repr,
                         @Cached CastToJavaStringNode toJavaStringNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+                        @Cached PyObjectLookupAttr lookup) {
             Object self = method.getSelf();
             Object func = method.getFunction();
             String defname = "?";
 
-            Object funcName = pol.lookupAttribute(func, frame, __QUALNAME__);
+            Object funcName = lookup.execute(frame, func, __QUALNAME__);
             if (funcName == PNone.NO_VALUE) {
-                funcName = pol.lookupAttribute(func, frame, __NAME__);
+                funcName = lookup.execute(frame, func, __NAME__);
             }
 
             try {
-                return PythonUtils.format("<bound method %s of %s>", toJavaStringNode.execute(funcName), callReprNode.executeObject(frame, self));
+                return PythonUtils.format("<bound method %s of %s>", toJavaStringNode.execute(funcName), repr.execute(frame, self));
             } catch (CannotCastException e) {
-                return PythonUtils.format("<bound method %s of %s>", defname, callReprNode.executeObject(frame, self));
+                return PythonUtils.format("<bound method %s of %s>", defname, repr.execute(frame, self));
             }
         }
     }

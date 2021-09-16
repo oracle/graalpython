@@ -866,24 +866,22 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class SizeOfNode extends PythonUnaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        static Object doit(VirtualFrame frame, Object obj,
+        Object doit(VirtualFrame frame, Object obj,
                         @Cached GetClassNode getClassNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PyObjectSizeNode sizeNode,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+                        @Cached PyObjectLookupAttr lookup) {
             Object cls = getClassNode.execute(obj);
             long size = 0;
-            Object itemsize = pol.lookupAttribute(obj, frame, __ITEMSIZE__);
+            Object itemsize = lookup.execute(frame, obj, __ITEMSIZE__);
             if (itemsize != PNone.NO_VALUE) {
-                Object clsItemsize = pol.lookupAttribute(cls, frame, __ITEMSIZE__);
-                Object objLen = pol.lookupAttribute(obj, frame, __LEN__);
-                if (clsItemsize == PNone.NO_VALUE || objLen == PNone.NO_VALUE) {
-                    size = 0;
-                } else {
+                Object clsItemsize = lookup.execute(frame, cls, __ITEMSIZE__);
+                Object objLen = lookup.execute(frame, obj, __LEN__);
+                if (clsItemsize != PNone.NO_VALUE && objLen != PNone.NO_VALUE) {
                     size = asLongNode.execute(frame, clsItemsize) * sizeNode.execute(frame, obj);
                 }
             }
-            size += asLongNode.execute(frame, pol.lookupAttributeStrict(cls, frame, __BASICSIZE__));
+            size += asLongNode.execute(frame, lookup.executeStrict(frame, this, cls, __BASICSIZE__));
             return size;
         }
     }

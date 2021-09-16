@@ -343,41 +343,43 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isSelfModuleOrNull(method)")
-        static Object doSelfIsModule(VirtualFrame frame, PMethod method, @SuppressWarnings("unused") Object obj,
+        Object doSelfIsModule(VirtualFrame frame, PMethod method, @SuppressWarnings("unused") Object obj,
                         @Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
-            return getName(frame, method.getFunction(), toJavaStringNode, pol);
+                        @Shared("lookupName") @Cached PyObjectLookupAttr lookupName) {
+            return getName(frame, method.getFunction(), toJavaStringNode, lookupName);
         }
 
         @Specialization(guards = "isSelfModuleOrNull(method)")
-        static Object doSelfIsModule(VirtualFrame frame, PBuiltinMethod method, @SuppressWarnings("unused") Object obj,
+        Object doSelfIsModule(VirtualFrame frame, PBuiltinMethod method, @SuppressWarnings("unused") Object obj,
                         @Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
-            return getName(frame, method.getFunction(), toJavaStringNode, pol);
+                        @Shared("lookupName") @Cached PyObjectLookupAttr lookupName) {
+            return getName(frame, method.getFunction(), toJavaStringNode, lookupName);
         }
 
         @Specialization(guards = "!isSelfModuleOrNull(method)")
         Object doSelfIsObjet(VirtualFrame frame, PMethod method, @SuppressWarnings("unused") Object obj,
                         @Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+                        @Shared("lookupGetattr") @Cached PyObjectLookupAttr lookupGetattr,
+                        @Shared("lookupName") @Cached PyObjectLookupAttr lookupName) {
             PythonModule builtins = getCore().getBuiltins();
-            Object getattr = pol.lookupAttributeStrict(builtins, frame, GETATTR);
-            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, method.getFunction(), toJavaStringNode, pol)});
+            Object getattr = lookupGetattr.executeStrict(frame, this, builtins, GETATTR);
+            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, method.getFunction(), toJavaStringNode, lookupName)});
             return factory().createTuple(new Object[]{getattr, args});
         }
 
         @Specialization(guards = "!isSelfModuleOrNull(method)")
-        Object doSelfIsObjet(VirtualFrame frame, PBuiltinMethod method, @SuppressWarnings("unused") Object obj,
+        Object doSelfIsObject(VirtualFrame frame, PBuiltinMethod method, @SuppressWarnings("unused") Object obj,
                         @Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+                        @Shared("lookupGetattr") @Cached PyObjectLookupAttr lookupGetattr,
+                        @Shared("lookupName") @Cached PyObjectLookupAttr lookupName) {
             PythonModule builtins = getCore().getBuiltins();
-            Object getattr = pol.lookupAttributeStrict(builtins, frame, GETATTR);
-            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, method.getFunction(), toJavaStringNode, pol)});
+            Object getattr = lookupGetattr.executeStrict(frame, this, builtins, GETATTR);
+            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, method.getFunction(), toJavaStringNode, lookupName)});
             return factory().createTuple(new Object[]{getattr, args});
         }
 
-        private static String getName(VirtualFrame frame, Object func, CastToJavaStringNode toJavaStringNode, PythonObjectLibrary pol) {
-            return toJavaStringNode.execute(pol.lookupAttribute(func, frame, __NAME__));
+        private String getName(VirtualFrame frame, Object func, CastToJavaStringNode toJavaStringNode, PyObjectLookupAttr lookup) {
+            return toJavaStringNode.execute(lookup.executeStrict(frame, this, func, __NAME__));
         }
     }
 }

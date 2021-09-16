@@ -54,8 +54,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -69,7 +69,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PClassmethod})
@@ -127,10 +126,10 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
     abstract static class IsAbstractMethodNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean isAbstract(VirtualFrame frame, PDecoratedMethod self,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached PyObjectLookupAttr lookup,
                         @Cached PyObjectIsTrueNode isTrue,
                         @Cached ConditionProfile hasAttrProfile) {
-            Object result = lib.lookupAttribute(self.getCallable(), frame, __ISABSTRACTMETHOD__);
+            Object result = lookup.execute(frame, self.getCallable(), __ISABSTRACTMETHOD__);
             if (hasAttrProfile.profile(result != PNone.NO_VALUE)) {
                 return isTrue.execute(frame, result);
             }
