@@ -581,14 +581,14 @@ def PySequence_Contains(haystack, needle):
 @may_raise
 def PySequence_Repeat(obj, n):
     if not PySequence_Check(obj):
-        raise TypeError("'%p' object can't be repeated", obj)
+        raise TypeError("'%s' object can't be repeated" % type(obj))
     return obj * n
 
 
 @may_raise
 def PySequence_InPlaceRepeat(obj, n):
     if not PySequence_Check(obj):
-        raise TypeError("'%p' object can't be repeated", obj)
+        raise TypeError("'%s' object can't be repeated" % type(obj))
     obj *= n
     return obj
 
@@ -596,14 +596,14 @@ def PySequence_InPlaceRepeat(obj, n):
 @may_raise
 def PySequence_Concat(s, o):
     if not (PySequence_Check(s) and PySequence_Check(o)):
-        raise TypeError("'%p' object can't be repeated", s)
+        raise TypeError("'%s' object can't be concatenated" % type(s))
     return s + o
 
 
 @may_raise
 def PySequence_InPlaceConcat(s, o):
     if not (PySequence_Check(s) and PySequence_Check(o)):
-        raise TypeError("'%p' object can't be repeated", s)
+        raise TypeError("'%s' object can't be concatenated" % type(s))
     s += o
     return s
 
