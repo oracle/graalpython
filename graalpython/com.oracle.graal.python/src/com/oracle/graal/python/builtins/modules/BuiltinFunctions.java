@@ -1553,27 +1553,32 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         PNone printNoKeywords(VirtualFrame frame, Object[] values, PNone sep, PNone end, PNone file, PNone flush,
-                        @Shared("callWrite") @Cached PyObjectCallMethodObjArgs callWrite,
+                        @Shared("lookupWrite") @Cached PyObjectLookupAttr lookupWrite,
+                        @Shared("callWrite") @Cached CallNode callWrite,
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
                         @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
             Object stdout = getStdout();
-            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, callWrite, callFlush, strNode);
+            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, lookupWrite, callWrite, callFlush, strNode);
         }
 
         @Specialization(guards = {"!isNone(file)", "!isNoValue(file)"})
         PNone printAllGiven(VirtualFrame frame, Object[] values, String sep, String end, Object file, boolean flush,
-                        @Shared("callWrite") @Cached PyObjectCallMethodObjArgs callWrite,
+                        @Shared("lookupWrite") @Cached PyObjectLookupAttr lookupWrite,
+                        @Shared("callWrite") @Cached CallNode callWrite,
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
                         @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
             int lastValue = values.length - 1;
+            // Note: the separate lookup is necessary due to different __getattr__ treatment than
+            // method lookup
+            Object writeMethod = lookupWrite.executeStrict(frame, this, file, "write");
             for (int i = 0; i < lastValue; i++) {
-                callWrite.execute(frame, file, "write", strNode.execute(frame, values[i]));
-                callWrite.execute(frame, file, "write", sep);
+                callWrite.execute(frame, writeMethod, strNode.execute(frame, values[i]));
+                callWrite.execute(frame, writeMethod, sep);
             }
             if (lastValue >= 0) {
-                callWrite.execute(frame, file, "write", strNode.execute(frame, values[lastValue]));
+                callWrite.execute(frame, writeMethod, strNode.execute(frame, values[lastValue]));
             }
-            callWrite.execute(frame, file, "write", end);
+            callWrite.execute(frame, writeMethod, end);
             if (flush) {
                 callFlush.execute(frame, file, "flush");
             }
@@ -1586,7 +1591,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CastToJavaStringNode castEnd,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castFlush,
                         @Cached PRaiseNode raiseNode,
-                        @Shared("callWrite") @Cached PyObjectCallMethodObjArgs callWrite,
+                        @Shared("lookupWrite") @Cached PyObjectLookupAttr lookupWrite,
+                        @Shared("callWrite") @Cached CallNode callWrite,
                         @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
                         @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
             String sep;
@@ -1615,7 +1621,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 flush = castFlush.executeBoolean(frame, flushIn);
             }
-            return printAllGiven(frame, values, sep, end, file, flush, callWrite, callFlush, strNode);
+            return printAllGiven(frame, values, sep, end, file, flush, lookupWrite, callWrite, callFlush, strNode);
         }
 
         private Object getStdout() {
