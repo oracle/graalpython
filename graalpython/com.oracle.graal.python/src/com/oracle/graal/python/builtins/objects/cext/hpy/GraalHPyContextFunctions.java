@@ -923,7 +923,6 @@ public abstract class GraalHPyContextFunctions {
                         @Cached IsSubtypeNode isExcValueSubtypeNode,
                         @Cached GetClassNode getClassNode,
                         @Cached PCallHPyFunction callFromStringNode,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached CallNode callExceptionConstructorNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -933,7 +932,7 @@ public abstract class GraalHPyContextFunctions {
                 checkArity(arguments, 3);
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object errTypeObj = asPythonObjectNode.execute(context, arguments[1]);
-                if (!(PGuards.isClass(errTypeObj, interopLib) && isSubtypeNode.execute(errTypeObj, PythonBuiltinClassType.PBaseException))) {
+                if (!(PGuards.isPythonClass(errTypeObj) && isSubtypeNode.execute(errTypeObj, PythonBuiltinClassType.PBaseException))) {
                     return raiseNode.raise(SystemError, "exception %s not a BaseException subclass", errTypeObj);
                 }
                 try {
