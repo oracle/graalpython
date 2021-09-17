@@ -844,17 +844,22 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         Object doit(CDataObject obj, int offset,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode) {
-
             if (!pyTypeCheck.isCDataObject(obj)) {
                 return error(null, obj, offset);
             }
-
+            FFIType ffiType = pyObjectStgDictNode.execute(obj).ffi_type_pointer;
             PyCArgObject parg = factory().createCArgObject();
             parg.tag = 'P';
             // parg.pffi_type = FFIType.ffi_type_pointer;
-            parg.pffi_type = pyObjectStgDictNode.execute(obj).ffi_type_pointer;
+            parg.pffi_type = ffiType.getAsArray();
             parg.obj = obj;
+            if (parg.pffi_type != ffiType && !obj.b_ptr.isManagedBytes()) {
+                parg.value = PtrValue.allocate(parg.pffi_type, ffiType.size);
+                parg.value.writeArrayElement(ffiType, 0, obj.b_ptr.getPrimitiveValue(ffiType));
+                obj.b_ptr.ptr = parg.value.ptr;
+            }
             parg.value = obj.b_ptr.ref(offset);
+
             return parg;
         }
 
@@ -1082,6 +1087,29 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 } else {
                     throw raise(NotImplementedError, "Returned object is not supported.");
+                }
+            } else {
+                try {
+                    switch (rtype.type) {
+                        case FFI_TYPE_UINT8:
+                        case FFI_TYPE_SINT8:
+                            result = ilib.asByte(result);
+                            break;
+                        case FFI_TYPE_UINT16:
+                        case FFI_TYPE_SINT16:
+                            result = ilib.asShort(result);
+                            break;
+                        case FFI_TYPE_UINT32:
+                        case FFI_TYPE_SINT32:
+                            result = ilib.asInt(result);
+                            break;
+                        case FFI_TYPE_SINT64:
+                        case FFI_TYPE_UINT64:
+                            result = ilib.asLong(result);
+                            break;
+                    }
+                } catch (UnsupportedMessageException e) {
+                    // pass through.
                 }
             }
 
