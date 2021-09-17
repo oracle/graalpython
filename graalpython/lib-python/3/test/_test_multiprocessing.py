@@ -3344,7 +3344,9 @@ class _TestListener(BaseTestCase):
         if self.TYPE == 'processes':
             self.assertRaises(OSError, l.accept)
 
+    # GR-28433
     @unittest.skipIf(IS_LINUX, "module 'socket' has no attribute 'AF_UNIX'")
+    @unittest.skipIf(sys.implementation.name == 'graalpython', "module 'socket' has no attribute 'AF_UNIX'")
     @unittest.skipUnless(util.abstract_sockets_supported,
                          "test needs abstract socket support")
     def test_abstract_socket(self):

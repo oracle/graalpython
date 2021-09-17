@@ -132,6 +132,8 @@ public final class PosixConstants {
     public static final MandatoryIntConstant AF_UNSPEC;
     public static final MandatoryIntConstant AF_INET;
     public static final MandatoryIntConstant AF_INET6;
+    public static final OptionalIntConstant AF_PACKET;
+    public static final MandatoryIntConstant AF_UNIX;
     public static final MandatoryIntConstant SOCK_DGRAM;
     public static final MandatoryIntConstant SOCK_STREAM;
     public static final MandatoryIntConstant INADDR_ANY;
@@ -354,6 +356,9 @@ public final class PosixConstants {
         AF_UNSPEC = reg.createMandatoryInt("AF_UNSPEC");
         AF_INET = reg.createMandatoryInt("AF_INET");
         AF_INET6 = reg.createMandatoryInt("AF_INET6");
+        // Following two aren't really supported, but we can fail later:
+        AF_PACKET = reg.createOptionalInt("AF_PACKET");
+        AF_UNIX = reg.createMandatoryInt("AF_UNIX");
         SOCK_DGRAM = reg.createMandatoryInt("SOCK_DGRAM");
         SOCK_STREAM = reg.createMandatoryInt("SOCK_STREAM");
         INADDR_ANY = reg.createMandatoryInt("INADDR_ANY");
@@ -483,7 +488,7 @@ public final class PosixConstants {
         waitOptions = new IntConstant[]{WNOHANG, WUNTRACED};
         accessMode = new IntConstant[]{R_OK, W_OK, X_OK, F_OK};
         rtld = new IntConstant[]{RTLD_LAZY, RTLD_NOW, RTLD_GLOBAL, RTLD_LOCAL};
-        socketFamily = new IntConstant[]{AF_UNSPEC, AF_INET, AF_INET6};
+        socketFamily = new IntConstant[]{AF_UNSPEC, AF_INET, AF_INET6, AF_PACKET, AF_UNIX};
         socketType = new IntConstant[]{SOCK_DGRAM, SOCK_STREAM};
         ip4Address = new IntConstant[]{INADDR_ANY, INADDR_BROADCAST, INADDR_NONE, INADDR_LOOPBACK, INADDR_ALLHOSTS_GROUP, INADDR_MAX_LOCAL_GROUP, INADDR_UNSPEC_GROUP};
         gaiFlags = new IntConstant[]{AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST, AI_V4MAPPED, AI_ALL, AI_ADDRCONFIG, AI_IDN, AI_CANONIDN, AI_NUMERICSERV};

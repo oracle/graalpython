@@ -22,7 +22,9 @@ test.support.requires("network")
 TEST_STR = b"hello world\n"
 HOST = test.support.HOST
 
-HAVE_UNIX_SOCKETS = hasattr(socket, "AF_UNIX")
+# GR-28433
+import sys
+HAVE_UNIX_SOCKETS = hasattr(socket, "AF_UNIX") and sys.implementation.name != 'graalpython'
 requires_unix_sockets = unittest.skipUnless(HAVE_UNIX_SOCKETS,
                                             'requires Unix sockets')
 HAVE_FORKING = hasattr(os, "fork")
