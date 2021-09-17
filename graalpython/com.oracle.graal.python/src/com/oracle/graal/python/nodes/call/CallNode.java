@@ -123,18 +123,18 @@ public abstract class CallNode extends PNodeWithContext {
 
     @Specialization
     protected Object doType(VirtualFrame frame, PythonBuiltinClassType callableObject, Object[] arguments, PKeyword[] keywords,
-                    @Cached PRaiseNode raise,
-                    @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                    @Cached CallVarargsMethodNode callCallNode) {
+                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Shared("lookupCall") @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
+                    @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
         Object call = callAttrGetterNode.execute(callableObject);
         return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
     }
 
     @Specialization(guards = "isPythonClass(callableObject)", replaces = "doType")
     protected Object doPythonClass(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
-                    @Cached PRaiseNode raise,
-                    @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                    @Cached CallVarargsMethodNode callCallNode) {
+                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Shared("lookupCall") @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
+                    @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
         Object call = callAttrGetterNode.execute(callableObject);
         return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
     }
