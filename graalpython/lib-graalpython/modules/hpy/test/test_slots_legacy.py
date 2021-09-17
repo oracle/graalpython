@@ -257,6 +257,7 @@ class TestCustomLegacySlotsFeatures(HPyTest):
         p = mod.Point()
         assert p.z == 2073
 
+    @pytest.mark.xfail
     def test_legacy_slots_fails_without_legacy(self):
         import pytest
         mod_src = """
