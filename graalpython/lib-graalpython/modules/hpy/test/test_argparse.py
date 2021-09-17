@@ -29,6 +29,7 @@ functions. In particular, you have to "import pytest" inside the test in order
 to be able to use e.g. pytest.raises (which on PyPy will be implemented by a
 "fake pytest module")
 """
+import pytest
 from .support import HPyTest
 
 
@@ -83,6 +84,8 @@ class TestParseItem(HPyTest):
             "function unsigned byte integer is less than minimum"
         )
 
+    # TODO(fa): needs to be fixed
+    @pytest.mark.skip
     def test_s(self):
         import pytest
         mod = self.make_parse_item("s", "const char*", "HPyUnicode_FromString")

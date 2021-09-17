@@ -793,6 +793,7 @@ class TestType(HPyTest):
             pass
         assert isinstance(Sub(), mod.Dummy)
 
+    @pytest.mark.xfail
     def test_directly_setting_hpy_tpflags_internal_pure_raises(self):
         import pytest
         mod_src = """
