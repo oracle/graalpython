@@ -281,3 +281,45 @@ class LookupTest(unittest.TestCase):
         self.assertRaises(LookupError, codecs.lookup_error, 'a')
         codecs.register_error('testhandler', errhandler)
         self.assertEqual(codecs.lookup_error('testhandler'), errhandler)
+
+    def test_codecs_builtins(self):
+        s = "abc"
+
+        encoded = codecs.utf_8_encode(s)
+        self.assertEqual(s, codecs.utf_8_decode(encoded[0])[0])
+
+        encoded = codecs.utf_7_encode(s)
+        self.assertEqual(s, codecs.utf_7_decode(encoded[0])[0])
+
+        encoded = codecs.utf_16_encode(s)
+        self.assertEqual(s, codecs.utf_16_decode(encoded[0])[0])
+
+        encoded = codecs.utf_16_le_encode(s)
+        self.assertEqual(s, codecs.utf_16_le_decode(encoded[0])[0])
+
+        encoded = codecs.utf_16_be_encode(s)
+        self.assertEqual(s, codecs.utf_16_be_decode(encoded[0])[0])
+
+        encoded = codecs.utf_32_encode(s)
+        self.assertEqual(s, codecs.utf_32_decode(encoded[0])[0])
+
+        encoded = codecs.utf_32_le_encode(s)
+        self.assertEqual(s, codecs.utf_32_le_decode(encoded[0])[0])
+
+        encoded = codecs.utf_32_be_encode(s)
+        self.assertEqual(s, codecs.utf_32_be_decode(encoded[0])[0])
+
+        encoded = codecs.utf_32_be_encode(s)
+        self.assertEqual(s, codecs.utf_32_be_decode(encoded[0])[0])
+
+        encoded = codecs.raw_unicode_escape_encode(s)
+        self.assertEqual(s, codecs.raw_unicode_escape_decode(encoded[0])[0])
+
+        encoded = codecs.unicode_escape_encode(s)
+        self.assertEqual(s, codecs.unicode_escape_decode(encoded[0])[0])
+
+        encoded = codecs.latin_1_encode(s)
+        self.assertEqual(s, codecs.latin_1_decode(encoded[0])[0])
+
+        encoded = codecs.ascii_encode(s)
+        self.assertEqual(s, codecs.ascii_decode(encoded[0])[0])
