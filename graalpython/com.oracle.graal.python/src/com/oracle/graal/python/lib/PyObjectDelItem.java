@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -68,10 +69,10 @@ public abstract class PyObjectDelItem extends Node {
 
     @Specialization
     static void doWithFrame(VirtualFrame frame, Object primary, Object index,
-                    @Cached GetClassNode getClassNode,
+                    @Shared("getclass") @Cached GetClassNode getClassNode,
                     @Cached("create(DelItem)") LookupSpecialMethodSlotNode lookupDelitem,
-                    @Cached PRaiseNode raise,
-                    @Cached CallBinaryMethodNode callDelitem) {
+                    @Shared("raiseNode") @Cached PRaiseNode raise,
+                    @Shared("callNode") @Cached CallBinaryMethodNode callDelitem) {
         Object delitem = lookupDelitem.execute(frame, getClassNode.execute(primary), primary);
         if (delitem == PNone.NO_VALUE) {
             throw raise.raise(TypeError, ErrorMessages.OBJ_DOESNT_SUPPORT_DELETION, primary);
@@ -81,10 +82,10 @@ public abstract class PyObjectDelItem extends Node {
 
     @Specialization(replaces = "doWithFrame")
     static void doGeneric(Object primary, Object index,
-                    @Cached GetClassNode getClassNode,
+                    @Shared("getclass") @Cached GetClassNode getClassNode,
                     @Cached(parameters = "DelItem") LookupCallableSlotInMRONode lookupDelitem,
-                    @Cached PRaiseNode raise,
-                    @Cached CallBinaryMethodNode callDelitem) {
+                    @Shared("raiseNode") @Cached PRaiseNode raise,
+                    @Shared("callNode") @Cached CallBinaryMethodNode callDelitem) {
         Object setitem = lookupDelitem.execute(getClassNode.execute(primary));
         if (setitem == PNone.NO_VALUE) {
             throw raise.raise(TypeError, ErrorMessages.OBJ_DOESNT_SUPPORT_DELETION, primary);
