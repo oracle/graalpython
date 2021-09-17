@@ -1965,7 +1965,7 @@ public class GraalHPyNodes {
                             case GraalHPyDef.HPY_DEF_KIND_SLOT:
                                 Object slotDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_SLOT, moduleDefine);
                                 property = addSlotNode.execute(context, newType, slotDef);
-                                if (SpecialMethodNames.__NEW__.equals(property.key)) {
+                                if (property != null && SpecialMethodNames.__NEW__.equals(property.key)) {
                                     seenNew = true;
                                 }
                                 break;
