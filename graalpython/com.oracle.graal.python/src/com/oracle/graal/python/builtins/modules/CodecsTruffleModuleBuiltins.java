@@ -73,7 +73,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object lookup(VirtualFrame frame, String encoding, String alternateCommand,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            PythonModule codecs = PythonContext.get(this).getCore().lookupBuiltinModule("_codecs_truffle");
+            PythonModule codecs = getContext().getCore().lookupBuiltinModule("_codecs_truffle");
             return callMethod.execute(frame, codecs, "_lookup_text_encoding", encoding, alternateCommand);
         }
     }

@@ -2189,7 +2189,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PySequence_Check extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean check(Object object,
+        static boolean check(Object object,
                         @Cached PySequenceCheckNode check) {
             return check.execute(object);
         }

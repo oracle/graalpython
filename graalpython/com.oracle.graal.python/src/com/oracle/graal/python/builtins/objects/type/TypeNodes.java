@@ -838,6 +838,7 @@ public abstract class TypeNodes {
         @Child private PRaiseNode raiseNode;
         @Child private GetNameNode getTypeNameNode;
         @Child private ReadAttributeFromObjectNode readAttr;
+        @Child private InstancesOfTypeHaveDictNode instancesHaveDictNode;
 
         public abstract boolean execute(VirtualFrame frame, Object oldBase, Object newBase);
 
@@ -968,6 +969,14 @@ public abstract class TypeNodes {
             return slots != PNone.NO_VALUE ? slots : null;
         }
 
+        private boolean instancesHaveDict(Object type) {
+            if (instancesHaveDictNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                instancesHaveDictNode = insert(InstancesOfTypeHaveDictNode.create());
+            }
+            return instancesHaveDictNode.execute(type);
+        }
+
         private GetObjectArrayNode getObjectArrayNode() {
             if (getObjectArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1014,6 +1023,39 @@ public abstract class TypeNodes {
                 raiseNode = insert(PRaiseNode.create());
             }
             return raiseNode;
+        }
+    }
+
+    /**
+     * Equivalent of checking type->tp_dictoffset != 0 in CPython
+     */
+    abstract static class InstancesOfTypeHaveDictNode extends PNodeWithContext {
+        public abstract boolean execute(Object type);
+
+        @Specialization
+        static boolean doPBCT(PythonBuiltinClassType type) {
+            return type.isBuiltinWithDict();
+        }
+
+        @Specialization
+        static boolean doPythonClass(PythonManagedClass type) {
+            return (type.getInstanceShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) == 0;
+        }
+
+        @Specialization
+        static boolean doNativeObject(PythonAbstractNativeObject type,
+                        @Cached GetTypeMemberNode getMember,
+                        @Cached CastToJavaIntExactNode cast) {
+            return cast.execute(getMember.execute(type, NativeMember.TP_DICTOFFSET)) != 0;
+        }
+
+        @Fallback
+        static boolean doOther(@SuppressWarnings("unused") Object type) {
+            return true;
+        }
+
+        public static InstancesOfTypeHaveDictNode create() {
+            return TypeNodesFactory.InstancesOfTypeHaveDictNodeGen.create();
         }
     }
 
@@ -1643,19 +1685,5 @@ public abstract class TypeNodes {
                     return 0;
             }
         }
-    }
-
-    // Equivalent of checking type->tp_dictoffset != 0 in CPython
-    private static boolean instancesHaveDict(Object type) {
-        if (type instanceof PythonBuiltinClassType) {
-            return ((PythonBuiltinClassType) type).isBuiltinWithDict();
-        }
-        if (type instanceof PythonClass) {
-            return (((PythonClass) type).getInstanceShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) == 0;
-        }
-        if (type instanceof PythonAbstractNativeObject) {
-            return CastToJavaIntExactNode.getUncached().execute(GetTypeMemberNode.getUncached().execute(type, NativeMember.TP_DICTOFFSET)) != 0;
-        }
-        return true;
     }
 }
