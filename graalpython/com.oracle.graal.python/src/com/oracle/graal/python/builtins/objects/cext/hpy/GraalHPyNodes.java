@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_NEW;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_GETSET;
@@ -1925,6 +1926,10 @@ public class GraalHPyNodes {
 
                 // store flags, basicsize, and itemsize to type
                 long flags = castToLong(valueLib, ptrLib.readMember(typeSpec, "flags"));
+                if ((flags & GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE) != 0) {
+                    throw raiseNode.raise(TypeError, "HPy_TPFLAGS_INTERNAL_PURE should not be used directly, set .legacy=true instead");
+                }
+
                 long basicSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "basicsize"));
                 long itemSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "itemsize"));
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_ITEMSIZE, itemSize);
