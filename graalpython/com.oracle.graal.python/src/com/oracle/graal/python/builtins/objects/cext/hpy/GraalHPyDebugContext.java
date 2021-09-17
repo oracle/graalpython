@@ -147,6 +147,7 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
         return handle;
     }
 
+    @Override
     public synchronized GraalHPyHandle getObjectForHPyHandle(int handle) {
         try {
             return super.getObjectForHPyHandle(handle);
@@ -182,6 +183,7 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
         return ((long) generation << Integer.SIZE) | age;
     }
 
+    @Override
     @TruffleBoundary
     void onInvalidHandle(int id) {
         assert GraalHPyHandle.wasAllocated(id);
