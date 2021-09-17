@@ -106,12 +106,16 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
@@ -1851,6 +1855,7 @@ public class GraalHPyNodes {
      *     } HPyType_Spec;
      * </pre>
      */
+    @ImportStatic(SpecialMethodSlot.class)
     @GenerateUncached
     abstract static class HPyCreateTypeFromSpecNode extends Node {
 
@@ -1873,7 +1878,9 @@ public class GraalHPyNodes {
                         @Cached HPyCreateSlotNode addSlotNode,
                         @Cached HPyCreateLegacySlotNode createLegacySlotNode,
                         @Cached HPyCreateGetSetDescriptorNode createGetSetDescriptorNode,
-                        @Cached ReadAttributeFromObjectNode readNewNode,
+                        @Cached GetSuperClassNode getSuperClassNode,
+                        @Cached IsSameTypeNode isSameTypeNode,
+                        @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNewNode,
                         @Cached HPyAsPythonObjectNode hPyAsPythonObjectNode,
                         @Cached PRaiseNode raiseNode) {
 
@@ -1929,6 +1936,8 @@ public class GraalHPyNodes {
                     clazz.itemSize = itemSize;
                 }
 
+                boolean seenNew = false;
+
                 // process defines
                 Object defines = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_GET_DEFINES, typeSpec);
                 // field 'defines' may be 'NULL'
@@ -1951,6 +1960,9 @@ public class GraalHPyNodes {
                             case GraalHPyDef.HPY_DEF_KIND_SLOT:
                                 Object slotDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_SLOT, moduleDefine);
                                 property = addSlotNode.execute(context, newType, slotDef);
+                                if (SpecialMethodNames.__NEW__.equals(property.key)) {
+                                    seenNew = true;
+                                }
                                 break;
                             case GraalHPyDef.HPY_DEF_KIND_MEMBER:
                                 Object memberDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_MEMBER, moduleDefine);
@@ -1985,11 +1997,22 @@ public class GraalHPyNodes {
                 }
 
                 /*
-                 * Ensure that we don't use 'object.__new__' because that would not allocate the
-                 * native space if a basicsize is given.
+                 * If 'basicsize > 0' and no explicit constructor is given, the constructor of the
+                 * object needs to allocate the native space for the object. However, the inherited
+                 * constructors won't usually do that. So, we compute the constructor here and
+                 * decorate it.
                  */
-                if (readNewNode.execute(newType, SpecialMethodNames.__NEW__) == PNone.NO_VALUE) {
-                    writeAttributeToObjectNode.execute(newType, SpecialMethodNames.__NEW__, HPyObjectNewNode.createBuiltinFunction(PythonLanguage.get(raiseNode)));
+                if (basicSize > 0 && !seenNew) {
+                    Object inheritedConstructor = null;
+
+                    Object baseClass = getSuperClassNode.execute(newType);
+                    if (!isSameTypeNode.execute(baseClass, PythonBuiltinClassType.PythonObject)) {
+                        // Lookup the inherited constructor and pass it to the HPy decorator.
+                        inheritedConstructor = lookupNewNode.execute(baseClass);
+                    }
+
+                    PBuiltinFunction constructorDecorator = HPyObjectNewNode.createBuiltinFunction(PythonLanguage.get(raiseNode), inheritedConstructor);
+                    writeAttributeToObjectNode.execute(newType, SpecialMethodNames.__NEW__, constructorDecorator);
                 }
 
                 return newType;
