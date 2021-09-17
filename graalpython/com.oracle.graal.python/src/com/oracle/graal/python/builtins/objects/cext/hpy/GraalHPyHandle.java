@@ -264,7 +264,7 @@ public final class GraalHPyHandle implements TruffleObject {
     public GraalHPyHandle copy() {
         return new GraalHPyHandle(delegate);
     }
-    
+
     static boolean wasAllocated(int id) {
         return id != UNINITIALIZED;
     }
