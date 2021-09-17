@@ -106,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransf
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsContextNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -2465,7 +2466,7 @@ public abstract class GraalHPyContextFunctions {
                     PDict dict;
                     HashingStorage dictStorage;
                     if (dictObj == PNone.NO_VALUE) {
-                        dictStorage = PDict.createNewStorage(true, 2);
+                        dictStorage = new DynamicObjectStorage(PythonLanguage.get(asContextNode));
                         dict = factory.createDict(dictStorage);
                     } else {
                         if (!(dictObj instanceof PDict)) {
