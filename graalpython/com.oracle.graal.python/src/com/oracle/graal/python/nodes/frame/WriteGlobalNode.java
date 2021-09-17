@@ -42,7 +42,7 @@ package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -50,65 +50,102 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@NodeChild(value = "rhs", type = ExpressionNode.class)
 public abstract class WriteGlobalNode extends StatementNode implements GlobalNode, WriteNode {
     protected final String attributeId;
     @Child protected IsBuiltinClassProfile builtinProfile = IsBuiltinClassProfile.create();
+    @Child private ExpressionNode rhs;
 
-    WriteGlobalNode(String attributeId) {
+    WriteGlobalNode(String attributeId, ExpressionNode rhs) {
         this.attributeId = attributeId;
+        this.rhs = rhs;
     }
 
     public static WriteGlobalNode create(String attributeId) {
-        return create(attributeId, null);
+        return WriteGlobalNodeGen.create(attributeId, null);
     }
 
     public static WriteGlobalNode create(String attributeId, ExpressionNode rhs) {
         return WriteGlobalNodeGen.create(attributeId, rhs);
     }
 
-    private static PDict getGlobalsDict(VirtualFrame frame) {
-        return (PDict) PArguments.getGlobals(frame);
+    @Override
+    public final void executeVoid(VirtualFrame frame) {
+        executeWithGlobals(frame, getGlobals(frame));
     }
 
-    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isBuiltinDict(cachedGlobals, builtinProfile)"}, assumptions = "singleContextAssumption()", limit = "1")
-    void writeDictObjectCached(VirtualFrame frame, Object value,
-                    @Cached(value = "getGlobals(frame)", weak = true) Object cachedGlobals,
+    @Override
+    public final void executeBoolean(VirtualFrame frame, boolean value) {
+        executeObjectWithGlobals(frame, getGlobals(frame), value);
+    }
+
+    @Override
+    public final void executeInt(VirtualFrame frame, int value) {
+        executeObjectWithGlobals(frame, getGlobals(frame), value);
+    }
+
+    @Override
+    public final void executeLong(VirtualFrame frame, long value) {
+        executeObjectWithGlobals(frame, getGlobals(frame), value);
+    }
+
+    @Override
+    public final void executeDouble(VirtualFrame frame, double value) {
+        executeObjectWithGlobals(frame, getGlobals(frame), value);
+    }
+
+    @Override
+    public final void executeObject(VirtualFrame frame, Object value) {
+        executeObjectWithGlobals(frame, getGlobals(frame), value);
+    }
+
+    public final void executeWithGlobals(VirtualFrame frame, Object globals) {
+        executeObjectWithGlobals(frame, globals, getRhs().execute(frame));
+    }
+
+    public abstract void executeObjectWithGlobals(VirtualFrame frame, Object globals, Object value);
+
+    @Specialization(guards = {"globals == cachedGlobals", "isBuiltinDict(cachedGlobals, builtinProfile)"}, assumptions = "singleContextAssumption()", limit = "1")
+    void writeDictObjectCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals, Object value,
+                    @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Shared("setItemDict") @Cached HashingCollectionNodes.SetItemNode storeNode) {
-        storeNode.execute(frame, (PDict) cachedGlobals, attributeId, value);
+        storeNode.execute(frame, cachedGlobals, attributeId, value);
     }
 
-    @Specialization(replaces = "writeDictObjectCached", guards = "isBuiltinDict(getGlobals(frame), builtinProfile)")
-    void writeDictObject(VirtualFrame frame, Object value,
+    @Specialization(replaces = "writeDictObjectCached", guards = "isBuiltinDict(globals, builtinProfile)")
+    void writeDictObject(VirtualFrame frame, PDict globals, Object value,
                     @Shared("setItemDict") @Cached HashingCollectionNodes.SetItemNode storeNode) {
-        storeNode.execute(frame, getGlobalsDict(frame), attributeId, value);
+        storeNode.execute(frame, globals, attributeId, value);
     }
 
-    @Specialization(replaces = {"writeDictObject", "writeDictObjectCached"}, guards = "isDict(getGlobals(frame))")
-    void writeGenericDict(VirtualFrame frame, Object value,
+    @Specialization(replaces = {"writeDictObject", "writeDictObjectCached"})
+    void writeGenericDict(VirtualFrame frame, PDict globals, Object value,
                     @Cached SetItemNode storeNode) {
-        storeNode.executeWith(frame, PArguments.getGlobals(frame), attributeId, value);
+        storeNode.executeWith(frame, globals, attributeId, value);
     }
 
-    @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isModule(cachedGlobals)"}, assumptions = "singleContextAssumption()", limit = "1")
-    void writeModuleCached(@SuppressWarnings("unused") VirtualFrame frame, Object value,
-                    @Cached(value = "getGlobals(frame)", weak = true) Object cachedGlobals,
+    @Specialization(guards = {"globals == cachedGlobals"}, assumptions = "singleContextAssumption()", limit = "1")
+    void writeModuleCached(@SuppressWarnings("unused") PythonModule globals, Object value,
+                    @Cached(value = "globals", weak = true) PythonModule cachedGlobals,
                     @Shared("write") @Cached WriteAttributeToObjectNode write) {
         write.execute(cachedGlobals, attributeId, value);
     }
 
-    @Specialization(guards = "isModule(getGlobals(frame))", replaces = "writeModuleCached")
-    void writeModule(VirtualFrame frame, Object value,
+    @Specialization(replaces = "writeModuleCached")
+    void writeModule(PythonModule globals, Object value,
                     @Shared("write") @Cached WriteAttributeToObjectNode write) {
-        write.execute(PArguments.getGlobals(frame), attributeId, value);
+        write.execute(globals, attributeId, value);
     }
 
     @Override
     public String getAttributeId() {
         return attributeId;
+    }
+
+    @Override
+    public final ExpressionNode getRhs() {
+        return rhs;
     }
 }

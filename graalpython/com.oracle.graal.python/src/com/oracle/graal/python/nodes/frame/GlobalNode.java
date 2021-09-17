@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.frame;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
@@ -52,19 +51,8 @@ public interface GlobalNode {
         return PArguments.getGlobals(frame);
     }
 
-    default boolean isModule(Object globals) {
-        return globals instanceof PythonModule;
-    }
-
-    default boolean isBuiltinDict(Object globals, IsBuiltinClassProfile profile) {
-        if (globals instanceof PDict) {
-            return profile.profileObject(globals, PythonBuiltinClassType.PDict);
-        }
-        return false;
-    }
-
-    default boolean isDict(Object globals) {
-        return globals instanceof PDict;
+    default boolean isBuiltinDict(PDict globals, IsBuiltinClassProfile profile) {
+        return profile.profileObject(globals, PythonBuiltinClassType.PDict);
     }
 
     public String getAttributeId();

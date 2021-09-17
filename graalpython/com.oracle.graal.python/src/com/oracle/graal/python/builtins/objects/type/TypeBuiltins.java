@@ -62,6 +62,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -74,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -689,7 +691,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object doIt(Object args, Object kwargs) {
-            return factory().createDict();
+            return factory().createDict(new DynamicObjectStorage(PythonLanguage.get(this)));
         }
     }
 

@@ -121,7 +121,25 @@ public abstract class CallNode extends PNodeWithContext {
         return dispatch.executeCall(frame, callable, createArgs.execute(callable, arguments, keywords));
     }
 
-    @Specialization(guards = "!isCallable(callableObject)")
+    @Specialization
+    protected Object doType(VirtualFrame frame, PythonBuiltinClassType callableObject, Object[] arguments, PKeyword[] keywords,
+                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Shared("lookupCall") @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
+                    @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
+        Object call = callAttrGetterNode.execute(callableObject);
+        return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
+    }
+
+    @Specialization(guards = "isPythonClass(callableObject)", replaces = "doType")
+    protected Object doPythonClass(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
+                    @Shared("raise") @Cached PRaiseNode raise,
+                    @Shared("lookupCall") @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
+                    @Shared("callCall") @Cached CallVarargsMethodNode callCallNode) {
+        Object call = callAttrGetterNode.execute(callableObject);
+        return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
+    }
+
+    @Specialization(guards = "!isCallable(callableObject)", replaces = {"doType", "doPythonClass"})
     protected Object doObjectAndType(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
                     @Shared("raise") @Cached PRaiseNode raise,
                     @Shared("lookupCall") @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
