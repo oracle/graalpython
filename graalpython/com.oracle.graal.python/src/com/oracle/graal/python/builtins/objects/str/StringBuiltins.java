@@ -29,8 +29,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.ENCODE;
 import static com.oracle.graal.python.nodes.BuiltinNames.FORMAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.FORMAT_MAP;
 import static com.oracle.graal.python.nodes.ErrorMessages.ENCODER_RETURNED_P_INSTEAD_OF_BYTES;
-import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_NOT_SUBSCRIPTABLE;
-import static com.oracle.graal.python.nodes.ErrorMessages.TAKES_EXACTLY_S_ARGUMENTS_D_GIVEN;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
@@ -107,7 +105,6 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
-import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -260,7 +257,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = FORMAT_MAP, minNumOfPositionalArgs = 1, declaresExplicitSelf = true, parameterNames = {"self", "mapping"})
+    @Builtin(name = FORMAT_MAP, minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"self", "mapping"})
     @ArgumentClinic(name = "self", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
     @ImportStatic(SpecialMethodNames.class)
@@ -270,11 +267,10 @@ public final class StringBuiltins extends PythonBuiltins {
             return StringBuiltinsClinicProviders.FormatMapNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "checkMapping.execute(mapping)", limit = "1")
+        @Specialization
         String format(VirtualFrame frame, String self, Object mapping,
                         @Cached BuiltinFunctions.FormatNode format,
-                        @Cached OperatorModuleBuiltins.GetItemNode getItem,
-                        @SuppressWarnings("unused") @Cached PyMappingCheckNode checkMapping) {
+                        @Cached OperatorModuleBuiltins.GetItemNode getItem) {
 
             TemplateFormatter template = new TemplateFormatter(self);
 
@@ -286,19 +282,6 @@ public final class StringBuiltins extends PythonBuiltins {
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!checkMapping.execute(obj)", "!isNone(obj)"}, limit = "1")
-        String format(String self, Object obj,
-                        @SuppressWarnings("unused") @Cached PyMappingCheckNode checkMapping) {
-            throw raise(TypeError, OBJ_NOT_SUBSCRIPTABLE, obj);
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "isNone(obj)")
-        String format(String self, PNone obj) {
-            throw raise(TypeError, TAKES_EXACTLY_S_ARGUMENTS_D_GIVEN, "format_map", "one", 0);
         }
     }
 
