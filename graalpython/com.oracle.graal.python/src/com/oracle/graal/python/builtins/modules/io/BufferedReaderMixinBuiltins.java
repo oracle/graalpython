@@ -118,12 +118,12 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
         byte[] bufferedreaderRawRead(VirtualFrame frame, PBuffered self, int len,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached PythonObjectFactory factory,
-                        @Cached IONodes.CallReadInto readInto,
+                        @Cached PyObjectCallMethodObjArgs callMethodReadInto,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached ConditionProfile osError) {
             PByteArray memobj = factory.createByteArray(new byte[len]);
             // TODO _PyIO_trap_eintr [GR-23297]
-            Object res = readInto.execute(frame, self.getRaw(), memobj);
+            Object res = callMethodReadInto.execute(frame, self.getRaw(), READINTO, memobj);
             if (res == PNone.NONE) {
                 /* Non-blocking stream would have blocked. Special return code! */
                 return BLOCKED;
@@ -184,8 +184,8 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class ReadableNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @Cached IONodes.CallReadable readable) {
-            return readable.execute(frame, self.getRaw());
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, self.getRaw(), READABLE);
         }
     }
 

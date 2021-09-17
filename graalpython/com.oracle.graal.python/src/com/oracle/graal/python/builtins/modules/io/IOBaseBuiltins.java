@@ -54,6 +54,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEKABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.TELL;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.TRUNCATE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITELINES;
 import static com.oracle.graal.python.builtins.modules.io.IONodes._CHECKCLOSED;
 import static com.oracle.graal.python.builtins.modules.io.IONodes._CHECKREADABLE;
@@ -219,10 +220,10 @@ public class IOBaseBuiltins extends PythonBuiltins {
     abstract static class CheckWritableNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doCheckWritable(VirtualFrame frame, PythonObject self,
-                        @Cached IONodes.CallWritable writable,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @CachedLibrary(limit = "1") PythonObjectLibrary isSame) {
-            Object v = writable.execute(frame, self);
-            if (isSame.isSame(v, getCore().getTrue())) {
+            Object result = callMethod.execute(frame, self, WRITABLE);
+            if (isSame.isSame(result, true)) {
                 return true;
             }
             throw unsupported(getRaiseNode(), ErrorMessages.FILE_OR_STREAM_IS_NOT_WRITABLE);
@@ -376,7 +377,7 @@ public class IOBaseBuiltins extends PythonBuiltins {
                         @Cached CheckClosedNode checkClosedNode,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached IONodes.CallWrite writeNode,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @CachedLibrary("lines") PythonObjectLibrary libLines) {
             checkClosedNode.call(frame, self);
             Object iter = libLines.getIteratorWithFrame(lines, frame);
@@ -388,7 +389,7 @@ public class IOBaseBuiltins extends PythonBuiltins {
                     e.expectStopIteration(errorProfile);
                     break;
                 }
-                writeNode.execute(frame, self, line);
+                callMethod.execute(frame, self, WRITE, line);
                 // TODO _PyIO_trap_eintr [GR-23297]
             }
             return PNone.NONE;

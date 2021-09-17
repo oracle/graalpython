@@ -98,6 +98,8 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -683,8 +685,8 @@ public class StringIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "self.hasDecoder()"})
         static Object doit(VirtualFrame frame, PStringIO self,
-                        @Cached IONodes.GetNewlines newlines) {
-            return newlines.execute(frame, self.getDecoder());
+                        @Cached PyObjectGetAttr getAttr) {
+            return getAttr.execute(frame, self.getDecoder(), NEWLINES);
         }
     }
 
@@ -740,10 +742,10 @@ public class StringIOBuiltins extends PythonBuiltins {
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isStringIO(self, profile)"})
         Object slowpath(VirtualFrame frame, PStringIO self,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
-                        @Cached IONodes.CallReadline readline,
+                        @Cached PyObjectCallMethodObjArgs callMethodReadline,
                         @Cached CastToJavaStringNode toString) {
             self.realize();
-            Object res = readline.execute(frame, self);
+            Object res = callMethodReadline.execute(frame, self, READLINE);
             if (!PGuards.isString(res)) {
                 throw raise(OSError, S_SHOULD_HAVE_RETURNED_A_STR_OBJECT_NOT_P, READLINE, res);
             }

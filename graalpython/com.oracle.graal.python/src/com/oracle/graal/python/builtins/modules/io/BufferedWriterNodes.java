@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CU
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.isValidReadBuffer;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.isValidWriteBuffer;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.rawOffset;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_S_INVALID_LENGTH;
 import static com.oracle.graal.python.nodes.ErrorMessages.WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
@@ -54,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -210,10 +212,10 @@ public class BufferedWriterNodes {
         @Specialization
         int bufferedwriterRawWrite(VirtualFrame frame, PBuffered self, byte[] buf, int len,
                         @Cached PythonObjectFactory factory,
-                        @Cached IONodes.CallWrite writeNode,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             PBytes memobj = factory.createBytes(buf, len);
-            Object res = writeNode.execute(frame, self.getRaw(), memobj);
+            Object res = callMethod.execute(frame, self.getRaw(), WRITE, memobj);
             if (res == PNone.NONE) {
                 /*
                  * Non-blocking stream would have blocked. Special return code!

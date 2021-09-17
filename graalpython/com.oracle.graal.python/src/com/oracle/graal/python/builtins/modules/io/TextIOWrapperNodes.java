@@ -44,8 +44,17 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsuppor
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIncrementalNewlineDecoder;
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.STRICT;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSED;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.DECODE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.GETSTATE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.READ;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.READ1;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.READABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.RESET;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEKABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.SETSTATE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.TELL;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ASCII;
 import static com.oracle.graal.python.nodes.ErrorMessages.COULD_NOT_DETERMINE_DEFAULT_ENCODING;
 import static com.oracle.graal.python.nodes.ErrorMessages.DECODER_SHOULD_RETURN_A_STRING_RESULT_NOT_P;
@@ -70,8 +79,10 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -190,10 +201,10 @@ public class TextIOWrapperNodes {
         @Specialization(guards = "self.hasPendingBytes()")
         static void writeflush(VirtualFrame frame, PTextIO self,
                         @Cached PythonObjectFactory factory,
-                        @Cached IONodes.CallWrite writeNode) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             byte[] pending = self.getAndClearPendingBytes();
             PBytes b = factory.createBytes(pending);
-            writeNode.execute(frame, self.getBuffer(), b);
+            callMethod.execute(frame, self.getBuffer(), WRITE, b);
             // TODO: check _PyIO_trap_eintr
         }
     }
@@ -424,9 +435,8 @@ public class TextIOWrapperNodes {
         boolean readChunk(VirtualFrame frame, PTextIO self, int hint,
                         @Cached SequenceNodes.GetObjectArrayNode getArray,
                         @Cached DecodeNode decodeNode,
-                        @Cached IONodes.CallGetState getState,
-                        @Cached IONodes.CallRead read,
-                        @Cached IONodes.CallRead1 read1,
+                        @Cached PyObjectCallMethodObjArgs callMethodGetState,
+                        @Cached PyObjectCallMethodObjArgs callMethodRead,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
@@ -443,7 +453,7 @@ public class TextIOWrapperNodes {
                  * To prepare for tell(), we need to snapshot a point in the file where the
                  * decoder's input buffer is empty.
                  */
-                Object state = getState.execute(frame, self.getDecoder());
+                Object state = callMethodGetState.execute(frame, self.getDecoder(), GETSTATE);
                 /*
                  * Given this, we know there was a valid snapshot point len(decBuffer) bytes ago
                  * with decoder state (b'', decFlags).
@@ -473,9 +483,9 @@ public class TextIOWrapperNodes {
 
             Object inputChunk;
             if (self.isHasRead1()) {
-                inputChunk = read1.execute(frame, self.getBuffer(), chunkSize);
+                inputChunk = callMethodRead.execute(frame, self.getBuffer(), READ1, chunkSize);
             } else {
-                inputChunk = read.execute(frame, self.getBuffer(), chunkSize);
+                inputChunk = callMethodRead.execute(frame, self.getBuffer(), READ, chunkSize);
             }
 
             Object inputChunkBuf;
@@ -545,8 +555,8 @@ public class TextIOWrapperNodes {
         String decodeGeneric(VirtualFrame frame, Object decoder, Object o, boolean eof,
                         @Cached IONodes.ToStringNode toString,
                         @Cached BranchProfile notString,
-                        @Cached IONodes.CallDecode decode) {
-            Object decoded = decode.execute(frame, decoder, o, eof);
+                        @Cached PyObjectCallMethodObjArgs callMethodDecode) {
+            Object decoded = callMethodDecode.execute(frame, decoder, DECODE, o, eof);
             return checkDecoded(decoded, toString, notString);
         }
 
@@ -567,8 +577,8 @@ public class TextIOWrapperNodes {
         String decode(VirtualFrame frame, PTextIO self, Object o, boolean isFinal,
                         @Cached IONodes.ToStringNode toString,
                         @Cached BranchProfile notString,
-                        @Cached IONodes.CallDecode decode) {
-            Object decoded = decode.execute(frame, self.getDecoder(), o, isFinal);
+                        @Cached PyObjectCallMethodObjArgs callMethodDecode) {
+            Object decoded = callMethodDecode.execute(frame, self.getDecoder(), DECODE, o, isFinal);
             try {
                 return toString.execute(decoded);
             } catch (CannotCastException e) {
@@ -600,15 +610,15 @@ public class TextIOWrapperNodes {
 
         @Specialization(guards = {"self.hasDecoder()", "isAtInit(cookie)"})
         static void atInit(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") PTextIO.CookieType cookie, @SuppressWarnings("unused") PythonObjectFactory factory,
-                        @Cached IONodes.CallReset reset) {
-            reset.execute(frame, self.getDecoder());
+                        @Cached PyObjectCallMethodObjArgs callMethodReset) {
+            callMethodReset.execute(frame, self.getDecoder(), RESET);
         }
 
         @Specialization(guards = {"self.hasDecoder()", "!isAtInit(cookie)"})
         static void decoderSetstate(VirtualFrame frame, PTextIO self, PTextIO.CookieType cookie, PythonObjectFactory factory,
-                        @Cached IONodes.CallSetState setState) {
+                        @Cached PyObjectCallMethodObjArgs callMethodSetState) {
             PTuple tuple = factory.createTuple(new Object[]{factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY), cookie.decFlags});
-            setState.execute(frame, self.getDecoder(), tuple);
+            callMethodSetState.execute(frame, self.getDecoder(), SETSTATE, tuple);
 
         }
     }
@@ -624,8 +634,8 @@ public class TextIOWrapperNodes {
 
         @Specialization(guards = "self.hasDecoder()")
         static void reset(VirtualFrame frame, PTextIO self,
-                        @Cached IONodes.CallReset reset) {
-            reset.execute(frame, self.getDecoder());
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            callMethod.execute(frame, self.getDecoder(), RESET);
         }
     }
 
@@ -635,15 +645,15 @@ public class TextIOWrapperNodes {
 
         @Specialization(guards = "startOfStream")
         static void encoderResetStart(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") boolean startOfStream,
-                        @Cached IONodes.CallReset reset) {
-            reset.execute(frame, self.getEncoder());
+                        @Cached PyObjectCallMethodObjArgs callMethodReset) {
+            callMethodReset.execute(frame, self.getEncoder(), RESET);
             self.setEncodingStartOfStream(true);
         }
 
         @Specialization(guards = "!startOfStream")
         static void encoderResetNotStart(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") boolean startOfStream,
-                        @Cached IONodes.CallSetState setState) {
-            setState.execute(frame, self.getEncoder(), 0);
+                        @Cached PyObjectCallMethodObjArgs callMethodSetState) {
+            callMethodSetState.execute(frame, self.getEncoder(), SETSTATE, 0);
             self.setEncodingStartOfStream(false);
 
         }
@@ -663,14 +673,14 @@ public class TextIOWrapperNodes {
 
         @Specialization(guards = {"self.isSeekable()", "self.hasEncoder()"})
         static void fixEncoderState(VirtualFrame frame, PTextIO self,
-                        @Cached IONodes.CallTell tell,
-                        @Cached IONodes.CallSetState setState,
+                        @Cached PyObjectCallMethodObjArgs callMethodTell,
+                        @Cached PyObjectCallMethodObjArgs callMethodSetState,
                         @CachedLibrary(limit = "2") PythonObjectLibrary libCookie) {
             self.setEncodingStartOfStream(true);
-            Object cookieObj = tell.execute(frame, self.getBuffer());
+            Object cookieObj = callMethodTell.execute(frame, self.getBuffer(), TELL);
             if (!libCookie.equals(cookieObj, 0, libCookie)) {
                 self.setEncodingStartOfStream(false);
-                setState.execute(frame, self.getEncoder(), 0);
+                callMethodSetState.execute(frame, self.getEncoder(), SETSTATE, 0);
             }
         }
     }
@@ -685,10 +695,10 @@ public class TextIOWrapperNodes {
         static void setDecoder(VirtualFrame frame, PTextIO self, Object codecInfo, String errors,
                         @Cached CodecsTruffleModuleBuiltins.GetIncrementalDecoderNode getIncrementalDecoderNode,
                         @Cached ConditionProfile isTrueProfile,
-                        @Cached IONodes.CallReadable readable,
+                        @Cached PyObjectCallMethodObjArgs callMethodReadable,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached PythonObjectFactory factory) {
-            Object res = readable.execute(frame, self.getBuffer());
+            Object res = callMethodReadable.execute(frame, self.getBuffer(), READABLE);
             if (isTrueProfile.profile(!isTrueNode.execute(frame, res))) {
                 return;
             }
@@ -714,8 +724,8 @@ public class TextIOWrapperNodes {
                         @Cached CodecsTruffleModuleBuiltins.GetIncrementalEncoderNode getIncrementalEncoderNode,
                         @Cached ConditionProfile isTrueProfile,
                         @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached IONodes.CallWritable writable) {
-            Object res = writable.execute(frame, self.getBuffer());
+                        @Cached PyObjectCallMethodObjArgs callMethodWritable) {
+            Object res = callMethodWritable.execute(frame, self.getBuffer(), WRITABLE);
             if (isTrueProfile.profile(!isTrueNode.execute(frame, res))) {
                 return;
             }
@@ -741,8 +751,8 @@ public class TextIOWrapperNodes {
                         @Cached SetEncoderNode setEncoderNode,
                         @Cached SetDecoderNode setDecoderNode,
                         @Cached FixEncoderStateNode fixEncoderStateNode,
-                        @Cached IONodes.CallSeekable seekable,
-                        @Cached IONodes.HasRead1 hasRead1,
+                        @Cached PyObjectCallMethodObjArgs callMethodSeekable,
+                        @Cached PyObjectLookupAttr lookup,
                         @Cached PyObjectIsTrueNode isTrueNode) {
             self.setOK(false);
             self.setDetached(false);
@@ -806,11 +816,11 @@ public class TextIOWrapperNodes {
                 }
             }
 
-            Object res = seekable.execute(frame, buffer);
+            Object res = callMethodSeekable.execute(frame, buffer, SEEKABLE);
             self.setTelling(isTrueNode.execute(frame, res));
             self.setSeekable(self.isTelling());
 
-            self.setHasRead1(hasRead1.execute(frame, buffer));
+            self.setHasRead1(lookup.execute(frame, buffer, READ1) != PNone.NO_VALUE);
 
             self.setEncodingStartOfStream(false);
             fixEncoderStateNode.execute(frame, self);

@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -103,17 +104,17 @@ public class RawIOBaseBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "size < 0")
         static Object readall(VirtualFrame frame, Object self, @SuppressWarnings("unused") int size,
-                        @Cached IONodes.CallReadall readall) {
-            return readall.execute(frame, self);
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, self, READALL);
         }
 
         @Specialization(guards = "size >= 0")
         Object read(VirtualFrame frame, Object self, int size,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Cached IONodes.CallReadInto readInto,
+                        @Cached PyObjectCallMethodObjArgs callMethodReadInto,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             PByteArray b = factory().createByteArray(new byte[size]);
-            Object res = readInto.execute(frame, self, b);
+            Object res = callMethodReadInto.execute(frame, self, READINTO, b);
             if (res == PNone.NONE) {
                 return res;
             }
@@ -138,12 +139,12 @@ public class RawIOBaseBuiltins extends PythonBuiltins {
          */
         @Specialization
         Object readall(VirtualFrame frame, Object self,
-                        @Cached IONodes.CallRead read,
+                        @Cached PyObjectCallMethodObjArgs callMethodRead,
                         @Cached ConditionProfile isBuffer,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             ByteArrayOutputStream chunks = createOutputStream();
             while (true) {
-                Object data = read.execute(frame, self, DEFAULT_BUFFER_SIZE);
+                Object data = callMethodRead.execute(frame, self, READ, DEFAULT_BUFFER_SIZE);
                 // TODO _PyIO_trap_eintr [GR-23297]
                 if (data == PNone.NONE) {
                     if (chunks.size() == 0) {

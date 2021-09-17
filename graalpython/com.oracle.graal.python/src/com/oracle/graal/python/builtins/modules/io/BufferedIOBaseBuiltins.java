@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -125,7 +126,7 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
     abstract static class ReadIntoGenericNode extends PythonBinaryClinicBuiltinNode {
 
         @SuppressWarnings("unused")
-        protected Object callRead(VirtualFrame frame, Object self, int len) {
+        protected String getMethodName() {
             throw CompilerDirectives.shouldNotReachHere("abstract");
         }
 
@@ -135,11 +136,12 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
         @Specialization
         Object readinto(VirtualFrame frame, Object self, Object buffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached ConditionProfile isBytes,
                         @Cached ConditionProfile oversize) {
             try {
                 int len = bufferLib.getBufferLength(buffer);
-                Object data = callRead(frame, self, len);
+                Object data = callMethod.execute(frame, self, getMethodName(), len);
                 if (isBytes.profile(!(data instanceof PBytes))) {
                     throw raise(ValueError, S_SHOULD_RETURN_BYTES, "read()");
                 }
@@ -166,11 +168,9 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
     abstract static class ReadIntoNode extends ReadIntoGenericNode {
-        @Child IONodes.CallRead read = IONodesFactory.CallReadNodeGen.create();
-
         @Override
-        protected final Object callRead(VirtualFrame frame, Object self, int len) {
-            return read.execute(frame, self, len);
+        protected final String getMethodName() {
+            return READ;
         }
 
         @Override
@@ -183,11 +183,9 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
     abstract static class ReadInto1Node extends ReadIntoGenericNode {
-        @Child IONodes.CallRead1 read1 = IONodesFactory.CallRead1NodeGen.create();
-
         @Override
-        protected final Object callRead(VirtualFrame frame, Object self, int len) {
-            return read1.execute(frame, self, len);
+        protected final String getMethodName() {
+            return READ1;
         }
 
         @Override
