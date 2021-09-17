@@ -72,11 +72,11 @@ public abstract class PyObjectDelItem extends Node {
                     @Cached("create(DelItem)") LookupSpecialMethodSlotNode lookupDelitem,
                     @Cached PRaiseNode raise,
                     @Cached CallBinaryMethodNode callDelitem) {
-        Object setitem = lookupDelitem.execute(frame, getClassNode.execute(primary), primary);
-        if (setitem == PNone.NO_VALUE) {
+        Object delitem = lookupDelitem.execute(frame, getClassNode.execute(primary), primary);
+        if (delitem == PNone.NO_VALUE) {
             throw raise.raise(TypeError, ErrorMessages.OBJ_DOESNT_SUPPORT_DELETION, primary);
         }
-        callDelitem.executeObject(frame, setitem, primary, index);
+        callDelitem.executeObject(frame, delitem, primary, index);
     }
 
     @Specialization(replaces = "doWithFrame")
