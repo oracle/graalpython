@@ -56,7 +56,7 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
     private int age;
     private long[] debugHandleInfo = new long[]{0};
     private int closedHandlesQueueMaxSize = DEFAULT_CLOSED_HANDLES_QUEUE_MAX_SIZE;
-    private final Queue<GraalHPyHandle> closedHandles = new LinkedList<>();
+    private final LinkedList<GraalHPyHandle> closedHandles = new LinkedList<>();
     private Object onInvalidHandleCallback;
 
     public GraalHPyDebugContext(GraalHPyContext context) {
@@ -167,8 +167,8 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
             GraalHPyHandle handle = super.getObjectForHPyHandle(handleId);
             super.releaseHPyHandleForObject(handleId);
             debugHandleInfo[handleId] = -1;
-            if (closedHandles.size() >= closedHandlesQueueMaxSize) {
-                closedHandles.poll();
+            if (!closedHandles.isEmpty() && closedHandles.size() >= closedHandlesQueueMaxSize) {
+                closedHandles.removeFirst();
             }
             closedHandles.add(handle);
             return true;
