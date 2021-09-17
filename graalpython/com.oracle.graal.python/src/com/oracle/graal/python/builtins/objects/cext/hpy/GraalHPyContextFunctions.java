@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Size
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsContextNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
@@ -340,13 +341,17 @@ public abstract class GraalHPyContextFunctions {
 
                     // process HPy methods
                     Object moduleDefines = callGetterNode.call(context, GRAAL_HPY_MODULE_GET_DEFINES, moduleDef);
-                    if (!ptrLib.hasArrayElements(moduleDefines)) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, "field 'defines' did not return an array");
-                    }
-
                     try {
-                        long nModuleDefines = ptrLib.getArraySize(moduleDefines);
+                        long nModuleDefines;
+                        if (ptrLib.isNull(moduleDefines)) {
+                            nModuleDefines = 0;
+                        } else if (!ptrLib.hasArrayElements(moduleDefines)) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            throw raiseNode.raise(PythonBuiltinClassType.SystemError, "field 'defines' did not return an array");
+                        } else {
+                            nModuleDefines = ptrLib.getArraySize(moduleDefines);
+                        }
+
                         for (long i = 0; i < nModuleDefines; i++) {
                             Object moduleDefine = ptrLib.readArrayElement(moduleDefines, i);
                             int kind = castToJavaIntNode.execute(callGetterNode.call(context, GRAAL_HPY_DEF_GET_KIND, moduleDefine));
