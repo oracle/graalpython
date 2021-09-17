@@ -65,7 +65,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PDebugHandle;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -78,6 +78,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -230,9 +231,10 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class HPyDebugSetOnInvalidHandleNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PNone doInt(VirtualFrame frame, Object callback) {
+        PNone doInt(VirtualFrame frame, Object callback,
+                        @Cached PyCallableCheckNode callableCheckNode) {
             GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this);
-            if (!PythonObjectLibrary.getUncached().isCallable(callback)) {
+            if (!callableCheckNode.execute(frame, callback)) {
                 throw raise(TypeError, "Expected a callable object");
             }
             hpyDebugContext.setOnInvalidHandleCallback(callback);
