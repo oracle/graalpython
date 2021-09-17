@@ -46,7 +46,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -578,7 +577,7 @@ public final class PythonContext {
          * Maps the two fake file descriptors created in {@link #pipe()} to one
          * {@link LinkedBlockingQueue}
          */
-        private final SortedMap<Integer, LinkedBlockingQueue<Object>> pipeData = new ConcurrentSkipListMap<>();
+        private final ConcurrentSkipListMap<Integer, LinkedBlockingQueue<Object>> pipeData = new ConcurrentSkipListMap<>();
 
         /**
          * Holds ref count of file descriptors which were passed over to a spawned child context.
@@ -588,7 +587,7 @@ public final class PythonContext {
          * <li>real file descriptors coming from the posix implementation</li>
          * </ul>
          */
-        private final Map<Integer, Integer> fdRefCount = new ConcurrentHashMap<>();
+        private final ConcurrentHashMap<Integer, Integer> fdRefCount = new ConcurrentHashMap<>();
 
         public SharedMultiprocessingData(ConcurrentHashMap<String, Semaphore> namedSemaphores) {
             this.namedSemaphores = namedSemaphores;
@@ -691,10 +690,10 @@ public final class PythonContext {
         }
 
         /**
-         * This uses LinkedBlockingQueue#compute to determine the blocking state. The runnable may
-         * be run multiple times, so we need to check and write all possible results to the result
-         * array. This ensures that if there is concurrent modification of the {@link #pipeData}, we
-         * will get a valid result.
+         * This uses {@link ConcurrentSkipListMap#compute} to determine the blocking state. The
+         * runnable may be run multiple times, so we need to check and write all possible results to
+         * the result array. This ensures that if there is concurrent modification of the
+         * {@link #pipeData}, we will get a valid result.
          */
         @TruffleBoundary
         public boolean isBlocking(int fd) {
