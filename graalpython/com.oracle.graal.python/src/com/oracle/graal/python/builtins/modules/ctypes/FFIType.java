@@ -91,18 +91,18 @@ final class FFIType {
          *
          * The return value of managed callback functions with return type VOID will be ignored.
          */
-        FFI_TYPE_VOID("VOID", 0), // `void`
+        FFI_TYPE_VOID("VOID", 0, null), // `void`
 
-        FFI_TYPE_UINT8("UINT8", Byte.BYTES),
-        FFI_TYPE_SINT8("SINT8", Byte.BYTES),
-        FFI_TYPE_UINT16("UINT16", Short.BYTES),
-        FFI_TYPE_SINT16("SINT16", Short.BYTES),
-        FFI_TYPE_UINT32("UINT32", Integer.BYTES),
-        FFI_TYPE_SINT32("SINT32", Integer.BYTES),
-        FFI_TYPE_UINT64("UINT64", Long.BYTES),
-        FFI_TYPE_SINT64("SINT64", Long.BYTES),
-        FFI_TYPE_FLOAT("FLOAT", Float.BYTES),
-        FFI_TYPE_DOUBLE("DOUBLE", Double.BYTES),
+        FFI_TYPE_UINT8("UINT8", Byte.BYTES, (byte) 0),
+        FFI_TYPE_SINT8("SINT8", Byte.BYTES, (byte) 0),
+        FFI_TYPE_UINT16("UINT16", Short.BYTES, (short) 0),
+        FFI_TYPE_SINT16("SINT16", Short.BYTES, (short) 0),
+        FFI_TYPE_UINT32("UINT32", Integer.BYTES, 0),
+        FFI_TYPE_SINT32("SINT32", Integer.BYTES, 0),
+        FFI_TYPE_UINT64("UINT64", Long.BYTES, 0L),
+        FFI_TYPE_SINT64("SINT64", Long.BYTES, 0L),
+        FFI_TYPE_FLOAT("FLOAT", Float.BYTES, 0.0f),
+        FFI_TYPE_DOUBLE("DOUBLE", Double.BYTES, 0.0),
         FFI_TYPE_UINT8_ARRAY("[UINT8]", Long.BYTES, true),
         FFI_TYPE_SINT8_ARRAY("[SINT8]", Long.BYTES, true),
         FFI_TYPE_UINT16_ARRAY("[UINT16]", Long.BYTES, true),
@@ -130,7 +130,7 @@ final class FFIType {
          * the user’s responsibility to ensure that the pointer really points to a function with a
          * matching signature.
          */
-        FFI_TYPE_POINTER("POINTER", Long.BYTES), // `void *`
+        FFI_TYPE_POINTER("POINTER", Long.BYTES, true), // `void *`
 
         /*
          * The STRING values passed from native functions to managed code behave like POINTER return
@@ -145,22 +145,28 @@ final class FFIType {
          * passing them to callback function pointers..
          */
         // (mq) This is not something we will be using for the time being.
-        FFI_TYPE_OBJECT("OBJECT", Long.BYTES), // `TruffleObject`
+        FFI_TYPE_OBJECT("OBJECT", Long.BYTES, null), // `TruffleObject`
 
         FFI_TYPE_STRUCT("POINTER", Long.BYTES, true);
 
         private final String nfiType;
         private final int size;
         private final boolean isArray;
+        private final Object initValue;
 
-        FFI_TYPES(String str, int size, boolean isArray) {
+        FFI_TYPES(String str, int size, Object value, boolean isArray) {
             this.nfiType = str;
             this.size = size;
             this.isArray = isArray;
+            this.initValue = value;
         }
 
-        FFI_TYPES(String str, int size) {
-            this(str, size, false);
+        FFI_TYPES(String str, int size, boolean isArray) {
+            this(str, size, null, isArray);
+        }
+
+        FFI_TYPES(String str, int size, Object value) {
+            this(str, size, value, false);
         }
 
         protected int getSize() {
@@ -173,6 +179,10 @@ final class FFIType {
 
         protected String getNFIType() {
             return nfiType;
+        }
+
+        protected Object getInitValue() {
+            return initValue;
         }
     }
 
@@ -220,7 +230,11 @@ final class FFIType {
     }
 
     private static String getNFIType(FFIType type) {
-        return type.type.getNFIType();
+        return type.type.isArray ? "[UINT8]" : type.type.getNFIType();
+    }
+
+    private static String getNFIReturnType(FFIType type) {
+        return type.type.isArray ? "POINTER" : type.type.getNFIType();
     }
 
     protected static String buildNFISignature(FFIType[] atypes, FFIType restype) {
@@ -236,122 +250,101 @@ final class FFIType {
             PythonUtils.append(sb, getNFIType(type));
         }
         PythonUtils.append(sb, "):");
-        PythonUtils.append(sb, getNFIType(restype));
+        PythonUtils.append(sb, getNFIReturnType(restype));
         return PythonUtils.sbToString(sb);
     }
 
-    protected static final int BOOL_TYPE = 1;
-    protected static final int BYTE_TYPE = 2;
-    protected static final int SHORT_TYPE = 4;
-    protected static final int INT_TYPE = 8;
-    protected static final int LONG_TYPE = 16;
-    protected static final int FLOAT_TYPE = 32;
-    protected static final int DOUBLE_TYPE = 64;
-    protected static final int STRING_TYPE = 128;
-    protected static final int OBJECT_TYPE = 256;
-    protected static final int POINTER_TYPE = 512;
-
-    protected static final int BYTE_ARRAY_TYPE = 1024;
-
     enum FieldSet {
-        nil(0),
+        nil(null),
 
-        s_set(BYTE_TYPE), // byte
-        b_set(BYTE_TYPE), // byte
-        B_set(BYTE_TYPE), // byte
-        c_set(BYTE_TYPE), // byte
-        d_set(DOUBLE_TYPE), // double
-        d_set_sw(DOUBLE_TYPE), // double
-        g_set(DOUBLE_TYPE), // double
-        f_set(FLOAT_TYPE), // float
-        f_set_sw(FLOAT_TYPE), // float
-        h_set(SHORT_TYPE), // short
-        h_set_sw(SHORT_TYPE), // short
-        H_set(SHORT_TYPE), // short
-        H_set_sw(SHORT_TYPE), // short
-        i_set(INT_TYPE), // int
-        i_set_sw(INT_TYPE), // int
-        I_set(INT_TYPE), // int
-        I_set_sw(INT_TYPE), // int
-        l_set(LONG_TYPE), // long
-        l_set_sw(LONG_TYPE), // long
-        L_set(LONG_TYPE), // long
-        L_set_sw(LONG_TYPE), // long
-        q_set(LONG_TYPE), // long
-        q_set_sw(LONG_TYPE), // long
-        Q_set(LONG_TYPE), // long
-        Q_set_sw(LONG_TYPE), // long
-        P_set(POINTER_TYPE), // Pointer
-        z_set(BYTE_ARRAY_TYPE), // char *
-        u_set(STRING_TYPE), // String
-        U_set(STRING_TYPE), // String
-        Z_set(BYTE_ARRAY_TYPE), // char *
-        vBOOL_set(BOOL_TYPE), // boolean
-        bool_set(BOOL_TYPE), // boolean
-        O_set(OBJECT_TYPE); // Object
+        s_set(ffi_type_schar), // byte
+        b_set(ffi_type_schar), // byte
+        B_set(ffi_type_uchar), // byte
+        c_set(ffi_type_schar), // byte
+        d_set(ffi_type_double), // double
+        d_set_sw(ffi_type_double), // double
+        g_set(ffi_type_longdouble), // double
+        f_set(ffi_type_float), // float
+        f_set_sw(ffi_type_float), // float
+        h_set(ffi_type_sshort), // short
+        h_set_sw(ffi_type_sshort), // short
+        H_set(ffi_type_ushort), // short
+        H_set_sw(ffi_type_ushort), // short
+        i_set(ffi_type_sint), // int
+        i_set_sw(ffi_type_sint), // int
+        I_set(ffi_type_uint), // int
+        I_set_sw(ffi_type_uint), // int
+        l_set(ffi_type_sint64), // long
+        l_set_sw(ffi_type_sint64), // long
+        L_set(ffi_type_uint64), // long
+        L_set_sw(ffi_type_uint64), // long
+        q_set(ffi_type_sint64), // long
+        q_set_sw(ffi_type_sint64), // long
+        Q_set(ffi_type_uint64), // long
+        Q_set_sw(ffi_type_uint64), // long
+        P_set(ffi_type_pointer), // Pointer
+        z_set(ffi_type_sint8_array), // char *
+        u_set(ffi_type_sint16), // String
+        U_set(ffi_type_sint16_array), // String
+        Z_set(ffi_type_sint16_array), // char *
+        vBOOL_set(ffi_type_sshort), // boolean
+        bool_set(ffi_type_uchar), // boolean
+        O_set(ffi_type_pointer); // Object
 
-        final int type;
+        final FFIType ffiType;
 
-        FieldSet(int type) {
-            this.type = type;
-        }
-
-        boolean isType(int t) {
-            return type == t;
+        FieldSet(FFIType type) {
+            this.ffiType = type;
         }
     }
 
     enum FieldGet {
-        nil(0),
+        nil(null),
 
-        s_get(BYTE_TYPE), // byte
-        b_get(BYTE_TYPE), // byte
-        B_get(BYTE_TYPE), // byte
-        c_get(BYTE_TYPE), // byte
-        d_get(DOUBLE_TYPE), // double
-        d_get_sw(DOUBLE_TYPE), // double
-        g_get(DOUBLE_TYPE), // double
-        f_get(FLOAT_TYPE), // float
-        f_get_sw(FLOAT_TYPE), // float
-        h_get(SHORT_TYPE), // short
-        h_get_sw(SHORT_TYPE), // short
-        H_get(SHORT_TYPE), // short
-        H_get_sw(SHORT_TYPE), // short
-        i_get(INT_TYPE), // int
-        i_get_sw(INT_TYPE), // int
-        I_get(INT_TYPE), // int
-        I_get_sw(INT_TYPE), // int
-        l_get(LONG_TYPE), // long
-        l_get_sw(LONG_TYPE), // long
-        L_get(LONG_TYPE), // long
-        L_get_sw(LONG_TYPE), // long
-        q_get(LONG_TYPE), // long
-        q_get_sw(LONG_TYPE), // long
-        Q_get(LONG_TYPE), // long
-        Q_get_sw(LONG_TYPE), // long
-        P_get(POINTER_TYPE), // Pointer
-        z_get(BYTE_ARRAY_TYPE), // char *
-        u_get(STRING_TYPE), // String
-        U_get(STRING_TYPE), // String
-        Z_get(BYTE_ARRAY_TYPE), // char *
-        vBOOL_get(BOOL_TYPE), // boolean
-        bool_get(BOOL_TYPE), // boolean
-        O_get(OBJECT_TYPE); // Object
+        s_get(ffi_type_schar), // byte
+        b_get(ffi_type_schar), // byte
+        B_get(ffi_type_uchar), // byte
+        c_get(ffi_type_schar), // byte
+        d_get(ffi_type_double), // double
+        d_get_sw(ffi_type_double), // double
+        g_get(ffi_type_longdouble), // double
+        f_get(ffi_type_float), // float
+        f_get_sw(ffi_type_float), // float
+        h_get(ffi_type_sshort), // short
+        h_get_sw(ffi_type_sshort), // short
+        H_get(ffi_type_ushort), // short
+        H_get_sw(ffi_type_ushort), // short
+        i_get(ffi_type_sint), // int
+        i_get_sw(ffi_type_sint), // int
+        I_get(ffi_type_uint), // int
+        I_get_sw(ffi_type_uint), // int
+        l_get(ffi_type_sint64), // long
+        l_get_sw(ffi_type_sint64), // long
+        L_get(ffi_type_uint64), // long
+        L_get_sw(ffi_type_uint64), // long
+        q_get(ffi_type_sint64), // long
+        q_get_sw(ffi_type_sint64), // long
+        Q_get(ffi_type_uint64), // long
+        Q_get_sw(ffi_type_uint64), // long
+        P_get(ffi_type_pointer), // Pointer
+        z_get(ffi_type_sint8_array), // char *
+        u_get(ffi_type_sint16), // String
+        U_get(ffi_type_sint16_array), // String
+        Z_get(ffi_type_sint16_array), // char *
+        vBOOL_get(ffi_type_sshort), // boolean
+        bool_get(ffi_type_uchar), // boolean
+        O_get(ffi_type_pointer); // Object
 
-        final int type;
+        final FFIType ffiType;
 
-        FieldGet(int type) {
-            this.type = type;
-        }
-
-        boolean isType(int t) {
-            return type == t;
+        FieldGet(FFIType type) {
+            this.ffiType = type;
         }
     }
 
     enum FieldDesc {
         // @formatter:off
-        s('s', FieldSet.s_set, FieldGet.s_get, ffi_type_pointer), // String
+        s('s', FieldSet.s_set, FieldGet.s_get, ffi_type_schar), // ASCII String
         b('b', FieldSet.b_set, FieldGet.b_get, ffi_type_schar), // signed char
         B('B', FieldSet.B_set, FieldGet.B_get, ffi_type_uchar), // unsigned char
         c('c', FieldSet.c_set, FieldGet.c_get, ffi_type_schar), // char
@@ -367,10 +360,10 @@ final class FFIType {
         q('q', FieldSet.q_set, FieldGet.q_get, ffi_type_sint64, FieldSet.q_set_sw, FieldGet.q_get_sw), // long long
         Q('Q', FieldSet.Q_set, FieldGet.Q_get, ffi_type_uint64, FieldSet.Q_set_sw, FieldGet.Q_get_sw), // long long
         P('P', FieldSet.P_set, FieldGet.P_get, ffi_type_pointer), // Pointer
-        z('z', FieldSet.z_set, FieldGet.z_get, nfi_type_string), // string
-        u('u', FieldSet.u_set, FieldGet.u_get, nfi_type_string), // wchar_t CTYPES_UNICODE
-        U('U', FieldSet.U_set, FieldGet.U_get, nfi_type_string), // String CTYPES_UNICODE
-        Z('Z', FieldSet.Z_set, FieldGet.Z_get, nfi_type_string), // wchar_t
+        z('z', FieldSet.z_set, FieldGet.z_get, ffi_type_sint8_array), // ASCII String
+        u('u', FieldSet.u_set, FieldGet.u_get, ffi_type_sint16), // wchar_t (2 bytes == Character.BYTES) CTYPES_UNICODE
+        U('U', FieldSet.U_set, FieldGet.U_get, ffi_type_sint16_array), // Unicode String CTYPES_UNICODE
+        Z('Z', FieldSet.Z_set, FieldGet.Z_get, ffi_type_sint16_array), // Unicode String wchar_t
         v('v', FieldSet.vBOOL_set, FieldGet.vBOOL_get, ffi_type_sshort), // short int
         QM('?', FieldSet.bool_set, FieldGet.bool_get, ffi_type_uchar), // _Bool
         O('O', FieldSet.O_set, FieldGet.O_get, ffi_type_pointer); // PyObject

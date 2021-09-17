@@ -57,7 +57,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
@@ -91,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;

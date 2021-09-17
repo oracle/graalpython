@@ -142,7 +142,7 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             setDict.execute((PythonObject) result, stgdict);
             stgdict.align = FieldDesc.P.pffi_type.alignment;
             stgdict.length = 1;
-            stgdict.size = StgDictObject.VOID_PTR_SIZE;
+            stgdict.size = FFIType.ffi_type_pointer.size;
             stgdict.setfunc = FieldSet.nil;
             stgdict.ffi_type_pointer = FFIType.ffi_type_pointer;
 
@@ -166,11 +166,15 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
 
             ob = hlib.getItem(stgdict.getDictStorage(), _restype_);
             if (!PGuards.isPNone(ob)) {
-                if (pyTypeStgDictNode.execute(ob) == null && !lib.isCallable(ob)) {
+                StgDictObject dict = pyTypeStgDictNode.execute(ob);
+                if (dict == null && !lib.isCallable(ob)) {
                     throw raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE1);
                 }
                 stgdict.restype = ob;
                 stgdict.checker = lookupAttr.execute(ob, _check_retval_);
+                if (dict != null) {
+                    stgdict.ffi_type_pointer = dict.ffi_type_pointer.getAsArray();
+                }
             }
 
             return result;

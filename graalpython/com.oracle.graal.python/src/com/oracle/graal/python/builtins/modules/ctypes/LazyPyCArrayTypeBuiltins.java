@@ -155,7 +155,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                 ByteArrayStorage storage = (ByteArrayStorage) self.b_ptr.ptr;
                 storage.memcpy(self.b_ptr.offset, bytes);
             } else {
-                throw raise(NotImplementedError);
+                throw raise(NotImplementedError, "Some storage types aren't supported yet.");
             }
             return PNone.NONE;
         }
@@ -170,7 +170,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
             if (self.b_ptr.isManagedBytes()) {
                 return factory().createBytes(ByteArrayStorage.trim((ByteArrayStorage) self.b_ptr.ptr, self.b_ptr.offset));
             } else {
-                throw raise(NotImplementedError);
+                throw raise(NotImplementedError, "Some storage types aren't supported yet.");
             }
         }
 
@@ -186,7 +186,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                 ByteArrayStorage storage = (ByteArrayStorage) self.b_ptr.ptr;
                 storage.memcpy(self.b_ptr.offset, getBytes.execute(value.getSequenceStorage()));
             } else {
-                throw raise(NotImplementedError);
+                throw raise(NotImplementedError, "Some storage types aren't supported yet.");
             }
             return PNone.NONE;
         }

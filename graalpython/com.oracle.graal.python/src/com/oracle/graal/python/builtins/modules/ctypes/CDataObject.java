@@ -40,13 +40,22 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
+import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.DeRefHandleNode;
 import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public class CDataObject extends PythonBuiltinObject {
@@ -77,6 +86,10 @@ public class CDataObject extends PythonBuiltinObject {
     public CDataObject(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
         this.b_ptr = new PtrValue();
+    }
+
+    protected static CDataObjectWrapper createWrapper(StgDictObject dictObject, byte[] storage) {
+        return new CDataObjectWrapper(dictObject, storage);
     }
 
     @ExportMessage
@@ -134,4 +147,109 @@ public class CDataObject extends PythonBuiltinObject {
             NULL,
     };
     */
+
+    @SuppressWarnings("static-method")
+    @ExportLibrary(InteropLibrary.class)
+    @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
+    public static class CDataObjectWrapper implements TruffleObject {
+
+        final byte[] storage;
+        final StgDictObject stgDict;
+
+        Object nativePointer;
+
+        public CDataObjectWrapper(StgDictObject stgDict, byte[] storage) {
+            this.storage = storage;
+            assert stgDict != null;
+            this.stgDict = stgDict;
+            this.nativePointer = null;
+        }
+
+        private int getIndex(String field) {
+            for (int i = 0; i < this.stgDict.fieldsNames.length; i++) {
+                if (PString.equals(this.stgDict.fieldsNames[i], field)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        @ExportMessage
+        boolean hasMembers() {
+            return this.stgDict.fieldsNames.length > 0;
+        }
+
+        @ExportMessage
+        String[] getMembers(@SuppressWarnings("unused") boolean includeInternal) {
+            return this.stgDict.fieldsNames;
+        }
+
+        @ExportMessage
+        boolean isMemberReadable(String member) {
+            return getIndex(member) != -1;
+        }
+
+        @ExportMessage
+        final boolean isMemberModifiable(String member) {
+            return isMemberReadable(member);
+        }
+
+        @ExportMessage
+        final boolean isMemberInsertable(@SuppressWarnings("unused") String member) {
+            return false;
+        }
+
+        @ExportMessage
+        Object readMember(String member) throws UnknownIdentifierException {
+            int idx = getIndex(member);
+            if (idx != -1) {
+                return CtypesNodes.getValue(stgDict.fieldsTypes[idx], storage, stgDict.fieldsOffsets[idx]);
+            }
+            throw UnknownIdentifierException.create(member);
+        }
+
+        @ExportMessage
+        void writeMember(String member, Object value) throws UnknownIdentifierException {
+            int idx = getIndex(member);
+            if (idx != -1) {
+                CtypesNodes.setValue(stgDict.fieldsTypes[idx], storage, stgDict.fieldsOffsets[idx], value);
+                return;
+            }
+            throw UnknownIdentifierException.create(member);
+        }
+
+        @ExportMessage
+        boolean isPointer() {
+            return nativePointer != null;
+        }
+
+        @ExportMessage
+        long asPointer(
+                        @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
+            return lib.asPointer(nativePointer);
+        }
+
+        @ExportMessage
+        void toNative(
+                        @Cached DeRefHandleNode deRefHandleNode) {
+            if (nativePointer == null) {
+                nativePointer = deRefHandleNode.execute(this);
+            }
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        boolean hasNativeType() {
+            // TODO implement native type
+            return false;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        Object getNativeType() {
+            // TODO implement native type
+            return null;
+        }
+    }
+
 }
