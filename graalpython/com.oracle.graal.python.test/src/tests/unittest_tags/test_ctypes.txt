@@ -7,6 +7,7 @@
 *ctypes.test.test_arrays.ArrayTestCase.test_empty_element_array
 *ctypes.test.test_arrays.ArrayTestCase.test_empty_element_struct
 *ctypes.test.test_arrays.ArrayTestCase.test_large_array
+*ctypes.test.test_arrays.ArrayTestCase.test_simple
 *ctypes.test.test_arrays.ArrayTestCase.test_subclass
 *ctypes.test.test_arrays.ArrayTestCase.test_zero_length
 *ctypes.test.test_as_parameter.AsParamPropertyWrapperTestCase.test_recursive_as_param
@@ -25,6 +26,7 @@
 *ctypes.test.test_bitfields.BitFieldTest.test_single_bitfield_size
 *ctypes.test.test_bitfields.BitFieldTest.test_uint32
 *ctypes.test.test_buffers.StringBufferTestCase.test_buffer
+*ctypes.test.test_buffers.StringBufferTestCase.test_create_unicode_buffer_non_bmp
 *ctypes.test.test_bytes.BytesTest.test_BSTR
 *ctypes.test.test_bytes.BytesTest.test_c_char_p
 *ctypes.test.test_bytes.BytesTest.test_c_wchar_p
@@ -56,7 +58,9 @@
 *ctypes.test.test_callbacks.StdcallCallbacks.test_unsupported_restype_1
 *ctypes.test.test_callbacks.StdcallCallbacks.test_unsupported_restype_2
 *ctypes.test.test_callbacks.StdcallCallbacks.test_ushort
+*ctypes.test.test_cast.Test.test_array2pointer
 *ctypes.test.test_cast.Test.test_bad_type_arg
+*ctypes.test.test_cast.Test.test_other
 *ctypes.test.test_cast.Test.test_wchar_p
 *ctypes.test.test_cfuncs.stdcallCFunctions.test_byte
 *ctypes.test.test_cfuncs.stdcallCFunctions.test_byte_plus
@@ -97,6 +101,8 @@
 *ctypes.test.test_find.Test_OpenGL_libs.test_shell_injection
 *ctypes.test.test_frombuffer.Test.test_abstract
 *ctypes.test.test_frombuffer.Test.test_fortran_contiguous
+*ctypes.test.test_frombuffer.Test.test_from_buffer_copy
+*ctypes.test.test_frombuffer.Test.test_from_buffer_copy_with_offset
 *ctypes.test.test_frombuffer.Test.test_from_buffer_memoryview
 *ctypes.test.test_funcptr.CFuncPtrTestCase.test_abstract
 *ctypes.test.test_functions.FunctionTestCase.test_doubleresult
@@ -108,6 +114,7 @@
 *ctypes.test.test_functions.FunctionTestCase.test_struct_return_2H_stdcall
 *ctypes.test.test_functions.FunctionTestCase.test_struct_return_8H_stdcall
 *ctypes.test.test_functions.FunctionTestCase.test_wchar_parm
+*ctypes.test.test_functions.FunctionTestCase.test_wchar_result
 *ctypes.test.test_internals.ObjectsTestCase.test_embedded_structs
 *ctypes.test.test_internals.ObjectsTestCase.test_ptr_struct
 *ctypes.test.test_internals.ObjectsTestCase.test_simple_struct
@@ -174,6 +181,8 @@
 *ctypes.test.test_sizes.SizesTestCase.test_size_t
 *ctypes.test.test_sizes.SizesTestCase.test_ssize_t
 *ctypes.test.test_slicing.SlicesTestCase.test_char_array
+*ctypes.test.test_slicing.SlicesTestCase.test_getslice_cint
+*ctypes.test.test_slicing.SlicesTestCase.test_setslice_cint
 *ctypes.test.test_stringptr.StringPtrTestCase.test__POINTER_c_char
 *ctypes.test.test_strings.StringArrayTestCase.test_c_buffer_raw
 *ctypes.test.test_strings.StringArrayTestCase.test_c_buffer_value
@@ -193,6 +202,7 @@
 *ctypes.test.test_struct_fields.StructFieldsTestCase.test_2
 *ctypes.test.test_struct_fields.StructFieldsTestCase.test_3
 *ctypes.test.test_struct_fields.StructFieldsTestCase.test_4
+*ctypes.test.test_structures.StructureTestCase.test_38368
 *ctypes.test.test_structures.StructureTestCase.test_abstract_class
 *ctypes.test.test_structures.StructureTestCase.test_bitfield_by_value
 *ctypes.test.test_structures.StructureTestCase.test_conflicting_initializers
@@ -201,6 +211,7 @@
 *ctypes.test.test_structures.StructureTestCase.test_initializers
 *ctypes.test.test_structures.StructureTestCase.test_invalid_field_types
 *ctypes.test.test_structures.StructureTestCase.test_invalid_name
+*ctypes.test.test_structures.StructureTestCase.test_keyword_initializers
 *ctypes.test.test_structures.StructureTestCase.test_methods
 *ctypes.test.test_structures.StructureTestCase.test_packed_c_limits
 *ctypes.test.test_structures.StructureTestCase.test_struct_alignment

@@ -418,8 +418,6 @@ public final class PythonContext {
 
     // ctypes' used native libraries/functions.
     private final ConcurrentHashMap<Long, Object> ptrAdrMap = new ConcurrentHashMap<>();
-    @CompilationFinal private Object strlenFunction; // ctypes NFI backend helper
-    @CompilationFinal private Object memcpyFunction; // ctypes NFI backend helper
 
     @CompilationFinal private PosixSupport posixSupport;
     @CompilationFinal private NFIZlibSupport nativeZlib;
@@ -967,20 +965,6 @@ public final class PythonContext {
 
     public ConcurrentHashMap<Long, Object> getCtypesAdrMap() {
         return ptrAdrMap;
-    }
-
-    public Object getStrlenFunction() {
-        return strlenFunction;
-    }
-
-    public Object getMemcpyFunction() {
-        return memcpyFunction;
-    }
-
-    public void setCtypesNFIHelpers(Object strlen, Object memcpy) {
-        assert strlenFunction == null && memcpyFunction == null : "Ctypes NFI helper should only be set once";
-        strlenFunction = strlen;
-        memcpyFunction = memcpy;
     }
 
     public TruffleLanguage.Env getEnv() {

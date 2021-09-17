@@ -495,6 +495,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 }
             }
             CtypesThreadState state = CtypesThreadState.get(getContext(), PythonLanguage.get(this));
+            CtypesModuleBuiltins ctypesModuleBuiltins = (CtypesModuleBuiltins) getContext().getCore().lookupBuiltinModule("_ctypes").getBuiltins();
             Object result = callProcNode.execute(frame, pProc,
                             callargs,
                             dict.flags,
@@ -504,7 +505,8 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                             checker,
                             state,
                             factory(),
-                            getContext());
+                            getContext(),
+                            ctypesModuleBuiltins);
             /* The 'errcheck' protocol */
             if (result != null && errcheck != null) {
                 Object v = callNode.execute(frame, errcheck, result, self, callargs);
