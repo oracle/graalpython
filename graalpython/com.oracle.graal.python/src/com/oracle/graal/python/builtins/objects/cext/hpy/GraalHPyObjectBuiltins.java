@@ -117,7 +117,6 @@ public abstract class GraalHPyObjectBuiltins {
     @Builtin(name = SpecialMethodNames.__NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     abstract static class HPyObjectNewNode extends PythonVarargsBuiltinNode {
         private static final String KW_SUPER_CONSTRUCTOR = "$supercons";
-        private static final String[] KEYWORDS_HIDDEN_CALLABLE = {KW_SUPER_CONSTRUCTOR};
 
         private static PKeyword[] createKwDefaults(Object superConstructor) {
             if (superConstructor != null) {
@@ -200,7 +199,7 @@ public abstract class GraalHPyObjectBuiltins {
         }
 
         @SuppressWarnings("unused")
-        private Object extractInheritedConstructor(Object[] arguments, PKeyword[] keywords) {
+        private static Object extractInheritedConstructor(Object[] arguments, PKeyword[] keywords) {
             // TODO(fa): not yet implemented
             return null;
         }
