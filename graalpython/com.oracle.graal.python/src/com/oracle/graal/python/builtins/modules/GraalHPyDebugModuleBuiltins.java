@@ -46,12 +46,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Queue;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltinsClinicProviders.HPyDebugSetClosedHandlesQueueMaxSizeNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
@@ -60,16 +65,20 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PDebugHandle;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -119,7 +128,8 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_open_handles", minNumOfPositionalArgs = 1)
+    @Builtin(name = "get_open_handles", minNumOfPositionalArgs = 1, //
+                    doc = "Return a list containing all the open handles whose generation is >= of the given arg")
     @GenerateNodeFactory
     abstract static class HPyDebugGetOpenHandlesNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -136,11 +146,63 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
             openHandles.sort(Comparator.comparingLong(debugContext::getDebugHandleInfo));
             Object[] result = new Object[n];
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            // do reverse order to match order expected by HPy tests
             for (int i = 0; i < n; i++) {
-                result[n - 1 - i] = factory.createDebugHandle(openHandles.get(i));
+                result[i] = factory.createDebugHandle(openHandles.get(i));
             }
             return result;
+        }
+    }
+
+    @Builtin(name = "get_closed_handles", //
+                    doc = "Return a list of all the closed handle in the cache")
+    @GenerateNodeFactory
+    abstract static class HPyDebugGetClosedHandlesNode extends PythonBuiltinNode {
+        @Specialization
+        PList doInt(VirtualFrame frame) {
+            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this);
+            return factory().createList(getClosedDebugHandles(hpyDebugContext));
+        }
+
+        @TruffleBoundary
+        private static Object[] getClosedDebugHandles(GraalHPyDebugContext debugContext) {
+            Queue<GraalHPyHandle> openHandles = debugContext.getClosedHandles();
+            int n = openHandles.size();
+            Object[] result = new Object[n];
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            int i = 0;
+            for (GraalHPyHandle handle : openHandles) {
+                result[i++] = factory.createDebugHandle(handle);
+            }
+            return result;
+        }
+    }
+
+    @Builtin(name = "get_closed_handles_queue_max_size", //
+                    doc = "Return the maximum size of the closed handles queue")
+    @GenerateNodeFactory
+    abstract static class HPyDebugGetClosedHandlesQueueMaxSizeNode extends PythonBuiltinNode {
+        @Specialization
+        int doInt(VirtualFrame frame) {
+            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this);
+            return hpyDebugContext.getClosedHandlesQueueMaxSize();
+        }
+    }
+
+    @Builtin(name = "set_closed_handles_queue_max_size", minNumOfPositionalArgs = 1, parameterNames = {"size"}, //
+                    doc = "Set the maximum size of the closed handles queue")
+    @ArgumentClinic(name = "size", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class HPyDebugSetClosedHandlesQueueMaxSizeNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return HPyDebugSetClosedHandlesQueueMaxSizeNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone doInt(VirtualFrame frame, int size) {
+            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this);
+            hpyDebugContext.setClosedHandlesQueueMaxSize(size);
+            return PNone.NONE;
         }
     }
 
@@ -164,4 +226,19 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "set_on_invalid_handle", //
+                    doc = "Set the function to call when we detect the usage of an invalid handle")
+    @GenerateNodeFactory
+    abstract static class HPyDebugSetOnInvalidHandleNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PNone doInt(VirtualFrame frame, Object callback,
+                        @Cached PyCallableCheckNode callableCheckNode) {
+            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this);
+            if (!callableCheckNode.execute(frame, callback)) {
+                throw raise(TypeError, "Expected a callable object");
+            }
+            hpyDebugContext.setOnInvalidHandleCallback(callback);
+            return PNone.NONE;
+        }
+    }
 }

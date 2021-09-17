@@ -2,7 +2,7 @@
 {
   "name":"com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext",
   "methods":[
-    {"name":"ctxCast","parameterTypes":["long"] }, 
+    {"name":"ctxAsStruct","parameterTypes":["long"] }, 
     {"name":"ctxClose","parameterTypes":["long"] }, 
     {"name":"ctxDictNew","parameterTypes":[] }, 
     {"name":"ctxDup","parameterTypes":["long"] }, 

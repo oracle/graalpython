@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2021, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,21 +22,16 @@
  * SOFTWARE.
  */
 
-#ifndef HPY_COMMON_RUNTIME_TUPLEBUILDER_H
-#define HPY_COMMON_RUNTIME_TUPLEBUILDER_H
-
 #include <Python.h>
 #include "hpy.h"
-#include "common/hpytype.h"
+#include "hpy/runtime/ctx_funcs.h"
 
+#ifdef HPY_UNIVERSAL_ABI
+   // for _h2py and _py2h
+#  include "handles.h"
+#endif
 
-_HPy_HIDDEN HPyTupleBuilder ctx_TupleBuilder_New(HPyContext ctx,
-                                                 HPy_ssize_t initial_size);
-_HPy_HIDDEN void ctx_TupleBuilder_Set(HPyContext ctx, HPyTupleBuilder builder,
-                                      HPy_ssize_t index, HPy h_item);
-_HPy_HIDDEN HPy ctx_TupleBuilder_Build(HPyContext ctx, HPyTupleBuilder builder);
-_HPy_HIDDEN void ctx_TupleBuilder_Cancel(HPyContext ctx,
-                                         HPyTupleBuilder builder);
-
-
-#endif /* HPY_COMMON_RUNTIME_TUPLEBUILDER_H */
+_HPy_HIDDEN int
+ctx_Err_Occurred(HPyContext *ctx) {
+    return PyErr_Occurred() ? 1 : 0;
+}

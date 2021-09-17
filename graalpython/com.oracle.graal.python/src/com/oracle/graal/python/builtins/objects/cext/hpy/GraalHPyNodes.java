@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_NEW;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_GETSET;
@@ -51,6 +52,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MEMBER_GET_TYPE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_METH_GET_SIGNATURE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_SLOT_GET_SLOT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT;
 
 import java.math.BigInteger;
@@ -102,14 +104,20 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -1184,7 +1192,7 @@ public class GraalHPyNodes {
         @Specialization(guards = "isBoxedNullHandle(bits)")
         @SuppressWarnings("unused")
         static Object doNullLong(GraalHPyContext hpyContext, long bits) {
-            return null;
+            return GraalHPyHandle.NULL_HANDLE_DELEGATE;
         }
 
         @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
@@ -1221,7 +1229,7 @@ public class GraalHPyNodes {
         static Object doNullOther(GraalHPyContext hpyContext, Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") long bits) {
-            return null;
+            return GraalHPyHandle.NULL_HANDLE_DELEGATE;
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
@@ -1256,6 +1264,10 @@ public class GraalHPyNodes {
     @ImportStatic(GraalHPyBoxing.class)
     public abstract static class HPyAsPythonObjectNode extends CExtToJavaNode {
 
+        static Assumption noDebugModeAssumption() {
+            return PythonLanguage.get(null).noHPyDebugModeAssumption;
+        }
+
         protected final GraalHPyContext ensureContext(GraalHPyContext hpyContext) {
             if (hpyContext == null) {
                 return getContext().getHPyContext();
@@ -1266,15 +1278,23 @@ public class GraalHPyNodes {
 
         public abstract Object execute(GraalHPyContext hpyContext, long bits);
 
-        @Specialization
+        @Specialization(assumptions = "noDebugModeAssumption()")
         static Object doHandle(@SuppressWarnings("unused") GraalHPyContext hpyContext, GraalHPyHandle handle) {
+            return handle.getDelegate();
+        }
+
+        @Specialization(replaces = "doHandle")
+        static Object doValidHandle(GraalHPyContext hpyContext, GraalHPyHandle handle) {
+            if (!handle.isValid()) {
+                hpyContext.onInvalidHandle(handle.getDebugId());
+            }
             return handle.getDelegate();
         }
 
         @Specialization(guards = "isBoxedNullHandle(bits)")
         @SuppressWarnings("unused")
         static Object doNullLong(GraalHPyContext hpyContext, long bits) {
-            return PNone.NO_VALUE;
+            return GraalHPyHandle.NULL_HANDLE_DELEGATE;
         }
 
         @Specialization(guards = {"!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
@@ -1306,7 +1326,7 @@ public class GraalHPyNodes {
         static Object doNullOther(@SuppressWarnings("unused") GraalHPyContext hpyContext, @SuppressWarnings("unused") Object value,
                         @Shared("lib") @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary lib,
                         @Bind("asPointer(value, lib)") @SuppressWarnings("unused") long bits) {
-            return PNone.NO_VALUE;
+            return GraalHPyHandle.NULL_HANDLE_DELEGATE;
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
@@ -1836,6 +1856,7 @@ public class GraalHPyNodes {
      *     } HPyType_Spec;
      * </pre>
      */
+    @ImportStatic(SpecialMethodSlot.class)
     @GenerateUncached
     abstract static class HPyCreateTypeFromSpecNode extends Node {
 
@@ -1858,7 +1879,9 @@ public class GraalHPyNodes {
                         @Cached HPyCreateSlotNode addSlotNode,
                         @Cached HPyCreateLegacySlotNode createLegacySlotNode,
                         @Cached HPyCreateGetSetDescriptorNode createGetSetDescriptorNode,
-                        @Cached ReadAttributeFromObjectNode readNewNode,
+                        @Cached GetSuperClassNode getSuperClassNode,
+                        @Cached IsSameTypeNode isSameTypeNode,
+                        @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNewNode,
                         @Cached HPyAsPythonObjectNode hPyAsPythonObjectNode,
                         @Cached PRaiseNode raiseNode) {
 
@@ -1903,6 +1926,10 @@ public class GraalHPyNodes {
 
                 // store flags, basicsize, and itemsize to type
                 long flags = castToLong(valueLib, ptrLib.readMember(typeSpec, "flags"));
+                if ((flags & GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE) != 0) {
+                    throw raiseNode.raise(TypeError, "HPy_TPFLAGS_INTERNAL_PURE should not be used directly, set .legacy=true instead");
+                }
+
                 long basicSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "basicsize"));
                 long itemSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "itemsize"));
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_ITEMSIZE, itemSize);
@@ -1913,6 +1940,8 @@ public class GraalHPyNodes {
                     clazz.flags = flags;
                     clazz.itemSize = itemSize;
                 }
+
+                boolean seenNew = false;
 
                 // process defines
                 Object defines = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_GET_DEFINES, typeSpec);
@@ -1936,6 +1965,9 @@ public class GraalHPyNodes {
                             case GraalHPyDef.HPY_DEF_KIND_SLOT:
                                 Object slotDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_SLOT, moduleDefine);
                                 property = addSlotNode.execute(context, newType, slotDef);
+                                if (property != null && SpecialMethodNames.__NEW__.equals(property.key)) {
+                                    seenNew = true;
+                                }
                                 break;
                             case GraalHPyDef.HPY_DEF_KIND_MEMBER:
                                 Object memberDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_MEMBER, moduleDefine);
@@ -1970,11 +2002,22 @@ public class GraalHPyNodes {
                 }
 
                 /*
-                 * Ensure that we don't use 'object.__new__' because that would not allocate the
-                 * native space if a basicsize is given.
+                 * If 'basicsize > 0' and no explicit constructor is given, the constructor of the
+                 * object needs to allocate the native space for the object. However, the inherited
+                 * constructors won't usually do that. So, we compute the constructor here and
+                 * decorate it.
                  */
-                if (readNewNode.execute(newType, SpecialMethodNames.__NEW__) == PNone.NO_VALUE) {
-                    writeAttributeToObjectNode.execute(newType, SpecialMethodNames.__NEW__, HPyObjectNewNode.createBuiltinFunction(PythonLanguage.get(raiseNode)));
+                if (basicSize > 0 && !seenNew) {
+                    Object inheritedConstructor = null;
+
+                    Object baseClass = getSuperClassNode.execute(newType);
+                    if (!isSameTypeNode.execute(baseClass, PythonBuiltinClassType.PythonObject)) {
+                        // Lookup the inherited constructor and pass it to the HPy decorator.
+                        inheritedConstructor = lookupNewNode.execute(baseClass);
+                    }
+
+                    PBuiltinFunction constructorDecorator = HPyObjectNewNode.createBuiltinFunction(PythonLanguage.get(raiseNode), inheritedConstructor);
+                    writeAttributeToObjectNode.execute(newType, SpecialMethodNames.__NEW__, constructorDecorator);
                 }
 
                 return newType;
@@ -2018,7 +2061,7 @@ public class GraalHPyNodes {
                 Object specParam = ptrLib.readArrayElement(typeSpecParamArray, i);
                 // TODO(fa): directly read member as soon as this is supported by Sulong.
                 // Currently, we cannot pass struct-by-value via interop.
-                int specParamKind = castToJavaIntNode.execute(ptrLib.readMember(specParam, "kind"));
+                int specParamKind = castToJavaIntNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_KIND, specParam));
                 Object specParamObject = asPythonObjectNode.execute(context, callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT, specParam));
 
                 switch (specParamKind) {
@@ -2069,20 +2112,26 @@ public class GraalHPyNodes {
         }
     }
 
-    @ImportStatic(PythonOptions.class)
     @GenerateUncached
     public abstract static class HPyGetNativeSpacePointerNode extends Node {
 
         public abstract Object execute(Object object);
 
         @Specialization
-        static Object doDynamicObject(PythonHPyObject object) {
+        static Object doPythonHPyObject(PythonHPyObject object) {
             return object.getHPyNativeSpace();
         }
 
+        @Specialization
+        static Object doPythonHPyObject(PythonObject object,
+                        @Cached ReadAttributeFromDynamicObjectNode readNativeSpaceNode) {
+            return readNativeSpaceNode.execute(object.getStorage(), GraalHPyDef.OBJECT_HPY_NATIVE_SPACE);
+        }
+
         @Fallback
-        static Object doDynamicObject(@SuppressWarnings("unused") Object object) {
-            return PNone.NO_VALUE;
+        static Object doOther(Object object,
+                        @Cached ReadAttributeFromObjectNode readNativeSpaceNode) {
+            return readNativeSpaceNode.execute(object, GraalHPyDef.OBJECT_HPY_NATIVE_SPACE);
         }
     }
 

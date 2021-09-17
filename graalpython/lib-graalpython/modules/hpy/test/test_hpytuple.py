@@ -28,7 +28,7 @@ class TestTuple(HPyTest):
     def test_Check(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 if (HPyTuple_Check(ctx, arg))
                     return HPy_Dup(ctx, ctx->h_True);
@@ -47,7 +47,7 @@ class TestTuple(HPyTest):
     def test_FromArray(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 HPy x = HPyLong_FromLong(ctx, 42);
                 if (HPy_IsNull(x))
@@ -65,7 +65,7 @@ class TestTuple(HPyTest):
     def test_Pack(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 HPy x = HPyLong_FromLong(ctx, 42);
                 if (HPy_IsNull(x))
@@ -82,7 +82,7 @@ class TestTuple(HPyTest):
     def test_TupleBuilder(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy h_self, HPy h_arg)
+            static HPy f_impl(HPyContext *ctx, HPy h_self, HPy h_arg)
             {
                 HPyTupleBuilder builder = HPyTupleBuilder_New(ctx, 3);
                 HPyTupleBuilder_Set(ctx, builder, 0, h_arg);

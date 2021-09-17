@@ -42,6 +42,7 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -66,23 +67,35 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 @ExportLibrary(PythonNativeWrapperLibrary.class)
 public final class GraalHPyHandle implements TruffleObject {
+    private static final int UNINITIALIZED = Integer.MIN_VALUE;
 
+    public static final Object NULL_HANDLE_DELEGATE = PNone.NO_VALUE;
     public static final GraalHPyHandle NULL_HANDLE = new GraalHPyHandle();
     public static final String I = "_i";
 
     private final Object delegate;
+    /**
+     * The ID of the handle if it was allocated in the handle table.
+     * <p>
+     * The value also encodes the state:<br/>
+     * (1) If the value is {@link #UNINITIALIZED}, then the handle was never allocated in the handle
+     * table.<br/>
+     * (2) If the value is zero or positive then this is the index for the handle table. If the<br/>
+     * (3) If the value is negative but not {@link #UNINITIALIZED} then the handle was already
+     * closed (only used in HPy debug mode)<br/>
+     * </p>
+     */
     private int id;
 
     private GraalHPyHandle() {
-        // used only for the NULL handle
-        this.delegate = null;
+        this.delegate = NULL_HANDLE_DELEGATE;
         this.id = 0;
     }
 
     GraalHPyHandle(Object delegate) {
         assert delegate != null : "HPy handles to Java null are not allowed";
         this.delegate = delegate;
-        this.id = -1;
+        this.id = UNINITIALIZED;
     }
 
     /**
@@ -101,17 +114,24 @@ public final class GraalHPyHandle implements TruffleObject {
 
     public int getIdDebug(GraalHPyContext context) {
         int result = id;
-        if (id == -1) {
+        if (id == UNINITIALIZED) {
             result = context.getHPyHandleForObject(this);
             id = result;
         }
         return result;
     }
 
+    int getDebugId() {
+        if (id >= 0) {
+            return id;
+        }
+        return -id;
+    }
+
     @ExportMessage
     boolean isPointer(
                     @Exclusive @Cached ConditionProfile isNativeProfile) {
-        return isNativeProfile.profile(id != -1 || delegate instanceof Integer || delegate instanceof Double);
+        return isNativeProfile.profile(id >= 0 || delegate instanceof Integer || delegate instanceof Double);
     }
 
     @ExportMessage
@@ -122,7 +142,7 @@ public final class GraalHPyHandle implements TruffleObject {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnsupportedMessageException.create();
         }
-        if (id != -1) {
+        if (id != UNINITIALIZED) {
             return GraalHPyBoxing.boxHandle(id);
         } else if (delegate instanceof Integer) {
             return GraalHPyBoxing.boxInt((Integer) delegate);
@@ -227,16 +247,25 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     boolean isAllocated() {
+        return id != UNINITIALIZED && id != 0;
+    }
+
+    boolean isValid() {
         return id > 0;
     }
 
     void closeAndInvalidate(GraalHPyContext hpyContext) {
-        assert id != -1;
-        hpyContext.releaseHPyHandleForObject(id);
-        id = -1;
+        assert id != UNINITIALIZED;
+        if (hpyContext.releaseHPyHandleForObject(id)) {
+            id = -id;
+        }
     }
 
     public GraalHPyHandle copy() {
         return new GraalHPyHandle(delegate);
+    }
+
+    static boolean wasAllocated(int id) {
+        return id != UNINITIALIZED;
     }
 }

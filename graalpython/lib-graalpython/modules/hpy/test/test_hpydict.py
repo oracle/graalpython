@@ -28,7 +28,7 @@ class TestDict(HPyTest):
     def test_Check(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 if (HPyDict_Check(ctx, arg))
                     return HPy_Dup(ctx, ctx->h_True);
@@ -47,7 +47,7 @@ class TestDict(HPyTest):
     def test_New(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_NOARGS)
-            static HPy f_impl(HPyContext ctx, HPy self)
+            static HPy f_impl(HPyContext *ctx, HPy self)
             {
                 return HPyDict_New(ctx);
             }
@@ -59,7 +59,7 @@ class TestDict(HPyTest):
     def test_set_item(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 HPy dict = HPyDict_New(ctx);
                 if (HPy_IsNull(dict))
@@ -78,7 +78,7 @@ class TestDict(HPyTest):
     def test_get_item(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
-            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            static HPy f_impl(HPyContext *ctx, HPy self, HPy arg)
             {
                 HPy key = HPyUnicode_FromString(ctx, "hello");
                 if (HPy_IsNull(key))

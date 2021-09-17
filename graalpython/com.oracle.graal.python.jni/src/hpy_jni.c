@@ -60,14 +60,14 @@
 #include <jni.h>
 
 /* definitions for HPyTracker */
-#include "common/runtime/ctx_tracker.h"
+#include "hpy/runtime/ctx_funcs.h"
 
 static JNIEnv* jniEnv;
 
 #define ALL_UPCALLS \
     UPCALL(New, SIG_HPY SIG_PTR, SIG_HPY) \
     UPCALL(TypeGenericNew, SIG_HPY, SIG_HPY) \
-    UPCALL(Cast, SIG_HPY, SIG_PTR) \
+    UPCALL(AsStruct, SIG_HPY, SIG_PTR) \
     UPCALL(Close, SIG_HPY, SIG_VOID) \
     UPCALL(FloatFromDouble, SIG_DOUBLE, SIG_HPY) \
     UPCALL(FloatAsDouble, SIG_HPY, SIG_DOUBLE) \
@@ -109,75 +109,75 @@ ALL_UPCALLS
 #define CONTEXT_INSTANCE(_hpy_ctx) ((jobject)(graal_hpy_context_get_native_context(_hpy_ctx)->jni_context))
 
 
-static void *ctx_Cast_jni(HPyContext ctx, HPy h) {
-    return DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), Cast, HPY_UP(h));
+static void *ctx_AsStruct_jni(HPyContext *ctx, HPy h) {
+    return DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), AsStruct, HPY_UP(h));
 }
 
-static HPy ctx_FloatFromDouble_jni(HPyContext ctx, double v) {
+static HPy ctx_FloatFromDouble_jni(HPyContext *ctx, double v) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), FloatFromDouble, (DOUBLE_UP) v);
 }
 
-static double ctx_FloatAsDouble_jni(HPyContext ctx, HPy h) {
+static double ctx_FloatAsDouble_jni(HPyContext *ctx, HPy h) {
     return DO_UPCALL_DOUBLE(CONTEXT_INSTANCE(ctx), FloatAsDouble, HPY_UP(h));
 }
 
-static long ctx_LongAsLong_jni(HPyContext ctx, HPy h) {
+static long ctx_LongAsLong_jni(HPyContext *ctx, HPy h) {
     return DO_UPCALL_LONG(CONTEXT_INSTANCE(ctx), LongAsLong, HPY_UP(h));
 }
 
-static HPy ctx_LongFromLong_jni(HPyContext ctx, long l) {
+static HPy ctx_LongFromLong_jni(HPyContext *ctx, long l) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), LongFromLong, l);
 }
 
-static HPy ctx_New_jni(HPyContext ctx, HPy type, void** data) {
+static HPy ctx_New_jni(HPyContext *ctx, HPy type, void** data) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), New, HPY_UP(type), (SIZE_T_UP) data);
 }
 
-static HPy ctx_GetItemi_jni(HPyContext ctx, HPy obj, HPy_ssize_t idx) {
+static HPy ctx_GetItemi_jni(HPyContext *ctx, HPy obj, HPy_ssize_t idx) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetItemi, HPY_UP(obj), (SIZE_T_UP) idx);
 }
 
-static int ctx_SetItemi_jni(HPyContext ctx, HPy obj, HPy_ssize_t idx, HPy value) {
+static int ctx_SetItemi_jni(HPyContext *ctx, HPy obj, HPy_ssize_t idx, HPy value) {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), SetItemi, HPY_UP(obj), (SIZE_T_UP) idx, HPY_UP(value));
 }
 
-static int ctx_SetItem_jni(HPyContext ctx, HPy obj, HPy key, HPy value) {
+static int ctx_SetItem_jni(HPyContext *ctx, HPy obj, HPy key, HPy value) {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), SetItem, HPY_UP(obj), HPY_UP(key), HPY_UP(value));
 }
 
-static void ctx_Close_jni(HPyContext ctx, HPy h) {
+static void ctx_Close_jni(HPyContext *ctx, HPy h) {
     DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), Close, HPY_UP(h));
 }
 
-static HPy ctx_Dup_jni(HPyContext ctx, HPy h) {
+static HPy ctx_Dup_jni(HPyContext *ctx, HPy h) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), Dup, HPY_UP(h));
 }
 
-static int ctx_NumberCheck_jni(HPyContext ctx, HPy obj) {
+static int ctx_NumberCheck_jni(HPyContext *ctx, HPy obj) {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), NumberCheck, HPY_UP(obj));
 }
 
-static int ctx_ListCheck_jni(HPyContext ctx, HPy obj) {
+static int ctx_ListCheck_jni(HPyContext *ctx, HPy obj) {
     return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ListCheck, HPY_UP(obj));
 }
 
-static HPy_ssize_t ctx_Length_jni(HPyContext ctx, HPy obj) {
+static HPy_ssize_t ctx_Length_jni(HPyContext *ctx, HPy obj) {
     return DO_UPCALL_SIZE_T(CONTEXT_INSTANCE(ctx), Length, HPY_UP(obj));
 }
 
-static HPy ctx_TypeGenericNew_jni(HPyContext ctx, HPy type, _HPyPtr args, HPy_ssize_t nargs, HPy kw) {
+static HPy ctx_TypeGenericNew_jni(HPyContext *ctx, HPy type, _HPyPtr args, HPy_ssize_t nargs, HPy kw) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), TypeGenericNew, HPY_UP(type));
 }
 
-static HPy ctx_Unicode_FromWideChar_jni(HPyContext ctx, const wchar_t *arr, HPy_ssize_t idx) {
+static HPy ctx_Unicode_FromWideChar_jni(HPyContext *ctx, const wchar_t *arr, HPy_ssize_t idx) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), UnicodeFromWideChar, (PTR_UP) arr, (SIZE_T_UP) idx);
 }
 
-static HPy ctx_DictNew_jni(HPyContext ctx) {
+static HPy ctx_DictNew_jni(HPyContext *ctx) {
     return DO_UPCALL_HPY_NOARGS(CONTEXT_INSTANCE(ctx), DictNew);
 }
 
-static HPy ctx_ListNew_jni(HPyContext ctx, HPy_ssize_t len) {
+static HPy ctx_ListNew_jni(HPyContext *ctx, HPy_ssize_t len) {
     return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), ListNew, (SIZE_T_UP) len);
 }
 
@@ -242,18 +242,18 @@ static inline HPy toPtr(uint64_t ptr) {
 //*************************
 // direct fast paths that handle certain calls on the native side:
 
-static void *(*original_Cast)(HPyContext ctx, HPy h);
-static HPy (*original_Dup)(HPyContext ctx, HPy h);
-static HPy (*original_FloatFromDouble)(HPyContext ctx, double v);
-static double (*original_FloatAsDouble)(HPyContext ctx, HPy h);
-static long (*original_LongAsLong)(HPyContext ctx, HPy h);
-static HPy (*original_LongFromLong)(HPyContext ctx, long l);
-static int (*original_ListCheck)(HPyContext ctx, HPy h);
-static int (*original_NumberCheck)(HPyContext ctx, HPy h);
-static void (*original_Close)(HPyContext ctx, HPy h);
-static HPy (*original_UnicodeFromWideChar)(HPyContext ctx, const wchar_t *arr, HPy_ssize_t size);
+static void *(*original_AsStruct)(HPyContext *ctx, HPy h);
+static HPy (*original_Dup)(HPyContext *ctx, HPy h);
+static HPy (*original_FloatFromDouble)(HPyContext *ctx, double v);
+static double (*original_FloatAsDouble)(HPyContext *ctx, HPy h);
+static long (*original_LongAsLong)(HPyContext *ctx, HPy h);
+static HPy (*original_LongFromLong)(HPyContext *ctx, long l);
+static int (*original_ListCheck)(HPyContext *ctx, HPy h);
+static int (*original_NumberCheck)(HPyContext *ctx, HPy h);
+static void (*original_Close)(HPyContext *ctx, HPy h);
+static HPy (*original_UnicodeFromWideChar)(HPyContext *ctx, const wchar_t *arr, HPy_ssize_t size);
 
-static void *augment_Cast(HPyContext ctx, HPy h) {
+static void *augment_AsStruct(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (isBoxedHandle(bits)) {
         void** space = (void**)ctx->_private;
@@ -263,11 +263,11 @@ static void *augment_Cast(HPyContext ctx, HPy h) {
     }
 }
 
-static HPy augment_FloatFromDouble(HPyContext ctx, double v) {
+static HPy augment_FloatFromDouble(HPyContext *ctx, double v) {
     return toPtr(boxDouble(v));
 }
 
-static double augment_FloatAsDouble(HPyContext ctx, HPy h) {
+static double augment_FloatAsDouble(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (isBoxedDouble(bits)) {
         return unboxDouble(bits);
@@ -278,7 +278,7 @@ static double augment_FloatAsDouble(HPyContext ctx, HPy h) {
     }
 }
 
-static long augment_LongAsLong(HPyContext ctx, HPy h) {
+static long augment_LongAsLong(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (isBoxedInt(bits)) {
         return unboxInt(bits);
@@ -287,7 +287,7 @@ static long augment_LongAsLong(HPyContext ctx, HPy h) {
     }
 }
 
-static HPy augment_LongFromLong(HPyContext ctx, long l) {
+static HPy augment_LongFromLong(HPyContext *ctx, long l) {
 	int32_t i = (int32_t) l;
 	if (l == i) {
         return toPtr(boxInt(i));
@@ -296,14 +296,14 @@ static HPy augment_LongFromLong(HPyContext ctx, long l) {
     }
 }
 
-static void augment_Close(HPyContext ctx, HPy h) {
+static void augment_Close(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (isBoxedHandle(bits)) {
         return original_Close(ctx, h);
     }
 }
 
-static HPy augment_Dup(HPyContext ctx, HPy h) {
+static HPy augment_Dup(HPyContext *ctx, HPy h) {
     uint64_t bits = toBits(h);
     if (isBoxedHandle(bits)) {
         return original_Dup(ctx, h);
@@ -312,7 +312,7 @@ static HPy augment_Dup(HPyContext ctx, HPy h) {
     }
 }
 
-static int augment_NumberCheck(HPyContext ctx, HPy obj) {
+static int augment_NumberCheck(HPyContext *ctx, HPy obj) {
     uint64_t bits = toBits(obj);
     if (isBoxedDouble(bits) || isBoxedInt(bits)) {
         return true;
@@ -321,7 +321,7 @@ static int augment_NumberCheck(HPyContext ctx, HPy obj) {
     }
 }
 
-static int augment_ListCheck(HPyContext ctx, HPy obj) {
+static int augment_ListCheck(HPyContext *ctx, HPy obj) {
     uint64_t bits = toBits(obj);
     if (isBoxedHandle(bits)) {
         return original_ListCheck(ctx, obj);
@@ -332,7 +332,7 @@ static int augment_ListCheck(HPyContext ctx, HPy obj) {
 
 #define MAX_UNICODE 0x10ffff
 
-static HPy augment_UnicodeFromWideChar(HPyContext ctx, const wchar_t *u, HPy_ssize_t size) {
+static HPy augment_UnicodeFromWideChar(HPyContext *ctx, const wchar_t *u, HPy_ssize_t size) {
     if (u == NULL && size != 0) {
         return HPy_NULL;
     }
@@ -379,34 +379,34 @@ static HPy augment_UnicodeFromWideChar(HPyContext ctx, const wchar_t *u, HPy_ssi
     }
 }
 
-void initDirectFastPaths(HPyContext context) {
+void initDirectFastPaths(HPyContext *context) {
     LOG("%p", context);
     context->name = "HPy Universal ABI (GraalVM backend, JNI)";
-    
+
     original_FloatFromDouble = context->ctx_Float_FromDouble;
     context->ctx_Float_FromDouble = augment_FloatFromDouble;
-    
+
     original_FloatAsDouble = context->ctx_Float_AsDouble;
     context->ctx_Float_AsDouble = augment_FloatAsDouble;
-    
+
     original_LongAsLong = context->ctx_Long_AsLong;
     context->ctx_Long_AsLong = augment_LongAsLong;
-    
+
     original_LongFromLong = context->ctx_Long_FromLong;
     context->ctx_Long_FromLong = augment_LongFromLong;
 
     original_Close = context->ctx_Close;
     context->ctx_Close = augment_Close;
-    
-    original_Cast = context->ctx_Cast;
-    context->ctx_Cast = augment_Cast;
-    
+
+    original_AsStruct = context->ctx_AsStruct;
+    context->ctx_AsStruct = augment_AsStruct;
+
     original_Dup = context->ctx_Dup;
     context->ctx_Dup = augment_Dup;
-    
+
     original_NumberCheck = context->ctx_Number_Check;
     context->ctx_Number_Check = augment_NumberCheck;
-    
+
     original_ListCheck = context->ctx_List_Check;
     context->ctx_List_Check = augment_ListCheck;
 
@@ -414,7 +414,7 @@ void initDirectFastPaths(HPyContext context) {
     context->ctx_Unicode_FromWideChar = augment_UnicodeFromWideChar;
 }
 
-void setHPyContextNativeSpace(HPyContext context, void** nativeSpace) {
+void setHPyContextNativeSpace(HPyContext *context, void** nativeSpace) {
     LOG("%p %p", context, nativeSpace);
     context->_private = nativeSpace;
 }
@@ -430,12 +430,12 @@ JNIEXPORT void JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_initJNI(JNIEnv *env, jclass clazz, jobject ctx, jlong ctxPointer) {
     LOG("%s", "hpy_native.c:initJNI\n");
     jniEnv = env;
-    HPyContext context = (HPyContext) ctxPointer;
+    HPyContext *context = (HPyContext *) ctxPointer;
 
     context->ctx_Float_FromDouble = ctx_FloatFromDouble_jni;
     context->ctx_Float_AsDouble = ctx_FloatAsDouble_jni;
     context->ctx_Long_AsLong = ctx_LongAsLong_jni;
-    context->ctx_Cast = ctx_Cast_jni;
+    context->ctx_AsStruct = ctx_AsStruct_jni;
     context->ctx_Close = ctx_Close_jni;
 
     context->ctx_Dup = ctx_Dup_jni;
@@ -445,7 +445,7 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     context->ctx_Length = ctx_Length_jni;
     context->ctx_New = ctx_New_jni;
     context->ctx_Type_GenericNew = ctx_TypeGenericNew_jni;
-    
+
     context->ctx_GetItem_i = ctx_GetItemi_jni;
     context->ctx_SetItem_i = ctx_SetItemi_jni;
     context->ctx_SetItem = ctx_SetItem_jni;
@@ -462,7 +462,7 @@ JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 
     graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
     assert(clazz != NULL);
-        
+
 #define SIG_HPY "J"
 #define SIG_SIZE_T "J"
 #define SIG_PTR "J"

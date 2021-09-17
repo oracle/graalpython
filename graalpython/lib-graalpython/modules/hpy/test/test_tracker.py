@@ -36,7 +36,7 @@ class TestHPyTracker(HPyTest):
     def hpytracker_module(self, ops, size=0):
         return self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
-            static HPy f_impl(HPyContext ctx, HPy self,
+            static HPy f_impl(HPyContext *ctx, HPy self,
                               HPy *args, HPy_ssize_t nargs)
             {{
                 HPyTracker ht;
@@ -86,7 +86,7 @@ class TestHPyTracker(HPyTest):
         import pytest
         mod = self.make_module("""
             HPyDef_METH(squares, "squares", squares_impl, HPyFunc_VARARGS)
-            static HPy squares_impl(HPyContext ctx, HPy self,
+            static HPy squares_impl(HPyContext *ctx, HPy self,
                               HPy *args, HPy_ssize_t nargs)
             {
                 long i, n;

@@ -534,7 +534,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     public abstract static class GetFileSystemEncodingNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        protected static String getFileSystemEncoding() {
+        public static String getFileSystemEncoding() {
             String javaEncoding = System.getProperty("file.encoding");
             String pythonEncoding = CharsetMapping.getPythonEncodingNameFromJavaName(javaEncoding);
             // Fallback on returning the property value if no mapping found

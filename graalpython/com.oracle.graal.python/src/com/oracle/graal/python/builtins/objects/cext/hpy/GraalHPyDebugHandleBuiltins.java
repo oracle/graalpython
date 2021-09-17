@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
@@ -57,12 +58,10 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.DebugHandle)
 public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
@@ -78,7 +77,7 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doGeneric(PDebugHandle self) {
-            return self.getHandle().getDelegate();
+            return self.getObj();
         }
     }
 
@@ -88,9 +87,19 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
     public abstract static class HPyDebugHandleIdNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        long doGeneric(PDebugHandle self,
-                        @Cached ConditionProfile profile) {
-            return GraalHPyBoxing.boxHandle(self.getHandle().getId(getContext().getHPyDebugContext(), profile));
+        static long doGeneric(PDebugHandle self) {
+            return self.getId();
+        }
+    }
+
+    @Builtin(name = "is_closed", minNumOfPositionalArgs = 1, isGetter = true, //
+                    doc = "Self-explanatory")
+    @GenerateNodeFactory
+    public abstract static class HPyDebugHandleIsClosedNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        static boolean doGeneric(PDebugHandle self) {
+            return self.isClosed();
         }
     }
 
@@ -100,7 +109,7 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doDebugHandle(PDebugHandle self, PDebugHandle other) {
-            return self.getHandle() == other.getHandle();
+            return self.eq(other);
         }
 
         @Specialization(guards = "!isDebugHandle(other)")
@@ -124,18 +133,33 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
             PythonContext context = getContext();
             Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
-                return format(context.getHPyDebugContext(), self);
+                return format(self);
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }
         }
 
         @TruffleBoundary
-        private static Object format(GraalHPyDebugContext hpyDebugContext, PDebugHandle self) {
-            long id = GraalHPyBoxing.boxHandle(self.getHandle().getId(hpyDebugContext, ConditionProfile.getUncached()));
-            Object objRepr = LookupAndCallUnaryDynamicNode.getUncached().executeObject(self.getHandle().getDelegate(), SpecialMethodNames.__REPR__);
-            String reprStr = CastToJavaStringNode.getUncached().execute(objRepr);
-            return String.format("<DebugHandle 0x%s for %s>", Long.toHexString(id), reprStr);
+        private static Object format(PDebugHandle self) {
+            long id = self.getId();
+            if (self.isClosed()) {
+                return String.format("<DebugHandle 0x%s CLOSED>", Long.toHexString(id));
+            } else {
+                Object objRepr = LookupAndCallUnaryDynamicNode.getUncached().executeObject(self.getObj(), SpecialMethodNames.__REPR__);
+                String reprStr = CastToJavaStringNode.getUncached().execute(objRepr);
+                return String.format("<DebugHandle 0x%s for %s>", Long.toHexString(id), reprStr);
+            }
+        }
+    }
+
+    @Builtin(name = "_force_close", minNumOfPositionalArgs = 1, doc = "Close the underlying handle. FOR TESTS ONLY.")
+    @GenerateNodeFactory
+    public abstract static class HPyDebugHandleForceCloseNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        PNone doGeneric(PDebugHandle self) {
+            self.close(getContext().getHPyDebugContext());
+            return PNone.NONE;
         }
     }
 }

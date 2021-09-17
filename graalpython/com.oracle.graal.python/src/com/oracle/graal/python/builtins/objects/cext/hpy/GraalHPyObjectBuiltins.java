@@ -45,16 +45,16 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltinsFactory.HPyObjectNewNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -114,53 +114,94 @@ public abstract class GraalHPyObjectBuiltins {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__NEW__, minNumOfPositionalArgs = 1, parameterNames = "$self", takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = SpecialMethodNames.__NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     abstract static class HPyObjectNewNode extends PythonVarargsBuiltinNode {
+        private static final String KW_SUPER_CONSTRUCTOR = "$supercons";
+
+        private static PKeyword[] createKwDefaults(Object superConstructor) {
+            if (superConstructor != null) {
+                return new PKeyword[]{new PKeyword(KW_SUPER_CONSTRUCTOR, superConstructor)};
+            }
+            return PKeyword.EMPTY_KEYWORDS;
+        }
+
         private static final Builtin BUILTIN = HPyObjectNewNode.class.getAnnotation(Builtin.class);
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(HPyObjectNewNode.class);
 
         @Child private PCallHPyFunction callHPyFunctionNode;
-        @Child private ReadAttributeFromObjectNode readBasicsizeNode;
+        @Child private CallVarargsMethodNode callNewNode;
         @Child private WriteAttributeToObjectNode writeNativeSpaceNode;
 
         @Override
         public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             if (arguments.length >= 1) {
-                return doGeneric(frame, arguments[0], PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
+                return doGeneric(frame, self, arguments, keywords);
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new VarargsBuiltinDirectInvocationNotSupported();
         }
 
         @Specialization
-        @SuppressWarnings("unused")
-        PythonObject doGeneric(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
+        Object doGeneric(VirtualFrame frame, Object explicitSelf, Object[] arguments, PKeyword[] keywords) {
+            assert explicitSelf != null;
 
             // create the managed Python object
-            PythonObject pythonObject = null;
 
+            // delegate to the best base's constructor
+            Object self;
+            Object[] argsWithSelf;
+            if (explicitSelf == PNone.NO_VALUE) {
+                argsWithSelf = arguments;
+                self = argsWithSelf[0];
+            } else {
+                argsWithSelf = new Object[arguments.length + 1];
+                argsWithSelf[0] = explicitSelf;
+                PythonUtils.arraycopy(arguments, 0, argsWithSelf, 1, arguments.length);
+                self = explicitSelf;
+            }
+            Object dataPtr = PNone.NO_VALUE;
             if (self instanceof PythonClass) {
                 // allocate native space
                 long basicSize = ((PythonClass) self).basicSize;
-                if (basicSize != -1) {
+                if (basicSize > 0) {
                     /*
                      * This is just calling 'calloc' which is a pure helper function. Therefore, we
                      * can take any HPy context and don't need to attach a context to this __new__
                      * function for that since the helper function won't deal with handles.
                      */
-                    Object dataPtr = ensureCallHPyFunctionNode().call(getContext().getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
-                    pythonObject = factory().createPythonHPyObject(self, dataPtr);
+                    dataPtr = ensureCallHPyFunctionNode().call(getContext().getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
 
                     if (LOGGER.isLoggable(Level.FINEST)) {
-                        LOGGER.finest(() -> String.format("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
+                        LOGGER.finest(PythonUtils.format("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
                     }
                     // TODO(fa): add memory tracing
                 }
             }
-            if (pythonObject == null) {
-                pythonObject = factory().createPythonObject(self);
+
+            Object inheritedConstructor = extractInheritedConstructor(arguments, keywords);
+            Object pythonObject;
+            if (inheritedConstructor == null) {
+                // fast-path if the super class is 'object'
+                pythonObject = factory().createPythonHPyObject(self, dataPtr);
+            } else {
+                pythonObject = ensureCallNewNode().execute(frame, inheritedConstructor, argsWithSelf, keywords);
+
+                /*
+                 * Since we are creating an object with an unknown constructor, the Java type may be
+                 * anything (e.g. PInt, etc). So, we need to store the native space pointer into a
+                 * hidden key.
+                 */
+                if (dataPtr != PNone.NO_VALUE) {
+                    ensureWriteNativeSpaceNode().execute(pythonObject, GraalHPyDef.OBJECT_HPY_NATIVE_SPACE, dataPtr);
+                }
             }
             return pythonObject;
+        }
+
+        @SuppressWarnings("unused")
+        private static Object extractInheritedConstructor(Object[] arguments, PKeyword[] keywords) {
+            // TODO(fa): not yet implemented
+            return null;
         }
 
         private PCallHPyFunction ensureCallHPyFunctionNode() {
@@ -171,12 +212,28 @@ public abstract class GraalHPyObjectBuiltins {
             return callHPyFunctionNode;
         }
 
+        private CallVarargsMethodNode ensureCallNewNode() {
+            if (callNewNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNewNode = insert(CallVarargsMethodNode.create());
+            }
+            return callNewNode;
+        }
+
+        private WriteAttributeToObjectNode ensureWriteNativeSpaceNode() {
+            if (writeNativeSpaceNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                writeNativeSpaceNode = insert(WriteAttributeToObjectNode.create());
+            }
+            return writeNativeSpaceNode;
+        }
+
         @TruffleBoundary
-        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language) {
+        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object superConstructor) {
             RootCallTarget callTarget = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyObjectNewNodeFactory<>(HPyObjectNewNodeGen.create()), true),
                             HPyObjectNewNode.class, BUILTIN.name());
             int flags = PBuiltinFunction.getFlags(BUILTIN, callTarget);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(SpecialMethodNames.__NEW__, null, 0, flags, callTarget);
+            return PythonObjectFactory.getUncached().createBuiltinFunction(SpecialMethodNames.__NEW__, null, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(superConstructor), flags, callTarget);
         }
     }
 }

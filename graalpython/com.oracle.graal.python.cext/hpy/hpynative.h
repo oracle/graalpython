@@ -50,16 +50,16 @@ typedef struct {
     void *jni_context;
 
 	/* embed HPy context */
-	struct _HPyContext_s hpy_context;
+    HPyContext hpy_context;
 } GraalHPyContext;
 
 #define MUST_INLINE __attribute__((always_inline)) static inline
 
-MUST_INLINE HPyContext graal_native_context_get_hpy_context(GraalHPyContext *native_context) {
+MUST_INLINE HPyContext *graal_native_context_get_hpy_context(GraalHPyContext *native_context) {
 	return &(native_context->hpy_context);
 }
 
-MUST_INLINE GraalHPyContext *graal_hpy_context_get_native_context(HPyContext hpy_context) {
+MUST_INLINE GraalHPyContext *graal_hpy_context_get_native_context(HPyContext *hpy_context) {
 	return (GraalHPyContext *)(((void *)hpy_context) - offsetof(GraalHPyContext, hpy_context));
 }
 

@@ -22,11 +22,17 @@
  * SOFTWARE.
  */
 
-#ifndef HPY_COMMON_RUNTIME_CTX_MODULE_H
-#define HPY_COMMON_RUNTIME_CTX_MODULE_H
+#ifndef HPY_COMMON_RUNTIME_ARGPARSE_H
+#define HPY_COMMON_RUNTIME_ARGPARSE_H
 
 #include "hpy.h"
 
-_HPy_HIDDEN HPy ctx_Module_Create(HPyContext ctx, HPyModuleDef *hpydef);
+HPyAPI_HELPER int
+HPyArg_Parse(HPyContext *ctx, HPyTracker *ht, HPy *args, HPy_ssize_t nargs, const char *fmt, ...);
 
-#endif /* HPY_COMMON_RUNTIME_CTX_MODULE_H */
+HPyAPI_HELPER int
+HPyArg_ParseKeywords(HPyContext *ctx, HPyTracker *ht, HPy *args, HPy_ssize_t nargs, HPy kw,
+                     const char *fmt, const char *keywords[], ...);
+
+
+#endif /* HPY_COMMON_RUNTIME_ARGPARSE_H */

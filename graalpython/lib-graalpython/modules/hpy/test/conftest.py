@@ -22,8 +22,8 @@
 # SOFTWARE.
 import sys
 import pytest
-from .support import ExtensionCompiler
-from hpy.debug.pytest import hpy_debug # make it available to all tests
+from .support import ExtensionCompiler, DefaultExtensionTemplate
+from hpy.debug.leakdetector import LeakDetector
 
 GRAALPYTHON_NATIVE = sys.implementation.name == 'graalpython' and __graalpython__.platform_id == 'native'
 
@@ -39,10 +39,27 @@ def hpy_devel(request):
 
 @pytest.fixture(params=['cpython', 'universal', 'debug', 'nfi'] if GRAALPYTHON_NATIVE else ['cpython', 'universal', 'debug'])
 def hpy_abi(request):
-    return request.param
+    abi = request.param
+    if abi == 'debug':
+        with LeakDetector():
+            yield abi
+    else:
+        yield abi
 
 @pytest.fixture
-def compiler(request, tmpdir, hpy_devel, hpy_abi):
+def ExtensionTemplate():
+    return DefaultExtensionTemplate
+
+
+@pytest.fixture
+def compiler(request, tmpdir, hpy_devel, hpy_abi, ExtensionTemplate):
     compiler_verbose = request.config.getoption('--compiler-v')
     return ExtensionCompiler(tmpdir, hpy_devel, hpy_abi,
-                             compiler_verbose=compiler_verbose)
+                             compiler_verbose=compiler_verbose,
+                             ExtensionTemplate=ExtensionTemplate)
+
+@pytest.fixture()
+def skip_nfi(hpy_abi):
+    # skip all tests in this class for NFI mode
+    if hpy_abi == 'nfi':
+        pytest.skip()

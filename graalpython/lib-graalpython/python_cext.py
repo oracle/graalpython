@@ -1012,14 +1012,18 @@ def __bad_internal_call(filename, lineno, obj):
     raise SystemError(msg)
 
 
+@may_raise
 def PyErr_NewException(name, base, dictionary):
+    dot_idx = name.find(".")
+    if dot_idx == -1:
+        raise SystemError( "PyErr_NewException: name must be module.class")
     if "__module__" not in dictionary:
-        dictionary["__module__"] = name.rpartition(".")[2]
+        dictionary["__module__"] = name[:dot_idx]
     if not isinstance(base, tuple):
         bases = (base,)
     else:
         bases = base
-    return type(name, bases, dictionary)
+    return type(name[dot_idx+1:], bases, dictionary)
 
 
 def PyErr_NewExceptionWithDoc(name, doc, base, dictionary):
