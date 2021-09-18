@@ -77,6 +77,9 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -658,13 +661,13 @@ public class ArrayBuiltins extends PythonBuiltins {
             return ReduceExNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "protocol < 3", limit = "2")
+        @Specialization(guards = "protocol < 3")
         Object reduceLegacy(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
                         @Cached GetClassNode getClassNode,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached PyObjectLookupAttr lookup,
                         @Cached ToListNode toListNode) {
             Object cls = getClassNode.execute(self);
-            Object dict = lib.lookupAttribute(self, frame, __DICT__);
+            Object dict = lookup.execute(frame, self, __DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
@@ -675,17 +678,18 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "protocol >= 3")
         Object reduce(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
                         @Cached GetClassNode getClassNode,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @Cached PyObjectLookupAttr lookupDict,
+                        @Cached PyObjectGetAttr getReconstructor,
                         @Cached ToBytesNode toBytesNode) {
             PythonModule arrayModule = getCore().lookupBuiltinModule("array");
             PArray.MachineFormat mformat = PArray.MachineFormat.forFormat(self.getFormat());
             assert mformat != null;
             Object cls = getClassNode.execute(self);
-            Object dict = lib.lookupAttribute(self, frame, __DICT__);
+            Object dict = lookupDict.execute(frame, self, __DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
-            Object reconstructor = lib.lookupAttributeStrict(arrayModule, frame, "_array_reconstructor");
+            Object reconstructor = getReconstructor.execute(frame, arrayModule, "_array_reconstructor");
             PTuple args = factory().createTuple(new Object[]{cls, self.getFormatString(), mformat.code, toBytesNode.call(frame, self)});
             return factory().createTuple(new Object[]{reconstructor, args, dict});
         }
@@ -953,7 +957,7 @@ public class ArrayBuiltins extends PythonBuiltins {
     public abstract static class FromFileNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
         Object fromfile(VirtualFrame frame, PArray self, Object file, int n,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached ConditionProfile nNegativeProfile,
                         @Cached BranchProfile notBytesProfile,
@@ -964,7 +968,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             }
             int itemsize = self.getFormat().bytesize;
             int nbytes = n * itemsize;
-            Object readResult = lib.lookupAndCallRegularMethod(file, frame, "read", nbytes);
+            Object readResult = callMethod.execute(frame, file, "read", nbytes);
             if (readResult instanceof PBytes) {
                 int readLength = sizeNode.execute(frame, readResult);
                 fromBytesNode.execute(frame, self, readResult);
@@ -1024,13 +1028,13 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class FromStringNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "isString(str)", limit = "2")
+        @Specialization(guards = "isString(str)")
         static Object fromstring(VirtualFrame frame, PArray self, Object str,
-                        @CachedLibrary("str") PythonObjectLibrary lib,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached FromBytesNode fromBytesNode) {
             warnNode.warnEx(frame, DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.", 1);
-            Object bytes = lib.lookupAndCallRegularMethod(str, frame, "encode", "utf-8");
+            Object bytes = callMethod.execute(frame, str, "encode", "utf-8");
             return fromBytesNode.execute(frame, self, bytes);
         }
 
@@ -1136,9 +1140,9 @@ public class ArrayBuiltins extends PythonBuiltins {
     @Builtin(name = "tofile", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ToFileNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "2")
+        @Specialization
         Object tofile(VirtualFrame frame, PArray self, Object file,
-                        @CachedLibrary("file") PythonObjectLibrary lib) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             if (self.getLength() > 0) {
                 int remaining = self.getLength() * self.getFormat().bytesize;
                 int blocksize = 64 * 1024;
@@ -1151,7 +1155,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                         buffer = new byte[blocksize];
                     }
                     PythonUtils.arraycopy(self.getBuffer(), i * blocksize, buffer, 0, buffer.length);
-                    lib.lookupAndCallRegularMethod(file, frame, "write", factory().createBytes(buffer));
+                    callMethod.execute(frame, file, "write", factory().createBytes(buffer));
                     remaining -= blocksize;
                 }
             }

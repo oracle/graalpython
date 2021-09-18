@@ -68,7 +68,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsClinicProviders.ModuleNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -153,9 +153,9 @@ public class ModuleBuiltins extends PythonBuiltins {
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached CallNode callNode,
                         @Cached GetDictIfExistsNode getDict,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hashLib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
-            Object dict = pol.lookupAttribute(self, frame, __DICT__);
+                        @Cached PyObjectLookupAttr lookup,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary hashLib) {
+            Object dict = lookup.execute(frame, self, __DICT__);
             if (isDict(dict, isDictProfile)) {
                 HashingStorage dictStorage = ((PHashingCollection) dict).getDictStorage();
                 Object dirFunc = hashLib.getItem(dictStorage, __DIR__);

@@ -49,7 +49,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.GilNode;
@@ -65,13 +65,13 @@ public class ConversionNodeTests {
     static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"arg"}, null);
     @Rule public ExpectedException expectedException = ExpectedException.none();
 
-    protected static Object call(Object arg, ArgumentCastNodeWithRaise castNode) {
+    protected static Object call(Object arg, ArgumentCastNode castNode) {
         PythonLanguage language = PythonLanguage.get(castNode);
         final PythonContext pythonContext = PythonContext.get(castNode);
 
         RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new PRootNode(language) {
             @Child private CalleeContext calleeContext = CalleeContext.create();
-            @Child private ArgumentCastNodeWithRaise node = castNode;
+            @Child private ArgumentCastNode node = castNode;
 
             @Override
             public Object execute(VirtualFrame frame) {

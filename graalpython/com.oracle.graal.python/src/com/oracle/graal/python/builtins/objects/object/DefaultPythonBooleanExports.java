@@ -208,11 +208,6 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static int asFileDescriptorWithState(Boolean x, @SuppressWarnings("unused") ThreadState threadState) {
-        return x ? 1 : 0;
-    }
-
-    @ExportMessage
     static Object lookupAttributeInternal(Boolean receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {

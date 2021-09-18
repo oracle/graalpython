@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_TYPE_A_NOT_TYP
 import static com.oracle.graal.python.nodes.ErrorMessages.SHOULD_RETURN_A_NOT_B;
 import static com.oracle.graal.python.nodes.ErrorMessages.SHOULD_RETURN_TYPE_A_NOT_TYPE_B;
 import static com.oracle.graal.python.nodes.ErrorMessages.SLOTNAMES_SHOULD_BE_A_NOT_B;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NEWOBJ_EX__;
@@ -59,7 +58,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETSTATE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_ELLIPSIS;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_EMPTY_BYTES;
@@ -97,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -104,8 +103,10 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
@@ -120,6 +121,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -444,12 +446,12 @@ public abstract class ObjectNodes {
     abstract static class GetNewArgsNode extends Node {
         public abstract Pair<Object, Object> execute(VirtualFrame frame, Object obj);
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         Pair<Object, Object> dispatch(VirtualFrame frame, Object obj,
                         @Cached GetNewArgsInternalNode getNewArgsInternalNode,
-                        @CachedLibrary(value = "obj") PythonObjectLibrary pol) {
-            Object getNewArgsExAttr = pol.lookupAttribute(obj, frame, __GETNEWARGS_EX__);
-            Object getNewArgsAttr = pol.lookupAttribute(obj, frame, __GETNEWARGS__);
+                        @Cached PyObjectLookupAttr lookupAttr) {
+            Object getNewArgsExAttr = lookupAttr.execute(frame, obj, __GETNEWARGS_EX__);
+            Object getNewArgsAttr = lookupAttr.execute(frame, obj, __GETNEWARGS__);
             return getNewArgsInternalNode.execute(frame, getNewArgsExAttr, getNewArgsAttr);
         }
 
@@ -458,13 +460,13 @@ public abstract class ObjectNodes {
 
             @Specialization(guards = "!isNoValue(getNewArgsExAttr)")
             Pair<Object, Object> doNewArgsEx(VirtualFrame frame, Object getNewArgsExAttr, @SuppressWarnings("unused") Object getNewArgsAttr,
-                            @Cached FastIsTupleSubClassNode isTupleSubClassNode,
+                            @Shared("callNode") @Cached CallNode callNode,
+                            @Shared("tupleCheck") @Cached FastIsTupleSubClassNode isTupleSubClassNode,
                             @Cached FastIsDictSubClassNode isDictSubClassNode,
                             @Cached SequenceStorageNodes.GetItemNode getItemNode,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                            @Cached PyObjectSizeNode sizeNode,
-                            @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
-                Object newargs = pol.callObject(getNewArgsExAttr, frame);
+                            @Cached PyObjectSizeNode sizeNode) {
+                Object newargs = callNode.execute(frame, getNewArgsExAttr);
                 if (!isTupleSubClassNode.execute(frame, newargs)) {
                     throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, __GETNEWARGS_EX__, "tuple", newargs);
                 }
@@ -487,11 +489,11 @@ public abstract class ObjectNodes {
                 return Pair.create(args, kwargs);
             }
 
-            @Specialization(guards = "!isNoValue(getNewArgsAttr)", limit = "getCallSiteInlineCacheMaxDepth()")
+            @Specialization(guards = "!isNoValue(getNewArgsAttr)")
             Pair<Object, Object> doNewArgs(VirtualFrame frame, @SuppressWarnings("unused") PNone getNewArgsExAttr, Object getNewArgsAttr,
-                            @Cached FastIsTupleSubClassNode isTupleSubClassNode,
-                            @CachedLibrary(value = "getNewArgsAttr") PythonObjectLibrary pol) {
-                Object args = pol.callObject(getNewArgsAttr, frame);
+                            @Shared("callNode") @Cached CallNode callNode,
+                            @Shared("tupleCheck") @Cached FastIsTupleSubClassNode isTupleSubClassNode) {
+                Object args = callNode.execute(frame, getNewArgsAttr);
                 if (!isTupleSubClassNode.execute(frame, args)) {
                     throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, __GETNEWARGS__, "tuple", args);
                 }
@@ -510,14 +512,14 @@ public abstract class ObjectNodes {
     abstract static class GetSlotNamesNode extends Node {
         public abstract Object execute(VirtualFrame frame, Object cls, Object copyReg);
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         Object dispatch(VirtualFrame frame, Object cls, Object copyReg,
                         @Cached GetSlotNamesInternalNode getSlotNamesInternalNode,
                         @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
-                        @CachedLibrary(value = "cls") PythonObjectLibrary pol,
+                        @Cached PyObjectLookupAttr lookupAttr,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hashLib) {
             Object slotNames = PNone.NO_VALUE;
-            Object clsDict = pol.lookupAttribute(cls, frame, __DICT__);
+            Object clsDict = lookupAttr.execute(frame, cls, __DICT__);
             if (!PGuards.isNoValue(clsDict)) {
                 HashingStorage hashingStorage = getHashingStorageNode.execute(frame, clsDict);
                 Object item = hashLib.getItem(hashingStorage, __SLOTNAMES__);
@@ -541,11 +543,11 @@ public abstract class ObjectNodes {
                 return names;
             }
 
-            @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+            @Specialization
             Object getCopyRegSlotNames(VirtualFrame frame, Object cls, Object copyReg, @SuppressWarnings("unused") PNone slotNames,
                             @Cached FastIsListSubClassNode isListSubClassNode,
-                            @CachedLibrary(value = "copyReg") PythonObjectLibrary pol) {
-                Object names = pol.lookupAndCallRegularMethod(copyReg, frame, "_slotnames", cls);
+                            @Cached PyObjectCallMethodObjArgs callMethod) {
+                Object names = callMethod.execute(frame, copyReg, "_slotnames", cls);
                 if (!PGuards.isNone(names) && !isListSubClassNode.execute(frame, names)) {
                     throw raise(TypeError, COPYREG_SLOTNAMES);
                 }
@@ -559,21 +561,21 @@ public abstract class ObjectNodes {
     abstract static class GetStateNode extends Node {
         public abstract Object execute(VirtualFrame frame, Object obj, boolean required, Object copyReg);
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         Object dispatch(VirtualFrame frame, Object obj, boolean required, Object copyReg,
                         @Cached GetStateInternalNode getStateInternalNode,
-                        @CachedLibrary(value = "obj") PythonObjectLibrary pol) {
-            Object getStateAttr = pol.lookupAttribute(obj, frame, __GETSTATE__);
+                        @Cached PyObjectLookupAttr lookupAttr) {
+            Object getStateAttr = lookupAttr.execute(frame, obj, __GETSTATE__);
             return getStateInternalNode.execute(frame, obj, required, copyReg, getStateAttr);
         }
 
         abstract static class GetStateInternalNode extends PNodeWithState {
             public abstract Object execute(VirtualFrame frame, Object obj, boolean required, Object copyReg, Object getStateAttr);
 
-            @Specialization(guards = "!isNoValue(getStateAttr)", limit = "getCallSiteInlineCacheMaxDepth()")
+            @Specialization(guards = "!isNoValue(getStateAttr)")
             Object getState(VirtualFrame frame, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") boolean required, @SuppressWarnings("unused") Object copyReg, Object getStateAttr,
-                            @CachedLibrary(value = "getStateAttr") PythonObjectLibrary pol) {
-                return pol.callObject(getStateAttr, frame);
+                            @Cached CallNode callNode) {
+                return callNode.execute(frame, getStateAttr);
             }
 
             @Specialization
@@ -644,6 +646,9 @@ public abstract class ObjectNodes {
 
         @Specialization(guards = "proto >= 2")
         public Object reduceNewObj(VirtualFrame frame, Object obj, @SuppressWarnings("unused") int proto,
+                        @Cached GetClassNode getClassNode,
+                        @Cached("create(__NEW__)") LookupAttributeInMRONode lookupNew,
+                        @Cached PyObjectLookupAttr lookupAttr,
                         @Cached("createImportCopyReg()") ImportNode.ImportExpression importNode,
                         @Cached ConditionProfile newObjProfile,
                         @Cached ConditionProfile hasArgsProfile,
@@ -653,9 +658,10 @@ public abstract class ObjectNodes {
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
                         @Cached PyObjectSizeNode sizeNode,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
-            Object cls = pol.lookupAttribute(obj, frame, __CLASS__);
-            if (pol.lookupAttribute(cls, frame, __NEW__) == PNone.NO_VALUE) {
+            Object cls = getClassNode.execute(obj);
+            if (lookupNew.execute(cls) == PNone.NO_VALUE) {
                 throw raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
             }
 
@@ -669,7 +675,7 @@ public abstract class ObjectNodes {
             boolean hasargs = args != PNone.NONE;
 
             if (newObjProfile.profile(kwargs == PNone.NONE || sizeNode.execute(frame, kwargs) == 0)) {
-                newobj = pol.lookupAttribute(copyReg, frame, __NEWOBJ__);
+                newobj = lookupAttr.execute(frame, copyReg, __NEWOBJ__);
                 Object[] newargsVals;
                 if (hasArgsProfile.profile(hasargs)) {
                     SequenceStorage sequenceStorage = getSequenceStorageNode.execute(args);
@@ -682,7 +688,7 @@ public abstract class ObjectNodes {
                 }
                 newargs = factory().createTuple(newargsVals);
             } else if (hasArgsProfile.profile(hasargs)) {
-                newobj = pol.lookupAttribute(copyReg, frame, __NEWOBJ_EX__);
+                newobj = lookupAttr.execute(frame, copyReg, __NEWOBJ_EX__);
                 newargs = factory().createTuple(new Object[]{cls, args, kwargs});
             } else {
                 throw raiseBadInternalCall();
@@ -694,7 +700,7 @@ public abstract class ObjectNodes {
 
             Object state = getStateNode.execute(frame, obj, required, copyReg);
             Object listitems = objIsList ? pol.getIterator(obj) : PNone.NONE;
-            Object dictitems = objIsDict ? pol.getIterator(pol.lookupAndCallRegularMethod(obj, frame, ITEMS)) : PNone.NONE;
+            Object dictitems = objIsDict ? pol.getIterator(callMethod.execute(frame, obj, ITEMS)) : PNone.NONE;
 
             return factory().createTuple(new Object[]{newobj, newargs, state, listitems, dictitems});
         }
@@ -702,9 +708,9 @@ public abstract class ObjectNodes {
         @Specialization(guards = "proto < 2")
         public Object reduceCopyReg(VirtualFrame frame, Object obj, int proto,
                         @Cached("createImportCopyReg()") ImportNode.ImportExpression importNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             Object copyReg = importNode.execute(frame);
-            return pol.lookupAndCallRegularMethod(copyReg, frame, "_reduce_ex", obj, proto);
+            return callMethod.execute(frame, copyReg, "_reduce_ex", obj, proto);
         }
     }
 
@@ -719,12 +725,12 @@ public abstract class ObjectNodes {
     public abstract static class GetFullyQualifiedNameNode extends PNodeWithContext {
         public abstract String execute(Frame frame, Object cls);
 
-        @Specialization(limit = "3")
+        @Specialization
         static String get(VirtualFrame frame, Object cls,
-                        @CachedLibrary("cls") PythonObjectLibrary lib,
+                        @Cached PyObjectLookupAttr lookupAttr,
                         @Cached CastToJavaStringNode cast) {
-            Object moduleNameObject = lib.lookupAttribute(cls, frame, __MODULE__);
-            Object qualNameObject = lib.lookupAttribute(cls, frame, __QUALNAME__);
+            Object moduleNameObject = lookupAttr.execute(frame, cls, __MODULE__);
+            Object qualNameObject = lookupAttr.execute(frame, cls, __QUALNAME__);
             String qualName = cast.execute(qualNameObject);
             if (moduleNameObject == PNone.NO_VALUE || BuiltinNames.BUILTINS.equals(moduleNameObject)) {
                 return qualName;

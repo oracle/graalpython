@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -117,13 +117,13 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
             @TruffleBoundary
             private static void handleException(PythonContext context, PException e) {
                 PBaseException pythonException = e.getEscapedException();
-                PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
                 if (!IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), PythonBuiltinClassType.SystemExit)) {
-                    lib.lookupAndCallRegularMethod(context.getCore().getStderr(), null, "write", "Error in atexit._run_exitfuncs:\n");
+                    PyObjectCallMethodObjArgs callWrite = PyObjectCallMethodObjArgs.getUncached();
+                    callWrite.execute(null, context.getCore().getStderr(), "write", "Error in atexit._run_exitfuncs:\n");
                     try {
                         ExceptionUtils.printExceptionTraceback(context, pythonException);
                     } catch (PException pe) {
-                        lib.lookupAndCallRegularMethod(context.getCore().getStderr(), null, "write", "Failed to print traceback\n");
+                        callWrite.execute(null, context.getCore().getStderr(), "write", "Failed to print traceback\n");
                     }
                 }
             }

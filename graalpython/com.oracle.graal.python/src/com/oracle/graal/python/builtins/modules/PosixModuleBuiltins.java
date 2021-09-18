@@ -80,6 +80,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -95,6 +96,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -2619,20 +2621,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
      * Equivalent of CPython's {@code fildes_converter()}, which in turn delegates to
      * {@code PyObject_AsFileDescriptor}. Always returns an {@code int}.
      */
-    public abstract static class FileDescriptorConversionNode extends ArgumentCastNodeWithRaise {
+    public abstract static class FileDescriptorConversionNode extends ArgumentCastNode {
         @Specialization
-        int doFdInt(int value) {
-            return PInt.asFileDescriptor(value, getRaiseNode());
-        }
-
-        @Specialization(guards = "!isInt(value)", limit = "3")
         static int doIndex(VirtualFrame frame, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            return lib.asFileDescriptorWithState(value, PArguments.getThreadState(frame));
-        }
-
-        protected static boolean isInt(Object value) {
-            return value instanceof Integer;
+                        @Cached PyObjectAsFileDescriptor asFileDescriptor) {
+            return asFileDescriptor.execute(frame, value);
         }
 
         @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)

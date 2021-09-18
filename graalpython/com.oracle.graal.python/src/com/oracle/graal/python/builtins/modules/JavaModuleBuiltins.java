@@ -56,9 +56,11 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -266,19 +268,19 @@ public class JavaModuleBuiltins extends PythonBuiltins {
 
         @CompilationFinal protected Object getAttr;
 
-        private Object getAttr(VirtualFrame frame, PythonModule mod, PythonObjectLibrary lib) {
+        private Object getAttr(VirtualFrame frame, PythonModule mod) {
             if (getAttr == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                Object javaLoader = lib.lookupAttributeStrict(mod, frame, JAVA_PKG_LOADER);
-                getAttr = lib.lookupAndCallRegularMethod(javaLoader, frame, MAKE_GETATTR, JAVA);
+                Object javaLoader = PyObjectGetAttr.getUncached().execute(frame, mod, JAVA_PKG_LOADER);
+                getAttr = PyObjectCallMethodObjArgs.getUncached().execute(frame, javaLoader, MAKE_GETATTR, JAVA);
             }
             return getAttr;
         }
 
         @Specialization
         Object none(VirtualFrame frame, PythonModule mod, Object name,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            return lib.callObject(getAttr(frame, mod, lib), frame, name);
+                        @Cached CallNode callNode) {
+            return callNode.execute(frame, getAttr(frame, mod), name);
         }
     }
 

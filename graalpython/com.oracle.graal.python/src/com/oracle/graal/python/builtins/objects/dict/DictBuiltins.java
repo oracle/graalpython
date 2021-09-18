@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -592,10 +593,10 @@ public final class DictBuiltins extends PythonBuiltins {
             return newStorage;
         }
 
-        @Specialization(guards = {"args.length == 1", "!isDict(args)", "hasKeysAttr(args, frame, libArg)"})
+        @Specialization(guards = {"args.length == 1", "!isDict(args)", "hasKeysAttr(frame, args, lookupKeys)"}, limit = "1")
         public static Object updateMapping(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary libArg,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
+                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @Shared("keysLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
@@ -607,10 +608,10 @@ public final class DictBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"args.length == 1", "!isDict(args)", "!hasKeysAttr(args, frame, libArg)"})
+        @Specialization(guards = {"args.length == 1", "!isDict(args)", "!hasKeysAttr(frame, args, lookupKeys)"}, limit = "1")
         public static Object updateSequence(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary libArg,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
+                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @Shared("keysLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
                         @Cached PRaiseNode raise,
                         @Cached GetNextNode nextNode,
@@ -658,8 +659,8 @@ public final class DictBuiltins extends PythonBuiltins {
             return isDict(args) && args[0] == self;
         }
 
-        protected static boolean hasKeysAttr(Object[] args, VirtualFrame frame, PythonObjectLibrary lib) {
-            return lib.lookupAttribute(args[0], frame, KEYS) != PNone.NO_VALUE;
+        protected static boolean hasKeysAttr(VirtualFrame frame, Object[] args, PyObjectLookupAttr lookupKeys) {
+            return lookupKeys.execute(frame, args[0], KEYS) != NO_VALUE;
         }
 
     }

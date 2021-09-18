@@ -41,62 +41,65 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Equivalent to use for PyObject_SetItem.
+ * Equivalent of CPython's {@code PyObject_AsFileDescriptor}.
  */
 @GenerateUncached
-@ImportStatic(SpecialMethodSlot.class)
-public abstract class PyObjectSetItem extends Node {
-    public abstract void execute(Frame frame, Object container, Object index, Object item);
+public abstract class PyObjectAsFileDescriptor extends PNodeWithContext {
+    public abstract int execute(Frame frame, Object object);
 
     @Specialization
-    void doWithFrame(VirtualFrame frame, Object primary, Object index, Object value,
-                    @Cached GetClassNode getClassNode,
-                    @Cached("create(SetItem)") LookupSpecialMethodSlotNode lookupSetitem,
-                    @Cached PRaiseNode raise,
-                    @Cached CallTernaryMethodNode callSetitem) {
-        Object setitem = lookupSetitem.execute(frame, getClassNode.execute(primary), primary);
-        if (setitem == PNone.NO_VALUE) {
-            throw raise.raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, primary);
+    static int doInt(@SuppressWarnings("unused") int object,
+                    @Shared("raise") @Cached PRaiseNode raise) {
+        return checkResult(object, raise);
+    }
+
+    @Specialization(guards = "longCheckNode.execute(object)", limit = "1")
+    static int doPyLong(VirtualFrame frame, Object object,
+                    @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
+                    @Shared("asInt") @Cached PyLongAsIntNode asIntNode,
+                    @Shared("raise") @Cached PRaiseNode raise) {
+        return checkResult(asIntNode.execute(frame, object), raise);
+    }
+
+    @Fallback
+    static int doNotLong(VirtualFrame frame, Object object,
+                    @Cached PyObjectLookupAttr lookupFileno,
+                    @Cached CallNode callFileno,
+                    @Exclusive @Cached PyLongCheckNode checkResultNode,
+                    @Shared("asInt") @Cached PyLongAsIntNode asIntNode,
+                    @Shared("raise") @Cached PRaiseNode raise) {
+        Object filenoMethod = lookupFileno.execute(frame, object, "fileno");
+        if (filenoMethod != PNone.NO_VALUE) {
+            Object result = callFileno.execute(frame, filenoMethod);
+            if (checkResultNode.execute(result)) {
+                return checkResult(asIntNode.execute(frame, result), raise);
+            }
+            throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_INTEGER, "fileno()");
         }
-        callSetitem.execute(frame, setitem, primary, index, value);
+        throw raise.raise(TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
     }
 
-    @Specialization(replaces = "doWithFrame")
-    void doGeneric(Object primary, Object index, Object value,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "SetItem") LookupCallableSlotInMRONode lookupSetitem,
-                    @Cached PRaiseNode raise,
-                    @Cached CallTernaryMethodNode callSetitem) {
-        Object setitem = lookupSetitem.execute(getClassNode.execute(primary));
-        if (setitem == PNone.NO_VALUE) {
-            throw raise.raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, primary);
+    private static int checkResult(int result, PRaiseNode raiseNode) {
+        if (result < 0) {
+            throw raiseNode.raise(ValueError, ErrorMessages.S_CANNOT_BE_NEGATIVE_INTEGER_D, "file descriptor", result);
         }
-        callSetitem.execute(null, setitem, primary, index, value);
-    }
-
-    public static PyObjectSetItem create() {
-        return PyObjectSetItemNodeGen.create();
-    }
-
-    public static PyObjectSetItem getUncached() {
-        return PyObjectSetItemNodeGen.getUncached();
+        return result;
     }
 }

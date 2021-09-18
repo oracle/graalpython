@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -239,12 +238,6 @@ final class DefaultPythonIntegerExports {
                 return oLib.equalsInternal(other, receiver, threadState) == 1;
             }
         }
-    }
-
-    @ExportMessage
-    static int asFileDescriptorWithState(Integer x, @SuppressWarnings("unused") ThreadState state,
-                    @Cached PRaiseNode raiseNode) {
-        return PInt.asFileDescriptor(x, raiseNode);
     }
 
     @ExportMessage

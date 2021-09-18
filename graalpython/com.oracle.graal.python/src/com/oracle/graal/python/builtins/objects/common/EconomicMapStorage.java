@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DEL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 
@@ -48,7 +47,6 @@ import java.util.Iterator;
 
 import org.graalvm.collections.MapCursor;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -60,7 +58,6 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializ
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -176,10 +173,7 @@ public class EconomicMapStorage extends HashingStorage {
         }
 
         static boolean maySideEffect(PythonObject o, LookupInheritedAttributeNode.Dynamic lookup) {
-            boolean se = lookup.execute(o, __DEL__) != PNone.NO_VALUE;
-            se = se || !PGuards.isBuiltinFunction(lookup.execute(o, __EQ__));
-            se = se || !PGuards.isBuiltinFunction(lookup.execute(o, __HASH__));
-            return se;
+            return !PGuards.isBuiltinFunction(lookup.execute(o, __EQ__)) || !PGuards.isBuiltinFunction(lookup.execute(o, __HASH__));
         }
 
         @Specialization
@@ -322,78 +316,22 @@ public class EconomicMapStorage extends HashingStorage {
         }
     }
 
-    private static boolean hasDELSideEffect(Object o, LookupInheritedAttributeNode.Dynamic lookup) {
-        return o instanceof PythonObject && lookup.execute(o, __DEL__) != PNone.NO_VALUE;
+    @ExportMessage
+    HashingStorage delItemWithState(Object key, ThreadState state,
+                    @Shared("plib") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                    @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                    @Shared("gotState") @Cached ConditionProfile gotState) {
+        VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+        DictKey newKey = new DictKey(key, hashNode.execute(frame, key));
+        map.removeKey(newKey, lib, lib, gotState, state);
+        return this;
     }
 
     @ExportMessage
-    static class DelItemWithState {
-
-        @Specialization(guards = "!hasSideEffect(self)")
-        static HashingStorage delItemWithState(EconomicMapStorage self, Object key, ThreadState state,
-                        @Shared("plib") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
-                        @Shared("gotState") @Cached ConditionProfile gotState) {
-            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
-            DictKey newKey = new DictKey(key, hashNode.execute(frame, key));
-            self.map.removeKey(newKey, lib, lib, gotState, state);
-            return self;
-        }
-
-        @Specialization
-        static HashingStorage delItemWithStateWithSideEffect(EconomicMapStorage self, Object key, ThreadState state,
-                        @Shared("plib") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
-                        @Shared("lookupDel") @Cached LookupInheritedAttributeNode.Dynamic lookup,
-                        @Shared("callDel") @Cached CallUnaryMethodNode callNode,
-                        @Shared("gotState") @Cached ConditionProfile gotState) {
-            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
-            DictKey newKey = new DictKey(key, hashNode.execute(frame, key));
-            Object value = self.map.removeKey(newKey, lib, lib, gotState, state);
-            if (hasDELSideEffect(key, lookup)) {
-                callNode.executeObject(frame, lookup.execute(key, __DEL__), key);
-            }
-            if (hasDELSideEffect(value, lookup)) {
-                callNode.executeObject(frame, lookup.execute(value, __DEL__), value);
-            }
-            return self;
-        }
-    }
-
-    @ExportMessage
-    static class Clear {
-
-        @Specialization(guards = "!hasSideEffect(self)")
-        static HashingStorage clear(EconomicMapStorage self) {
-            self.map.clear();
-            return self;
-        }
-
-        @Specialization
-        static HashingStorage clearWithSideEffect(EconomicMapStorage self,
-                        @Shared("lookupDel") @Cached LookupInheritedAttributeNode.Dynamic lookup,
-                        @Shared("callDel") @Cached CallUnaryMethodNode callNode) {
-            if (self.map.size() == 0) {
-                return self;
-            }
-            Object[] entries = new Object[self.map.size() * 2];
-            MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            int i = 0;
-            while (advance(cursor)) {
-                Object key = getKey(cursor);
-                Object value = getValue(cursor);
-                entries[i++] = hasDELSideEffect(key, lookup) ? key : null;
-                entries[i++] = hasDELSideEffect(value, lookup) ? value : null;
-            }
-            self.map.clear();
-            for (Object o : entries) {
-                if (o != null) {
-                    callNode.executeObject(lookup.execute(o, __DEL__), o);
-                }
-            }
-            return self;
-        }
-
+    @Override
+    HashingStorage clear() {
+        map.clear();
+        return this;
     }
 
     @ExportMessage

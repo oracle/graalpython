@@ -75,8 +75,8 @@ import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -326,19 +326,19 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "create_builtin", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CreateBuiltin extends PythonBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         public Object run(VirtualFrame frame, PythonObject moduleSpec,
                         @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached("create(__LOADER__)") SetAttributeNode setAttributeNode,
-                        @CachedLibrary(value = "moduleSpec") PythonObjectLibrary pol) {
-            Object name = pol.lookupAttribute(moduleSpec, frame, "name");
+                        @Cached PyObjectLookupAttr lookup) {
+            Object name = lookup.execute(frame, moduleSpec, "name");
             PythonModule builtinModule = getBuiltinModule(toJavaStringNode.execute(name));
             if (builtinModule != null) {
                 // TODO: GR-26411 builtin modules cannot be re-initialized (see is_builtin)
                 // We are setting the loader to the spec loader (since this is the loader that is
                 // set during bootstrap); this, however, should be handled be the builtin module
                 // reinitialization (if reinit is possible)
-                Object loader = pol.lookupAttribute(moduleSpec, frame, "loader");
+                Object loader = lookup.execute(frame, moduleSpec, "loader");
                 if (loader != PNone.NO_VALUE) {
                     setAttributeNode.executeVoid(frame, builtinModule, loader);
                 }

@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -47,6 +49,8 @@ import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -108,6 +112,7 @@ public abstract class PyObjectGetMethod extends Node {
                     @Shared("lookupSet") @Cached(parameters = "Set") LookupCallableSlotInMRONode lookupSet,
                     @Shared("callGet") @Cached CallTernaryMethodNode callGet,
                     @Shared("readAttr") @Cached ReadAttributeFromObjectNode readAttr,
+                    @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                     @Cached BranchProfile hasDescr,
                     @Cached BranchProfile returnDataDescr,
                     @Cached BranchProfile returnAttr,
@@ -115,15 +120,16 @@ public abstract class PyObjectGetMethod extends Node {
                     @Cached BranchProfile returnBoundDescr) {
         boolean methodFound = false;
         Object descr = lookupNode.execute(lazyClass);
-        Object getMethod = null;
+        Object getMethod = PNone.NO_VALUE;
         if (descr != PNone.NO_VALUE) {
             hasDescr.enter();
             if (MaybeBindDescriptorNode.isMethodDescriptor(descr)) {
                 methodFound = true;
             } else {
                 // lookupGet acts as branch profile for this branch
-                getMethod = lookupGet.execute(getDescrClass.execute(descr));
-                if (getMethod != PNone.NO_VALUE && lookupSet.execute(descr) != PNone.NO_VALUE) {
+                Object descrType = getDescrClass.execute(descr);
+                getMethod = lookupGet.execute(descrType);
+                if (getMethod != PNone.NO_VALUE && lookupSet.execute(descrType) != PNone.NO_VALUE) {
                     returnDataDescr.enter();
                     return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));
                 }
@@ -141,12 +147,15 @@ public abstract class PyObjectGetMethod extends Node {
             returnUnboundMethod.enter();
             return descr;
         }
-        if (getMethod != null) {
+        if (getMethod != PNone.NO_VALUE) {
             // callGet is used twice, and cannot act as the profile here
             returnBoundDescr.enter();
             return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));
         }
-        return new BoundDescriptor(descr);
+        if (descr != PNone.NO_VALUE) {
+            return new BoundDescriptor(descr);
+        }
+        throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
     }
 
     // No explicit branch profiling when we're looking up multiple things
@@ -159,16 +168,18 @@ public abstract class PyObjectGetMethod extends Node {
                     @Shared("lookupGet") @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet,
                     @Shared("lookupSet") @Cached(parameters = "Set") LookupCallableSlotInMRONode lookupSet,
                     @Shared("callGet") @Cached CallTernaryMethodNode callGet,
-                    @Shared("readAttr") @Cached ReadAttributeFromObjectNode readAttr) {
+                    @Shared("readAttr") @Cached ReadAttributeFromObjectNode readAttr,
+                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
         boolean methodFound = false;
         Object descr = lookupNode.execute(lazyClass, name);
-        Object getMethod = null;
+        Object getMethod = PNone.NO_VALUE;
         if (descr != PNone.NO_VALUE) {
             if (MaybeBindDescriptorNode.isMethodDescriptor(descr)) {
                 methodFound = true;
             } else {
-                getMethod = lookupGet.execute(getDescrClass.execute(descr));
-                if (getMethod != PNone.NO_VALUE && lookupSet.execute(descr) != PNone.NO_VALUE) {
+                Object descrType = getDescrClass.execute(descr);
+                getMethod = lookupGet.execute(descrType);
+                if (getMethod != PNone.NO_VALUE && lookupSet.execute(descrType) != PNone.NO_VALUE) {
                     return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));
                 }
             }
@@ -182,9 +193,12 @@ public abstract class PyObjectGetMethod extends Node {
         if (methodFound) {
             return descr;
         }
-        if (getMethod != null) {
+        if (getMethod != PNone.NO_VALUE) {
             return new BoundDescriptor(callGet.execute(frame, getMethod, descr, receiver, lazyClass));
         }
-        return new BoundDescriptor(descr);
+        if (descr != PNone.NO_VALUE) {
+            return new BoundDescriptor(descr);
+        }
+        throw raiseNode.raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
     }
 }

@@ -47,7 +47,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -58,7 +59,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
@@ -75,14 +75,15 @@ public abstract class WriteUnraisableNode extends Node {
 
     @Specialization
     static void writeUnraisable(VirtualFrame frame, PBaseException exception, String message, Object object,
-                    @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                    @Cached PyObjectLookupAttr lookup,
+                    @Cached CallNode callNode,
                     @Cached GetClassNode getClassNode,
                     @Cached PythonObjectFactory factory,
                     @Cached GetExceptionTracebackNode getExceptionTracebackNode) {
         PythonContext context = PythonContext.get(getClassNode);
         try {
             PythonModule sysModule = context.getCore().lookupBuiltinModule("sys");
-            Object unraisablehook = lib.lookupAttribute(sysModule, frame, BuiltinNames.UNRAISABLEHOOK);
+            Object unraisablehook = lookup.execute(frame, sysModule, BuiltinNames.UNRAISABLEHOOK);
             Object exceptionType = getClassNode.execute(exception);
             Object traceback = getExceptionTracebackNode.execute(exception);
             if (traceback == null) {
@@ -93,7 +94,7 @@ public abstract class WriteUnraisableNode extends Node {
                 messageObj = formatMessage(message);
             }
             Object hookArguments = factory.createStructSeq(SysModuleBuiltins.UNRAISABLE_HOOK_ARGS_DESC, exceptionType, exception, traceback, messageObj, object != null ? object : PNone.NONE);
-            lib.callObject(unraisablehook, frame, hookArguments);
+            callNode.execute(frame, unraisablehook, hookArguments);
         } catch (PException e) {
             ignoreException(context, message);
         }

@@ -102,10 +102,10 @@ import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -131,7 +131,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PyCFuncPtr)
 public class PyCFuncPtrBuiltins extends PythonBuiltins {
@@ -196,10 +195,10 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
         Object callback(Object type, Object[] args, @SuppressWarnings("unused") PKeyword[] kwds,
                         @SuppressWarnings("unused") @Cached PyLongCheckNode longCheckNode,
                         // @Cached KeepRefNode keepRefNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached PyCallableCheckNode callableCheck,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
             Object callable = args[0];
-            if (!lib.isCallable(callable)) {
+            if (!callableCheck.execute(callable)) {
                 throw raise(TypeError, ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS);
             }
 
@@ -323,8 +322,8 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object PyCFuncPtr_set_errcheck(PyCFuncPtrObject self, Object value,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            if (value != PNone.NONE && !lib.isCallable(value)) {
+                        @Cached PyCallableCheckNode callableCheck) {
+            if (value != PNone.NONE && !callableCheck.execute(value)) {
                 throw raise(TypeError, THE_ERRCHECK_ATTRIBUTE_MUST_BE_CALLABLE);
             }
             self.errcheck = value;
@@ -356,13 +355,13 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
         Object PyCFuncPtr_set_restype(PyCFuncPtrObject self, Object value,
                         @Cached("create(_check_retval_)") LookupAttributeInMRONode lookupAttr,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @Cached PyCallableCheckNode callableCheck) {
             if (value == PNone.NONE) {
                 self.checker = null;
                 self.restype = null;
                 return PNone.NONE;
             }
-            if (pyTypeStgDictNode.execute(value) != null && !lib.isCallable(value)) {
+            if (pyTypeStgDictNode.execute(value) != null && !callableCheck.execute(value)) {
                 throw raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE);
             }
             if (!PGuards.isPFunction(value)) {

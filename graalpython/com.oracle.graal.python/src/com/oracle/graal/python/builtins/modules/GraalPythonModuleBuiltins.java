@@ -64,8 +64,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
@@ -83,9 +83,9 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
@@ -669,10 +669,10 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "type_check", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class TypeCheckNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         boolean typeCheck(Object instance, Object cls,
-                        @CachedLibrary("instance") PythonObjectLibrary lib) {
-            return lib.typeCheck(instance, cls);
+                        @Cached PyObjectTypeCheck typeCheckNode) {
+            return typeCheckNode.execute(instance, cls);
         }
     }
 

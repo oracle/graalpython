@@ -40,63 +40,81 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 /**
- * Equivalent to use for PyObject_SetItem.
+ * Equivalent of CPython's {@code PySequence_Check}.
  */
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
-public abstract class PyObjectSetItem extends Node {
-    public abstract void execute(Frame frame, Object container, Object index, Object item);
+public abstract class PySequenceCheckNode extends PNodeWithContext {
+    public abstract boolean execute(Object object);
 
     @Specialization
-    void doWithFrame(VirtualFrame frame, Object primary, Object index, Object value,
-                    @Cached GetClassNode getClassNode,
-                    @Cached("create(SetItem)") LookupSpecialMethodSlotNode lookupSetitem,
-                    @Cached PRaiseNode raise,
-                    @Cached CallTernaryMethodNode callSetitem) {
-        Object setitem = lookupSetitem.execute(frame, getClassNode.execute(primary), primary);
-        if (setitem == PNone.NO_VALUE) {
-            throw raise.raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, primary);
+    static boolean doSequence(@SuppressWarnings("unused") PSequence object) {
+        return true;
+    }
+
+    @Specialization
+    static boolean doString(@SuppressWarnings("unused") String object) {
+        return true;
+    }
+
+    @Specialization
+    static boolean doDict(@SuppressWarnings("unused") PDict object) {
+        return false;
+    }
+
+    @Specialization
+    static boolean doMappingproxy(@SuppressWarnings("unused") PMappingproxy object) {
+        return false;
+    }
+
+    protected static boolean cannotBeSequence(Object object) {
+        return object instanceof PDict || object instanceof PMappingproxy;
+    }
+
+    @Specialization(guards = {"!cannotBeSequence(object)"})
+    boolean doPythonObject(PythonObject object,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Shared("lookupGetItem") @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetItem) {
+        Object type = getClassNode.execute(object);
+        return lookupGetItem.execute(type) != PNone.NO_VALUE;
+    }
+
+    @Specialization(guards = {"!cannotBeSequence(object)"}, replaces = "doPythonObject")
+    boolean doGeneric(Object object,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Shared("lookupGetItem") @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetItem,
+                    @CachedLibrary(limit = "3") InteropLibrary lib) {
+        Object type = getClassNode.execute(object);
+        if (type == PythonBuiltinClassType.ForeignObject) {
+            return lib.hasArrayElements(object);
         }
-        callSetitem.execute(frame, setitem, primary, index, value);
+        return lookupGetItem.execute(type) != PNone.NO_VALUE;
     }
 
-    @Specialization(replaces = "doWithFrame")
-    void doGeneric(Object primary, Object index, Object value,
-                    @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "SetItem") LookupCallableSlotInMRONode lookupSetitem,
-                    @Cached PRaiseNode raise,
-                    @Cached CallTernaryMethodNode callSetitem) {
-        Object setitem = lookupSetitem.execute(getClassNode.execute(primary));
-        if (setitem == PNone.NO_VALUE) {
-            throw raise.raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, primary);
-        }
-        callSetitem.execute(null, setitem, primary, index, value);
+    public static PySequenceCheckNode create() {
+        return PySequenceCheckNodeGen.create();
     }
 
-    public static PyObjectSetItem create() {
-        return PyObjectSetItemNodeGen.create();
-    }
-
-    public static PyObjectSetItem getUncached() {
-        return PyObjectSetItemNodeGen.getUncached();
+    public static PySequenceCheckNode getUncached() {
+        return PySequenceCheckNodeGen.getUncached();
     }
 }

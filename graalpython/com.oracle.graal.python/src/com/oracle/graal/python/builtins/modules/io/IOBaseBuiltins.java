@@ -54,6 +54,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEKABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.TELL;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.TRUNCATE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITELINES;
 import static com.oracle.graal.python.builtins.modules.io.IONodes._CHECKCLOSED;
 import static com.oracle.graal.python.builtins.modules.io.IONodes._CHECKREADABLE;
@@ -88,12 +89,16 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -129,10 +134,10 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ClosedNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(limit = "1")
+        @Specialization
         static boolean closed(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return isClosed(self, frame, lib);
+                        @Cached PyObjectLookupAttr lookup) {
+            return isClosed(self, frame, lookup);
         }
     }
 
@@ -169,11 +174,11 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = _CHECKCLOSED, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CheckClosedNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         Object doCheckClosed(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary selfLib,
+                        @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            if (isTrueNode.execute(frame, selfLib.lookupAttributeStrict(self, frame, CLOSED))) {
+            if (isTrueNode.execute(frame, getAttr.execute(frame, self, CLOSED))) {
                 throw raise(ValueError, ErrorMessages.IO_CLOSED);
             }
             return PNone.NONE;
@@ -183,11 +188,11 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = _CHECKSEEKABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CheckSeekableNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         boolean doCheckSeekable(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @CachedLibrary(limit = "1") PythonObjectLibrary isSame) {
-            Object v = lib.lookupAndCallRegularMethod(self, frame, SEEKABLE);
+            Object v = callMethod.execute(frame, self, SEEKABLE);
             if (isSame.isSame(v, getCore().getTrue())) {
                 return true;
             }
@@ -198,11 +203,11 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = _CHECKREADABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CheckReadableNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         boolean doCheckReadable(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @CachedLibrary(limit = "1") PythonObjectLibrary isSame) {
-            Object v = lib.lookupAndCallRegularMethod(self, frame, READABLE);
+            Object v = callMethod.execute(frame, self, READABLE);
             if (isSame.isSame(v, getCore().getTrue())) {
                 return true;
             }
@@ -215,10 +220,10 @@ public class IOBaseBuiltins extends PythonBuiltins {
     abstract static class CheckWritableNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doCheckWritable(VirtualFrame frame, PythonObject self,
-                        @Cached IONodes.CallWritable writable,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @CachedLibrary(limit = "1") PythonObjectLibrary isSame) {
-            Object v = writable.execute(frame, self);
-            if (isSame.isSame(v, getCore().getTrue())) {
+            Object result = callMethod.execute(frame, self, WRITABLE);
+            if (isSame.isSame(result, true)) {
                 return true;
             }
             throw unsupported(getRaiseNode(), ErrorMessages.FILE_OR_STREAM_IS_NOT_WRITABLE);
@@ -229,14 +234,15 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @ImportStatic(IONodes.class)
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         PNone close(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Cached PyObjectLookupAttr lookup,
                         @Cached("create(__IOBASE_CLOSED)") SetAttributeNode setAttributeNode,
                         @Cached BranchProfile errorProfile) {
-            if (!isClosed(self, frame, lib)) {
+            if (!isClosed(self, frame, lookup)) {
                 try {
-                    lib.lookupAndCallRegularMethod(self, frame, FLUSH);
+                    callMethod.execute(frame, self, FLUSH);
                 } catch (PException e) {
                     errorProfile.enter();
                     try {
@@ -258,11 +264,10 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class FlushNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(limit = "1")
+        @Specialization
         PNone flush(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
-                        @Cached ConditionProfile closedProfile) {
-            if (closedProfile.profile(isClosed(self, frame, lib))) {
+                        @Cached PyObjectLookupAttr lookup) {
+            if (isClosed(self, frame, lookup)) {
                 throw raise(ValueError, ErrorMessages.IO_CLOSED);
             }
             return PNone.NONE;
@@ -290,10 +295,10 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = TELL, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TellNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         static Object tell(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return lib.lookupAndCallRegularMethod(self, frame, SEEK, 0, 1);
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, self, SEEK, 0, 1);
         }
     }
 
@@ -311,10 +316,10 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = __EXIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class ExitNode extends PythonBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         static Object exit(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return lib.lookupAndCallRegularMethod(self, frame, CLOSE);
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, self, CLOSE);
         }
     }
 
@@ -352,11 +357,11 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class NextNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         Object next(VirtualFrame frame, PythonObject self,
-                        @CachedLibrary("self") PythonObjectLibrary selfLib,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectSizeNode sizeNode) {
-            Object line = selfLib.lookupAndCallRegularMethod(self, frame, READLINE);
+            Object line = callMethod.execute(frame, self, READLINE);
             if (sizeNode.execute(frame, line) <= 0) {
                 throw raise(StopIteration);
             }
@@ -372,7 +377,7 @@ public class IOBaseBuiltins extends PythonBuiltins {
                         @Cached CheckClosedNode checkClosedNode,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached IONodes.CallWrite writeNode,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @CachedLibrary("lines") PythonObjectLibrary libLines) {
             checkClosedNode.call(frame, self);
             Object iter = libLines.getIteratorWithFrame(lines, frame);
@@ -384,7 +389,7 @@ public class IOBaseBuiltins extends PythonBuiltins {
                     e.expectStopIteration(errorProfile);
                     break;
                 }
-                writeNode.execute(frame, self, line);
+                callMethod.execute(frame, self, WRITE, line);
                 // TODO _PyIO_trap_eintr [GR-23297]
             }
             return PNone.NONE;
@@ -404,19 +409,21 @@ public class IOBaseBuiltins extends PythonBuiltins {
         /**
          * implementation of cpython/Modules/_io/iobase.c:_io__IOBase_readline_impl
          */
-        @Specialization(limit = "2")
+        @Specialization
         PBytes readline(VirtualFrame frame, Object self, int limit,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached PyObjectLookupAttr lookupPeek,
+                        @Cached CallNode callPeek,
+                        @Cached PyObjectCallMethodObjArgs callRead,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached ConditionProfile hasPeek,
                         @Cached ConditionProfile isBytes) {
             /* For backwards compatibility, a (slowish) readline(). */
-            Object peek = lib.lookupAttribute(self, frame, "peek");
+            Object peek = lookupPeek.execute(frame, self, PEEK);
             ByteArrayOutputStream buffer = createOutputStream();
             while (limit < 0 || buffer.size() < limit) {
                 int nreadahead = 1;
                 if (hasPeek.profile(peek != PNone.NO_VALUE)) {
-                    Object readahead = lib.lookupAndCallRegularMethod(self, frame, PEEK, 1);
+                    Object readahead = callPeek.execute(frame, peek, 1);
                     // TODO _PyIO_trap_eintr [GR-23297]
                     if (isBytes.profile(!(readahead instanceof PBytes))) {
                         throw raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "peek()", readahead);
@@ -434,7 +441,7 @@ public class IOBaseBuiltins extends PythonBuiltins {
                     }
                 }
 
-                Object b = lib.lookupAndCallRegularMethod(self, frame, READ, nreadahead);
+                Object b = callRead.execute(frame, self, READ, nreadahead);
                 if (isBytes.profile(!(b instanceof PBytes))) {
                     throw raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "read()", b);
                 }
@@ -505,8 +512,8 @@ public class IOBaseBuiltins extends PythonBuiltins {
      * @param self the IOBase instance
      * @return true if the {@link IONodes#__IOBASE_CLOSED} attribute exists
      */
-    private static boolean isClosed(PythonObject self, VirtualFrame frame, PythonObjectLibrary lib) {
-        return !PGuards.isNoValue(lib.lookupAttribute(self, frame, __IOBASE_CLOSED));
+    private static boolean isClosed(PythonObject self, VirtualFrame frame, PyObjectLookupAttr lookup) {
+        return !PGuards.isNoValue(lookup.execute(frame, self, __IOBASE_CLOSED));
     }
 
     /**

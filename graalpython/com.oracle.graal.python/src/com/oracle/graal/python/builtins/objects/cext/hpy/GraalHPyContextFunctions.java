@@ -130,9 +130,11 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -1798,7 +1800,7 @@ public abstract class GraalHPyContextFunctions {
                             @Cached HPyAsContextNode asContextNode,
                             @Cached HPyAsPythonObjectNode asPythonObjectNode,
                             @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
-                            @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                            @Cached CallNode callNode,
                             @Cached(value = "createToNativeNode(receiver)", uncached = "getUncachedToNativeNode(receiver)") CExtToNativeNode toNativeNode,
                             @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
                             @Exclusive @Cached GilNode gil) throws ArityException {
@@ -1815,7 +1817,7 @@ public abstract class GraalHPyContextFunctions {
                     }
                     try {
                         Object builtinFunction = readAttributeFromObjectNode.execute(nativeContext.getContext().getBuiltins(), receiver.key);
-                        return toNativeNode.execute(nativeContext, lib.callObjectWithState(builtinFunction, null, pythonArguments));
+                        return toNativeNode.execute(nativeContext, callNode.execute(builtinFunction, pythonArguments, PKeyword.EMPTY_KEYWORDS));
                     } catch (PException e) {
                         transformExceptionToNativeNode.execute(nativeContext, e);
                         switch (receiver.returnType) {
@@ -2277,11 +2279,11 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary objectLib) throws ArityException {
+                        @Cached PyCallableCheckNode callableCheck) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
             Object object = asPythonObjectNode.execute(nativeContext, arguments[1]);
-            return PInt.intValue(objectLib.isCallable(object));
+            return PInt.intValue(callableCheck.execute(object));
         }
     }
 
@@ -2370,7 +2372,7 @@ public abstract class GraalHPyContextFunctions {
             stderr.println("object repr     : ");
             stderr.flush();
             try {
-                Object reprObj = PythonObjectLibrary.getUncached().lookupAndCallRegularMethod(context.getBuiltins(), null, BuiltinNames.REPR, pythonObject);
+                Object reprObj = PyObjectCallMethodObjArgs.getUncached().execute(null, context.getBuiltins(), BuiltinNames.REPR, pythonObject);
                 stderr.println(CastToJavaStringNode.getUncached().execute(reprObj));
             } catch (PException | CannotCastException e) {
                 // errors are ignored at this point

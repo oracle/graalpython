@@ -47,5 +47,15 @@ class AssertionsTest(unittest.TestCase):
         except:
             pass
         else:
-            raise Exception("Assertions doesn't work!")
+            raise Exception("Assertions don't work!")
+
+    def test_assert_message(self):
+        try:
+            assert False, 1
+        except AssertionError as e:
+            if e.args != (1,):
+                raise Exception(f"Expected AssertionError.args to be {(1,)}, was {e.args}")
+        else:
+            raise Exception("Assertions don't work!")
+
     

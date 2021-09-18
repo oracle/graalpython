@@ -48,7 +48,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -58,7 +58,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PBufferedReader)
@@ -115,10 +114,10 @@ public class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
     @Builtin(name = FLUSH, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class FlushNode extends PythonUnaryWithInitErrorBuiltinNode {
-        @Specialization(guards = "self.isOK()", limit = "1")
+        @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, FLUSH);
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            return callMethod.execute(frame, self.getRaw(), FLUSH);
         }
     }
 }

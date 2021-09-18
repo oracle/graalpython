@@ -65,8 +65,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -116,7 +116,7 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached PyCallableCheckNode callableCheck,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
             StgDictObject stgdict = factory().createStgDictObject(PythonBuiltinClassType.StgDict);
 
@@ -167,7 +167,7 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
             ob = hlib.getItem(stgdict.getDictStorage(), _restype_);
             if (!PGuards.isPNone(ob)) {
                 StgDictObject dict = pyTypeStgDictNode.execute(ob);
-                if (dict == null && !lib.isCallable(ob)) {
+                if (dict == null && !callableCheck.execute(ob)) {
                     throw raise(TypeError, RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE1);
                 }
                 stgdict.restype = ob;
@@ -211,9 +211,9 @@ public class PyCFuncPtrTypeBuiltins extends PythonBuiltins {
                  *      Although specific examples reported relate specifically to unions and
                  *      not bitfields, the bitfields check is also being disabled as a
                  *      precaution.
-                
+
                     StgDictObject *stgdict = PyType_stgdict(tp);
-                
+
                     if (stgdict != NULL) {
                         if (stgdict.flags & TYPEFLAG_HASUNION) {
                             Py_DECREF(converters);

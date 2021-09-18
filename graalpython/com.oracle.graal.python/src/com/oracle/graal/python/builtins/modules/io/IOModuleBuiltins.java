@@ -70,13 +70,14 @@ import java.util.List;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -84,7 +85,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -275,7 +275,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
                         @Cached TextIOWrapperNodes.TextIOWrapperInitNode initTextIO,
                         @Cached("create(MODE)") SetAttributeNode setAttrNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("l") @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose,
                         @Shared("e") @Cached ConditionProfile profile) {
             PFileIO fileIO = createFileIO(frame, file, mode, closefd, opener, factory(), initFileIO);
             Object result = fileIO;
@@ -329,7 +329,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
                 setAttrNode.executeVoid(frame, wrapper, mode.mode);
                 return result;
             } catch (PException e) {
-                lib.lookupAndCallRegularMethod(result, frame, CLOSE);
+                callClose.execute(frame, result, CLOSE);
                 throw e;
             }
         }
@@ -354,10 +354,10 @@ public class IOModuleBuiltins extends PythonBuiltins {
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("l") @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose,
                         @Shared("e") @Cached ConditionProfile profile) {
             warnNode.warnEx(frame, RuntimeWarning, "line buffering (buffering=1) isn't supported in binary mode, the default buffer size will be used", 1);
-            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, initFileIO, createBufferedIO, posixLib, lib, profile);
+            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, initFileIO, createBufferedIO, posixLib, callClose, profile);
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue != 1", "bufferingValue != 0"})
@@ -369,7 +369,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
                         @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("l") @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Shared("c") @Cached PyObjectCallMethodObjArgs callClose,
                         @Shared("e") @Cached ConditionProfile profile) {
             PFileIO fileIO = createFileIO(frame, file, mode, closefd, opener, factory(), initFileIO);
             try {
@@ -407,7 +407,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
                 /* if binary, returns the buffered file */
                 return createBufferedIO.execute(frame, fileIO, buffering, factory(), mode);
             } catch (PException e) {
-                lib.lookupAndCallRegularMethod(fileIO, frame, CLOSE);
+                callClose.execute(frame, fileIO, CLOSE);
                 throw e;
             }
         }

@@ -42,17 +42,16 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -62,72 +61,72 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 /**
- * Equivalent of CPython's {@code PyCallable_Check} function.
+ * Equivalent of CPython's {@code PyMapping_Check}.
  */
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
-public abstract class PyCallableCheckNode extends PNodeWithContext {
+public abstract class PyMappingCheckNode extends PNodeWithContext {
     public abstract boolean execute(Object object);
 
     @Specialization
-    static boolean doFunction(@SuppressWarnings("unused") PFunction o) {
+    static boolean doDict(@SuppressWarnings("unused") PDict object) {
         return true;
     }
 
     @Specialization
-    static boolean doMethod(@SuppressWarnings("unused") PMethod o) {
-        return true;
+    static boolean doString(@SuppressWarnings("unused") String object) {
+        return false;
     }
 
     @Specialization
-    static boolean doBuiltinFunction(@SuppressWarnings("unused") PBuiltinFunction o) {
-        return true;
+    static boolean doSequence(@SuppressWarnings("unused") PSequence object) {
+        return false;
     }
 
     @Specialization
-    static boolean doBuiltinMethod(@SuppressWarnings("unused") PBuiltinMethod o) {
-        return true;
+    static boolean doArray(@SuppressWarnings("unused") PArray object) {
+        return false;
     }
 
     @Specialization
-    static boolean doClass(@SuppressWarnings("unused") PythonClass o) {
-        return true;
+    static boolean doMemoryView(@SuppressWarnings("unused") PMemoryView object) {
+        return false;
     }
 
     @Specialization
-    static boolean doBuiltinClass(@SuppressWarnings("unused") PythonBuiltinClass o) {
-        return true;
+    static boolean doRange(@SuppressWarnings("unused") PRange object) {
+        return false;
     }
 
-    @Specialization
-    static boolean doType(@SuppressWarnings("unused") PythonBuiltinClassType o) {
-        return true;
+    protected static boolean cannotBeMapping(Object object) {
+        return object instanceof String || object instanceof PSequence || object instanceof PArray || object instanceof PMemoryView || object instanceof PRange;
     }
 
-    @Specialization(replaces = {"doFunction", "doMethod", "doBuiltinFunction", "doBuiltinMethod", "doClass", "doBuiltinClass"})
-    static boolean doObject(PythonAbstractObject o,
+    @Specialization(guards = "!cannotBeMapping(object)")
+    boolean doPythonObject(PythonObject object,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
-                    @Shared("lookupCall") @Cached(parameters = "Call") LookupCallableSlotInMRONode lookupCall) {
-        return lookupCall.execute(getClassNode.execute(o)) != PNone.NO_VALUE;
+                    @Shared("lookupGetItem") @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetItem) {
+        Object type = getClassNode.execute(object);
+        return lookupGetItem.execute(type) != PNone.NO_VALUE;
     }
 
-    @Specialization(replaces = {"doFunction", "doMethod", "doBuiltinFunction", "doBuiltinMethod", "doClass", "doBuiltinClass", "doType", "doObject"})
-    static boolean doGeneric(Object o,
+    @Specialization(guards = "!cannotBeMapping(object)", replaces = "doPythonObject")
+    boolean doGeneric(Object object,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
-                    @Shared("lookupCall") @Cached(parameters = "Call") LookupCallableSlotInMRONode lookupCall,
+                    @Shared("lookupGetItem") @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetItem,
                     @CachedLibrary(limit = "3") InteropLibrary lib) {
-        Object type = getClassNode.execute(o);
+        Object type = getClassNode.execute(object);
         if (type == PythonBuiltinClassType.ForeignObject) {
-            return lib.isExecutable(o) || lib.isInstantiable(o);
+            return lib.hasHashEntries(object);
         }
-        return lookupCall.execute(type) != PNone.NO_VALUE;
+        return lookupGetItem.execute(type) != PNone.NO_VALUE;
     }
 
-    public static PyCallableCheckNode create() {
-        return PyCallableCheckNodeGen.create();
+    public static PyMappingCheckNode create() {
+        return PyMappingCheckNodeGen.create();
     }
 
-    public static PyCallableCheckNode getUncached() {
-        return PyCallableCheckNodeGen.getUncached();
+    public static PyMappingCheckNode getUncached() {
+        return PyMappingCheckNodeGen.getUncached();
     }
 }

@@ -118,6 +118,10 @@ public abstract class PyObjectCallMethodObjArgs extends Node {
         }
     }
 
+    public static PyObjectCallMethodObjArgs create() {
+        return PyObjectCallMethodObjArgsNodeGen.create();
+    }
+
     public static PyObjectCallMethodObjArgs getUncached() {
         return PyObjectCallMethodObjArgsNodeGen.getUncached();
     }

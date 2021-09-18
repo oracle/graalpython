@@ -51,10 +51,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -108,11 +107,11 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                         @Cached("createGetItem()") LookupAndCallBinaryNode callGetItemNode,
                         @Cached FastConstructListNode constructListNode,
                         @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary itemLib,
+                        @Cached PyObjectAsFileDescriptor asFileDescriptor,
                         @Cached BranchProfile notSelectableBranch,
                         @Cached GilNode gil) {
             return doGeneric(frame, rlist, wlist, xlist, PNone.NONE, posixLib, sizeNode,
-                            callGetItemNode, constructListNode, pyTimeFromObjectNode, itemLib, notSelectableBranch, gil);
+                            callGetItemNode, constructListNode, pyTimeFromObjectNode, asFileDescriptor, notSelectableBranch, gil);
         }
 
         @Specialization(replaces = "doWithoutTimeout")
@@ -122,12 +121,12 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                         @Cached("createGetItem()") LookupAndCallBinaryNode callGetItemNode,
                         @Cached FastConstructListNode constructListNode,
                         @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary itemLib,
+                        @Cached PyObjectAsFileDescriptor asFileDescriptor,
                         @Cached BranchProfile notSelectableBranch,
                         @Cached GilNode gil) {
-            ObjAndFDList readFDs = seq2set(frame, rlist, sizeNode, itemLib, callGetItemNode, constructListNode);
-            ObjAndFDList writeFDs = seq2set(frame, wlist, sizeNode, itemLib, callGetItemNode, constructListNode);
-            ObjAndFDList xFDs = seq2set(frame, xlist, sizeNode, itemLib, callGetItemNode, constructListNode);
+            ObjAndFDList readFDs = seq2set(frame, rlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
+            ObjAndFDList writeFDs = seq2set(frame, wlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
+            ObjAndFDList xFDs = seq2set(frame, xlist, sizeNode, asFileDescriptor, callGetItemNode, constructListNode);
 
             Timeval timeoutval = null;
             if (!PGuards.isPNone(timeout)) {
@@ -173,9 +172,8 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             return factory().createList(PythonUtils.arrayCopyOf(resultObjs, resultObjsIdx));
         }
 
-        private ObjAndFDList seq2set(VirtualFrame frame, Object sequence, PyObjectSizeNode sizeNode, PythonObjectLibrary itemLib, LookupAndCallBinaryNode callGetItemNode,
+        private ObjAndFDList seq2set(VirtualFrame frame, Object sequence, PyObjectSizeNode sizeNode, PyObjectAsFileDescriptor asFileDescriptor, LookupAndCallBinaryNode callGetItemNode,
                         FastConstructListNode constructListNode) {
-            PArguments.ThreadState threadState = PArguments.getThreadState(frame);
             // We cannot assume any size of those two arrays, because the sequence may change as a
             // side effect of the invocation of fileno. We also need to call PyObjectSizeNode
             // repeatedly in the loop condition
@@ -185,7 +183,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < sizeNode.execute(frame, sequence); i++) {
                 Object pythonObject = callGetItemNode.executeObject(frame, pSequence, i);
                 objects.add(pythonObject);
-                int fd = itemLib.asFileDescriptorWithState(pythonObject, threadState);
+                int fd = asFileDescriptor.execute(frame, pythonObject);
                 if (fd >= FD_SETSIZE.value) {
                     throw raise(ValueError, ErrorMessages.FILE_DESCRIPTOR_OUT_OF_RANGE_IN_SELECT);
                 }

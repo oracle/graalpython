@@ -53,8 +53,8 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -75,7 +75,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PBuiltinFunction})
@@ -351,9 +350,9 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonBuiltinNode {
         @Specialization
         Object doBuiltinFunc(VirtualFrame frame, PBuiltinFunction func, @SuppressWarnings("unused") Object obj,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+                        @Cached PyObjectGetAttr getAttr) {
             PythonModule builtins = getCore().getBuiltins();
-            Object getattr = pol.lookupAttributeStrict(builtins, frame, GETATTR);
+            Object getattr = getAttr.execute(frame, builtins, GETATTR);
             PTuple args = factory().createTuple(new Object[]{func.getEnclosingType(), func.getName()});
             return factory().createTuple(new Object[]{getattr, args});
         }

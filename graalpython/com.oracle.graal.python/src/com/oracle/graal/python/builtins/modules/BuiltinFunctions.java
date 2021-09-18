@@ -127,10 +127,14 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
@@ -216,6 +220,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -1263,16 +1268,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return lib.getIteratorWithFrame(object, frame);
         }
 
-        @Specialization(guards = {"lib.isCallable(callable)", "!isNoValue(sentinel)"}, limit = "1")
+        @Specialization(guards = {"callableCheck.execute(callable)", "!isNoValue(sentinel)"}, limit = "1")
         Object iter(Object callable, Object sentinel,
-                        @SuppressWarnings("unused") @CachedLibrary("callable") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @Cached PyCallableCheckNode callableCheck) {
             return factory().createSentinelIterator(callable, sentinel);
         }
 
-        @Specialization(guards = {"!lib.isCallable(callable)", "!isNoValue(sentinel)"}, limit = "1")
+        @Fallback
         @SuppressWarnings("unused")
-        Object iterNotCallable(Object callable, Object sentinel,
-                        @CachedLibrary("callable") PythonObjectLibrary lib) {
+        Object iterNotCallable(Object callable, Object sentinel) {
             throw raise(TypeError, ErrorMessages.ITER_V_MUST_BE_CALLABLE);
         }
     }
@@ -1548,31 +1552,36 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @CompilationFinal private PythonModule cachedSys;
 
         @Specialization
-        PNone printNoKeywords(VirtualFrame frame, Object[] values, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone end, @SuppressWarnings("unused") PNone file,
-                        @SuppressWarnings("unused") PNone flush,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Cached PyObjectStrAsObjectNode strNode) {
+        @SuppressWarnings("unused")
+        PNone printNoKeywords(VirtualFrame frame, Object[] values, PNone sep, PNone end, PNone file, PNone flush,
+                        @Shared("getWriteMethod") @Cached PyObjectGetAttr getWriteMethod,
+                        @Shared("callWrite") @Cached CallNode callWrite,
+                        @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
+                        @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
             Object stdout = getStdout();
-            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, lib, strNode);
+            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, getWriteMethod, callWrite, callFlush, strNode);
         }
 
         @Specialization(guards = {"!isNone(file)", "!isNoValue(file)"})
-        PNone printAllGiven(VirtualFrame frame, Object[] values, String sep, String end, Object file, boolean flush,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Cached PyObjectStrAsObjectNode strNode) {
+        static PNone printAllGiven(VirtualFrame frame, Object[] values, String sep, String end, Object file, boolean flush,
+                        @Shared("getWriteMethod") @Cached PyObjectGetAttr getWriteMethod,
+                        @Shared("callWrite") @Cached CallNode callWrite,
+                        @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
+                        @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
             int lastValue = values.length - 1;
-            Object writeMethod = lib.lookupAttributeStrict(file, frame, "write");
+            // Note: the separate lookup is necessary due to different __getattr__ treatment than
+            // method lookup
+            Object writeMethod = getWriteMethod.execute(frame, file, "write");
             for (int i = 0; i < lastValue; i++) {
-                lib.callObject(writeMethod, frame, strNode.execute(frame, values[i]));
-                lib.callObject(writeMethod, frame, sep);
+                callWrite.execute(frame, writeMethod, strNode.execute(frame, values[i]));
+                callWrite.execute(frame, writeMethod, sep);
             }
             if (lastValue >= 0) {
-                lib.callObject(writeMethod, frame, strNode.execute(frame, values[lastValue]));
+                callWrite.execute(frame, writeMethod, strNode.execute(frame, values[lastValue]));
             }
-            lib.callObject(writeMethod, frame, end);
+            callWrite.execute(frame, writeMethod, end);
             if (flush) {
-                Object flushMethod = lib.lookupAttributeStrict(file, frame, "flush");
-                lib.callObject(flushMethod, frame);
+                callFlush.execute(frame, file, "flush");
             }
             return PNone.NONE;
         }
@@ -1583,8 +1592,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CastToJavaStringNode castEnd,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castFlush,
                         @Cached PRaiseNode raiseNode,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
-                        @Cached PyObjectStrAsObjectNode strNode) {
+                        @Shared("getWriteMethod") @Cached PyObjectGetAttr getWriteMethod,
+                        @Shared("callWrite") @Cached CallNode callWrite,
+                        @Shared("callFlush") @Cached PyObjectCallMethodObjArgs callFlush,
+                        @Shared("strNode") @Cached PyObjectStrAsObjectNode strNode) {
             String sep;
             try {
                 sep = sepIn instanceof PNone ? DEFAULT_SEPARATOR : castSep.execute(sepIn);
@@ -1611,7 +1622,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 flush = castFlush.executeBoolean(frame, flushIn);
             }
-            return printAllGiven(frame, values, sep, end, file, flush, lib, strNode);
+            return printAllGiven(frame, values, sep, end, file, flush, getWriteMethod, callWrite, callFlush, strNode);
         }
 
         private Object getStdout() {
@@ -2107,10 +2118,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class BuildClassNode extends PythonVarargsBuiltinNode {
         @TruffleBoundary
         private static Object buildJavaClass(Object func, String name, Object base) {
-            PythonObjectLibrary factory = PythonObjectLibrary.getUncached();
             // uncached PythonContext get, since this code path is slow in any case
             Object module = PythonContext.get(null).getCore().lookupBuiltinModule(BuiltinNames.__GRAALPYTHON__);
-            Object buildFunction = factory.lookupAttribute(module, null, "build_java_class");
+            Object buildFunction = PyObjectLookupAttr.getUncached().execute(null, module, "build_java_class");
             return CallNode.getUncached().execute(buildFunction, func, name, base);
         }
 

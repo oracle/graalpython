@@ -86,6 +86,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleFo
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.CheckCompatibleForAssigmentNodeGen;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -93,6 +95,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -868,20 +871,19 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PyObjectSizeNode sizeNode,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PyObjectGetAttr getAttr) {
             Object cls = getClassNode.execute(obj);
             long size = 0;
-            Object itemsize = pol.lookupAttribute(obj, frame, __ITEMSIZE__);
+            Object itemsize = lookupAttr.execute(frame, obj, __ITEMSIZE__);
             if (itemsize != PNone.NO_VALUE) {
-                Object clsItemsize = pol.lookupAttribute(cls, frame, __ITEMSIZE__);
-                Object objLen = pol.lookupAttribute(obj, frame, __LEN__);
-                if (clsItemsize == PNone.NO_VALUE || objLen == PNone.NO_VALUE) {
-                    size = 0;
-                } else {
+                Object clsItemsize = lookupAttr.execute(frame, cls, __ITEMSIZE__);
+                Object objLen = lookupAttr.execute(frame, obj, __LEN__);
+                if (clsItemsize != PNone.NO_VALUE && objLen != PNone.NO_VALUE) {
                     size = asLongNode.execute(frame, clsItemsize) * sizeNode.execute(frame, obj);
                 }
             }
-            size += asLongNode.execute(frame, pol.lookupAttributeStrict(cls, frame, __BASICSIZE__));
+            size += asLongNode.execute(frame, getAttr.execute(frame, cls, __BASICSIZE__));
             return size;
         }
     }
@@ -915,15 +917,16 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static Object doit(VirtualFrame frame, Object obj, int proto,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached CallNode callNode,
                         @Cached ConditionProfile reduceProfile,
-                        @Cached ObjectNodes.CommonReduceNode commonReduceNode,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
-            Object _reduce = pol.lookupAttribute(obj, frame, __REDUCE__);
+                        @Cached ObjectNodes.CommonReduceNode commonReduceNode) {
+            Object _reduce = lookupAttr.execute(frame, obj, __REDUCE__);
             if (reduceProfile.profile(_reduce != PNone.NO_VALUE)) {
                 // Check if __reduce__ has been overridden:
                 // "type(obj).__reduce__ is not object.__reduce__"
                 if (!(_reduce instanceof PBuiltinMethod) || ((PBuiltinMethod) _reduce).getFunction().getBuiltinNodeFactory() != REDUCE_FACTORY) {
-                    return pol.callObject(_reduce, frame);
+                    return callNode.execute(frame, _reduce);
                 }
             }
             return commonReduceNode.execute(frame, obj, proto);

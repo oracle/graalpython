@@ -40,55 +40,29 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
- * Equivalent to use for the various PyDict_GetItem* functions available in CPython. Note that these
- * functions lead to places where there are hard casts to PyDictObject anyway, so we just accept
- * PDict. Returns {@code null} when the key is not present.
+ * Equivalent of CPython's {@code PyObject_TypeCheck}. Performs a subclass check of an object
+ * without considering changed {@code __class__} and without calling into {@code __instancecheck__}
+ * or {@code __subclasscheck__}.
  */
 @GenerateUncached
-public abstract class PyDictGetItem extends Node {
-    public abstract Object execute(Frame frame, PDict dict, Object item);
+public abstract class PyObjectTypeCheck extends PNodeWithContext {
+    public abstract boolean execute(Object object, Object type);
 
-    // We never need a frame for reading string keys
-    @Specialization(limit = "3")
-    static final Object getString(@SuppressWarnings("unused") PDict dict, String item,
-                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
-                    @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
-        return lib.getItem(dictStorage, item);
-    }
-
-    @Specialization(replaces = "getString", limit = "3")
-    static final Object getItemCached(VirtualFrame frame, @SuppressWarnings("unused") PDict dict, Object item,
-                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
-                    @Cached ConditionProfile frameCondition,
-                    @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
-        return lib.getItemWithFrame(dictStorage, item, frameCondition, frame);
-    }
-
-    @Specialization(replaces = "getItemCached")
-    static final Object getItem(PDict dict, Object item,
-                    @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-        return lib.getItem(dict.getDictStorage(), item);
-    }
-
-    public static PyDictGetItem create() {
-        return PyDictGetItemNodeGen.create();
-    }
-
-    public static PyDictGetItem getUncached() {
-        return PyDictGetItemNodeGen.getUncached();
+    @Specialization
+    static boolean doGeneric(Object object, Object type,
+                    @Cached GetClassNode getClassNode,
+                    @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                    @Cached IsSubtypeNode isSubtypeNode) {
+        Object objectType = getClassNode.execute(object);
+        return isSameTypeNode.execute(type, objectType) || isSubtypeNode.execute(objectType, type);
     }
 }

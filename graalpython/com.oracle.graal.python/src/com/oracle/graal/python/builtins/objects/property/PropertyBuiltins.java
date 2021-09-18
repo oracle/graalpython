@@ -49,8 +49,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -74,7 +74,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PProperty)
 public class PropertyBuiltins extends PythonBuiltins {
@@ -109,8 +108,7 @@ public class PropertyBuiltins extends PythonBuiltins {
             }
             // if no docstring given and the getter has one, use that one
             if ((doc == PNone.NO_VALUE || doc == PNone.NONE) && fget != PNone.NO_VALUE) {
-                PythonObjectLibrary fgetLib = PythonObjectLibrary.getFactory().getUncached(fget);
-                Object get_doc = fgetLib.lookupAttribute(fget, null, SpecialAttributeNames.__DOC__);
+                Object get_doc = PyObjectLookupAttr.getUncached().execute(null, fget, SpecialAttributeNames.__DOC__);
                 if (get_doc != PNone.NO_VALUE) {
                     if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(self), PythonBuiltinClassType.PProperty)) {
                         self.setDoc(get_doc);
@@ -359,22 +357,22 @@ public class PropertyBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doGeneric(VirtualFrame frame, PProperty self,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached PyObjectLookupAttr lookup,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            if (isAbstract(frame, lib, isTrueNode, self.getFget())) {
+            if (isAbstract(frame, lookup, isTrueNode, self.getFget())) {
                 return true;
             }
-            if (isAbstract(frame, lib, isTrueNode, self.getFset())) {
+            if (isAbstract(frame, lookup, isTrueNode, self.getFset())) {
                 return true;
             }
-            return isAbstract(frame, lib, isTrueNode, self.getFdel());
+            return isAbstract(frame, lookup, isTrueNode, self.getFdel());
         }
 
-        private static boolean isAbstract(VirtualFrame frame, PythonObjectLibrary lib, PyObjectIsTrueNode isTrueNode, Object func) {
+        private static boolean isAbstract(VirtualFrame frame, PyObjectLookupAttr lookup, PyObjectIsTrueNode isTrueNode, Object func) {
             if (func == null) {
                 return false;
             }
-            Object result = lib.lookupAttribute(func, frame, __ISABSTRACTMETHOD__);
+            Object result = lookup.execute(frame, func, __ISABSTRACTMETHOD__);
             if (result != PNone.NO_VALUE) {
                 return isTrueNode.execute(frame, result);
             }

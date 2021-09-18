@@ -727,12 +727,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(PGenerator.create(getLanguage(), name, qualname, callTargets, frameDescriptor, arguments, closure, cellSlots, generatorInfo, this, iterator));
     }
 
-    public final PMappingproxy createMappingproxy(PythonObject object) {
+    public final PMappingproxy createMappingproxy(Object object) {
         PythonBuiltinClassType mpClass = PythonBuiltinClassType.PMappingproxy;
         return trace(new PMappingproxy(mpClass, mpClass.getInstanceShape(getLanguage()), object));
     }
 
-    public final PMappingproxy createMappingproxy(Object cls, PythonObject object) {
+    public final PMappingproxy createMappingproxy(Object cls, Object object) {
         return trace(new PMappingproxy(cls, getShape(cls), object));
     }
 

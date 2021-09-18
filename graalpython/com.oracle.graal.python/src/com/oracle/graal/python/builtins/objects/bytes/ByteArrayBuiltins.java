@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -66,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -743,15 +743,15 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class BaseReduceNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(limit = "1")
+        @Specialization
         public Object reduce(VirtualFrame frame, PByteArray self,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached GetClassNode getClassNode,
-                        @CachedLibrary("self") PythonObjectLibrary plib) {
+                        @Cached PyObjectLookupAttr lookupDict) {
             byte[] bytes = getBytes.execute(self.getSequenceStorage());
             int len = lenNode.execute(self.getSequenceStorage());
-            Object dict = plib.lookupAttribute(self, frame, __DICT__);
+            Object dict = lookupDict.execute(frame, self, __DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }

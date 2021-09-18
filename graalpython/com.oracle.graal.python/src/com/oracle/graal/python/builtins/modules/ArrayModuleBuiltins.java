@@ -38,6 +38,7 @@ import java.util.List;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -54,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -65,7 +67,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -329,7 +330,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         Object reconstructCached(VirtualFrame frame, Object arrayType, String typeCode, @SuppressWarnings("unused") int mformatCode, PBytes bytes,
                         @Cached("mformatCode") int cachedCode,
                         @Cached("createIdentityProfile()") ValueProfile formatProfile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached PyObjectCallMethodObjArgs callDecode,
                         @Cached ArrayBuiltins.FromBytesNode fromBytesNode,
                         @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
                         @Cached IsSubtypeNode isSubtypeNode,
@@ -338,12 +339,12 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             if (format == null) {
                 throw raise(ValueError, "bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
             }
-            return doReconstruct(frame, arrayType, typeCode, cachedCode, bytes, lib, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, formatProfile.profile(format));
+            return doReconstruct(frame, arrayType, typeCode, cachedCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, formatProfile.profile(format));
         }
 
         @Specialization(replaces = "reconstructCached")
         Object reconstruct(VirtualFrame frame, Object arrayType, String typeCode, int mformatCode, PBytes bytes,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached PyObjectCallMethodObjArgs callDecode,
                         @Cached ArrayBuiltins.FromBytesNode fromBytesNode,
                         @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
                         @Cached IsSubtypeNode isSubtypeNode,
@@ -352,10 +353,10 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             if (format == null) {
                 throw raise(ValueError, "bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
             }
-            return doReconstruct(frame, arrayType, typeCode, mformatCode, bytes, lib, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, format);
+            return doReconstruct(frame, arrayType, typeCode, mformatCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, format);
         }
 
-        private Object doReconstruct(VirtualFrame frame, Object arrayType, String typeCode, int mformatCode, PBytes bytes, PythonObjectLibrary lib,
+        private Object doReconstruct(VirtualFrame frame, Object arrayType, String typeCode, int mformatCode, PBytes bytes, PyObjectCallMethodObjArgs callDecode,
                         ArrayBuiltins.FromBytesNode fromBytesNode, ArrayBuiltins.FromUnicodeNode fromUnicodeNode, IsSubtypeNode isSubtypeNode,
                         ArrayBuiltins.ByteSwapNode byteSwapNode, BufferFormat format) {
             if (!isSubtypeNode.execute(frame, arrayType, PythonBuiltinClassType.PArray)) {
@@ -371,7 +372,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                     String newTypeCode = machineFormat.format == format ? typeCode : machineFormat.format.baseTypeCode;
                     array = factory().createArray(arrayType, newTypeCode, machineFormat.format);
                     if (machineFormat.unicodeEncoding != null) {
-                        Object decoded = lib.lookupAndCallRegularMethod(bytes, frame, "decode", machineFormat.unicodeEncoding);
+                        Object decoded = callDecode.execute(frame, bytes, "decode", machineFormat.unicodeEncoding);
                         fromUnicodeNode.execute(frame, array, decoded);
                     } else {
                         fromBytesNode.execute(frame, array, bytes);

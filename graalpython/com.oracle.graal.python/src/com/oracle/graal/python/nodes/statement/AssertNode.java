@@ -30,8 +30,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Assertio
 import java.io.PrintStream;
 
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -47,7 +45,6 @@ public class AssertNode extends StatementNode {
     @Child private PRaiseNode raise;
     @Child private CoerceToBooleanNode condition;
     @Child private ExpressionNode message;
-    @Child private LookupAndCallUnaryNode callNode;
     @CompilationFinal private Boolean assertionsEnabled = null;
 
     private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
@@ -83,15 +80,10 @@ public class AssertNode extends StatementNode {
     }
 
     private PException assertionFailed(VirtualFrame frame) {
-        String assertionMessage = null;
+        Object assertionMessage = null;
         if (message != null) {
             try {
-                Object messageObj = message.execute(frame);
-                if (callNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    callNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__STR__));
-                }
-                assertionMessage = (String) callNode.executeObject(frame, messageObj);
+                assertionMessage = message.execute(frame);
             } catch (PException e) {
                 // again, Python exceptions just fall through
                 throw e;

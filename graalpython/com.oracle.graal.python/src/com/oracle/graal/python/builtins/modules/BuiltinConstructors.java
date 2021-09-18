@@ -187,12 +187,15 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsAcceptableBaseNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatFromString;
+import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
@@ -1559,7 +1562,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             @Specialization
             static PException report(VirtualFrame frame, Object type,
-                            @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                            @Cached PyObjectCallMethodObjArgs callSort,
+                            @Cached PyObjectCallMethodObjArgs callJoin,
                             @Cached PyObjectSizeNode sizeNode,
                             @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                             @Cached CastToJavaStringNode cast,
@@ -1567,8 +1571,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             @Cached PRaiseNode raiseNode) {
                 PList list = constructListNode.execute(frame, readAttributeFromObjectNode.execute(type, __ABSTRACTMETHODS__));
                 int methodCount = sizeNode.execute(frame, list);
-                lib.lookupAndCallRegularMethod(list, frame, "sort");
-                String joined = cast.execute(lib.lookupAndCallRegularMethod(", ", frame, "join", list));
+                callSort.execute(frame, list, "sort");
+                String joined = cast.execute(callJoin.execute(frame, ", ", "join", list));
                 throw raiseNode.raise(TypeError, "Can't instantiate abstract class %N with abstract method%s %s", type, methodCount > 1 ? "s" : "", joined);
             }
 
@@ -3015,8 +3019,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         Object methodGeneric(@SuppressWarnings("unused") Object cls, Object func, Object self,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary dataModelLibrary) {
-            if (dataModelLibrary.isCallable(func)) {
+                        @Cached PyCallableCheckNode callableCheck) {
+            if (callableCheck.execute(func)) {
                 return factory().createMethod(self, func);
             } else {
                 throw raise(TypeError, ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE);
@@ -3189,29 +3193,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "mappingproxy", constructsClass = PythonBuiltinClassType.PMappingproxy, isPublic = false, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
-        @Specialization(guards = "isMapping(obj, lib)", limit = "1")
-        Object doMapping(Object klass, PythonObject obj,
-                        @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return factory().createMappingproxy(klass, obj);
+        @Specialization(guards = "!isNoValue(obj)")
+        Object doMapping(Object klass, Object obj,
+                        @Cached PyMappingCheckNode mappingCheckNode) {
+            if (mappingCheckNode.execute(obj)) {
+                return factory().createMappingproxy(klass, obj);
+            }
+            throw raise(TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);
         }
 
         @Specialization(guards = "isNoValue(none)")
         @SuppressWarnings("unused")
         Object doMissing(Object klass, PNone none) {
             throw raise(TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_POS, "mappingproxy()", "mapping", 1);
-        }
-
-        @Specialization(guards = {"!isMapping(obj, lib)", "!isNoValue(obj)"}, limit = "1")
-        Object doInvalid(@SuppressWarnings("unused") Object klass, Object obj,
-                        @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib) {
-            throw raise(TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);
-        }
-
-        protected static boolean isMapping(Object o, PythonObjectLibrary library) {
-            if (o instanceof PList || o instanceof PTuple) {
-                return false;
-            }
-            return library.isMapping(o);
         }
     }
 

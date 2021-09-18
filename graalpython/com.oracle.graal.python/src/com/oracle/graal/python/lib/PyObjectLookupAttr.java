@@ -239,6 +239,10 @@ public abstract class PyObjectLookupAttr extends Node {
         return PNone.NO_VALUE;
     }
 
+    public static PyObjectLookupAttr create() {
+        return PyObjectLookupAttrNodeGen.create();
+    }
+
     public static PyObjectLookupAttr getUncached() {
         return PyObjectLookupAttrNodeGen.getUncached();
     }

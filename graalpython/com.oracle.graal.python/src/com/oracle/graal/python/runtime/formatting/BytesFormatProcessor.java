@@ -49,7 +49,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -122,13 +121,6 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
             // exactly like in CPython, all errors are translated to this
             throw raiseNode.raise(TypeError, ErrorMessages.FLOAT_ARG_REQUIRED, arg);
         }
-    }
-
-    @Override
-    protected boolean useAsMapping(Object args1, Object lazyClass) {
-        return !isString(args1, lazyClass) && isMapping(args1) && //
-                        !isSubtype(lazyClass, PythonBuiltinClassType.PBytes) && //
-                        !isSubtype(lazyClass, PythonBuiltinClassType.PByteArray);
     }
 
     @Override

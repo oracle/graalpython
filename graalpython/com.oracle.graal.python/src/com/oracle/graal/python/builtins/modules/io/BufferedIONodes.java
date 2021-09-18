@@ -45,6 +45,12 @@ import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CU
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.rawOffset;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.readahead;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSED;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.READABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEK;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEKABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.TELL;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_FIT_P_IN_OFFSET_SIZE;
 import static com.oracle.graal.python.nodes.ErrorMessages.FILE_OR_STREAM_IS_NOT_SEEKABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_STREAM_INVALID_POS;
@@ -60,6 +66,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -73,6 +81,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -122,9 +131,9 @@ public class BufferedIONodes {
 
         @Specialization(guards = {"self.getBuffer() != null", "!self.isFastClosedChecks()"})
         static boolean isClosedBuffered(VirtualFrame frame, PBuffered self,
-                        @Cached IONodes.GetClosed getClosed,
+                        @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectIsTrueNode isTrue) {
-            Object res = getClosed.execute(frame, self.getRaw());
+            Object res = getAttr.execute(frame, self.getRaw(), CLOSED);
             return isTrue.execute(frame, res);
         }
     }
@@ -150,10 +159,10 @@ public class BufferedIONodes {
 
         @Specialization
         static boolean isSeekable(VirtualFrame frame, PBuffered self,
-                        @Cached IONodes.CallSeekable seekable,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectIsTrueNode isTrue) {
             assert self.isOK();
-            Object res = seekable.execute(frame, self.getRaw());
+            Object res = callMethod.execute(frame, self.getRaw(), SEEKABLE);
             return isTrue.execute(frame, res);
         }
     }
@@ -169,9 +178,9 @@ public class BufferedIONodes {
 
         @Specialization
         static boolean isReadable(VirtualFrame frame, Object raw,
-                        @Cached IONodes.CallReadable readable,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectIsTrueNode isTrue) {
-            Object res = readable.execute(frame, raw);
+            Object res = callMethod.execute(frame, raw, READABLE);
             return isTrue.execute(frame, res);
         }
 
@@ -191,9 +200,9 @@ public class BufferedIONodes {
 
         @Specialization
         static boolean isWritable(VirtualFrame frame, Object raw,
-                        @Cached IONodes.CallWritable writable,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectIsTrueNode isTrue) {
-            Object res = writable.execute(frame, raw);
+            Object res = callMethod.execute(frame, raw, WRITABLE);
             return isTrue.execute(frame, res);
         }
 
@@ -243,9 +252,9 @@ public class BufferedIONodes {
         public abstract long execute(VirtualFrame frame, PBuffered self);
 
         private static long tell(VirtualFrame frame, Object raw,
-                        IONodes.CallTell tell,
+                        PyObjectCallMethodObjArgs callMethod,
                         AsOffNumberNode asOffNumberNode) {
-            Object res = tell.execute(frame, raw);
+            Object res = callMethod.execute(frame, raw, TELL);
             return asOffNumberNode.execute(frame, res, ValueError);
         }
 
@@ -254,10 +263,10 @@ public class BufferedIONodes {
          */
         @Specialization(guards = "!ignore")
         long bufferedRawTell(VirtualFrame frame, PBuffered self,
-                        @Cached IONodes.CallTell tell,
-                        @Cached AsOffNumberNode asOffNumberNode,
+                        @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Shared("asOffT") @Cached AsOffNumberNode asOffNumberNode,
                         @Cached ConditionProfile isValid) {
-            long n = tell(frame, self.getRaw(), tell, asOffNumberNode);
+            long n = tell(frame, self.getRaw(), callMethod, asOffNumberNode);
             if (isValid.profile(n < 0)) {
                 throw raise(OSError, IO_STREAM_INVALID_POS, n);
             }
@@ -267,11 +276,11 @@ public class BufferedIONodes {
 
         @Specialization(guards = "ignore")
         static long bufferedRawTellIgnoreException(VirtualFrame frame, PBuffered self,
-                        @Cached IONodes.CallTell tell,
-                        @Cached AsOffNumberNode asOffNumberNode) {
+                        @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Shared("asOffT") @Cached AsOffNumberNode asOffNumberNode) {
             long n;
             try {
-                n = tell(frame, self.getRaw(), tell, asOffNumberNode);
+                n = tell(frame, self.getRaw(), callMethod, asOffNumberNode);
             } catch (PException e) {
                 n = -1;
                 // ignore
@@ -297,10 +306,10 @@ public class BufferedIONodes {
         @Specialization
         static long bufferedRawSeek(VirtualFrame frame, PBuffered self, long target, int whence,
                         @Cached PRaiseNode raise,
-                        @Cached IONodes.CallSeek seek,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached AsOffNumberNode asOffNumberNode,
                         @Cached ConditionProfile profile) {
-            Object res = seek.execute(frame, self.getRaw(), target, whence);
+            Object res = callMethod.execute(frame, self.getRaw(), SEEK, target, whence);
             long n = asOffNumberNode.execute(frame, res, ValueError);
             if (profile.profile(n < 0)) {
                 raise.raise(OSError, IO_STREAM_INVALID_POS, n);

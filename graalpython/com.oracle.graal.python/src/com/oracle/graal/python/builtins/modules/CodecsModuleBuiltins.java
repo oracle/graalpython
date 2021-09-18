@@ -911,16 +911,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "register", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class RegisterNode extends PythonBuiltinNode {
-        @Specialization(guards = "callableCheckNode.execute(frame, searchFunction)")
-        Object lookup(@SuppressWarnings("unused") VirtualFrame frame, Object searchFunction,
+        @Specialization(guards = "callableCheckNode.execute(searchFunction)")
+        Object lookup(Object searchFunction,
                         @SuppressWarnings("unused") @Cached PyCallableCheckNode callableCheckNode) {
             add(PythonContext.get(this), searchFunction);
             return null;
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "!callableCheckNode.execute(frame, searchFunction)")
-        Object lookupNoCallble(VirtualFrame frame, Object searchFunction,
+        @Specialization(guards = "!callableCheckNode.execute(searchFunction)")
+        Object lookupNoCallble(Object searchFunction,
                         @Cached PyCallableCheckNode callableCheckNode) {
             throw raise(TypeError, ARG_MUST_BE_CALLABLE);
         }
@@ -959,16 +959,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return CodecsModuleBuiltinsClinicProviders.RegisterErrorNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "callableCheckNode.execute(frame, handler)")
-        Object register(@SuppressWarnings("unused") VirtualFrame frame, String name, Object handler,
+        @Specialization(guards = "callableCheckNode.execute(handler)")
+        Object register(String name, Object handler,
                         @SuppressWarnings("unused") @Cached PyCallableCheckNode callableCheckNode) {
             put(PythonContext.get(this), name, handler);
             return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "!callableCheckNode.execute(frame, handler)")
-        Object registerNoCallable(VirtualFrame frame, String name, Object handler,
+        @Specialization(guards = "!callableCheckNode.execute(handler)")
+        Object registerNoCallable(String name, Object handler,
                         @Cached PyCallableCheckNode callableCheckNode) {
             throw raise(TypeError, HANDLER_MUST_BE_CALLABLE);
         }

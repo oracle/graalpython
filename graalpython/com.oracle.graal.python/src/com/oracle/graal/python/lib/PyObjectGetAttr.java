@@ -107,6 +107,10 @@ public abstract class PyObjectGetAttr extends Node {
         }
     }
 
+    public static PyObjectGetAttr create() {
+        return PyObjectGetAttrNodeGen.create();
+    }
+
     public static PyObjectGetAttr getUncached() {
         return PyObjectGetAttrNodeGen.getUncached();
     }

@@ -57,13 +57,17 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -73,6 +77,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -152,8 +157,8 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "getitem", minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
+    @ImportStatic(SpecialMethodSlot.class)
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization
@@ -162,7 +167,7 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
             return getItem.execute(frame, dict, item);
         }
 
-        @Specialization
+        @Specialization(guards = "!isPString(value)")
         public static Object doSequence(VirtualFrame frame, PSequence value, Object index,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
@@ -170,9 +175,15 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public static Object doObject(VirtualFrame frame, Object value, Object index,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
-            return getItemNode.executeObject(frame, value, index);
+        public Object doObject(VirtualFrame frame, Object value, Object index,
+                        @Cached GetClassNode getClassNode,
+                        @Cached(parameters = "GetItem") LookupSpecialMethodSlotNode lookupGetItem,
+                        @Cached CallBinaryMethodNode callGetItem) {
+            Object method = lookupGetItem.execute(frame, getClassNode.execute(value), value);
+            if (method == PNone.NO_VALUE) {
+                throw raise(TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, value);
+            }
+            return callGetItem.executeObject(frame, method, value, index);
         }
     }
 

@@ -29,23 +29,17 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 
 import java.math.BigInteger;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -57,7 +51,6 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PInt extends PythonBuiltinObject {
 
     public static final BigInteger MAX_INT = BigInteger.valueOf(Integer.MAX_VALUE);
@@ -282,27 +275,6 @@ public final class PInt extends PythonBuiltinObject {
         } else {
             throw UnsupportedMessageException.create();
         }
-    }
-
-    @ExportMessage
-    public int asFileDescriptorWithState(@SuppressWarnings("unused") ThreadState state,
-                    @Exclusive @Cached PRaiseNode raiseNode,
-                    @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode) {
-        int result;
-        try {
-            result = castToJavaIntNode.execute(this);
-        } catch (PException e) {
-            throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
-        }
-        return asFileDescriptor(result, raiseNode);
-    }
-
-    @Ignore
-    public static int asFileDescriptor(int value, PRaiseNode raiseNode) {
-        if (value < 0) {
-            raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.S_CANNOT_BE_NEGATIVE_INTEGER_D, "file descriptor", value);
-        }
-        return value;
     }
 
     @Override

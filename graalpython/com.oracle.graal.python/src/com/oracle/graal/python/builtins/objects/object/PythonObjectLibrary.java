@@ -427,24 +427,6 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Coerces a given primitive or object to a file descriptor (i.e. Java {@code int}) just like
-     * {@code PyObject_AsFileDescriptor} does.
-     *
-     * Converted to int if possible, or if the object defines __fileno__(), then return the result
-     * of that method. Raise TypeError otherwise.
-     */
-    public int asFileDescriptorWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState) {
-        throw getDefaultNodes().getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
-    }
-
-    /**
-     * @see #asFileDescriptorWithState
-     */
-    public final int asFileDescriptor(Object receiver) {
-        return asFileDescriptorWithState(receiver, null);
-    }
-
-    /**
      * Looks up an attribute for the given receiver like {@code PyObject_LookupAttr}.
      *
      * @param receiver self
@@ -613,60 +595,6 @@ public abstract class PythonObjectLibrary extends Library {
      * @see #lookupAndCallRegularMethod(Object, VirtualFrame, String, Object...)
      */
     public abstract Object lookupAndCallRegularMethodWithState(Object receiver, ThreadState state, String methodName, Object... arguments);
-
-    /**
-     * Checks whether the receiver is a Python sequence. As described in the
-     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
-     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
-     * Containers</a>
-     *
-     * <br>
-     * See {@link #isSequenceType(Object)}
-     *
-     * @param receiver the receiver Object
-     * @return True if object is a Python sequence object
-     */
-    public boolean isSequence(Object receiver) {
-        return lookupAttributeOnType(receiver, SpecialMethodNames.__LEN__) != PNone.NO_VALUE &&
-                        lookupAttributeOnType(receiver, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE;
-    }
-
-    /**
-     * Checks whether the receiver is a Python mapping. This message is supposed to be an equivalent
-     * of CPython's {@code PyCheck_Mapping}. Note that such object does not have to conform to the
-     * definition of mapping as described in
-     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a>.
-     *
-     * @param receiver the receiver Object
-     * @return True if object is a Python mapping object
-     */
-    public boolean isMapping(Object receiver) {
-        return lookupAttributeOnType(receiver, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE;
-    }
-
-    /**
-     * Checks whether the receiver is a Python sequence type. As described in the
-     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
-     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
-     * Containers</a>
-     *
-     * <br>
-     * Specifically the default implementation checks for the implementation of the following
-     * special methods: <b>
-     * <ul>
-     * <li>__getitem__</li>
-     * <li>__len__</li>
-     * </ul>
-     * </b>
-     *
-     * @param receiver the receiver Object
-     * @return True if a sequence type
-     */
-    public boolean isSequenceType(Object receiver) {
-        return isLazyPythonClass(receiver) &&
-                        lookupAttribute(receiver, null, SpecialMethodNames.__LEN__) != PNone.NO_VALUE &&
-                        lookupAttribute(receiver, null, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE;
-    }
 
     /**
      * Checks whether the reciever is a buffer, e.g. bytes-like, object storage.

@@ -69,7 +69,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -129,7 +128,6 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.property.PProperty;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -139,6 +137,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -153,6 +152,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -343,7 +343,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
     }
 
-    @ImportStatic({NativeMember.class, SpecialMethodNames.class, SpecialAttributeNames.class, PythonOptions.class})
+    @ImportStatic({NativeMember.class, SpecialMethodNames.class, SpecialAttributeNames.class, PythonOptions.class, SpecialMethodSlot.class})
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ReadNativeMemberNode extends Node {
 
@@ -510,22 +510,23 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_AS_SEQUENCE, key)")
         static Object doTpAsSequence(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached LookupAttributeInMRONode.Dynamic getAttrNode,
+                        @Shared("lookupLen") @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
                         @Shared("nullToSulongNode") @Cached ToSulongNode toSulongNode) {
-            if (getAttrNode.execute(object, __LEN__) != PNone.NO_VALUE) {
+            if (lookupLen.execute(object) != PNone.NO_VALUE) {
                 return new PySequenceMethodsWrapper(object);
             } else {
                 return toSulongNode.execute(getNativeNullNode.execute());
             }
         }
 
-        @Specialization(guards = "eq(TP_AS_MAPPING, key)", limit = "1")
+        @Specialization(guards = "eq(TP_AS_MAPPING, key)")
         static Object doTpAsMapping(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @CachedLibrary("object") PythonObjectLibrary pythonTypeLibrary,
+                        @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetitem,
+                        @Shared("lookupLen") @Cached(parameters = "Len") LookupCallableSlotInMRONode lookupLen,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
                         @Shared("nullToSulongNode") @Cached ToSulongNode toSulongNode) {
-            if (pythonTypeLibrary.isSequenceType(object)) {
+            if (lookupGetitem.execute(object) != PNone.NO_VALUE && lookupLen.execute(object) != PNone.NONE) {
                 return new PyMappingMethodsWrapper(object);
             } else {
                 return toSulongNode.execute(getNativeNullNode.execute());

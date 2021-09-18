@@ -59,17 +59,17 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeOnTypeNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.CheckIsSequenceNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -85,7 +85,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
@@ -95,7 +94,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.StgDict)
@@ -114,9 +112,9 @@ public class StgDictBuiltins extends PythonBuiltins {
 
         @Specialization
         Object init(VirtualFrame frame, StgDictObject self, Object[] args, PKeyword[] kwargs,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached PyObjectLookupAttr lookup,
                         @Cached CallNode callNode) {
-            Object initMethod = lib.lookupAttribute(PythonBuiltinClassType.PDict, frame, SpecialMethodNames.__INIT__);
+            Object initMethod = lookup.execute(frame, PythonBuiltinClassType.PDict, SpecialMethodNames.__INIT__);
             Object[] dictArgs;
             if (args.length > 0) {
                 dictArgs = new Object[args.length + 1];
@@ -170,19 +168,13 @@ public class StgDictBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached GetAnyAttributeNode getAttributeNode,
                         @Cached SetAttributeNode.Dynamic setAttributeNode,
-                        @Cached CheckIsSequenceNode isSequenceNode,
+                        @Cached PySequenceCheckNode sequenceCheckNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached GetItemNode getItemNode,
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached("create(_fields_)") GetAttributeNode getAttrString) {
             Object fields = getAttrString.executeObject(frame, descr.proto);
-            boolean isFieldsSeq = false;
-            try {
-                isFieldsSeq = isSequenceNode.execute(fields);
-            } catch (PException e) {
-                // pass through
-            }
-            if (!isFieldsSeq) {
+            if (!sequenceCheckNode.execute(fields)) {
                 throw raise(TypeError, FIELDS_MUST_BE_A_SEQUENCE);
             }
 
@@ -200,7 +192,7 @@ public class StgDictBuiltins extends PythonBuiltins {
                 if (fdescr.anonymous != 0) {
                     MakeFields(frame, type, fdescr, index + fdescr.index, offset + fdescr.offset, factory,
                                     getClassNode, getAttributeNode, setAttributeNode,
-                                    isSequenceNode, sizeNode, getItemNode, getArray, getAttrString);
+                                    sequenceCheckNode, sizeNode, getItemNode, getArray, getAttrString);
                     continue;
                 }
                 CFieldObject new_descr = factory.createCFieldObject(CField);
@@ -279,7 +271,7 @@ public class StgDictBuiltins extends PythonBuiltins {
          */
         @Specialization
         void MakeAnonFields(VirtualFrame frame, Object type, PythonObjectFactory factory,
-                        @Cached CheckIsSequenceNode isSequenceNode,
+                        @Cached PySequenceCheckNode sequenceCheckNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached GetItemNode getItemNode,
                         @Cached MakeFieldsNode makeFieldsNode,
@@ -290,13 +282,7 @@ public class StgDictBuiltins extends PythonBuiltins {
             if (PGuards.isPNone(anon)) {
                 return;
             }
-            boolean isAnonSeq = false;
-            try {
-                isAnonSeq = isSequenceNode.execute(anon);
-            } catch (PException e) {
-                // pass through
-            }
-            if (!isAnonSeq) {
+            if (!sequenceCheckNode.execute(anon)) {
                 throw raise(TypeError, ANONYMOUS_MUST_BE_A_SEQUENCE);
             }
 

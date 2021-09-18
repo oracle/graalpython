@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -252,8 +253,8 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.hasDecoder()")
         static String withDecoder(VirtualFrame frame, PNLDecoder self, Object input, boolean isFinal,
                         @Cached CastToJavaStringNode toString,
-                        @Cached IONodes.CallDecode decode) {
-            Object res = decode.execute(frame, self.getDecoder(), input, isFinal);
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            Object res = callMethod.execute(frame, self.getDecoder(), DECODE, input, isFinal);
             return noDecoder(self, toString.execute(res), isFinal);
         }
     }
@@ -274,8 +275,8 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached IONodes.CallGetState getState) {
-            Object state = getState.execute(frame, self.getDecoder());
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
+            Object state = callMethod.execute(frame, self.getDecoder(), GETSTATE);
             if (!(state instanceof PTuple)) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
@@ -315,7 +316,7 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Shared("o") @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Shared("i") @Cached PyIndexCheckNode indexCheckNode,
                         @Shared("s") @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached IONodes.CallSetState setState) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             Object[] objects = getObjectArrayNode.execute(state);
             if (objects.length != 2 || !indexCheckNode.execute(objects[1])) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
@@ -324,7 +325,7 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
             self.setPendingCR((flag & 1) != 0);
             flag >>= 1;
             PTuple tuple = factory().createTuple(new Object[]{objects[0], flag});
-            return setState.execute(frame, self.getDecoder(), tuple);
+            return callMethod.execute(frame, self.getDecoder(), SETSTATE, tuple);
         }
 
         @Fallback
@@ -346,9 +347,9 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.hasDecoder()")
         static Object withDecoder(VirtualFrame frame, PNLDecoder self,
-                        @Cached IONodes.CallReset reset) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             noDecoder(self);
-            return reset.execute(frame, self.getDecoder());
+            return callMethod.execute(frame, self.getDecoder(), RESET);
         }
     }
 

@@ -234,7 +234,7 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
         PNone doInt(VirtualFrame frame, Object callback,
                         @Cached PyCallableCheckNode callableCheckNode) {
             GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this);
-            if (!callableCheckNode.execute(frame, callback)) {
+            if (!callableCheckNode.execute(callback)) {
                 throw raise(TypeError, "Expected a callable object");
             }
             hpyDebugContext.setOnInvalidHandleCallback(callback);
