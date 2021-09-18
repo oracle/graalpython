@@ -113,7 +113,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
@@ -534,7 +533,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("getClassThis") @Cached GetClassNode getClass,
                     @Cached PyMappingCheckNode checkMapping,
                     @Shared("lookup") @Cached PyObjectLookupAttr lookupKeys,
-                    @Cached CallUnaryMethodNode callKeys,
+                    @Cached CallNode callKeys,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Cached SequenceNodes.LenNode lenNode,
                     @Cached TypeNodes.GetMroNode getMroNode,
@@ -557,7 +556,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 if (checkMapping.execute(this)) {
                     Object keysMethod = lookupKeys.execute(null, this, KEYS);
                     if (keysMethod != PNone.NO_VALUE) {
-                        PList mapKeys = castToList.executeWithGlobalState(callKeys.executeObject(keysMethod, this));
+                        PList mapKeys = castToList.executeWithGlobalState(callKeys.execute(keysMethod));
                         int len = lenNode.execute(mapKeys);
                         for (int i = 0; i < len; i++) {
                             Object key = getItemNode.execute(mapKeys, i);
