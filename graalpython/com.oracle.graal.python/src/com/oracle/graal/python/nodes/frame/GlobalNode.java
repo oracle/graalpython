@@ -40,19 +40,12 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public interface GlobalNode {
     default Object getGlobals(VirtualFrame frame) {
         return PArguments.getGlobals(frame);
-    }
-
-    default boolean isBuiltinDict(PDict globals, IsBuiltinClassProfile profile) {
-        return profile.profileObject(globals, PythonBuiltinClassType.PDict);
     }
 
     public String getAttributeId();

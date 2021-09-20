@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.argument.keywords;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -51,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -65,12 +65,11 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
-public abstract class CopyKeywordsNode extends Node {
+public abstract class CopyKeywordsNode extends PNodeWithContext {
     @CompilerDirectives.ValueType
     protected static final class CopyKeywordsState {
         private final HashingStorage hashingStorage;
@@ -132,28 +131,22 @@ public abstract class CopyKeywordsNode extends Node {
 
     public abstract void execute(PArguments.ThreadState state, PDict starargs, PKeyword[] keywords);
 
-    protected static boolean isBuiltinDict(Object object, IsBuiltinClassProfile profile) {
-        return object instanceof PDict && profile.profileObject(object, PythonBuiltinClassType.PDict);
-    }
-
-    @Specialization(guards = "isBuiltinDict(starargs, classProfile)", limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = "isBuiltinDict(starargs)", limit = "getCallSiteInlineCacheMaxDepth()")
     void doBuiltinDict(@SuppressWarnings("unused") PArguments.ThreadState state, PDict starargs, PKeyword[] keywords,
                     @Cached AddKeywordNode addKeywordNode,
-                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile classProfile,
                     @CachedLibrary(value = "starargs.getDictStorage()") HashingStorageLibrary lib) {
         HashingStorage hashingStorage = starargs.getDictStorage();
         lib.forEach(hashingStorage, addKeywordNode, new CopyKeywordsState(hashingStorage, keywords));
     }
 
-    @Specialization(guards = "!isBuiltinDict(starargs, classProfile)", limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = "!isBuiltinDict(starargs)", limit = "getCallSiteInlineCacheMaxDepth()")
     void doDict(PArguments.ThreadState state, PDict starargs, PKeyword[] keywords,
                     @Cached GetNextNode getNextNode,
                     @Cached CastToJavaStringNode castToJavaStringNode,
                     @Cached IsBuiltinClassProfile errorProfile,
                     @CachedLibrary("starargs") PythonObjectLibrary pol,
                     @Cached PRaiseNode raiseNode,
-                    @Cached ConditionProfile gotState,
-                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile classProfile) {
+                    @Cached ConditionProfile gotState) {
         Object iter = pol.getIteratorWithState(starargs, state);
         int i = 0;
         while (true) {

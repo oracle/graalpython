@@ -40,6 +40,7 @@ import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
@@ -65,15 +66,22 @@ public class PDict extends PHashingCollection {
     }
 
     public PDict(Object cls, Shape instanceShape, HashingStorage dictStorage) {
-        super(cls, instanceShape, dictStorage);
+        super(ensurePBCT(cls), instanceShape, dictStorage);
+    }
+
+    private static Object ensurePBCT(Object cls) {
+        if (cls instanceof PythonBuiltinClass && ((PythonBuiltinClass) cls).getType() == PythonBuiltinClassType.PDict) {
+            return PythonBuiltinClassType.PDict;
+        }
+        return cls;
     }
 
     public PDict(Object cls, Shape instanceShape) {
-        super(cls, instanceShape, EmptyStorage.INSTANCE);
+        this(cls, instanceShape, EmptyStorage.INSTANCE);
     }
 
     public PDict(Object cls, Shape instanceShape, PKeyword[] keywords) {
-        super(cls, instanceShape, (keywords != null) ? KeywordsStorage.create(keywords) : EmptyStorage.INSTANCE);
+        this(cls, instanceShape, (keywords != null) ? KeywordsStorage.create(keywords) : EmptyStorage.INSTANCE);
     }
 
     public Object getItem(Object key) {

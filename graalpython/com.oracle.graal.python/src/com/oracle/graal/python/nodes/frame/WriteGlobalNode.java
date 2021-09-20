@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -55,7 +54,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class WriteGlobalNode extends StatementNode implements GlobalNode, WriteNode {
     protected final String attributeId;
-    @Child protected IsBuiltinClassProfile builtinProfile = IsBuiltinClassProfile.create();
     @Child private ExpressionNode rhs;
 
     WriteGlobalNode(String attributeId, ExpressionNode rhs) {
@@ -107,14 +105,14 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
 
     public abstract void executeObjectWithGlobals(VirtualFrame frame, Object globals, Object value);
 
-    @Specialization(guards = {"globals == cachedGlobals", "isBuiltinDict(cachedGlobals, builtinProfile)"}, assumptions = "singleContextAssumption()", limit = "1")
+    @Specialization(guards = {"globals == cachedGlobals", "isBuiltinDict(cachedGlobals)"}, assumptions = "singleContextAssumption()", limit = "1")
     void writeDictObjectCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals, Object value,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Shared("setItemDict") @Cached HashingCollectionNodes.SetItemNode storeNode) {
         storeNode.execute(frame, cachedGlobals, attributeId, value);
     }
 
-    @Specialization(replaces = "writeDictObjectCached", guards = "isBuiltinDict(globals, builtinProfile)")
+    @Specialization(replaces = "writeDictObjectCached", guards = "isBuiltinDict(globals)")
     void writeDictObject(VirtualFrame frame, PDict globals, Object value,
                     @Shared("setItemDict") @Cached HashingCollectionNodes.SetItemNode storeNode) {
         storeNode.execute(frame, globals, attributeId, value);
