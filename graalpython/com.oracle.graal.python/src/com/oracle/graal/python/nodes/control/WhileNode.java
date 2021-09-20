@@ -32,11 +32,8 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RepeatingNode;
-import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 final class WhileRepeatingNode extends PNodeWithContext implements RepeatingNode {
-
-    private final LoopConditionProfile conditionProfile = LoopConditionProfile.createCountingProfile();
 
     @Child CoerceToBooleanNode condition;
     @Child StatementNode body;
@@ -48,7 +45,7 @@ final class WhileRepeatingNode extends PNodeWithContext implements RepeatingNode
 
     @Override
     public boolean executeRepeating(VirtualFrame frame) {
-        if (conditionProfile.profile(condition.executeBoolean(frame))) {
+        if (condition.executeBoolean(frame)) {
             body.executeVoid(frame);
             return true;
         }
