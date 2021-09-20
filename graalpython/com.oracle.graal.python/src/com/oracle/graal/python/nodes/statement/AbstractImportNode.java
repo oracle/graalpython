@@ -197,6 +197,10 @@ public abstract class AbstractImportNode extends StatementNode {
         public static ImportName create() {
             return ImportNameNodeGen.create();
         }
+
+        public static ImportName getUncached() {
+            return ImportNameNodeGen.getUncached();
+        }
     }
 
     /**
