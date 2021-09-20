@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.deque.PDeque;
 import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
+import com.oracle.graal.python.builtins.objects.dict.PDefaultDict;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemIterator;
@@ -1182,6 +1183,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PDequeIter createDequeIter(PDeque deque) {
         return trace(new PDequeIter(PythonBuiltinClassType.PDequeIter, getShape(PythonBuiltinClassType.PDequeIter), deque, false));
+    }
+
+    public final PDefaultDict createDefaultDict(Object cls) {
+        return trace(new PDefaultDict(PythonBuiltinClassType.PDefaultDict, getShape(PythonBuiltinClassType.PDefaultDict)));
     }
 
     public final PDequeIter createDequeRevIter(PDeque deque) {

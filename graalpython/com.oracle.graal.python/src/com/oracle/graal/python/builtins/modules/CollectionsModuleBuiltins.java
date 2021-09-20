@@ -167,4 +167,25 @@ public class CollectionsModuleBuiltins extends PythonBuiltins {
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.DEQUE, deque);
         }
     }
+
+    // _collections.defaultdict
+    @Builtin(name = BuiltinNames.DEFAULTDICT, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PDefaultDict, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    abstract static class DefaultDictNode extends PythonVarargsBuiltinNode {
+
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            if (arguments.length >= 1) {
+                return doGeneric(arguments[0], null, null);
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new VarargsBuiltinDirectInvocationNotSupported();
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        PDeque doGeneric(Object cls, Object[] args, PKeyword[] kwargs) {
+            return factory().createDeque(cls);
+        }
+    }
 }
