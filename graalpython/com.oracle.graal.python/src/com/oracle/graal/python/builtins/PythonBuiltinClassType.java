@@ -218,6 +218,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
     JSONScanner("Scanner", "_json", Flags.PUBLIC_BASE_WODICT),
     JSONEncoder("Encoder", "_json", Flags.PUBLIC_BASE_WODICT),
 
+    // _ast (rest of the classes are not builtin, they are generated in AstModuleBuiltins)
+    AST("AST", "_ast", Flags.PUBLIC_BASE_WDICT),
+
     // HPy
     DebugHandle("DebugHandle", GraalHPyDebugModuleBuiltins.HPY_DEBUG, Flags.PUBLIC_DERIVED_WODICT),
 
