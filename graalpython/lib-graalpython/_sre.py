@@ -275,11 +275,11 @@ class Match():
 
     @property
     def lastindex(self):
-        lastindex = None
-        for index in range(1, self.__compiled_regex.groupCount):
-            if self.__result.getStart(index) >= 0:
-                lastindex = index
-        return lastindex
+        lastindex = self.__result.lastGroup
+        if lastindex == -1:
+            return None
+        else:
+            return lastindex
 
     def __repr__(self):
         return "<%s object; span=%r, match=%r>" % (type(self).__name__, self.span(), self.group())
