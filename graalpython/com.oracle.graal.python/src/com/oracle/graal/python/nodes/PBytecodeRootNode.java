@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -130,6 +131,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
@@ -152,6 +154,7 @@ import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import java.util.Arrays;
 
 public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNode {
@@ -325,6 +328,21 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @SuppressWarnings("unchecked")
     private <T extends Node> T insertChildNode(Function<Integer, T> nodeSupplier, int bytecodeIndex, int argument) {
+        CompilerAsserts.partialEvaluationConstant(bytecodeIndex);
+        T node = (T) adoptedNodes[bytecodeIndex];
+        CompilerAsserts.partialEvaluationConstant(node);
+        if (node != null) {
+            return node;
+        } else {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            T newNode = nodeSupplier.apply(argument);
+            adoptedNodes[bytecodeIndex] = insert(newNode);
+            return newNode;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends Node> T insertChildNode(Function<Object, T> nodeSupplier, int bytecodeIndex, EconomicMapStorage argument) {
         CompilerAsserts.partialEvaluationConstant(bytecodeIndex);
         T node = (T) adoptedNodes[bytecodeIndex];
         CompilerAsserts.partialEvaluationConstant(node);
@@ -1190,8 +1208,26 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case BUILD_SET:
                     case BUILD_SET_UNPACK:
                     case BUILD_MAP:
+                        throw CompilerDirectives.shouldNotReachHere("build bytecodes");
                     case SETUP_ANNOTATIONS:
+                        throw CompilerDirectives.shouldNotReachHere("setup annotations");
                     case BUILD_CONST_KEY_MAP:
+                        {
+                            PTuple keys = ((PTuple) stack[stackTop]);
+                            SequenceStorage keysStorage = keys.getSequenceStorage();
+                            EconomicMapStorage map = EconomicMapStorage.create(oparg);
+                            HashingStorageLibrary mapLib = insertChildNode((m) -> HashingStorageLibrary.getFactory().create(m), bci, map);
+                            for (int i = oparg; i > 0; i--) {
+                                Object key = keysStorage.getItemNormalized(oparg - i);
+                                int stackIdx = stackTop - oparg + 1;
+                                Object value = stack[stackIdx];
+                                stack[stackIdx] = null;
+                                mapLib.setItemWithFrame(map, key, value, ConditionProfile.getUncached(), frame);
+                            }
+                            stackTop = stackTop - oparg;
+                            stack[++stackTop] = factory.createDict(map);
+                        }
+                        break;
                     case BUILD_MAP_UNPACK:
                     case BUILD_MAP_UNPACK_WITH_CALL:
                         throw CompilerDirectives.shouldNotReachHere("build bytecodes");
