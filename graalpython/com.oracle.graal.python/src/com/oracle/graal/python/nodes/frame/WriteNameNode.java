@@ -64,7 +64,13 @@ public abstract class WriteNameNode extends StatementNode implements WriteNode, 
         return WriteNameNodeGen.create(attributeId, rhs);
     }
 
-    @Specialization(guards = "hasLocalsDict(frame, isBuiltin)")
+    @Specialization(guards = "!hasLocals(frame)")
+    protected static void writeGlobal(VirtualFrame frame, Object value,
+                    @Cached("create(attributeId)") WriteGlobalNode setItem) {
+        setItem.executeObject(frame, value);
+    }
+
+    @Specialization(guards = "hasLocalsDict(frame, isBuiltin)", limit = "1")
     protected void writeLocalsDict(VirtualFrame frame, Object value,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin,
                     @Cached HashingCollectionNodes.SetItemNode setItem) {
@@ -77,12 +83,6 @@ public abstract class WriteNameNode extends StatementNode implements WriteNode, 
                     @Cached SetItemNode setItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
         setItem.executeWith(frame, frameLocals, attributeId, value);
-    }
-
-    @Specialization(guards = "!hasLocals(frame)")
-    protected static void writeGlobal(VirtualFrame frame, Object value,
-                    @Cached("create(attributeId)") WriteGlobalNode setItem) {
-        setItem.executeObject(frame, value);
     }
 
     public final String getAttributeId() {
