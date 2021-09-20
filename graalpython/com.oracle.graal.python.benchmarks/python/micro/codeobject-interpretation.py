@@ -114,9 +114,9 @@ for _ in range(0, SIMULATED_FILECOUNT, len(BYTECODE_FILES)):
 
 
 CODESTR1 = "\n".join(["""
-import sys
+# import sys
 def foo(): pass
-len(sys.__name__)
+len(foo.__name__)
 """] * 100)
 CODESTR2 = "\n".join(["""
 def bar(): pass
@@ -124,18 +124,25 @@ x = None
 len([])
 y = x
 """] * 100)
-if IS_GRAAL and False: # test with bytecode or with AST
+import pydoc_data.topics
+with open(pydoc_data.topics.__file__, "r") as f:
+    CODESTR3 = f.read()
+TEST_WITH_BYTECODE = True # False to test with AST
+if IS_GRAAL and TEST_WITH_BYTECODE:
     JUST_PYC_1 = __graalpython__.compile(CODESTR1, "1", "pyc-nocompile")
     JUST_PYC_2 = __graalpython__.compile(CODESTR1, "2", "pyc-nocompile")
+    JUST_PYC_3 = __graalpython__.compile(CODESTR3, pydoc_data.topics.__file__, "pyc-nocompile")
 else:
     JUST_PYC_1 = marshal.dumps(compile(CODESTR1, "1", "exec"))
     JUST_PYC_2 = marshal.dumps(compile(CODESTR2, "2", "exec"))
+    JUST_PYC_3 = marshal.dumps(compile(CODESTR3, pydoc_data.topics.__file__, "exec"))
 
 
 MORE_CODEOBJECTS = []
 for _ in range(0, SIMULATED_FILECOUNT, 2):
     MORE_CODEOBJECTS.append(marshal.loads(JUST_PYC_1))
     MORE_CODEOBJECTS.append(marshal.loads(JUST_PYC_2))
+    MORE_CODEOBJECTS.append(marshal.loads(JUST_PYC_3))
 
 
 BYTECODE_FILE_DATA = []
@@ -149,6 +156,7 @@ def measure(num):
         # Enable this to benchmark GraalPython code deserialization SST vs
         # bytecode. Switch out the mode in the global setup above
         # marshal.loads(JUST_PYC_1); marshal.loads(JUST_PYC_2)
+        # marshal.loads(JUST_PYC_1); marshal.loads(JUST_PYC_2); marshal.loads(JUST_PYC_3)
 
         # Enable this to measure executing different modules in AST vs bytecode
         # exec(MORE_CODEOBJECTS[i % len(MORE_CODEOBJECTS)])
