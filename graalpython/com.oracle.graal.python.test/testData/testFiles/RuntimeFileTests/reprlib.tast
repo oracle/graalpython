@@ -301,8 +301,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
         Identifier: Repr
         PythonCallBinary SourceSection: [1178,4965]`class Repr:↵↵    def...`
           CallBinaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: Repr SourceSection: None
             Arguments: None
             KwArguments: None

@@ -439,8 +439,8 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
         Identifier: Verbose
         PythonCallTernary SourceSection: [1931,1967]`class Verbose(Except...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: Verbose SourceSection: None
             Arguments: None
             KwArguments: None
@@ -484,8 +484,8 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
         Identifier: Pattern
         PythonCallBinary SourceSection: [1967,3333]`class Pattern:↵    #...`
           CallBinaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: Pattern SourceSection: None
             Arguments: None
             KwArguments: None
@@ -1023,8 +1023,8 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
         Identifier: SubPattern
         PythonCallBinary SourceSection: [3333,7117]`class SubPattern:↵  ...`
           CallBinaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: SubPattern SourceSection: None
             Arguments: None
             KwArguments: None
@@ -2588,8 +2588,8 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39303]`#↵# Secret 
         Identifier: Tokenizer
         PythonCallBinary SourceSection: [7117,9275]`class Tokenizer:↵   ...`
           CallBinaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: Tokenizer SourceSection: None
             Arguments: None
             KwArguments: None

@@ -70,8 +70,8 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                       Frame: [0,C,Illegal]
                                       PythonCallTernary SourceSection: [64,190]`class C(object):â†µ   ...`
                                         CallTernaryMethodNodeGen SourceSection: None
-                                        GetCallAttributeNodeGen SourceSection: None
-                                          BuiltinsLiteralNode SourceSection: None
+                                        LoadBuildClassNode SourceSection: None
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FunctionDefinitionNode Name: C SourceSection: None
                                           Arguments: None
                                           KwArguments: None

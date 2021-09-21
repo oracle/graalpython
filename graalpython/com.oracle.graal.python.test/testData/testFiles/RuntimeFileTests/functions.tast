@@ -456,8 +456,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
         Identifier: map
         PythonCallTernary SourceSection: [3055,3636]`class map(object):↵ ...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: map SourceSection: None
             Arguments: None
             KwArguments: None

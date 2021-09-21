@@ -264,8 +264,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         Identifier: _OrderedDictKeysView
         PythonCallTernary SourceSection: [2419,2547]`class _OrderedDictKe...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: _OrderedDictKeysView SourceSection: None
             Arguments: None
             KwArguments: None
@@ -384,8 +384,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         Identifier: _OrderedDictItemsView
         PythonCallTernary SourceSection: [2547,2722]`class _OrderedDictIt...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: _OrderedDictItemsView SourceSection: None
             Arguments: None
             KwArguments: None
@@ -516,8 +516,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         Identifier: _OrderedDictValuesView
         PythonCallTernary SourceSection: [2722,2892]`class _OrderedDictVa...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: _OrderedDictValuesView SourceSection: None
             Arguments: None
             KwArguments: None
@@ -644,8 +644,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         Identifier: _Link
         PythonCallTernary SourceSection: [2892,2967]`class _Link(object):...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: _Link SourceSection: None
             Arguments: None
             KwArguments: None
@@ -698,8 +698,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         Identifier: OrderedDict
         PythonCallTernary SourceSection: [2967,10820]`class OrderedDict(di...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: OrderedDict SourceSection: None
             Arguments: None
             KwArguments: None
@@ -4211,8 +4211,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             Identifier: Counter
             PythonCallTernary SourceSection: [18080,32029]`class Counter(dict):...`
               CallTernaryMethodNodeGen SourceSection: None
-              GetCallAttributeNodeGen SourceSection: None
-                BuiltinsLiteralNode SourceSection: None
+              LoadBuildClassNode SourceSection: None
+                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
               FunctionDefinitionNode Name: Counter SourceSection: None
                 Arguments: None
                 KwArguments: None

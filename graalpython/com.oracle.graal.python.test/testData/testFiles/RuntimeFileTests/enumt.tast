@@ -430,8 +430,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
         Identifier: auto
         PythonCallBinary SourceSection: [1292,1420]`class auto:↵    """↵...`
           CallBinaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: auto SourceSection: None
             Arguments: None
             KwArguments: None
@@ -488,8 +488,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
         Identifier: _EnumDict
         PythonCallTernary SourceSection: [1420,3954]`class _EnumDict(dict...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: _EnumDict SourceSection: None
             Arguments: None
             KwArguments: None
@@ -999,8 +999,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
         Identifier: EnumMeta
         PythonCallTernary SourceSection: [3968,21037]`class EnumMeta(type)...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: EnumMeta SourceSection: None
             Arguments: None
             KwArguments: None
@@ -5412,14 +5412,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                   IsBuiltinClassProfile SourceSection: None
                     GetClassNodeGen SourceSection: None
             EmptyNode SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [25753,25838]`class IntEnum(int, E...`
         Identifier: IntEnum
         PythonCallQuaternary SourceSection: [25753,25838]`class IntEnum(int, E...`
           CallQuaternaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: IntEnum SourceSection: None
             Arguments: None
             KwArguments: None
@@ -5519,8 +5519,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
         Identifier: Flag
         PythonCallTernary SourceSection: [25897,29992]`class Flag(Enum):↵  ...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: Flag SourceSection: None
             Arguments: None
             KwArguments: None
@@ -6950,8 +6950,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
         Identifier: IntFlag
         PythonCallQuaternary SourceSection: [29992,32384]`class IntFlag(int, F...`
           CallQuaternaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: IntFlag SourceSection: None
             Arguments: None
             KwArguments: None

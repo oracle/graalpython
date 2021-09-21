@@ -1383,8 +1383,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
         Identifier: FrameSummary
         PythonCallBinary SourceSection: [8040,10444]`class FrameSummary:↵...`
           CallBinaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: FrameSummary SourceSection: None
             Arguments: None
             KwArguments: None
@@ -2307,8 +2307,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
         Identifier: StackSummary
         PythonCallTernary SourceSection: [11144,15801]`class StackSummary(l...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: StackSummary SourceSection: None
             Arguments: None
             KwArguments: None
@@ -3215,8 +3215,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
             Identifier: TracebackException
             PythonCallBinary SourceSection: [15801,23096]`class TracebackExcep...`
               CallBinaryMethodNodeGen SourceSection: None
-              GetCallAttributeNodeGen SourceSection: None
-                BuiltinsLiteralNode SourceSection: None
+              LoadBuildClassNode SourceSection: None
+                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
               FunctionDefinitionNode Name: TracebackException SourceSection: None
                 Arguments: None
                 KwArguments: None

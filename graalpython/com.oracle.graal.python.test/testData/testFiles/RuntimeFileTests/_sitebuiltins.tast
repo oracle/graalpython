@@ -17,8 +17,8 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
         Identifier: Quitter
         PythonCallTernary SourceSection: [329,773]`class Quitter(object...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: Quitter SourceSection: None
             Arguments: None
             KwArguments: None
@@ -245,8 +245,8 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
         Identifier: _Printer
         PythonCallTernary SourceSection: [773,2538]`class _Printer(objec...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: _Printer SourceSection: None
             Arguments: None
             KwArguments: None
@@ -881,8 +881,8 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
             Identifier: _Helper
             PythonCallTernary SourceSection: [2538,3115]`class _Helper(object...`
               CallTernaryMethodNodeGen SourceSection: None
-              GetCallAttributeNodeGen SourceSection: None
-                BuiltinsLiteralNode SourceSection: None
+              LoadBuildClassNode SourceSection: None
+                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
               FunctionDefinitionNode Name: _Helper SourceSection: None
                 Arguments: None
                 KwArguments: None

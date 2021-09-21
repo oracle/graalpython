@@ -810,8 +810,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                   IsBuiltinClassProfile SourceSection: None
                     GetClassNodeGen SourceSection: None
             EmptyNode SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2924,3203]`class Awaitable(meta...`
         Identifier: Awaitable
         PythonCallNodeGen SourceSection: [2924,3203]`class Awaitable(meta...`
@@ -993,14 +993,14 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                   IsBuiltinClassProfile SourceSection: None
                     GetClassNodeGen SourceSection: None
             EmptyNode SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [3203,4279]`class Coroutine(Awai...`
         Identifier: Coroutine
         PythonCallTernary SourceSection: [3203,4279]`class Coroutine(Awai...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: Coroutine SourceSection: None
             Arguments: None
             KwArguments: None
@@ -1540,14 +1540,14 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                   IsBuiltinClassProfile SourceSection: None
                     GetClassNodeGen SourceSection: None
             EmptyNode SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [4615,5061]`class AsyncIterator(...`
         Identifier: AsyncIterator
         PythonCallTernary SourceSection: [4615,5061]`class AsyncIterator(...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: AsyncIterator SourceSection: None
             Arguments: None
             KwArguments: None
@@ -1758,8 +1758,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
         Identifier: AsyncGenerator
         PythonCallTernary SourceSection: [5061,6485]`class AsyncGenerator...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: AsyncGenerator SourceSection: None
             Arguments: None
             KwArguments: None
@@ -2355,14 +2355,14 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                   IsBuiltinClassProfile SourceSection: None
                     GetClassNodeGen SourceSection: None
             EmptyNode SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [6833,7255]`class Iterator(Itera...`
         Identifier: Iterator
         PythonCallTernary SourceSection: [6833,7255]`class Iterator(Itera...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: Iterator SourceSection: None
             Arguments: None
             KwArguments: None
@@ -2729,8 +2729,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
         Identifier: Reversible
         PythonCallTernary SourceSection: [7753,8073]`class Reversible(Ite...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: Reversible SourceSection: None
             Arguments: None
             KwArguments: None
@@ -2915,8 +2915,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
         Identifier: Generator
         PythonCallTernary SourceSection: [8073,9357]`class Generator(Iter...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: Generator SourceSection: None
             Arguments: None
             KwArguments: None
@@ -3498,8 +3498,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                   IsBuiltinClassProfile SourceSection: None
                     GetClassNodeGen SourceSection: None
             EmptyNode SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [9659,9953]`class Container(meta...`
         Identifier: Container
         PythonCallNodeGen SourceSection: [9659,9953]`class Container(meta...`
@@ -3679,8 +3679,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                   IsBuiltinClassProfile SourceSection: None
                     GetClassNodeGen SourceSection: None
             EmptyNode SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [9953,10209]`class Collection(Siz...`
         Identifier: Collection
         PythonCallNodeGen SourceSection: [9953,10209]`class Collection(Siz...`
@@ -3811,8 +3811,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             Identifier: Container
             IsBuiltinClassProfile SourceSection: None
               GetClassNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10209,10521]`class Callable(metac...`
         Identifier: Callable
         PythonCallNodeGen SourceSection: [10209,10521]`class Callable(metac...`
@@ -3999,14 +3999,14 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                   IsBuiltinClassProfile SourceSection: None
                     GetClassNodeGen SourceSection: None
             EmptyNode SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10521,14799]`class Set(Collection...`
         Identifier: Set
         PythonCallTernary SourceSection: [10521,14799]`class Set(Collection...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: Set SourceSection: None
             Arguments: None
             KwArguments: None
@@ -5545,8 +5545,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
         Identifier: MutableSet
         PythonCallTernary SourceSection: [14825,16941]`class MutableSet(Set...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: MutableSet SourceSection: None
             Arguments: None
             KwArguments: None
@@ -6257,8 +6257,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
         Identifier: Mapping
         PythonCallTernary SourceSection: [16987,18236]`class Mapping(Collec...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: Mapping SourceSection: None
             Arguments: None
             KwArguments: None
@@ -6713,8 +6713,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
         Identifier: MappingView
         PythonCallTernary SourceSection: [18269,18544]`class MappingView(Si...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: MappingView SourceSection: None
             Arguments: None
             KwArguments: None
@@ -6904,8 +6904,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
         Identifier: KeysView
         PythonCallQuaternary SourceSection: [18544,18802]`class KeysView(Mappi...`
           CallQuaternaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: KeysView SourceSection: None
             Arguments: None
             KwArguments: None
@@ -7155,8 +7155,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
         Identifier: ItemsView
         PythonCallQuaternary SourceSection: [18833,19284]`class ItemsView(Mapp...`
           CallQuaternaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: ItemsView SourceSection: None
             Arguments: None
             KwArguments: None
@@ -7456,8 +7456,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
         Identifier: ValuesView
         PythonCallQuaternary SourceSection: [19317,19672]`class ValuesView(Map...`
           CallQuaternaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: ValuesView SourceSection: None
             Arguments: None
             KwArguments: None
@@ -7690,8 +7690,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
         Identifier: MutableMapping
         PythonCallTernary SourceSection: [19707,22581]`class MutableMapping...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: MutableMapping SourceSection: None
             Arguments: None
             KwArguments: None
@@ -8440,8 +8440,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
         Identifier: Sequence
         PythonCallQuaternary SourceSection: [22633,24271]`class Sequence(Rever...`
           CallQuaternaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: Sequence SourceSection: None
             Arguments: None
             KwArguments: None
@@ -9152,8 +9152,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
         Identifier: ByteString
         PythonCallTernary SourceSection: [24376,24514]`class ByteString(Seq...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: ByteString SourceSection: None
             Arguments: None
             KwArguments: None
@@ -9232,8 +9232,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
         Identifier: MutableSequence
         PythonCallTernary SourceSection: [24574,26338]`class MutableSequenc...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: MutableSequence SourceSection: None
             Arguments: None
             KwArguments: None

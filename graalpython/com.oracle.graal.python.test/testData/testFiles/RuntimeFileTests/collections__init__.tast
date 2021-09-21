@@ -264,8 +264,8 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
         Identifier: _OrderedDictKeysView
         PythonCallTernary SourceSection: [2419,2547]`class _OrderedDictKe...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: _OrderedDictKeysView SourceSection: None
             Arguments: None
             KwArguments: None
@@ -384,8 +384,8 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
         Identifier: _OrderedDictItemsView
         PythonCallTernary SourceSection: [2547,2722]`class _OrderedDictIt...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: _OrderedDictItemsView SourceSection: None
             Arguments: None
             KwArguments: None
@@ -516,8 +516,8 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
         Identifier: _OrderedDictValuesView
         PythonCallTernary SourceSection: [2722,2892]`class _OrderedDictVa...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: _OrderedDictValuesView SourceSection: None
             Arguments: None
             KwArguments: None
@@ -644,8 +644,8 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
         Identifier: _Link
         PythonCallTernary SourceSection: [2892,2967]`class _Link(object):...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: _Link SourceSection: None
             Arguments: None
             KwArguments: None
@@ -698,8 +698,8 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
         Identifier: OrderedDict
         PythonCallTernary SourceSection: [2967,10820]`class OrderedDict(di...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: OrderedDict SourceSection: None
             Arguments: None
             KwArguments: None
@@ -4207,8 +4207,8 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
         Identifier: Counter
         PythonCallTernary SourceSection: [18080,32191]`class Counter(dict):...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: Counter SourceSection: None
             Arguments: None
             KwArguments: None
@@ -6779,8 +6779,8 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
         Identifier: ChainMap
         PythonCallTernary SourceSection: [32191,35981]`class ChainMap(_coll...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: ChainMap SourceSection: None
             Arguments: None
             KwArguments: None
@@ -8095,8 +8095,8 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
         Identifier: UserDict
         PythonCallTernary SourceSection: [35981,38176]`class UserDict(_coll...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: UserDict SourceSection: None
             Arguments: None
             KwArguments: None
@@ -8965,8 +8965,8 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
         Identifier: UserList
         PythonCallTernary SourceSection: [38176,41307]`class UserList(_coll...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: UserList SourceSection: None
             Arguments: None
             KwArguments: None
@@ -11009,8 +11009,8 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
             Identifier: UserString
             PythonCallTernary SourceSection: [41307,47650]`class UserString(_co...`
               CallTernaryMethodNodeGen SourceSection: None
-              GetCallAttributeNodeGen SourceSection: None
-                BuiltinsLiteralNode SourceSection: None
+              LoadBuildClassNode SourceSection: None
+                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
               FunctionDefinitionNode Name: UserString SourceSection: None
                 Arguments: None
                 KwArguments: None

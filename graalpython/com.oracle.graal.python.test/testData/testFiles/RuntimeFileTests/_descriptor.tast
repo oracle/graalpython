@@ -110,8 +110,8 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                         Frame: [2,named_tuple,Illegal]
                       PythonCallTernary SourceSection: [2121,2611]`class named_tuple(tu...`
                         CallTernaryMethodNodeGen SourceSection: None
-                        GetCallAttributeNodeGen SourceSection: None
-                          BuiltinsLiteralNode SourceSection: None
+                        LoadBuildClassNode SourceSection: None
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FunctionDefinitionNode Name: named_tuple SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -563,8 +563,8 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
             Identifier: SimpleNamespace
             PythonCallTernary SourceSection: [2974,3601]`class SimpleNamespac...`
               CallTernaryMethodNodeGen SourceSection: None
-              GetCallAttributeNodeGen SourceSection: None
-                BuiltinsLiteralNode SourceSection: None
+              LoadBuildClassNode SourceSection: None
+                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
               FunctionDefinitionNode Name: SimpleNamespace SourceSection: None
                 Arguments: None
                 KwArguments: None

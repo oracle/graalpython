@@ -1962,8 +1962,8 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
         Identifier: attrgetter
         PythonCallBinary SourceSection: [4937,6321]`class attrgetter:↵  ...`
           CallBinaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: attrgetter SourceSection: None
             Arguments: None
             KwArguments: None
@@ -2496,8 +2496,8 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
         Identifier: itemgetter
         PythonCallBinary SourceSection: [6321,7294]`class itemgetter:↵  ...`
           CallBinaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: itemgetter SourceSection: None
             Arguments: None
             KwArguments: None
@@ -2983,8 +2983,8 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
         Identifier: methodcaller
         PythonCallBinary SourceSection: [7294,8778]`class methodcaller:↵...`
           CallBinaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: methodcaller SourceSection: None
             Arguments: None
             KwArguments: None

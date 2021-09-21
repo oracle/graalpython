@@ -39,8 +39,8 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                         Frame: [0,DerivedClassName,Illegal]
                         PythonCallTernary SourceSection: [12,63]`class DerivedClassNa...`
                           CallTernaryMethodNodeGen SourceSection: None
-                          GetCallAttributeNodeGen SourceSection: None
-                            BuiltinsLiteralNode SourceSection: None
+                          LoadBuildClassNode SourceSection: None
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: DerivedClassName SourceSection: None
                             Arguments: None
                             KwArguments: None

@@ -84,8 +84,8 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
         Identifier: RegexFlag
         PythonCallTernary SourceSection: [6964,7809]`class RegexFlag(enum...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: RegexFlag SourceSection: None
             Arguments: None
             KwArguments: None
@@ -1864,8 +1864,8 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             Identifier: Scanner
             PythonCallBinary SourceSection: [13918,15192]`class Scanner:↵    d...`
               CallBinaryMethodNodeGen SourceSection: None
-              GetCallAttributeNodeGen SourceSection: None
-                BuiltinsLiteralNode SourceSection: None
+              LoadBuildClassNode SourceSection: None
+                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
               FunctionDefinitionNode Name: Scanner SourceSection: None
                 Arguments: None
                 KwArguments: None

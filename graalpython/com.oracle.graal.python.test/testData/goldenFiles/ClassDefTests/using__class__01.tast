@@ -13,8 +13,8 @@ ModuleRootNode Name: <module 'using__class__01'> SourceSection: [0,52]`class X:â
           Identifier: X
           PythonCallBinary SourceSection: [0,52]`class X:â†µ     def fn...`
             CallBinaryMethodNodeGen SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+            LoadBuildClassNode SourceSection: None
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             FunctionDefinitionNode Name: X SourceSection: None
               Arguments: None
               KwArguments: None

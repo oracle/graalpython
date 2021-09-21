@@ -40,8 +40,8 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                           Frame: [0,MyIter,Illegal]
                         PythonCallBinary SourceSection: [14,148]`class MyIter:↵      ...`
                           CallBinaryMethodNodeGen SourceSection: None
-                          GetCallAttributeNodeGen SourceSection: None
-                            BuiltinsLiteralNode SourceSection: None
+                          LoadBuildClassNode SourceSection: None
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: MyIter SourceSection: None
                             Arguments: None
                             KwArguments: None

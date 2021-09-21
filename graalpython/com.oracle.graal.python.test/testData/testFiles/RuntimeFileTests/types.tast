@@ -312,8 +312,8 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
         Identifier: _C
         PythonCallBinary SourceSection: [781,814]`class _C:↵    def _m...`
           CallBinaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: _C SourceSection: None
             Arguments: None
             KwArguments: None
@@ -1245,8 +1245,8 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
         Identifier: DynamicClassAttribute
         PythonCallBinary SourceSection: [4330,6524]`class DynamicClassAt...`
           CallBinaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: DynamicClassAttribute SourceSection: None
             Arguments: None
             KwArguments: None
@@ -1960,8 +1960,8 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
         Identifier: _GeneratorWrapper
         PythonCallBinary SourceSection: [6524,7624]`class _GeneratorWrap...`
           CallBinaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: _GeneratorWrapper SourceSection: None
             Arguments: None
             KwArguments: None
