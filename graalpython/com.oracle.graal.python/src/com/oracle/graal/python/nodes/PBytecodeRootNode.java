@@ -1102,8 +1102,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         throw CompilerDirectives.shouldNotReachHere("async bytecodes");
                     case LOAD_BUILD_CLASS:
                         {
-                            ReadGlobalOrBuiltinNode read = insertChildNode(() -> ReadGlobalOrBuiltinNode.create(__BUILD_CLASS__), bci);
-                            stack[++stackTop] = read.executeWithGlobals(frame, globals);
+                            ReadGlobalOrBuiltinNode read = insertChildNode((uncached) -> uncached ? ReadGlobalOrBuiltinNode.getUncached() : ReadGlobalOrBuiltinNode.create(__BUILD_CLASS__), bci);
+                            stack[++stackTop] = read.read(frame, globals, __BUILD_CLASS__);
                         }
                         break;
                     case STORE_NAME:
@@ -1137,8 +1137,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                     newNode.execute(frame, locals, varname, value);
                                 }
                             } else {
-                                WriteGlobalNode writeGlobalNode = insertChildNode((a) -> WriteGlobalNode.create((String) a), bci + 1, varname);
-                                writeGlobalNode.executeObjectWithGlobals(frame, globals, value);
+                                WriteGlobalNode writeGlobalNode = insertChildNode((a, uncached) -> uncached ? WriteGlobalNode.getUncached() : WriteGlobalNode.create((String) a), bci + 1, varname);
+                                writeGlobalNode.write(frame, globals, varname, value);
                             }
                         }
                         break;
@@ -1180,8 +1180,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case STORE_GLOBAL:
                         {
                             String varname = names[oparg];
-                            WriteGlobalNode writeGlobalNode = insertChildNode((a) -> WriteGlobalNode.create((String) a), bci, varname);
-                            writeGlobalNode.executeObjectWithGlobals(frame, globals, stack[stackTop]);
+                            WriteGlobalNode writeGlobalNode = insertChildNode((a, uncached) -> uncached ? WriteGlobalNode.getUncached() : WriteGlobalNode.create((String) a), bci, varname);
+                            writeGlobalNode.write(frame, globals, varname, stack[stackTop]);
                             stack[stackTop--] = null;
                         }
                         break;
@@ -1205,7 +1205,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                     } else { // generalize
                                         CompilerDirectives.transferToInterpreterAndInvalidate();
                                         GetItemNode newNode = GetItemNode.create();
-                                        adoptedNodes[bci] = insert(newNode);
+                                        adoptedNodes[bci] = helper.replace(newNode);
                                         result = newNode.execute(frame, locals, varname);
                                     }
                                 } else if (helper instanceof GetItemNode) {
@@ -1214,19 +1214,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                     CompilerDirectives.transferToInterpreterAndInvalidate();
                                     assert helper == null;
                                     if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
-                                        HashingStorageLibrary lib = HashingStorageLibrary.getFactory().createDispatched(2);
-                                        adoptedNodes[bci] = insert(lib);
+                                        HashingStorageLibrary lib = insertChildNode((uncached) -> uncached ? HashingStorageLibrary.getUncached() : HashingStorageLibrary.getFactory().createDispatched(2), bci);
                                         result = lib.getItem(((PDict) locals).getDictStorage(), varname);
                                     } else {
-                                        GetItemNode newNode = GetItemNode.create();
-                                        adoptedNodes[bci] = insert(newNode);
+                                        GetItemNode newNode = insertChildNode(() -> GetItemNode.create(), bci);
                                         result = newNode.execute(frame, locals, varname);
                                     }
                                 }
                             }
                             if (result == null) {
-                                ReadGlobalOrBuiltinNode read = insertChildNode((a) -> ReadGlobalOrBuiltinNode.create((String) a), bci + 1, varname);
-                                result = read.executeWithGlobals(frame, globals);
+                                ReadGlobalOrBuiltinNode read = insertChildNode((a, uncached) -> uncached ? ReadGlobalOrBuiltinNode.getUncached() : ReadGlobalOrBuiltinNode.create((String) a), bci + 1, varname);
+                                result = read.read(frame, globals, varname);
                             }
                             stack[++stackTop] = result;
                         }
@@ -1234,8 +1232,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case LOAD_GLOBAL:
                         {
                             String varname = names[oparg];
-                            ReadGlobalOrBuiltinNode read = insertChildNode((a) -> ReadGlobalOrBuiltinNode.create((String) a), bci, varname);
-                            stack[++stackTop] = read.executeWithGlobals(frame, globals);
+                            ReadGlobalOrBuiltinNode read = insertChildNode((a, uncached) -> uncached ? ReadGlobalOrBuiltinNode.getUncached() : ReadGlobalOrBuiltinNode.create((String) a), bci, varname);
+                            stack[++stackTop] = read.read(frame, globals, varname);
                         }
                         break;
                     case DELETE_FAST:
