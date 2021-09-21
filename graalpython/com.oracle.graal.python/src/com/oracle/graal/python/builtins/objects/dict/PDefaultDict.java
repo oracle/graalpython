@@ -47,22 +47,26 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.object.Shape;
 
 public class PDefaultDict extends PDict {
-    private Object defaultFactory;
+    private final Object defaultFactory;
 
-    public PDefaultDict(PythonLanguage lang) {
+    public PDefaultDict(PythonLanguage lang, Object defaultFactory) {
         super(lang);
+        this.defaultFactory = defaultFactory;
     }
 
-    public PDefaultDict(Object cls, Shape instanceShape, HashingStorage dictStorage) {
+    public PDefaultDict(Object cls, Shape instanceShape, HashingStorage dictStorage, Object defaultFactory) {
         super(cls, instanceShape, dictStorage);
+        this.defaultFactory = defaultFactory;
     }
 
-    public PDefaultDict(Object cls, Shape instanceShape) {
+    public PDefaultDict(Object cls, Shape instanceShape, Object defaultFactory) {
         super(cls, instanceShape);
+        this.defaultFactory = defaultFactory;
     }
 
-    public PDefaultDict(Object cls, Shape instanceShape, PKeyword[] keywords) {
+    public PDefaultDict(Object cls, Shape instanceShape, PKeyword[] keywords, Object defaultFactory) {
         super(cls, instanceShape, keywords);
+        this.defaultFactory = defaultFactory;
     }
 
     @Override

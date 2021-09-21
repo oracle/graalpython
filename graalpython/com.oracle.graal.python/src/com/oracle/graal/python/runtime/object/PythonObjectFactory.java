@@ -1185,8 +1185,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDequeIter(PythonBuiltinClassType.PDequeIter, getShape(PythonBuiltinClassType.PDequeIter), deque, false));
     }
 
-    public final PDefaultDict createDefaultDict(Object cls) {
-        return trace(new PDefaultDict(PythonBuiltinClassType.PDefaultDict, getShape(PythonBuiltinClassType.PDefaultDict)));
+    public final PDefaultDict createDefaultDict(Object defaultFactory) {
+        return trace(new PDefaultDict(PythonBuiltinClassType.PDefaultDict, getShape(PythonBuiltinClassType.PDefaultDict), defaultFactory));
+    }
+
+    public final PDefaultDict createDefaultDict(Object cls, Object defaultFactory) {
+        return trace(new PDefaultDict(cls, getShape(cls), defaultFactory));
     }
 
     public final PDequeIter createDequeRevIter(PDeque deque) {

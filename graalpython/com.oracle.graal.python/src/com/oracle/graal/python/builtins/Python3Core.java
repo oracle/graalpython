@@ -166,6 +166,7 @@ import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeIterBuiltins;
+import com.oracle.graal.python.builtins.objects.dict.DefaultDictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictReprBuiltin;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesBuiltins;
@@ -301,7 +302,6 @@ public final class Python3Core implements ParserErrorCallback {
                         "faulthandler",
                         "base_exception",
                         PythonCextBuiltins.PYTHON_CEXT,
-                        "_collections",
                         "bytes",
                         "bytearray",
                         "time",
@@ -432,6 +432,7 @@ public final class Python3Core implements ParserErrorCallback {
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new WarningsModuleBuiltins(),
+                        new DefaultDictBuiltins(),
 
                         // io
                         new IOModuleBuiltins(),

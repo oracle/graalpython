@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.deque.DequeIterBuiltins.DequeIterNextNode;
 import com.oracle.graal.python.builtins.objects.deque.PDeque;
 import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
+import com.oracle.graal.python.builtins.objects.dict.PDefaultDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -172,20 +173,11 @@ public class CollectionsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = BuiltinNames.DEFAULTDICT, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PDefaultDict, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class DefaultDictNode extends PythonVarargsBuiltinNode {
-
-        @Override
-        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            if (arguments.length >= 1) {
-                return doGeneric(arguments[0], null, null);
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new VarargsBuiltinDirectInvocationNotSupported();
-        }
-
         @Specialization
         @SuppressWarnings("unused")
-        PDeque doGeneric(Object cls, Object[] args, PKeyword[] kwargs) {
-            return factory().createDeque(cls);
+        PDefaultDict doGeneric(Object cls, Object[] args, PKeyword[] kwargs) {
+            Object defaultFactory = (args.length >= 1) ? args[0] : PNone.NONE;
+            return factory().createDefaultDict(cls, defaultFactory);
         }
     }
 }
