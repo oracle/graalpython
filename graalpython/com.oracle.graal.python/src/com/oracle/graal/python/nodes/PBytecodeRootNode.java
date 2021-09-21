@@ -357,6 +357,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         if (node != null) {
             return node;
         } else {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             final int mask;
             if ((bytecodeIndex & 0b1) == 0) {
                 mask = 0x80000000;
@@ -367,7 +368,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 extraArgs[bytecodeIndex >> 1] |= mask;
                 return nodeSupplier.get(true); // first execution uncached
             } else {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
                 T newNode = nodeSupplier.get(false);
                 adoptedNodes[bytecodeIndex] = insert(newNode);
                 return newNode;
@@ -1128,13 +1128,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                 CompilerDirectives.transferToInterpreterAndInvalidate();
                                 assert helper == null;
                                 if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
-                                    HashingCollectionNodes.SetItemNode newNode;
-                                    newNode = HashingCollectionNodes.SetItemNode.create();
-                                    adoptedNodes[bci] = insert(newNode);
+                                    HashingCollectionNodes.SetItemNode newNode = insertChildNode((uncached) -> uncached ? HashingCollectionNodes.SetItemNode.getUncached() : HashingCollectionNodes.SetItemNode.create(), bci);
                                     newNode.execute(frame, (PDict) locals, varname, value);
                                 } else {
-                                    PyObjectSetItem newNode = PyObjectSetItem.create();
-                                    adoptedNodes[bci] = insert(newNode);
+                                    PyObjectSetItem newNode = insertChildNode((uncached) -> uncached ? PyObjectSetItem.getUncached() : PyObjectSetItem.create(), bci);
                                     newNode.execute(frame, locals, varname, value);
                                 }
                             } else {
@@ -1526,7 +1523,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             switch (oparg) {
                                 case 1:
                                     {
-                                        CallUnaryMethodNode callNode = insertChildNode((uncached) -> uncached ? CallUnaryMethodNode.create() : CallUnaryMethodNode.getUncached(), bci);
+                                        CallUnaryMethodNode callNode = insertChildNode((uncached) -> uncached ? CallUnaryMethodNode.getUncached() : CallUnaryMethodNode.create(), bci);
                                         Object result = callNode.executeObject(frame, func, stack[stackTop]);
                                         stack[stackTop--] = null;
                                         stack[stackTop] = result;
