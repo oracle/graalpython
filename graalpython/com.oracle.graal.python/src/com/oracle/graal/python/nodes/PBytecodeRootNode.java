@@ -141,6 +141,7 @@ import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotKind;
@@ -190,7 +191,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @CompilationFinal private Object osrMetadata;
 
-    private static final FrameDescriptor DESCRIPTOR = new FrameDescriptor();
+    public static final FrameDescriptor DESCRIPTOR = new FrameDescriptor();
     private static final FrameSlot STACK_SLOT = DESCRIPTOR.addFrameSlot("stack", FrameSlotKind.Object);
     private static final FrameSlot FAST_SLOT = DESCRIPTOR.addFrameSlot("fast", FrameSlotKind.Object);
     private static final FrameSlot CELL_SLOT = DESCRIPTOR.addFrameSlot("cell", FrameSlotKind.Object);
@@ -1905,6 +1906,20 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
         }
         return kwdefaults;
+    }
+
+    public void syncFastToLocals(Object localsObject, Frame frameToSync, PyObjectSetItem setItem, PyObjectDelItem delItem) {
+        Object[] fastlocals = (Object[])FrameUtil.getObjectSafe(frameToSync, FAST_SLOT);
+        assert fastlocals.length == varnames.length;
+        for (int i = 0; i < varnames.length; i++) {
+            Object v = fastlocals[i];
+            String n = varnames[i];
+            if (v == null) {
+                delItem.execute(frameToSync, localsObject, n);
+            } else {
+                setItem.execute(frameToSync, localsObject, n, v);
+            }
+        }
     }
 
     // TODO: Below are 119 bytecodes. That's less than 128, so we can compact them and then use the
