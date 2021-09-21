@@ -127,7 +127,7 @@ y = x
 import pydoc_data.topics
 with open(pydoc_data.topics.__file__, "r") as f:
     CODESTR3 = f.read()
-TEST_WITH_BYTECODE = True # False to test with AST
+TEST_WITH_BYTECODE = False # False to test with AST
 if IS_GRAAL and TEST_WITH_BYTECODE:
     JUST_PYC_1 = __graalpython__.compile(CODESTR1, "1", "pyc-nocompile")
     JUST_PYC_2 = __graalpython__.compile(CODESTR1, "2", "pyc-nocompile")
@@ -139,10 +139,20 @@ else:
 
 
 MORE_CODEOBJECTS = []
-for _ in range(0, SIMULATED_FILECOUNT, 2):
-    MORE_CODEOBJECTS.append(marshal.loads(JUST_PYC_1))
-    MORE_CODEOBJECTS.append(marshal.loads(JUST_PYC_2))
-    MORE_CODEOBJECTS.append(marshal.loads(JUST_PYC_3))
+
+
+def __cleanup__(*args):
+    import time
+    s = time.time()
+    MORE_CODEOBJECTS.clear()
+    for _ in range(0, SIMULATED_FILECOUNT, 2):
+        MORE_CODEOBJECTS.append(marshal.loads(JUST_PYC_1))
+        MORE_CODEOBJECTS.append(marshal.loads(JUST_PYC_2))
+        MORE_CODEOBJECTS.append(marshal.loads(JUST_PYC_3))
+    print(f"Resetting {len(MORE_CODEOBJECTS)} took {time.time() - s} seconds")
+
+
+__cleanup__()
 
 
 BYTECODE_FILE_DATA = []
@@ -155,11 +165,10 @@ def measure(num):
     for i in range(num):
         # Enable this to benchmark GraalPython code deserialization SST vs
         # bytecode. Switch out the mode in the global setup above
-        # marshal.loads(JUST_PYC_1); marshal.loads(JUST_PYC_2)
         # marshal.loads(JUST_PYC_1); marshal.loads(JUST_PYC_2); marshal.loads(JUST_PYC_3)
 
         # Enable this to measure executing different modules in AST vs bytecode
-        # exec(MORE_CODEOBJECTS[i % len(MORE_CODEOBJECTS)])
+        exec(MORE_CODEOBJECTS[i % len(MORE_CODEOBJECTS)])
 
         # Enable this to measure just unmarshalling
         # marshal.loads(BYTECODE_FILE_DATA[i % len(BYTECODE_FILE_DATA)])
