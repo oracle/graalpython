@@ -56,8 +56,6 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = __GETITEM__)
 public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
-    private static final String P_OBJECT_IS_NOT_SUBSCRIPTABLE = "'%p' object is not subscriptable";
-
     public ExpressionNode getPrimary() {
         return getLeftNode();
     }
@@ -164,7 +162,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 raiseNode = insert(PRaiseNode.create());
             }
-            throw raiseNode.raise(TypeError, P_OBJECT_IS_NOT_SUBSCRIPTABLE, arg);
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, arg);
         }
     }
 }
