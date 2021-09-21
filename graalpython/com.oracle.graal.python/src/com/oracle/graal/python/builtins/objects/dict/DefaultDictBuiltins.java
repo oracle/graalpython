@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
@@ -50,12 +51,15 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -64,6 +68,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDefaultDict)
 public final class DefaultDictBuiltins extends PythonBuiltins {
@@ -110,6 +115,26 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
         public PDefaultDict copy(@SuppressWarnings("unused") VirtualFrame frame, PDefaultDict self,
                           @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             return factory().createDefaultDict(self.getDefaultFactory(), lib.copy(self.getDictStorage()));
+        }
+    }
+
+    @Builtin(name = __MISSING__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class MissingNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "self.getDefaultFactory() == null")
+        Object doNoFactory(@SuppressWarnings("unused") PDefaultDict self, Object key) {
+            throw raise(PythonBuiltinClassType.KeyError, key);
+        }
+
+        @Specialization(guards = "self.getDefaultFactory() != null", limit = "getCallSiteInlineCacheMaxDepth()")
+        Object doMissing(VirtualFrame frame, PDefaultDict self, Object key,
+                       @Cached CallNode callNode,
+                       @CachedLibrary(value = "self.getDictStorage()") HashingStorageLibrary hlib,
+                       @Cached.Exclusive @Cached ConditionProfile profile) {
+            final Object value = callNode.execute(frame, self.getDefaultFactory());
+            final HashingStorage storage = hlib.setItemWithFrame(self.getDictStorage(), key, value, profile, frame);
+            self.setDictStorage(storage);
+            return value;
         }
     }
 }
