@@ -37,7 +37,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
@@ -66,13 +65,13 @@ import com.oracle.graal.python.builtins.objects.dict.DictBuiltinsFactory.Dispatc
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -89,7 +88,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -332,42 +330,29 @@ public final class DictBuiltins extends PythonBuiltins {
 
         protected abstract Object execute(VirtualFrame frame, Object self, Object key);
 
-        @Specialization(guards = "hasMissing(self, lib)", limit = "1")
+        @Specialization
         protected static Object misssing(VirtualFrame frame, Object self, Object key,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return lib.lookupAndCallSpecialMethod(self, frame, __MISSING__, key);
-        }
-
-        @Specialization(guards = "!hasMissing(self, lib)", limit = "1")
-        protected static Object misssing(VirtualFrame frame, Object self, Object key,
-                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib,
-                        @Exclusive @Cached DefaultMissingNode missing) {
-            return missing.call(frame, self, key);
-        }
-
-        protected static boolean hasMissing(Object self, PythonObjectLibrary lib) {
-            return lib.lookupAttributeOnType(self, __MISSING__) != NO_VALUE;
+                        @Cached("create(__MISSING__)") LookupAndCallBinaryNode callMissing,
+                        @Cached DefaultMissingNode defaultMissing) {
+            Object result = callMissing.executeObject(frame, self, key);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                return defaultMissing.execute(key);
+            }
+            return result;
         }
     }
 
-    protected abstract static class DefaultMissingNode extends PythonBinaryBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        Object run(Object self, PString key,
-                        @Cached CastToJavaStringNode castStr) {
-            throw raise(KeyError, "%s", castStr.execute(key));
-        }
+    protected abstract static class DefaultMissingNode extends PNodeWithRaise {
+        public abstract Object execute(Object key);
 
-        @SuppressWarnings("unused")
         @Specialization
-        Object run(Object self, String key) {
+        Object run(String key) {
             throw raise(KeyError, "%s", key);
         }
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!isString(key)")
-        Object run(VirtualFrame frame, Object self, Object key) {
-            throw raise(KeyError, new Object[]{key});
+        @Specialization(guards = "!isJavaString(key)")
+        Object run(Object key) {
+            throw raise(KeyError, key);
         }
     }
 

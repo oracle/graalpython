@@ -41,15 +41,6 @@
 package com.oracle.graal.python.builtins.objects.str;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
-import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins.GetItemNode;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.lib.PyObjectAsciiNode;
-import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
-import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import static com.oracle.graal.python.nodes.ErrorMessages.EMPTY_ATTR_IN_FORMAT_STR;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_CONVERSION;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_AFTER_FORMAT_CONVERSION;
@@ -65,15 +56,26 @@ import static com.oracle.graal.python.nodes.ErrorMessages.SWITCHING_FROM_MANUAL_
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNEXPECTED_S_IN_FIELD_NAME;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNMATCHED_S;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.nodes.Node;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
+import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins.GetItemNode;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
+import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class TemplateFormatter {
 
@@ -324,7 +326,7 @@ public final class TemplateFormatter {
                 }
                 String attr = name.substring(start, i);
                 if (result != null) {
-                    result = PythonObjectLibrary.getUncached().lookupAttribute(result, null, attr);
+                    result = PyObjectLookupAttr.getUncached().execute(null, result, attr);
                 } else {
                     this.parserList.add(new Object[]{true, attr});
                 }

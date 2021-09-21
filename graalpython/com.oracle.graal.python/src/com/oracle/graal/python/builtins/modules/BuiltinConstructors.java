@@ -76,7 +76,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MRO_ENTRIES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
@@ -365,6 +364,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private CanBeDoubleNode canBeDoubleNode;
         @Child private PyFloatAsDoubleNode asDoubleNode;
         @Child private LookupAndCallUnaryNode callReprNode;
+        @Child private LookupAndCallUnaryNode callComplexNode;
         @Child private WarnNode warnNode;
 
         private PComplex createComplex(Object cls, double real, double imaginary) {
@@ -415,11 +415,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return createComplex(cls, real, 0);
         }
 
-        @Specialization(guards = "isNoValue(imag)", limit = "1")
-        PComplex complexFromDouble(VirtualFrame frame, Object cls, PFloat real, @SuppressWarnings("unused") PNone imag,
-                        @CachedLibrary("real") PythonObjectLibrary objectLib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
-            return complexFromObject(frame, cls, real, imag, objectLib, methodLib);
+        @Specialization(guards = "isNoValue(imag)")
+        PComplex complexFromDouble(VirtualFrame frame, Object cls, PFloat real, @SuppressWarnings("unused") PNone imag) {
+            return complexFromObject(frame, cls, real, imag);
         }
 
         @Specialization(guards = "isNoValue(imag)")
@@ -432,18 +430,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return createComplex(cls, real, 0);
         }
 
-        @Specialization(guards = "isNoValue(imag)", limit = "1")
-        PComplex complexFromLong(VirtualFrame frame, Object cls, PInt real, @SuppressWarnings("unused") PNone imag,
-                        @CachedLibrary("real") PythonObjectLibrary objectLib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
-            return complexFromObject(frame, cls, real, imag, objectLib, methodLib);
+        @Specialization(guards = "isNoValue(imag)")
+        PComplex complexFromLong(VirtualFrame frame, Object cls, PInt real, @SuppressWarnings("unused") PNone imag) {
+            return complexFromObject(frame, cls, real, imag);
         }
 
-        @Specialization(guards = {"isNoValue(imag)", "!isNoValue(number)", "!isString(number)"}, limit = "1")
-        PComplex complexFromObject(VirtualFrame frame, Object cls, Object number, @SuppressWarnings("unused") PNone imag,
-                        @CachedLibrary("number") PythonObjectLibrary objectLib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
-            PComplex value = getComplexNumberFromObject(frame, number, objectLib, methodLib);
+        @Specialization(guards = {"isNoValue(imag)", "!isNoValue(number)", "!isString(number)"})
+        PComplex complexFromObject(VirtualFrame frame, Object cls, Object number, @SuppressWarnings("unused") PNone imag) {
+            PComplex value = getComplexNumberFromObject(frame, number);
             if (value == null) {
                 if (canBeDouble(number)) {
                     return createComplex(cls, asDouble(frame, number), 0.0);
@@ -469,11 +463,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return createComplex(cls, one - two.getImag(), two.getReal());
         }
 
-        @Specialization(guards = "!isString(one)", limit = "1")
-        PComplex complexFromComplexLong(VirtualFrame frame, Object cls, Object one, long two,
-                        @CachedLibrary("one") PythonObjectLibrary objectLib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
-            PComplex value = getComplexNumberFromObject(frame, one, objectLib, methodLib);
+        @Specialization(guards = "!isString(one)")
+        PComplex complexFromComplexLong(VirtualFrame frame, Object cls, Object one, long two) {
+            PComplex value = getComplexNumberFromObject(frame, one);
             if (value == null) {
                 if (canBeDouble(one)) {
                     return createComplex(cls, asDouble(frame, one), two);
@@ -484,11 +476,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return createComplex(cls, value.getReal(), value.getImag() + two);
         }
 
-        @Specialization(guards = "!isString(one)", limit = "1")
-        PComplex complexFromComplexDouble(VirtualFrame frame, Object cls, Object one, double two,
-                        @CachedLibrary("one") PythonObjectLibrary objectLib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
-            PComplex value = getComplexNumberFromObject(frame, one, objectLib, methodLib);
+        @Specialization(guards = "!isString(one)")
+        PComplex complexFromComplexDouble(VirtualFrame frame, Object cls, Object one, double two) {
+            PComplex value = getComplexNumberFromObject(frame, one);
             if (value == null) {
                 if (canBeDouble(one)) {
                     return createComplex(cls, asDouble(frame, one), two);
@@ -499,11 +489,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return createComplex(cls, value.getReal(), value.getImag() + two);
         }
 
-        @Specialization(guards = "!isString(one)", limit = "1")
-        PComplex complexFromComplexPInt(VirtualFrame frame, Object cls, Object one, PInt two,
-                        @CachedLibrary("one") PythonObjectLibrary objectLib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
-            PComplex value = getComplexNumberFromObject(frame, one, objectLib, methodLib);
+        @Specialization(guards = "!isString(one)")
+        PComplex complexFromComplexPInt(VirtualFrame frame, Object cls, Object one, PInt two) {
+            PComplex value = getComplexNumberFromObject(frame, one);
             if (value == null) {
                 if (canBeDouble(one)) {
                     return createComplex(cls, asDouble(frame, one), two.doubleValueWithOverflow(getRaiseNode()));
@@ -514,11 +502,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return createComplex(cls, value.getReal(), value.getImag() + two.doubleValueWithOverflow(getRaiseNode()));
         }
 
-        @Specialization(guards = "!isString(one)", limit = "1")
-        PComplex complexFromComplexComplex(VirtualFrame frame, Object cls, Object one, PComplex two,
-                        @CachedLibrary("one") PythonObjectLibrary objectLib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
-            PComplex value = getComplexNumberFromObject(frame, one, objectLib, methodLib);
+        @Specialization(guards = "!isString(one)")
+        PComplex complexFromComplexComplex(VirtualFrame frame, Object cls, Object one, PComplex two) {
+            PComplex value = getComplexNumberFromObject(frame, one);
             if (value == null) {
                 if (canBeDouble(one)) {
                     return createComplex(cls, asDouble(frame, one) - two.getImag(), two.getReal());
@@ -530,10 +516,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isString(one)", "!isNoValue(two)", "!isPComplex(two)"})
-        PComplex complexFromComplexObject(VirtualFrame frame, Object cls, Object one, Object two,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary objectLib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
-            PComplex oneValue = getComplexNumberFromObject(frame, one, objectLib, methodLib);
+        PComplex complexFromComplexObject(VirtualFrame frame, Object cls, Object one, Object two) {
+            PComplex oneValue = getComplexNumberFromObject(frame, one);
             if (canBeDouble(two)) {
                 double twoValue = asDouble(frame, two);
                 if (oneValue == null) {
@@ -597,6 +581,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return asDoubleNode.execute(frame, object);
         }
 
+        private Object callComplex(VirtualFrame frame, Object object) {
+            if (callComplexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callComplexNode = insert(LookupAndCallUnaryNode.create(__COMPLEX__));
+            }
+            return callComplexNode.executeObject(frame, object);
+        }
+
         private WarnNode getWarnNode() {
             if (warnNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -613,23 +605,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_NUMBER, "complex() second", x);
         }
 
-        private PComplex getComplexNumberFromObject(VirtualFrame frame, Object object, PythonObjectLibrary objectLib, PythonObjectLibrary methodLib) {
+        private PComplex getComplexNumberFromObject(VirtualFrame frame, Object object) {
             if (getIsComplexTypeProfile().profileObject(object, PythonBuiltinClassType.PComplex)) {
                 return (PComplex) object;
             } else {
-                Object complexCallable = objectLib.lookupAttributeOnType(object, __COMPLEX__);
-                if (complexCallable != PNone.NO_VALUE) {
-                    Object result = methodLib.callUnboundMethod(complexCallable, frame, object);
-                    if (result instanceof PComplex) {
-                        if (!getIsResultComplexTypeProfile().profileObject(result, PythonBuiltinClassType.PComplex)) {
-                            getWarnNode().warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
-                                            ErrorMessages.WARN_P_RETURNED_NON_P,
-                                            object, "__complex__", "complex", result, "complex");
-                        }
-                        return (PComplex) result;
-                    } else {
-                        throw raise(TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, result);
+                Object result = callComplex(frame, object);
+                if (result instanceof PComplex) {
+                    if (!getIsResultComplexTypeProfile().profileObject(result, PythonBuiltinClassType.PComplex)) {
+                        getWarnNode().warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                                        ErrorMessages.WARN_P_RETURNED_NON_P,
+                                        object, "__complex__", "complex", result, "complex");
                     }
+                    return (PComplex) result;
+                } else if (result != PNone.NO_VALUE) {
+                    throw raise(TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, result);
                 }
                 if (object instanceof PComplex) {
                     // the class extending PComplex but doesn't have __complex__ method
@@ -1022,6 +1011,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callIndexNode;
         @Child private LookupAndCallUnaryNode callTruncNode;
         @Child private LookupAndCallUnaryNode callReprNode;
+        @Child private LookupAndCallUnaryNode callIntNode;
         @Child private WarnNode warnNode;
 
         public final Object executeWith(VirtualFrame frame, Object number) {
@@ -1332,25 +1322,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         // PString
-        @Specialization(guards = "isNoValue(base)", limit = "1")
+        @Specialization(guards = "isNoValue(base)")
         @Megamorphic
-        Object parsePInt(VirtualFrame frame, Object cls, PString arg, @SuppressWarnings("unused") PNone base,
-                        @CachedLibrary("arg") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
-            Object result = callInt(frame, arg, lib, methodLib);
+        Object parsePInt(VirtualFrame frame, Object cls, PString arg, @SuppressWarnings("unused") PNone base) {
+            Object result = callInt(frame, arg);
             if (result != PNone.NO_VALUE) {
                 return result;
             }
             return stringToInt(frame, cls, arg.getValue(), 10, arg);
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         @Megamorphic
-        Object parsePInt(VirtualFrame frame, Object cls, PString arg, int base,
-                        @CachedLibrary("arg") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
+        Object parsePInt(VirtualFrame frame, Object cls, PString arg, int base) {
             checkBase(base);
-            Object result = callInt(frame, arg, lib, methodLib);
+            Object result = callInt(frame, arg);
             if (result != PNone.NO_VALUE) {
                 return result;
             }
@@ -1383,13 +1369,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.INT_CANT_CONVERT_STRING_WITH_EXPL_BASE);
         }
 
-        @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"}, limit = "5")
+        @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"})
         @Megamorphic
         Object createIntGeneric(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone base,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @CachedLibrary(value = "obj") PythonObjectLibrary objectLib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
             // This method (together with callInt and callIndex) reflects the logic of PyNumber_Long
             // in CPython. We don't use PythonObjectLibrary here since the original CPython function
             // does not use any of the conversion functions (such as _PyLong_AsInt or
@@ -1399,7 +1383,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // This unfortunately means that this method relies on the internal logic of NO_VALUE
             // return values representing missing magic methods which should be ideally hidden
             // by PythonObjectLibrary.
-            Object result = callInt(frame, obj, objectLib, methodLib);
+            Object result = callInt(frame, obj);
             if (result == PNone.NO_VALUE) {
                 result = callIndex(frame, obj);
                 if (result == PNone.NO_VALUE) {
@@ -1423,7 +1407,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     } else {
                         result = callIndex(frame, truncResult);
                         if (result == PNone.NO_VALUE) {
-                            result = callInt(frame, truncResult, objectLib, methodLib);
+                            result = callInt(frame, truncResult);
                             if (result == PNone.NO_VALUE) {
                                 throw raise(TypeError, ErrorMessages.RETURNED_NON_INTEGRAL, "__trunc__", truncResult);
                             }
@@ -1459,20 +1443,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return FloatBuiltinsFactory.IntNodeFactory.create();
         }
 
-        private Object callInt(VirtualFrame frame, Object obj, PythonObjectLibrary objectLib, PythonObjectLibrary methodLib) {
-            // The case when the result is NO_VALUE (i.e. the object does not provide __int__)
-            // is handled in createIntGeneric
-            Object intCallable = objectLib.lookupAttributeOnType(obj, __INT__);
-            if (intCallable != PNone.NO_VALUE) {
-                Object result = methodLib.callUnboundMethod(intCallable, frame, obj);
-                if (result != PNone.NO_VALUE && !isIntegerType(result)) {
-                    throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, __INT__, result);
-                }
-                return result;
-            }
-            return PNone.NO_VALUE;
-        }
-
         private Object callIndex(VirtualFrame frame, Object obj) {
             if (callIndexNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1493,6 +1463,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 callTruncNode = insert(LookupAndCallUnaryNode.create(__TRUNC__));
             }
             return callTruncNode.executeObject(frame, obj);
+        }
+
+        private Object callInt(VirtualFrame frame, Object object) {
+            if (callIntNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callIntNode = insert(LookupAndCallUnaryNode.create(__INT__));
+            }
+            Object result = callIntNode.executeObject(frame, object);
+            if (result != PNone.NO_VALUE && !isIntegerType(result)) {
+                throw raise(TypeError, ErrorMessages.RETURNED_NON_INT, __INT__, result);
+            }
+            return result;
         }
 
         private WarnNode getWarnNode() {
@@ -2162,12 +2144,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isString(wName)")
         Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
                         @Cached GetClassNode getClassNode,
-                        @CachedLibrary(limit = "5") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
                         @Cached BranchProfile updatedStorage,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
                         @Cached("create(__SET_NAME__)") LookupInheritedAttributeNode getSetNameNode,
+                        @Cached("create(__MRO_ENTRIES__)") LookupInheritedAttributeNode lookupMroEntriesNode,
                         @Cached CastToJavaStringNode castStr,
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
@@ -2183,7 +2165,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // Determine the proper metatype to deal with this
             String name = castStr.execute(wName);
             Object metaclass = cls;
-            Object winner = calculateMetaclass(frame, metaclass, bases, getClassNode, lib);
+            Object winner = calculateMetaclass(frame, metaclass, bases, getClassNode, lookupMroEntriesNode);
             if (winner != metaclass) {
                 Object newFunc = getNewFuncNode.execute(winner);
                 if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode() == getRootNode())) {
@@ -2717,10 +2699,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return getMroNode.execute(pythonClass);
         }
 
-        private Object calculateMetaclass(VirtualFrame frame, Object cls, PTuple bases, GetClassNode getClassNode, PythonObjectLibrary lib) {
+        private Object calculateMetaclass(VirtualFrame frame, Object cls, PTuple bases, GetClassNode getClassNode, LookupInheritedAttributeNode lookupMroEntries) {
             Object winner = cls;
             for (Object base : ensureGetObjectArrayNode().execute(bases)) {
-                if (lib.lookupAttributeOnType(base, __MRO_ENTRIES__) != PNone.NO_VALUE) {
+                if (lookupMroEntries.execute(base) != PNone.NO_VALUE) {
                     throw raise(TypeError, ErrorMessages.TYPE_DOESNT_SUPPORT_MRO_ENTRY_RESOLUTION);
                 }
                 if (!ensureIsAcceptableBaseNode().execute(base)) {

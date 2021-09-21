@@ -66,7 +66,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__DEBUG__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__GRAALPYTHON__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
@@ -156,7 +155,6 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttribu
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -276,15 +274,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return Math.abs(arg);
         }
 
-        @Specialization(limit = "2")
+        @Specialization
         public Object absObject(VirtualFrame frame, Object object,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-            Object method = lib.lookupAttributeOnType(object, __ABS__);
-            if (method == NO_VALUE) {
+                        @Cached("create(__ABS__)") LookupAndCallUnaryNode callAbs) {
+            Object result = callAbs.executeObject(frame, object);
+            if (result == NO_VALUE) {
                 throw raise(TypeError, ErrorMessages.BAD_OPERAND_FOR, "", "abs()", object);
             }
-            return methodLib.callUnboundMethod(method, frame, object);
+            return result;
         }
     }
 
@@ -428,8 +425,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         boolean doGeneric(Object object,
-                        @Cached("create(__CALL__)") LookupInheritedAttributeNode getAttributeNode) {
-            /**
+                        @Cached PyCallableCheckNode callableCheck) {
+            /*
              * Added temporarily to skip translation/execution errors in unit testing
              */
 
@@ -437,12 +434,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return true;
             }
 
-            Object callAttr = getAttributeNode.execute(object);
-            if (callAttr != NO_VALUE) {
-                return true;
-            }
-
-            return PGuards.isCallable(object);
+            return callableCheck.execute(object);
         }
     }
 
@@ -1715,30 +1707,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = ROUND, minNumOfPositionalArgs = 1, parameterNames = {"number", "ndigits"})
     @GenerateNodeFactory
     public abstract static class RoundNode extends PythonBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         Object round(VirtualFrame frame, Object x, @SuppressWarnings("unused") PNone n,
-                        @CachedLibrary("x") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib,
-                        @Cached BranchProfile noRound) {
-            Object method = lib.lookupAttributeOnType(x, __ROUND__);
-            if (method == PNone.NO_VALUE) {
-                noRound.enter();
+                        @Cached("create(__ROUND__)") LookupAndCallUnaryNode callRound) {
+            Object result = callRound.executeObject(frame, x);
+            if (result == PNone.NO_VALUE) {
                 throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, __ROUND__);
             }
-            return methodLib.callUnboundMethod(method, frame, x);
+            return result;
         }
 
-        @Specialization(guards = "!isNoValue(n)", limit = "1")
+        @Specialization(guards = "!isPNone(n)")
         Object round(VirtualFrame frame, Object x, Object n,
-                        @CachedLibrary("x") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib,
-                        @Cached BranchProfile noRound) {
-            Object method = lib.lookupAttributeOnType(x, __ROUND__);
-            if (method == PNone.NO_VALUE) {
-                noRound.enter();
+                        @Cached("create(__ROUND__)") LookupAndCallBinaryNode callRound) {
+            Object result = callRound.executeObject(frame, x, n);
+            if (result == NOT_IMPLEMENTED) {
                 throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, __ROUND__);
             }
-            return methodLib.callUnboundMethod(method, frame, x, n);
+            return result;
         }
     }
 
@@ -1748,7 +1734,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class SetAttrNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object setAttr(VirtualFrame frame, Object object, Object key, Object value,
-                        @Cached("new()") SetAttributeNode.Dynamic setAttrNode) {
+                        @Cached SetAttributeNode.Dynamic setAttrNode) {
             setAttrNode.execute(frame, object, key, value);
             return PNone.NONE;
         }

@@ -64,18 +64,18 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
-import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.util.ArrayBuilder;
@@ -86,14 +86,12 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ControlFlowException;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(HashingStorageLibrary.class)
@@ -117,8 +115,7 @@ public abstract class HashingStorage {
         }
     }
 
-    @ImportStatic({SpecialMethodNames.class, PGuards.class, PythonOptions.class})
-    public abstract static class InitNode extends Node implements IndirectCallNode {
+    public abstract static class InitNode extends PNodeWithContext implements IndirectCallNode {
 
         private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
         private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
@@ -163,17 +160,19 @@ public abstract class HashingStorage {
             return lookupKeysAttributeNode.execute(o) != PNone.NO_VALUE;
         }
 
-        @Specialization(guards = {"isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(dictLike, dictLib)"}, limit = "1")
+        @Specialization(guards = {"isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(dictLike, getClassNode, lookupIter)"}, limit = "1")
         static HashingStorage doPDict(PHashingCollection dictLike, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @SuppressWarnings("unused") @CachedLibrary("dictLike") PythonObjectLibrary dictLib,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             return lib.copy(dictLike.getDictStorage());
         }
 
-        @Specialization(guards = {"!isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(iterable, iterLib)"}, limit = "1")
+        @Specialization(guards = {"!isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(iterable, getClassNode, lookupIter)"}, limit = "1")
         HashingStorage doPDictKwargs(VirtualFrame frame, PHashingCollection iterable, PKeyword[] kwargs,
-                        @SuppressWarnings("unused") @CachedLibrary("iterable") PythonObjectLibrary iterLib,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+                        @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             PythonContext contextRef = PythonContext.get(this);
             PythonLanguage language = PythonLanguage.get(this);
             Object state = IndirectCallContext.enter(frame, language, contextRef, this);
@@ -186,11 +185,12 @@ public abstract class HashingStorage {
             }
         }
 
-        @Specialization(guards = "hasIterAttrButNotBuiltin(col, colLib)", limit = "1")
+        @Specialization(guards = "hasIterAttrButNotBuiltin(col, getClassNode, lookupIter)", limit = "1")
         HashingStorage doNoBuiltinKeysAttr(VirtualFrame frame, PHashingCollection col, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @SuppressWarnings("unused") @CachedLibrary("col") PythonObjectLibrary colLib,
+                        @SuppressWarnings("unused") @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
                         @Cached GetNextNode nextNode,
@@ -199,14 +199,14 @@ public abstract class HashingStorage {
             return copyToStorage(frame, col, kwargs, curStorage, callKeysNode, callGetItemNode, keysLib, nextNode, errorProfile, lib);
         }
 
-        protected static boolean hasIterAttrButNotBuiltin(PHashingCollection col, PythonObjectLibrary lib) {
-            Object attr = lib.lookupAttributeOnType(col, SpecialMethodNames.__ITER__);
+        protected static boolean hasIterAttrButNotBuiltin(PHashingCollection col, GetClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
+            Object attr = lookupIter.execute(getClassNode.execute(col));
             return attr != PNone.NO_VALUE && !(attr instanceof PBuiltinMethod || attr instanceof PBuiltinFunction);
         }
 
         @Specialization(guards = {"!isPDict(mapping)", "hasKeysAttribute(mapping)"})
         HashingStorage doMapping(VirtualFrame frame, Object mapping, PKeyword[] kwargs,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
