@@ -89,7 +89,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
-import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import static com.oracle.graal.python.nodes.BuiltinNames.ENCODE;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -822,7 +821,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     abstract static class LookupNode extends PythonUnaryBuiltinNode {
         @Specialization
         PTuple lookup(VirtualFrame frame, PBytesLike encoding,
-                        @Cached PyObjectCallMethodObjArgs callMethodNode,
                         @Cached AsciiDecodeNode asciiDecodeNode,
                         @Cached CallUnaryMethodNode callNode,
                         @Cached TupleBuiltins.LenNode lenNode,
@@ -830,12 +828,11 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile hasTruffleEncodingProfile,
                         @Cached ConditionProfile isTupleProfile) {
             String decoded = (String) ((PTuple) asciiDecodeNode.call(frame, encoding, PNone.NO_VALUE)).getSequenceStorage().getInternalArray()[0];
-            return lookup(frame, decoded, callMethodNode, callNode, lenNode, hasSearchPathProfile, hasTruffleEncodingProfile, isTupleProfile);
+            return lookup(frame, decoded, callNode, lenNode, hasSearchPathProfile, hasTruffleEncodingProfile, isTupleProfile);
         }
 
         @Specialization
         PTuple lookup(VirtualFrame frame, String encoding,
-                        @Cached PyObjectCallMethodObjArgs callMethodNode,
                         @Cached CallUnaryMethodNode callNode,
                         @Cached TupleBuiltins.LenNode lenNode,
                         @Cached ConditionProfile hasSearchPathProfile,
@@ -849,7 +846,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             }
             if (hasTruffleEncodingProfile.profile(hasTruffleEncoding(encoding))) {
                 PythonModule codecs = context.getCore().lookupBuiltinModule("_codecs_truffle");
-                result = (PTuple) callMethodNode.execute(frame, codecs, "codec_info_for_truffle", encoding);
+                result = CodecsTruffleModuleBuiltins.codecsInfo(codecs, encoding, context, factory());
             } else {
                 for (Object func : getSearchPaths(context)) {
                     Object obj = callNode.executeObject(func, normalized_encoding);
@@ -1007,7 +1004,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "encode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
+    @Builtin(name = ENCODE, minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
     @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"", useDefaultForNone = true)
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
@@ -1035,7 +1032,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
+    @Builtin(name = DECODE, minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
     @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"", useDefaultForNone = true)
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory

@@ -112,6 +112,7 @@ public abstract class BuiltinNames {
     public static final String TUPLE = "tuple";
     public static final String CALLABLE = "callable";
     public static final String ENCODE = "encode";
+    public static final String DECODE = "decode";
     public static final String FORMAT = "format";
     public static final String FORMAT_MAP = "format_map";
     public static final String FORMATTER_PARSER = "formatter_parser";
@@ -146,6 +147,7 @@ public abstract class BuiltinNames {
     public static final String __GRAALPYTHON__ = "__graalpython__";
     public static final String _CODECS = "_codecs";
     public static final String _STRING = "_string";
+    public static final String _CODECS_TRUFFLE = "_codecs_truffle";
     public static final String GETSET_DESCRIPTOR = "getset_descriptor";
     public static final String MEMBER_DESCRIPTOR = "member_descriptor";
     public static final String WRAPPER_DESCRIPTOR = "wrapper_descriptor";

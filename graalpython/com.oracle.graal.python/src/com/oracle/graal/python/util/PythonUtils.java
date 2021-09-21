@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.util;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -57,11 +60,21 @@ import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -533,5 +546,49 @@ public final class PythonUtils {
         // codePoint >= MIN_VALUE && codePoint <= MAX_VALUE
         // We consistently use logical shift (>>>) to facilitate
         // additional runtime optimizations.
+    }
+
+    @TruffleBoundary
+    public static void createMember(PythonLanguage language, Object klass, Class<?> nodeClass, String name, String doc, int idx, Function<PythonLanguage, RootNode> rootNodeSupplier) {
+        RootCallTarget callTarget = language.createCachedCallTarget(rootNodeSupplier, nodeClass, idx);
+        PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        PBuiltinFunction getter = factory.createGetSetBuiltinFunction(name, klass, 0, callTarget);
+        GetSetDescriptor callable = factory.createGetSetDescriptor(getter, null, name, klass, false);
+        callable.setAttribute(__DOC__, doc);
+        WriteAttributeToObjectNode.getUncached(true).execute(klass, name, callable);
+    }
+
+    @TruffleBoundary
+    public static void createMethod(PythonLanguage language, Object klass, Class<?> nodeClass, Object type, int numDefaults, Supplier<PythonBuiltinBaseNode> nodeSupplier,
+                    Object... callTargetCacheKeys) {
+        Builtin builtin = nodeClass.getAnnotation(Builtin.class);
+        RootCallTarget callTarget = language.createCachedCallTarget(l -> {
+            NodeFactory<PythonBuiltinBaseNode> nodeFactory = new BuiltinFunctionRootNode.StandaloneBuiltinFactory<>(nodeSupplier.get());
+            return new BuiltinFunctionRootNode(l, builtin, nodeFactory, true);
+        }, nodeClass, createCalltargetKeys(callTargetCacheKeys, nodeClass));
+        int flags = PBuiltinFunction.getFlags(builtin, callTarget);
+        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), type, numDefaults, flags, callTarget);
+        WriteAttributeToObjectNode.getUncached(true).execute(klass, builtin.name(), function);
+    }
+
+    @TruffleBoundary
+    public static void createConstructor(PythonLanguage language, Object klass, Class<?> nodeClass, Supplier<PythonBuiltinBaseNode> nodeSupplier, Object... callTargetCacheKeys) {
+        Builtin builtin = nodeClass.getAnnotation(Builtin.class);
+        assert __NEW__.equals(builtin.name());
+        assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);
+        RootCallTarget callTarget = language.createCachedCallTarget(l -> {
+            NodeFactory<PythonBuiltinBaseNode> nodeFactory = new BuiltinFunctionRootNode.StandaloneBuiltinFactory<>(nodeSupplier.get());
+            return new BuiltinFunctionRootNode(l, builtin, nodeFactory, true, PythonBuiltinClassType.PTuple);
+        }, nodeClass, createCalltargetKeys(callTargetCacheKeys, nodeClass));
+        int flags = PBuiltinFunction.getFlags(builtin, callTarget);
+        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), PythonBuiltinClassType.PTuple, 1, flags, callTarget);
+        WriteAttributeToObjectNode.getUncached(true).execute(klass, __NEW__, function);
+    }
+
+    private static Object[] createCalltargetKeys(Object[] callTargetCacheKeys, Class<?> nodeClass) {
+        Object[] keys = new Object[callTargetCacheKeys.length + 1];
+        keys[0] = nodeClass;
+        arraycopy(callTargetCacheKeys, 0, keys, 1, callTargetCacheKeys.length);
+        return keys;
     }
 }
