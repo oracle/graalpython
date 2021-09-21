@@ -706,6 +706,22 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDict(cls, instanceShape, storage));
     }
 
+    public final PDefaultDict createDefaultDict(Object defaultFactory) {
+        return createDefaultDict(PythonBuiltinClassType.PDefaultDict, defaultFactory);
+    }
+
+    public final PDefaultDict createDefaultDict(Object cls, Object defaultFactory) {
+        return trace(new PDefaultDict(cls, getShape(cls), defaultFactory));
+    }
+
+    public final PDefaultDict createDefaultDict(Object defaultFactory, HashingStorage storage) {
+        return createDefaultDict(PythonBuiltinClassType.PDefaultDict, defaultFactory, storage);
+    }
+
+    public final PDefaultDict createDefaultDict(Object cls, Object defaultFactory, HashingStorage storage) {
+        return trace(new PDefaultDict(cls, getShape(cls), storage, defaultFactory));
+    }
+
     public final PDictView createDictKeysView(PHashingCollection dict) {
         return trace(new PDictKeysView(PythonBuiltinClassType.PDictKeysView, PythonBuiltinClassType.PDictKeysView.getInstanceShape(getLanguage()), dict));
     }
@@ -1183,14 +1199,6 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PDequeIter createDequeIter(PDeque deque) {
         return trace(new PDequeIter(PythonBuiltinClassType.PDequeIter, getShape(PythonBuiltinClassType.PDequeIter), deque, false));
-    }
-
-    public final PDefaultDict createDefaultDict(Object defaultFactory) {
-        return trace(new PDefaultDict(PythonBuiltinClassType.PDefaultDict, getShape(PythonBuiltinClassType.PDefaultDict), defaultFactory));
-    }
-
-    public final PDefaultDict createDefaultDict(Object cls, Object defaultFactory) {
-        return trace(new PDefaultDict(cls, getShape(cls), defaultFactory));
     }
 
     public final PDequeIter createDequeRevIter(PDeque deque) {

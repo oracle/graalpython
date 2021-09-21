@@ -10,6 +10,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -22,6 +23,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDefaultDict)
 public final class DefaultDictBuiltins extends PythonBuiltins {
@@ -57,6 +59,17 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
             final Object defaultFactory = self.getDefaultFactory();
             PTuple args = (defaultFactory == PNone.NONE) ? factory().createEmptyTuple() : factory().createTuple(new Object[]{defaultFactory});
             return factory().createTuple(new Object[]{getClassNode.execute(self), args, PNone.NONE, PNone.NONE, getIter.execute(frame, itemsNode.items(self))});
+        }
+    }
+
+    // copy()
+    @Builtin(name = "copy", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class CopyNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "1")
+        public PDefaultDict copy(@SuppressWarnings("unused") VirtualFrame frame, PDefaultDict self,
+                          @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            return factory().createDefaultDict(self.getDefaultFactory(), lib.copy(self.getDictStorage()));
         }
     }
 }
