@@ -176,8 +176,7 @@ public class CollectionsModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         PDefaultDict doGeneric(Object cls, Object[] args, PKeyword[] kwargs) {
-            Object defaultFactory = (args.length >= 1) ? args[0] : PNone.NONE;
-            return factory().createDefaultDict(cls, defaultFactory);
+            return factory().createDefaultDict(cls);
         }
     }
 }

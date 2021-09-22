@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.modules.json.PJSONEncoder.FastEncode;
 import com.oracle.graal.python.builtins.modules.json.PJSONScanner;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAObject;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -706,8 +707,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDict(cls, instanceShape, storage));
     }
 
-    public final PDefaultDict createDefaultDict(Object defaultFactory) {
-        return createDefaultDict(PythonBuiltinClassType.PDefaultDict, defaultFactory);
+    public final PDefaultDict createDefaultDict(Object cls) {
+        return createDefaultDict(cls, PNone.NONE);
     }
 
     public final PDefaultDict createDefaultDict(Object cls, Object defaultFactory) {

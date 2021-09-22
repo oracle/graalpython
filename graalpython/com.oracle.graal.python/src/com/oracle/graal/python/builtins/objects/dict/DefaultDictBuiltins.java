@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -53,15 +55,19 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -135,6 +141,27 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
             final HashingStorage storage = hlib.setItemWithFrame(self.getDictStorage(), key, value, profile, frame);
             self.setDictStorage(storage);
             return value;
+        }
+    }
+
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class InitNode extends PythonBuiltinNode {
+        @Specialization
+        Object doInit(VirtualFrame frame, PDefaultDict self, Object[] args, PKeyword[] kwargs,
+                            @Cached DictBuiltins.InitNode dictInitNode,
+                            @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+            Object[] newArgs = args;
+            Object newDefault = PNone.NONE;
+            if (newArgs.length > 0) {
+                newDefault = newArgs[0];
+                if (newDefault != PNone.NONE && !pol.isCallable(newDefault)) {
+                    throw raise(PythonBuiltinClassType.TypeError, FIRST_ARG_MUST_BE_CALLABLE, " or None");
+                }
+                newArgs = PythonUtils.arrayCopyOfRange(args, 1, args.length);
+            }
+            self.setDefaultFactory(newDefault);
+            return dictInitNode.execute(frame, self, newArgs, kwargs);
         }
     }
 }

@@ -47,7 +47,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.object.Shape;
 
 public class PDefaultDict extends PDict {
-    private final Object defaultFactory;
+    private Object defaultFactory;
 
     public PDefaultDict(PythonLanguage lang, Object defaultFactory) {
         super(lang);
@@ -77,5 +77,9 @@ public class PDefaultDict extends PDict {
 
     public Object getDefaultFactory() {
         return defaultFactory;
+    }
+
+    public void setDefaultFactory(Object defaultFactory) {
+        this.defaultFactory = defaultFactory;
     }
 }
