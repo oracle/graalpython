@@ -388,13 +388,13 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
      * <dt><b>Program name is an absolute path</b></dt>
      * <dd>Just return {@code program}.</dd>
      * <dt><b>Program name is a relative path</b></dt>
-     * <dd>it will resolve it to an absolute path. E.g. {@code "./python3"} will become {@code 
+     * <dd>it will resolve it to an absolute path. E.g. {@code "./python3"} will become {@code
      * "<current_working_dir>/python3"}/dd>
      * <dt><b>Program name is neither an absolute nor a relative path</b></dt>
      * <dd>It will resolve the program name wrt. to the {@code PATH} env variable. Since it may be
      * that the {@code PATH} variable is not available, this method will return {@code null}</dd>
      * </dl>
-     * 
+     *
      * @param program The program name as passed in the process' argument vector (position 0).
      * @return The absolute path to the program or {@code null}.
      */
@@ -1027,11 +1027,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             switch (System.getProperty("java.vm.name")) {
                 case "Java HotSpot(TM) 64-Bit Server VM":
                     cmd.add("-server");
-                    cmd.add("-d64");
                     break;
                 case "Java HotSpot(TM) 64-Bit Client VM":
                     cmd.add("-client");
-                    cmd.add("-d64");
                     break;
                 default:
                     break;
