@@ -239,6 +239,7 @@ import com.oracle.graal.python.builtins.objects.thread.ThreadBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
@@ -433,6 +434,7 @@ public final class Python3Core implements ParserErrorCallback {
                         new ReferenceTypeBuiltins(),
                         new WarningsModuleBuiltins(),
                         new DefaultDictBuiltins(),
+                        new TupleGetterBuiltins(),
 
                         // io
                         new IOModuleBuiltins(),

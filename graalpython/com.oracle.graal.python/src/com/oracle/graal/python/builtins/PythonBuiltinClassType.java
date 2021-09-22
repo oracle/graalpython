@@ -43,6 +43,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.FOREIGN;
 import static com.oracle.graal.python.nodes.BuiltinNames.MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.PROPERTY;
 import static com.oracle.graal.python.nodes.BuiltinNames.SIMPLE_QUEUE;
+import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE_GETTER;
 import static com.oracle.graal.python.nodes.BuiltinNames.WRAPPER_DESCRIPTOR;
 
 import java.util.Arrays;
@@ -98,6 +99,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PCell("cell", Flags.PRIVATE_DERIVED_WODICT),
     PDefaultDict(DEFAULTDICT, "_collections", Flags.PUBLIC_BASE_WODICT),
     PDeque(DEQUE, "_collections", Flags.PUBLIC_BASE_WODICT),
+    PTupleGetter(TUPLE_GETTER, "_collections", Flags.PUBLIC_BASE_WODICT),
     PDequeIter(DEQUE_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
     PDequeRevIter(DEQUE_REV_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
     PComplex("complex", BUILTINS),

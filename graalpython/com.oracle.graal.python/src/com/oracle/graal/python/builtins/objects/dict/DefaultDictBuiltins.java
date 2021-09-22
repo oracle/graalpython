@@ -88,14 +88,14 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object reprFunction(VirtualFrame frame, PDefaultDict self,
-                                   @Cached GetClassNode getClassNode,
-                                   @Cached TypeNodes.GetNameNode getNameNode,
-                                   @Cached LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode reprNode,
-                                   @Cached DictReprBuiltin.ReprNode dictReprNode) {
+                        @Cached GetClassNode getClassNode,
+                        @Cached TypeNodes.GetNameNode getNameNode,
+                        @Cached LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode reprNode,
+                        @Cached DictReprBuiltin.ReprNode dictReprNode) {
             final Object klass = getClassNode.execute(self);
             return String.format("%s(%s, %s)", getNameNode.execute(klass),
-                    reprNode.executeObject(self.getDefaultFactory(), __REPR__),
-                    dictReprNode.call(frame, self));
+                            reprNode.executeObject(self.getDefaultFactory(), __REPR__),
+                            dictReprNode.call(frame, self));
         }
     }
 
@@ -104,9 +104,9 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object reduce(VirtualFrame frame, PDefaultDict self,
-                      @Cached GetClassNode getClassNode,
-                      @Cached PyObjectGetIter getIter,
-                      @Cached DictBuiltins.ItemsNode itemsNode) {
+                        @Cached GetClassNode getClassNode,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached DictBuiltins.ItemsNode itemsNode) {
             final Object defaultFactory = self.getDefaultFactory();
             PTuple args = (defaultFactory == PNone.NONE) ? factory().createEmptyTuple() : factory().createTuple(new Object[]{defaultFactory});
             return factory().createTuple(new Object[]{getClassNode.execute(self), args, PNone.NONE, PNone.NONE, getIter.execute(frame, itemsNode.items(self))});
@@ -119,7 +119,7 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "1")
         public PDefaultDict copy(@SuppressWarnings("unused") VirtualFrame frame, PDefaultDict self,
-                          @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             return factory().createDefaultDict(self.getDefaultFactory(), lib.copy(self.getDictStorage()));
         }
     }
@@ -134,9 +134,9 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getDefaultFactory() != null", limit = "getCallSiteInlineCacheMaxDepth()")
         Object doMissing(VirtualFrame frame, PDefaultDict self, Object key,
-                       @Cached CallNode callNode,
-                       @CachedLibrary(value = "self.getDictStorage()") HashingStorageLibrary hlib,
-                       @Cached.Exclusive @Cached ConditionProfile profile) {
+                        @Cached CallNode callNode,
+                        @CachedLibrary(value = "self.getDictStorage()") HashingStorageLibrary hlib,
+                        @Cached.Exclusive @Cached ConditionProfile profile) {
             final Object value = callNode.execute(frame, self.getDefaultFactory());
             final HashingStorage storage = hlib.setItemWithFrame(self.getDictStorage(), key, value, profile, frame);
             self.setDictStorage(storage);
@@ -149,8 +149,8 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization
         Object doInit(VirtualFrame frame, PDefaultDict self, Object[] args, PKeyword[] kwargs,
-                            @Cached DictBuiltins.InitNode dictInitNode,
-                            @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+                        @Cached DictBuiltins.InitNode dictInitNode,
+                        @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             Object[] newArgs = args;
             Object newDefault = PNone.NONE;
             if (newArgs.length > 0) {
