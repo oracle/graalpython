@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -64,8 +63,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequence
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -155,17 +154,17 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             return null;
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         Object doSequence(VirtualFrame frame, Object env,
                         @Cached PyObjectSizeNode sizeNode,
-                        @CachedLibrary("env") PythonObjectLibrary lib,
                         @Cached ToBytesNode toBytesNode,
+                        @Cached PyObjectGetItem getItem,
                         @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {
             // TODO unlike CPython, this accepts a dict (if the keys are integers (0, 1, ..., len-1)
             int length = sizeNode.execute(frame, env);
             Object[] result = new Object[length];
             for (int i = 0; i < length; ++i) {
-                Object o = lib.lookupAndCallSpecialMethod(env, frame, __GETITEM__, i);
+                Object o = getItem.execute(frame, env, i);
                 byte[] bytes = toBytesNode.execute(o);
                 Object o1 = posixLib.createPathFromBytes(getContext().getPosixSupport(), bytes);
                 if (o1 == null) {
@@ -225,7 +224,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             return o;
         }
 
-        @Specialization(guards = "errPipeValid(closeFds, errPipeWrite)", limit = "1")
+        @Specialization(guards = "errPipeValid(closeFds, errPipeWrite)")
         int forkExec(VirtualFrame frame, Object[] args, Object executableList, boolean closeFds,
                         PTuple fdsToKeepTuple, Object cwdObj, Object env,
                         int stdinRead, int stdinWrite, int stdoutRead, int stdoutWrite,
@@ -233,16 +232,16 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         boolean restoreSignals, boolean callSetsid, @SuppressWarnings("unused") PNone preexecFn,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached LenNode lenNode,
-                        @Cached("createNotNormalized()") GetItemNode getItemNode,
+                        @Cached("createNotNormalized()") GetItemNode tupleGetItem,
+                        @Cached PyObjectGetItem getItem,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached ObjectToOpaquePathNode objectToOpaquePathNode,
                         @Cached PyObjectSizeNode sizeNode,
-                        @CachedLibrary("executableList") PythonObjectLibrary lib,
                         @Cached GilNode gil,
                         @Cached ToBytesNode toBytesNode) {
 
             Object[] processArgs = args;
-            int[] fdsToKeep = convertFdSequence(frame, fdsToKeepTuple, lenNode, getItemNode, castToIntNode);
+            int[] fdsToKeep = convertFdSequence(frame, fdsToKeepTuple, lenNode, tupleGetItem, castToIntNode);
             Object cwd = PGuards.isPNone(cwdObj) ? null : objectToOpaquePathNode.execute(frame, cwdObj, false);
 
             byte[] sysExecutable = fsEncode(getContext().getOption(PythonOptions.Executable));
@@ -250,7 +249,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             int length = sizeNode.execute(frame, executableList);
             Object[] executables = new Object[length];
             for (int i = 0; i < length; ++i) {
-                byte[] bytes = toBytesNode.execute(lib.lookupAndCallSpecialMethod(executableList, frame, __GETITEM__, i));
+                byte[] bytes = toBytesNode.execute(getItem.execute(frame, executableList, i));
                 if (Arrays.equals(bytes, sysExecutable)) {
                     if (length != 1) {
                         throw raise(ValueError, ErrorMessages.UNSUPPORTED_USE_OF_SYS_EXECUTABLE);

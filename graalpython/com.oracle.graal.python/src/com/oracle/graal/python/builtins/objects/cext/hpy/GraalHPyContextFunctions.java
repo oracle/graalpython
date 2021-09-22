@@ -123,7 +123,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -153,6 +152,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
@@ -1860,7 +1860,9 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached GetClassNode getClassNode,
+                        @Cached LookupSpecialMethodNode.Dynamic lookupRichcmp,
+                        @Cached CallTernaryMethodNode callRichcmp,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -1870,16 +1872,17 @@ public abstract class GraalHPyContextFunctions {
                 checkArity(arguments, 4);
                 GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
                 Object receiver = asPythonObjectNode.execute(nativeContext, arguments[1]);
-                Object[] pythonArguments = new Object[2];
-                pythonArguments[0] = asPythonObjectNode.execute(nativeContext, arguments[2]);
+                Object arg1 = asPythonObjectNode.execute(nativeContext, arguments[2]);
+                Object arg2;
                 try {
-                    pythonArguments[1] = SpecialMethodNames.getCompareOpString(castToJavaIntExactNode.execute(arguments[3]));
+                    arg2 = SpecialMethodNames.getCompareOpString(castToJavaIntExactNode.execute(arguments[3]));
                 } catch (CannotCastException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw UnsupportedTypeException.create(arguments, "4th argument must fit into Java int");
                 }
                 try {
-                    Object result = lib.lookupAndCallSpecialMethodWithState(receiver, null, SpecialMethodNames.RICHCMP, pythonArguments);
+                    Object richcmp = lookupRichcmp.execute(null, getClassNode.execute(receiver), SpecialMethodNames.RICHCMP, receiver);
+                    Object result = callRichcmp.execute(null, richcmp, receiver, arg1, arg2);
                     return returnPrimitive ? PInt.intValue(isTrueNode.execute(null, result)) : asHandleNode.execute(nativeContext, result);
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(nativeContext, e);

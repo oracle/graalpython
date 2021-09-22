@@ -41,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
@@ -220,10 +221,11 @@ public class PDict extends PHashingCollection {
     @ExportMessage
     static Object getHashEntriesIterator(PDict self,
                     @Exclusive @Cached GilNode gil,
-                    @Shared("iterLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                    @Shared("iterLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                    @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
         boolean mustRelease = gil.acquire();
         try {
-            Object dictItems = lib.lookupAndCallSpecialMethod(self, null, ITEMS);
+            Object dictItems = callMethod.execute(null, self, ITEMS);
             return lib.getIterator(dictItems);
         } finally {
             gil.release(mustRelease);
@@ -233,10 +235,11 @@ public class PDict extends PHashingCollection {
     @ExportMessage
     static Object getHashKeysIterator(PDict self,
                     @Exclusive @Cached GilNode gil,
-                    @Shared("iterLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                    @Shared("iterLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                    @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
         boolean mustRelease = gil.acquire();
         try {
-            Object dictKeys = lib.lookupAndCallSpecialMethod(self, null, KEYS);
+            Object dictKeys = callMethod.execute(null, self, KEYS);
             return lib.getIterator(dictKeys);
         } finally {
             gil.release(mustRelease);
@@ -246,10 +249,11 @@ public class PDict extends PHashingCollection {
     @ExportMessage
     static Object getHashValuesIterator(PDict self,
                     @Exclusive @Cached GilNode gil,
-                    @Shared("iterLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                    @Shared("iterLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                    @Shared("callMethod") @Cached PyObjectCallMethodObjArgs callMethod) {
         boolean mustRelease = gil.acquire();
         try {
-            Object dictValues = lib.lookupAndCallSpecialMethod(self, null, VALUES);
+            Object dictValues = callMethod.execute(null, self, VALUES);
             return lib.getIterator(dictValues);
         } finally {
             gil.release(mustRelease);

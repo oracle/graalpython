@@ -64,11 +64,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
-import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins.GetItemNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
@@ -101,7 +101,7 @@ public final class TemplateFormatter {
     }
 
     @TruffleBoundary
-    public String build(Node node, Object[] argsArg, Object kwArgs, FormatNode formatNode, GetItemNode getItemNode) {
+    public String build(Node node, Object[] argsArg, Object kwArgs, FormatNode formatNode, PyObjectGetItem getItemNode) {
         this.args = argsArg;
         this.keywords = kwArgs;
         this.autoNumbering = 0;
@@ -109,14 +109,14 @@ public final class TemplateFormatter {
         return buildString(node, 0, template.length(), 2, formatNode, getItemNode);
     }
 
-    private String buildString(Node node, int start, int end, int level, FormatNode formatNode, GetItemNode getItemNode) {
+    private String buildString(Node node, int start, int end, int level, FormatNode formatNode, PyObjectGetItem getItemNode) {
         if (level == 0) {
             throw PRaiseNode.raiseUncached(node, ValueError, RECURSION_DEPTH_EXCEEDED);
         }
         return doBuildString(node, start, end, level - 1, this.template, formatNode, getItemNode);
     }
 
-    private String doBuildString(Node node, int start, int end, int level, String s, FormatNode formatNode, GetItemNode getItemNode) {
+    private String doBuildString(Node node, int start, int end, int level, String s, FormatNode formatNode, PyObjectGetItem getItemNode) {
         StringBuilder out = new StringBuilder();
         int lastLiteral = start;
         int i = start;
@@ -242,7 +242,7 @@ public final class TemplateFormatter {
         return new Field(s.substring(start, end), null, end);
     }
 
-    private Object getArgument(Node node, String name, GetItemNode getItemNode) {
+    private Object getArgument(Node node, String name, PyObjectGetItem getItemNode) {
         // First, find the argument.
         int i = 0;
         int end = name.length();
@@ -304,7 +304,7 @@ public final class TemplateFormatter {
         return resolveLookups(node, arg, name, i, end, getItemNode);
     }
 
-    private Object resolveLookups(Node node, Object obj, String name, int startArg, int end, GetItemNode getItemNode) {
+    private Object resolveLookups(Node node, Object obj, String name, int startArg, int end, PyObjectGetItem getItemNode) {
         // Resolve attribute and item lookups.
         int i = startArg;
         int start = startArg;
@@ -360,7 +360,7 @@ public final class TemplateFormatter {
                 }
                 i += 1; // # Skip "]"
                 if (result != null) {
-                    result = getItemNode.call(null, result, item);
+                    result = getItemNode.execute(null, result, item);
                 } else {
                     this.parserList.add(new Object[]{false, item});
                 }
@@ -379,7 +379,7 @@ public final class TemplateFormatter {
         return bigInt.intValue();
     }
 
-    private Object renderField(Node node, int start, int end, boolean recursive, int level, FormatNode formatNode, GetItemNode getItemNode) {
+    private Object renderField(Node node, int start, int end, boolean recursive, int level, FormatNode formatNode, PyObjectGetItem getItemNode) {
         Field filed = parseField(node, start, end);
         String name = filed.name;
         Character conversion = filed.conversion;
@@ -476,7 +476,7 @@ public final class TemplateFormatter {
         return parserList;
     }
 
-    private Object getKeyword(Node node, String key, GetItemNode getItemNode) {
+    private Object getKeyword(Node node, String key, PyObjectGetItem getItemNode) {
         if (keywords instanceof PKeyword[]) {
             for (PKeyword kwArg : (PKeyword[]) keywords) {
                 if (key.equals(kwArg.getName())) {
@@ -484,7 +484,7 @@ public final class TemplateFormatter {
                 }
             }
         } else {
-            Object result = getItemNode.call(null, keywords, key);
+            Object result = getItemNode.execute(null, keywords, key);
             if (result != null) {
                 return result;
             }

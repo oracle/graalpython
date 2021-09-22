@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -584,11 +585,11 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @Shared("keysLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
+                        @Cached PyObjectGetItem getItem,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             HashingStorage storage = HashingStorage.copyToStorage(frame, args[0], kwargs, self.getDictStorage(),
-                            callKeysNode, callGetItemNode, keysLib, nextNode, errorProfile, lib);
+                            callKeysNode, getItem, keysLib, nextNode, errorProfile, lib);
             self.setDictStorage(storage);
             return PNone.NONE;
         }
@@ -601,14 +602,14 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raise,
                         @Cached GetNextNode nextNode,
                         @Cached ListNodes.FastConstructListNode createListNode,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
+                        @Cached PyObjectGetItem getItem,
                         @Cached SequenceNodes.LenNode seqLenNode,
                         @Cached ConditionProfile lengthTwoProfile,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached IsBuiltinClassProfile isTypeErrorProfile) {
             StorageSupplier storageSupplier = (boolean isStringKey, int length) -> self.getDictStorage();
             HashingStorage storage = HashingStorage.addSequenceToStorage(frame, args[0], kwargs, storageSupplier,
-                            keysLib, nextNode, createListNode, seqLenNode, lengthTwoProfile, raise, getItemNode, isTypeErrorProfile, errorProfile, lib);
+                            keysLib, nextNode, createListNode, seqLenNode, lengthTwoProfile, raise, getItem, isTypeErrorProfile, errorProfile, lib);
             self.setDictStorage(storage);
             return PNone.NONE;
         }

@@ -48,7 +48,6 @@ import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.i
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
@@ -236,7 +235,6 @@ import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -244,7 +242,6 @@ import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -3301,8 +3298,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doManaged(VirtualFrame frame, Object module, Object listWrapper, Object position,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
-                        @Cached CallBinaryMethodNode callGetItemNode,
+                        @Cached PySequenceCheckNode pySequenceCheck,
+                        @Cached com.oracle.graal.python.lib.PyObjectGetItem getItem,
                         @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
                         @Cached AsPythonObjectNode positionAsPythonObjectNode,
                         @Cached ToNewRefNode toNewRefNode,
@@ -3310,11 +3307,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
-                Object attrGetItem = lookupGetItemNode.execute(delegate, __GETITEM__);
-                if (attrGetItem == PNone.NO_VALUE) {
+                if (pySequenceCheck.execute(delegate)) {
                     throw raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_INDEXING, delegate);
                 }
-                Object item = callGetItemNode.executeObject(frame, attrGetItem, delegate, positionAsPythonObjectNode.execute(position));
+                Object item = getItem.execute(frame, delegate, positionAsPythonObjectNode.execute(position));
                 return toNewRefNode.execute(item);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
@@ -3327,21 +3323,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyObjectGetItem extends PythonTernaryBuiltinNode {
         @Specialization
-        Object doManaged(VirtualFrame frame, Object module, Object listWrapper, Object position,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupGetItemNode,
-                        @Cached CallBinaryMethodNode callGetItemNode,
+        Object doManaged(VirtualFrame frame, Object module, Object listWrapper, Object key,
+                        @Cached com.oracle.graal.python.lib.PyObjectGetItem getItem,
                         @Cached AsPythonObjectNode listWrapperAsPythonObjectNode,
-                        @Cached AsPythonObjectNode positionAsPythonObjectNode,
+                        @Cached AsPythonObjectNode keyAsPythonObjectNode,
                         @Cached ToNewRefNode toNewRefNode,
                         @Cached GetNativeNullNode getNativeNullNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
-                Object attrGetItem = lookupGetItemNode.execute(delegate, __GETITEM__);
-                if (attrGetItem == PNone.NO_VALUE) {
-                    throw raise(TypeError, ErrorMessages.OBJ_NOT_SUBSCRIPTABLE, delegate);
-                }
-                Object item = callGetItemNode.executeObject(frame, attrGetItem, delegate, positionAsPythonObjectNode.execute(position));
+                Object item = getItem.execute(frame, delegate, keyAsPythonObjectNode.execute(key));
                 return toNewRefNode.execute(item);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);

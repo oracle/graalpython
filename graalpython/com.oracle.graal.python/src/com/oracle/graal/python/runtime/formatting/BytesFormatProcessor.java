@@ -59,9 +59,9 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.FormattingBuffer.BytesFormattingBuffer;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Formatter;
@@ -71,7 +71,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     private final byte[] formatBytes;
     private final int bytesLength;
 
-    public BytesFormatProcessor(Python3Core core, PRaiseNode raiseNode, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, byte[] formatBytes, int bytesLength) {
+    public BytesFormatProcessor(Python3Core core, PRaiseNode raiseNode, PyObjectGetItem getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, byte[] formatBytes, int bytesLength) {
         super(core, raiseNode, getItemNode, getTupleItemNode, new BytesFormattingBuffer());
         this.formatBytes = formatBytes;
         this.bytesLength = bytesLength;

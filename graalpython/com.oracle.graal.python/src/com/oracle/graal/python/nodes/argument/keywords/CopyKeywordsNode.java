@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.argument.keywords;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -49,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -145,6 +145,7 @@ public abstract class CopyKeywordsNode extends PNodeWithContext {
                     @Cached CastToJavaStringNode castToJavaStringNode,
                     @Cached IsBuiltinClassProfile errorProfile,
                     @CachedLibrary("starargs") PythonObjectLibrary pol,
+                    @Cached PyObjectGetItem getItem,
                     @Cached PRaiseNode raiseNode,
                     @Cached ConditionProfile gotState) {
         Object iter = pol.getIteratorWithState(starargs, state);
@@ -157,7 +158,7 @@ public abstract class CopyKeywordsNode extends PNodeWithContext {
                     frame = PArguments.frameForCall(state);
                 }
                 key = getNextNode.execute(frame, iter);
-                Object value = pol.lookupAndCallSpecialMethodWithState(starargs, state, __GETITEM__, key);
+                Object value = getItem.execute(frame, starargs, key);
                 keywords[i++] = new PKeyword(castToJavaStringNode.execute(key), value);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);

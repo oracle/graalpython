@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltinsClinicProviders.WarnBuiltinNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -70,13 +71,11 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
 import com.oracle.graal.python.lib.PyObjectSetItem;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -98,6 +97,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -173,7 +173,6 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Child CastToJavaStringNode castStr;
         @Child PRaiseNode raiseNode;
         @Child PythonObjectLibrary pylib;
-        @Child PyObjectSizeNode sizeNode;
         @Child GetClassNode getClassNode;
         @Child PyNumberAsSizeNode asSizeNode;
         @Child PyObjectIsTrueNode isTrueNode;
@@ -188,6 +187,8 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Child PyObjectSetItem setItemNode;
         @Child PyObjectStrAsObjectNode strNode;
         @Child CallNode callNode;
+        @Child SequenceStorageNodes.LenNode sequenceLenNode;
+        @Child SequenceStorageNodes.GetItemScalarNode sequenceGetItem;
 
         static WarningsModuleNode create() {
             return new WarningsModuleNode();
@@ -274,12 +275,20 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             return callNode;
         }
 
-        private PyObjectSizeNode getSizeNode() {
-            if (sizeNode == null) {
+        private SequenceStorageNodes.GetItemScalarNode getSequenceGetItem() {
+            if (sequenceGetItem == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                sizeNode = insert(PyObjectSizeNode.create());
+                sequenceGetItem = insert(SequenceStorageNodes.GetItemScalarNode.create());
             }
-            return sizeNode;
+            return sequenceGetItem;
+        }
+
+        private SequenceStorageNodes.LenNode getSequenceLenNode() {
+            if (sequenceLenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                sequenceLenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return sequenceLenNode;
         }
 
         private Object getPythonClass(Object object) {
@@ -513,13 +522,20 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             if (!(filters instanceof PList)) {
                 throw getRaise().raise(PythonBuiltinClassType.ValueError, "warnings.filters must be a list");
             }
-            for (int i = 0; i < getSizeNode().execute(frame, filters); i++) {
-                Object tmpItem = getPyLib().lookupAndCallSpecialMethod(filters, frame, SpecialMethodNames.__GETITEM__, i);
-                if (!(tmpItem instanceof PTuple) || getSizeNode().execute(frame, tmpItem) != 5) {
+            SequenceStorage filtersStorage = ((PList) filters).getSequenceStorage();
+            SequenceStorageNodes.GetItemScalarNode sequenceGetItem = getSequenceGetItem();
+            SequenceStorageNodes.LenNode sequenceLen = getSequenceLenNode();
+            for (int i = 0; i < sequenceLen.execute(filtersStorage); i++) {
+                Object tmpItem = sequenceGetItem.execute(filtersStorage, i);
+                if (!(tmpItem instanceof PTuple)) {
+                    throw getRaise().raise(PythonBuiltinClassType.ValueError, "warnings.filters item %d isn't a 5-tuple", i);
+                }
+                SequenceStorage tmpStorage = ((PTuple) tmpItem).getSequenceStorage();
+                if (sequenceLen.execute(tmpStorage) != 5) {
                     throw getRaise().raise(PythonBuiltinClassType.ValueError, "warnings.filters item %d isn't a 5-tuple", i);
                 }
 
-                Object actionObj = getPyLib().lookupAndCallSpecialMethod(tmpItem, frame, SpecialMethodNames.__GETITEM__, 0);
+                Object actionObj = sequenceGetItem.execute(tmpStorage, 0);
                 String action;
                 try {
                     action = getCastStr().execute(actionObj);
@@ -528,10 +544,10 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                     // tuple so...
                     throw getRaise().raise(PythonBuiltinClassType.TypeError, "action must be a string, not %p", actionObj);
                 }
-                Object msg = getPyLib().lookupAndCallSpecialMethod(tmpItem, frame, SpecialMethodNames.__GETITEM__, 1);
-                Object cat = getPyLib().lookupAndCallSpecialMethod(tmpItem, frame, SpecialMethodNames.__GETITEM__, 2);
-                Object mod = getPyLib().lookupAndCallSpecialMethod(tmpItem, frame, SpecialMethodNames.__GETITEM__, 3);
-                Object lnObj = getPyLib().lookupAndCallSpecialMethod(tmpItem, frame, SpecialMethodNames.__GETITEM__, 4);
+                Object msg = sequenceGetItem.execute(tmpStorage, 1);
+                Object cat = sequenceGetItem.execute(tmpStorage, 2);
+                Object mod = sequenceGetItem.execute(tmpStorage, 3);
+                Object lnObj = sequenceGetItem.execute(tmpStorage, 4);
 
                 boolean goodMsg = checkMatched(frame, msg, text);
                 boolean goodMod = checkMatched(frame, mod, module);
