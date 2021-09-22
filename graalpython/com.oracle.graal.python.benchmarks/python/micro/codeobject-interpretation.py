@@ -141,18 +141,19 @@ else:
 MORE_CODEOBJECTS = []
 
 
-def __cleanup__(*args):
+def __setup__(num):
+    __cleanup__(num)
+
+
+def __cleanup__(num):
     import time
     s = time.time()
     MORE_CODEOBJECTS.clear()
-    for _ in range(0, SIMULATED_FILECOUNT, 2):
+    for _ in range(0, num, 3):
         MORE_CODEOBJECTS.append(marshal.loads(JUST_PYC_1))
         MORE_CODEOBJECTS.append(marshal.loads(JUST_PYC_2))
         MORE_CODEOBJECTS.append(marshal.loads(JUST_PYC_3))
     print(f"Resetting {len(MORE_CODEOBJECTS)} took {time.time() - s} seconds")
-
-
-__cleanup__()
 
 
 BYTECODE_FILE_DATA = []
@@ -168,7 +169,7 @@ def measure(num):
         # marshal.loads(JUST_PYC_1); marshal.loads(JUST_PYC_2); marshal.loads(JUST_PYC_3)
 
         # Enable this to measure executing different modules in AST vs bytecode
-        exec(MORE_CODEOBJECTS[i % len(MORE_CODEOBJECTS)])
+        exec(MORE_CODEOBJECTS[i])
 
         # Enable this to measure just unmarshalling
         # marshal.loads(BYTECODE_FILE_DATA[i % len(BYTECODE_FILE_DATA)])
