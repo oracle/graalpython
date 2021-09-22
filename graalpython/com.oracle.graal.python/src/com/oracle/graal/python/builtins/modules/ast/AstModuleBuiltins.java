@@ -193,7 +193,7 @@ public class AstModuleBuiltins extends PythonBuiltins {
         PythonClass TypeIgnore_type = makeType(astModule, "TypeIgnore", type_ignore_type);
     }
 
-    private PythonClass makeType(PythonModule astModule, String name, PythonAbstractClass base) {
+    private static PythonClass makeType(PythonModule astModule, String name, PythonAbstractClass base) {
         PythonObjectFactory factory = PythonObjectFactory.getUncached();
         PythonClass newType = factory.createPythonClassAndFixupSlots(PythonBuiltinClassType.PythonClass, name, new PythonAbstractClass[]{base});
         astModule.setAttribute(name, newType);
