@@ -890,10 +890,10 @@ public final class PythonContext {
                                 "from multiprocessing.spawn import spawn_truffleprocess; spawn_truffleprocess(" + fd + ", " + sentinel + ")",
                                 "<spawned-child-context>").internal(true).build();
                 CallTarget ct;
-                ct = data.parentCtx.getEnv().parsePublic(source);
                 TruffleContext ctx = builder.build();
                 data.setTruffleContext(ctx);
                 Object parent = ctx.enter(null);
+                ct = PythonContext.get(null).getEnv().parsePublic(source);
                 try {
                     data.running.countDown();
                     Object res = ct.call();
