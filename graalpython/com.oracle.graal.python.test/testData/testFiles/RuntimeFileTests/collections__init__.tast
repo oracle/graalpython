@@ -331,7 +331,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 FunctionBodyNode SourceSection: [2511,2545]`yield from reversed(...`
                                   ExpressionStatementNode SourceSection: [2511,2545]`yield from reversed(...`
                                     YieldFromNode SourceSection: [2511,2545]`yield from reversed(...`
-                                      CachedDispatchFirst SourceSection: None
+                                      PyObjectGetIterNodeGen SourceSection: None
                                       GetNextCached SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__

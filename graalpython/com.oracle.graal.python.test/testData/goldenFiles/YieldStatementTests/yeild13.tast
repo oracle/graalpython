@@ -43,7 +43,7 @@ ModuleRootNode Name: <module 'yeild13'> SourceSection: [0,26]`def f(): f((yield 
                         ReadGlobalOrBuiltinNodeGen SourceSection: [9,10]`f`
                           Identifier: f
                         YieldFromNode SourceSection: [12,24]`yield from 1`
-                          CachedDispatchFirst SourceSection: None
+                          PyObjectGetIterNodeGen SourceSection: None
                           GetNextCached SourceSection: None
                             LookupAndCallUnaryNodeGen SourceSection: None
                               Op: __next__
