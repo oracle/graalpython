@@ -68,8 +68,8 @@ public class ASN1Helper {
     static final String ASN1_EMAIL = "EMAIL";
 
     static final String OID_CRL_DISTRIBUTION_POINTS = "2.5.29.31";
-    static final String OID_OCSP = "1.3.6.1.5.5.7.48.1";
-    static final String OID_CA_ISSUERS = "1.3.6.1.5.5.7.48.2";
+    static final byte[] OID_OCSP = new byte[]{/* 1, 3, 6, */ 1, 5, 5, 7, 48, 1};
+    static final byte[] OID_CA_ISSUERS = new byte[]{/* 1, 3, 6, */ 1, 5, 5, 7, 48, 2};
     static final String OID_AUTHORITY_INFO_ACCESS = "1.3.6.1.5.5.7.1.1";
 
     private static final Map<String, String> javaToName = new HashMap<>();
