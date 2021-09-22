@@ -51,7 +51,6 @@ import static com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins.
 import static com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES.FFI_TYPE_STRUCT;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrBuiltins.PyCFuncPtrFromDllNode.strchr;
 import static com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins._type_;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENT_D;
 import static com.oracle.graal.python.nodes.ErrorMessages.BYREF_ARGUMENT_MUST_BE_A_CTYPES_INSTANCE_NOT_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAST_ARGUMENT_2_MUST_BE_A_POINTER_TYPE_NOT_S;
@@ -102,6 +101,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
@@ -114,7 +114,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
@@ -1351,9 +1350,9 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         void ConvParam(VirtualFrame frame, Object obj, int index, argument pa, PythonObjectFactory factory, PythonContext context,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached IsBuiltinClassProfile profile,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached PyNumberAsSizeNode asInt,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode) {
@@ -1402,10 +1401,10 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 return;
             }
 
-            if (lib.isBuffer(obj)) {
+            if (obj instanceof PBytes) {
                 // pa.ffi_type = FFIType.ffi_type_pointer;
                 pa.ffi_type = FFIType.ffi_type_sint8_array;
-                pa.value = getBytes(lib, obj); // PyBytes_AsString(obj);
+                pa.value = bufferLib.getCopiedByteArray(obj); // PyBytes_AsString(obj);
                 pa.keep = obj;
                 return;
             }
@@ -1426,7 +1425,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
              * classes as parameters (they have to expose the '_as_parameter_' attribute)
              */
             if (arg != null) {
-                ConvParam(frame, arg, index, pa, factory, context, longCheckNode, profile, lib, asInt, lookupAttr, pyObjectStgDictNode);
+                ConvParam(frame, arg, index, pa, factory, context, bufferLib, longCheckNode, profile, asInt, lookupAttr, pyObjectStgDictNode);
                 return;
             }
             throw raise(TypeError, DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D, index);
