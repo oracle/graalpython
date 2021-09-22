@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CANT_DELETE_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANT_SET_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.ErrorMessages.DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.TUPLE_OUT_OF_BOUNDS;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
@@ -128,6 +129,23 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         Object delete(PTupleGetter self, Object instance) {
             throw raise(PythonBuiltinClassType.AttributeError, CANT_DELETE_ATTRIBUTE);
+        }
+    }
+
+    @Builtin(name = __DOC__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class TupleGetterDocNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "!isNoValue(value)")
+        @SuppressWarnings("unused")
+        Object set(PTupleGetter self, Object value) {
+            self.setDoc(value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        @SuppressWarnings("unused")
+        Object get(PTupleGetter self, @SuppressWarnings("unused") PNone value) {
+            return self.getDoc();
         }
     }
 }

@@ -40,20 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
 public class PTupleGetter extends PythonBuiltinObject {
     private final int index;
-    private final Object doc;
+    private Object doc;
 
     public PTupleGetter(Object cls, Shape instanceShape, int index, Object doc) {
         super(cls, instanceShape);
         this.index = index;
         this.doc = doc;
-        setAttribute(__DOC__, this.doc);
     }
 
     public int getIndex() {
@@ -62,5 +59,9 @@ public class PTupleGetter extends PythonBuiltinObject {
 
     public Object getDoc() {
         return doc;
+    }
+
+    public void setDoc(Object doc) {
+        this.doc = doc;
     }
 }
