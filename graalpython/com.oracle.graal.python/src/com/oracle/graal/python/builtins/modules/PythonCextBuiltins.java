@@ -3307,7 +3307,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 Object delegate = listWrapperAsPythonObjectNode.execute(listWrapper);
-                if (pySequenceCheck.execute(delegate)) {
+                if (!pySequenceCheck.execute(delegate)) {
                     throw raise(TypeError, ErrorMessages.OBJ_DOES_NOT_SUPPORT_INDEXING, delegate);
                 }
                 Object item = getItem.execute(frame, delegate, positionAsPythonObjectNode.execute(position));

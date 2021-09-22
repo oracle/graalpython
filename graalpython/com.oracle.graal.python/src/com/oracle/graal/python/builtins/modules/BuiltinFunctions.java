@@ -132,6 +132,7 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
@@ -1248,10 +1249,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     @ReportPolymorphism
     public abstract static class IterNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isNoValue(sentinel)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "isNoValue(sentinel)")
         static Object iter(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone sentinel,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            return lib.getIteratorWithFrame(object, frame);
+                        @Cached PyObjectGetIter getIter) {
+            return getIter.execute(frame, object);
         }
 
         @Specialization(guards = {"callableCheck.execute(callable)", "!isNoValue(sentinel)"}, limit = "1")
@@ -1290,21 +1291,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "args.length == 0", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "args.length == 0")
         Object maxSequence(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone key, Object defaultVal,
-                        @CachedLibrary("arg1") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                         @Cached IsBuiltinClassProfile errorProfile1,
                         @Cached IsBuiltinClassProfile errorProfile2,
                         @Cached ConditionProfile hasDefaultProfile) {
-            return minmaxSequenceWithKey(frame, arg1, args, null, defaultVal, lib, nextNode, compare, castToBooleanNode, null, errorProfile1, errorProfile2, hasDefaultProfile);
+            return minmaxSequenceWithKey(frame, arg1, args, null, defaultVal, getIter, nextNode, compare, castToBooleanNode, null, errorProfile1, errorProfile2, hasDefaultProfile);
         }
 
-        @Specialization(guards = {"args.length == 0", "!isPNone(keywordArg)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"args.length == 0", "!isPNone(keywordArg)"})
         Object minmaxSequenceWithKey(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArg, Object defaultVal,
-                        @CachedLibrary("arg1") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
@@ -1312,7 +1313,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile errorProfile1,
                         @Cached IsBuiltinClassProfile errorProfile2,
                         @Cached ConditionProfile hasDefaultProfile) {
-            Object iterator = lib.getIteratorWithFrame(arg1, frame);
+            Object iterator = getIter.execute(frame, arg1);
             Object currentValue;
             try {
                 currentValue = nextNode.execute(frame, iterator);
@@ -1824,18 +1825,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         int sumIntNone(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") PNone start,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) throws UnexpectedResultException {
-            return sumIntInternal(frame, arg1, 0, lib);
+                        @Shared("getIter") @Cached PyObjectGetIter getIter) throws UnexpectedResultException {
+            return sumIntInternal(frame, arg1, 0, getIter);
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         int sumIntInt(VirtualFrame frame, Object arg1, int start,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) throws UnexpectedResultException {
-            return sumIntInternal(frame, arg1, start, lib);
+                        @Shared("getIter") @Cached PyObjectGetIter getIter) throws UnexpectedResultException {
+            return sumIntInternal(frame, arg1, start, getIter);
         }
 
-        private int sumIntInternal(VirtualFrame frame, Object arg1, int start, PythonObjectLibrary lib) throws UnexpectedResultException {
-            Object iterator = lib.getIteratorWithState(arg1, PArguments.getThreadState(frame));
+        private int sumIntInternal(VirtualFrame frame, Object arg1, int start, PyObjectGetIter getIter) throws UnexpectedResultException {
+            Object iterator = getIter.execute(frame, arg1);
             int value = start;
             while (true) {
                 int nextValue;
@@ -1858,12 +1859,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         double sumDoubleDouble(VirtualFrame frame, Object arg1, double start,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) throws UnexpectedResultException {
-            return sumDoubleInternal(frame, arg1, start, lib);
+                        @Shared("getIter") @Cached PyObjectGetIter getIter) throws UnexpectedResultException {
+            return sumDoubleInternal(frame, arg1, start, getIter);
         }
 
-        private double sumDoubleInternal(VirtualFrame frame, Object arg1, double start, PythonObjectLibrary lib) throws UnexpectedResultException {
-            Object iterator = lib.getIteratorWithState(arg1, PArguments.getThreadState(frame));
+        private double sumDoubleInternal(VirtualFrame frame, Object arg1, double start, PyObjectGetIter getIter) throws UnexpectedResultException {
+            Object iterator = getIter.execute(frame, arg1);
             double value = start;
             while (true) {
                 double nextValue;
@@ -1886,7 +1887,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(replaces = {"sumIntNone", "sumIntInt", "sumDoubleDouble"})
         Object sum(VirtualFrame frame, Object arg1, Object start,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached ConditionProfile hasStart,
                         @Cached BranchProfile stringStart,
                         @Cached BranchProfile bytesStart,
@@ -1901,7 +1902,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 byteArrayStart.enter();
                 throw raise(TypeError, ErrorMessages.CANT_SUM_BYTEARRAY);
             }
-            Object iterator = lib.getIteratorWithState(arg1, PArguments.getThreadState(frame));
+            Object iterator = getIter.execute(frame, arg1);
             return iterateGeneric(frame, iterator, hasStart.profile(start != NO_VALUE) ? start : 0, errorProfile1);
         }
 

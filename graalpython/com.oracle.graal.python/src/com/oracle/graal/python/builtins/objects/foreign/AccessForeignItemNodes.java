@@ -50,12 +50,12 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndex
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.GetForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.RemoveForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.SetForeignItemNodeGen;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -258,7 +258,7 @@ abstract class AccessForeignItemNodes {
         @Specialization(guards = "lib.hasArrayElements(object)")
         public Object doArraySlice(VirtualFrame frame, Object object, PSlice idxSlice, Object pvalues,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pvaluesLib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNext,
                         @Shared("unsupportedType") @Cached BranchProfile unsupportedType,
                         @Shared("wrongIndex") @Cached BranchProfile wrongIndex,
@@ -266,7 +266,7 @@ abstract class AccessForeignItemNodes {
                         @Cached ComputeIndices compute,
                         @Shared("gil") @Cached GilNode gil) {
             SliceInfo mslice = materializeSlice(frame, sliceCast.execute(idxSlice), object, compute, lib);
-            Object iter = pvaluesLib.getIteratorWithFrame(pvalues, frame);
+            Object iter = getIter.execute(frame, pvalues);
             for (int i = mslice.start; i < mslice.stop; i += mslice.step) {
                 Object value = getNext.execute(frame, iter);
                 gil.release(true);

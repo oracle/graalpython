@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Unic
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -350,10 +350,10 @@ public abstract class StringNodes {
             }
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         static String doGeneric(VirtualFrame frame, String string, Object iterable,
                         @Cached PRaiseNode raise,
-                        @CachedLibrary("iterable") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile0,
                         @Cached IsBuiltinClassProfile errorProfile1,
@@ -361,7 +361,7 @@ public abstract class StringNodes {
                         @Cached CastToJavaStringNode castStrNode) {
             Object iterator;
             try {
-                iterator = lib.getIteratorWithFrame(iterable, frame);
+                iterator = getIter.execute(frame, iterable);
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.TypeError, errorProfile0);
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_JOIN_ITERABLE);

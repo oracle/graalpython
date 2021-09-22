@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -242,14 +243,14 @@ public class ListBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "iterable.isPRangeIterator()", rewriteOn = UnexpectedResultException.class, limit = "1")
+        @Specialization(guards = "iterable.isPRangeIterator()", rewriteOn = UnexpectedResultException.class)
         static PNone listPGenerator(VirtualFrame frame, PList list, PGenerator iterable,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
-                        @CachedLibrary("iterable") PythonObjectLibrary lib,
+                        @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile errorProfile) throws UnexpectedResultException {
             clearStorage(list);
-            Object iterObj = lib.getIteratorWithFrame(iterable, frame);
+            Object iterObj = getIter.execute(frame, iterable);
             SequenceStorage storage = EmptySequenceStorage.INSTANCE;
 
             PIntRangeIterator range = (PIntRangeIterator) iterable.getIterator();
@@ -286,14 +287,14 @@ public class ListBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
         static PNone listIterable(VirtualFrame frame, PList list, Object iterable,
                         @Cached IteratorNodes.GetLength lenNode,
-                        @CachedLibrary("iterable") PythonObjectLibrary lib,
+                        @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached CreateStorageFromIteratorNode storageNode) {
             clearStorage(list);
             int len = lenNode.execute(frame, iterable);
-            Object iterObj = lib.getIteratorWithFrame(iterable, frame);
+            Object iterObj = getIter.execute(frame, iterable);
             list.setSequenceStorage(storageNode.execute(frame, iterObj, len));
             return PNone.NONE;
         }

@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -372,15 +373,15 @@ public class IOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = WRITELINES, minNumOfPositionalArgs = 2, parameterNames = {"$self", "lines"})
     @GenerateNodeFactory
     abstract static class WriteLinesNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "2")
+        @Specialization
         static Object writeLines(VirtualFrame frame, PythonObject self, Object lines,
                         @Cached CheckClosedNode checkClosedNode,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @CachedLibrary("lines") PythonObjectLibrary libLines) {
+                        @Cached PyObjectGetIter getIter) {
             checkClosedNode.call(frame, self);
-            Object iter = libLines.getIteratorWithFrame(lines, frame);
+            Object iter = getIter.execute(frame, lines);
             while (true) {
                 Object line;
                 try {
@@ -470,23 +471,23 @@ public class IOBaseBuiltins extends PythonBuiltins {
             return IOBaseBuiltinsClinicProviders.ReadlinesNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "hint <= 0", limit = "1")
+        @Specialization(guards = "hint <= 0")
         Object doall(VirtualFrame frame, Object self, @SuppressWarnings("unused") int hint,
                         @Cached GetNextNode next,
                         @Cached IsBuiltinClassProfile errorProfile,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf,
+                        @Cached PyObjectGetIter getIter,
                         @Cached PyObjectSizeNode sizeNode) {
-            return withHint(frame, self, Integer.MAX_VALUE, next, errorProfile, libSelf, sizeNode);
+            return withHint(frame, self, Integer.MAX_VALUE, next, errorProfile, getIter, sizeNode);
         }
 
-        @Specialization(guards = "hint > 0", limit = "1")
+        @Specialization(guards = "hint > 0")
         Object withHint(VirtualFrame frame, Object self, int hint,
                         @Cached GetNextNode next,
                         @Cached IsBuiltinClassProfile errorProfile,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf,
+                        @Cached PyObjectGetIter getIter,
                         @Cached PyObjectSizeNode sizeNode) {
             int length = 0;
-            Object iterator = libSelf.getIteratorWithFrame(self, frame);
+            Object iterator = getIter.execute(frame, self);
             ArrayBuilder<Object> list = new ArrayBuilder<>();
             while (true) {
                 try {

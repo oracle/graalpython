@@ -98,12 +98,12 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -530,13 +530,13 @@ public class BytesIOBuiltins extends PythonBuiltins {
     @Builtin(name = WRITELINES, minNumOfPositionalArgs = 2, parameterNames = {"$self", "lines"})
     @GenerateNodeFactory
     abstract static class WriteLinesNode extends ClosedCheckPythonBinaryBuiltinNode {
-        @Specialization(guards = {"self.hasBuf()", "checkExports(self)"}, limit = "2")
+        @Specialization(guards = {"self.hasBuf()", "checkExports(self)"})
         static Object writeLines(VirtualFrame frame, PBytesIO self, Object lines,
                         @Cached GetNextNode getNextNode,
                         @Cached WriteNode writeNode,
                         @Cached IsBuiltinClassProfile errorProfile,
-                        @CachedLibrary("lines") PythonObjectLibrary libLines) {
-            Object iter = libLines.getIteratorWithFrame(lines, frame);
+                        @Cached PyObjectGetIter getIter) {
+            Object iter = getIter.execute(frame, lines);
             while (true) {
                 Object line;
                 try {

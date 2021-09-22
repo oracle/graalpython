@@ -35,10 +35,10 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetAttrNodeGen;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -71,7 +71,7 @@ public class ImportStarNode extends AbstractImportNode {
     @Child private CastToJavaStringNode castToStringNode;
     @Child private GetNextNode nextNode;
     @Child private PyObjectSizeNode sizeNode;
-    @Child private PythonObjectLibrary pol;
+    @Child private PyObjectGetIter getIterNode;
     @Child private PyObjectGetAttr getAllNode;
     @Child private GetOrCreateDictNode getDictNode;
 
@@ -145,7 +145,7 @@ public class ImportStarNode extends AbstractImportNode {
             } catch (PException e) {
                 e.expectAttributeError(ensureIsAttributeErrorProfile());
                 assert importedModule instanceof PythonModule;
-                Object keysIterator = ensurePol().getIterator(ensureGetDictNode().execute(importedModule));
+                Object keysIterator = ensureGetIterNode().execute(frame, ensureGetDictNode().execute(importedModule));
                 while (true) {
                     try {
                         Object key = ensureGetNextNode().execute(frame, keysIterator);
@@ -230,13 +230,12 @@ public class ImportStarNode extends AbstractImportNode {
         return getAllNode;
     }
 
-    private PythonObjectLibrary ensurePol() {
-        if (pol == null) {
+    private PyObjectGetIter ensureGetIterNode() {
+        if (getIterNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            // used on imported module and the module dict
-            pol = insert(PythonObjectLibrary.getFactory().createDispatched(2));
+            getIterNode = insert(PyObjectGetIter.create());
         }
-        return pol;
+        return getIterNode;
     }
 
     private GetOrCreateDictNode ensureGetDictNode() {

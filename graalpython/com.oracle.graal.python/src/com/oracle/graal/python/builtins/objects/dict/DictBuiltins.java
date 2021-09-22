@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -583,13 +584,13 @@ public final class DictBuiltins extends PythonBuiltins {
         public static Object updateMapping(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
                         @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
                         @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
-                        @Shared("keysLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
+                        @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached PyObjectGetItem getItem,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             HashingStorage storage = HashingStorage.copyToStorage(frame, args[0], kwargs, self.getDictStorage(),
-                            callKeysNode, getItem, keysLib, nextNode, errorProfile, lib);
+                            callKeysNode, getItem, getIter, nextNode, errorProfile, lib);
             self.setDictStorage(storage);
             return PNone.NONE;
         }
@@ -598,7 +599,7 @@ public final class DictBuiltins extends PythonBuiltins {
         public static Object updateSequence(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
                         @SuppressWarnings("unused") @Shared("lookupKeys") @Cached PyObjectLookupAttr lookupKeys,
                         @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
-                        @Shared("keysLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
+                        @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached PRaiseNode raise,
                         @Cached GetNextNode nextNode,
                         @Cached ListNodes.FastConstructListNode createListNode,
@@ -609,7 +610,7 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile isTypeErrorProfile) {
             StorageSupplier storageSupplier = (boolean isStringKey, int length) -> self.getDictStorage();
             HashingStorage storage = HashingStorage.addSequenceToStorage(frame, args[0], kwargs, storageSupplier,
-                            keysLib, nextNode, createListNode, seqLenNode, lengthTwoProfile, raise, getItem, isTypeErrorProfile, errorProfile, lib);
+                            getIter, nextNode, createListNode, seqLenNode, lengthTwoProfile, raise, getItem, isTypeErrorProfile, errorProfile, lib);
             self.setDictStorage(storage);
             return PNone.NONE;
         }
@@ -667,7 +668,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Fallback
         public Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached CallNode callCtor,
                         @Cached GetClassNode getClassNode,
                         @Cached(parameters = "SetItem") LookupSpecialMethodSlotNode lookupSetItem,
@@ -676,7 +677,7 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile errorProfile) {
             Object dict = callCtor.execute(frame, cls);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
-            Object it = lib.getIteratorWithFrame(iterable, frame);
+            Object it = getIter.execute(frame, iterable);
             Object setitemMethod = lookupSetItem.execute(frame, getClassNode.execute(dict), dict);
             if (setitemMethod != PNone.NO_VALUE) {
                 while (true) {

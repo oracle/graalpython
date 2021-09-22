@@ -49,9 +49,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -125,13 +125,13 @@ public abstract class ExecutePositionalStarargsNode extends Node {
         throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, none);
     }
 
-    @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization
     static Object[] starargs(VirtualFrame frame, Object object,
                     @Cached PRaiseNode raise,
-                    @CachedLibrary("object") PythonObjectLibrary lib,
+                    @Cached PyObjectGetIter getIter,
                     @Cached GetNextNode nextNode,
                     @Cached IsBuiltinClassProfile errorProfile) {
-        Object iterator = lib.getIteratorWithFrame(object, frame);
+        Object iterator = getIter.execute(frame, object);
         if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
             ArrayList<Object> internalStorage = new ArrayList<>();
             while (true) {
@@ -200,13 +200,13 @@ public abstract class ExecutePositionalStarargsNode extends Node {
             return ExecutePositionalStarargsNode.doNone(none, raise);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         static Object[] starargs(Object object,
                         @Cached PRaiseNode raise,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            Object iterator = lib.getIterator(object);
+            Object iterator = getIter.execute(null, object);
             if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
                 ArrayList<Object> internalStorage = new ArrayList<>();
                 while (true) {

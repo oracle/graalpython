@@ -45,8 +45,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -63,7 +63,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 public abstract class SetNodes {
 
@@ -93,14 +92,14 @@ public abstract class SetNodes {
             return factory().createSet(cls);
         }
 
-        @Specialization(guards = "!isNoValue(iterable)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "!isNoValue(iterable)")
         PSet setIterable(VirtualFrame frame, Object cls, Object iterable,
-                        @CachedLibrary("iterable") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
 
             PSet set = factory().createSet(cls);
-            Object iterator = lib.getIteratorWithFrame(iterable, frame);
+            Object iterator = getIter.execute(frame, iterable);
             while (true) {
                 try {
                     getSetItemNode().execute(frame, set, nextNode.execute(frame, iterator), PNone.NONE);

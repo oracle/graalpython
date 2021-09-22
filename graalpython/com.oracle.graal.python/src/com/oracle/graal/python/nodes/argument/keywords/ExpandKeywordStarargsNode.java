@@ -82,7 +82,7 @@ public abstract class ExpandKeywordStarargsNode extends PNodeWithContext {
                     @SuppressWarnings("unused") @CachedLibrary("starargs.getDictStorage()") HashingStorageLibrary lib,
                     @Cached("len(lib, starargs)") int cachedLen) {
         PKeyword[] keywords = new PKeyword[cachedLen];
-        copyKeywordsNode.executeWithoutState(starargs, keywords);
+        copyKeywordsNode.execute(starargs, keywords);
         return keywords;
     }
 

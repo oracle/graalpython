@@ -52,10 +52,10 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -83,7 +83,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -250,13 +249,13 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            @Specialization(guards = {"!isBytes(initializer)", "!isString(initializer)"}, limit = "3")
+            @Specialization(guards = {"!isBytes(initializer)", "!isString(initializer)"})
             PArray arrayIteratorInitializer(VirtualFrame frame, Object cls, String typeCode, Object initializer,
-                            @CachedLibrary("initializer") PythonObjectLibrary lib,
+                            @Cached PyObjectGetIter getIter,
                             @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached GetNextNode nextNode,
                             @Cached IsBuiltinClassProfile errorProfile) {
-                Object iter = lib.getIteratorWithFrame(initializer, frame);
+                Object iter = getIter.execute(frame, initializer);
 
                 BufferFormat format = getFormatChecked(typeCode);
                 PArray array = getFactory().createArray(cls, typeCode, format);

@@ -54,8 +54,8 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -250,16 +250,16 @@ public final class SetBuiltins extends PythonBuiltins {
             return curStorage;
         }
 
-        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isBuiltinSequence(other, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isBuiltinSequence(other, getClassNode)"}, limit = "1")
         static HashingStorage doIterable(VirtualFrame frame, HashingStorage storage, Object other,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @CachedLibrary("other") PythonObjectLibrary otherLib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached ConditionProfile hasFrame,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage curStorage = storage;
-            Object iterator = otherLib.getIteratorWithFrame(other, frame);
+            Object iterator = getIter.execute(frame, other);
             while (true) {
                 Object key;
                 try {

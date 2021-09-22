@@ -195,6 +195,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
@@ -772,28 +773,28 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EnumerateNode extends PythonBuiltinNode {
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         PEnumerate doNone(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone keywordArg,
-                        @CachedLibrary("iterable") PythonObjectLibrary lib) {
-            return factory().createEnumerate(cls, lib.getIteratorWithFrame(iterable, frame), 0);
+                        @Shared("getIter") @Cached PyObjectGetIter getIter) {
+            return factory().createEnumerate(cls, getIter.execute(frame, iterable), 0);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         PEnumerate doInt(VirtualFrame frame, Object cls, Object iterable, int start,
-                        @CachedLibrary("iterable") PythonObjectLibrary lib) {
-            return factory().createEnumerate(cls, lib.getIteratorWithFrame(iterable, frame), start);
+                        @Shared("getIter") @Cached PyObjectGetIter getIter) {
+            return factory().createEnumerate(cls, getIter.execute(frame, iterable), start);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         PEnumerate doLong(VirtualFrame frame, Object cls, Object iterable, long start,
-                        @CachedLibrary("iterable") PythonObjectLibrary lib) {
-            return factory().createEnumerate(cls, lib.getIteratorWithFrame(iterable, frame), start);
+                        @Shared("getIter") @Cached PyObjectGetIter getIter) {
+            return factory().createEnumerate(cls, getIter.execute(frame, iterable), start);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         PEnumerate doPInt(VirtualFrame frame, Object cls, Object iterable, PInt start,
-                        @CachedLibrary("iterable") PythonObjectLibrary lib) {
-            return factory().createEnumerate(cls, lib.getIteratorWithFrame(iterable, frame), start);
+                        @Shared("getIter") @Cached PyObjectGetIter getIter) {
+            return factory().createEnumerate(cls, getIter.execute(frame, iterable), start);
         }
 
         static boolean isIntegerIndex(Object idx) {
@@ -2022,11 +2023,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class ZipNode extends PythonBuiltinNode {
         @Specialization
         PZip zip(VirtualFrame frame, Object cls, Object[] args,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @Cached PyObjectGetIter getIter) {
             Object[] iterables = new Object[args.length];
             for (int i = 0; i < args.length; i++) {
                 Object item = args[i];
-                iterables[i] = lib.getIteratorWithFrame(item, frame);
+                iterables[i] = getIter.execute(frame, item);
             }
             return factory().createZip(cls, iterables);
         }

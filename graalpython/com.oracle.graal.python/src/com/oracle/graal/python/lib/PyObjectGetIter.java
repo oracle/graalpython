@@ -43,13 +43,15 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -67,19 +69,30 @@ public abstract class PyObjectGetIter extends Node {
     public abstract Object execute(Frame frame, Object receiver);
 
     @Specialization
+    static Object getIterRange(PIntRange object,
+                    @Cached PythonObjectFactory factory) {
+        return factory.createIntRangeIterator(object);
+    }
+
+    @Specialization
     static Object getIter(Frame frame, Object receiver,
                     @Cached GetClassNode getReceiverClass,
                     @Cached GetClassNode getResultClass,
-                    @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                    @Cached(parameters = "Iter") LookupSpecialMethodSlotNode lookupIter,
                     @Cached(parameters = "Next") LookupCallableSlotInMRONode lookupIternext,
-                    @Cached(parameters = "GetItem") LookupCallableSlotInMRONode lookupGetItem,
+                    @Cached PySequenceCheckNode sequenceCheckNode,
                     @Cached PythonObjectFactory factory,
                     @Cached PRaiseNode raise,
                     @Cached CallUnaryMethodNode callIter) {
         Object type = getReceiverClass.execute(receiver);
-        Object iterMethod = lookupIter.execute(type);
+        Object iterMethod = PNone.NO_VALUE;
+        try {
+            iterMethod = lookupIter.execute(frame, type, receiver);
+        } catch (PException e) {
+            // ignore
+        }
         if (iterMethod instanceof PNone) {
-            if (pySequenceCheck(receiver, type, lookupGetItem)) {
+            if (sequenceCheckNode.execute(receiver)) {
                 return factory.createSequenceIterator(receiver);
             }
         } else {
@@ -93,16 +106,12 @@ public abstract class PyObjectGetIter extends Node {
         throw raise.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
     }
 
-    private static boolean pySequenceCheck(Object receiver, Object type, LookupCallableSlotInMRONode lookupGetitem) {
-        if (receiver instanceof PDict) {
-            return false;
-        }
-        Object getItemMethod = lookupGetitem.execute(type);
-        return !(getItemMethod instanceof PNone);
-    }
-
     private static boolean pyIterCheck(Object type, LookupCallableSlotInMRONode lookupIternext) {
         return !(lookupIternext.execute(type) instanceof PNone);
+    }
+
+    public static PyObjectGetIter create() {
+        return PyObjectGetIterNodeGen.create();
     }
 
     public static PyObjectGetIter getUncached() {

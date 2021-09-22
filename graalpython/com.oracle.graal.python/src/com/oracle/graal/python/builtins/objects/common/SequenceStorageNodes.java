@@ -111,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -2221,7 +2222,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "!hasStorage(iterable) || !cannotBeOverridden(iterable, getClassNode)", limit = "1")
         SequenceStorage doWithoutStorage(VirtualFrame frame, SequenceStorage left, Object iterable, int len,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached LenNode lenNode,
                         @Cached EnsureCapacityNode ensureCapacityNode,
                         @Cached GetNextNode getNextNode,
@@ -2229,7 +2230,7 @@ public abstract class SequenceStorageNodes {
                         @Cached AppendNode appendNode) {
             SequenceStorage currentStore = left;
             int lenLeft = lenNode.execute(currentStore);
-            Object it = lib.getIteratorWithFrame(iterable, frame);
+            Object it = getIter.execute(frame, iterable);
             if (len > 0) {
                 ensureCapacityNode.execute(left, lengthResult(lenLeft, len));
             }
