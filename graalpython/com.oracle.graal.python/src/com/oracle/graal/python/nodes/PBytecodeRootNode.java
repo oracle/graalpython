@@ -180,8 +180,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @CompilationFinal(dimensions = 1) private long[] blockstackRanges = null;
 
     /**
-     * PE-final store for quickened bytecodes. The highest bits are used by the {@link
-     * #insertChildNode} functions to execute uncached first and then cached.
+     * PE-final store for quickened bytecodes.
      */
     @CompilationFinal(dimensions = 1) private final int[] extraArgs;
 
@@ -198,6 +197,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final FrameSlot FREE_SLOT = DESCRIPTOR.addFrameSlot("free", FrameSlotKind.Object);
     private static final FrameSlot BLOCKSTACK_SLOT = DESCRIPTOR.addFrameSlot("blockstack", FrameSlotKind.Object);
     private static final int MAXBLOCKS = 15; // 25% less than on CPython, shouldn't matter much
+
+    private static final Node MARKER_NODE = new Node(){};
 
     private static final Object UNREIFIED_EXC_TYPE = new Object();
     private static final Object UNREIFIED_EXC_VALUE = new Object();
@@ -354,76 +355,57 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         CompilerAsserts.partialEvaluationConstant(bytecodeIndex);
         T node = (T) adoptedNodes[bytecodeIndex];
         CompilerAsserts.partialEvaluationConstant(node);
-        if (node != null) {
-            return node;
-        } else {
+        if (node == null) { // first execution uncached
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            final int mask;
-            if ((bytecodeIndex & 0b1) == 0) {
-                mask = 0x80000000;
-            } else {
-                mask = 0x40000000;
-            }
-            if ((extraArgs[bytecodeIndex >> 1] & mask) == 0) {
-                extraArgs[bytecodeIndex >> 1] |= mask;
-                return nodeSupplier.get(true); // first execution uncached
-            } else {
-                T newNode = nodeSupplier.get(false);
-                adoptedNodes[bytecodeIndex] = insert(newNode);
-                return newNode;
-            }
+            adoptedNodes[bytecodeIndex] = MARKER_NODE;
+            return nodeSupplier.get(true);
+        } else if (node == MARKER_NODE) { // second execution caches
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            T newNode = nodeSupplier.get(false);
+            adoptedNodes[bytecodeIndex] = insert(newNode);
+            return newNode;
+        } else {
+            return node;
         }
     }
 
     @SuppressWarnings("unchecked")
     private <T extends Node> T insertChildNode(NodeFunction<Object, T> nodeSupplier, int bytecodeIndex, Object argument) {
+        CompilerAsserts.partialEvaluationConstant(nodeSupplier);
         CompilerAsserts.partialEvaluationConstant(bytecodeIndex);
         T node = (T) adoptedNodes[bytecodeIndex];
         CompilerAsserts.partialEvaluationConstant(node);
-        if (node != null) {
-            return node;
+        if (node == null) { // first execution uncached
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            adoptedNodes[bytecodeIndex] = MARKER_NODE;
+            return nodeSupplier.apply(argument, true);
+        } else if (node == MARKER_NODE) { // second execution caches
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            T newNode = nodeSupplier.apply(argument, false);
+            adoptedNodes[bytecodeIndex] = insert(newNode);
+            return newNode;
         } else {
-            final int mask;
-            if ((bytecodeIndex & 0b1) == 0) {
-                mask = 0x80000000;
-            } else {
-                mask = 0x40000000;
-            }
-            if ((extraArgs[bytecodeIndex >> 1] & mask) == 0) {
-                extraArgs[bytecodeIndex >> 1] |= mask;
-                return nodeSupplier.apply(argument, true); // first execution uncached
-            } else {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                T newNode = nodeSupplier.apply(argument, false);
-                adoptedNodes[bytecodeIndex] = insert(newNode);
-                return newNode;
-            }
+            return node;
         }
     }
 
     @SuppressWarnings("unchecked")
     private <T extends Node> T insertChildNode(IntNodeFunction<T> nodeSupplier, int bytecodeIndex, int argument) {
+        CompilerAsserts.partialEvaluationConstant(nodeSupplier);
         CompilerAsserts.partialEvaluationConstant(bytecodeIndex);
         T node = (T) adoptedNodes[bytecodeIndex];
         CompilerAsserts.partialEvaluationConstant(node);
-        if (node != null) {
-            return node;
+        if (node == null) { // first execution uncached
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            adoptedNodes[bytecodeIndex] = MARKER_NODE;
+            return nodeSupplier.apply(argument, true);
+        } else if (node == MARKER_NODE) { // second execution caches
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            T newNode = nodeSupplier.apply(argument, false);
+            adoptedNodes[bytecodeIndex] = insert(newNode);
+            return newNode;
         } else {
-            final int mask;
-            if ((bytecodeIndex & 0b1) == 0) {
-                mask = 0x80000000;
-            } else {
-                mask = 0x40000000;
-            }
-            if ((extraArgs[bytecodeIndex >> 1] & mask) == 0) {
-                extraArgs[bytecodeIndex >> 1] |= mask;
-                return nodeSupplier.apply(argument, true); // first execution uncached
-            } else {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                T newNode = nodeSupplier.apply(argument, false);
-                adoptedNodes[bytecodeIndex] = insert(newNode);
-                return newNode;
-            }
+            return node;
         }
     }
 
