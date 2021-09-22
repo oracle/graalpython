@@ -302,10 +302,6 @@ public final class Python3Core implements ParserErrorCallback {
                         "base_exception",
                         PythonCextBuiltins.PYTHON_CEXT,
                         "_collections",
-                        // TODO: see the encodings initialization before _codecs_truffle.py is
-                        // loaded in initializePython3Core;
-                        // once _codecs_truffle.py is gone, it should not be necessary
-                        "_codecs_truffle",
                         "bytes",
                         "bytearray",
                         "time",
@@ -319,6 +315,9 @@ public final class Python3Core implements ParserErrorCallback {
                         "mmap",
                         "_ast",
                         "java",
+                        // TODO: see the encodings initialization before sys_post_init.py is
+                        // loaded in initializePython3Core;
+                        // once sys_post_init.py is gone, it should not be necessary
                         "sys_post_init",
                         "_contextvars",
                         "pip_hook",
@@ -657,8 +656,8 @@ public final class Python3Core implements ParserErrorCallback {
     private void initializePython3Core(String coreHome) {
         loadFile(BuiltinNames.BUILTINS, coreHome);
         for (String s : coreFiles) {
-            // TODO: once _codecs_truffle.py is gone, this should not be necessary
-            if (s.equals("_codecs_truffle")) {
+            // TODO: once sys_post_init.py is gone, this should not be necessary
+            if (s.equals("sys_post_init")) {
                 importEncoding();
             }
             loadFile(s, coreHome);

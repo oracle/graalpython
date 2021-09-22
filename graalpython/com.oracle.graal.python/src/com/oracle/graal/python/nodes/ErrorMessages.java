@@ -357,6 +357,7 @@ public abstract class ErrorMessages {
     public static final String IS_NOT_IN_RANGE = "%s is not in range";
     public static final String IS_NOT_A_UNICODE_OBJECT = "%s is not a unicode object";
     public static final String IS_NOT_A_SEQUENCE = "%p is not a sequence";
+    public static final String IS_NOT_TEXT_ENCODING = "'%s' is not a text encoding; use %s to handle arbitrary codecs";
     public static final String SHOULD_RETURN_TYPE_A_NOT_TYPE_B = "%s should return a %s, not %p";
     public static final String MUST_BE_TYPE_A_NOT_TYPE_B = "%s must be a %s, not %p";
     public static final String SHOULD_RETURN_A_NOT_B = "%s should return a %s, not %s";

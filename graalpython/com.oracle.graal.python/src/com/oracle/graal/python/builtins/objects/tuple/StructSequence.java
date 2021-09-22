@@ -62,10 +62,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToAr
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GetFullyQualifiedClassNameNode;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.DisabledNewNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.NewNodeGen;
@@ -80,8 +78,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
-import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.StandaloneBuiltinFactory;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -89,7 +85,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -98,9 +93,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -273,36 +266,15 @@ public class StructSequence {
     }
 
     private static void createMember(PythonLanguage language, Object klass, String name, String doc, int idx) {
-        RootCallTarget callTarget = language.createCachedCallTarget(l -> new GetStructMemberNode(l, idx), GetStructMemberNode.class, idx);
-        PythonObjectFactory factory = PythonObjectFactory.getUncached();
-        PBuiltinFunction getter = factory.createGetSetBuiltinFunction(name, klass, 0, callTarget);
-        GetSetDescriptor callable = factory.createGetSetDescriptor(getter, null, name, klass, false);
-        callable.setAttribute(__DOC__, doc);
-        WriteAttributeToObjectNode.getUncached(true).execute(klass, name, callable);
+        PythonUtils.createMember(language, klass, GetStructMemberNode.class, name, doc, idx, (l) -> new GetStructMemberNode(l, idx));
     }
 
     private static void createMethod(PythonLanguage language, Object klass, Descriptor desc, Class<?> nodeClass, Function<Descriptor, PythonBuiltinBaseNode> nodeSupplier) {
-        Builtin builtin = nodeClass.getAnnotation(Builtin.class);
-        RootCallTarget callTarget = language.createCachedCallTarget(l -> {
-            NodeFactory<PythonBuiltinBaseNode> nodeFactory = new StandaloneBuiltinFactory<>(nodeSupplier.apply(desc));
-            return new BuiltinFunctionRootNode(l, builtin, nodeFactory, true);
-        }, nodeClass, desc);
-        int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), PythonBuiltinClassType.PTuple, 0, flags, callTarget);
-        WriteAttributeToObjectNode.getUncached(true).execute(klass, builtin.name(), function);
+        PythonUtils.createMethod(language, klass, nodeClass, PythonBuiltinClassType.PTuple, 0, () -> nodeSupplier.apply(desc), desc);
     }
 
     private static void createConstructor(PythonLanguage language, Object klass, Descriptor desc, Class<?> nodeClass, Function<Descriptor, PythonBuiltinBaseNode> nodeSupplier) {
-        Builtin builtin = nodeClass.getAnnotation(Builtin.class);
-        assert __NEW__.equals(builtin.name());
-        assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);
-        RootCallTarget callTarget = language.createCachedCallTarget(l -> {
-            NodeFactory<PythonBuiltinBaseNode> nodeFactory = new StandaloneBuiltinFactory<>(nodeSupplier.apply(desc));
-            return new BuiltinFunctionRootNode(l, builtin, nodeFactory, true, PythonBuiltinClassType.PTuple);
-        }, nodeClass, desc);
-        int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), PythonBuiltinClassType.PTuple, 1, flags, callTarget);
-        WriteAttributeToObjectNode.getUncached(true).execute(klass, __NEW__, function);
+        PythonUtils.createConstructor(language, klass, nodeClass, () -> nodeSupplier.apply(desc), desc);
     }
 
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
