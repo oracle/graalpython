@@ -815,7 +815,7 @@ public final class Python3Core implements ParserErrorCallback {
         }
         // publish builtin types in the corresponding modules
         for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.VALUES) {
-            String module = builtinClass.getPublicInModule();
+            String module = builtinClass.getPublishInModule();
             if (module != null) {
                 PythonModule pythonModule = lookupBuiltinModule(module);
                 if (pythonModule != null) {

@@ -97,7 +97,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PByteArray("bytearray", BUILTINS),
     PBytes("bytes", BUILTINS),
     PCell("cell", Flags.PRIVATE_DERIVED_WODICT),
-    PDefaultDict(DEFAULTDICT, "_collections", Flags.PUBLIC_BASE_WODICT),
+    PDefaultDict(DEFAULTDICT, "_collections", "collections", Flags.PUBLIC_BASE_WODICT),
     PDeque(DEQUE, "_collections", Flags.PUBLIC_BASE_WODICT),
     PTupleGetter(TUPLE_GETTER, "_collections", Flags.PUBLIC_BASE_WODICT),
     PDequeIter(DEQUE_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
@@ -369,7 +369,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     private final String name;
-    private final String publicInModule;
+    private final String publishInModule;
+    private final String moduleName;
     // This is the name qualified by module used for printing. But the actual __qualname__ is just
     // plain name without module
     private final String printName;
@@ -396,10 +397,15 @@ public enum PythonBuiltinClassType implements TruffleObject {
     private Object[] specialMethodSlots;
 
     PythonBuiltinClassType(String name, String module, Flags flags) {
+        this(name, module, module, flags);
+    }
+
+    PythonBuiltinClassType(String name, String publishInModule, String moduleName, Flags flags) {
         this.name = name;
-        this.publicInModule = flags.isPublic ? module : null;
-        if (module != null && module != BUILTINS) {
-            printName = module + "." + name;
+        this.publishInModule = publishInModule;
+        this.moduleName = flags.isPublic ? moduleName : null;
+        if (publishInModule != null && publishInModule != BUILTINS) {
+            printName = moduleName + "." + name;
         } else {
             printName = name;
         }
@@ -444,8 +450,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return isBuiltinWithDict;
     }
 
-    public String getPublicInModule() {
-        return publicInModule;
+    public String getPublishInModule() {
+        return publishInModule;
+    }
+
+    public String getModuleName() {
+        return moduleName;
     }
 
     /**
