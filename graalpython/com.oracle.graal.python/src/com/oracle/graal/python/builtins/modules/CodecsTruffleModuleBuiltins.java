@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.LookupError;
 import static com.oracle.graal.python.nodes.BuiltinNames.ENCODE;
 import static com.oracle.graal.python.nodes.BuiltinNames._CODECS_TRUFFLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_TEXT_ENCODING;
@@ -49,13 +50,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.LookupError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.CodecsDecodeNode;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.CodecsEncodeNode;
@@ -146,7 +146,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
 
     private static PythonClass initClass(String className, PythonAbstractClass superClass, BuiltinDescr[] descrs, PythonModule codecsTruffleModule, PythonLanguage language,
                     PythonObjectFactory factory) {
-        PythonClass clazz = factory.createPythonClassAndFixupSlots(PythonBuiltinClassType.PythonClass, className, new PythonAbstractClass[]{superClass});
+        PythonClass clazz = factory.createPythonClassAndFixupSlots(language, PythonBuiltinClassType.PythonClass, className, new PythonAbstractClass[]{superClass});
         for (BuiltinDescr d : descrs) {
             PythonUtils.createMethod(language, clazz, d.nodeFactory.getNodeClass(), d.enclosingType ? clazz : null, 1, () -> d.nodeFactory.createNode(), factory);
         }
