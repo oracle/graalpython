@@ -188,7 +188,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Child PyObjectStrAsObjectNode strNode;
         @Child CallNode callNode;
         @Child SequenceStorageNodes.LenNode sequenceLenNode;
-        @Child SequenceStorageNodes.GetItemScalarNode sequenceGetItem;
+        @Child SequenceStorageNodes.GetItemScalarNode sequenceGetItemNode;
 
         static WarningsModuleNode create() {
             return new WarningsModuleNode();
@@ -275,12 +275,12 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             return callNode;
         }
 
-        private SequenceStorageNodes.GetItemScalarNode getSequenceGetItem() {
-            if (sequenceGetItem == null) {
+        private SequenceStorageNodes.GetItemScalarNode getSequenceGetItemNode() {
+            if (sequenceGetItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                sequenceGetItem = insert(SequenceStorageNodes.GetItemScalarNode.create());
+                sequenceGetItemNode = insert(SequenceStorageNodes.GetItemScalarNode.create());
             }
-            return sequenceGetItem;
+            return sequenceGetItemNode;
         }
 
         private SequenceStorageNodes.LenNode getSequenceLenNode() {
@@ -523,7 +523,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 throw getRaise().raise(PythonBuiltinClassType.ValueError, "warnings.filters must be a list");
             }
             SequenceStorage filtersStorage = ((PList) filters).getSequenceStorage();
-            SequenceStorageNodes.GetItemScalarNode sequenceGetItem = getSequenceGetItem();
+            SequenceStorageNodes.GetItemScalarNode sequenceGetItem = getSequenceGetItemNode();
             SequenceStorageNodes.LenNode sequenceLen = getSequenceLenNode();
             for (int i = 0; i < sequenceLen.execute(filtersStorage); i++) {
                 Object tmpItem = sequenceGetItem.execute(filtersStorage, i);
