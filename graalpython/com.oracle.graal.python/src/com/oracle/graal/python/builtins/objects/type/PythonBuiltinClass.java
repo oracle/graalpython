@@ -57,7 +57,6 @@ import com.oracle.truffle.api.utilities.TriState;
  * A Python built-in class that is immutable.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PythonBuiltinClass extends PythonManagedClass {
     private final PythonBuiltinClassType type;
 
@@ -106,7 +105,6 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         PythonClass.updateMroShapeSubTypes(this);
     }
 
-    @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")
     @ExportMessage(library = InteropLibrary.class)
     @SuppressWarnings("static-method")
     boolean isMetaObject() {

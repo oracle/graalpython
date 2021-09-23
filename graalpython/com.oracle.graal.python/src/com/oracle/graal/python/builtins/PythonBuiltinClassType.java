@@ -786,12 +786,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return lib.callObjectWithState(PythonContext.get(lib).getCore().lookupType(this), state, arguments);
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public boolean isLazyPythonClass() {
-        return true;
-    }
-
     public static boolean isExceptionType(PythonBuiltinClassType type) {
         return type.isException;
     }

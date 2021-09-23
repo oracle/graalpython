@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -189,6 +190,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Child CallNode callNode;
         @Child SequenceStorageNodes.LenNode sequenceLenNode;
         @Child SequenceStorageNodes.GetItemScalarNode sequenceGetItemNode;
+        @Child TypeNodes.IsTypeNode isTypeNode;
 
         static WarningsModuleNode create() {
             return new WarningsModuleNode();
@@ -225,6 +227,14 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 pylib = insert(PythonObjectLibrary.getFactory().createDispatched(7));
             }
             return pylib;
+        }
+
+        private TypeNodes.IsTypeNode getIsTypeNode() {
+            if (isTypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isTypeNode = insert(TypeNodes.IsTypeNode.create());
+            }
+            return isTypeNode;
         }
 
         private PyObjectLookupAttr getLookupAttrNode() {
@@ -868,7 +878,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 return messageType;
             } else if (category == null || category == PNone.NONE) {
                 return PythonBuiltinClassType.UserWarning;
-            } else if (!getPyLib().isLazyPythonClass(category) || !getIsSubtype().execute(frame, category, PythonBuiltinClassType.Warning)) {
+            } else if (!getIsTypeNode().execute(category) || !getIsSubtype().execute(frame, category, PythonBuiltinClassType.Warning)) {
                 throw getRaise().raise(PythonBuiltinClassType.TypeError, "category must be a Warning subclass, not '%P'", category);
             } else {
                 return category;

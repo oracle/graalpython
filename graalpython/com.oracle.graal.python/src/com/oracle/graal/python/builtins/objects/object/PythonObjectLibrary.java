@@ -58,7 +58,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
@@ -84,17 +83,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @DefaultExport(DefaultPythonObjectExports.class)
 @SuppressWarnings("unused")
 public abstract class PythonObjectLibrary extends Library {
-    /**
-     * @return true if the receiver of a Python type.<br>
-     *         <br>
-     *
-     *         Note: this is similar to {@link InteropLibrary#isMetaObject(Object)} but without the
-     *         {@link InteropLibrary#isMetaInstance(Object, Object)} assertion.
-     */
-    public boolean isLazyPythonClass(Object receiver) {
-        return false;
-    }
-
     /**
      * Sets the {@code __class__} value of the receiver. This is not supported for all kinds of
      * objects.

@@ -25,11 +25,13 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
+
 import java.util.ArrayList;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -65,8 +67,6 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 
 @ExportLibrary(InteropLibrary.class)
 @ImportStatic(SpecialMethodNames.class)
@@ -318,13 +318,12 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
                 }
                 Object exception = arguments[0];
                 if (exception instanceof PBaseException) {
-                    PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
                     IsSubtypeNode isSubtype = IsSubtypeNode.getUncached();
                     ReadAttributeFromObjectNode readAttr = ReadAttributeFromObjectNode.getUncached();
 
                     for (String c : caughtClasses) {
                         Object cls = readAttr.execute(PythonContext.get(gil).getBuiltins(), c);
-                        if (lib.isLazyPythonClass(cls)) {
+                        if (TypeNodes.IsTypeNode.getUncached().execute(cls)) {
                             if (isSubtype.execute(GetClassNode.getUncached().execute(exception), cls)) {
                                 return true;
                             }

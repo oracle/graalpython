@@ -100,7 +100,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
@@ -1290,7 +1289,7 @@ public abstract class TypeNodes {
         @TruffleBoundary
         static PythonAbstractClass[] invokeMro(PythonAbstractClass cls) {
             Object type = GetClassNode.getUncached().execute(cls);
-            if (PythonObjectLibrary.getUncached().isLazyPythonClass(type) && type instanceof PythonClass) {
+            if (IsTypeNode.getUncached().execute(type) && type instanceof PythonClass) {
                 Object mroMeth = LookupAttributeInMRONode.Dynamic.getUncached().execute(type, MRO);
                 if (mroMeth instanceof PFunction) {
                     Object mroObj = CallUnaryMethodNode.getUncached().executeObject(mroMeth, cls);
@@ -1351,7 +1350,7 @@ public abstract class TypeNodes {
                 if (object == null) {
                     continue;
                 }
-                if (!PythonObjectLibrary.getUncached().isLazyPythonClass(object)) {
+                if (!IsTypeNode.getUncached().execute(object)) {
                     throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.S_RETURNED_NON_CLASS, "mro()", object);
                 }
                 if (!IsSubtypeNode.getUncached().execute(solid, getSolidBase.execute(object))) {
