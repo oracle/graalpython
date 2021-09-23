@@ -84,14 +84,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @SuppressWarnings("unused")
 public abstract class PythonObjectLibrary extends Library {
     /**
-     * Sets the {@code __class__} value of the receiver. This is not supported for all kinds of
-     * objects.
-     */
-    public void setLazyPythonClass(Object receiver, Object cls) {
-        throw getDefaultNodes().getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES_NOT_P, receiver);
-    }
-
-    /**
      * Checks whether the receiver is a Python iterable object. As described in the
      * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
      * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for

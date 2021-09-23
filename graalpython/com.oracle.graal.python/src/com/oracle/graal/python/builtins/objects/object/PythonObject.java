@@ -40,15 +40,11 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonObjectLibrary.class)
 public class PythonObject extends PythonAbstractObject {
     public static final HiddenKey DICT = HiddenAttributes.DICT;
     public static final byte CLASS_CHANGED_FLAG = 1;
@@ -80,9 +76,7 @@ public class PythonObject extends PythonAbstractObject {
         return constantClass == (pythonClass instanceof PythonBuiltinClass ? ((PythonBuiltinClass) pythonClass).getType() : pythonClass);
     }
 
-    @ExportMessage
-    public void setLazyPythonClass(Object cls,
-                    @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
+    public void setPythonClass(Object cls, DynamicObjectLibrary dylib) {
         // n.b.: the CLASS property is usually a constant property that is stored in the shape
         // in
         // single-context-mode. If we change it for the first time, there's an implicit shape

@@ -84,7 +84,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.CheckCompatibleForAssigmentNodeGen;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -122,7 +121,6 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -138,6 +136,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -154,8 +153,6 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ClassNode extends PythonBinaryBuiltinNode {
 
-        @Child private CheckCompatibleForAssigmentNode compatibleForAssigmentNode;
-
         @Specialization(guards = "isNoValue(value)")
         static Object getClass(Object self, @SuppressWarnings("unused") PNone value,
                         @Cached GetClassNode getClass) {
@@ -169,41 +166,23 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isPythonClass(value) || isPythonBuiltinClassType(value)")
         PNone setClass(VirtualFrame frame, PythonObject self, Object value,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib1,
-                        @Cached GetClassNode getClassNode,
-                        @Cached BranchProfile errorValueBranch,
-                        @Cached BranchProfile errorSelfBranch) {
-            if (isBuiltinClassNotModule(value) || PGuards.isNativeClass(value)) {
-                errorValueBranch.enter();
-                throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
-            }
-            Object lazyClass = getClassNode.execute(self);
-            if (isBuiltinClassNotModule(lazyClass) || PGuards.isNativeClass(lazyClass)) {
-                errorSelfBranch.enter();
+                        @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
+                        @Cached IsBuiltinClassProfile classProfile1,
+                        @Cached IsBuiltinClassProfile classProfile2,
+                        @Cached CheckCompatibleForAssigmentNode checkCompatibleForAssigmentNode,
+                        @Cached GetClassNode getClassNode) {
+            Object type = getClassNode.execute(self);
+            if (isBuiltinClassNotModule(value, classProfile1) || PGuards.isNativeClass(value) || isBuiltinClassNotModule(type, classProfile2) || PGuards.isNativeClass(type)) {
                 throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
             }
 
-            setClass(frame, self, lazyClass, value, PythonContext.get(this), lib1);
+            checkCompatibleForAssigmentNode.execute(frame, type, value);
+            self.setPythonClass(value, dylib);
             return PNone.NONE;
         }
 
-        private void setClass(VirtualFrame frame, PythonObject self, Object lazyClass, Object value, PythonContext ctx, PythonObjectLibrary lib1) {
-            if (lazyClass instanceof PythonBuiltinClassType) {
-                getCheckCompatibleForAssigmentNode().execute(frame, ctx.getCore().lookupType((PythonBuiltinClassType) lazyClass), value);
-            } else {
-                getCheckCompatibleForAssigmentNode().execute(frame, lazyClass, value);
-            }
-
-            lib1.setLazyPythonClass(self, value);
-        }
-
-        private static boolean isBuiltinClassNotModule(Object lazyClass) {
-            if (lazyClass instanceof PythonBuiltinClass) {
-                return ((PythonBuiltinClass) lazyClass).getType() != PythonBuiltinClassType.PythonModule;
-            } else if (lazyClass instanceof PythonBuiltinClassType) {
-                return lazyClass != PythonBuiltinClassType.PythonModule;
-            }
-            return false;
+        private static boolean isBuiltinClassNotModule(Object type, IsBuiltinClassProfile classProfile) {
+            return classProfile.profileIsAnyBuiltinClass(type) && !classProfile.profileClass(type, PythonBuiltinClassType.PythonModule);
         }
 
         @Specialization(guards = {"isPythonClass(value) || isPythonBuiltinClassType(value)", "!isPythonObject(self)"})
@@ -214,14 +193,6 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Fallback
         Object getClassError(@SuppressWarnings("unused") Object self, Object value) {
             throw raise(TypeError, ErrorMessages.CLASS_MUST_BE_SET_TO_CLASS, value);
-        }
-
-        private CheckCompatibleForAssigmentNode getCheckCompatibleForAssigmentNode() {
-            if (compatibleForAssigmentNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                compatibleForAssigmentNode = insert(CheckCompatibleForAssigmentNodeGen.create());
-            }
-            return compatibleForAssigmentNode;
         }
     }
 
