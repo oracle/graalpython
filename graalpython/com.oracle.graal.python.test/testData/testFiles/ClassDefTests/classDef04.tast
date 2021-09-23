@@ -13,8 +13,8 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
           Identifier: Complex
           PythonCallBinary SourceSection: [0,110]`class Complex:↵    d...`
             CallBinaryMethodNodeGen SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+            LoadBuildClassNode SourceSection: None
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             FunctionDefinitionNode Name: Complex SourceSection: None
               Arguments: None
               KwArguments: None

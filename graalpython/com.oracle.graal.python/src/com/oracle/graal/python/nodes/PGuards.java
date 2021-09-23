@@ -547,6 +547,15 @@ public abstract class PGuards {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
 
+    public static boolean isBuiltinDict(PDict dict) {
+        /*
+         * dict's __class__ cannot be reassigned and other objects cannot have their class assigned
+         * to builtin dict, so it is enough to look at the initial class. PDict constructor ensures
+         * that it cannot be PythonBuiltinClass.
+         */
+        return dict.getInitialPythonClass() == PythonBuiltinClassType.PDict;
+    }
+
     public static boolean isKindOfBuiltinClass(Object clazz) {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }

@@ -459,8 +459,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonModule(cls, getShape(cls)));
     }
 
-    public final PythonClass createPythonClassAndFixupSlots(Object metaclass, String name, PythonAbstractClass[] bases) {
-        PythonLanguage language = getLanguage();
+    public final PythonClass createPythonClassAndFixupSlots(PythonLanguage language, Object metaclass, String name, PythonAbstractClass[] bases) {
         PythonClass result = trace(new PythonClass(language, metaclass, getShape(metaclass), name, bases));
         SpecialMethodSlot.initializeSpecialMethodSlots(result, GetMroStorageNode.getUncached(), language);
         result.initializeMroShape(language);

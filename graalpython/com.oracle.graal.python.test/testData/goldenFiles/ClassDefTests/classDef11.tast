@@ -54,8 +54,8 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                         Frame: [2,named_tuple,Illegal]
                         PythonCallTernary SourceSection: [46,264]`class named_tuple(tu...`
                           CallTernaryMethodNodeGen SourceSection: None
-                          GetCallAttributeNodeGen SourceSection: None
-                            BuiltinsLiteralNode SourceSection: None
+                          LoadBuildClassNode SourceSection: None
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           FunctionDefinitionNode Name: named_tuple SourceSection: None
                             Arguments: None
                             KwArguments: None

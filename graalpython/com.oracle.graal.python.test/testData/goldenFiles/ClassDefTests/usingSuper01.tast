@@ -13,8 +13,8 @@ ModuleRootNode Name: <module 'usingSuper01'> SourceSection: [0,59]`class X:↵  
           Identifier: X
           PythonCallBinary SourceSection: [0,59]`class X:↵    def run...`
             CallBinaryMethodNodeGen SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+            LoadBuildClassNode SourceSection: None
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             FunctionDefinitionNode Name: X SourceSection: None
               Arguments: None
               KwArguments: None

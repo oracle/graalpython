@@ -13,8 +13,8 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
           Identifier: OrderedDict
           PythonCallTernary SourceSection: [0,106]`class OrderedDict(di...`
             CallTernaryMethodNodeGen SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+            LoadBuildClassNode SourceSection: None
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             FunctionDefinitionNode Name: OrderedDict SourceSection: None
               Arguments: None
               KwArguments: None

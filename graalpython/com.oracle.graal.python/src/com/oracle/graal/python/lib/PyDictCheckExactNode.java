@@ -40,23 +40,30 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyDict_CheckExact}.
  */
 @GenerateUncached
-public abstract class PyDictCheckExactNode extends Node {
+public abstract class PyDictCheckExactNode extends PNodeWithContext {
     public abstract boolean execute(Object object);
 
-    @Specialization
-    static boolean doGeneric(Object object,
-                    @Cached IsBuiltinClassProfile isBuiltin) {
-        return isBuiltin.profileObject(object, PythonBuiltinClassType.PDict);
+    @Specialization(guards = "isBuiltinDict(dict)")
+    static boolean doBuiltinDict(@SuppressWarnings("unused") PDict dict) {
+        return true;
+    }
+
+    @Specialization(guards = "!isBuiltinDict(dict)")
+    static boolean doOtherDict(@SuppressWarnings("unused") PDict dict) {
+        return false;
+    }
+
+    @Specialization(guards = "!isDict(object)")
+    static boolean doOther(@SuppressWarnings("unused") Object object) {
+        return false;
     }
 }

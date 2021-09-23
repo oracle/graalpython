@@ -42,7 +42,6 @@
 package com.oracle.graal.python.parser.sst;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.LAMBDA_NAME;
-import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
@@ -62,12 +61,13 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.NoValueNode;
-import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.classes.ClassDefinitionPrologueNode;
+import com.oracle.graal.python.nodes.classes.LoadBuildClassNode;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.control.BreakNode;
@@ -110,7 +110,6 @@ import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.literal.BooleanLiteralNode;
-import com.oracle.graal.python.nodes.literal.BuiltinsLiteralNode;
 import com.oracle.graal.python.nodes.literal.BytesLiteralNode;
 import com.oracle.graal.python.nodes.literal.ComplexLiteralNode;
 import com.oracle.graal.python.nodes.literal.DictLiteralNode;
@@ -506,8 +505,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         args[0] = funcDef;
         args[1] = new StringLiteralNode(node.name);
 
-        ExpressionNode owner = GetAttributeNode.create(__BUILD_CLASS__, new BuiltinsLiteralNode());
-        ExpressionNode classDef = PythonCallNode.create(owner, args, nameArgs, starArg, kwArg);
+        ExpressionNode buildClass = new LoadBuildClassNode();
+        ExpressionNode classDef = PythonCallNode.create(buildClass, args, nameArgs, starArg, kwArg);
         classDef.assignSourceSection(nodeSourceSection);
 
         ReadNode read = scopeEnvironment.findVariable(node.name);

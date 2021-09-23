@@ -30,8 +30,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
             Module: _sitebuiltins
       WriteGlobalNodeGen SourceSection: [3140,3180]`PREFIXES = [sys.pref...`
         Identifier: PREFIXES
-        IsBuiltinClassProfile SourceSection: None
-          GetClassNodeGen SourceSection: None
         ListLiteralNode SourceSection: [3151,3180]`[sys.prefix, sys.exe...`
           GetAttributeNode SourceSection: [3152,3162]`sys.prefix`
             GetFixedAttributeNodeGen SourceSection: None
@@ -54,18 +52,12 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
           PythonObjectFactoryNodeGen SourceSection: None
       WriteGlobalNodeGen SourceSection: [3293,3316]`ENABLE_USER_SITE = N...`
         Identifier: ENABLE_USER_SITE
-        IsBuiltinClassProfile SourceSection: None
-          GetClassNodeGen SourceSection: None
         ObjectLiteralNode SourceSection: [3312,3316]`None`
       WriteGlobalNodeGen SourceSection: [3490,3506]`USER_SITE = None`
         Identifier: USER_SITE
-        IsBuiltinClassProfile SourceSection: None
-          GetClassNodeGen SourceSection: None
         ObjectLiteralNode SourceSection: [3502,3506]`None`
       WriteGlobalNodeGen SourceSection: [3507,3523]`USER_BASE = None`
         Identifier: USER_BASE
-        IsBuiltinClassProfile SourceSection: None
-          GetClassNodeGen SourceSection: None
         ObjectLiteralNode SourceSection: [3519,3523]`None`
       WriteNameNodeGen SourceSection: [3526,3696]`def makepath(*paths)...`
         Identifier: makepath
@@ -1628,8 +1620,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ObjectLiteralNode SourceSection: [9781,9785]`None`
                       WriteGlobalNodeGen SourceSection: [9795,9821]`USER_BASE = _getuser...`
                         Identifier: USER_BASE
-                        IsBuiltinClassProfile SourceSection: None
-                          GetClassNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [9807,9821]`_getuserbase()`
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [9807,9819]`_getuserbase`
@@ -1682,8 +1672,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ObjectLiteralNode SourceSection: [10147,10151]`None`
                       WriteGlobalNodeGen SourceSection: [10161,10192]`USER_SITE = _get_pat...`
                         Identifier: USER_SITE
-                        IsBuiltinClassProfile SourceSection: None
-                          GetClassNodeGen SourceSection: None
                         PythonCallUnary SourceSection: [10173,10192]`_get_path(userbase)`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [10173,10182]`_get_path`
@@ -3017,8 +3005,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           BlockNode SourceSection: None
                             WriteGlobalNodeGen SourceSection: [17391,17414]`PREFIXES = [sys.pref...`
                               Identifier: PREFIXES
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                               ListLiteralNode SourceSection: [17402,17414]`[sys.prefix]`
                                 GetAttributeNode SourceSection: [17403,17413]`sys.prefix`
                                   GetFixedAttributeNodeGen SourceSection: None
@@ -3030,8 +3016,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 PythonObjectFactoryNodeGen SourceSection: None
                             WriteGlobalNodeGen SourceSection: [17427,17451]`ENABLE_USER_SITE = F...`
                               Identifier: ENABLE_USER_SITE
-                              IsBuiltinClassProfile SourceSection: None
-                                GetClassNodeGen SourceSection: None
                               BooleanLiteralNode SourceSection: [17446,17451]`False`
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [17457,17475]`return known_paths`
@@ -3370,8 +3354,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           ObjectLiteralNode SourceSection: [19196,19200]`None`
                       WriteGlobalNodeGen SourceSection: [19210,19251]`ENABLE_USER_SITE = c...`
                         Identifier: ENABLE_USER_SITE
-                        IsBuiltinClassProfile SourceSection: None
-                          GetClassNodeGen SourceSection: None
                         PythonCallNodeGen SourceSection: [19229,19251]`check_enableusersite...`
                           CallNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [19229,19249]`check_enableusersite...`

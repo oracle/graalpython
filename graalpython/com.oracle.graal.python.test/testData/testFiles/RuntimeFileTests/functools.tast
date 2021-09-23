@@ -1582,8 +1582,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                       Frame: [1,K,Illegal]
                       PythonCallTernary SourceSection: [8164,8715]`class K(object):↵   ...`
                         CallTernaryMethodNodeGen SourceSection: None
-                        GetCallAttributeNodeGen SourceSection: None
-                          BuiltinsLiteralNode SourceSection: None
+                        LoadBuildClassNode SourceSection: None
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FunctionDefinitionNode Name: K SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2047,8 +2047,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
         Identifier: partial
         PythonCallBinary SourceSection: [9042,11795]`class partial:↵    "...`
           CallBinaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: partial SourceSection: None
             Arguments: None
             KwArguments: None
@@ -3073,8 +3073,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
         Identifier: partialmethod
         PythonCallTernary SourceSection: [11886,15107]`class partialmethod(...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: partialmethod SourceSection: None
             Arguments: None
             KwArguments: None
@@ -3918,8 +3918,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
         Identifier: _HashedSeq
         PythonCallTernary SourceSection: [15188,15601]`class _HashedSeq(lis...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: _HashedSeq SourceSection: None
             Arguments: None
             KwArguments: None

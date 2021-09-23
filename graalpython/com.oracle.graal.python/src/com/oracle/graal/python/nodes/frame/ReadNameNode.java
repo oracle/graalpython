@@ -89,9 +89,13 @@ public abstract class ReadNameNode extends ExpressionNode implements ReadNode, A
         return ((PDict) PArguments.getSpecialArgument(frame)).getDictStorage();
     }
 
-    @Specialization(guards = "hasLocalsDict(frame, isBuiltin)")
+    @Specialization(guards = "!hasLocals(frame)")
+    protected Object readFromLocals(VirtualFrame frame) {
+        return getReadGlobalNode().execute(frame);
+    }
+
+    @Specialization(guards = "hasLocalsDict(frame)")
     protected Object readFromLocalsDict(VirtualFrame frame,
-                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
         Object result = hlib.getItem(getStorage(frame), attributeId);
         if (result == null) {
@@ -110,11 +114,6 @@ public abstract class ReadNameNode extends ExpressionNode implements ReadNode, A
         } catch (PException e) {
             return readGlobalsIfKeyError(frame, e);
         }
-    }
-
-    @Specialization(guards = "!hasLocals(frame)")
-    protected Object readFromLocals(VirtualFrame frame) {
-        return getReadGlobalNode().execute(frame);
     }
 
     public StatementNode makeWriteNode(ExpressionNode rhs) {

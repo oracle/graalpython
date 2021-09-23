@@ -13,8 +13,8 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
           Identifier: XN
           PythonCallBinary SourceSection: [0,258]`class XN:↵          ...`
             CallBinaryMethodNodeGen SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+            LoadBuildClassNode SourceSection: None
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             FunctionDefinitionNode Name: XN SourceSection: None
               Arguments: None
               KwArguments: None

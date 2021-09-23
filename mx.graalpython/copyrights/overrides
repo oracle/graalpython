@@ -487,7 +487,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/WriteGeneratorFrameVariableNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/YieldNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/literal/BooleanLiteralNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/literal/BuiltinsLiteralNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/literal/BytesLiteralNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/literal/ComplexLiteralNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/literal/DictLiteralNode.java,zippy.copyright

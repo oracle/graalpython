@@ -30,8 +30,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
         Identifier: error
         PythonCallTernary SourceSection: [515,1619]`class error(Exceptio...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: error SourceSection: None
             Arguments: None
             KwArguments: None
@@ -309,8 +309,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
         Identifier: _NamedIntConstant
         PythonCallTernary SourceSection: [1619,1868]`class _NamedIntConst...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: _NamedIntConstant SourceSection: None
             Arguments: None
             KwArguments: None

@@ -44,12 +44,10 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AtexitModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BinasciiModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
@@ -105,6 +103,8 @@ import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ast.AstBuiltins;
+import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
@@ -244,6 +244,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
@@ -313,7 +314,6 @@ public final class Python3Core implements ParserErrorCallback {
                         "termios",
                         "zipimport",
                         "mmap",
-                        "_ast",
                         "java",
                         // TODO: see the encodings initialization before sys_post_init.py is
                         // loaded in initializePython3Core;
@@ -528,6 +528,9 @@ public final class Python3Core implements ParserErrorCallback {
                         // json
                         new JSONScannerBuiltins(),
                         new JSONEncoderBuiltins(),
+
+                        // _ast
+                        new AstBuiltins(),
 
                         // ctypes
                         new CArgObjectBuiltins(),

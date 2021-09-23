@@ -25,8 +25,8 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,40]`@decorator1↵
                   GetClassNodeGen SourceSection: None
               PythonCallBinary SourceSection: [24,40]`class foo():pass`
                 CallBinaryMethodNodeGen SourceSection: None
-                GetCallAttributeNodeGen SourceSection: None
-                  BuiltinsLiteralNode SourceSection: None
+                LoadBuildClassNode SourceSection: None
+                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 FunctionDefinitionNode Name: foo SourceSection: None
                   Arguments: None
                   KwArguments: None

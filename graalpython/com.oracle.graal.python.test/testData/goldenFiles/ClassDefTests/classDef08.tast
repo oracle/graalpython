@@ -13,8 +13,8 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
           Identifier: Test
           PythonCallBinary SourceSection: [0,129]`class Test():â†µ    de...`
             CallBinaryMethodNodeGen SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+            LoadBuildClassNode SourceSection: None
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             FunctionDefinitionNode Name: Test SourceSection: None
               Arguments: None
               KwArguments: None

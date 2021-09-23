@@ -140,32 +140,29 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result);
     }
 
-    @Specialization(guards = {"globals == cachedGlobals", "isBuiltinDict(cachedGlobals, builtinProfile)",
+    @Specialization(guards = {"globals == cachedGlobals", "isBuiltinDict(cachedGlobals)",
                     "cachedGlobals.getDictStorage() == cachedStorage"}, assumptions = "singleContextAssumption()", limit = "1")
     protected Object readGlobalBuiltinDictCachedUnchangedStorage(@SuppressWarnings("unused") PDict globals,
                     @SuppressWarnings("unused") @Cached(value = "globals", weak = true) PDict cachedGlobals,
                     @Cached(value = "globals.getDictStorage()", weak = true) HashingStorage cachedStorage,
-                    @CachedLibrary("cachedStorage") HashingStorageLibrary hlib,
-                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile builtinProfile) {
+                    @CachedLibrary("cachedStorage") HashingStorageLibrary hlib) {
         Object result = hlib.getItem(cachedStorage, attributeId);
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 
     @Specialization(guards = {"globals == cachedGlobals",
-                    "isBuiltinDict(cachedGlobals, builtinProfile)"}, assumptions = "singleContextAssumption()", replaces = "readGlobalBuiltinDictCachedUnchangedStorage", limit = "1")
+                    "isBuiltinDict(cachedGlobals)"}, assumptions = "singleContextAssumption()", replaces = "readGlobalBuiltinDictCachedUnchangedStorage", limit = "1")
     protected Object readGlobalBuiltinDictCached(@SuppressWarnings("unused") PDict globals,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
-                    @CachedLibrary(value = "cachedGlobals.getDictStorage()") HashingStorageLibrary hlib,
-                    @Cached @SuppressWarnings("unused") IsBuiltinClassProfile builtinProfile) {
+                    @CachedLibrary(value = "cachedGlobals.getDictStorage()") HashingStorageLibrary hlib) {
         Object result = hlib.getItem(cachedGlobals.getDictStorage(), attributeId);
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }
 
-    @Specialization(guards = "isBuiltinDict(globals, builtinProfile)", replaces = {"readGlobalBuiltinDictCached", "readGlobalBuiltinDictCachedUnchangedStorage"}, limit = "3")
+    @Specialization(guards = "isBuiltinDict(globals)", replaces = {"readGlobalBuiltinDictCached", "readGlobalBuiltinDictCachedUnchangedStorage"}, limit = "3")
     protected Object readGlobalBuiltinDict(@SuppressWarnings("unused") PDict globals,
                     @Bind("globals.getDictStorage()") HashingStorage storage,
-                    @CachedLibrary("storage") HashingStorageLibrary hlib,
-                    @Cached @SuppressWarnings("unused") IsBuiltinClassProfile builtinProfile) {
+                    @CachedLibrary("storage") HashingStorageLibrary hlib) {
         Object result = hlib.getItem(storage, attributeId);
         return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
     }

@@ -8,8 +8,6 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
     ExpressionWithSideEffects SourceSection: [0,114]`SOMETHING = NONE↵def...`
       WriteGlobalNodeGen SourceSection: [0,16]`SOMETHING = NONE`
         Identifier: SOMETHING
-        IsBuiltinClassProfile SourceSection: None
-          GetClassNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [12,16]`NONE`
           Identifier: NONE
           IsBuiltinClassProfile SourceSection: None
@@ -46,8 +44,6 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
                         BooleanLiteralNode SourceSection: [54,58]`True`
                       WriteGlobalNodeGen SourceSection: [61,77]`SOMETHING = True`
                         Identifier: SOMETHING
-                        IsBuiltinClassProfile SourceSection: None
-                          GetClassNodeGen SourceSection: None
                         BooleanLiteralNode SourceSection: [73,77]`True`
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None

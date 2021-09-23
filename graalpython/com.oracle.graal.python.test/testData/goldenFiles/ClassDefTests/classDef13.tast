@@ -10,8 +10,8 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
         Identifier: Point
         PythonCallBinary SourceSection: [0,29]`class Point:↵  x = 0...`
           CallBinaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: Point SourceSection: None
             Arguments: None
             KwArguments: None

@@ -8,8 +8,6 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
     ExpressionWithSideEffects SourceSection: [0,137]`c = 0 # global varia...`
       WriteGlobalNodeGen SourceSection: [0,5]`c = 0`
         Identifier: c
-        IsBuiltinClassProfile SourceSection: None
-          GetClassNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [4,5]`0`
           Value: 0
       WriteNameNodeGen SourceSection: [25,111]`def add():↵    globa...`
@@ -41,8 +39,6 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
                       EmptyNode SourceSection: [40,48]`global c`
                     WriteGlobalNodeGen SourceSection: [53,62]`c = c + 2`
                       Identifier: c
-                      IsBuiltinClassProfile SourceSection: None
-                        GetClassNodeGen SourceSection: None
                       AddNodeGen SourceSection: [57,62]`c + 2`
                         ReadGlobalOrBuiltinNodeGen SourceSection: [57,58]`c`
                           Identifier: c

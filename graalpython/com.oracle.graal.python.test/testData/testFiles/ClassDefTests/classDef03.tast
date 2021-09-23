@@ -13,8 +13,8 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
           Identifier: MyClass
           PythonCallBinary SourceSection: [0,108]`class MyClass:↵    "...`
             CallBinaryMethodNodeGen SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+            LoadBuildClassNode SourceSection: None
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             FunctionDefinitionNode Name: MyClass SourceSection: None
               Arguments: None
               KwArguments: None

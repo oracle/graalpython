@@ -70,8 +70,8 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                       Frame: [1,Test,Illegal]
                                       PythonCallTernary SourceSection: [77,375]`class Test(object):↵...`
                                         CallTernaryMethodNodeGen SourceSection: None
-                                        GetCallAttributeNodeGen SourceSection: None
-                                          BuiltinsLiteralNode SourceSection: None
+                                        LoadBuildClassNode SourceSection: None
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         FunctionDefinitionNode Name: Test SourceSection: None
                                           Arguments: None
                                           KwArguments: None

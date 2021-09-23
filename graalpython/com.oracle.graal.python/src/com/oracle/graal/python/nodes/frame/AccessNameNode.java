@@ -40,10 +40,9 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public interface AccessNameNode {
@@ -53,9 +52,9 @@ public interface AccessNameNode {
         return PArguments.getSpecialArgument(frame) != null;
     }
 
-    default boolean hasLocalsDict(VirtualFrame frame, IsBuiltinClassProfile isBuiltin) {
+    default boolean hasLocalsDict(VirtualFrame frame) {
         Object specialArgument = PArguments.getSpecialArgument(frame);
-        return specialArgument instanceof PDict && isBuiltin.profileObject(specialArgument, PythonBuiltinClassType.PDict);
+        return specialArgument instanceof PDict && PGuards.isBuiltinDict((PDict) specialArgument);
     }
 
     public abstract String getAttributeId();

@@ -10,8 +10,8 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
         Identifier: ChainMap
         PythonCallTernary SourceSection: [161,3951]`class ChainMap(_coll...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: ChainMap SourceSection: None
             Arguments: None
             KwArguments: None
@@ -1326,8 +1326,8 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
         Identifier: UserDict
         PythonCallTernary SourceSection: [3951,6146]`class UserDict(_coll...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: UserDict SourceSection: None
             Arguments: None
             KwArguments: None
@@ -2196,8 +2196,8 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
         Identifier: UserList
         PythonCallTernary SourceSection: [6146,9277]`class UserList(_coll...`
           CallTernaryMethodNodeGen SourceSection: None
-          GetCallAttributeNodeGen SourceSection: None
-            BuiltinsLiteralNode SourceSection: None
+          LoadBuildClassNode SourceSection: None
+            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
           FunctionDefinitionNode Name: UserList SourceSection: None
             Arguments: None
             KwArguments: None
@@ -4240,8 +4240,8 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
             Identifier: UserString
             PythonCallTernary SourceSection: [9277,15620]`class UserString(_co...`
               CallTernaryMethodNodeGen SourceSection: None
-              GetCallAttributeNodeGen SourceSection: None
-                BuiltinsLiteralNode SourceSection: None
+              LoadBuildClassNode SourceSection: None
+                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
               FunctionDefinitionNode Name: UserString SourceSection: None
                 Arguments: None
                 KwArguments: None

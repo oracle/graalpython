@@ -13,8 +13,8 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,60]`class C(object
           Identifier: C
           PythonCallTernary SourceSection: [0,60]`class C(object):↵   ...`
             CallTernaryMethodNodeGen SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+            LoadBuildClassNode SourceSection: None
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             FunctionDefinitionNode Name: C SourceSection: None
               Arguments: None
               KwArguments: None

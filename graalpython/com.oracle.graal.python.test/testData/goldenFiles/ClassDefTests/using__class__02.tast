@@ -13,8 +13,8 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
           Identifier: X
           PythonCallBinary SourceSection: [0,263]`class X:↵           ...`
             CallBinaryMethodNodeGen SourceSection: None
-            GetCallAttributeNodeGen SourceSection: None
-              BuiltinsLiteralNode SourceSection: None
+            LoadBuildClassNode SourceSection: None
+              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
             FunctionDefinitionNode Name: X SourceSection: None
               Arguments: None
               KwArguments: None
@@ -85,8 +85,8 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                         Frame: [1,Y,Illegal]
                                         PythonCallBinary SourceSection: [56,192]`class Y:↵           ...`
                                           CallBinaryMethodNodeGen SourceSection: None
-                                          GetCallAttributeNodeGen SourceSection: None
-                                            BuiltinsLiteralNode SourceSection: None
+                                          LoadBuildClassNode SourceSection: None
+                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           FunctionDefinitionNode Name: Y SourceSection: None
                                             Arguments: None
                                             KwArguments: None

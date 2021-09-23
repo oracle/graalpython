@@ -15,8 +15,8 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
               Identifier: FalseRec
               PythonCallBinary SourceSection: [22,83]`class FalseRec:â†µ  de...`
                 CallBinaryMethodNodeGen SourceSection: None
-                GetCallAttributeNodeGen SourceSection: None
-                  BuiltinsLiteralNode SourceSection: None
+                LoadBuildClassNode SourceSection: None
+                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 FunctionDefinitionNode Name: FalseRec SourceSection: None
                   Arguments: None
                   KwArguments: None
