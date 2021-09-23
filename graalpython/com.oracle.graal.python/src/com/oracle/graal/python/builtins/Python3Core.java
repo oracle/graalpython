@@ -44,7 +44,6 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -246,6 +245,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
@@ -433,8 +433,6 @@ public final class Python3Core implements ParserErrorCallback {
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new WarningsModuleBuiltins(),
-                        new DefaultDictBuiltins(),
-                        new TupleGetterBuiltins(),
 
                         // io
                         new IOModuleBuiltins(),
@@ -465,6 +463,8 @@ public final class Python3Core implements ParserErrorCallback {
                         new DequeBuiltins(),
                         new DequeIterBuiltins(),
                         new CollectionsModuleBuiltins(),
+                        new DefaultDictBuiltins(),
+                        new TupleGetterBuiltins(),
                         new JavaModuleBuiltins(),
                         new JArrayModuleBuiltins(),
                         new JSONModuleBuiltins(),

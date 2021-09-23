@@ -58,7 +58,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.lib.PyTupleCheckExactNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -93,11 +93,10 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
     abstract static class TupleGetterGetNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object get(VirtualFrame frame, PTupleGetter self, Object instance, @SuppressWarnings("unused") Object owner,
-                        @Cached PyTupleCheckExactNode tupleCheckExactNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode) {
             final int index = self.getIndex();
-            if (!tupleCheckExactNode.execute(instance)) {
+            if (!PGuards.isPTuple(instance)) {
                 if (instance == PNone.NONE) {
                     return self;
                 }

@@ -56,9 +56,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -150,12 +150,12 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
         @Specialization
         Object doInit(VirtualFrame frame, PDefaultDict self, Object[] args, PKeyword[] kwargs,
                         @Cached DictBuiltins.InitNode dictInitNode,
-                        @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+                        @Cached PyCallableCheckNode callableCheckNode) {
             Object[] newArgs = args;
             Object newDefault = PNone.NONE;
             if (newArgs.length > 0) {
                 newDefault = newArgs[0];
-                if (newDefault != PNone.NONE && !pol.isCallable(newDefault)) {
+                if (newDefault != PNone.NONE && !callableCheckNode.execute(newDefault)) {
                     throw raise(PythonBuiltinClassType.TypeError, FIRST_ARG_MUST_BE_CALLABLE, " or None");
                 }
                 newArgs = PythonUtils.arrayCopyOfRange(args, 1, args.length);
