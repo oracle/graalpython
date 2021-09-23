@@ -154,7 +154,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             return null;
         }
 
-        @Specialization
+        @Specialization(guards = "!isPNone(env)")
         Object doSequence(VirtualFrame frame, Object env,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached ToBytesNode toBytesNode,
