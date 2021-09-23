@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.Z_OK;
 import static com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.Z_STREAM_ERROR;
 import static com.oracle.graal.python.nodes.ErrorMessages.INCONSISTENT_STREAM_STATE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_GREATER_THAN_ZERO;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__COPY__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
 
@@ -199,7 +200,7 @@ public class ZlibDecompressBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__copy__", minNumOfPositionalArgs = 1)
+    @Builtin(name = __COPY__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class UndescoreCopyNode extends CopyNode {
     }
