@@ -164,4 +164,21 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
             return dictInitNode.execute(frame, self, newArgs, kwargs);
         }
     }
+
+    @Builtin(name = "default_factory", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "Factory for default value called by __missing__().")
+    @GenerateNodeFactory
+    abstract static class DefaultFactoryNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "!isNoValue(value)")
+        @SuppressWarnings("unused")
+        Object set(PDefaultDict self, Object value) {
+            self.setDefaultFactory(value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        @SuppressWarnings("unused")
+        Object get(PDefaultDict self, @SuppressWarnings("unused") PNone value) {
+            return self.getDefaultFactory();
+        }
+    }
 }
