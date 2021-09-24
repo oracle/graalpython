@@ -106,7 +106,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.BiConsumer;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.nodes.Node;
@@ -151,7 +150,7 @@ public final class CertUtils {
      * _ssl.c#_decode_certificate
      */
     @TruffleBoundary
-    public static PDict decodeCertificate(Node node, X509Certificate cert) throws IOException, CertificateParsingException {
+    public static PDict decodeCertificate(Node node, X509Certificate cert) throws CertificateParsingException {
         PythonObjectFactory factory = PythonObjectFactory.getUncached();
         PDict dict = factory.createDict();
         HashingStorage storage = dict.getDictStorage();
@@ -289,45 +288,60 @@ public final class CertUtils {
         private static final byte OBJECT_IDENTIFIER = 0x06;
         private static final byte SEQUENCE = 0x10;
 
+        private static final String ERROR_MESSAGE = "Invalid DER encoded data";
+
         final byte[] data;
-        final int end;
         final boolean isContextTag;
         final int contentLen;
         final int contentStart;
         int contentTag;
 
-        DerValue(byte[] data) {
+        DerValue(byte[] data) throws CertificateParsingException {
             this(data, 0, data.length);
         }
 
-        DerValue(byte[] data, int offset, int end) {
-            this.data = data;
-            this.end = end;
+        DerValue(byte[] data, int offset, int end) throws CertificateParsingException {
+            if (offset == data.length) {
+                // this is a 0-length value at the end of the data
+                this.data = data;
+                this.contentTag = 0;
+                this.isContextTag = false;
+                this.contentStart = offset;
+                this.contentLen = 0;
+            } else if (offset < data.length) {
+                this.data = data;
 
-            this.contentTag = data[offset] & 0b11111;
-            this.isContextTag = (data[offset] & 0b11000000) == 0b10000000;
-            int[] lenAndOffset = readLength(data, offset);
-            this.contentStart = lenAndOffset[0];
-            this.contentLen = lenAndOffset[1];
+                this.contentTag = data[offset] & 0b11111;
+                this.isContextTag = (data[offset] & 0b11000000) == 0b10000000;
+                int[] lenAndOffset = readLength(data, offset);
+                this.contentStart = lenAndOffset[0];
+                this.contentLen = lenAndOffset[1];
 
-            assert this.contentTag != 0b11111 : "extended tag range not supported";
-            assert contentStart + contentLen <= end;
+                assert this.contentTag != 0b11111 : "extended tag range not supported";
+                assert contentStart + contentLen <= end;
+            } else {
+                throw new CertificateParsingException(ERROR_MESSAGE);
+            }
         }
 
-        private static int[] readLength(byte[] data, int offset) {
-            int lenBase = data[offset + 1] & 0xff;
-            if (lenBase < 128) {
-                return new int[]{offset + 2, lenBase};
-            } else {
-                int lengthOfLength = lenBase - 128;
-                if (lengthOfLength > 4) {
-                    throw new IllegalArgumentException("longer than int-range DER values not supported");
+        private static int[] readLength(byte[] data, int offset) throws CertificateParsingException {
+            try {
+                int lenBase = data[offset + 1] & 0xff;
+                if (lenBase < 128) {
+                    return new int[]{offset + 2, lenBase};
+                } else {
+                    int lengthOfLength = lenBase - 128;
+                    if (lengthOfLength > 4) {
+                        throw new IllegalArgumentException("longer than int-range DER values not supported");
+                    }
+                    int fullLength = 0;
+                    for (int i = 0; i < lengthOfLength; i++) {
+                        fullLength = (fullLength << 8) | data[offset + 2 + i];
+                    }
+                    return new int[]{offset + 2 + lengthOfLength, fullLength};
                 }
-                int fullLength = 0;
-                for (int i = 0; i < lengthOfLength; i++) {
-                    fullLength = (fullLength << 8) | data[offset + 2 + i];
-                }
-                return new int[]{offset + 2 + lengthOfLength, fullLength};
+            } catch (ArrayIndexOutOfBoundsException e) {
+                throw new CertificateParsingException(ERROR_MESSAGE);
             }
         }
 
@@ -335,7 +349,7 @@ public final class CertUtils {
             return Arrays.copyOfRange(data, contentStart, contentStart + contentLen);
         }
 
-        DerValue getObjectIdentifier() {
+        DerValue getObjectIdentifier() throws CertificateParsingException {
             if (contentTag != OBJECT_IDENTIFIER) {
                 return null;
             } else {
@@ -343,7 +357,7 @@ public final class CertUtils {
             }
         }
 
-        DerValue getContextTag(int tag) {
+        DerValue getContextTag(int tag) throws CertificateParsingException {
             if (contentTag != tag || !isContextTag) {
                 return null;
             } else {
@@ -351,7 +365,7 @@ public final class CertUtils {
             }
         }
 
-        DerValue getOctetString() {
+        DerValue getOctetString() throws CertificateParsingException {
             if (contentTag != OCTET_STRING) {
                 return null;
             } else {
@@ -359,7 +373,7 @@ public final class CertUtils {
             }
         }
 
-        DerValue getSequence() {
+        DerValue getSequence() throws CertificateParsingException {
             if (contentTag != SEQUENCE) {
                 return null;
             } else {
@@ -386,7 +400,7 @@ public final class CertUtils {
             }
         }
 
-        List<DerValue> getSequenceElements() {
+        List<DerValue> getSequenceElements() throws CertificateParsingException {
             List<DerValue> result = new ArrayList<>();
             iterateSequence((e, r) -> {
                 result.add(e);
@@ -394,7 +408,12 @@ public final class CertUtils {
             return result;
         }
 
-        <T> void iterateSequence(BiConsumer<DerValue, T> consumer, T value) {
+        @FunctionalInterface
+        private interface DerSequenceConsumer<A, B> {
+            abstract void accept(A a, B b) throws CertificateParsingException;
+        }
+
+        <T> void iterateSequence(DerSequenceConsumer<DerValue, T> consumer, T value) throws CertificateParsingException {
             int sequenceStart = contentStart;
             int sequenceEnd = contentStart + contentLen;
             DerValue sequenceData = getSequence();
@@ -411,7 +430,7 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
-    private static PTuple parseCRLPoints(X509Certificate cert, PythonObjectFactory factory) throws IOException {
+    private static PTuple parseCRLPoints(X509Certificate cert, PythonObjectFactory factory) throws CertificateParsingException {
         List<String> result = new ArrayList<>();
         byte[] bytes = cert.getExtensionValue(OID_CRL_DISTRIBUTION_POINTS);
         if (bytes == null) {
@@ -452,7 +471,7 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
-    private static PTuple parseCAIssuers(X509Certificate cert, PythonObjectFactory factory) throws IOException {
+    private static PTuple parseCAIssuers(X509Certificate cert, PythonObjectFactory factory) throws CertificateParsingException {
         List<String> result = new ArrayList<>();
         byte[] bytes = cert.getExtensionValue(OID_AUTHORITY_INFO_ACCESS);
         if (bytes == null) {
@@ -484,7 +503,7 @@ public final class CertUtils {
     }
 
     @TruffleBoundary
-    private static PTuple parseOCSP(X509Certificate cert, PythonObjectFactory factory) {
+    private static PTuple parseOCSP(X509Certificate cert, PythonObjectFactory factory) throws CertificateParsingException {
         List<String> result = new ArrayList<>();
         byte[] bytes = cert.getExtensionValue(OID_AUTHORITY_INFO_ACCESS);
         if (bytes == null) {
