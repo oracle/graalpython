@@ -46,13 +46,12 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -86,7 +85,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
@@ -947,13 +945,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FsumNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         double doIt(VirtualFrame frame, Object iterable,
-                        @CachedLibrary("iterable") PythonObjectLibrary iterableLib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached("create(__NEXT__)") LookupAndCallUnaryNode callNextNode,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached IsBuiltinClassProfile stopProfile) {
-            Object iterator = iterableLib.getIteratorWithFrame(iterable, frame);
+            Object iterator = getIter.execute(frame, iterable);
             return fsum(frame, iterator, callNextNode, asDoubleNode, stopProfile);
         }
 
@@ -2268,14 +2266,14 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         public Object doGenericNoStart(VirtualFrame frame, Object iterable, PNone start,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
-            return doGeneric(frame, iterable, 1, lib);
+                        @Shared("getIter") @Cached PyObjectGetIter getIter) {
+            return doGeneric(frame, iterable, 1, getIter);
         }
 
         @Specialization(guards = "!isNoValue(start)")
         public Object doGeneric(VirtualFrame frame, Object iterable, Object start,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
-            Object iterator = lib.getIteratorWithState(iterable, PArguments.getThreadState(frame));
+                        @Shared("getIter") @Cached PyObjectGetIter getIter) {
+            Object iterator = getIter.execute(frame, iterable);
             Object value = start;
             while (true) {
                 Object nextValue;

@@ -25,13 +25,13 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -55,7 +55,7 @@ abstract class FormatProcessor<T> {
     /** see {@link #getArg()} for the meaning of this value. */
     private int argIndex = -1;
     private Object args;
-    private final LookupAndCallBinaryNode getItemNode;
+    private final PyObjectGetItem getItemNode;
     private final TupleBuiltins.GetItemNode getTupleItemNode;
 
     protected int index;
@@ -63,7 +63,7 @@ abstract class FormatProcessor<T> {
     protected final PRaiseNode raiseNode;
     protected final FormattingBuffer buffer;
 
-    public FormatProcessor(Python3Core core, PRaiseNode raiseNode, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, FormattingBuffer buffer) {
+    public FormatProcessor(Python3Core core, PRaiseNode raiseNode, PyObjectGetItem getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, FormattingBuffer buffer) {
         this.core = core;
         this.raiseNode = raiseNode;
         this.getItemNode = getItemNode;
@@ -99,7 +99,7 @@ abstract class FormatProcessor<T> {
     }
 
     Object getItem(Object arg, Object arg2) {
-        return getItemNode.executeObject(null, arg, arg2);
+        return getItemNode.execute(null, arg, arg2);
     }
 
     Object getArg() {

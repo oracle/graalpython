@@ -91,7 +91,7 @@ public class CDataTypeSequenceBuiltins extends PythonBuiltins {
         return CDataTypeSequenceBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __MUL__, minNumOfPositionalArgs = 1)
+    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RepeatNode extends PythonBinaryBuiltinNode {
         // TODO: weakref ctypes.cache values

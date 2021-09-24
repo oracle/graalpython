@@ -41,15 +41,6 @@
 package com.oracle.graal.python.builtins.objects.str;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
-import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins.GetItemNode;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.lib.PyObjectAsciiNode;
-import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
-import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import static com.oracle.graal.python.nodes.ErrorMessages.EMPTY_ATTR_IN_FORMAT_STR;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_CONVERSION;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_AFTER_FORMAT_CONVERSION;
@@ -65,15 +56,26 @@ import static com.oracle.graal.python.nodes.ErrorMessages.SWITCHING_FROM_MANUAL_
 import static com.oracle.graal.python.nodes.ErrorMessages.TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNEXPECTED_S_IN_FIELD_NAME;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNMATCHED_S;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.nodes.Node;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
+import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class TemplateFormatter {
 
@@ -99,7 +101,7 @@ public final class TemplateFormatter {
     }
 
     @TruffleBoundary
-    public String build(Node node, Object[] argsArg, Object kwArgs, FormatNode formatNode, GetItemNode getItemNode) {
+    public String build(Node node, Object[] argsArg, Object kwArgs, FormatNode formatNode, PyObjectGetItem getItemNode) {
         this.args = argsArg;
         this.keywords = kwArgs;
         this.autoNumbering = 0;
@@ -107,14 +109,14 @@ public final class TemplateFormatter {
         return buildString(node, 0, template.length(), 2, formatNode, getItemNode);
     }
 
-    private String buildString(Node node, int start, int end, int level, FormatNode formatNode, GetItemNode getItemNode) {
+    private String buildString(Node node, int start, int end, int level, FormatNode formatNode, PyObjectGetItem getItemNode) {
         if (level == 0) {
             throw PRaiseNode.raiseUncached(node, ValueError, RECURSION_DEPTH_EXCEEDED);
         }
         return doBuildString(node, start, end, level - 1, this.template, formatNode, getItemNode);
     }
 
-    private String doBuildString(Node node, int start, int end, int level, String s, FormatNode formatNode, GetItemNode getItemNode) {
+    private String doBuildString(Node node, int start, int end, int level, String s, FormatNode formatNode, PyObjectGetItem getItemNode) {
         StringBuilder out = new StringBuilder();
         int lastLiteral = start;
         int i = start;
@@ -240,7 +242,7 @@ public final class TemplateFormatter {
         return new Field(s.substring(start, end), null, end);
     }
 
-    private Object getArgument(Node node, String name, GetItemNode getItemNode) {
+    private Object getArgument(Node node, String name, PyObjectGetItem getItemNode) {
         // First, find the argument.
         int i = 0;
         int end = name.length();
@@ -302,7 +304,7 @@ public final class TemplateFormatter {
         return resolveLookups(node, arg, name, i, end, getItemNode);
     }
 
-    private Object resolveLookups(Node node, Object obj, String name, int startArg, int end, GetItemNode getItemNode) {
+    private Object resolveLookups(Node node, Object obj, String name, int startArg, int end, PyObjectGetItem getItemNode) {
         // Resolve attribute and item lookups.
         int i = startArg;
         int start = startArg;
@@ -324,7 +326,7 @@ public final class TemplateFormatter {
                 }
                 String attr = name.substring(start, i);
                 if (result != null) {
-                    result = PythonObjectLibrary.getUncached().lookupAttribute(result, null, attr);
+                    result = PyObjectLookupAttr.getUncached().execute(null, result, attr);
                 } else {
                     this.parserList.add(new Object[]{true, attr});
                 }
@@ -358,7 +360,7 @@ public final class TemplateFormatter {
                 }
                 i += 1; // # Skip "]"
                 if (result != null) {
-                    result = getItemNode.call(null, result, item);
+                    result = getItemNode.execute(null, result, item);
                 } else {
                     this.parserList.add(new Object[]{false, item});
                 }
@@ -377,7 +379,7 @@ public final class TemplateFormatter {
         return bigInt.intValue();
     }
 
-    private Object renderField(Node node, int start, int end, boolean recursive, int level, FormatNode formatNode, GetItemNode getItemNode) {
+    private Object renderField(Node node, int start, int end, boolean recursive, int level, FormatNode formatNode, PyObjectGetItem getItemNode) {
         Field filed = parseField(node, start, end);
         String name = filed.name;
         Character conversion = filed.conversion;
@@ -474,7 +476,7 @@ public final class TemplateFormatter {
         return parserList;
     }
 
-    private Object getKeyword(Node node, String key, GetItemNode getItemNode) {
+    private Object getKeyword(Node node, String key, PyObjectGetItem getItemNode) {
         if (keywords instanceof PKeyword[]) {
             for (PKeyword kwArg : (PKeyword[]) keywords) {
                 if (key.equals(kwArg.getName())) {
@@ -482,7 +484,7 @@ public final class TemplateFormatter {
                 }
             }
         } else {
-            Object result = getItemNode.call(null, keywords, key);
+            Object result = getItemNode.execute(null, keywords, key);
             if (result != null) {
                 return result;
             }

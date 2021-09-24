@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -796,13 +797,13 @@ public class ArrayBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isArray(value)", limit = "3")
+        @Specialization(guards = "!isArray(value)")
         Object extend(VirtualFrame frame, PArray self, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached ArrayNodes.PutValueNode putValueNode,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            Object iter = lib.getIteratorWithFrame(value, frame);
+            Object iter = getIter.execute(frame, value);
             int length = self.getLength();
             while (true) {
                 Object nextValue;

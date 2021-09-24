@@ -714,10 +714,36 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        static Object doForeignArray(Object iterable,
-                        @CachedLibrary("iterable") PythonObjectLibrary lib) {
-            return lib.getIterator(iterable);
+        @Specialization(limit = "3")
+        static Object doGeneric(Object object,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode raiseNode,
+                        @CachedLibrary("object") InteropLibrary lib,
+                        @Cached GilNode gil) {
+            gil.release(true);
+            try {
+                if (lib.isIterator(object)) {
+                    return object;
+                } else if (lib.hasIterator(object)) {
+                    return lib.getIterator(object);
+                } else if (lib.hasArrayElements(object)) {
+                    long size = lib.getArraySize(object);
+                    if (size < Integer.MAX_VALUE) {
+                        return factory.createForeignArrayIterator(object);
+                    }
+                    throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
+                } else if (lib.isString(object)) {
+                    return factory.createStringIterator(lib.asString(object));
+                } else if (lib.hasHashEntries(object)) {
+                    // just like dict.__iter__, we take the keys by default
+                    return lib.getHashKeysIterator(object);
+                }
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                gil.acquire();
+            }
+            throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
         }
     }
 

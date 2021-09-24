@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -66,6 +67,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -84,22 +86,22 @@ public final class MapBuiltins extends PythonBuiltins {
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 3, takesVarArgs = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBuiltinNode {
-        @Specialization(guards = "args.length == 0", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "args.length == 0")
         static PNone doOne(VirtualFrame frame, PMap self, Object func, Object iterable, @SuppressWarnings("unused") Object[] args,
-                        @CachedLibrary("iterable") PythonObjectLibrary lib) {
+                        @Shared("getIter") @Cached PyObjectGetIter getIter) {
             self.setFunction(func);
-            self.setIterators(new Object[]{lib.getIteratorWithFrame(iterable, frame)});
+            self.setIterators(new Object[]{getIter.execute(frame, iterable)});
             return PNone.NONE;
         }
 
         @Specialization(replaces = "doOne")
         static PNone doGeneric(VirtualFrame frame, PMap self, Object func, Object iterable, Object[] args,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @Shared("getIter") @Cached PyObjectGetIter getIter) {
             self.setFunction(func);
             Object[] iterators = new Object[args.length + 1];
-            iterators[0] = lib.getIteratorWithFrame(iterable, frame);
+            iterators[0] = getIter.execute(frame, iterable);
             for (int i = 0; i < args.length; i++) {
-                iterators[i + 1] = lib.getIteratorWithFrame(args[i], frame);
+                iterators[i + 1] = getIter.execute(frame, args[i]);
             }
             self.setIterators(iterators);
             return PNone.NONE;
@@ -146,7 +148,7 @@ public final class MapBuiltins extends PythonBuiltins {
         boolean doit(VirtualFrame frame, PMap self, Object x,
                         @Cached BranchProfile moreThanOne,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary argsLib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode next,
                         @Cached IsBuiltinClassProfile profile) {
             PMap iterMap = factory().createMap(PythonBuiltinClassType.PMap);
@@ -160,7 +162,7 @@ public final class MapBuiltins extends PythonBuiltins {
             } else {
                 args = PythonUtils.EMPTY_OBJECT_ARRAY;
             }
-            InitNode.doGeneric(frame, iterMap, self.getFunction(), iterator, args, argsLib);
+            InitNode.doGeneric(frame, iterMap, self.getFunction(), iterator, args, getIter);
             while (true) {
                 try {
                     Object n = next.execute(frame, iterMap);

@@ -43,9 +43,9 @@ package com.oracle.graal.python.nodes.builtins;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -57,7 +57,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 public abstract class TupleNodes {
 
@@ -91,8 +90,8 @@ public abstract class TupleNodes {
         PTuple tuple(VirtualFrame frame, Object cls, Object iterable,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached CreateStorageFromIteratorNode storageNode,
-                        @CachedLibrary("iterable") PythonObjectLibrary plib) {
-            Object iterObj = plib.getIteratorWithFrame(iterable, frame);
+                        @Cached PyObjectGetIter getIter) {
+            Object iterObj = getIter.execute(frame, iterable);
             return factory.createTuple(cls, storageNode.execute(frame, iterObj));
         }
 

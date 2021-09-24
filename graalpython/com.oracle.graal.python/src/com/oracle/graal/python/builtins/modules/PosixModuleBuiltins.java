@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
 import static com.oracle.graal.python.runtime.PosixConstants.O_CLOEXEC;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
@@ -67,11 +66,9 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToAr
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -86,6 +83,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -2107,19 +2105,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return value;
         }
 
-        @Specialization(guards = "!isPath(value)", limit = "3")
+        @Specialization(guards = "!isPath(value)")
         Object callFspath(VirtualFrame frame, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-            Object func = lib.lookupAttributeOnType(value, __FSPATH__);
-            if (func == PNone.NO_VALUE) {
-                throw raise(TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, value);
-            }
-            Object pathObject = methodLib.callUnboundMethodWithState(func, PArguments.getThreadState(frame), value);
+                        @Cached("create(__FSPATH__)") LookupAndCallUnaryNode callFSPath) {
+            Object pathObject = callFSPath.executeObject(frame, value);
             if (isPath(pathObject)) {
                 return pathObject;
+            } else if (pathObject == PNone.NO_VALUE) {
+                throw raise(TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, value);
+            } else {
+                throw raise(TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, value, pathObject);
             }
-            throw raise(TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, value, pathObject);
         }
 
         protected static boolean isPath(Object obj) {
@@ -2539,17 +2535,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PosixFileHandle doGeneric(VirtualFrame frame, Object value,
                         @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheckNode,
-                        @CachedLibrary("value") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                        @Cached("create(__FSPATH__)") LookupAndCallUnaryNode callFSPath,
                         @Cached BytesNodes.ToBytesNode toByteArrayNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            Object func = lib.lookupAttributeOnType(value, __FSPATH__);
-            if (func == PNone.NO_VALUE) {
+            Object pathObject = callFSPath.executeObject(frame, value);
+            if (pathObject == PNone.NO_VALUE) {
                 throw raise(TypeError, ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName,
                                 getAllowedTypes(), value);
             }
-            Object pathObject = methodLib.callUnboundMethodWithState(func, PArguments.getThreadState(frame), value);
             // 'pathObject' replaces 'value' as the PosixPath.originalObject for auditing purposes
             // by design
             if (pathObject instanceof PBytes) {

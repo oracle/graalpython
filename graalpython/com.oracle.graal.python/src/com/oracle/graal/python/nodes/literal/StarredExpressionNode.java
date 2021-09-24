@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -64,7 +64,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 public final class StarredExpressionNode extends LiteralNode {
@@ -141,8 +140,8 @@ public final class StarredExpressionNode extends LiteralNode {
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached GetNextNode next,
                         @Cached IsBuiltinClassProfile errorProfile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary plib) {
-            Object iterator = plib.getIteratorWithFrame(values, frame);
+                        @Cached PyObjectGetIter getIter) {
+            Object iterator = getIter.execute(frame, values);
             HashingStorage storage = storageIn;
             while (true) {
                 try {
@@ -174,8 +173,8 @@ public final class StarredExpressionNode extends LiteralNode {
                         @Cached GetNextNode next,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary plib) {
-            Object iterator = plib.getIteratorWithFrame(values, frame);
+                        @Cached PyObjectGetIter getIter) {
+            Object iterator = getIter.execute(frame, values);
             SequenceStorage storage = storageIn;
             while (true) {
                 try {

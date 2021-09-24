@@ -41,10 +41,10 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -75,10 +75,11 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
-        static Object doPDictValuesView(PDictValuesView self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return lib.getIterator(self);
+        @Specialization(limit = "3")
+        Object doPDictValuesView(@SuppressWarnings("unused") PDictValuesView self,
+                        @Bind("self.getWrappedDict().getDictStorage()") HashingStorage storage,
+                        @CachedLibrary("storage") HashingStorageLibrary lib) {
+            return factory().createDictValueIterator(lib.values(storage).iterator(), storage, lib.length(storage));
         }
     }
 

@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -1823,12 +1824,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object getIterator(
-                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @CachedLibrary("this") InteropLibrary lib,
+                    @Cached PyObjectGetIter getIter,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
-        if (lib.isIterable(this)) {
+        if (lib.hasIterator(this)) {
             boolean mustRelease = gil.acquire();
             try {
-                return lib.getIterator(this);
+                return getIter.execute(null, this);
             } finally {
                 gil.release(mustRelease);
             }

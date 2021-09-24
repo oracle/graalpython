@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -90,12 +91,12 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -126,11 +127,18 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        // 'limit = 2' because this is only expected to receive PDictKeysView and PDictItemsView
-        @Specialization(limit = "2")
-        static Object getKeysViewIter(PDictView self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return lib.getIterator(self);
+        @Specialization(limit = "3")
+        Object getKeysViewIter(@SuppressWarnings("unused") PDictKeysView self,
+                        @Bind("self.getWrappedDict().getDictStorage()") HashingStorage storage,
+                        @CachedLibrary("storage") HashingStorageLibrary lib) {
+            return factory().createDictKeyIterator(lib.keys(storage).iterator(), storage, lib.length(storage));
+        }
+
+        @Specialization(limit = "3")
+        Object getItemsViewIter(@SuppressWarnings("unused") PDictItemsView self,
+                        @Bind("self.getWrappedDict().getDictStorage()") HashingStorage storage,
+                        @CachedLibrary("storage") HashingStorageLibrary lib) {
+            return factory().createDictItemIterator(lib.entries(storage).iterator(), storage, lib.length(storage));
         }
     }
 
@@ -261,7 +269,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
      * view comparisons dictates that we need to use iteration to compare them in the general case.
      */
     protected static class ContainedInNode extends PNodeWithContext {
-        @Child private PythonObjectLibrary lib;
+        @Child private PyObjectGetIter getIterNode;
         @Child private GetNextNode next;
         @Child private LookupAndCallBinaryNode contains;
         @Child private CoerceToBooleanNode cast;
@@ -304,17 +312,16 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return stopProfile;
         }
 
-        private PythonObjectLibrary ensureLib() {
-            if (lib == null) {
+        private PyObjectGetIter getGetIterNode() {
+            if (getIterNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                int limit = PythonOptions.getCallSiteInlineCacheMaxDepth();
-                lib = insert(PythonObjectLibrary.getFactory().createDispatched(limit));
+                getIterNode = insert(PyObjectGetIter.create());
             }
-            return lib;
+            return getIterNode;
         }
 
         public boolean execute(VirtualFrame frame, Object self, Object other) {
-            Object iterator = ensureLib().getIteratorWithFrame(self, frame);
+            Object iterator = getGetIterNode().execute(frame, self);
             boolean ok = checkAll;
             try {
                 while (checkAll && ok || !checkAll && !ok) {

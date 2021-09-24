@@ -72,7 +72,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
@@ -106,13 +105,13 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -234,15 +233,15 @@ public final class StringBuiltins extends PythonBuiltins {
     abstract static class StrFormatNode extends PythonBuiltinNode {
         @Specialization
         String format(VirtualFrame frame, PString self, Object[] args, PKeyword[] kwargs,
-                        @Cached BuiltinFunctions.FormatNode format,
-                        @Cached OperatorModuleBuiltins.GetItemNode getItem) {
+                        @Shared("format") @Cached BuiltinFunctions.FormatNode format,
+                        @Shared("getItem") @Cached PyObjectGetItem getItem) {
             return format(frame, self.getValue(), args, kwargs, format, getItem);
         }
 
         @Specialization
         String format(VirtualFrame frame, String self, Object[] args, PKeyword[] kwargs,
-                        @Cached BuiltinFunctions.FormatNode format,
-                        @Cached OperatorModuleBuiltins.GetItemNode getItem) {
+                        @Shared("format") @Cached BuiltinFunctions.FormatNode format,
+                        @Shared("getItem") @Cached PyObjectGetItem getItem) {
 
             TemplateFormatter template = new TemplateFormatter(self);
 
@@ -270,7 +269,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         String format(VirtualFrame frame, String self, Object mapping,
                         @Cached BuiltinFunctions.FormatNode format,
-                        @Cached OperatorModuleBuiltins.GetItemNode getItem) {
+                        @Cached PyObjectGetItem getItem) {
 
             TemplateFormatter template = new TemplateFormatter(self);
 
@@ -1940,7 +1939,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doStringObject(VirtualFrame frame, String self, Object right,
-                        @Shared("getItemNode") @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
+                        @Shared("getItemNode") @Cached PyObjectGetItem getItemNode,
                         @Shared("getTupleItemNode") @Cached TupleBuiltins.GetItemNode getTupleItemNode) {
             PythonContext context = getContext();
             PythonLanguage language = getLanguage();
@@ -1955,7 +1954,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         Object doGeneric(VirtualFrame frame, Object self, Object right,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Shared("getItemNode") @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
+                        @Shared("getItemNode") @Cached PyObjectGetItem getItemNode,
                         @Shared("getTupleItemNode") @Cached TupleBuiltins.GetItemNode getTupleItemNode) {
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __MOD__, self);
             return doStringObject(frame, selfStr, right, getItemNode, getTupleItemNode);

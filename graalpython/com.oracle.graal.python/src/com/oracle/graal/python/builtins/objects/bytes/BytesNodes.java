@@ -69,12 +69,12 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndex
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -150,15 +150,15 @@ public abstract class BytesNodes {
 
         public abstract byte[] execute(VirtualFrame frame, byte[] sep, Object iterable);
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         static byte[] join(VirtualFrame frame, byte[] sep, Object iterable,
-                        @CachedLibrary("iterable") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached ToBytesNode toBytesNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             ArrayList<byte[]> parts = new ArrayList<>();
             int partsTotalSize = 0;
-            Object iterator = lib.getIteratorWithFrame(iterable, frame);
+            Object iterator = getIter.execute(frame, iterable);
             while (true) {
                 try {
                     partsTotalSize += append(parts, toBytesNode.execute(getNextNode.execute(frame, iterator)));
@@ -795,8 +795,8 @@ public abstract class BytesNodes {
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile stopIterationProfile,
                         @Cached CastToByteNode castToByteNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            Object it = lib.getIteratorWithFrame(iterable, frame);
+                        @Cached PyObjectGetIter getIter) {
+            Object it = getIter.execute(frame, iterable);
             int len = lenghtHintNode.execute(frame, iterable);
             byte[] arr = new byte[len < 16 && len > 0 ? len : 16];
             int i = 0;

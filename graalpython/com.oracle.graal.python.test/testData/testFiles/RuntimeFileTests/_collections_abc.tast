@@ -7095,7 +7095,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                 FunctionBodyNode SourceSection: [18776,18800]`yield from self._map...`
                                   ExpressionStatementNode SourceSection: [18776,18800]`yield from self._map...`
                                     YieldFromNode SourceSection: [18776,18800]`yield from self._map...`
-                                      CachedDispatchFirst SourceSection: None
+                                      PyObjectGetIterNodeGen SourceSection: None
                                       GetNextCached SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__

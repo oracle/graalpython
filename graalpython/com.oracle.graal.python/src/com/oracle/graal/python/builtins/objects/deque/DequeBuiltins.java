@@ -93,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -160,15 +161,15 @@ public class DequeBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isNoValue(iterable)", limit = "1")
+        @Specialization(guards = "!isNoValue(iterable)")
         static PNone doIterable(VirtualFrame frame, PDeque self, Object iterable, @SuppressWarnings("unused") PNone maxlen,
-                        @CachedLibrary("iterable") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile isStopIterationProfile) {
             if (self.getSize() != 0) {
                 self.clear();
             }
-            Object iterator = lib.getIterator(iterable);
+            Object iterator = getIter.execute(frame, iterable);
             while (true) {
                 try {
                     self.append(getNextNode.execute(frame, iterator));
@@ -183,7 +184,7 @@ public class DequeBuiltins extends PythonBuiltins {
         @Specialization(replaces = {"doNothing", "doIterable"})
         PNone doGeneric(VirtualFrame frame, PDeque self, Object iterable, Object maxlenObj,
                         @Cached CastToJavaIntExactNode castToIntNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile isTypeErrorProfile,
                         @Cached IsBuiltinClassProfile isStopIterationProfile) {
@@ -207,7 +208,7 @@ public class DequeBuiltins extends PythonBuiltins {
             }
 
             if (iterable != PNone.NO_VALUE) {
-                doIterable(frame, self, iterable, PNone.NO_VALUE, lib, getNextNode, isStopIterationProfile);
+                doIterable(frame, self, iterable, PNone.NO_VALUE, getIter, getNextNode, isStopIterationProfile);
             }
             return PNone.NONE;
         }
@@ -326,14 +327,14 @@ public class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone doGeneric(VirtualFrame frame, PDeque self, Object other,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary otherLib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile isStopIterationProfile) {
             if (self == other) {
                 return doSelf(self, self);
             }
 
-            Object it = otherLib.getIteratorWithFrame(other, frame);
+            Object it = getIter.execute(frame, other);
             if (self.getMaxLength() == 0) {
                 consumeIterator(frame, it, getNextNode, isStopIterationProfile);
                 return PNone.NONE;
@@ -665,9 +666,9 @@ public class DequeBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         PDeque doOther(VirtualFrame frame, PDeque self, Object other,
-                        @CachedLibrary("other") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile isStopIterationProfile) {
             if (other instanceof PDeque) {
@@ -678,7 +679,7 @@ public class DequeBuiltins extends PythonBuiltins {
              * Funnily, CPython's implementation 'deque_inplace_concat' also allows to concat
              * non-deque objects (whereas 'deque_concat' just accepts deque objects).
              */
-            Object iterator = lib.getIterator(other);
+            Object iterator = getIter.execute(frame, other);
             while (true) {
                 try {
                     self.append(getNextNode.execute(frame, iterator));
@@ -950,9 +951,9 @@ public class DequeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DequeReduceNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(limit = "1")
+        @Specialization
         Object doGeneric(VirtualFrame frame, PDeque self,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached GetClassNode getClassNode,
@@ -962,7 +963,7 @@ public class DequeBuiltins extends PythonBuiltins {
             if (PGuards.isNoValue(dict) || sizeNode.execute(frame, dict) <= 0) {
                 dict = PNone.NONE;
             }
-            Object it = lib.getIterator(self);
+            Object it = getIter.execute(frame, self);
             PTuple emptyTuple = factory().createEmptyTuple();
             int maxLength = self.getMaxLength();
             if (maxLength != -1) {
@@ -990,10 +991,10 @@ public class DequeBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        @Specialization(limit = "3")
+        @Specialization
         Object doGeneric(VirtualFrame frame, PDeque self, Object other,
-                        @CachedLibrary("self") PythonObjectLibrary selfLib,
-                        @CachedLibrary("other") PythonObjectLibrary otherLib,
+                        @Cached PyObjectGetIter getIterSelf,
+                        @Cached PyObjectGetIter getIterOther,
                         @Cached GetNextNode selfItNextNode,
                         @Cached GetNextNode otherItNextNode,
                         @Cached IsBuiltinClassProfile profile) {
@@ -1010,8 +1011,8 @@ public class DequeBuiltins extends PythonBuiltins {
                 return false;
             }
 
-            Object ait = selfLib.getIteratorWithFrame(self, frame);
-            Object bit = otherLib.getIteratorWithFrame(otherDeque, frame);
+            Object ait = getIterSelf.execute(frame, self);
+            Object bit = getIterOther.execute(frame, otherDeque);
             while (true) {
                 try {
                     Object selfItem = selfItNextNode.execute(frame, ait);

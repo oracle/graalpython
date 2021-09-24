@@ -39,7 +39,7 @@ ModuleRootNode Name: <module 'yeild12'> SourceSection: [0,21]`def f(): yield fro
                   FunctionBodyNode SourceSection: [9,21]`yield from 1`
                     ExpressionStatementNode SourceSection: [9,21]`yield from 1`
                       YieldFromNode SourceSection: [9,21]`yield from 1`
-                        CachedDispatchFirst SourceSection: None
+                        PyObjectGetIterNodeGen SourceSection: None
                         GetNextCached SourceSection: None
                           LookupAndCallUnaryNodeGen SourceSection: None
                             Op: __next__

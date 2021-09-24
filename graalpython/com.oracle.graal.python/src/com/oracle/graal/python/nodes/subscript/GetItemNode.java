@@ -33,7 +33,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -53,7 +52,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = __GETITEM__)
@@ -103,7 +101,6 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
     @Specialization(guards = {"!indexCheckNode.execute(index)", "!isPSlice(index)"}, limit = "1")
     public Object doListError(VirtualFrame frame, PList primary, Object index,
                     @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                     @Cached PRaiseNode raiseNode) {
         throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", index);
     }

@@ -60,13 +60,12 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.thread.PSemLock;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -355,7 +354,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doGeneric(VirtualFrame frame, Object rlist,
                         @Cached PyObjectSizeNode sizeNode,
-                        @Cached("createGetItem()") LookupAndCallBinaryNode callGetItemNode,
+                        @Cached PyObjectGetItem getItem,
                         @Cached ListNodes.FastConstructListNode constructListNode,
                         @Cached CastToJavaIntLossyNode castToJava,
                         @Cached GilNode gil) {
@@ -363,7 +362,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
             SharedMultiprocessingData sharedData = getContext().getSharedMultiprocessingData();
             PSequence pSequence = constructListNode.execute(frame, rlist);
             for (int i = 0; i < sizeNode.execute(frame, pSequence); i++) {
-                Object pythonObject = callGetItemNode.executeObject(frame, pSequence, i);
+                Object pythonObject = getItem.execute(frame, pSequence, i);
                 int fd = toInt(castToJava, pythonObject);
                 gil.release(true);
                 try {
@@ -383,10 +382,6 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
-        }
-
-        static LookupAndCallBinaryNode createGetItem() {
-            return LookupAndCallBinaryNode.create(SpecialMethodNames.__GETITEM__);
         }
     }
 

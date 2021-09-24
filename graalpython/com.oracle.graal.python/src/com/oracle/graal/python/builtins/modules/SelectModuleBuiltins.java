@@ -54,13 +54,12 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -104,7 +103,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
         PTuple doWithoutTimeout(VirtualFrame frame, Object rlist, Object wlist, Object xlist, @SuppressWarnings("unused") PNone timeout,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PyObjectSizeNode sizeNode,
-                        @Cached("createGetItem()") LookupAndCallBinaryNode callGetItemNode,
+                        @Cached PyObjectGetItem callGetItemNode,
                         @Cached FastConstructListNode constructListNode,
                         @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
                         @Cached PyObjectAsFileDescriptor asFileDescriptor,
@@ -118,7 +117,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
         PTuple doGeneric(VirtualFrame frame, Object rlist, Object wlist, Object xlist, Object timeout,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PyObjectSizeNode sizeNode,
-                        @Cached("createGetItem()") LookupAndCallBinaryNode callGetItemNode,
+                        @Cached PyObjectGetItem callGetItemNode,
                         @Cached FastConstructListNode constructListNode,
                         @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
                         @Cached PyObjectAsFileDescriptor asFileDescriptor,
@@ -172,7 +171,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             return factory().createList(PythonUtils.arrayCopyOf(resultObjs, resultObjsIdx));
         }
 
-        private ObjAndFDList seq2set(VirtualFrame frame, Object sequence, PyObjectSizeNode sizeNode, PyObjectAsFileDescriptor asFileDescriptor, LookupAndCallBinaryNode callGetItemNode,
+        private ObjAndFDList seq2set(VirtualFrame frame, Object sequence, PyObjectSizeNode sizeNode, PyObjectAsFileDescriptor asFileDescriptor, PyObjectGetItem callGetItemNode,
                         FastConstructListNode constructListNode) {
             // We cannot assume any size of those two arrays, because the sequence may change as a
             // side effect of the invocation of fileno. We also need to call PyObjectSizeNode
@@ -181,7 +180,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             IntArrayBuilder fds = new IntArrayBuilder();
             PSequence pSequence = constructListNode.execute(frame, sequence);
             for (int i = 0; i < sizeNode.execute(frame, sequence); i++) {
-                Object pythonObject = callGetItemNode.executeObject(frame, pSequence, i);
+                Object pythonObject = callGetItemNode.execute(frame, pSequence, i);
                 objects.add(pythonObject);
                 int fd = asFileDescriptor.execute(frame, pythonObject);
                 if (fd >= FD_SETSIZE.value) {
@@ -202,10 +201,5 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                 this.fds = fds;
             }
         }
-
-        static LookupAndCallBinaryNode createGetItem() {
-            return LookupAndCallBinaryNode.create(SpecialMethodNames.__GETITEM__);
-        }
     }
-
 }

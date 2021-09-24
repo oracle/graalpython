@@ -31,9 +31,9 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.range.PRange;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -68,7 +68,7 @@ public class PRangeTests {
             PRange range = factory.createIntRange(10);
             int index = 0;
             TestRoot testRoot = new TestRoot(PythonLanguage.get(factory));
-            Object iter = PythonObjectLibrary.getUncached().getIterator(range);
+            Object iter = PyObjectGetIter.getUncached().execute(null, range);
             GetNextNode next = GetNextNode.create();
             testRoot.doInsert(next);
             IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.getUncached();
@@ -96,7 +96,7 @@ public class PRangeTests {
             PRange range = PythonObjectFactory.getUncached().createIntRange(0, 10, 2, 5);
             int index = 0;
             TestRoot testRoot = new TestRoot(PythonLanguage.get(factory));
-            Object iter = PythonObjectLibrary.getUncached().getIterator(range);
+            Object iter = PyObjectGetIter.getUncached().execute(null, range);
             GetNextNode next = GetNextNode.create();
             testRoot.doInsert(next);
             IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.getUncached();

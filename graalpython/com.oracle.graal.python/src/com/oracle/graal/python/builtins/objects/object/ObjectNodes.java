@@ -96,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -659,7 +660,7 @@ public abstract class ObjectNodes {
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+                        @Cached PyObjectGetIter getIter) {
             Object cls = getClassNode.execute(obj);
             if (lookupNew.execute(cls) == PNone.NO_VALUE) {
                 throw raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
@@ -699,8 +700,8 @@ public abstract class ObjectNodes {
             boolean required = !hasargs && !objIsDict && !objIsList;
 
             Object state = getStateNode.execute(frame, obj, required, copyReg);
-            Object listitems = objIsList ? pol.getIterator(obj) : PNone.NONE;
-            Object dictitems = objIsDict ? pol.getIterator(callMethod.execute(frame, obj, ITEMS)) : PNone.NONE;
+            Object listitems = objIsList ? getIter.execute(frame, obj) : PNone.NONE;
+            Object dictitems = objIsDict ? getIter.execute(frame, callMethod.execute(frame, obj, ITEMS)) : PNone.NONE;
 
             return factory().createTuple(new Object[]{newobj, newargs, state, listitems, dictitems});
         }

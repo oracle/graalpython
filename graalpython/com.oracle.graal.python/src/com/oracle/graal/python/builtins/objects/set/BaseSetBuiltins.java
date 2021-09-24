@@ -66,11 +66,11 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -303,22 +303,22 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary selfLib,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @CachedLibrary("other") PythonObjectLibrary otherLib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            return isDisjointGeneric(frame, self, other, hasFrame, selfLib, otherLib, getNextNode, errorProfile);
+            return isDisjointGeneric(frame, self, other, hasFrame, selfLib, getIter, getNextNode, errorProfile);
         }
 
         @Specialization(guards = {"!isAnySet(other)"}, limit = "3")
         static boolean isDisjointGeneric(VirtualFrame frame, PBaseSet self, Object other,
                         @Cached ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary selfLib,
-                        @CachedLibrary("other") PythonObjectLibrary otherLib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
             HashingStorage selfStorage = self.getDictStorage();
-            Object iterator = otherLib.getIteratorWithFrame(other, frame);
+            Object iterator = getIter.execute(frame, other);
             while (true) {
                 try {
                     Object nextValue = getNextNode.execute(frame, iterator);

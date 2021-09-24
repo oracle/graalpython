@@ -66,8 +66,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__DEBUG__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__GRAALPYTHON__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROUND__;
@@ -128,11 +126,13 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
@@ -153,10 +153,8 @@ import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
-import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -276,15 +274,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return Math.abs(arg);
         }
 
-        @Specialization(limit = "2")
+        @Specialization
         public Object absObject(VirtualFrame frame, Object object,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-            Object method = lib.lookupAttributeOnType(object, __ABS__);
-            if (method == NO_VALUE) {
+                        @Cached("create(__ABS__)") LookupAndCallUnaryNode callAbs) {
+            Object result = callAbs.executeObject(frame, object);
+            if (result == NO_VALUE) {
                 throw raise(TypeError, ErrorMessages.BAD_OPERAND_FOR, "", "abs()", object);
             }
-            return methodLib.callUnboundMethod(method, frame, object);
+            return result;
         }
     }
 
@@ -428,8 +425,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         boolean doGeneric(Object object,
-                        @Cached("create(__CALL__)") LookupInheritedAttributeNode getAttributeNode) {
-            /**
+                        @Cached PyCallableCheckNode callableCheck) {
+            /*
              * Added temporarily to skip translation/execution errors in unit testing
              */
 
@@ -437,12 +434,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return true;
             }
 
-            Object callAttr = getAttributeNode.execute(object);
-            if (callAttr != NO_VALUE) {
-                return true;
-            }
-
-            return PGuards.isCallable(object);
+            return callableCheck.execute(object);
         }
     }
 
@@ -505,12 +497,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return list;
         }
 
-        @Specialization(guards = "!isNoValue(object)", limit = "1")
-        static Object dir(VirtualFrame frame, Object object,
+        @Specialization(guards = "!isNoValue(object)")
+        Object dir(VirtualFrame frame, Object object,
                         @Cached ListBuiltins.ListSortNode sortNode,
                         @Cached ListNodes.ConstructListNode constructListNode,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            PList list = constructListNode.execute(frame, lib.lookupAndCallSpecialMethod(object, frame, __DIR__));
+                        @Cached("create(__DIR__)") LookupAndCallUnaryNode callDir) {
+            Object result = callDir.executeObject(frame, object);
+            if (result == NO_VALUE) {
+                throw raise(TypeError, "object does not provide __dir__");
+            }
+            PList list = constructListNode.execute(frame, result);
             sortNode.execute(frame, list);
             return list;
         }
@@ -559,16 +555,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private final BranchProfile hasFreeVarsBranch = BranchProfile.create();
         @Child protected CompileNode compileNode;
         @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
-        @Child private HasInheritedAttributeNode hasGetItemNode;
+        @Child private PyMappingCheckNode mappingCheckNode;
         @Child private GetOrCreateDictNode getOrCreateDictNode;
-
-        private HasInheritedAttributeNode getHasGetItemNode() {
-            if (hasGetItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                hasGetItemNode = insert(HasInheritedAttributeNode.create(SpecialMethodNames.__GETITEM__));
-            }
-            return hasGetItemNode;
-        }
 
         protected void assertNoFreeVars(PCode code) {
             Object[] freeVars = code.getFreeVars();
@@ -583,12 +571,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         protected boolean isMapping(Object object) {
-            // tfel: it seems that CPython only checks that there is __getitem__
-            if (object instanceof PDict) {
-                return true;
-            } else {
-                return getHasGetItemNode().execute(object);
+            if (mappingCheckNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                mappingCheckNode = insert(PyMappingCheckNode.create());
             }
+            return mappingCheckNode.execute(object);
         }
 
         protected boolean isAnyNone(Object object) {
@@ -1262,10 +1249,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     @ReportPolymorphism
     public abstract static class IterNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isNoValue(sentinel)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "isNoValue(sentinel)")
         static Object iter(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone sentinel,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            return lib.getIteratorWithFrame(object, frame);
+                        @Cached PyObjectGetIter getIter) {
+            return getIter.execute(frame, object);
         }
 
         @Specialization(guards = {"callableCheck.execute(callable)", "!isNoValue(sentinel)"}, limit = "1")
@@ -1304,21 +1291,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "args.length == 0", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "args.length == 0")
         Object maxSequence(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone key, Object defaultVal,
-                        @CachedLibrary("arg1") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                         @Cached IsBuiltinClassProfile errorProfile1,
                         @Cached IsBuiltinClassProfile errorProfile2,
                         @Cached ConditionProfile hasDefaultProfile) {
-            return minmaxSequenceWithKey(frame, arg1, args, null, defaultVal, lib, nextNode, compare, castToBooleanNode, null, errorProfile1, errorProfile2, hasDefaultProfile);
+            return minmaxSequenceWithKey(frame, arg1, args, null, defaultVal, getIter, nextNode, compare, castToBooleanNode, null, errorProfile1, errorProfile2, hasDefaultProfile);
         }
 
-        @Specialization(guards = {"args.length == 0", "!isPNone(keywordArg)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"args.length == 0", "!isPNone(keywordArg)"})
         Object minmaxSequenceWithKey(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") Object[] args, Object keywordArg, Object defaultVal,
-                        @CachedLibrary("arg1") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
@@ -1326,7 +1313,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile errorProfile1,
                         @Cached IsBuiltinClassProfile errorProfile2,
                         @Cached ConditionProfile hasDefaultProfile) {
-            Object iterator = lib.getIteratorWithFrame(arg1, frame);
+            Object iterator = getIter.execute(frame, arg1);
             Object currentValue;
             try {
                 currentValue = nextNode.execute(frame, iterator);
@@ -1674,25 +1661,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     public abstract static class FormatNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(limit = "1")
-        Object repr(VirtualFrame frame, Object obj, @SuppressWarnings("unused") PNone formatSpec,
-                        @CachedLibrary("obj") PythonObjectLibrary lib,
-                        @Cached BranchProfile notStringBranch) {
-            Object res = lib.lookupAndCallSpecialMethod(obj, frame, __FORMAT__, "");
-            if (!PGuards.isString(res)) {
-                notStringBranch.enter();
-                throw raise(TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, __FORMAT__, "str", res);
-            }
-            return res;
+        @Specialization(guards = "isNoValue(formatSpec)")
+        Object format(VirtualFrame frame, Object obj, @SuppressWarnings("unused") PNone formatSpec,
+                        @Shared("callFormat") @Cached("create(__FORMAT__)") LookupAndCallBinaryNode callFormat) {
+            return format(frame, obj, "", callFormat);
         }
 
-        @Specialization(guards = "!isNoValue(formatSpec)", limit = "1")
-        Object repr(VirtualFrame frame, Object obj, Object formatSpec,
-                        @CachedLibrary("obj") PythonObjectLibrary lib,
-                        @Cached BranchProfile notStringBranch) {
-            Object res = lib.lookupAndCallSpecialMethod(obj, frame, __FORMAT__, formatSpec);
+        @Specialization(guards = "!isNoValue(formatSpec)")
+        Object format(VirtualFrame frame, Object obj, Object formatSpec,
+                        @Shared("callFormat") @Cached("create(__FORMAT__)") LookupAndCallBinaryNode callFormat) {
+            Object res = callFormat.executeObject(frame, obj, formatSpec);
+            if (res == NO_VALUE) {
+                throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_FORMAT, obj);
+            }
             if (!PGuards.isString(res)) {
-                notStringBranch.enter();
                 throw raise(TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, __FORMAT__, "str", res);
             }
             return res;
@@ -1715,30 +1697,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = ROUND, minNumOfPositionalArgs = 1, parameterNames = {"number", "ndigits"})
     @GenerateNodeFactory
     public abstract static class RoundNode extends PythonBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         Object round(VirtualFrame frame, Object x, @SuppressWarnings("unused") PNone n,
-                        @CachedLibrary("x") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib,
-                        @Cached BranchProfile noRound) {
-            Object method = lib.lookupAttributeOnType(x, __ROUND__);
-            if (method == PNone.NO_VALUE) {
-                noRound.enter();
+                        @Cached("create(__ROUND__)") LookupAndCallUnaryNode callRound) {
+            Object result = callRound.executeObject(frame, x);
+            if (result == PNone.NO_VALUE) {
                 throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, __ROUND__);
             }
-            return methodLib.callUnboundMethod(method, frame, x);
+            return result;
         }
 
-        @Specialization(guards = "!isNoValue(n)", limit = "1")
+        @Specialization(guards = "!isPNone(n)")
         Object round(VirtualFrame frame, Object x, Object n,
-                        @CachedLibrary("x") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib,
-                        @Cached BranchProfile noRound) {
-            Object method = lib.lookupAttributeOnType(x, __ROUND__);
-            if (method == PNone.NO_VALUE) {
-                noRound.enter();
+                        @Cached("create(__ROUND__)") LookupAndCallBinaryNode callRound) {
+            Object result = callRound.executeObject(frame, x, n);
+            if (result == NOT_IMPLEMENTED) {
                 throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, __ROUND__);
             }
-            return methodLib.callUnboundMethod(method, frame, x, n);
+            return result;
         }
     }
 
@@ -1748,7 +1724,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class SetAttrNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object setAttr(VirtualFrame frame, Object object, Object key, Object value,
-                        @Cached("new()") SetAttributeNode.Dynamic setAttrNode) {
+                        @Cached SetAttributeNode.Dynamic setAttrNode) {
             setAttrNode.execute(frame, object, key, value);
             return PNone.NONE;
         }
@@ -1849,18 +1825,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         int sumIntNone(VirtualFrame frame, Object arg1, @SuppressWarnings("unused") PNone start,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) throws UnexpectedResultException {
-            return sumIntInternal(frame, arg1, 0, lib);
+                        @Shared("getIter") @Cached PyObjectGetIter getIter) throws UnexpectedResultException {
+            return sumIntInternal(frame, arg1, 0, getIter);
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         int sumIntInt(VirtualFrame frame, Object arg1, int start,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) throws UnexpectedResultException {
-            return sumIntInternal(frame, arg1, start, lib);
+                        @Shared("getIter") @Cached PyObjectGetIter getIter) throws UnexpectedResultException {
+            return sumIntInternal(frame, arg1, start, getIter);
         }
 
-        private int sumIntInternal(VirtualFrame frame, Object arg1, int start, PythonObjectLibrary lib) throws UnexpectedResultException {
-            Object iterator = lib.getIteratorWithState(arg1, PArguments.getThreadState(frame));
+        private int sumIntInternal(VirtualFrame frame, Object arg1, int start, PyObjectGetIter getIter) throws UnexpectedResultException {
+            Object iterator = getIter.execute(frame, arg1);
             int value = start;
             while (true) {
                 int nextValue;
@@ -1883,12 +1859,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
         double sumDoubleDouble(VirtualFrame frame, Object arg1, double start,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) throws UnexpectedResultException {
-            return sumDoubleInternal(frame, arg1, start, lib);
+                        @Shared("getIter") @Cached PyObjectGetIter getIter) throws UnexpectedResultException {
+            return sumDoubleInternal(frame, arg1, start, getIter);
         }
 
-        private double sumDoubleInternal(VirtualFrame frame, Object arg1, double start, PythonObjectLibrary lib) throws UnexpectedResultException {
-            Object iterator = lib.getIteratorWithState(arg1, PArguments.getThreadState(frame));
+        private double sumDoubleInternal(VirtualFrame frame, Object arg1, double start, PyObjectGetIter getIter) throws UnexpectedResultException {
+            Object iterator = getIter.execute(frame, arg1);
             double value = start;
             while (true) {
                 double nextValue;
@@ -1911,7 +1887,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(replaces = {"sumIntNone", "sumIntInt", "sumDoubleDouble"})
         Object sum(VirtualFrame frame, Object arg1, Object start,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached ConditionProfile hasStart,
                         @Cached BranchProfile stringStart,
                         @Cached BranchProfile bytesStart,
@@ -1926,7 +1902,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 byteArrayStart.enter();
                 throw raise(TypeError, ErrorMessages.CANT_SUM_BYTEARRAY);
             }
-            Object iterator = lib.getIteratorWithState(arg1, PArguments.getThreadState(frame));
+            Object iterator = getIter.execute(frame, arg1);
             return iterateGeneric(frame, iterator, hasStart.profile(start != NO_VALUE) ? start : 0, errorProfile1);
         }
 

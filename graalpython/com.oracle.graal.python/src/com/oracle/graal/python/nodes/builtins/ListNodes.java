@@ -51,9 +51,9 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -81,7 +81,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class ListNodes {
@@ -117,12 +116,12 @@ public abstract class ListNodes {
             return factory.createList(cls, copyNode.execute(getSequenceStorageNode.execute(list)));
         }
 
-        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
         static PList listIterable(VirtualFrame frame, Object cls, Object iterable,
-                        @CachedLibrary("iterable") PythonObjectLibrary lib,
+                        @Cached PyObjectGetIter getIter,
                         @Cached SequenceStorageNodes.CreateStorageFromIteratorNode createStorageFromIteratorNode,
                         @Cached PythonObjectFactory factory) {
-            Object iterObj = lib.getIteratorWithFrame(iterable, frame);
+            Object iterObj = getIter.execute(frame, iterable);
             SequenceStorage storage = createStorageFromIteratorNode.execute(frame, iterObj);
             return factory.createList(cls, storage);
         }

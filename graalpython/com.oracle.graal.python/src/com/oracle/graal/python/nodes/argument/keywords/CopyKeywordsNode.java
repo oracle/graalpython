@@ -41,14 +41,13 @@
 package com.oracle.graal.python.nodes.argument.keywords;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -63,9 +62,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
@@ -125,39 +122,31 @@ public abstract class CopyKeywordsNode extends PNodeWithContext {
         }
     }
 
-    public final void executeWithoutState(PDict starargs, PKeyword[] keywords) {
-        execute(null, starargs, keywords);
-    }
-
-    public abstract void execute(PArguments.ThreadState state, PDict starargs, PKeyword[] keywords);
+    public abstract void execute(PDict starargs, PKeyword[] keywords);
 
     @Specialization(guards = "isBuiltinDict(starargs)", limit = "getCallSiteInlineCacheMaxDepth()")
-    void doBuiltinDict(@SuppressWarnings("unused") PArguments.ThreadState state, PDict starargs, PKeyword[] keywords,
+    void doBuiltinDict(PDict starargs, PKeyword[] keywords,
                     @Cached AddKeywordNode addKeywordNode,
                     @CachedLibrary(value = "starargs.getDictStorage()") HashingStorageLibrary lib) {
         HashingStorage hashingStorage = starargs.getDictStorage();
         lib.forEach(hashingStorage, addKeywordNode, new CopyKeywordsState(hashingStorage, keywords));
     }
 
-    @Specialization(guards = "!isBuiltinDict(starargs)", limit = "getCallSiteInlineCacheMaxDepth()")
-    void doDict(PArguments.ThreadState state, PDict starargs, PKeyword[] keywords,
+    @Specialization(guards = "!isBuiltinDict(starargs)")
+    void doDict(PDict starargs, PKeyword[] keywords,
                     @Cached GetNextNode getNextNode,
                     @Cached CastToJavaStringNode castToJavaStringNode,
                     @Cached IsBuiltinClassProfile errorProfile,
-                    @CachedLibrary("starargs") PythonObjectLibrary pol,
-                    @Cached PRaiseNode raiseNode,
-                    @Cached ConditionProfile gotState) {
-        Object iter = pol.getIteratorWithState(starargs, state);
+                    @Cached PyObjectGetIter getIter,
+                    @Cached PyObjectGetItem getItem,
+                    @Cached PRaiseNode raiseNode) {
+        Object iter = getIter.execute(null, starargs);
         int i = 0;
         while (true) {
             Object key;
             try {
-                VirtualFrame frame = null;
-                if (gotState.profile(state != null)) {
-                    frame = PArguments.frameForCall(state);
-                }
-                key = getNextNode.execute(frame, iter);
-                Object value = pol.lookupAndCallSpecialMethodWithState(starargs, state, __GETITEM__, key);
+                key = getNextNode.execute(null, iter);
+                Object value = getItem.execute(null, starargs, key);
                 keywords[i++] = new PKeyword(castToJavaStringNode.execute(key), value);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
