@@ -99,7 +99,6 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
-import java.util.Map;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
