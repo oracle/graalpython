@@ -336,7 +336,7 @@ public final class CertUtils {
                     }
                     int fullLength = 0;
                     for (int i = 0; i < lengthOfLength; i++) {
-                        fullLength = (fullLength << 8) | data[offset + 2 + i];
+                        fullLength = (fullLength << 8) | (data[offset + 2 + i] & 0xff);
                     }
                     return new int[]{offset + 2 + lengthOfLength, fullLength};
                 }
