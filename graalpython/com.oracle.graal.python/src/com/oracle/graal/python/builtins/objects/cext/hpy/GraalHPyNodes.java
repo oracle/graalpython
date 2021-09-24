@@ -1850,6 +1850,7 @@ public class GraalHPyNodes {
      *         int basicsize;
      *         int itemsize;
      *         unsigned int flags;
+     *         int legacy;
      *         void *legacy_slots;
      *         HPyDef **defines;
      *         const char *doc;
@@ -1881,6 +1882,7 @@ public class GraalHPyNodes {
                         @Cached HPyCreateGetSetDescriptorNode createGetSetDescriptorNode,
                         @Cached GetSuperClassNode getSuperClassNode,
                         @Cached IsSameTypeNode isSameTypeNode,
+                        @Cached ReadAttributeFromObjectNode readHPyTypeFlagsNode,
                         @Cached(parameters = "New") LookupCallableSlotInMRONode lookupNewNode,
                         @Cached HPyAsPythonObjectNode hPyAsPythonObjectNode,
                         @Cached PRaiseNode raiseNode) {
@@ -1928,6 +1930,13 @@ public class GraalHPyNodes {
                 long flags = castToLong(valueLib, ptrLib.readMember(typeSpec, "flags"));
                 if ((flags & GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE) != 0) {
                     throw raiseNode.raise(TypeError, "HPy_TPFLAGS_INTERNAL_PURE should not be used directly, set .legacy=true instead");
+                }
+
+                long legacy = castToLong(valueLib, ptrLib.readMember(typeSpec, "legacy"));
+                if (legacy != 0) {
+                    flags &= ~GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE;
+                } else {
+                    flags |= GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE;
                 }
 
                 long basicSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "basicsize"));
@@ -2007,10 +2016,10 @@ public class GraalHPyNodes {
                  * constructors won't usually do that. So, we compute the constructor here and
                  * decorate it.
                  */
+                Object baseClass = getSuperClassNode.execute(newType);
                 if (basicSize > 0 && !seenNew) {
                     Object inheritedConstructor = null;
 
-                    Object baseClass = getSuperClassNode.execute(newType);
                     if (!isSameTypeNode.execute(baseClass, PythonBuiltinClassType.PythonObject)) {
                         // Lookup the inherited constructor and pass it to the HPy decorator.
                         inheritedConstructor = lookupNewNode.execute(baseClass);
@@ -2019,6 +2028,15 @@ public class GraalHPyNodes {
                     PBuiltinFunction constructorDecorator = HPyObjectNewNode.createBuiltinFunction(PythonLanguage.get(raiseNode), inheritedConstructor);
                     writeAttributeToObjectNode.execute(newType, SpecialMethodNames.__NEW__, constructorDecorator);
                 }
+
+                long baseFlags;
+                if (baseClass instanceof PythonClass) {
+                    baseFlags = ((PythonClass) baseClass).flags;
+                } else {
+                    Object baseFlagsObj = readHPyTypeFlagsNode.execute(baseClass, GraalHPyDef.TYPE_HPY_FLAGS);
+                    baseFlags = baseFlagsObj != PNone.NO_VALUE ? (long) baseFlagsObj : 0;
+                }
+                checkInheritanceConstraints(flags, baseFlags, raiseNode);
 
                 return newType;
             } catch (CannotCastException | InteropException e) {
@@ -2098,6 +2116,24 @@ public class GraalHPyNodes {
                 return new String[]{specName.substring(0, firstDotIdx), specName.substring(firstDotIdx + 1)};
             }
             return new String[]{null, specName};
+        }
+
+        private static void checkInheritanceConstraints(long flags, long baseFlags, PRaiseNode raiseNode) {
+            boolean isPure = (flags & GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE) != 0;
+            boolean isBasePure = (baseFlags & GraalHPyDef.HPy_TPFLAGS_INTERNAL_PURE) != 0;
+            // Pure types may inherit from:
+            //
+            // * pure types, or
+            // * PyBaseObject_Type, or
+            // * other builtin or legacy types as long as long as they do not
+            // access the struct layout (e.g. by using HPy_AsStruct or defining
+            // a deallocator with HPy_tp_destroy).
+            //
+            // It would be nice to relax these restrictions or check them here.
+            // See https://github.com/hpyproject/hpy/issues/169 for details.
+            if (!isPure && isBasePure) {
+                throw raiseNode.raise(TypeError, "A legacy type should not inherit its memory layout from a pure type");
+            }
         }
 
         private static long castToLong(InteropLibrary lib, Object value) throws OverflowException {
