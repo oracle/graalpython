@@ -84,8 +84,6 @@ class TestParseItem(HPyTest):
             "function unsigned byte integer is less than minimum"
         )
 
-    # TODO(fa): needs to be fixed
-    @pytest.mark.skip
     def test_s(self):
         import pytest
         mod = self.make_parse_item("s", "const char*", "HPyUnicode_FromString")
