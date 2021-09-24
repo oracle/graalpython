@@ -156,9 +156,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
 
-    @CompilationFinal public boolean singleContext = true;
-    private boolean firstContextInitialized;
-
     /**
      * This assumption will be valid if all contexts are single-threaded. Hence, it will be
      * invalidated as soon as at least one context has been initialized for multi-threading.
@@ -271,16 +268,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean areOptionsCompatible(OptionValues firstOptions, OptionValues newOptions) {
-        if (singleContext) {
-            return false;
-        }
         return PythonOptions.areOptionsCompatible(firstOptions, newOptions);
     }
 
     @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
-        // We intentionally bypass the singleContext check in PythonLanguage#areOptionsCompatible
-        if (!PythonOptions.areOptionsCompatible(context.getEnv().getOptions(), newEnv.getOptions())) {
+        if (!areOptionsCompatible(context.getEnv().getOptions(), newEnv.getOptions())) {
             Python3Core.writeInfo("Cannot use preinitialized context.");
             return false;
         }
@@ -309,7 +302,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         } else {
             assert areOptionsCompatible(options, PythonOptions.createEngineOptions(env)) : "invalid engine options";
         }
-        firstContextInitialized = true;
         return context;
     }
 
@@ -709,14 +701,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected void initializeMultipleContexts() {
         super.initializeMultipleContexts();
-        // We want to make sure that initializeMultipleContexts is always called before the first
-        // context is created.
-        // This would not be the case with inner contexts, but we achieve that by returning false
-        // from areOptionsCompatible when it is invoked for the first inner context, then Truffle
-        // creates a new PythonLanguage instance, calls initializeMultipleContexts on it, and only
-        // then uses it to create the inner contexts.
-        assert !firstContextInitialized;
-        singleContext = false;
         singleContextAssumption.invalidate();
     }
 
