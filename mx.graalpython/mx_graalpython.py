@@ -2199,10 +2199,10 @@ def update_hpy_import_cmd(args):
     SUITE.vc.git_command(SUITE.dir, ["merge", HPY_IMPORT_ORPHAN_BRANCH_NAME])
 
     # update PKG-INFO version
-    pkg_info_file = join(_get_core_home(), "modules", "hpy.devel.egg-info", "PKG-INFO")
+    pkg_info_file = join(_get_core_home(), "modules", "hpy.egg-info", "PKG-INFO")
     with open(pkg_info_file, "w") as f:
         f.write("Metadata-Version: 2.1\n"
-                "Name: hpy.devel\n"
+                "Name: hpy\n"
                 "Version: {}\n"
                 "Summary: UNKNOWN\n"
                 "Home-page: UNKNOWN\n"
