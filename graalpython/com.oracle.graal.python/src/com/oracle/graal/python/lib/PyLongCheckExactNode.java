@@ -40,18 +40,17 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Equivalent of CPython's {@code PyLong_CheckExact}.
  */
 @GenerateUncached
-public abstract class PyLongCheckExactNode extends Node {
+public abstract class PyLongCheckExactNode extends PNodeWithContext {
     public abstract boolean execute(Object object);
 
     @Specialization
@@ -64,10 +63,29 @@ public abstract class PyLongCheckExactNode extends Node {
         return true;
     }
 
+    @Specialization(guards = "isBuiltinPInt(object)")
+    static boolean doBuiltinPInt(@SuppressWarnings("unused") PInt object) {
+        return true;
+    }
+
+    @Specialization(guards = "!isBuiltinPInt(object)")
+    static boolean doOtherPInt(@SuppressWarnings("unused") PInt object) {
+        return false;
+    }
+
+    @Specialization(guards = "!canBeBuiltinInt(object)")
+    static boolean doOther(@SuppressWarnings("unused") Object object) {
+        return false;
+    }
+
     @Specialization
-    static boolean doGeneric(Object object,
-                    @Cached IsBuiltinClassProfile isBuiltin) {
-        return isBuiltin.profileObject(object, PythonBuiltinClassType.PInt);
+    static boolean doNativePtr(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
+        return true;
+    }
+
+    protected static boolean canBeBuiltinInt(Object object) {
+        // Boolean is a subclass, don't put it here
+        return object instanceof Integer || object instanceof Long || object instanceof PInt || object instanceof PythonNativeVoidPtr;
     }
 
     public static PyLongCheckExactNode getUncached() {

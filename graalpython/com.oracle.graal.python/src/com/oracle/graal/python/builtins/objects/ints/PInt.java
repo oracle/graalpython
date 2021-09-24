@@ -29,9 +29,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 
 import java.math.BigInteger;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -65,9 +67,16 @@ public final class PInt extends PythonBuiltinObject {
     private final BigInteger value;
 
     public PInt(Object clazz, Shape instanceShape, BigInteger value) {
-        super(clazz, instanceShape);
+        super(ensurePBCT(clazz), instanceShape);
         assert value != null;
         this.value = value;
+    }
+
+    private static Object ensurePBCT(Object clazz) {
+        if (clazz instanceof PythonBuiltinClass && ((PythonBuiltinClass) clazz).getType() == PythonBuiltinClassType.PInt) {
+            return PythonBuiltinClassType.PInt;
+        }
+        return clazz;
     }
 
     public static long abs(long a) {
