@@ -68,6 +68,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -93,9 +94,15 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
                         @Cached LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode reprNode,
                         @Cached DictReprBuiltin.ReprNode dictReprNode) {
             final Object klass = getClassNode.execute(self);
-            return String.format("%s(%s, %s)", getNameNode.execute(klass),
-                            reprNode.executeObject(self.getDefaultFactory(), __REPR__),
-                            dictReprNode.call(frame, self));
+            final String name = getNameNode.execute(klass);
+            final Object factoryRepr = reprNode.executeObject(self.getDefaultFactory(), __REPR__);
+            final Object dictRepr = dictReprNode.call(frame, self);
+            return getDefaultDictReprInternal(name, factoryRepr, dictRepr);
+        }
+
+        @CompilerDirectives.TruffleBoundary
+        private static String getDefaultDictReprInternal(String name, Object factoryRepr, Object dictRepr) {
+            return String.format("%s(%s, %s)", name, factoryRepr, dictRepr);
         }
     }
 

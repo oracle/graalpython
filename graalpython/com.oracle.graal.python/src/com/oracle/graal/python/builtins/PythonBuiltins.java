@@ -37,6 +37,7 @@ import java.util.Map.Entry;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.util.BiConsumer;
@@ -94,7 +95,8 @@ public abstract class PythonBuiltins {
                 PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, constructsClass, numDefaults(builtin), flags, callTarget);
                 PythonBuiltinClass builtinClass = core.lookupType(constructsClass);
                 builtinClass.setAttributeUnsafe(__NEW__, newFunc);
-                if (builtinClass.getAttribute(__DOC__) == PNone.NO_VALUE) {
+                final Object currentBuiltinDoc = builtinClass.getAttribute(__DOC__);
+                if (PGuards.isNone(currentBuiltinDoc) || PGuards.isNoValue(currentBuiltinDoc)) {
                     builtinClass.setAttribute(__DOC__, builtinDoc);
                 }
             } else {
