@@ -2139,6 +2139,15 @@ def update_hpy_import_cmd(args):
     # headers go into 'com.oracle.graal.python.cext/include'
     header_dest = join(mx.project("com.oracle.graal.python.cext").dir, "include")
 
+    # copy 'hpy/devel/__init__.py' to 'lib-graalpython/module/hpy/devel/__init__.py'
+    dest_devel_file = join(_get_core_home(), "modules", "hpy", "devel", "__init__.py")
+    src_devel_file = join(hpy_repo_path, "hpy", "devel", "__init__.py")
+    if not os.path.exists(src_devel_file):
+        SUITE.vc.git_command(SUITE.dir, ["reset", "--hard"])
+        SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
+        mx.abort("File '{}' is missing but required.".format(src_devel_file))
+    import_file(src_devel_file, dest_devel_file)
+
     # 'version.py' goes to 'lib-graalpython/module/hpy/devel/'
     dest_version_file = join(_get_core_home(), "modules", "hpy", "devel", "version.py")
     src_version_file = join(hpy_repo_path, "hpy", "devel", "version.py")
