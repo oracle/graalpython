@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -83,36 +82,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @DefaultExport(DefaultPythonObjectExports.class)
 @SuppressWarnings("unused")
 public abstract class PythonObjectLibrary extends Library {
-    /**
-     * Checks whether the receiver is a Python iterable object. As described in the
-     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
-     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
-     * Containers</a>
-     *
-     * <br>
-     * Specifically the default implementation checks for the implementation of the <b>__iter__</b>
-     * special method. If not defined, it will also check for iterable objects that implement the
-     * following special methods: <b>
-     * <ul>
-     * <li>__getitem__</li>
-     * <li>__next__</li>
-     * </ul>
-     * </b>
-     *
-     * @param receiver the receiver Object
-     * @return True if object is iterable
-     */
-    public boolean isIterable(Object receiver) {
-        if (!(lookupAttributeOnType(receiver, SpecialMethodNames.__ITER__) instanceof PNone)) {
-            return true;
-        } else if (lookupAttributeOnType(receiver, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE) {
-            return true;
-        } else {
-            return isCallable(receiver) &&
-                            lookupAttributeOnType(receiver, SpecialMethodNames.__NEXT__) != PNone.NO_VALUE;
-        }
-    }
-
     /**
      * Checks whether the receiver is a Python callable object. As described in the
      * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and

@@ -42,7 +42,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
 
@@ -72,7 +71,6 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -92,7 +90,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -135,26 +132,12 @@ public final class DictBuiltins extends PythonBuiltins {
             return initNode;
         }
 
-        @Specialization(guards = {"args.length == 1", "firstArgIterable(args, lib)", "!firstArgString(args)"})
+        @Specialization(guards = {"args.length == 1"})
         Object doVarargs(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary storageLib) {
             self.setDictStorage(storageLib.addAllToOther(getInitNode().execute(frame, args[0], kwargs), self.getDictStorage()));
             return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"args.length == 1", "!firstArgIterable(args, lib)"})
-        Object doVarargsNotIterable(Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            throw raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, args[0]);
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"args.length == 1", "firstArgString(args)"})
-        static Object doString(Object self, Object[] args, PKeyword[] kwargs,
-                        @Cached PRaiseNode raise) {
-            throw raise.raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, 0, 1);
         }
 
         @Specialization(guards = {"args.length == 0", "kwargs.length > 0"})
@@ -173,14 +156,6 @@ public final class DictBuiltins extends PythonBuiltins {
         @Specialization(guards = "args.length > 1")
         Object doGeneric(@SuppressWarnings("unused") PDict self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
             throw raise(TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, "dict", 1, args.length);
-        }
-
-        protected static boolean firstArgIterable(Object[] args, PythonObjectLibrary lib) {
-            return lib.isIterable(args[0]);
-        }
-
-        protected static boolean firstArgString(Object[] args) {
-            return PGuards.isString(args[0]);
         }
     }
 
@@ -615,13 +590,6 @@ public final class DictBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!isIterable(args, libOther)")
-        public Object notIterable(PDict self, Object[] args, PKeyword[] kwargs,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary libOther) {
-            throw raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, args[0]);
-        }
-
         protected static boolean isDict(Object[] args) {
             return args.length == 1 && args[0] instanceof PDict;
         }
@@ -632,14 +600,6 @@ public final class DictBuiltins extends PythonBuiltins {
 
         protected static boolean isDictButNotEconomicMap(Object[] args) {
             return args.length == 1 && args[0] instanceof PDict && !(((PDict) args[0]).getDictStorage() instanceof EconomicMapStorage);
-        }
-
-        protected static boolean isSeq(Object[] args) {
-            return args.length == 1 && args[0] instanceof PSequence;
-        }
-
-        protected static boolean isIterable(Object[] args, PythonObjectLibrary lib) {
-            return args.length == 1 && lib.isIterable(args[0]);
         }
 
         protected static boolean isSelf(PDict self, Object[] args) {

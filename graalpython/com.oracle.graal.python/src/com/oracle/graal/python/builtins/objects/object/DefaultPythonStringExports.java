@@ -66,11 +66,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = String.class)
 final class DefaultPythonStringExports {
     @ExportMessage
-    static boolean isIterable(@SuppressWarnings("unused") String str) {
-        return true;
-    }
-
-    @ExportMessage
     static class IsSame {
         @Specialization
         static boolean ss(String receiver, String other) {

@@ -173,6 +173,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     private static final String PRIVATE_PREFIX = "__";
     private DynamicObjectNativeWrapper nativeWrapper;
 
+    // @ImportStatic doesn't work for this for some reason
+    protected static final SpecialMethodSlot Iter = SpecialMethodSlot.Iter;
+
     public static final Assumption singleContextAssumption() {
         return PythonLanguage.get(null).singleContextAssumption;
     }
@@ -531,7 +534,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @TruffleBoundary
     public Object getMembers(boolean includeInternal,
                     @Cached CastToListInteropNode castToList,
-                    @Shared("getClassThis") @Cached GetClassNode getClass,
+                    @Shared("getClass") @Cached GetClassNode getClass,
                     @Cached PyMappingCheckNode checkMapping,
                     @Shared("lookup") @Cached PyObjectLookupAttr lookupKeys,
                     @Cached CallNode callKeys,
@@ -1729,7 +1732,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public Object getMetaObject(@Shared("getClassThis") @Cached GetClassNode getClass,
+    public Object getMetaObject(
+                    @Shared("getClass") @Cached GetClassNode getClass,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -1821,8 +1825,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean hasIterator(
-                    @CachedLibrary("this") PythonObjectLibrary lib) {
-        return lib.isIterable(this);
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter) {
+        return lookupIter.execute(getClassNode.execute(this)) != PNone.NO_VALUE;
     }
 
     @ExportMessage

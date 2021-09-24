@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -218,7 +217,7 @@ public abstract class HashingStorage {
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"})
-        HashingStorage doSequence(VirtualFrame frame, PythonObject iterable, PKeyword[] kwargs,
+        HashingStorage doSequence(VirtualFrame frame, Object iterable, PKeyword[] kwargs,
                         @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
                         @Cached PRaiseNode raise,
