@@ -127,12 +127,12 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     @Builtin(name = __MISSING__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MissingNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "self.getDefaultFactory() == null")
+        @Specialization(guards = "isNone(self.getDefaultFactory())")
         Object doNoFactory(@SuppressWarnings("unused") PDefaultDict self, Object key) {
             throw raise(PythonBuiltinClassType.KeyError, key);
         }
 
-        @Specialization(guards = "self.getDefaultFactory() != null", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "!isNone(self.getDefaultFactory())", limit = "getCallSiteInlineCacheMaxDepth()")
         Object doMissing(VirtualFrame frame, PDefaultDict self, Object key,
                         @Cached CallNode callNode,
                         @CachedLibrary(value = "self.getDictStorage()") HashingStorageLibrary hlib,
