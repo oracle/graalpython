@@ -467,7 +467,11 @@ public final class CertUtils {
                 }
             }
         }, result);
-        return factory.createTuple(result.toArray(new String[result.size()]));
+        if (result.size() > 0) {
+            return factory.createTuple(result.toArray(new String[result.size()]));
+        } else {
+            return null;
+        }
     }
 
     @TruffleBoundary
@@ -499,7 +503,11 @@ public final class CertUtils {
                 }
             }
         }, result);
-        return factory.createTuple(result.toArray(new String[result.size()]));
+        if (result.size() > 0) {
+            return factory.createTuple(result.toArray(new String[result.size()]));
+        } else {
+            return null;
+        }
     }
 
     @TruffleBoundary
@@ -531,7 +539,11 @@ public final class CertUtils {
                 }
             }
         }, result);
-        return factory.createTuple(result.toArray(new String[result.size()]));
+        if (result.size() > 0) {
+            return factory.createTuple(result.toArray(new String[result.size()]));
+        } else {
+            return null;
+        }
     }
 
     public enum LoadCertError {
