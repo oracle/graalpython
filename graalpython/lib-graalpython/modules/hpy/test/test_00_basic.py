@@ -203,7 +203,6 @@ class TestBasic(HPyTest):
         """)
         assert mod.f(4, 5) == 45
 
-    @pytest.mark.skip
     def test_builtin_handles(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)

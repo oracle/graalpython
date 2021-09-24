@@ -147,6 +147,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.ReturnType;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAttachFunctionTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
@@ -154,7 +155,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAttachFunctionTypeNode;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -1704,11 +1704,16 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     @ExportMessage
     @ImportStatic(HPyContextMember.class)
     static class IsMemberReadable {
-        @Specialization(guards = "cachedKey.equals(key)")
-        static boolean isMemberReadable(@SuppressWarnings("unused") GraalHPyContext context, @SuppressWarnings("unused") String key,
-                        @Cached(value = "key", allowUncached = true) @SuppressWarnings("unused") String cachedKey,
-                        @Cached(value = "getIndex(key)", allowUncached = true) int cachedIdx) {
+        @Specialization(guards = "cachedKey.equals(key)", limit = "1")
+        static boolean isMemberReadableCached(@SuppressWarnings("unused") GraalHPyContext context, @SuppressWarnings("unused") String key,
+                        @Cached(value = "key") @SuppressWarnings("unused") String cachedKey,
+                        @Cached(value = "getIndex(key)") int cachedIdx) {
             return cachedIdx != -1;
+        }
+
+        @Specialization(replaces = "isMemberReadableCached")
+        static boolean isMemberReadable(@SuppressWarnings("unused") GraalHPyContext context, String key) {
+            return HPyContextMember.getIndex(key) != -1;
         }
     }
 
@@ -1735,10 +1740,10 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
         public abstract Object execute(GraalHPyContext hpyContext, String key);
 
-        @Specialization(guards = "cachedKey.equals(key)")
-        static Object doMember(GraalHPyContext hpyContext, String key,
-                        @Cached(value = "key", allowUncached = true) @SuppressWarnings("unused") String cachedKey,
-                        @Cached(value = "getIndex(key)", allowUncached = true) int cachedIdx) {
+        @Specialization(guards = "cachedKey.equals(key)", limit = "1")
+        static Object doMemberCached(GraalHPyContext hpyContext, String key,
+                        @Cached(value = "key") @SuppressWarnings("unused") String cachedKey,
+                        @Cached(value = "getIndex(key)") int cachedIdx) {
             // TODO(fa) once everything is implemented, remove this check
             if (cachedIdx != -1) {
                 Object value = hpyContext.hpyContextMembers[cachedIdx];
@@ -1748,6 +1753,12 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw CompilerDirectives.shouldNotReachHere(String.format("context function %s not yet implemented: ", key));
+        }
+
+        @Specialization(replaces = "doMemberCached")
+        static Object doMember(GraalHPyContext hpyContext, String key,
+                        @Cached(value = "key", allowUncached = true) @SuppressWarnings("unused") String cachedKey) {
+            return doMemberCached(hpyContext, key, key, HPyContextMember.getIndex(key));
         }
     }
 
