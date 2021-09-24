@@ -92,7 +92,6 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
 
     @Specialization
     protected Object doDirect(VirtualFrame frame, Object[] arguments,
-                    @Cached ConditionProfile isClassBodyProfile,
                     @Cached ConditionProfile isGeneratorFunctionProfile) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);

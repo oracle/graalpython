@@ -119,7 +119,7 @@ public abstract class GenericInvokeNode extends InvokeNode {
     private Object doCall(Frame frame, PFunction callee, RootCallTarget callTarget, Object[] arguments,
                     PythonLanguage language, PythonContext context,
                     IndirectCallNode callNode, CallContext callContext,
-                    ConditionProfile isNullFrameProfile, ConditionProfile isClassBodyProfile, ConditionProfile isGeneratorFunctionProfile) {
+                    ConditionProfile isNullFrameProfile, ConditionProfile isGeneratorFunctionProfile) {
         optionallySetGeneratorFunction(arguments, callTarget, isGeneratorFunctionProfile, callee);
         if (isNullFrameProfile.profile(frame == null)) {
             PythonThreadState threadState = context.getThreadState(language);
@@ -137,7 +137,7 @@ public abstract class GenericInvokeNode extends InvokeNode {
     }
 
     private Object doCallWithFrame(Frame frame, PFunction callee, RootCallTarget callTarget, Object[] arguments,
-                    IndirectCallNode callNode, CallContext callContext, ConditionProfile isClassBodyProfile, ConditionProfile isGeneratorFunctionProfile) {
+                    IndirectCallNode callNode, CallContext callContext, ConditionProfile isGeneratorFunctionProfile) {
         optionallySetGeneratorFunction(arguments, callTarget, isGeneratorFunctionProfile, callee);
         assert frame instanceof VirtualFrame : "GenericInvokeNode should not be executed with non-virtual frames";
         callContext.prepareIndirectCall((VirtualFrame) frame, arguments, this);
@@ -148,31 +148,28 @@ public abstract class GenericInvokeNode extends InvokeNode {
     Object invokeFunctionWithFrame(Frame frame, PFunction callee, Object[] arguments,
                     @Shared("callNode") @Cached IndirectCallNode callNode,
                     @Shared("callContext") @Cached CallContext callContext,
-                    @Shared("isClassBodyProfile") @Cached ConditionProfile isClassBodyProfile,
                     @Shared("isGeneratorFunctionProfile") @Cached ConditionProfile isGeneratorFunctionProfile) {
         PArguments.setGlobals(arguments, callee.getGlobals());
         PArguments.setClosure(arguments, callee.getClosure());
         RootCallTarget callTarget = getCallTarget(callee);
-        return doCallWithFrame(frame, callee, callTarget, arguments, callNode, callContext, isClassBodyProfile, isGeneratorFunctionProfile);
+        return doCallWithFrame(frame, callee, callTarget, arguments, callNode, callContext, isGeneratorFunctionProfile);
     }
 
     @Specialization(guards = "frame != null")
     Object invokeBuiltinWithFrame(Frame frame, PBuiltinFunction callee, Object[] arguments,
                     @Shared("callNode") @Cached IndirectCallNode callNode,
                     @Shared("callContext") @Cached CallContext callContext,
-                    @Shared("isClassBodyProfile") @Cached ConditionProfile isClassBodyProfile,
                     @Shared("isGeneratorFunctionProfile") @Cached ConditionProfile isGeneratorFunctionProfile) {
         RootCallTarget callTarget = getCallTarget(callee);
-        return doCallWithFrame(frame, null, callTarget, arguments, callNode, callContext, isClassBodyProfile, isGeneratorFunctionProfile);
+        return doCallWithFrame(frame, null, callTarget, arguments, callNode, callContext, isGeneratorFunctionProfile);
     }
 
     @Specialization(guards = "frame != null")
     Object invokeCallTargetWithFrame(Frame frame, RootCallTarget callTarget, Object[] arguments,
                     @Shared("callNode") @Cached IndirectCallNode callNode,
                     @Shared("callContext") @Cached CallContext callContext,
-                    @Shared("isClassBodyProfile") @Cached ConditionProfile isClassBodyProfile,
                     @Shared("isGeneratorFunctionProfile") @Cached ConditionProfile isGeneratorFunctionProfile) {
-        return doCallWithFrame(frame, null, callTarget, arguments, callNode, callContext, isClassBodyProfile, isGeneratorFunctionProfile);
+        return doCallWithFrame(frame, null, callTarget, arguments, callNode, callContext, isGeneratorFunctionProfile);
     }
 
     @Specialization(replaces = "invokeFunctionWithFrame")
@@ -180,13 +177,11 @@ public abstract class GenericInvokeNode extends InvokeNode {
                     @Shared("callNode") @Cached IndirectCallNode callNode,
                     @Shared("callContext") @Cached CallContext callContext,
                     @Shared("isNullFrameProfile") @Cached ConditionProfile isNullFrameProfile,
-                    @Shared("isClassBodyProfile") @Cached ConditionProfile isClassBodyProfile,
                     @Shared("isGeneratorFunctionProfile") @Cached ConditionProfile isGeneratorFunctionProfile) {
         PArguments.setGlobals(arguments, callee.getGlobals());
         PArguments.setClosure(arguments, callee.getClosure());
         RootCallTarget callTarget = getCallTarget(callee);
-        return doCall(frame, callee, callTarget, arguments, PythonLanguage.get(this), PythonContext.get(this), callNode, callContext, isNullFrameProfile, isClassBodyProfile,
-                        isGeneratorFunctionProfile);
+        return doCall(frame, callee, callTarget, arguments, PythonLanguage.get(this), PythonContext.get(this), callNode, callContext, isNullFrameProfile, isGeneratorFunctionProfile);
     }
 
     @Specialization(replaces = "invokeBuiltinWithFrame")
@@ -194,10 +189,9 @@ public abstract class GenericInvokeNode extends InvokeNode {
                     @Shared("callNode") @Cached IndirectCallNode callNode,
                     @Shared("callContext") @Cached CallContext callContext,
                     @Shared("isNullFrameProfile") @Cached ConditionProfile isNullFrameProfile,
-                    @Shared("isClassBodyProfile") @Cached ConditionProfile isClassBodyProfile,
                     @Shared("isGeneratorFunctionProfile") @Cached ConditionProfile isGeneratorFunctionProfile) {
         RootCallTarget callTarget = getCallTarget(callee);
-        return doCall(frame, null, callTarget, arguments, PythonLanguage.get(this), PythonContext.get(this), callNode, callContext, isNullFrameProfile, isClassBodyProfile, isGeneratorFunctionProfile);
+        return doCall(frame, null, callTarget, arguments, PythonLanguage.get(this), PythonContext.get(this), callNode, callContext, isNullFrameProfile, isGeneratorFunctionProfile);
     }
 
     @Specialization(replaces = "invokeCallTargetWithFrame")
@@ -205,8 +199,7 @@ public abstract class GenericInvokeNode extends InvokeNode {
                     @Shared("callNode") @Cached IndirectCallNode callNode,
                     @Shared("callContext") @Cached CallContext callContext,
                     @Shared("isNullFrameProfile") @Cached ConditionProfile isNullFrameProfile,
-                    @Shared("isClassBodyProfile") @Cached ConditionProfile isClassBodyProfile,
                     @Shared("isGeneratorFunctionProfile") @Cached ConditionProfile isGeneratorFunctionProfile) {
-        return doCall(frame, null, callTarget, arguments, PythonLanguage.get(this), PythonContext.get(this), callNode, callContext, isNullFrameProfile, isClassBodyProfile, isGeneratorFunctionProfile);
+        return doCall(frame, null, callTarget, arguments, PythonLanguage.get(this), PythonContext.get(this), callNode, callContext, isNullFrameProfile, isGeneratorFunctionProfile);
     }
 }

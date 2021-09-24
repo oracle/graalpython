@@ -68,14 +68,16 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 /**
- * This node implements all {@code LOAD_*} bytecodes that can occur in CPython in class
- * bodies. They are not separated for us due to the way that our parser constructs {@link
- * com.oracle.graal.python.nodes.frame.ReadNode ReadNodes} first and then converts them into {@link
- * com.oracle.graal.python.nodes.frame.WriteNode WriteNodes} later. Since writes in the class body
- * go to the class scope, never to an outer cell, these are different than just using a {@link
- * ReadLocalCellNode} or {@link ReadNameNode} and using their transformation. The specializations
- * of this node then implement the equivalent of the bytecodes {@code LOAD_DEREF}, {@code
- * LOAD_GLOBAL}, {@code LOAD_NAME}, and {@code LOAD_CLASSDEREF} from CPython.
+ * This node implements all {@code LOAD_*} bytecodes that can occur in CPython in class bodies. They
+ * are not separated for us due to the way that our parser constructs
+ * {@link com.oracle.graal.python.nodes.frame.ReadNode ReadNodes} first and then converts them into
+ * {@link com.oracle.graal.python.nodes.frame.WriteNode WriteNodes} later. Since writes in the class
+ * body go to the class scope, never to an outer cell, these are different than just using a
+ * {@link ReadLocalCellNode} or {@link com.oracle.graal.python.nodes.frame.ReadNameNode
+ * ReadNameNode} and using their transformation. The specializations of this node then implement the
+ * equivalent of the bytecodes {@code LOAD_DEREF}, {@code LOAD_GLOBAL}, {@code LOAD_NAME}, and
+ * {@code
+ * LOAD_CLASSDEREF} from CPython.
  */
 @NodeInfo(shortName = "read_class_member")
 public abstract class ReadClassAttributeNode extends ExpressionNode implements ReadLocalNode, AccessNameNode {
