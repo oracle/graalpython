@@ -642,6 +642,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PHashInfo.base = PTuple;
         PThreadInfo.base = PTuple;
         PUnraisableHookArgs.base = PTuple;
+        PDefaultDict.base = PDict;
 
         PArrayIterator.type = PythonClass;
         PSocket.type = PythonClass;
