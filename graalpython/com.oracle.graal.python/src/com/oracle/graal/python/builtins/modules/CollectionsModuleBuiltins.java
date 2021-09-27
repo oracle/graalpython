@@ -40,8 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE_GETTER;
+
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -50,13 +53,16 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.deque.DequeIterBuiltins.DequeIterNextNode;
 import com.oracle.graal.python.builtins.objects.deque.PDeque;
 import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
+import com.oracle.graal.python.builtins.objects.dict.PDefaultDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -165,6 +171,33 @@ public class CollectionsModuleBuiltins extends PythonBuiltins {
                 return doDeque(cls, (PDeque) deque, PNone.NO_VALUE);
             }
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.DEQUE, deque);
+        }
+    }
+
+    // _collections.defaultdict
+    @Builtin(name = BuiltinNames.DEFAULTDICT, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PDefaultDict, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    abstract static class DefaultDictNode extends PythonVarargsBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        PDefaultDict doGeneric(Object cls, Object[] args, PKeyword[] kwargs) {
+            return factory().createDefaultDict(cls);
+        }
+    }
+
+    // _collections._tuplegetter
+    @Builtin(name = TUPLE_GETTER, parameterNames = {"cls", "index", "doc"}, constructsClass = PythonBuiltinClassType.PTupleGetter)
+    @ArgumentClinic(name = "index", conversion = ArgumentClinic.ClinicConversion.Index)
+    @GenerateNodeFactory
+    abstract static class TupleGetterNode extends PythonTernaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return CollectionsModuleBuiltinsClinicProviders.TupleGetterNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object construct(Object cls, int index, Object doc) {
+            return factory().createTupleGetter(cls, index, doc);
         }
     }
 }

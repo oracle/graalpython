@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
+import static com.oracle.graal.python.nodes.BuiltinNames.DEFAULTDICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.DEQUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.DEQUE_ITER;
 import static com.oracle.graal.python.nodes.BuiltinNames.DEQUE_REV_ITER;
@@ -42,6 +43,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.FOREIGN;
 import static com.oracle.graal.python.nodes.BuiltinNames.MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.PROPERTY;
 import static com.oracle.graal.python.nodes.BuiltinNames.SIMPLE_QUEUE;
+import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE_GETTER;
 import static com.oracle.graal.python.nodes.BuiltinNames.WRAPPER_DESCRIPTOR;
 
 import java.util.Arrays;
@@ -95,7 +97,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PByteArray("bytearray", BUILTINS),
     PBytes("bytes", BUILTINS),
     PCell("cell", Flags.PRIVATE_DERIVED_WODICT),
+    PDefaultDict(DEFAULTDICT, "_collections", "collections", Flags.PUBLIC_BASE_WODICT),
     PDeque(DEQUE, "_collections", Flags.PUBLIC_BASE_WODICT),
+    PTupleGetter(TUPLE_GETTER, "_collections", Flags.PUBLIC_BASE_WODICT),
     PDequeIter(DEQUE_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
     PDequeRevIter(DEQUE_REV_ITER, "_collections", Flags.PUBLIC_DERIVED_WODICT),
     PComplex("complex", BUILTINS),
@@ -368,7 +372,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     private final String name;
-    private final String publicInModule;
+    private final String publishInModule;
+    private final String moduleName;
     // This is the name qualified by module used for printing. But the actual __qualname__ is just
     // plain name without module
     private final String printName;
@@ -395,10 +400,15 @@ public enum PythonBuiltinClassType implements TruffleObject {
     private Object[] specialMethodSlots;
 
     PythonBuiltinClassType(String name, String module, Flags flags) {
+        this(name, module, module, flags);
+    }
+
+    PythonBuiltinClassType(String name, String publishInModule, String moduleName, Flags flags) {
         this.name = name;
-        this.publicInModule = flags.isPublic ? module : null;
-        if (module != null && module != BUILTINS) {
-            printName = module + "." + name;
+        this.publishInModule = publishInModule;
+        this.moduleName = flags.isPublic ? moduleName : null;
+        if (publishInModule != null && publishInModule != BUILTINS) {
+            printName = moduleName + "." + name;
         } else {
             printName = name;
         }
@@ -443,8 +453,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return isBuiltinWithDict;
     }
 
-    public String getPublicInModule() {
-        return publicInModule;
+    public String getPublishInModule() {
+        return publishInModule;
+    }
+
+    public String getModuleName() {
+        return moduleName;
     }
 
     /**
@@ -631,6 +645,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PHashInfo.base = PTuple;
         PThreadInfo.base = PTuple;
         PUnraisableHookArgs.base = PTuple;
+        PDefaultDict.base = PDict;
 
         PArrayIterator.type = PythonClass;
         PSocket.type = PythonClass;

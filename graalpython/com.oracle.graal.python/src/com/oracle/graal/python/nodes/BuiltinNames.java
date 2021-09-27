@@ -67,6 +67,8 @@ public abstract class BuiltinNames {
     // builtin functions
     public static final String ABS = "abs";
     public static final String DICT = "dict";
+    public static final String DEFAULTDICT = "defaultdict";
+    public static final String TUPLE_GETTER = "_tuplegetter";
     public static final String DEQUE = "deque";
     public static final String DEQUE_ITER = "_deque_iterator";
     public static final String DEQUE_REV_ITER = "_deque_reverse_iterator";

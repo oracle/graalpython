@@ -1021,7 +1021,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static Object getModuleType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value) {
-            String module = cls.getPublicInModule();
+            String module = cls.getModuleName();
             return module == null ? BuiltinNames.BUILTINS : module;
         }
 

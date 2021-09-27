@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.property;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.CANT_SET_ATTRIBUTE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ISABSTRACTMETHOD__;
 
 import java.util.List;
@@ -312,7 +313,7 @@ public class PropertyBuiltins extends PythonBuiltins {
         Object doGeneric(VirtualFrame frame, PProperty self, Object obj, Object value) {
             Object func = self.getFset();
             if (func == null) {
-                throw raise(PythonBuiltinClassType.AttributeError, "can't set attribute");
+                throw raise(PythonBuiltinClassType.AttributeError, CANT_SET_ATTRIBUTE);
             }
             ensureCallSetNode().executeObject(frame, func, obj, value);
             return PNone.NONE;

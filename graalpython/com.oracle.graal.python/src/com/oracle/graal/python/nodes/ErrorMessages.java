@@ -206,6 +206,7 @@ public abstract class ErrorMessages {
     public static final String COUNT_FUNC_MATH = "count function in Math";
     public static final String COVERAGE_TRACKER_NOT_RUNNING = "coverage tracker not running";
     public static final String DEFAULT_EXCEPT_MUST_BE_LAST = "default 'except:' must be last";
+    public static final String DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P = "descriptor for index '%d' for %s doesn't apply to '%p' object";
     public static final String DESC_S_FOR_S_DOESNT_APPLY_TO_S = "descriptor '%s' for '%s' objects doesn't apply to '%s' object";
     public static final String DESCRIPTOR_REQUIRES_OBJ = "descriptor '%s' requires a '%s' object but received a '%p'";
     public static final String DESCRIPTOR_NEED_OBJ = "descriptor '%s' of '%s' object needs an argument";
@@ -259,7 +260,7 @@ public abstract class ErrorMessages {
     public static final String FILL_CHAR_MUST_BE_LENGTH_1 = "The fill character must be exactly one character long";
     public static final String FILTER_SPEC_MUST_BE_DICT = "Filter specifier must be a dict or dict-like object";
     public static final String FILTER_SPECIFIER_MUST_HAVE = "Filter specifier must have an \"id\" entry";
-    public static final String FIRST_ARG_MUST_BE_CALLABLE = "first argument must be callable";
+    public static final String FIRST_ARG_MUST_BE_CALLABLE_S = "first argument must be callable%s";
     public static final String FIRST_ARG_MUST_BE_S_OR_TUPLE_NOT_P = "%s first arg must be %s or a tuple of str, not %p";
     public static final String FIRST_TWO_MAKETRANS_ARGS_MUST_HAVE_EQ_LENGTH = "the first two maketrans arguments must have equal length";
     public static final String FLOAT_ARG_REQUIRED = "float argument required, not %p";
@@ -877,6 +878,7 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_S_INSTANCE_INSTEAD_OF_S = "expected %s instance instead of %s";
     public static final String ARRAY_LENGTH_MUST_BE_0_NOT_D = "Array length must be >= 0, not %d";
     public static final String EXPECTED_A_TYPE_OBJECT = "Expected a type object";
+    public static final String CANT_SET_ATTRIBUTE = "can't set attribute";
     public static final String CANT_DELETE_ATTRIBUTE = "can't delete attribute";
     public static final String HAS_NO_STGINFO = "has no _stginfo_";
     public static final String DON_T_KNOW_HOW_TO_CONVERT_PARAMETER_D = "Don't know how to convert parameter %d";

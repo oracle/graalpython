@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.modules.json.PJSONEncoder.FastEncode;
 import com.oracle.graal.python.builtins.modules.json.PJSONScanner;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAObject;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -76,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.deque.PDeque;
 import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
+import com.oracle.graal.python.builtins.objects.dict.PDefaultDict;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemIterator;
@@ -151,6 +153,7 @@ import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.PTupleGetter;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence.BuiltinTypeDescriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -405,6 +408,14 @@ public abstract class PythonObjectFactory extends Node {
     public final PTuple createStructSeq(BuiltinTypeDescriptor desc, Object... values) {
         assert desc.inSequence <= values.length && values.length <= desc.fieldNames.length;
         return createTuple(desc.type, new ObjectSequenceStorage(values, desc.inSequence));
+    }
+
+    public final PTupleGetter createTupleGetter(int index, Object doc) {
+        return createTupleGetter(PythonBuiltinClassType.PTupleGetter, index, doc);
+    }
+
+    public final PTupleGetter createTupleGetter(Object cls, int index, Object doc) {
+        return trace(new PTupleGetter(cls, getShape(cls), index, doc));
     }
 
     public final PComplex createComplex(Object cls, double real, double imag) {
@@ -702,6 +713,22 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PDict createDict(Object cls, Shape instanceShape, HashingStorage storage) {
         return trace(new PDict(cls, instanceShape, storage));
+    }
+
+    public final PDefaultDict createDefaultDict(Object cls) {
+        return createDefaultDict(cls, PNone.NONE);
+    }
+
+    public final PDefaultDict createDefaultDict(Object cls, Object defaultFactory) {
+        return trace(new PDefaultDict(cls, getShape(cls), defaultFactory));
+    }
+
+    public final PDefaultDict createDefaultDict(Object defaultFactory, HashingStorage storage) {
+        return createDefaultDict(PythonBuiltinClassType.PDefaultDict, defaultFactory, storage);
+    }
+
+    public final PDefaultDict createDefaultDict(Object cls, Object defaultFactory, HashingStorage storage) {
+        return trace(new PDefaultDict(cls, getShape(cls), storage, defaultFactory));
     }
 
     public final PDictView createDictKeysView(PHashingCollection dict) {
