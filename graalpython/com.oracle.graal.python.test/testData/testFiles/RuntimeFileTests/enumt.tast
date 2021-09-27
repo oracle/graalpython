@@ -442,8 +442,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [1292,1420]`class auto:↵    """↵...`
               Name: auto
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -458,30 +457,18 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                       QualName: auto
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [1308,1394]`"""↵    Instances ar...`
                     FunctionBodyNode SourceSection: [1399,1417]`value = _auto_null`
-                      SetItemNodeGen SourceSection: [1399,1417]`value = _auto_null`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [1399,1417]`value = _auto_null`
+                        Identifier: value
                         ReadClassAttributeNodeGen SourceSection: [1407,1417]`_auto_null`
-                          GetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: _auto_null
+                          Identifier: _auto_null
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [1420,3954]`class _EnumDict(dict...`
@@ -500,8 +487,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               CellVarsSlots: __class__, 
             ClassBodyRootNode SourceSection: [1420,3954]`class _EnumDict(dict...`
               Name: _EnumDict
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: __class__
               FreeVars: None
               NeedsCellFrame: False
@@ -516,22 +502,16 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                       QualName: _EnumDict
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [1447,1620]`"""Track enum member...`
                     FunctionBodyNode SourceSection: [1625,3954]`def __init__(self):↵...`
-                      SetItemNodeGen SourceSection: [1625,1766]`def __init__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [1625,1766]`def __init__(self):↵...`
+                        Identifier: __init__
                         FunctionDefinitionNode Name: __init__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -589,11 +569,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [1766,3954]`def __setitem__(self...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [1766,3954]`def __setitem__(self...`
+                        Identifier: __setitem__
                         FunctionDefinitionNode Name: __setitem__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -979,11 +956,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Frame: [2,value,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [5,<return_val>,Object]
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __classcell__
                       ReadLocalVariableNodeGen SourceSection: None
                         Frame: [0,__class__,Illegal]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -1011,8 +985,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               CellVarsSlots: __class__, 
             ClassBodyRootNode SourceSection: [3968,21037]`class EnumMeta(type)...`
               Name: EnumMeta
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: __class__
               FreeVars: None
               NeedsCellFrame: False
@@ -1027,32 +1000,20 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                       QualName: EnumMeta
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [3994,4018]`"""Metaclass for Enu...`
                     FunctionBodyNode SourceSection: [4023,21037]`@classmethod↵    def...`
-                      SetItemNodeGen SourceSection: [4023,4441]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [4023,4441]`@classmethod↵    def...`
+                        Identifier: __prepare__
                         PythonCallUnary SourceSection: [4023,4035]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [4023,4035]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: __prepare__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -1150,11 +1111,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Frame: [3,enum_dict,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [8,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [4441,11215]`def __new__(metacls,...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [4441,11215]`def __new__(metacls,...`
+                        Identifier: __new__
                         FunctionDefinitionNode Name: __new__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2184,11 +2142,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         Frame: [15,enum_class,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [34,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [11215,11329]`def __bool__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [11215,11329]`def __bool__(self):↵...`
+                        Identifier: __bool__
                         FunctionDefinitionNode Name: __bool__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2222,11 +2177,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       BooleanLiteralNode SourceSection: [11319,11323]`True`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [11329,12747]`def __call__(cls, va...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [11329,12747]`def __call__(cls, va...`
+                        Identifier: __call__
                         FunctionDefinitionNode Name: __call__ SourceSection: None
                           Arguments:
                             ObjectLiteralNode SourceSection: [11360,11364]`None`
@@ -2352,11 +2304,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             Frame: [0,cls,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [8,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [12747,13118]`def __contains__(cls...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [12747,13118]`def __contains__(cls...`
+                        Identifier: __contains__
                         FunctionDefinitionNode Name: __contains__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2453,11 +2402,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         YesNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [13118,13425]`def __delattr__(cls,...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [13118,13425]`def __delattr__(cls,...`
+                        Identifier: __delattr__
                         FunctionDefinitionNode Name: __delattr__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2537,11 +2483,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Frame: [1,attr,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [13425,13558]`def __dir__(self):↵ ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [13425,13558]`def __dir__(self):↵ ...`
+                        Identifier: __dir__
                         FunctionDefinitionNode Name: __dir__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2588,11 +2531,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [13558,14112]`def __getattr__(cls,...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [13558,14112]`def __getattr__(cls,...`
+                        Identifier: __getattr__
                         FunctionDefinitionNode Name: __getattr__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2673,11 +2613,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [14112,14183]`def __getitem__(cls,...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [14112,14183]`def __getitem__(cls,...`
+                        Identifier: __getitem__
                         FunctionDefinitionNode Name: __getitem__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2727,11 +2664,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Frame: [1,name,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [14183,14278]`def __iter__(cls):↵ ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [14183,14278]`def __iter__(cls):↵ ...`
+                        Identifier: __iter__
                         FunctionDefinitionNode Name: __iter__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2832,11 +2766,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [14278,14340]`def __len__(cls):↵  ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [14278,14340]`def __len__(cls):↵  ...`
+                        Identifier: __len__
                         FunctionDefinitionNode Name: __len__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2880,21 +2811,12 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             Frame: [0,cls,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [14340,14629]`@property↵    def __...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [14340,14629]`@property↵    def __...`
+                        Identifier: __members__
                         PythonCallUnary SourceSection: [14340,14349]`@property`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [14340,14349]`@property`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: property
+                            Identifier: property
                           FunctionDefinitionNode Name: __members__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2938,11 +2860,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               Frame: [0,cls,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [14629,14695]`def __repr__(cls):↵ ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [14629,14695]`def __repr__(cls):↵ ...`
+                        Identifier: __repr__
                         FunctionDefinitionNode Name: __repr__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2984,11 +2903,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             Frame: [0,cls,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [14695,14804]`def __reversed__(cls...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [14695,14804]`def __reversed__(cls...`
+                        Identifier: __reversed__
                         FunctionDefinitionNode Name: __reversed__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -3093,11 +3009,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [14804,15299]`def __setattr__(cls,...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [14804,15299]`def __setattr__(cls,...`
+                        Identifier: __setattr__
                         FunctionDefinitionNode Name: __setattr__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -3188,11 +3101,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Frame: [2,value,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [5,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [15299,17473]`def _create_(cls, cl...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [15299,17473]`def _create_(cls, cl...`
+                        Identifier: _create_
                         FunctionDefinitionNode Name: _create_ SourceSection: None
                           Arguments: None
                           KwArguments:
@@ -3661,21 +3571,12 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         Frame: [21,enum_class,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [33,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [17473,19272]`@staticmethod↵    de...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [17473,19272]`@staticmethod↵    de...`
+                        Identifier: _get_mixins_
                         PythonCallUnary SourceSection: [17473,17486]`@staticmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [17473,17486]`@staticmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: staticmethod
+                            Identifier: staticmethod
                           FunctionDefinitionNode Name: _get_mixins_ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3888,21 +3789,12 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           PythonObjectFactoryNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [4,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [19272,21037]`@staticmethod↵    de...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [19272,21037]`@staticmethod↵    de...`
+                        Identifier: _find_new_
                         PythonCallUnary SourceSection: [19272,19285]`@staticmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [19272,19285]`@staticmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: staticmethod
+                            Identifier: staticmethod
                           FunctionDefinitionNode Name: _find_new_ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -4099,11 +3991,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           PythonObjectFactoryNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [9,<return_val>,Object]
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __classcell__
                       ReadLocalVariableNodeGen SourceSection: None
                         Frame: [0,__class__,Illegal]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -4126,8 +4015,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [21037,25753]`class Enum(metaclass...`
               Name: Enum
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -4142,22 +4030,16 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                       QualName: Enum
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [21073,21161]`"""Generic enumerati...`
                     FunctionBodyNode SourceSection: [21166,25753]`def __new__(cls, val...`
-                      SetItemNodeGen SourceSection: [21166,22042]`def __new__(cls, val...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [21166,22042]`def __new__(cls, val...`
+                        Identifier: __new__
                         FunctionDefinitionNode Name: __new__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4287,11 +4169,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Frame: [1,value,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [22042,22301]`def _generate_next_v...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [22042,22301]`def _generate_next_v...`
+                        Identifier: _generate_next_value_
                         FunctionDefinitionNode Name: _generate_next_value_ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4373,21 +4252,12 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Frame: [1,start,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [5,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [22301,22423]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [22301,22423]`@classmethod↵    def...`
+                        Identifier: _missing_
                         PythonCallUnary SourceSection: [22301,22313]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [22301,22313]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: _missing_ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -4445,11 +4315,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [22423,22549]`def __repr__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [22423,22549]`def __repr__(self):↵...`
+                        Identifier: __repr__
                         FunctionDefinitionNode Name: __repr__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4512,11 +4379,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [22549,22637]`def __str__(self):↵ ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [22549,22637]`def __str__(self):↵ ...`
+                        Identifier: __str__
                         FunctionDefinitionNode Name: __str__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4572,11 +4436,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [22637,22945]`def __dir__(self):↵ ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [22637,22945]`def __dir__(self):↵ ...`
+                        Identifier: __dir__
                         FunctionDefinitionNode Name: __dir__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4732,11 +4593,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Frame: [1,added_behavior,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [22945,23434]`def __format__(self,...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [22945,23434]`def __format__(self,...`
+                        Identifier: __format__
                         FunctionDefinitionNode Name: __format__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4833,11 +4691,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Frame: [1,format_spec,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [4,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [23434,23492]`def __hash__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [23434,23492]`def __hash__(self):↵...`
+                        Identifier: __hash__
                         FunctionDefinitionNode Name: __hash__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4881,11 +4736,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [23492,23976]`def __reduce_ex__(se...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [23492,23976]`def __reduce_ex__(se...`
+                        Identifier: __reduce_ex__
                         FunctionDefinitionNode Name: __reduce_ex__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4943,21 +4795,12 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [23976,24094]`@DynamicClassAttribu...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [23976,24094]`@DynamicClassAttribu...`
+                        Identifier: name
                         PythonCallUnary SourceSection: [23976,23998]`@DynamicClassAttribu...`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [23976,23998]`@DynamicClassAttribu...`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: DynamicClassAttribute
+                            Identifier: DynamicClassAttribute
                           FunctionDefinitionNode Name: name SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -4997,21 +4840,12 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             Frame: [0,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [24094,24215]`@DynamicClassAttribu...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [24094,24215]`@DynamicClassAttribu...`
+                        Identifier: value
                         PythonCallUnary SourceSection: [24094,24116]`@DynamicClassAttribu...`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [24094,24116]`@DynamicClassAttribu...`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: DynamicClassAttribute
+                            Identifier: DynamicClassAttribute
                           FunctionDefinitionNode Name: value SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -5051,21 +4885,12 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             Frame: [0,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [24215,25753]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [24215,25753]`@classmethod↵    def...`
+                        Identifier: _convert
                         PythonCallUnary SourceSection: [24215,24227]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [24215,24227]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: _convert SourceSection: None
                             Arguments:
                               ObjectLiteralNode SourceSection: [24279,24283]`None`
@@ -5430,8 +5255,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [25753,25838]`class IntEnum(int, E...`
               Name: IntEnum
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -5446,15 +5270,12 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                       QualName: IntEnum
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [25783,25835]`"""Enum where member...`
                     FunctionBodyNode SourceSection: [25783,25835]`"""Enum where member...`
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -5531,8 +5352,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [25897,29992]`class Flag(Enum):↵  ...`
               Name: Flag
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -5547,22 +5367,16 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                       QualName: Flag
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [25919,25942]`"""Support for flags...`
                     FunctionBodyNode SourceSection: [25948,29992]`def _generate_next_v...`
-                      SetItemNodeGen SourceSection: [25948,26625]`def _generate_next_v...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [25948,26625]`def _generate_next_v...`
+                        Identifier: _generate_next_value_
                         FunctionDefinitionNode Name: _generate_next_value_ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -5680,21 +5494,12 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             Value: 1
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [6,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [26625,26923]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [26625,26923]`@classmethod↵    def...`
+                        Identifier: _missing_
                         PythonCallUnary SourceSection: [26625,26637]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [26625,26637]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: _missing_ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -5779,21 +5584,12 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Frame: [3,possible_member,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [4,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [26923,27791]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [26923,27791]`@classmethod↵    def...`
+                        Identifier: _create_pseudo_member_
                         PythonCallUnary SourceSection: [26923,26935]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [26923,26935]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: _create_pseudo_member_ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -5946,11 +5742,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Frame: [2,pseudo_member,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [7,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [27791,28180]`def __contains__(sel...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [27791,28180]`def __contains__(sel...`
+                        Identifier: __contains__
                         FunctionDefinitionNode Name: __contains__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6049,11 +5842,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             Frame: [1,other,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [28180,28590]`def __repr__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [28180,28590]`def __repr__(self):↵...`
+                        Identifier: __repr__
                         FunctionDefinitionNode Name: __repr__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6258,11 +6048,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [4,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [28590,29097]`def __str__(self):↵ ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [28590,29097]`def __str__(self):↵ ...`
+                        Identifier: __str__
                         FunctionDefinitionNode Name: __str__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6500,11 +6287,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [4,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [29097,29156]`def __bool__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [29097,29156]`def __bool__(self):↵...`
+                        Identifier: __bool__
                         FunctionDefinitionNode Name: __bool__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6548,11 +6332,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [29156,29330]`def __or__(self, oth...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [29156,29330]`def __or__(self, oth...`
+                        Identifier: __or__
                         FunctionDefinitionNode Name: __or__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6631,11 +6412,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               Frame: [1,other,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [29330,29505]`def __and__(self, ot...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [29330,29505]`def __and__(self, ot...`
+                        Identifier: __and__
                         FunctionDefinitionNode Name: __and__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6714,11 +6492,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               Frame: [1,other,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [29505,29680]`def __xor__(self, ot...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [29505,29680]`def __xor__(self, ot...`
+                        Identifier: __xor__
                         FunctionDefinitionNode Name: __xor__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6797,11 +6572,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               Frame: [1,other,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [29680,29992]`def __invert__(self)...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [29680,29992]`def __invert__(self)...`
+                        Identifier: __invert__
                         FunctionDefinitionNode Name: __invert__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6962,8 +6734,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [29992,32384]`class IntFlag(int, F...`
               Name: IntFlag
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -6978,32 +6749,20 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                       QualName: IntFlag
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [30022,30059]`"""Support for integ...`
                     FunctionBodyNode SourceSection: [30065,32384]`@classmethod↵    def...`
-                      SetItemNodeGen SourceSection: [30065,30311]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [30065,30311]`@classmethod↵    def...`
+                        Identifier: _missing_
                         PythonCallUnary SourceSection: [30065,30077]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [30065,30077]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: _missing_ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -7085,21 +6844,12 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Frame: [2,new_member,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [30311,31606]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [30311,31606]`@classmethod↵    def...`
+                        Identifier: _create_pseudo_member_
                         PythonCallUnary SourceSection: [30311,30323]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [30311,30323]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: _create_pseudo_member_ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -7336,11 +7086,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           Frame: [2,pseudo_member,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [10,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [31606,31827]`def __or__(self, oth...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [31606,31827]`def __or__(self, oth...`
+                        Identifier: __or__
                         FunctionDefinitionNode Name: __or__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -7433,11 +7180,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         Frame: [2,result,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [31827,32025]`def __and__(self, ot...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [31827,32025]`def __and__(self, ot...`
+                        Identifier: __and__
                         FunctionDefinitionNode Name: __and__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -7525,11 +7269,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Frame: [1,other,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [32025,32223]`def __xor__(self, ot...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [32025,32223]`def __xor__(self, ot...`
+                        Identifier: __xor__
                         FunctionDefinitionNode Name: __xor__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -7617,50 +7358,20 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Frame: [1,other,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [32223,32239]`__ror__ = __or__`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [32223,32239]`__ror__ = __or__`
+                        Identifier: __ror__
                         ReadClassAttributeNodeGen SourceSection: [32233,32239]`__or__`
-                          GetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: __or__
-                      SetItemNodeGen SourceSection: [32244,32262]`__rand__ = __and__`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                          Identifier: __or__
+                      WriteNameNodeGen SourceSection: [32244,32262]`__rand__ = __and__`
+                        Identifier: __rand__
                         ReadClassAttributeNodeGen SourceSection: [32255,32262]`__and__`
-                          GetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: __and__
-                      SetItemNodeGen SourceSection: [32267,32285]`__rxor__ = __xor__`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                          Identifier: __and__
+                      WriteNameNodeGen SourceSection: [32267,32285]`__rxor__ = __xor__`
+                        Identifier: __rxor__
                         ReadClassAttributeNodeGen SourceSection: [32278,32285]`__xor__`
-                          GetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: __xor__
-                      SetItemNodeGen SourceSection: [32291,32384]`def __invert__(self)...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                          Identifier: __xor__
+                      WriteNameNodeGen SourceSection: [32291,32384]`def __invert__(self)...`
+                        Identifier: __invert__
                         FunctionDefinitionNode Name: __invert__ SourceSection: None
                           Arguments: None
                           KwArguments: None

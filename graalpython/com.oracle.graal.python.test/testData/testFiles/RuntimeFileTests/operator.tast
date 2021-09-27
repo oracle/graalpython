@@ -1974,8 +1974,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [4937,6321]`class attrgetter:↵  ...`
               Name: attrgetter
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -1990,31 +1989,22 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       QualName: attrgetter
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [4959,5307]`"""↵    Return a cal...`
                     FunctionBodyNode SourceSection: [5312,6321]`__slots__ = ('_attrs...`
-                      SetItemNodeGen SourceSection: [5312,5343]`__slots__ = ('_attrs...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [5312,5343]`__slots__ = ('_attrs...`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [5324,5343]`('_attrs', '_call')`
                           StringLiteralNode SourceSection: [5325,5333]`'_attrs'`
                           StringLiteralNode SourceSection: [5335,5342]`'_call'`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [5349,5988]`def __init__(self, a...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [5349,5988]`def __init__(self, a...`
+                        Identifier: __init__
                         FunctionDefinitionNode Name: __init__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2304,11 +2294,8 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Frame: [4,func,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [6,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [5988,6049]`def __call__(self, o...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [5988,6049]`def __call__(self, o...`
+                        Identifier: __call__
                         FunctionDefinitionNode Name: __call__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2355,11 +2342,8 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           Frame: [1,obj,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [6049,6255]`def __repr__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [6049,6255]`def __repr__(self):↵...`
+                        Identifier: __repr__
                         FunctionDefinitionNode Name: __repr__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2437,11 +2421,8 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [6255,6321]`def __reduce__(self)...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [6255,6321]`def __reduce__(self)...`
+                        Identifier: __reduce__
                         FunctionDefinitionNode Name: __reduce__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2508,8 +2489,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [6321,7294]`class itemgetter:↵  ...`
               Name: itemgetter
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -2524,31 +2504,22 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       QualName: itemgetter
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [6343,6565]`"""↵    Return a cal...`
                     FunctionBodyNode SourceSection: [6570,7294]`__slots__ = ('_items...`
-                      SetItemNodeGen SourceSection: [6570,6601]`__slots__ = ('_items...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [6570,6601]`__slots__ = ('_items...`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [6582,6601]`('_items', '_call')`
                           StringLiteralNode SourceSection: [6583,6591]`'_items'`
                           StringLiteralNode SourceSection: [6593,6600]`'_call'`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [6607,6965]`def __init__(self, i...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [6607,6965]`def __init__(self, i...`
+                        Identifier: __init__
                         FunctionDefinitionNode Name: __init__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2791,11 +2762,8 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Frame: [3,func,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [5,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [6965,7026]`def __call__(self, o...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [6965,7026]`def __call__(self, o...`
+                        Identifier: __call__
                         FunctionDefinitionNode Name: __call__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2842,11 +2810,8 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           Frame: [1,obj,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [7026,7228]`def __repr__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [7026,7228]`def __repr__(self):↵...`
+                        Identifier: __repr__
                         FunctionDefinitionNode Name: __repr__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2924,11 +2889,8 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [7228,7294]`def __reduce__(self)...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [7228,7294]`def __reduce__(self)...`
+                        Identifier: __reduce__
                         FunctionDefinitionNode Name: __reduce__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2995,8 +2957,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [7294,8778]`class methodcaller:↵...`
               Name: methodcaller
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -3011,32 +2972,23 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       QualName: methodcaller
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [7318,7570]`"""↵    Return a cal...`
                     FunctionBodyNode SourceSection: [7575,8778]`__slots__ = ('_name'...`
-                      SetItemNodeGen SourceSection: [7575,7616]`__slots__ = ('_name'...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [7575,7616]`__slots__ = ('_name'...`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [7587,7616]`('_name', '_args', '...`
                           StringLiteralNode SourceSection: [7588,7595]`'_name'`
                           StringLiteralNode SourceSection: [7597,7604]`'_args'`
                           StringLiteralNode SourceSection: [7606,7615]`'_kwargs'`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [7622,8011]`def __init__(*args, ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [7622,8011]`def __init__(*args, ...`
+                        Identifier: __init__
                         FunctionDefinitionNode Name: __init__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -3159,11 +3111,8 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                         Frame: [1,kwargs,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [4,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [8011,8110]`def __call__(self, o...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [8011,8110]`def __call__(self, o...`
+                        Identifier: __call__
                         FunctionDefinitionNode Name: __call__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -3236,11 +3185,8 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [8110,8442]`def __repr__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [8110,8442]`def __repr__(self):↵...`
+                        Identifier: __repr__
                         FunctionDefinitionNode Name: __repr__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -3426,11 +3372,8 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [8442,8778]`def __reduce__(self)...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [8442,8778]`def __reduce__(self)...`
+                        Identifier: __reduce__
                         FunctionDefinitionNode Name: __reduce__ SourceSection: None
                           Arguments: None
                           KwArguments: None

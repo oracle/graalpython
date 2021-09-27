@@ -22,8 +22,7 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [0,29]`class Point:↵  x = 0...`
               Name: Point
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -38,23 +37,17 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
                       QualName: Point
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [15,28]`x = 0↵  y = 0`
-                      SetItemNodeGen SourceSection: [15,20]`x = 0`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [15,20]`x = 0`
+                        Identifier: x
                         IntegerLiteralNode SourceSection: [19,20]`0`
                           Value: 0
-                      SetItemNodeGen SourceSection: [23,28]`y = 0`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [23,28]`y = 0`
+                        Identifier: y
                         IntegerLiteralNode SourceSection: [27,28]`0`
                           Value: 0
                   Return Expresssion: ObjectLiteralNode SourceSection: None

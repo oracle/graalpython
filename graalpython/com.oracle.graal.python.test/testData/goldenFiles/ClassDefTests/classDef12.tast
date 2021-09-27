@@ -82,8 +82,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                             CellVarsSlots: None
                                           ClassBodyRootNode SourceSection: [77,375]`class Test(object):↵...`
                                             Name: Test
-                                            Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                                              Param Names: namespace
+                                            Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                             CelVars: None
                                             FreeVars: method_and_var
                                             NeedsCellFrame: False
@@ -98,16 +97,13 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                     QualName: fn.<locals>.get_nested_class.<locals>.Test
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                       Identifier: __name__
-                                                    ReadIndexedArgumentNodeGen SourceSection: None
-                                                      Index: 0
-                                                    SetItemIfNotPresentNodeGen SourceSection: None
-                                                      SetItemNodeGen SourceSection: None
+                                                    WriteNameNodeGen SourceSection: None
+                                                      Identifier: __module__
+                                                    WriteNameNodeGen SourceSection: None
+                                                      Identifier: __qualname__
                                                   FunctionBodyNode SourceSection: [109,375]`def method_and_var(s...`
-                                                    SetItemNodeGen SourceSection: [109,179]`def method_and_var(s...`
-                                                      ArgumentExpressionNode SourceSection: None
-                                                        ReadIndexedArgumentNodeGen SourceSection: None
-                                                          Index: 0
-                                                      StringLiteralNode SourceSection: None
+                                                    WriteNameNodeGen SourceSection: [109,179]`def method_and_var(s...`
+                                                      Identifier: method_and_var
                                                       FunctionDefinitionNode Name: method_and_var SourceSection: None
                                                         Arguments: None
                                                         KwArguments: None
@@ -141,11 +137,8 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                     StringLiteralNode SourceSection: [158,166]`"method"`
                                                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                                 Frame: [1,<return_val>,Object]
-                                                    SetItemNodeGen SourceSection: [179,245]`def test(self):↵    ...`
-                                                      ArgumentExpressionNode SourceSection: None
-                                                        ReadIndexedArgumentNodeGen SourceSection: None
-                                                          Index: 0
-                                                      StringLiteralNode SourceSection: None
+                                                    WriteNameNodeGen SourceSection: [179,245]`def test(self):↵    ...`
+                                                      Identifier: test
                                                       FunctionDefinitionNode Name: test SourceSection: None
                                                         Arguments: None
                                                         KwArguments: None
@@ -182,11 +175,8 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                       ReadFromCellNodeGen SourceSection: None
                                                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                                 Frame: [2,<return_val>,Object]
-                                                    SetItemNodeGen SourceSection: [245,319]`def actual_global(se...`
-                                                      ArgumentExpressionNode SourceSection: None
-                                                        ReadIndexedArgumentNodeGen SourceSection: None
-                                                          Index: 0
-                                                      StringLiteralNode SourceSection: None
+                                                    WriteNameNodeGen SourceSection: [245,319]`def actual_global(se...`
+                                                      Identifier: actual_global
                                                       FunctionDefinitionNode Name: actual_global SourceSection: None
                                                         Arguments: None
                                                         KwArguments: None
@@ -224,11 +214,8 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                       StringLiteralNode SourceSection: [297,305]`"global"`
                                                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                                 Frame: [1,<return_val>,Object]
-                                                    SetItemNodeGen SourceSection: [319,375]`def str(self):↵     ...`
-                                                      ArgumentExpressionNode SourceSection: None
-                                                        ReadIndexedArgumentNodeGen SourceSection: None
-                                                          Index: 0
-                                                      StringLiteralNode SourceSection: None
+                                                    WriteNameNodeGen SourceSection: [319,375]`def str(self):↵     ...`
+                                                      Identifier: str
                                                       FunctionDefinitionNode Name: str SourceSection: None
                                                         Arguments: None
                                                         KwArguments: None

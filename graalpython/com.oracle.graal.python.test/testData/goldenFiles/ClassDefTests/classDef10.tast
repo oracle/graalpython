@@ -27,8 +27,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                     CellVarsSlots: None
                   ClassBodyRootNode SourceSection: [22,83]`class FalseRec:â†µ  de...`
                     Name: FalseRec
-                    Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                      Param Names: namespace
+                    Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                     CelVars: None
                     FreeVars: None
                     NeedsCellFrame: False
@@ -43,16 +42,13 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                             QualName: FalseRec
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: __name__
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                            SetItemIfNotPresentNodeGen SourceSection: None
-                              SetItemNodeGen SourceSection: None
+                            WriteNameNodeGen SourceSection: None
+                              Identifier: __module__
+                            WriteNameNodeGen SourceSection: None
+                              Identifier: __qualname__
                           FunctionBodyNode SourceSection: [40,83]`def test(self, arg):...`
-                            SetItemNodeGen SourceSection: [40,83]`def test(self, arg):...`
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
+                            WriteNameNodeGen SourceSection: [40,83]`def test(self, arg):...`
+                              Identifier: test
                               FunctionDefinitionNode Name: test SourceSection: None
                                 Arguments: None
                                 KwArguments: None

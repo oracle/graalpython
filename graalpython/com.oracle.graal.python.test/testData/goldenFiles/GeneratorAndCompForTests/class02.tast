@@ -25,8 +25,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                 CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,208]`class Counter(dict):...`
                 Name: Counter
-                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                  Param Names: namespace
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
@@ -41,16 +40,13 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                         QualName: Counter
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: __name__
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                        SetItemIfNotPresentNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __module__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __qualname__
                       FunctionBodyNode SourceSection: [25,208]`def _keep_positive(s...`
-                        SetItemNodeGen SourceSection: [25,208]`def _keep_positive(s...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [25,208]`def _keep_positive(s...`
+                          Identifier: _keep_positive
                           FunctionDefinitionNode Name: _keep_positive SourceSection: None
                             Arguments: None
                             KwArguments: None

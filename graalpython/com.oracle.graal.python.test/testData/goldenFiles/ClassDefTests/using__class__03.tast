@@ -25,8 +25,7 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                 CellVarsSlots: __class__, 
               ClassBodyRootNode SourceSection: [0,258]`class XN:↵          ...`
                 Name: XN
-                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                  Param Names: namespace
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: __class__
                 FreeVars: None
                 NeedsCellFrame: False
@@ -41,16 +40,13 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                         QualName: XN
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: __name__
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                        SetItemIfNotPresentNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __module__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __qualname__
                       FunctionBodyNode SourceSection: [22,258]`def fn1(self):↵     ...`
-                        SetItemNodeGen SourceSection: [22,115]`def fn1(self):↵     ...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [22,115]`def fn1(self):↵     ...`
+                          Identifier: fn1
                           FunctionDefinitionNode Name: fn1 SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -90,11 +86,8 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                                           Identifier: YN
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                        SetItemNodeGen SourceSection: [115,175]`def fn2(self):↵     ...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [115,175]`def fn2(self):↵     ...`
+                          Identifier: fn2
                           FunctionDefinitionNode Name: fn2 SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -131,11 +124,8 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                                           ReadFromCellNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                        SetItemNodeGen SourceSection: [175,258]`def fn3(slef):↵     ...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [175,258]`def fn3(slef):↵     ...`
+                          Identifier: fn3
                           FunctionDefinitionNode Name: fn3 SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -174,11 +164,8 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                                           ReadFromCellNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: None
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __classcell__
                         ReadLocalVariableNodeGen SourceSection: None
                           Frame: [0,__class__,Illegal]
                     Return Expresssion: ObjectLiteralNode SourceSection: None

@@ -96,8 +96,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [6964,7809]`class RegexFlag(enum...`
               Name: RegexFlag
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -112,277 +111,124 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                       QualName: RegexFlag
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [6999,7775]`ASCII = sre_compile....`
-                      SetItemNodeGen SourceSection: [6999,7033]`ASCII = sre_compile....`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [6999,7033]`ASCII = sre_compile....`
+                        Identifier: ASCII
                         GetAttributeNode SourceSection: [7007,7033]`sre_compile.SRE_FLAG...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_ASCII
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadClassAttributeNodeGen SourceSection: [7007,7018]`sre_compile`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: sre_compile
-                      SetItemNodeGen SourceSection: [7062,7106]`IGNORECASE = sre_com...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                            Identifier: sre_compile
+                      WriteNameNodeGen SourceSection: [7062,7106]`IGNORECASE = sre_com...`
+                        Identifier: IGNORECASE
                         GetAttributeNode SourceSection: [7075,7106]`sre_compile.SRE_FLAG...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_IGNORECASE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadClassAttributeNodeGen SourceSection: [7075,7086]`sre_compile`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: sre_compile
-                      SetItemNodeGen SourceSection: [7125,7161]`LOCALE = sre_compile...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                            Identifier: sre_compile
+                      WriteNameNodeGen SourceSection: [7125,7161]`LOCALE = sre_compile...`
+                        Identifier: LOCALE
                         GetAttributeNode SourceSection: [7134,7161]`sre_compile.SRE_FLAG...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_LOCALE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadClassAttributeNodeGen SourceSection: [7134,7145]`sre_compile`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: sre_compile
-                      SetItemNodeGen SourceSection: [7196,7234]`UNICODE = sre_compil...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                            Identifier: sre_compile
+                      WriteNameNodeGen SourceSection: [7196,7234]`UNICODE = sre_compil...`
+                        Identifier: UNICODE
                         GetAttributeNode SourceSection: [7206,7234]`sre_compile.SRE_FLAG...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_UNICODE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadClassAttributeNodeGen SourceSection: [7206,7217]`sre_compile`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: sre_compile
-                      SetItemNodeGen SourceSection: [7265,7307]`MULTILINE = sre_comp...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                            Identifier: sre_compile
+                      WriteNameNodeGen SourceSection: [7265,7307]`MULTILINE = sre_comp...`
+                        Identifier: MULTILINE
                         GetAttributeNode SourceSection: [7277,7307]`sre_compile.SRE_FLAG...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_MULTILINE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadClassAttributeNodeGen SourceSection: [7277,7288]`sre_compile`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: sre_compile
-                      SetItemNodeGen SourceSection: [7344,7380]`DOTALL = sre_compile...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                            Identifier: sre_compile
+                      WriteNameNodeGen SourceSection: [7344,7380]`DOTALL = sre_compile...`
+                        Identifier: DOTALL
                         GetAttributeNode SourceSection: [7353,7380]`sre_compile.SRE_FLAG...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_DOTALL
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadClassAttributeNodeGen SourceSection: [7353,7364]`sre_compile`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: sre_compile
-                      SetItemNodeGen SourceSection: [7410,7448]`VERBOSE = sre_compil...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                            Identifier: sre_compile
+                      WriteNameNodeGen SourceSection: [7410,7448]`VERBOSE = sre_compil...`
+                        Identifier: VERBOSE
                         GetAttributeNode SourceSection: [7420,7448]`sre_compile.SRE_FLAG...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_VERBOSE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadClassAttributeNodeGen SourceSection: [7420,7431]`sre_compile`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: sre_compile
-                      SetItemNodeGen SourceSection: [7486,7495]`A = ASCII`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                            Identifier: sre_compile
+                      WriteNameNodeGen SourceSection: [7486,7495]`A = ASCII`
+                        Identifier: A
                         ReadClassAttributeNodeGen SourceSection: [7490,7495]`ASCII`
-                          GetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: ASCII
-                      SetItemNodeGen SourceSection: [7500,7514]`I = IGNORECASE`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                          Identifier: ASCII
+                      WriteNameNodeGen SourceSection: [7500,7514]`I = IGNORECASE`
+                        Identifier: I
                         ReadClassAttributeNodeGen SourceSection: [7504,7514]`IGNORECASE`
-                          GetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: IGNORECASE
-                      SetItemNodeGen SourceSection: [7519,7529]`L = LOCALE`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                          Identifier: IGNORECASE
+                      WriteNameNodeGen SourceSection: [7519,7529]`L = LOCALE`
+                        Identifier: L
                         ReadClassAttributeNodeGen SourceSection: [7523,7529]`LOCALE`
-                          GetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: LOCALE
-                      SetItemNodeGen SourceSection: [7534,7545]`U = UNICODE`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                          Identifier: LOCALE
+                      WriteNameNodeGen SourceSection: [7534,7545]`U = UNICODE`
+                        Identifier: U
                         ReadClassAttributeNodeGen SourceSection: [7538,7545]`UNICODE`
-                          GetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: UNICODE
-                      SetItemNodeGen SourceSection: [7550,7563]`M = MULTILINE`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                          Identifier: UNICODE
+                      WriteNameNodeGen SourceSection: [7550,7563]`M = MULTILINE`
+                        Identifier: M
                         ReadClassAttributeNodeGen SourceSection: [7554,7563]`MULTILINE`
-                          GetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: MULTILINE
-                      SetItemNodeGen SourceSection: [7568,7578]`S = DOTALL`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                          Identifier: MULTILINE
+                      WriteNameNodeGen SourceSection: [7568,7578]`S = DOTALL`
+                        Identifier: S
                         ReadClassAttributeNodeGen SourceSection: [7572,7578]`DOTALL`
-                          GetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: DOTALL
-                      SetItemNodeGen SourceSection: [7583,7594]`X = VERBOSE`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                          Identifier: DOTALL
+                      WriteNameNodeGen SourceSection: [7583,7594]`X = VERBOSE`
+                        Identifier: X
                         ReadClassAttributeNodeGen SourceSection: [7587,7594]`VERBOSE`
-                          GetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: VERBOSE
-                      SetItemNodeGen SourceSection: [7656,7696]`TEMPLATE = sre_compi...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                          Identifier: VERBOSE
+                      WriteNameNodeGen SourceSection: [7656,7696]`TEMPLATE = sre_compi...`
+                        Identifier: TEMPLATE
                         GetAttributeNode SourceSection: [7667,7696]`sre_compile.SRE_FLAG...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_TEMPLATE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadClassAttributeNodeGen SourceSection: [7667,7678]`sre_compile`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: sre_compile
-                      SetItemNodeGen SourceSection: [7724,7736]`T = TEMPLATE`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                            Identifier: sre_compile
+                      WriteNameNodeGen SourceSection: [7724,7736]`T = TEMPLATE`
+                        Identifier: T
                         ReadClassAttributeNodeGen SourceSection: [7728,7736]`TEMPLATE`
-                          GetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: TEMPLATE
-                      SetItemNodeGen SourceSection: [7741,7775]`DEBUG = sre_compile....`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                          Identifier: TEMPLATE
+                      WriteNameNodeGen SourceSection: [7741,7775]`DEBUG = sre_compile....`
+                        Identifier: DEBUG
                         GetAttributeNode SourceSection: [7749,7775]`sre_compile.SRE_FLAG...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_DEBUG
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadClassAttributeNodeGen SourceSection: [7749,7760]`sre_compile`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: sre_compile
+                            Identifier: sre_compile
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           GetAttributeNode SourceSection: [6980,6992]`enum.IntFlag`
@@ -1876,8 +1722,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                   CellVarsSlots: None
                 ClassBodyRootNode SourceSection: [13918,15192]`class Scanner:↵    d...`
                   Name: Scanner
-                  Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                    Param Names: namespace
+                  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                   CelVars: None
                   FreeVars: None
                   NeedsCellFrame: False
@@ -1892,16 +1737,13 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           QualName: Scanner
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                          SetItemIfNotPresentNodeGen SourceSection: None
-                            SetItemNodeGen SourceSection: None
+                          WriteNameNodeGen SourceSection: None
+                            Identifier: __module__
+                          WriteNameNodeGen SourceSection: None
+                            Identifier: __qualname__
                         FunctionBodyNode SourceSection: [13937,15192]`def __init__(self, l...`
-                          SetItemNodeGen SourceSection: [13937,14612]`def __init__(self, l...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [13937,14612]`def __init__(self, l...`
+                            Identifier: __init__
                             FunctionDefinitionNode Name: __init__ SourceSection: None
                               Arguments:
                                 IntegerLiteralNode SourceSection: [13971,13972]`0`
@@ -2125,11 +1967,8 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                               Frame: [5,p,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [12,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [14612,15192]`def scan(self, strin...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [14612,15192]`def scan(self, strin...`
+                            Identifier: scan
                             FunctionDefinitionNode Name: scan SourceSection: None
                               Arguments: None
                               KwArguments: None

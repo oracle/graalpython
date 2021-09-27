@@ -51,8 +51,7 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                               CellVarsSlots: None
                             ClassBodyRootNode SourceSection: [12,63]`class DerivedClassNa...`
                               Name: DerivedClassName
-                              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                                Param Names: namespace
+                              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
@@ -67,10 +66,10 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                                       QualName: fn.<locals>.DerivedClassName
                                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                                         Identifier: __name__
-                                      ReadIndexedArgumentNodeGen SourceSection: None
-                                        Index: 0
-                                      SetItemIfNotPresentNodeGen SourceSection: None
-                                        SetItemNodeGen SourceSection: None
+                                      WriteNameNodeGen SourceSection: None
+                                        Identifier: __module__
+                                      WriteNameNodeGen SourceSection: None
+                                        Identifier: __qualname__
                                     FunctionBodyNode SourceSection: [59,63]`pass`
                                       ExpressionStatementNode SourceSection: [59,63]`pass`
                                         EmptyNode SourceSection: [59,63]`pass`

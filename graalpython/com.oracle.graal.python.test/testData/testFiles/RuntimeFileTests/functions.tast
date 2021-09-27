@@ -468,8 +468,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [3055,3636]`class map(object):↵ ...`
               Name: map
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -484,16 +483,13 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                       QualName: map
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [3078,3636]`def __init__(self, f...`
-                      SetItemNodeGen SourceSection: [3078,3288]`def __init__(self, f...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [3078,3288]`def __init__(self, f...`
+                        Identifier: __init__
                         FunctionDefinitionNode Name: __init__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -590,11 +586,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                         Frame: [4,iterators,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [6,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [3288,3435]`def __next__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [3288,3435]`def __next__(self):↵...`
+                        Identifier: __next__
                         FunctionDefinitionNode Name: __next__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -669,11 +662,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [3435,3480]`def __iter__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [3435,3480]`def __iter__(self):↵...`
+                        Identifier: __iter__
                         FunctionDefinitionNode Name: __iter__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -708,11 +698,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                         Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [3480,3636]`def __contains__(sel...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [3480,3636]`def __contains__(sel...`
+                        Identifier: __contains__
                         FunctionDefinitionNode Name: __contains__ SourceSection: None
                           Arguments: None
                           KwArguments: None

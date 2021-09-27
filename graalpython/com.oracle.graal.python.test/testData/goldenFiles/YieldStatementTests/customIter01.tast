@@ -52,8 +52,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                               CellVarsSlots: None
                             ClassBodyRootNode SourceSection: [14,148]`class MyIter:↵      ...`
                               Name: MyIter
-                              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                                Param Names: namespace
+                              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
@@ -68,16 +67,13 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                       QualName: fn.<locals>.MyIter
                                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                                         Identifier: __name__
-                                      ReadIndexedArgumentNodeGen SourceSection: None
-                                        Index: 0
-                                      SetItemIfNotPresentNodeGen SourceSection: None
-                                        SetItemNodeGen SourceSection: None
+                                      WriteNameNodeGen SourceSection: None
+                                        Identifier: __module__
+                                      WriteNameNodeGen SourceSection: None
+                                        Identifier: __qualname__
                                     FunctionBodyNode SourceSection: [36,148]`def __iter__(self):↵...`
-                                      SetItemNodeGen SourceSection: [36,88]`def __iter__(self):↵...`
-                                        ArgumentExpressionNode SourceSection: None
-                                          ReadIndexedArgumentNodeGen SourceSection: None
-                                            Index: 0
-                                        StringLiteralNode SourceSection: None
+                                      WriteNameNodeGen SourceSection: [36,88]`def __iter__(self):↵...`
+                                        Identifier: __iter__
                                         FunctionDefinitionNode Name: __iter__ SourceSection: None
                                           Arguments: None
                                           KwArguments: None
@@ -112,11 +108,8 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                                         Frame: [0,self,Illegal]
                                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [1,<return_val>,Object]
-                                      SetItemNodeGen SourceSection: [88,148]`def __next__(self):↵...`
-                                        ArgumentExpressionNode SourceSection: None
-                                          ReadIndexedArgumentNodeGen SourceSection: None
-                                            Index: 0
-                                        StringLiteralNode SourceSection: None
+                                      WriteNameNodeGen SourceSection: [88,148]`def __next__(self):↵...`
+                                        Identifier: __next__
                                         FunctionDefinitionNode Name: __next__ SourceSection: None
                                           Arguments: None
                                           KwArguments: None

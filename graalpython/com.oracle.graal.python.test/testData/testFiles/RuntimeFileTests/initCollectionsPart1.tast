@@ -276,8 +276,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [2419,2547]`class _OrderedDictKe...`
               Name: _OrderedDictKeysView
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -292,16 +291,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       QualName: _OrderedDictKeysView
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [2479,2547]`def __reversed__(sel...`
-                      SetItemNodeGen SourceSection: [2479,2547]`def __reversed__(sel...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [2479,2547]`def __reversed__(sel...`
+                        Identifier: __reversed__
                         GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
                           FrameDescriptor: 2 slots [self, <return_val>]
                           Active Flags: 2
@@ -396,8 +392,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [2547,2722]`class _OrderedDictIt...`
               Name: _OrderedDictItemsView
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -412,16 +407,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       QualName: _OrderedDictItemsView
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [2609,2722]`def __reversed__(sel...`
-                      SetItemNodeGen SourceSection: [2609,2722]`def __reversed__(sel...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [2609,2722]`def __reversed__(sel...`
+                        Identifier: __reversed__
                         GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
                           FrameDescriptor: 3 slots [self, key, <return_val>]
                           Active Flags: 2
@@ -528,8 +520,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [2722,2892]`class _OrderedDictVa...`
               Name: _OrderedDictValuesView
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -544,16 +535,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       QualName: _OrderedDictValuesView
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [2786,2892]`def __reversed__(sel...`
-                      SetItemNodeGen SourceSection: [2786,2892]`def __reversed__(sel...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [2786,2892]`def __reversed__(sel...`
+                        Identifier: __reversed__
                         GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
                           FrameDescriptor: 3 slots [self, key, <return_val>]
                           Active Flags: 2
@@ -656,8 +644,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [2892,2967]`class _Link(object):...`
               Name: _Link
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -672,16 +659,13 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       QualName: _Link
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [2917,2965]`__slots__ = 'prev', ...`
-                      SetItemNodeGen SourceSection: [2917,2965]`__slots__ = 'prev', ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [2917,2965]`__slots__ = 'prev', ...`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [2929,2965]`'prev', 'next', 'key...`
                           StringLiteralNode SourceSection: [2929,2935]`'prev'`
                           StringLiteralNode SourceSection: [2937,2943]`'next'`
@@ -710,8 +694,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [2967,10820]`class OrderedDict(di...`
               Name: OrderedDict
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -726,22 +709,16 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                       QualName: OrderedDict
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [2996,3039]`'Dictionary that rem...`
                     FunctionBodyNode SourceSection: [3841,10820]`def __init__(*args, ...`
-                      SetItemNodeGen SourceSection: [3841,4579]`def __init__(*args, ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [3841,4579]`def __init__(*args, ...`
+                        Identifier: __init__
                         FunctionDefinitionNode Name: __init__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -924,11 +901,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [2,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [8,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [4579,5195]`def __setitem__(self...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [4579,5195]`def __setitem__(self...`
+                        Identifier: __setitem__
                         FunctionDefinitionNode Name: __setitem__ SourceSection: None
                           Arguments:
                             GetAttributeNode SourceSection: [4646,4662]`dict.__setitem__`
@@ -937,29 +911,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               ReadClassAttributeNodeGen SourceSection: [4646,4650]`dict`
-                                GetItemNodeGen SourceSection: None
-                                  ArgumentExpressionNode SourceSection: None
-                                    ReadIndexedArgumentNodeGen SourceSection: None
-                                      Index: 0
-                                  StringLiteralNode SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                  Identifier: dict
+                                Identifier: dict
                             ReadClassAttributeNodeGen SourceSection: [4670,4676]`_proxy`
-                              GetItemNodeGen SourceSection: None
-                                ArgumentExpressionNode SourceSection: None
-                                  ReadIndexedArgumentNodeGen SourceSection: None
-                                    Index: 0
-                                StringLiteralNode SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: _proxy
+                              Identifier: _proxy
                             ReadClassAttributeNodeGen SourceSection: [4683,4688]`_Link`
-                              GetItemNodeGen SourceSection: None
-                                ArgumentExpressionNode SourceSection: None
-                                  ReadIndexedArgumentNodeGen SourceSection: None
-                                    Index: 0
-                                StringLiteralNode SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: _Link
+                              Identifier: _Link
                           KwArguments: None
                           Documentation: StringLiteralNode: `od.__setitem__(i, y)...`
                           FreeVarSlots: None
@@ -1140,11 +1096,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [2,value,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [13,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [5195,5709]`def __delitem__(self...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [5195,5709]`def __delitem__(self...`
+                        Identifier: __delitem__
                         FunctionDefinitionNode Name: __delitem__ SourceSection: None
                           Arguments:
                             GetAttributeNode SourceSection: [5235,5251]`dict.__delitem__`
@@ -1153,13 +1106,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               ReadClassAttributeNodeGen SourceSection: [5235,5239]`dict`
-                                GetItemNodeGen SourceSection: None
-                                  ArgumentExpressionNode SourceSection: None
-                                    ReadIndexedArgumentNodeGen SourceSection: None
-                                      Index: 0
-                                  StringLiteralNode SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                  Identifier: dict
+                                Identifier: dict
                           KwArguments: None
                           Documentation: StringLiteralNode: `od.__delitem__(y) <=...`
                           FreeVarSlots: None
@@ -1268,11 +1215,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       ObjectLiteralNode SourceSection: [5699,5703]`None`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [6,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [5709,5957]`def __iter__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [5709,5957]`def __iter__(self):↵...`
+                        Identifier: __iter__
                         GeneratorFunctionDefinitionNode Name: __iter__ SourceSection: None
                           FrameDescriptor: 4 slots [self, root, curr, <return_val>]
                           Active Flags: 3
@@ -1365,11 +1309,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Index: 0
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [5957,6225]`def __reversed__(sel...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [5957,6225]`def __reversed__(sel...`
+                        Identifier: __reversed__
                         GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
                           FrameDescriptor: 4 slots [self, root, curr, <return_val>]
                           Active Flags: 3
@@ -1462,11 +1403,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       Index: 0
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [6225,6420]`def clear(self):↵   ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [6225,6420]`def clear(self):↵   ...`
+                        Identifier: clear
                         FunctionDefinitionNode Name: clear SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -1545,11 +1483,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [6420,7123]`def popitem(self, la...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [6420,7123]`def popitem(self, la...`
+                        Identifier: popitem
                         FunctionDefinitionNode Name: popitem SourceSection: None
                           Arguments:
                             BooleanLiteralNode SourceSection: [6443,6447]`True`
@@ -1720,11 +1655,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [8,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [7123,7871]`def move_to_end(self...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [7123,7871]`def move_to_end(self...`
+                        Identifier: move_to_end
                         FunctionDefinitionNode Name: move_to_end SourceSection: None
                           Arguments:
                             BooleanLiteralNode SourceSection: [7155,7159]`True`
@@ -1909,11 +1841,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [3,link,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [9,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [7871,8311]`def __sizeof__(self)...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [7871,8311]`def __sizeof__(self)...`
+                        Identifier: __sizeof__
                         FunctionDefinitionNode Name: __sizeof__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2062,32 +1991,17 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                               ReadClassAttributeNodeGen SourceSection: [8331,8347]`_collections_abc`
-                                GetItemNodeGen SourceSection: None
-                                  ArgumentExpressionNode SourceSection: None
-                                    ReadIndexedArgumentNodeGen SourceSection: None
-                                      Index: 0
-                                  StringLiteralNode SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                  Identifier: _collections_abc
-                        SetItemNodeGen SourceSection: None
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                                Identifier: _collections_abc
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: update
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [23,<>temp23,Illegal]
-                        SetItemNodeGen SourceSection: None
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: _OrderedDict__update
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [23,<>temp23,Illegal]
-                      SetItemNodeGen SourceSection: [8375,8507]`def keys(self):↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [8375,8507]`def keys(self):↵    ...`
+                        Identifier: keys
                         FunctionDefinitionNode Name: keys SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2126,11 +2040,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [8507,8643]`def items(self):↵   ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [8507,8643]`def items(self):↵   ...`
+                        Identifier: items
                         FunctionDefinitionNode Name: items SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2169,11 +2080,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [8643,8775]`def values(self):↵  ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [8643,8775]`def values(self):↵  ...`
+                        Identifier: values
                         FunctionDefinitionNode Name: values SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2212,11 +2120,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [8775,8822]`__ne__ = _collection...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [8775,8822]`__ne__ = _collection...`
+                        Identifier: __ne__
                         GetAttributeNode SourceSection: [8784,8822]`_collections_abc.Mut...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: __ne__
@@ -2228,43 +2133,19 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                             ReadClassAttributeNodeGen SourceSection: [8784,8800]`_collections_abc`
-                              GetItemNodeGen SourceSection: None
-                                ArgumentExpressionNode SourceSection: None
-                                  ReadIndexedArgumentNodeGen SourceSection: None
-                                    Index: 0
-                                StringLiteralNode SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: _collections_abc
-                      SetItemNodeGen SourceSection: [8828,8847]`__marker = object()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                              Identifier: _collections_abc
+                      WriteNameNodeGen SourceSection: [8828,8847]`__marker = object()`
+                        Identifier: _OrderedDict__marker
                         PythonCallNodeGen SourceSection: [8839,8847]`object()`
                           CallNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [8839,8845]`object`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: object
-                      SetItemNodeGen SourceSection: [8853,9288]`def pop(self, key, d...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                            Identifier: object
+                      WriteNameNodeGen SourceSection: [8853,9288]`def pop(self, key, d...`
+                        Identifier: pop
                         FunctionDefinitionNode Name: pop SourceSection: None
                           Arguments:
                             ReadClassAttributeNodeGen SourceSection: [8880,8888]`__marker`
-                              GetItemNodeGen SourceSection: None
-                                ArgumentExpressionNode SourceSection: None
-                                  ReadIndexedArgumentNodeGen SourceSection: None
-                                    Index: 0
-                                StringLiteralNode SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: _OrderedDict__marker
+                              Identifier: _OrderedDict__marker
                           KwArguments: None
                           Documentation: StringLiteralNode: `od.pop(k[,d]) -> v, ...`
                           FreeVarSlots: None
@@ -2359,11 +2240,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Frame: [2,default,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [4,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [9288,9606]`def setdefault(self,...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [9288,9606]`def setdefault(self,...`
+                        Identifier: setdefault
                         FunctionDefinitionNode Name: setdefault SourceSection: None
                           Arguments:
                             ObjectLiteralNode SourceSection: [9322,9326]`None`
@@ -2436,23 +2314,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Frame: [2,default,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [9606,9840]`@_recursive_repr()↵ ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [9606,9840]`@_recursive_repr()↵ ...`
+                        Identifier: __repr__
                         PythonCallUnary SourceSection: [9606,9624]`@_recursive_repr()`
                           CallUnaryMethodNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [9606,9624]`@_recursive_repr()`
                             CallNodeGen SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: None
-                              GetItemNodeGen SourceSection: None
-                                ArgumentExpressionNode SourceSection: None
-                                  ReadIndexedArgumentNodeGen SourceSection: None
-                                    Index: 0
-                                StringLiteralNode SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: _recursive_repr
+                              Identifier: _recursive_repr
                           FunctionDefinitionNode Name: __repr__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2532,11 +2401,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             PythonObjectFactoryNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [9840,10105]`def __reduce__(self)...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [9840,10105]`def __reduce__(self)...`
+                        Identifier: __reduce__
                         FunctionDefinitionNode Name: __reduce__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2633,11 +2499,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [10105,10206]`def copy(self):↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [10105,10206]`def copy(self):↵    ...`
+                        Identifier: copy
                         FunctionDefinitionNode Name: copy SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2677,21 +2540,12 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [10206,10473]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [10206,10473]`@classmethod↵    def...`
+                        Identifier: fromkeys
                         PythonCallUnary SourceSection: [10206,10218]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [10206,10218]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: fromkeys SourceSection: None
                             Arguments:
                               ObjectLiteralNode SourceSection: [10257,10261]`None`
@@ -2765,11 +2619,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Frame: [3,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [5,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [10473,10820]`def __eq__(self, oth...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [10473,10820]`def __eq__(self, oth...`
+                        Identifier: __eq__
                         FunctionDefinitionNode Name: __eq__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4223,8 +4074,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                   CellVarsSlots: __class__, 
                 ClassBodyRootNode SourceSection: [18080,32029]`class Counter(dict):...`
                   Name: Counter
-                  Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                    Param Names: namespace
+                  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                   CelVars: __class__
                   FreeVars: None
                   NeedsCellFrame: False
@@ -4239,22 +4089,16 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           QualName: Counter
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                          SetItemIfNotPresentNodeGen SourceSection: None
-                            SetItemNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: None
+                            Identifier: __module__
+                          WriteNameNodeGen SourceSection: None
+                            Identifier: __qualname__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __doc__
                           StringLiteralNode SourceSection: [18105,19806]`'''Dict subclass for...`
                         FunctionBodyNode SourceSection: [20140,32029]`def __init__(*args, ...`
-                          SetItemNodeGen SourceSection: [20140,21061]`def __init__(*args, ...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [20140,21061]`def __init__(*args, ...`
+                            Identifier: __init__
                             FunctionDefinitionNode Name: __init__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -4376,11 +4220,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Frame: [2,self,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [6,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [21061,21239]`def __missing__(self...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [21061,21239]`def __missing__(self...`
+                            Identifier: __missing__
                             FunctionDefinitionNode Name: __missing__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -4422,11 +4263,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Value: 0
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [2,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [21239,21745]`def most_common(self...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [21239,21745]`def most_common(self...`
+                            Identifier: most_common
                             FunctionDefinitionNode Name: most_common SourceSection: None
                               Arguments:
                                 ObjectLiteralNode SourceSection: [21263,21267]`None`
@@ -4518,11 +4356,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Identifier: _heapq
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [2,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [21745,22609]`def elements(self):↵...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [21745,22609]`def elements(self):↵...`
+                            Identifier: elements
                             FunctionDefinitionNode Name: elements SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -4571,21 +4406,12 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     Frame: [0,self,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [1,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [22609,22923]`@classmethod↵    def...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [22609,22923]`@classmethod↵    def...`
+                            Identifier: fromkeys
                             PythonCallUnary SourceSection: [22609,22621]`@classmethod`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadClassAttributeNodeGen SourceSection: [22609,22621]`@classmethod`
-                                GetItemNodeGen SourceSection: None
-                                  ArgumentExpressionNode SourceSection: None
-                                    ReadIndexedArgumentNodeGen SourceSection: None
-                                      Index: 0
-                                  StringLiteralNode SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                  Identifier: classmethod
+                                Identifier: classmethod
                               FunctionDefinitionNode Name: fromkeys SourceSection: None
                                 Arguments:
                                   ObjectLiteralNode SourceSection: [22656,22660]`None`
@@ -4638,11 +4464,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             NoValueNode SourceSection: None
                                       Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                         Frame: [3,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [22923,24706]`def update(*args, **...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [22923,24706]`def update(*args, **...`
+                            Identifier: update
                             FunctionDefinitionNode Name: update SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -4868,11 +4691,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           BlockNode SourceSection: None
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [12,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [24706,26171]`def subtract(*args, ...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [24706,26171]`def subtract(*args, ...`
+                            Identifier: subtract
                             FunctionDefinitionNode Name: subtract SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -5098,11 +4918,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           BlockNode SourceSection: None
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [11,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [26171,26261]`def copy(self):↵    ...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [26171,26261]`def copy(self):↵    ...`
+                            Identifier: copy
                             FunctionDefinitionNode Name: copy SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -5142,11 +4959,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               Frame: [0,self,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [1,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [26261,26333]`def __reduce__(self)...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [26261,26333]`def __reduce__(self)...`
+                            Identifier: __reduce__
                             FunctionDefinitionNode Name: __reduce__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -5196,11 +5010,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             PythonObjectFactoryNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [1,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [26333,26512]`def __delitem__(self...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [26333,26512]`def __delitem__(self...`
+                            Identifier: __delitem__
                             FunctionDefinitionNode Name: __delitem__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -5260,11 +5071,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           BlockNode SourceSection: None
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [3,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [26512,27260]`def __repr__(self):↵...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [26512,27260]`def __repr__(self):↵...`
+                            Identifier: __repr__
                             FunctionDefinitionNode Name: __repr__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -5387,11 +5195,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             BlockNode SourceSection: None
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [2,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [27260,27838]`def __add__(self, ot...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [27260,27838]`def __add__(self, ot...`
+                            Identifier: __add__
                             FunctionDefinitionNode Name: __add__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -5563,11 +5368,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [2,result,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [6,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [27838,28445]`def __sub__(self, ot...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [27838,28445]`def __sub__(self, ot...`
+                            Identifier: __sub__
                             FunctionDefinitionNode Name: __sub__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -5742,11 +5544,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [2,result,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [6,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [28445,29119]`def __or__(self, oth...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [28445,29119]`def __or__(self, oth...`
+                            Identifier: __or__
                             FunctionDefinitionNode Name: __or__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -5929,11 +5728,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [2,result,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [7,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [29119,29643]`def __and__(self, ot...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [29119,29643]`def __and__(self, ot...`
+                            Identifier: __and__
                             FunctionDefinitionNode Name: __and__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -6062,11 +5858,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [2,result,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [7,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [29643,29900]`def __pos__(self):↵ ...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [29643,29900]`def __pos__(self):↵ ...`
+                            Identifier: __pos__
                             FunctionDefinitionNode Name: __pos__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -6151,11 +5944,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [1,result,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [6,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [29900,30219]`def __neg__(self):↵ ...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [29900,30219]`def __neg__(self):↵ ...`
+                            Identifier: __neg__
                             FunctionDefinitionNode Name: __neg__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -6243,11 +6033,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [1,result,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [6,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [30219,30486]`def _keep_positive(s...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [30219,30486]`def _keep_positive(s...`
+                            Identifier: _keep_positive
                             FunctionDefinitionNode Name: _keep_positive SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -6382,11 +6169,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [0,self,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [3,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [30486,30838]`def __iadd__(self, o...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [30486,30838]`def __iadd__(self, o...`
+                            Identifier: __iadd__
                             FunctionDefinitionNode Name: __iadd__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -6473,11 +6257,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Frame: [0,self,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [6,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [30838,31190]`def __isub__(self, o...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [30838,31190]`def __isub__(self, o...`
+                            Identifier: __isub__
                             FunctionDefinitionNode Name: __isub__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -6564,11 +6345,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Frame: [0,self,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [6,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [31190,31618]`def __ior__(self, ot...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [31190,31618]`def __ior__(self, ot...`
+                            Identifier: __ior__
                             FunctionDefinitionNode Name: __ior__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -6665,11 +6443,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Frame: [0,self,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [7,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [31618,32029]`def __iand__(self, o...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [31618,32029]`def __iand__(self, o...`
+                            Identifier: __iand__
                             FunctionDefinitionNode Name: __iand__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -6766,11 +6541,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 Frame: [0,self,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [7,<return_val>,Object]
-                        SetItemNodeGen SourceSection: None
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __classcell__
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [0,__class__,Illegal]
                       Return Expresssion: ObjectLiteralNode SourceSection: None

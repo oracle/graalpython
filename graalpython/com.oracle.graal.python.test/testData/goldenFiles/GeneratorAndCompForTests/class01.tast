@@ -25,8 +25,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                 CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,192]`class OrderedDict(di...`
                 Name: OrderedDict
-                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                  Param Names: namespace
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
@@ -41,16 +40,13 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                         QualName: OrderedDict
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: __name__
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                        SetItemIfNotPresentNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __module__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __qualname__
                       FunctionBodyNode SourceSection: [29,192]`def __reversed__(sel...`
-                        SetItemNodeGen SourceSection: [29,192]`def __reversed__(sel...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [29,192]`def __reversed__(sel...`
+                          Identifier: __reversed__
                           GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
                             FrameDescriptor: 4 slots [self, root, curr, <return_val>]
                             Active Flags: 3

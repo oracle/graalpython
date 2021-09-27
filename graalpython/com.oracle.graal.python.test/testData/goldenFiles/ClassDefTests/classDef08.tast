@@ -25,8 +25,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                 CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,129]`class Test():â†µ    de...`
                 Name: Test
-                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                  Param Names: namespace
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
@@ -41,16 +40,13 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                         QualName: Test
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: __name__
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                        SetItemIfNotPresentNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __module__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __qualname__
                       FunctionBodyNode SourceSection: [18,129]`def fn1(format):â†µ   ...`
-                        SetItemNodeGen SourceSection: [18,70]`def fn1(format):â†µ   ...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [18,70]`def fn1(format):â†µ   ...`
+                          Identifier: fn1
                           FunctionDefinitionNode Name: fn1 SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -88,11 +84,8 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                             Identifier: args
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Object]
-                        SetItemNodeGen SourceSection: [70,129]`def fn2(*args, **kwd...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [70,129]`def fn2(*args, **kwd...`
+                          Identifier: fn2
                           FunctionDefinitionNode Name: fn2 SourceSection: None
                             Arguments: None
                             KwArguments: None

@@ -66,8 +66,7 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                               CellVarsSlots: None
                             ClassBodyRootNode SourceSection: [46,264]`class named_tuple(tu...`
                               Name: named_tuple
-                              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                                Param Names: namespace
+                              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
                               FreeVars: fields, name
                               NeedsCellFrame: False
@@ -82,77 +81,29 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                       QualName: make_named_tuple_class.<locals>.named_tuple
                                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                                         Identifier: __name__
-                                      ReadIndexedArgumentNodeGen SourceSection: None
-                                        Index: 0
-                                      SetItemIfNotPresentNodeGen SourceSection: None
-                                        SetItemNodeGen SourceSection: None
+                                      WriteNameNodeGen SourceSection: None
+                                        Identifier: __module__
+                                      WriteNameNodeGen SourceSection: None
+                                        Identifier: __qualname__
                                     FunctionBodyNode SourceSection: [80,264]`__name__ = name↵    ...`
-                                      SetItemNodeGen SourceSection: [80,95]`__name__ = name`
-                                        ArgumentExpressionNode SourceSection: None
-                                          ReadIndexedArgumentNodeGen SourceSection: None
-                                            Index: 0
-                                        StringLiteralNode SourceSection: None
+                                      WriteNameNodeGen SourceSection: [80,95]`__name__ = name`
+                                        Identifier: __name__
                                         ReadClassAttributeNodeGen SourceSection: [91,95]`name`
-                                          GetItemNodeGen SourceSection: None
-                                            ArgumentExpressionNode SourceSection: None
-                                              ReadIndexedArgumentNodeGen SourceSection: None
-                                                Index: 0
-                                            StringLiteralNode SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                            Identifier: name
-                                          ReadLocalCellNodeGen SourceSection: None
-                                            ReadLocalVariableNodeGen SourceSection: None
-                                              Frame: [4,name,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
-                                      SetItemNodeGen SourceSection: [104,135]`n_sequence_fields = ...`
-                                        ArgumentExpressionNode SourceSection: None
-                                          ReadIndexedArgumentNodeGen SourceSection: None
-                                            Index: 0
-                                        StringLiteralNode SourceSection: None
+                                          Identifier: name
+                                      WriteNameNodeGen SourceSection: [104,135]`n_sequence_fields = ...`
+                                        Identifier: n_sequence_fields
                                         PythonCallUnary SourceSection: [124,135]`len(fields)`
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadClassAttributeNodeGen SourceSection: [124,127]`len`
-                                            GetItemNodeGen SourceSection: None
-                                              ArgumentExpressionNode SourceSection: None
-                                                ReadIndexedArgumentNodeGen SourceSection: None
-                                                  Index: 0
-                                              StringLiteralNode SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                              Identifier: len
+                                            Identifier: len
                                           ReadClassAttributeNodeGen SourceSection: [128,134]`fields`
-                                            GetItemNodeGen SourceSection: None
-                                              ArgumentExpressionNode SourceSection: None
-                                                ReadIndexedArgumentNodeGen SourceSection: None
-                                                  Index: 0
-                                              StringLiteralNode SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                              Identifier: fields
-                                            ReadLocalCellNodeGen SourceSection: None
-                                              ReadLocalVariableNodeGen SourceSection: None
-                                                Frame: [2,fields,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
-                                      SetItemNodeGen SourceSection: [144,159]`fields = fields`
-                                        ArgumentExpressionNode SourceSection: None
-                                          ReadIndexedArgumentNodeGen SourceSection: None
-                                            Index: 0
-                                        StringLiteralNode SourceSection: None
-                                        ReadClassAttributeNodeGen SourceSection: [153,159]`fields`
-                                          GetItemNodeGen SourceSection: None
-                                            ArgumentExpressionNode SourceSection: None
-                                              ReadIndexedArgumentNodeGen SourceSection: None
-                                                Index: 0
-                                            StringLiteralNode SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
                                             Identifier: fields
-                                          ReadLocalCellNodeGen SourceSection: None
-                                            ReadLocalVariableNodeGen SourceSection: None
-                                              Frame: [2,fields,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
-                                      SetItemNodeGen SourceSection: [168,264]`def __repr__(self):↵...`
-                                        ArgumentExpressionNode SourceSection: None
-                                          ReadIndexedArgumentNodeGen SourceSection: None
-                                            Index: 0
-                                        StringLiteralNode SourceSection: None
+                                      WriteNameNodeGen SourceSection: [144,159]`fields = fields`
+                                        Identifier: fields
+                                        ReadClassAttributeNodeGen SourceSection: [153,159]`fields`
+                                          Identifier: fields
+                                      WriteNameNodeGen SourceSection: [168,264]`def __repr__(self):↵...`
+                                        Identifier: __repr__
                                         FunctionDefinitionNode Name: __repr__ SourceSection: None
                                           Arguments: None
                                           KwArguments: None

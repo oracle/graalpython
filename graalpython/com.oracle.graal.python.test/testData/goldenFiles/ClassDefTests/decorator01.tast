@@ -31,8 +31,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,33]`@class_decorat
                   CellVarsSlots: None
                 ClassBodyRootNode SourceSection: [17,33]`class foo():pass`
                   Name: foo
-                  Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                    Param Names: namespace
+                  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                   CelVars: None
                   FreeVars: None
                   NeedsCellFrame: False
@@ -47,10 +46,10 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,33]`@class_decorat
                           QualName: foo
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                          SetItemIfNotPresentNodeGen SourceSection: None
-                            SetItemNodeGen SourceSection: None
+                          WriteNameNodeGen SourceSection: None
+                            Identifier: __module__
+                          WriteNameNodeGen SourceSection: None
+                            Identifier: __qualname__
                         FunctionBodyNode SourceSection: [29,33]`pass`
                           ExpressionStatementNode SourceSection: [29,33]`pass`
                             EmptyNode SourceSection: [29,33]`pass`

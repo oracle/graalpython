@@ -25,8 +25,7 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                 CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,106]`class OrderedDict(di...`
                 Name: OrderedDict
-                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                  Param Names: namespace
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
@@ -41,16 +40,13 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                         QualName: OrderedDict
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: __name__
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                        SetItemIfNotPresentNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __module__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __qualname__
                       FunctionBodyNode SourceSection: [27,106]`def setup(dict_setit...`
-                        SetItemNodeGen SourceSection: [27,106]`def setup(dict_setit...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [27,106]`def setup(dict_setit...`
+                          Identifier: setup
                           FunctionDefinitionNode Name: setup SourceSection: None
                             Arguments:
                               GetAttributeNode SourceSection: [52,68]`dict.__setitem__`
@@ -59,13 +55,7 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                 ReadClassAttributeNodeGen SourceSection: [52,56]`dict`
-                                  GetItemNodeGen SourceSection: None
-                                    ArgumentExpressionNode SourceSection: None
-                                      ReadIndexedArgumentNodeGen SourceSection: None
-                                        Index: 0
-                                    StringLiteralNode SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                    Identifier: dict
+                                  Identifier: dict
                             KwArguments: None
                             Documentation: None
                             FreeVarSlots: None
