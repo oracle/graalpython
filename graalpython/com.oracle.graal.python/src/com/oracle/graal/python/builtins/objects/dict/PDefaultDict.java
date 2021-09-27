@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.object.Shape;
 
-public class PDefaultDict extends PDict {
+public final class PDefaultDict extends PDict {
     private Object defaultFactory;
 
     public PDefaultDict(PythonLanguage lang, Object defaultFactory) {
