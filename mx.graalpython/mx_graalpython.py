@@ -26,6 +26,7 @@ from __future__ import print_function
 
 import contextlib
 import datetime
+import getpass
 import glob
 import itertools
 import json
@@ -1245,6 +1246,10 @@ def update_import_cmd(args):
                 vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
             finally:
                 mx._opts.very_verbose = prev_verbosity
+
+    for repo in repos_updated:
+        reponame = os.path.basename(repo)
+        print(f"ol-cli bitbucket create-pr --user {input('Username:')} --password {getpass.getpass('Password:')} --title='[GR-21590] Update Python imports' --project=G --repo={reponame} --from-branch={current_branch} --to-branch=master")
 
     if repos_updated:
         mx.log("\n  ".join(["These repos were updated:"] + repos_updated))
