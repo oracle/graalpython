@@ -873,7 +873,7 @@ def run_shared_lib_test(args=None):
     if args is None:
         args = []
     launcher = python_so(args)
-    svm_lib_path = os.path.abspath(os.path.join(launcher, "..", "..", "jre", "lib", "polyglot"))
+    svm_lib_path = os.path.abspath(os.path.join(launcher, "..", "..", "lib", "polyglot"))
     fd = name = progname = None
     try:
         fd, name = tempfile.mkstemp(suffix='.c')
@@ -1775,7 +1775,7 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                     f.name
                 ])
 
-        home_launcher = os.path.join(os.path.dirname(os.path.dirname(executable)), 'jre/languages/python')
+        home_launcher = os.path.join(os.path.dirname(os.path.dirname(executable)), 'languages/python')
         # merge all generated lcov files
         for f in os.listdir(SUITE.dir):
             if f.endswith(".lcov") and os.path.getsize(f):
