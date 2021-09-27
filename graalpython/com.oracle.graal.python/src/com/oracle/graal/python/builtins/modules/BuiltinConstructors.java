@@ -3023,7 +3023,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (callableCheck.execute(func)) {
                 return factory().createMethod(self, func);
             } else {
-                throw raise(TypeError, ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE, "");
+                throw raise(TypeError, ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE_S, "");
             }
         }
     }

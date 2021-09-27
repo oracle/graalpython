@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE;
+import static com.oracle.graal.python.nodes.ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
@@ -163,7 +163,7 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
             if (newArgs.length > 0) {
                 newDefault = newArgs[0];
                 if (newDefault != PNone.NONE && !callableCheckNode.execute(newDefault)) {
-                    throw raise(PythonBuiltinClassType.TypeError, FIRST_ARG_MUST_BE_CALLABLE, " or None");
+                    throw raise(PythonBuiltinClassType.TypeError, FIRST_ARG_MUST_BE_CALLABLE_S, " or None");
                 }
                 newArgs = PythonUtils.arrayCopyOfRange(args, 1, args.length);
             }

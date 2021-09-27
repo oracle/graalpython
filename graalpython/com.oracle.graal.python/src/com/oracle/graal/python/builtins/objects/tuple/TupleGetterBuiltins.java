@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -91,23 +90,28 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
     @Builtin(name = __GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class TupleGetterGetNode extends PythonTernaryBuiltinNode {
-        @Specialization
-        Object get(VirtualFrame frame, PTupleGetter self, Object instance, @SuppressWarnings("unused") Object owner,
+        @Specialization()
+        Object getTuple(VirtualFrame frame, PTupleGetter self, PTuple instance, @SuppressWarnings("unused") Object owner,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode) {
             final int index = self.getIndex();
-            if (!PGuards.isPTuple(instance)) {
-                if (instance == PNone.NONE) {
-                    return self;
-                }
-                throw raise(PythonBuiltinClassType.TypeError, DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P,
-                                index, "tuple subclasses", instance);
-            }
             if (index >= sizeNode.execute(frame, instance)) {
                 throw raise(PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
             }
 
             return getItemNode.execute(frame, instance, index);
+        }
+
+        @Specialization
+        Object getNone(@SuppressWarnings("unused") VirtualFrame frame, PTupleGetter self, @SuppressWarnings("unused") PNone instance, @SuppressWarnings("unused") Object owner) {
+            return self;
+        }
+
+        @Specialization(guards = {"!isPTuple(instance)", "!isNone(instance)"})
+        Object getOthers(@SuppressWarnings("unused") VirtualFrame frame, PTupleGetter self, Object instance, @SuppressWarnings("unused") Object owner) {
+            final int index = self.getIndex();
+            throw raise(PythonBuiltinClassType.TypeError, DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P,
+                            index, "tuple subclasses", instance);
         }
     }
 
@@ -135,14 +139,12 @@ public final class TupleGetterBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TupleGetterDocNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "!isNoValue(value)")
-        @SuppressWarnings("unused")
         Object set(PTupleGetter self, Object value) {
             self.setDoc(value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isNoValue(value)")
-        @SuppressWarnings("unused")
         Object get(PTupleGetter self, @SuppressWarnings("unused") PNone value) {
             return self.getDoc();
         }

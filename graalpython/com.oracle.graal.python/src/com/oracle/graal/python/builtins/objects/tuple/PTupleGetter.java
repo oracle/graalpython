@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.objects.tuple;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
-public class PTupleGetter extends PythonBuiltinObject {
+public final class PTupleGetter extends PythonBuiltinObject {
     private final int index;
     private Object doc;
 
