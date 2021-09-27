@@ -96,7 +96,7 @@ public abstract class PythonBuiltins {
                 PythonBuiltinClass builtinClass = core.lookupType(constructsClass);
                 builtinClass.setAttributeUnsafe(__NEW__, newFunc);
                 final Object currentBuiltinDoc = builtinClass.getAttribute(__DOC__);
-                if (PGuards.isNone(currentBuiltinDoc) || PGuards.isNoValue(currentBuiltinDoc)) {
+                if (PGuards.isPNone(currentBuiltinDoc)) {
                     builtinClass.setAttribute(__DOC__, builtinDoc);
                 }
             } else {
