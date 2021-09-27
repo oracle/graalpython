@@ -80,6 +80,7 @@ graalpython/com.oracle.graal.python.cext/include/hpy/hpyfunc.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/hpy/hpymodule.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/hpy/hpytype.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/hpy/macros.h,hpy.copyright
+graalpython/com.oracle.graal.python.cext/include/hpy/version.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/hpy/runtime/argparse.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/hpy/runtime/ctx_funcs.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/hpy/runtime/ctx_type.h,hpy.copyright
