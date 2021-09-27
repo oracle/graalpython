@@ -1665,7 +1665,7 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__AND__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class AndNode extends BinaryBitwiseNode {
+    public abstract static class AndNode extends BinaryBitwiseNode {
 
         @Override
         protected int op(int left, int right) {
@@ -1682,13 +1682,17 @@ public class IntBuiltins extends PythonBuiltins {
         protected final BigInteger op(BigInteger left, BigInteger right) {
             return left.and(right);
         }
+
+        public static AndNode create() {
+            return IntBuiltinsFactory.AndNodeFactory.create();
+        }
     }
 
     @Builtin(name = SpecialMethodNames.__ROR__, minNumOfPositionalArgs = 2)
     @Builtin(name = SpecialMethodNames.__OR__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class OrNode extends BinaryBitwiseNode {
+    public abstract static class OrNode extends BinaryBitwiseNode {
 
         @Override
         protected int op(int left, int right) {
@@ -1705,13 +1709,17 @@ public class IntBuiltins extends PythonBuiltins {
         public final BigInteger op(BigInteger left, BigInteger right) {
             return left.or(right);
         }
+
+        public static OrNode create() {
+            return IntBuiltinsFactory.OrNodeFactory.create();
+        }
     }
 
     @Builtin(name = SpecialMethodNames.__RXOR__, minNumOfPositionalArgs = 2)
     @Builtin(name = SpecialMethodNames.__XOR__, minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class XorNode extends BinaryBitwiseNode {
+    public abstract static class XorNode extends BinaryBitwiseNode {
         @Override
         protected int op(int left, int right) {
             return left ^ right;
@@ -1726,6 +1734,10 @@ public class IntBuiltins extends PythonBuiltins {
         @TruffleBoundary
         public BigInteger op(BigInteger left, BigInteger right) {
             return left.xor(right);
+        }
+
+        public static XorNode create() {
+            return IntBuiltinsFactory.XorNodeFactory.create();
         }
     }
 

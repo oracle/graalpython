@@ -323,7 +323,6 @@ public final class Python3Core implements ParserErrorCallback {
                         "_contextvars",
                         "pip_hook",
                         "_struct",
-                        "bool",
                         "_posixshmem"));
         // add service loader defined python file extensions
         if (!ImageInfo.inImageRuntimeCode()) {
