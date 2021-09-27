@@ -401,7 +401,9 @@ def update_unittest_tags(args):
         ('test_faulthandler.txt', '*graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_sigill'),
         # Disabled due to transient failure
         ('test_multiprocessing_main_handling.txt', '*graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.test_module_in_package'),
+        ('test_multiprocessing_main_handling.txt', '*graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.test_module_in_subpackage_in_zipfile'),
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.TestNoForkBomb.test_noforkbomb'),
+        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_active_children'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
