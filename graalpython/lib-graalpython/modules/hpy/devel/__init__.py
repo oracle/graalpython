@@ -296,7 +296,7 @@ class build_hpy_ext_mixin:
         if ext.hpy_abi == 'cpython':
             ext.extra_objects.append(self.hpydevel.get_ctx_lib())
             ext._hpy_needs_stub = False
-        if ext.hpy_abi == 'universal':
+        elif ext.hpy_abi == 'universal':
             ext.define_macros.append(('HPY_UNIVERSAL_ABI', None))
             ext._hpy_needs_stub = True
         else:
