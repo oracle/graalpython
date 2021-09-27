@@ -151,9 +151,7 @@ def import_current_as_named_module_with_delegate(module_name, delegate_name, del
 
 
 @builtin
-def build_java_class(func, name, base):
-    ns = {}
-    func(ns)  # fill up namespace with the methods and fields of the class
+def build_java_class(ns, name, base):
     ns['__super__'] = None  # place where store the original java class when instance is created
     ExtenderClass = type("PythonJavaExtenderClass", (object, ), ns)
     HostAdapter = __graalpython__.extend(base)

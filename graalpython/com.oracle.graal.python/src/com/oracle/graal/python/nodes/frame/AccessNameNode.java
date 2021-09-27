@@ -47,8 +47,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 public interface AccessNameNode {
     default boolean hasLocals(VirtualFrame frame) {
-        // (tfel): These nodes will only ever be generated in a module scope where
-        // neither generator special args nor a ClassBodyRootNode can occur
+        // (tfel): These nodes will only ever be generated in a module and class scope where
+        // generator special args do not occur
         return PArguments.getSpecialArgument(frame) != null;
     }
 

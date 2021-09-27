@@ -1395,8 +1395,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [8040,10444]`class FrameSummary:↵...`
               Name: FrameSummary
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -1411,22 +1410,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                       QualName: FrameSummary
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [8064,8626]`"""A single frame fr...`
                     FunctionBodyNode SourceSection: [8632,10444]`__slots__ = ('filena...`
-                      SetItemNodeGen SourceSection: [8632,8693]`__slots__ = ('filena...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [8632,8693]`__slots__ = ('filena...`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [8644,8693]`('filename', 'lineno...`
                           StringLiteralNode SourceSection: [8645,8655]`'filename'`
                           StringLiteralNode SourceSection: [8657,8665]`'lineno'`
@@ -1434,11 +1427,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                           StringLiteralNode SourceSection: [8675,8682]`'_line'`
                           StringLiteralNode SourceSection: [8684,8692]`'locals'`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [8699,9472]`def __init__(self, f...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [8699,9472]`def __init__(self, f...`
+                        Identifier: __init__
                         FunctionDefinitionNode Name: __init__ SourceSection: None
                           Arguments: None
                           KwArguments:
@@ -1642,11 +1632,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         ObjectLiteralNode SourceSection: [9462,9466]`None`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [8,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [9472,9897]`def __eq__(self, oth...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [9472,9897]`def __eq__(self, oth...`
+                        Identifier: __eq__
                         FunctionDefinitionNode Name: __eq__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -1811,11 +1798,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         Identifier: NotImplemented
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [9897,10001]`def __getitem__(self...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [9897,10001]`def __getitem__(self...`
+                        Identifier: __getitem__
                         FunctionDefinitionNode Name: __getitem__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -1888,11 +1872,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           Frame: [1,pos,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [10001,10098]`def __iter__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [10001,10098]`def __iter__(self):↵...`
+                        Identifier: __iter__
                         FunctionDefinitionNode Name: __iter__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -1959,11 +1940,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [10098,10276]`def __repr__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [10098,10276]`def __repr__(self):↵...`
+                        Identifier: __repr__
                         FunctionDefinitionNode Name: __repr__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2027,21 +2005,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           StringLiteralNode SourceSection: [10133,10190]`"<FrameSummary file ...`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [10276,10444]`@property↵    def li...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [10276,10444]`@property↵    def li...`
+                        Identifier: line
                         PythonCallUnary SourceSection: [10276,10285]`@property`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [10276,10285]`@property`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: property
+                            Identifier: property
                           FunctionDefinitionNode Name: line SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2319,8 +2288,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [11144,15801]`class StackSummary(l...`
               Name: StackSummary
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -2335,32 +2303,20 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                       QualName: StackSummary
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [11174,11198]`"""A stack of frames...`
                     FunctionBodyNode SourceSection: [11204,15801]`@classmethod↵    def...`
-                      SetItemNodeGen SourceSection: [11204,13095]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [11204,13095]`@classmethod↵    def...`
+                        Identifier: extract
                         PythonCallUnary SourceSection: [11204,11216]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [11204,11216]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: extract SourceSection: None
                             Arguments: None
                             KwArguments:
@@ -2690,21 +2646,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           Frame: [6,result,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [16,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [13095,13954]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [13095,13954]`@classmethod↵    def...`
+                        Identifier: from_list
                         PythonCallUnary SourceSection: [13095,13107]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [13095,13107]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: from_list SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2840,11 +2787,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           Frame: [2,result,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [12,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [13954,15801]`def format(self):↵  ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [13954,15801]`def format(self):↵  ...`
+                        Identifier: format
                         FunctionDefinitionNode Name: format SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -3227,8 +3171,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                   CellVarsSlots: None
                 ClassBodyRootNode SourceSection: [15801,23096]`class TracebackExcep...`
                   Name: TracebackException
-                  Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                    Param Names: namespace
+                  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                   CelVars: None
                   FreeVars: None
                   NeedsCellFrame: False
@@ -3243,22 +3186,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                           QualName: TracebackException
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                          SetItemIfNotPresentNodeGen SourceSection: None
-                            SetItemNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: None
+                            Identifier: __module__
+                          WriteNameNodeGen SourceSection: None
+                            Identifier: __qualname__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __doc__
                           StringLiteralNode SourceSection: [15831,17065]`"""An exception read...`
                         FunctionBodyNode SourceSection: [17071,23096]`def __init__(self, e...`
-                          SetItemNodeGen SourceSection: [17071,19613]`def __init__(self, e...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [17071,19613]`def __init__(self, e...`
+                            Identifier: __init__
                             FunctionDefinitionNode Name: __init__ SourceSection: None
                               Arguments: None
                               KwArguments:
@@ -3717,21 +3654,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           BlockNode SourceSection: None
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [11,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [19613,19814]`@classmethod↵    def...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [19613,19814]`@classmethod↵    def...`
+                            Identifier: from_exception
                             PythonCallUnary SourceSection: [19613,19625]`@classmethod`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadClassAttributeNodeGen SourceSection: [19613,19625]`@classmethod`
-                                GetItemNodeGen SourceSection: None
-                                  ArgumentExpressionNode SourceSection: None
-                                    ReadIndexedArgumentNodeGen SourceSection: None
-                                      Index: 0
-                                  StringLiteralNode SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                  Identifier: classmethod
+                                Identifier: classmethod
                               FunctionDefinitionNode Name: from_exception SourceSection: None
                                 Arguments: None
                                 KwArguments: None
@@ -3811,11 +3739,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 Frame: [0,cls,Illegal]
                                       Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                         Frame: [4,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [19814,20108]`def _load_lines(self...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [19814,20108]`def _load_lines(self...`
+                            Identifier: _load_lines
                             FunctionDefinitionNode Name: _load_lines SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -3913,11 +3838,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           BlockNode SourceSection: None
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [2,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [20108,20185]`def __eq__(self, oth...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [20108,20185]`def __eq__(self, oth...`
+                            Identifier: __eq__
                             FunctionDefinitionNode Name: __eq__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -3972,11 +3894,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 Frame: [1,other,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [2,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [20185,20234]`def __str__(self):↵ ...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [20185,20234]`def __str__(self):↵ ...`
+                            Identifier: __str__
                             FunctionDefinitionNode Name: __str__ SourceSection: None
                               Arguments: None
                               KwArguments: None
@@ -4016,11 +3935,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               Frame: [0,self,Illegal]
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [1,<return_val>,Object]
-                          SetItemNodeGen SourceSection: [20234,22055]`def format_exception...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [20234,22055]`def format_exception...`
+                            Identifier: format_exception_only
                             GeneratorFunctionDefinitionNode Name: format_exception_only SourceSection: None
                               FrameDescriptor: 10 slots [self, stype, smod, filename, lineno, badline, offset, caretspace, msg, <return_val>]
                               Active Flags: 15
@@ -4421,11 +4337,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           Index: 0
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: [22055,23096]`def format(self, *, ...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [22055,23096]`def format(self, *, ...`
+                            Identifier: format
                             GeneratorFunctionDefinitionNode Name: format SourceSection: None
                               FrameDescriptor: 4 slots [self, *, chain, <return_val>]
                               Active Flags: 16

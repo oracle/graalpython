@@ -82,8 +82,7 @@ ModuleRootNode Name: <module 'localMember02'> SourceSection: [0,156]`def fn():â†
                                             CellVarsSlots: None
                                           ClassBodyRootNode SourceSection: [68,136]`class C(object):â†µ   ...`
                                             Name: C
-                                            Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                                              Param Names: namespace
+                                            Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                             CelVars: None
                                             FreeVars: a_local_var_out
                                             NeedsCellFrame: False
@@ -98,28 +97,15 @@ ModuleRootNode Name: <module 'localMember02'> SourceSection: [0,156]`def fn():â†
                                                     QualName: fn.<locals>.f.<locals>.C
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                       Identifier: __name__
-                                                    ReadIndexedArgumentNodeGen SourceSection: None
-                                                      Index: 0
-                                                    SetItemIfNotPresentNodeGen SourceSection: None
-                                                      SetItemNodeGen SourceSection: None
+                                                    WriteNameNodeGen SourceSection: None
+                                                      Identifier: __module__
+                                                    WriteNameNodeGen SourceSection: None
+                                                      Identifier: __qualname__
                                                   FunctionBodyNode SourceSection: [97,126]`a_local_var = a_loca...`
-                                                    SetItemNodeGen SourceSection: [97,126]`a_local_var = a_loca...`
-                                                      ArgumentExpressionNode SourceSection: None
-                                                        ReadIndexedArgumentNodeGen SourceSection: None
-                                                          Index: 0
-                                                      StringLiteralNode SourceSection: None
+                                                    WriteNameNodeGen SourceSection: [97,126]`a_local_var = a_loca...`
+                                                      Identifier: a_local_var
                                                       ReadClassAttributeNodeGen SourceSection: [111,126]`a_local_var_out`
-                                                        GetItemNodeGen SourceSection: None
-                                                          ArgumentExpressionNode SourceSection: None
-                                                            ReadIndexedArgumentNodeGen SourceSection: None
-                                                              Index: 0
-                                                          StringLiteralNode SourceSection: None
-                                                        ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                                          Identifier: a_local_var_out
-                                                        ReadLocalCellNodeGen SourceSection: None
-                                                          ReadLocalVariableNodeGen SourceSection: None
-                                                            Frame: [1,a_local_var_out,Illegal]
-                                                          ReadFromCellNodeGen SourceSection: None
+                                                        Identifier: a_local_var_out
                                                 Return Expresssion: ObjectLiteralNode SourceSection: None
                                         StringLiteralNode SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [76,82]`object`

@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -62,7 +61,6 @@ import com.oracle.truffle.api.source.SourceSection;
 public final class PFrame extends PythonBuiltinObject {
     private Object[] arguments;
     private final Object localsDict;
-    private final boolean inClassScope;
     private final Reference virtualFrameInfo;
     private Node location;
     private RootCallTarget callTarget;
@@ -95,16 +93,15 @@ public final class PFrame extends PythonBuiltinObject {
 
         public void materialize(PythonLanguage lang, Frame targetFrame, PRootNode location) {
             Reference curFrameInfo = PArguments.getCurrentFrameInfo(targetFrame);
-            boolean inClassScope = PArguments.getSpecialArgument(targetFrame) instanceof ClassBodyRootNode;
             CompilerAsserts.partialEvaluationConstant(location);
             if (location.getFrameEscapedWithoutAllocationProfile().profile(this.pyFrame == null || this.pyFrame.virtualFrameInfo == null)) {
                 if (this.pyFrame == null) {
                     // TODO: frames: this doesn't go through the factory
-                    this.pyFrame = new PFrame(lang, curFrameInfo, location, inClassScope);
+                    this.pyFrame = new PFrame(lang, curFrameInfo, location);
                 } else {
                     assert this.pyFrame.localsDict != null : "PFrame was set without a frame or a locals dict";
                     // this is the case when we had custom locals
-                    this.pyFrame = new PFrame(lang, curFrameInfo, location, this.pyFrame.localsDict, inClassScope);
+                    this.pyFrame = new PFrame(lang, curFrameInfo, location, this.pyFrame.localsDict);
                 }
             }
             // TODO: frames: update location
@@ -152,23 +149,21 @@ public final class PFrame extends PythonBuiltinObject {
         }
     }
 
-    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, boolean inClassScope) {
-        this(lang, virtualFrameInfo, location, null, inClassScope);
+    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location) {
+        this(lang, virtualFrameInfo, location, null);
     }
 
-    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, Object locals, boolean inClassScope) {
+    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, Object locals) {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         this.virtualFrameInfo = virtualFrameInfo;
         this.localsDict = locals;
         this.location = location;
-        this.inClassScope = inClassScope;
     }
 
     private PFrame(PythonLanguage lang, Object locals) {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         this.virtualFrameInfo = null;
         this.location = null;
-        this.inClassScope = false;
         this.localsDict = locals;
     }
 
@@ -181,7 +176,6 @@ public final class PFrame extends PythonBuiltinObject {
         this.virtualFrameInfo = curFrameInfo;
         curFrameInfo.setPyFrame(this);
         this.location = GetCodeRootNode.getUncached().execute(code);
-        this.inClassScope = this.location instanceof ClassBodyRootNode;
         this.line = this.location == null ? code.getFirstLineNo() : -2;
         this.arguments = frameArgs;
 
@@ -281,10 +275,6 @@ public final class PFrame extends PythonBuiltinObject {
      **/
     public boolean isAssociated() {
         return virtualFrameInfo != null;
-    }
-
-    public boolean inClassScope() {
-        return inClassScope;
     }
 
     public RootCallTarget getTarget() {

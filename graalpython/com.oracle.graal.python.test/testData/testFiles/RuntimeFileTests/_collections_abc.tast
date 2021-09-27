@@ -651,8 +651,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [2646,2924]`class Hashable(metac...`
               Name: Hashable
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -667,33 +666,21 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Hashable
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [2686,2924]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [2686,2700]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [2686,2700]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [2698,2700]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [2706,2768]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [2706,2768]`@abstractmethod↵    ...`
+                        Identifier: __hash__
                         PythonCallUnary SourceSection: [2706,2721]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [2706,2721]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: __hash__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -728,21 +715,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Value: 0
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [2768,2924]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [2768,2924]`@classmethod↵    def...`
+                        Identifier: __subclasshook__
                         PythonCallUnary SourceSection: [2768,2780]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [2768,2780]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -826,8 +804,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [2924,3203]`class Awaitable(meta...`
               Name: Awaitable
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -842,33 +819,21 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Awaitable
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [2965,3203]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [2965,2979]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [2965,2979]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [2977,2979]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [2985,3045]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [2985,3045]`@abstractmethod↵    ...`
+                        Identifier: __await__
                         PythonCallUnary SourceSection: [2985,3000]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [2985,3000]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           GeneratorFunctionDefinitionNode Name: __await__ SourceSection: None
                             FrameDescriptor: 2 slots [self, <return_val>]
                             Active Flags: 2
@@ -911,21 +876,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [3045,3203]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [3045,3203]`@classmethod↵    def...`
+                        Identifier: __subclasshook__
                         PythonCallUnary SourceSection: [3045,3057]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [3045,3057]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -1011,8 +967,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [3203,4279]`class Coroutine(Awai...`
               Name: Coroutine
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -1027,33 +982,21 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Coroutine
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [3236,4279]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [3236,3250]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [3236,3250]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [3248,3250]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [3256,3446]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [3256,3446]`@abstractmethod↵    ...`
+                        Identifier: send
                         PythonCallUnary SourceSection: [3256,3271]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [3256,3271]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: send SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -1096,21 +1039,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [3446,3817]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [3446,3817]`@abstractmethod↵    ...`
+                        Identifier: throw
                         PythonCallUnary SourceSection: [3446,3461]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [3446,3461]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: throw SourceSection: None
                             Arguments:
                               ObjectLiteralNode SourceSection: [3491,3495]`None`
@@ -1210,11 +1144,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [4,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [3817,4095]`def close(self):↵   ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [3817,4095]`def close(self):↵   ...`
+                        Identifier: close
                         FunctionDefinitionNode Name: close SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -1272,21 +1203,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           NoValueNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [4095,4279]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [4095,4279]`@classmethod↵    def...`
+                        Identifier: __subclasshook__
                         PythonCallUnary SourceSection: [4095,4107]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [4095,4107]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -1379,8 +1301,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [4311,4615]`class AsyncIterable(...`
               Name: AsyncIterable
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -1395,33 +1316,21 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: AsyncIterable
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [4356,4615]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [4356,4370]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [4356,4370]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [4368,4370]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [4376,4453]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [4376,4453]`@abstractmethod↵    ...`
+                        Identifier: __aiter__
                         PythonCallUnary SourceSection: [4376,4391]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [4376,4391]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: __aiter__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -1458,21 +1367,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Identifier: AsyncIterator
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [4453,4615]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [4453,4615]`@classmethod↵    def...`
+                        Identifier: __subclasshook__
                         PythonCallUnary SourceSection: [4453,4465]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [4453,4465]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -1558,8 +1458,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [4615,5061]`class AsyncIterator(...`
               Name: AsyncIterator
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -1574,33 +1473,21 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: AsyncIterator
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [4656,5061]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [4656,4670]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [4656,4670]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [4668,4670]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [4676,4840]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [4676,4840]`@abstractmethod↵    ...`
+                        Identifier: __anext__
                         PythonCallUnary SourceSection: [4676,4691]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [4676,4691]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: __anext__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -1636,11 +1523,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [4840,4886]`def __aiter__(self):...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [4840,4886]`def __aiter__(self):...`
+                        Identifier: __aiter__
                         FunctionDefinitionNode Name: __aiter__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -1675,21 +1559,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [4886,5061]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [4886,5061]`@classmethod↵    def...`
+                        Identifier: __subclasshook__
                         PythonCallUnary SourceSection: [4886,4898]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [4886,4898]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -1770,8 +1645,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [5061,6485]`class AsyncGenerator...`
               Name: AsyncGenerator
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -1786,23 +1660,17 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: AsyncGenerator
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [5103,6485]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [5103,5117]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [5103,5117]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [5115,5117]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [5129,5320]`def __anext__(self):...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [5129,5320]`def __anext__(self):...`
+                        Identifier: __anext__
                         FunctionDefinitionNode Name: __anext__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -1841,21 +1709,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         ObjectLiteralNode SourceSection: [5309,5313]`None`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [5320,5540]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [5320,5540]`@abstractmethod↵    ...`
+                        Identifier: asend
                         PythonCallUnary SourceSection: [5320,5335]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [5320,5335]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: asend SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -1898,21 +1757,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [5540,5936]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [5540,5936]`@abstractmethod↵    ...`
+                        Identifier: athrow
                         PythonCallUnary SourceSection: [5540,5555]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [5540,5555]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: athrow SourceSection: None
                             Arguments:
                               ObjectLiteralNode SourceSection: [5592,5596]`None`
@@ -2012,11 +1862,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [4,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [5942,6246]`def aclose(self):↵  ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [5942,6246]`def aclose(self):↵  ...`
+                        Identifier: aclose
                         FunctionDefinitionNode Name: aclose SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2074,21 +1921,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           NoValueNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [6246,6485]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [6246,6485]`@classmethod↵    def...`
+                        Identifier: __subclasshook__
                         PythonCallUnary SourceSection: [6246,6258]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [6246,6258]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2182,8 +2020,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [6528,6833]`class Iterable(metac...`
               Name: Iterable
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -2198,33 +2035,21 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Iterable
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [6568,6833]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [6568,6582]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [6568,6582]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [6580,6582]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [6588,6677]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [6588,6677]`@abstractmethod↵    ...`
+                        Identifier: __iter__
                         PythonCallUnary SourceSection: [6588,6603]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [6588,6603]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           GeneratorFunctionDefinitionNode Name: __iter__ SourceSection: None
                             FrameDescriptor: 2 slots [self, <return_val>]
                             Active Flags: 3
@@ -2273,21 +2098,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [6677,6833]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [6677,6833]`@classmethod↵    def...`
+                        Identifier: __subclasshook__
                         PythonCallUnary SourceSection: [6677,6689]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [6677,6689]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2373,8 +2189,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [6833,7255]`class Iterator(Itera...`
               Name: Iterator
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -2389,33 +2204,21 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Iterator
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [6864,7255]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [6864,6878]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [6864,6878]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [6876,6878]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [6884,7043]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [6884,7043]`@abstractmethod↵    ...`
+                        Identifier: __next__
                         PythonCallUnary SourceSection: [6884,6899]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [6884,6899]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: __next__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2451,11 +2254,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [7043,7088]`def __iter__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [7043,7088]`def __iter__(self):↵...`
+                        Identifier: __iter__
                         FunctionDefinitionNode Name: __iter__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2490,21 +2290,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [7088,7255]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [7088,7255]`@classmethod↵    def...`
+                        Identifier: __subclasshook__
                         PythonCallUnary SourceSection: [7088,7100]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7088,7100]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2741,8 +2532,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [7753,8073]`class Reversible(Ite...`
               Name: Reversible
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -2757,33 +2547,21 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Reversible
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [7786,8073]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [7786,7800]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [7786,7800]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [7798,7800]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [7806,7899]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [7806,7899]`@abstractmethod↵    ...`
+                        Identifier: __reversed__
                         PythonCallUnary SourceSection: [7806,7821]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7806,7821]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
                             FrameDescriptor: 2 slots [self, <return_val>]
                             Active Flags: 3
@@ -2832,21 +2610,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [7899,8073]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [7899,8073]`@classmethod↵    def...`
+                        Identifier: __subclasshook__
                         PythonCallUnary SourceSection: [7899,7911]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [7899,7911]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -2927,8 +2696,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [8073,9357]`class Generator(Iter...`
               Name: Generator
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -2943,23 +2711,17 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Generator
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [8105,9357]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [8105,8119]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [8105,8119]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [8117,8119]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [8125,8290]`def __next__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [8125,8290]`def __next__(self):↵...`
+                        Identifier: __next__
                         FunctionDefinitionNode Name: __next__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -2998,21 +2760,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         ObjectLiteralNode SourceSection: [8279,8283]`None`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [8290,8480]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [8290,8480]`@abstractmethod↵    ...`
+                        Identifier: send
                         PythonCallUnary SourceSection: [8290,8305]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [8290,8305]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: send SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3055,21 +2808,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [8480,8851]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [8480,8851]`@abstractmethod↵    ...`
+                        Identifier: throw
                         PythonCallUnary SourceSection: [8480,8495]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [8480,8495]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: throw SourceSection: None
                             Arguments:
                               ObjectLiteralNode SourceSection: [8525,8529]`None`
@@ -3169,11 +2913,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [4,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [8851,9129]`def close(self):↵   ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [8851,9129]`def close(self):↵   ...`
+                        Identifier: close
                         FunctionDefinitionNode Name: close SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -3231,21 +2972,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           NoValueNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [9129,9357]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [9129,9357]`@classmethod↵    def...`
+                        Identifier: __subclasshook__
                         PythonCallUnary SourceSection: [9129,9141]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [9129,9141]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3339,8 +3071,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [9389,9659]`class Sized(metaclas...`
               Name: Sized
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -3355,33 +3086,21 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Sized
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [9426,9659]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [9426,9440]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [9426,9440]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [9438,9440]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [9446,9507]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [9446,9507]`@abstractmethod↵    ...`
+                        Identifier: __len__
                         PythonCallUnary SourceSection: [9446,9461]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [9446,9461]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: __len__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3416,21 +3135,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Value: 0
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [9507,9659]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [9507,9659]`@classmethod↵    def...`
+                        Identifier: __subclasshook__
                         PythonCallUnary SourceSection: [9507,9519]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [9507,9519]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3514,8 +3224,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [9659,9953]`class Container(meta...`
               Name: Container
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -3530,33 +3239,21 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Container
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [9700,9953]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [9700,9714]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [9700,9714]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [9712,9714]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [9720,9793]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [9720,9793]`@abstractmethod↵    ...`
+                        Identifier: __contains__
                         PythonCallUnary SourceSection: [9720,9735]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [9720,9735]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: __contains__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3597,21 +3294,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         BooleanLiteralNode SourceSection: [9782,9787]`False`
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [9793,9953]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [9793,9953]`@classmethod↵    def...`
+                        Identifier: __subclasshook__
                         PythonCallUnary SourceSection: [9793,9805]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [9793,9805]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3695,8 +3383,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [9953,10209]`class Collection(Siz...`
               Name: Collection
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -3711,33 +3398,21 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Collection
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [10004,10209]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [10004,10018]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [10004,10018]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [10016,10018]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [10024,10209]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [10024,10209]`@classmethod↵    def...`
+                        Identifier: __subclasshook__
                         PythonCallUnary SourceSection: [10024,10036]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [10024,10036]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3827,8 +3502,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [10209,10521]`class Callable(metac...`
               Name: Callable
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -3843,33 +3517,21 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Callable
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [10249,10521]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [10249,10263]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [10249,10263]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [10261,10263]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [10269,10350]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [10269,10350]`@abstractmethod↵    ...`
+                        Identifier: __call__
                         PythonCallUnary SourceSection: [10269,10284]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [10269,10284]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: __call__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -3917,21 +3579,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         BooleanLiteralNode SourceSection: [10339,10344]`False`
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [10350,10521]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [10350,10521]`@classmethod↵    def...`
+                        Identifier: __subclasshook__
                         PythonCallUnary SourceSection: [10350,10362]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [10350,10362]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: __subclasshook__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -4017,8 +3670,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [10521,14799]`class Set(Collection...`
               Name: Set
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -4033,29 +3685,20 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Set
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [10549,10901]`"""A set is a finite...`
                     FunctionBodyNode SourceSection: [10907,14799]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [10907,10921]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [10907,10921]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [10919,10921]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [10927,11199]`def __le__(self, oth...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [10927,11199]`def __le__(self, oth...`
+                        Identifier: __le__
                         FunctionDefinitionNode Name: __le__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4152,11 +3795,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BooleanLiteralNode SourceSection: [11189,11193]`True`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [11199,11363]`def __lt__(self, oth...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [11199,11363]`def __lt__(self, oth...`
+                        Identifier: __lt__
                         FunctionDefinitionNode Name: __lt__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4232,11 +3872,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         YesNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [11363,11527]`def __gt__(self, oth...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [11363,11527]`def __gt__(self, oth...`
+                        Identifier: __gt__
                         FunctionDefinitionNode Name: __gt__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4312,11 +3949,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         YesNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [11527,11799]`def __ge__(self, oth...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [11527,11799]`def __ge__(self, oth...`
+                        Identifier: __ge__
                         FunctionDefinitionNode Name: __ge__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4413,11 +4047,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BooleanLiteralNode SourceSection: [11789,11793]`True`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [11799,11964]`def __eq__(self, oth...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [11799,11964]`def __eq__(self, oth...`
+                        Identifier: __eq__
                         FunctionDefinitionNode Name: __eq__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4493,21 +4124,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         YesNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [11964,12241]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [11964,12241]`@classmethod↵    def...`
+                        Identifier: _from_iterable
                         PythonCallUnary SourceSection: [11964,11976]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [11964,11976]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: _from_iterable SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -4553,11 +4175,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Frame: [1,it,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [12241,12428]`def __and__(self, ot...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [12241,12428]`def __and__(self, ot...`
+                        Identifier: __and__
                         FunctionDefinitionNode Name: __and__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4683,24 +4302,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [12428,12446]`__rand__ = __and__`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [12428,12446]`__rand__ = __and__`
+                        Identifier: __rand__
                         ReadClassAttributeNodeGen SourceSection: [12439,12446]`__and__`
-                          GetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: __and__
-                      SetItemNodeGen SourceSection: [12452,12653]`def isdisjoint(self,...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                          Identifier: __and__
+                      WriteNameNodeGen SourceSection: [12452,12653]`def isdisjoint(self,...`
+                        Identifier: isdisjoint
                         FunctionDefinitionNode Name: isdisjoint SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4765,11 +4372,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BooleanLiteralNode SourceSection: [12643,12647]`True`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [12653,12857]`def __or__(self, oth...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [12653,12857]`def __or__(self, oth...`
+                        Identifier: __or__
                         FunctionDefinitionNode Name: __or__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -4900,24 +4504,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Frame: [2,chain,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [12857,12873]`__ror__ = __or__`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [12857,12873]`__ror__ = __or__`
+                        Identifier: __ror__
                         ReadClassAttributeNodeGen SourceSection: [12867,12873]`__or__`
-                          GetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: __or__
-                      SetItemNodeGen SourceSection: [12879,13199]`def __sub__(self, ot...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                          Identifier: __or__
+                      WriteNameNodeGen SourceSection: [12879,13199]`def __sub__(self, ot...`
+                        Identifier: __sub__
                         FunctionDefinitionNode Name: __sub__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -5071,11 +4663,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [13199,13520]`def __rsub__(self, o...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [13199,13520]`def __rsub__(self, o...`
+                        Identifier: __rsub__
                         FunctionDefinitionNode Name: __rsub__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -5226,11 +4815,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [13520,13770]`def __xor__(self, ot...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [13520,13770]`def __xor__(self, ot...`
+                        Identifier: __xor__
                         FunctionDefinitionNode Name: __xor__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -5317,24 +4903,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [13770,13788]`__rxor__ = __xor__`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [13770,13788]`__rxor__ = __xor__`
+                        Identifier: __rxor__
                         ReadClassAttributeNodeGen SourceSection: [13781,13788]`__xor__`
-                          GetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: __xor__
-                      SetItemNodeGen SourceSection: [13794,14799]`def _hash(self):↵   ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                          Identifier: __xor__
+                      WriteNameNodeGen SourceSection: [13794,14799]`def _hash(self):↵   ...`
+                        Identifier: _hash
                         FunctionDefinitionNode Name: _hash SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -5557,8 +5131,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [14825,16941]`class MutableSet(Set...`
               Name: MutableSet
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -5573,39 +5146,24 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: MutableSet
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [14852,15249]`"""A mutable set is ...`
                     FunctionBodyNode SourceSection: [15255,16941]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [15255,15269]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [15255,15269]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [15267,15269]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [15275,15386]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [15275,15386]`@abstractmethod↵    ...`
+                        Identifier: add
                         PythonCallUnary SourceSection: [15275,15290]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [15275,15290]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: add SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -5648,21 +5206,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [15386,15542]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [15386,15542]`@abstractmethod↵    ...`
+                        Identifier: discard
                         PythonCallUnary SourceSection: [15386,15401]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [15386,15401]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: discard SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -5705,11 +5254,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [15542,15732]`def remove(self, val...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [15542,15732]`def remove(self, val...`
+                        Identifier: remove
                         FunctionDefinitionNode Name: remove SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -5775,11 +5321,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Frame: [1,value,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [15732,15999]`def pop(self):↵     ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [15732,15999]`def pop(self):↵     ...`
+                        Identifier: pop
                         FunctionDefinitionNode Name: pop SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -5850,11 +5393,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Frame: [2,value,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [15999,16196]`def clear(self):↵   ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [15999,16196]`def clear(self):↵   ...`
+                        Identifier: clear
                         FunctionDefinitionNode Name: clear SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -5906,11 +5446,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [16196,16297]`def __ior__(self, it...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [16196,16297]`def __ior__(self, it...`
+                        Identifier: __ior__
                         FunctionDefinitionNode Name: __ior__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -5971,11 +5508,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [16297,16412]`def __iand__(self, i...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [16297,16412]`def __iand__(self, i...`
+                        Identifier: __iand__
                         FunctionDefinitionNode Name: __iand__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6039,11 +5573,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [16412,16769]`def __ixor__(self, i...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [16412,16769]`def __ixor__(self, i...`
+                        Identifier: __ixor__
                         FunctionDefinitionNode Name: __ixor__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6157,11 +5688,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [16769,16941]`def __isub__(self, i...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [16769,16941]`def __isub__(self, i...`
+                        Identifier: __isub__
                         FunctionDefinitionNode Name: __isub__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6269,8 +5797,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [16987,18236]`class Mapping(Collec...`
               Name: Mapping
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -6285,35 +5812,23 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Mapping
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [17019,18234]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [17019,17033]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [17019,17033]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [17031,17033]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [17039,17244]`"""A Mapping is a ge...`
                         StringLiteralNode SourceSection: [17039,17244]`"""A Mapping is a ge...`
-                      SetItemNodeGen SourceSection: [17250,17326]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [17250,17326]`@abstractmethod↵    ...`
+                        Identifier: __getitem__
                         PythonCallUnary SourceSection: [17250,17265]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [17250,17265]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: __getitem__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -6356,11 +5871,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [17326,17530]`def get(self, key, d...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [17326,17530]`def get(self, key, d...`
+                        Identifier: get
                         FunctionDefinitionNode Name: get SourceSection: None
                           Arguments:
                             ObjectLiteralNode SourceSection: [17353,17357]`None`
@@ -6421,11 +5933,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [17530,17687]`def __contains__(sel...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [17530,17687]`def __contains__(sel...`
+                        Identifier: __contains__
                         FunctionDefinitionNode Name: __contains__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6479,11 +5988,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           BooleanLiteralNode SourceSection: [17677,17681]`True`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [17687,17807]`def keys(self):↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [17687,17807]`def keys(self):↵    ...`
+                        Identifier: keys
                         FunctionDefinitionNode Name: keys SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6522,11 +6028,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [17807,17931]`def items(self):↵   ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [17807,17931]`def items(self):↵   ...`
+                        Identifier: items
                         FunctionDefinitionNode Name: items SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6565,11 +6068,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [17931,18051]`def values(self):↵  ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [17931,18051]`def values(self):↵  ...`
+                        Identifier: values
                         FunctionDefinitionNode Name: values SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6608,11 +6108,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [18051,18215]`def __eq__(self, oth...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [18051,18215]`def __eq__(self, oth...`
+                        Identifier: __eq__
                         FunctionDefinitionNode Name: __eq__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6685,11 +6182,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [1,other,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [18215,18234]`__reversed__ = None`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [18215,18234]`__reversed__ = None`
+                        Identifier: __reversed__
                         ObjectLiteralNode SourceSection: [18230,18234]`None`
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
@@ -6725,8 +6219,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [18269,18544]`class MappingView(Si...`
               Name: MappingView
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -6741,24 +6234,18 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: MappingView
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [18300,18544]`__slots__ = '_mappin...`
-                      SetItemNodeGen SourceSection: [18300,18323]`__slots__ = '_mappin...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [18300,18323]`__slots__ = '_mappin...`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [18312,18323]`'_mapping',`
                           StringLiteralNode SourceSection: [18312,18322]`'_mapping'`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [18329,18395]`def __init__(self, m...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [18329,18395]`def __init__(self, m...`
+                        Identifier: __init__
                         FunctionDefinitionNode Name: __init__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6803,11 +6290,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Frame: [1,mapping,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [18395,18453]`def __len__(self):↵ ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [18395,18453]`def __len__(self):↵ ...`
+                        Identifier: __len__
                         FunctionDefinitionNode Name: __len__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6851,11 +6335,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [18453,18544]`def __repr__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [18453,18544]`def __repr__(self):↵...`
+                        Identifier: __repr__
                         FunctionDefinitionNode Name: __repr__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -6916,8 +6397,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [18544,18802]`class KeysView(Mappi...`
               Name: KeysView
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -6932,33 +6412,21 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: KeysView
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [18583,18802]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [18583,18597]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [18583,18597]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [18595,18597]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [18603,18678]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [18603,18678]`@classmethod↵    def...`
+                        Identifier: _from_iterable
                         PythonCallUnary SourceSection: [18603,18615]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [18603,18615]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: _from_iterable SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -7004,11 +6472,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Frame: [1,it,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [18678,18748]`def __contains__(sel...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [18678,18748]`def __contains__(sel...`
+                        Identifier: __contains__
                         FunctionDefinitionNode Name: __contains__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -7061,11 +6526,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [18748,18802]`def __iter__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [18748,18802]`def __iter__(self):↵...`
+                        Identifier: __iter__
                         GeneratorFunctionDefinitionNode Name: __iter__ SourceSection: None
                           FrameDescriptor: 2 slots [self, <return_val>]
                           Active Flags: 2
@@ -7167,8 +6629,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [18833,19284]`class ItemsView(Mapp...`
               Name: ItemsView
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -7183,33 +6644,21 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: ItemsView
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [18873,19284]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [18873,18887]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [18873,18887]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [18885,18887]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [18893,18968]`@classmethod↵    def...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [18893,18968]`@classmethod↵    def...`
+                        Identifier: _from_iterable
                         PythonCallUnary SourceSection: [18893,18905]`@classmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [18893,18905]`@classmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: classmethod
+                            Identifier: classmethod
                           FunctionDefinitionNode Name: _from_iterable SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -7255,11 +6704,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             Frame: [1,it,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [18968,19185]`def __contains__(sel...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [18968,19185]`def __contains__(sel...`
+                        Identifier: __contains__
                         FunctionDefinitionNode Name: __contains__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -7350,11 +6796,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             YesNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [7,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [19185,19284]`def __iter__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [19185,19284]`def __iter__(self):↵...`
+                        Identifier: __iter__
                         GeneratorFunctionDefinitionNode Name: __iter__ SourceSection: None
                           FrameDescriptor: 3 slots [self, key, <return_val>]
                           Active Flags: 2
@@ -7468,8 +6911,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [19317,19672]`class ValuesView(Map...`
               Name: ValuesView
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -7484,23 +6926,17 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: ValuesView
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [19365,19672]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [19365,19379]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [19365,19379]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [19377,19379]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [19385,19580]`def __contains__(sel...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [19385,19580]`def __contains__(sel...`
+                        Identifier: __contains__
                         FunctionDefinitionNode Name: __contains__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -7588,11 +7024,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BooleanLiteralNode SourceSection: [19569,19574]`False`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [4,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [19580,19672]`def __iter__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [19580,19672]`def __iter__(self):↵...`
+                        Identifier: __iter__
                         GeneratorFunctionDefinitionNode Name: __iter__ SourceSection: None
                           FrameDescriptor: 3 slots [self, key, <return_val>]
                           Active Flags: 2
@@ -7702,8 +7135,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [19707,22581]`class MutableMapping...`
               Name: MutableMapping
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -7718,35 +7150,23 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: MutableMapping
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [19743,22581]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [19743,19757]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [19743,19757]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [19755,19757]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [19763,20005]`"""A MutableMapping ...`
                         StringLiteralNode SourceSection: [19763,20005]`"""A MutableMapping ...`
-                      SetItemNodeGen SourceSection: [20011,20094]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [20011,20094]`@abstractmethod↵    ...`
+                        Identifier: __setitem__
                         PythonCallUnary SourceSection: [20011,20026]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [20011,20026]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: __setitem__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -7795,21 +7215,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [20094,20170]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [20094,20170]`@abstractmethod↵    ...`
+                        Identifier: __delitem__
                         PythonCallUnary SourceSection: [20094,20109]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [20094,20109]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: __delitem__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -7852,36 +7263,18 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [20170,20189]`__marker = object()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [20170,20189]`__marker = object()`
+                        Identifier: _MutableMapping__marker
                         PythonCallNodeGen SourceSection: [20181,20189]`object()`
                           CallNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [20181,20187]`object`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: object
-                      SetItemNodeGen SourceSection: [20195,20645]`def pop(self, key, d...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                            Identifier: object
+                      WriteNameNodeGen SourceSection: [20195,20645]`def pop(self, key, d...`
+                        Identifier: pop
                         FunctionDefinitionNode Name: pop SourceSection: None
                           Arguments:
                             ReadClassAttributeNodeGen SourceSection: [20222,20230]`__marker`
-                              GetItemNodeGen SourceSection: None
-                                ArgumentExpressionNode SourceSection: None
-                                  ReadIndexedArgumentNodeGen SourceSection: None
-                                    Index: 0
-                                StringLiteralNode SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: _MutableMapping__marker
+                              Identifier: _MutableMapping__marker
                           KwArguments: None
                           Documentation: StringLiteralNode: `D.pop(k[,d]) -> v, r...`
                           FreeVarSlots: None
@@ -7966,11 +7359,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [3,value,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [4,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [20645,21004]`def popitem(self):↵ ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [20645,21004]`def popitem(self):↵ ...`
+                        Identifier: popitem
                         FunctionDefinitionNode Name: popitem SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -8045,11 +7435,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [21004,21191]`def clear(self):↵   ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [21004,21191]`def clear(self):↵   ...`
+                        Identifier: clear
                         FunctionDefinitionNode Name: clear SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -8101,11 +7488,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [21191,22342]`def update(*args, **...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [21191,22342]`def update(*args, **...`
+                        Identifier: update
                         FunctionDefinitionNode Name: update SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -8346,11 +7730,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [12,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [22342,22581]`def setdefault(self,...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [22342,22581]`def setdefault(self,...`
+                        Identifier: setdefault
                         FunctionDefinitionNode Name: setdefault SourceSection: None
                           Arguments:
                             ObjectLiteralNode SourceSection: [22376,22380]`None`
@@ -8452,8 +7833,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [22633,24271]`class Sequence(Rever...`
               Name: Sequence
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -8468,39 +7848,24 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: Sequence
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [22678,22822]`"""All the operation...`
                     FunctionBodyNode SourceSection: [22828,24271]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [22828,22842]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [22828,22842]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [22840,22842]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [22848,22928]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [22848,22928]`@abstractmethod↵    ...`
+                        Identifier: __getitem__
                         PythonCallUnary SourceSection: [22848,22863]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [22848,22863]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: __getitem__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -8543,11 +7908,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [22928,23125]`def __iter__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [22928,23125]`def __iter__(self):↵...`
+                        Identifier: __iter__
                         GeneratorFunctionDefinitionNode Name: __iter__ SourceSection: None
                           FrameDescriptor: 4 slots [self, i, v, <return_val>]
                           Active Flags: 6
@@ -8632,11 +7994,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       Index: 0
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [23125,23274]`def __contains__(sel...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [23125,23274]`def __contains__(sel...`
+                        Identifier: __contains__
                         FunctionDefinitionNode Name: __contains__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -8705,11 +8064,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BooleanLiteralNode SourceSection: [23263,23268]`False`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [23274,23374]`def __reversed__(sel...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [23274,23374]`def __reversed__(sel...`
+                        Identifier: __reversed__
                         GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
                           FrameDescriptor: 3 slots [self, i, <return_val>]
                           Active Flags: 2
@@ -8783,11 +8139,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       Index: 0
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: [23374,24105]`def index(self, valu...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [23374,24105]`def index(self, valu...`
+                        Identifier: index
                         FunctionDefinitionNode Name: index SourceSection: None
                           Arguments:
                             IntegerLiteralNode SourceSection: [23403,23404]`0`
@@ -8971,11 +8324,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       NoValueNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [6,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [24105,24271]`def count(self, valu...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [24105,24271]`def count(self, valu...`
+                        Identifier: count
                         FunctionDefinitionNode Name: count SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -9164,8 +8514,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [24376,24514]`class ByteString(Seq...`
               Name: ByteString
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -9180,22 +8529,16 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: ByteString
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
+                    WriteNameNodeGen SourceSection: None
+                      Identifier: __doc__
                       StringLiteralNode SourceSection: [24409,24492]`"""This unifies byte...`
                     FunctionBodyNode SourceSection: [24498,24512]`__slots__ = ()`
-                      SetItemNodeGen SourceSection: [24498,24512]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [24498,24512]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [24510,24512]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -9244,8 +8587,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [24574,26338]`class MutableSequenc...`
               Name: MutableSequence
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -9260,35 +8602,23 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                       QualName: MutableSequence
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [24612,26338]`__slots__ = ()↵↵    ...`
-                      SetItemNodeGen SourceSection: [24612,24626]`__slots__ = ()`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [24612,24626]`__slots__ = ()`
+                        Identifier: __slots__
                         TupleLiteralNode SourceSection: [24624,24626]`()`
                           PythonObjectFactoryNodeGen SourceSection: None
                       ExpressionStatementNode SourceSection: [24632,24813]`"""All the operation...`
                         StringLiteralNode SourceSection: [24632,24813]`"""All the operation...`
-                      SetItemNodeGen SourceSection: [24819,24906]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [24819,24906]`@abstractmethod↵    ...`
+                        Identifier: __setitem__
                         PythonCallUnary SourceSection: [24819,24834]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [24819,24834]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: __setitem__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -9337,21 +8667,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [24906,24986]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [24906,24986]`@abstractmethod↵    ...`
+                        Identifier: __delitem__
                         PythonCallUnary SourceSection: [24906,24921]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [24906,24921]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: __delitem__ SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -9394,21 +8715,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [24986,25130]`@abstractmethod↵    ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [24986,25130]`@abstractmethod↵    ...`
+                        Identifier: insert
                         PythonCallUnary SourceSection: [24986,25001]`@abstractmethod`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadClassAttributeNodeGen SourceSection: [24986,25001]`@abstractmethod`
-                            GetItemNodeGen SourceSection: None
-                              ArgumentExpressionNode SourceSection: None
-                                ReadIndexedArgumentNodeGen SourceSection: None
-                                  Index: 0
-                              StringLiteralNode SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: None
-                              Identifier: abstractmethod
+                            Identifier: abstractmethod
                           FunctionDefinitionNode Name: insert SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -9457,11 +8769,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         NoValueNode SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [25130,25267]`def append(self, val...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [25130,25267]`def append(self, val...`
+                        Identifier: append
                         FunctionDefinitionNode Name: append SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -9514,11 +8823,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Frame: [1,value,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [25267,25452]`def clear(self):↵   ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [25267,25452]`def clear(self):↵   ...`
+                        Identifier: clear
                         FunctionDefinitionNode Name: clear SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -9570,11 +8876,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [25452,25628]`def reverse(self):↵ ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [25452,25628]`def reverse(self):↵ ...`
+                        Identifier: reverse
                         FunctionDefinitionNode Name: reverse SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -9678,11 +8981,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [5,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [25628,25799]`def extend(self, val...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [25628,25799]`def extend(self, val...`
+                        Identifier: extend
                         FunctionDefinitionNode Name: extend SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -9740,11 +9040,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       BlockNode SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [25799,26062]`def pop(self, index=...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [25799,26062]`def pop(self, index=...`
+                        Identifier: pop
                         FunctionDefinitionNode Name: pop SourceSection: None
                           Arguments:
                             IntegerLiteralNode SourceSection: [25819,25821]`-1`
@@ -9801,11 +9098,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         Frame: [2,v,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [26062,26261]`def remove(self, val...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [26062,26261]`def remove(self, val...`
+                        Identifier: remove
                         FunctionDefinitionNode Name: remove SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -9854,11 +9148,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Frame: [1,value,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [26261,26338]`def __iadd__(self, v...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [26261,26338]`def __iadd__(self, v...`
+                        Identifier: __iadd__
                         FunctionDefinitionNode Name: __iadd__ SourceSection: None
                           Arguments: None
                           KwArguments: None

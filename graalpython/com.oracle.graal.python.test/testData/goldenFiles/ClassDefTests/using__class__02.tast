@@ -25,8 +25,7 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                 CellVarsSlots: __class__, 
               ClassBodyRootNode SourceSection: [0,263]`class X:↵           ...`
                 Name: X
-                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                  Param Names: namespace
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: __class__
                 FreeVars: None
                 NeedsCellFrame: False
@@ -41,16 +40,13 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                         QualName: X
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: __name__
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                        SetItemIfNotPresentNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __module__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __qualname__
                       FunctionBodyNode SourceSection: [21,263]`def createY(this):↵ ...`
-                        SetItemNodeGen SourceSection: [21,213]`def createY(this):↵ ...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [21,213]`def createY(this):↵ ...`
+                          Identifier: createY
                           FunctionDefinitionNode Name: createY SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -97,8 +93,7 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                               CellVarsSlots: __class__, 
                                             ClassBodyRootNode SourceSection: [56,192]`class Y:↵           ...`
                                               Name: Y
-                                              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                                                Param Names: namespace
+                                              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: __class__
                                               FreeVars: None
                                               NeedsCellFrame: False
@@ -113,33 +108,17 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                                       QualName: X.createY.<locals>.Y
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                         Identifier: __name__
-                                                      ReadIndexedArgumentNodeGen SourceSection: None
-                                                        Index: 0
-                                                      SetItemIfNotPresentNodeGen SourceSection: None
-                                                        SetItemNodeGen SourceSection: None
+                                                      WriteNameNodeGen SourceSection: None
+                                                        Identifier: __module__
+                                                      WriteNameNodeGen SourceSection: None
+                                                        Identifier: __qualname__
                                                     FunctionBodyNode SourceSection: [85,192]`z = __class__↵      ...`
-                                                      SetItemNodeGen SourceSection: [85,98]`z = __class__`
-                                                        ArgumentExpressionNode SourceSection: None
-                                                          ReadIndexedArgumentNodeGen SourceSection: None
-                                                            Index: 0
-                                                        StringLiteralNode SourceSection: None
+                                                      WriteNameNodeGen SourceSection: [85,98]`z = __class__`
+                                                        Identifier: z
                                                         ReadClassAttributeNodeGen SourceSection: [89,98]`__class__`
-                                                          GetItemNodeGen SourceSection: None
-                                                            ArgumentExpressionNode SourceSection: None
-                                                              ReadIndexedArgumentNodeGen SourceSection: None
-                                                                Index: 0
-                                                            StringLiteralNode SourceSection: None
-                                                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                                            Identifier: __class__
-                                                          ReadLocalCellNodeGen SourceSection: None
-                                                            ReadLocalVariableNodeGen SourceSection: None
-                                                              Frame: [3,<>freevar__class__,Illegal]
-                                                            ReadFromCellNodeGen SourceSection: None
-                                                      SetItemNodeGen SourceSection: [119,192]`def methodY(this):↵ ...`
-                                                        ArgumentExpressionNode SourceSection: None
-                                                          ReadIndexedArgumentNodeGen SourceSection: None
-                                                            Index: 0
-                                                        StringLiteralNode SourceSection: None
+                                                          Identifier: __class__
+                                                      WriteNameNodeGen SourceSection: [119,192]`def methodY(this):↵ ...`
+                                                        Identifier: methodY
                                                         FunctionDefinitionNode Name: methodY SourceSection: None
                                                           Arguments: None
                                                           KwArguments: None
@@ -178,11 +157,8 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                                                         ReadFromCellNodeGen SourceSection: None
                                                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                                                   Frame: [3,<return_val>,Object]
-                                                    SetItemNodeGen SourceSection: None
-                                                      ArgumentExpressionNode SourceSection: None
-                                                        ReadIndexedArgumentNodeGen SourceSection: None
-                                                          Index: 0
-                                                      StringLiteralNode SourceSection: None
+                                                    WriteNameNodeGen SourceSection: None
+                                                      Identifier: __classcell__
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [0,__class__,Illegal]
                                                   Return Expresssion: ObjectLiteralNode SourceSection: None
@@ -192,11 +168,8 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                           Frame: [1,Y,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [3,<return_val>,Object]
-                        SetItemNodeGen SourceSection: [213,263]`def methodX(this):↵ ...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [213,263]`def methodX(this):↵ ...`
+                          Identifier: methodX
                           FunctionDefinitionNode Name: methodX SourceSection: None
                             Arguments: None
                             KwArguments: None
@@ -235,11 +208,8 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                           ReadFromCellNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: None
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __classcell__
                         ReadLocalVariableNodeGen SourceSection: None
                           Frame: [0,__class__,Illegal]
                     Return Expresssion: ObjectLiteralNode SourceSection: None

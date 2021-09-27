@@ -25,8 +25,7 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                 CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,110]`class Complex:↵    d...`
                 Name: Complex
-                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                  Param Names: namespace
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
@@ -41,16 +40,13 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                         QualName: Complex
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: __name__
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                        SetItemIfNotPresentNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __module__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __qualname__
                       FunctionBodyNode SourceSection: [19,110]`def __init__(self, r...`
-                        SetItemNodeGen SourceSection: [19,110]`def __init__(self, r...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [19,110]`def __init__(self, r...`
+                          Identifier: __init__
                           FunctionDefinitionNode Name: __init__ SourceSection: None
                             Arguments: None
                             KwArguments: None

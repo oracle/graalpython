@@ -110,6 +110,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -159,10 +160,10 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
+import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
@@ -2093,11 +2094,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @ImportStatic(SpecialMethodSlot.class)
     public abstract static class BuildClassNode extends PythonVarargsBuiltinNode {
         @TruffleBoundary
-        private static Object buildJavaClass(Object func, String name, Object base) {
+        private static Object buildJavaClass(Object namespace, String name, Object base) {
             // uncached PythonContext get, since this code path is slow in any case
             Object module = PythonContext.get(null).getCore().lookupBuiltinModule(BuiltinNames.__GRAALPYTHON__);
             Object buildFunction = PyObjectLookupAttr.getUncached().execute(null, module, "build_java_class");
-            return CallNode.getUncached().execute(buildFunction, func, name, base);
+            return CallNode.getUncached().execute(buildFunction, namespace, name, base);
         }
 
         @Specialization
@@ -2109,7 +2110,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached GetClassNode getGetItemClass,
                         @Cached CallVarargsMethodNode callPrep,
                         @Cached CallVarargsMethodNode callType,
-                        @Cached CallUnaryMethodNode callBody,
+                        @Cached CallDispatchNode callBody,
                         @Cached UpdateBasesNode update,
                         @Cached SetItemNode setOrigBases,
                         @Cached GetClassNode getClass,
@@ -2135,7 +2136,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Env env = PythonContext.get(calculateMetaClass).getEnv();
             if (arguments.length == 2 && env.isHostObject(arguments[1]) && env.asHostObject(arguments[1]) instanceof Class<?>) {
                 // we want to subclass a Java class
-                return buildJavaClass(function, name, arguments[1]);
+                PDict ns = PythonObjectFactory.getUncached().createDict(new DynamicObjectStorage(PythonLanguage.get(null)));
+                Object[] args = PArguments.create(0);
+                PArguments.setCustomLocals(args, ns);
+                PArguments.setSpecialArgument(args, ns);
+                callBody.executeCall(frame, (PFunction) function, args);
+                return buildJavaClass(ns, name, arguments[1]);
             }
 
             class InitializeBuildClass {
@@ -2200,7 +2206,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     throw raise(PythonErrorType.TypeError, "<metaclass>.__prepare__() must return a mapping, not %p", ns);
                 }
             }
-            callBody.executeObject(frame, function, ns);
+            Object[] bodyArguments = PArguments.create(0);
+            PArguments.setCustomLocals(bodyArguments, ns);
+            PArguments.setSpecialArgument(bodyArguments, ns);
+            callBody.executeCall(frame, (PFunction) function, bodyArguments);
             if (init.bases != origBases) {
                 setOrigBases.executeWith(frame, ns, SpecialAttributeNames.__ORIG_BASES__, origBases);
             }

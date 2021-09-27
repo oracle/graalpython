@@ -540,7 +540,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 if (location == null) {
                     location = self.getCurrentCallTarget().getRootNode();
                 }
-                PFrame frame = factory.createPFrame(PFrame.Reference.EMPTY, location, locals, false);
+                PFrame frame = factory.createPFrame(PFrame.Reference.EMPTY, location, locals);
                 PArguments.setGlobals(arguments, PArguments.getGlobals(self.getArguments()));
                 PArguments.setClosure(arguments, PArguments.getClosure(self.getArguments()));
                 PArguments.setGeneratorFrame(arguments, generatorFrame);

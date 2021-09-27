@@ -107,10 +107,8 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
 
     @Specialization(guards = {"globals == null", "closure == null"})
     protected Object doNoClosure(VirtualFrame frame, PFunction callee, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments,
-                    @Cached ConditionProfile classBodyProfile,
                     @Cached ConditionProfile generatorFunctionProfile) {
         RootCallTarget ct = (RootCallTarget) callNode.getCurrentCallTarget();
-        optionallySetClassBodySpecial(arguments, ct, classBodyProfile);
         optionallySetGeneratorFunction(arguments, ct, generatorFunctionProfile, callee);
         // If the frame is 'null', we expect the execution state (i.e. caller info and exception
         // state) in the context. There are two common reasons for having a 'null' frame:
@@ -133,11 +131,10 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
 
     @Specialization(replaces = "doNoClosure")
     protected Object doGeneric(VirtualFrame frame, PFunction callee, PythonObject globals, PCell[] closure, Object[] arguments,
-                    @Cached ConditionProfile classBodyProfile,
                     @Cached ConditionProfile generatorFunctionProfile) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
-        return doNoClosure(frame, callee, null, null, arguments, classBodyProfile, generatorFunctionProfile);
+        return doNoClosure(frame, callee, null, null, arguments, generatorFunctionProfile);
     }
 
     public final CallTarget getCallTarget() {

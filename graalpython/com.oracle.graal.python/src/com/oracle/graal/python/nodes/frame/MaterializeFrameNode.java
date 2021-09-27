@@ -123,42 +123,30 @@ public abstract class MaterializeFrameNode extends Node {
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "isGeneratorFrame(frameToMaterialize)"})
     static PFrame freshPFrameForGenerator(Node location, @SuppressWarnings("unused") boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
                     @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory) {
-        PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getGeneratorFrameLocals(frameToMaterialize), false);
+        PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getGeneratorFrameLocals(frameToMaterialize));
         PArguments.synchronizeArgs(frameToMaterialize, escapedFrame);
         PFrame.Reference topFrameRef = PArguments.getCurrentFrameInfo(frameToMaterialize);
         topFrameRef.setPyFrame(escapedFrame);
         return escapedFrame;
     }
 
-    @Specialization(guards = {"cachedFD == frameToMaterialize.getFrameDescriptor()", "getPFrame(frameToMaterialize) == null", "!inClassBody(frameToMaterialize)",
-                    "!isGeneratorFrame(frameToMaterialize)"}, limit = "1")
+    @Specialization(guards = {"cachedFD == frameToMaterialize.getFrameDescriptor()", "getPFrame(frameToMaterialize) == null", "!isGeneratorFrame(frameToMaterialize)"}, limit = "1")
     static PFrame freshPFrameCachedFD(VirtualFrame frame, Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
                     @Cached("frameToMaterialize.getFrameDescriptor()") FrameDescriptor cachedFD,
                     @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode) {
         PDict locals = factory.createDictLocals(cachedFD);
-        PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals, false);
-        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, forceSync && !inModuleRoot(location), syncValuesNode);
+        PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals);
+        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, forceSync && !inModuleRoot(location) && !inClassBody(location), syncValuesNode);
     }
 
-    @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!inClassBody(frameToMaterialize)", "!isGeneratorFrame(frameToMaterialize)"}, replaces = "freshPFrameCachedFD")
+    @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!isGeneratorFrame(frameToMaterialize)"}, replaces = "freshPFrameCachedFD")
     static PFrame freshPFrame(VirtualFrame frame, Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
                     @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode) {
         PDict locals = factory.createDictLocals(frameToMaterialize.getFrameDescriptor());
-        PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals, false);
-        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, forceSync && !inModuleRoot(location), syncValuesNode);
-    }
-
-    @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "inClassBody(frameToMaterialize)"})
-    static PFrame freshPFrameInClassBody(VirtualFrame frame, Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
-                    @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
-                    @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode) {
-        // the namespace argument stores the locals
-        PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getArgument(frameToMaterialize, 0), true);
-        // The locals dict in a class body is always custom; we must not write the values from the
-        // frame to this dict.
-        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, false, syncValuesNode);
+        PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals);
+        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, forceSync && !inModuleRoot(location) && !inClassBody(location), syncValuesNode);
     }
 
     /**
@@ -173,8 +161,8 @@ public abstract class MaterializeFrameNode extends Node {
                     @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode) {
         Object locals = getPFrame(frameToMaterialize).getLocalsDict();
-        PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals, inClassBody(frameToMaterialize));
-        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, forceSync && !inModuleRoot(location), syncValuesNode);
+        PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, locals);
+        return doEscapeFrame(frame, frameToMaterialize, escapedFrame, markAsEscaped, forceSync && !inModuleRoot(location) && !inClassBody(location), syncValuesNode);
     }
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "getPFrame(frameToMaterialize).isAssociated()"})
@@ -182,7 +170,7 @@ public abstract class MaterializeFrameNode extends Node {
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode,
                     @Cached ConditionProfile syncProfile) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
-        if (syncProfile.profile(forceSync && !inClassBody(frameToMaterialize) && !inModuleRoot(location))) {
+        if (syncProfile.profile(forceSync && !inModuleRoot(location) && !inClassBody(location))) {
             syncValuesNode.execute(frame, pyFrame, frameToMaterialize);
         }
         if (markAsEscaped) {
@@ -206,9 +194,7 @@ public abstract class MaterializeFrameNode extends Node {
                 return incompleteFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, factory, syncValuesNode);
             }
         } else {
-            if (inClassBody(frameToMaterialize)) {
-                return freshPFrameInClassBody(frame, location, markAsEscaped, forceSync, frameToMaterialize, factory, syncValuesNode);
-            } else if (isGeneratorFrame(frameToMaterialize)) {
+            if (isGeneratorFrame(frameToMaterialize)) {
                 return freshPFrameForGenerator(location, markAsEscaped, forceSync, frameToMaterialize, factory);
             } else {
                 return freshPFrame(frame, location, markAsEscaped, forceSync, frameToMaterialize, factory, syncValuesNode);
@@ -231,10 +217,6 @@ public abstract class MaterializeFrameNode extends Node {
         return escapedFrame;
     }
 
-    protected static boolean inClassBody(Frame frame) {
-        return PArguments.getSpecialArgument(frame) instanceof ClassBodyRootNode;
-    }
-
     protected static boolean isGeneratorFrame(Frame frame) {
         return PArguments.isGeneratorFrame(frame);
     }
@@ -249,6 +231,15 @@ public abstract class MaterializeFrameNode extends Node {
             return location instanceof ModuleRootNode;
         } else {
             return location.getRootNode() instanceof ModuleRootNode;
+        }
+    }
+
+    protected static boolean inClassBody(Node location) {
+        assert location != null;
+        if (location instanceof PRootNode) {
+            return location instanceof ClassBodyRootNode;
+        } else {
+            return location.getRootNode() instanceof ClassBodyRootNode;
         }
     }
 

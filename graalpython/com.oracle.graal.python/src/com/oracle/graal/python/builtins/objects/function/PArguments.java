@@ -31,7 +31,6 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -177,8 +176,8 @@ public final class PArguments {
      * <ul>
      * <li>The value sent to a generator via <code>send</code></li>
      * <li>An exception thrown through a generator via <code>throw</code></li>
-     * <li>The {@link ClassBodyRootNode} when we are executing a class body</li>
-     * <li>The custom locals in a module scope when called through <code>exec</code></li>
+     * <li>The custom locals in a module or class scope when called through <code>exec</code> or
+     * <code>__build_class__</code></li>
      * </ul>
      */
     public static Object getSpecialArgument(Frame frame) {

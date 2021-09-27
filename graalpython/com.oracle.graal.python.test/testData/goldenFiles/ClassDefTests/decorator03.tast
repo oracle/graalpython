@@ -25,8 +25,7 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,60]`class C(object
                 CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,60]`class C(object):↵   ...`
                 Name: C
-                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                  Param Names: namespace
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
@@ -41,26 +40,17 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,60]`class C(object
                         QualName: C
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: __name__
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                        SetItemIfNotPresentNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: None
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __module__
+                        WriteNameNodeGen SourceSection: None
+                          Identifier: __qualname__
                       FunctionBodyNode SourceSection: [21,60]`@staticmethod↵    de...`
-                        SetItemNodeGen SourceSection: [21,60]`@staticmethod↵    de...`
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
+                        WriteNameNodeGen SourceSection: [21,60]`@staticmethod↵    de...`
+                          Identifier: foo
                           PythonCallUnary SourceSection: [21,34]`@staticmethod`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [21,34]`@staticmethod`
-                              GetItemNodeGen SourceSection: None
-                                ArgumentExpressionNode SourceSection: None
-                                  ReadIndexedArgumentNodeGen SourceSection: None
-                                    Index: 0
-                                StringLiteralNode SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: staticmethod
+                              Identifier: staticmethod
                             FunctionDefinitionNode Name: foo SourceSection: None
                               Arguments: None
                               KwArguments: None

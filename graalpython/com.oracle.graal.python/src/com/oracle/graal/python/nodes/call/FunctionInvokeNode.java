@@ -92,12 +92,10 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
 
     @Specialization
     protected Object doDirect(VirtualFrame frame, Object[] arguments,
-                    @Cached ConditionProfile isClassBodyProfile,
                     @Cached ConditionProfile isGeneratorFunctionProfile) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
         RootCallTarget ct = (RootCallTarget) callNode.getCurrentCallTarget();
-        optionallySetClassBodySpecial(arguments, ct, isClassBodyProfile);
         optionallySetGeneratorFunction(arguments, ct, isGeneratorFunctionProfile, callee);
         if (profileIsNullFrame(frame == null)) {
             PythonThreadState threadState = PythonContext.get(this).getThreadState(PythonLanguage.get(this));

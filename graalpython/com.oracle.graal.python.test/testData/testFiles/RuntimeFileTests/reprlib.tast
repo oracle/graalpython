@@ -313,8 +313,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
               CellVarsSlots: None
             ClassBodyRootNode SourceSection: [1178,4965]`class Repr:↵↵    def...`
               Name: Repr
-              Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                Param Names: namespace
+              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
@@ -329,16 +328,13 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                       QualName: Repr
                       ReadGlobalOrBuiltinNodeGen SourceSection: None
                         Identifier: __name__
-                      ReadIndexedArgumentNodeGen SourceSection: None
-                        Index: 0
-                      SetItemIfNotPresentNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __module__
+                      WriteNameNodeGen SourceSection: None
+                        Identifier: __qualname__
                     FunctionBodyNode SourceSection: [1195,4965]`def __init__(self):↵...`
-                      SetItemNodeGen SourceSection: [1195,1509]`def __init__(self):↵...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [1195,1509]`def __init__(self):↵...`
+                        Identifier: __init__
                         FunctionDefinitionNode Name: __init__ SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -436,11 +432,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         Value: 30
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [1509,1577]`def repr(self, x):↵ ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [1509,1577]`def repr(self, x):↵ ...`
+                        Identifier: repr
                         FunctionDefinitionNode Name: repr SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -494,11 +487,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [1577,1920]`def repr1(self, x, l...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [1577,1920]`def repr1(self, x, l...`
+                        Identifier: repr1
                         FunctionDefinitionNode Name: repr1 SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -624,11 +614,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Frame: [2,level,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [5,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [1920,2400]`def _repr_iterable(s...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [1920,2400]`def _repr_iterable(s...`
+                        Identifier: _repr_iterable
                         FunctionDefinitionNode Name: _repr_iterable SourceSection: None
                           Arguments:
                             StringLiteralNode SourceSection: [1983,1985]`''`
@@ -871,11 +858,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [12,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [2400,2512]`def repr_tuple(self,...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [2400,2512]`def repr_tuple(self,...`
+                        Identifier: repr_tuple
                         FunctionDefinitionNode Name: repr_tuple SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -940,11 +924,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [2512,2617]`def repr_list(self, ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [2512,2617]`def repr_list(self, ...`
+                        Identifier: repr_list
                         FunctionDefinitionNode Name: repr_list SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -1008,11 +989,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [2617,2838]`def repr_array(self,...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [2617,2838]`def repr_array(self,...`
+                        Identifier: repr_array
                         FunctionDefinitionNode Name: repr_array SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -1104,11 +1082,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [4,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [2838,3018]`def repr_set(self, x...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [2838,3018]`def repr_set(self, x...`
+                        Identifier: repr_set
                         FunctionDefinitionNode Name: repr_set SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -1188,11 +1163,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [3018,3262]`def repr_frozenset(s...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [3018,3262]`def repr_frozenset(s...`
+                        Identifier: repr_frozenset
                         FunctionDefinitionNode Name: repr_frozenset SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -1272,11 +1244,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [3262,3376]`def repr_deque(self,...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [3262,3376]`def repr_deque(self,...`
+                        Identifier: repr_deque
                         FunctionDefinitionNode Name: repr_deque SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -1340,11 +1309,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [3376,3893]`def repr_dict(self, ...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [3376,3893]`def repr_dict(self, ...`
+                        Identifier: repr_dict
                         FunctionDefinitionNode Name: repr_dict SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -1543,11 +1509,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [11,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [3893,4213]`def repr_str(self, x...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [3893,4213]`def repr_str(self, x...`
+                        Identifier: repr_str
                         FunctionDefinitionNode Name: repr_str SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -1744,11 +1707,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         Frame: [3,s,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [6,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [4213,4492]`def repr_int(self, x...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [4213,4492]`def repr_int(self, x...`
+                        Identifier: repr_int
                         FunctionDefinitionNode Name: repr_int SourceSection: None
                           Arguments: None
                           KwArguments: None
@@ -1899,11 +1859,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         Frame: [3,s,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [6,<return_val>,Object]
-                      SetItemNodeGen SourceSection: [4492,4965]`def repr_instance(se...`
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
+                      WriteNameNodeGen SourceSection: [4492,4965]`def repr_instance(se...`
+                        Identifier: repr_instance
                         FunctionDefinitionNode Name: repr_instance SourceSection: None
                           Arguments: None
                           KwArguments: None

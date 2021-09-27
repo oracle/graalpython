@@ -32,8 +32,7 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
                   CellVarsSlots: None
                 ClassBodyRootNode SourceSection: [0,35]`class A:↵    class B...`
                   Name: A
-                  Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                    Param Names: namespace
+                  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                   CelVars: None
                   FreeVars: None
                   NeedsCellFrame: False
@@ -48,16 +47,13 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
                           QualName: A
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: __name__
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                          SetItemIfNotPresentNodeGen SourceSection: None
-                            SetItemNodeGen SourceSection: None
+                          WriteNameNodeGen SourceSection: None
+                            Identifier: __module__
+                          WriteNameNodeGen SourceSection: None
+                            Identifier: __qualname__
                         FunctionBodyNode SourceSection: [13,35]`class B:↵        pas...`
-                          SetItemNodeGen SourceSection: [13,35]`class B:↵        pas...`
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
+                          WriteNameNodeGen SourceSection: [13,35]`class B:↵        pas...`
+                            Identifier: B
                             PythonCallBinary SourceSection: [13,35]`class B:↵        pas...`
                               CallBinaryMethodNodeGen SourceSection: None
                               LoadBuildClassNode SourceSection: None
@@ -72,8 +68,7 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
                                   CellVarsSlots: None
                                 ClassBodyRootNode SourceSection: [13,35]`class B:↵        pas...`
                                   Name: B
-                                  Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                                    Param Names: namespace
+                                  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                   CelVars: None
                                   FreeVars: None
                                   NeedsCellFrame: False
@@ -88,10 +83,10 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
                                           QualName: A.B
                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                                             Identifier: __name__
-                                          ReadIndexedArgumentNodeGen SourceSection: None
-                                            Index: 0
-                                          SetItemIfNotPresentNodeGen SourceSection: None
-                                            SetItemNodeGen SourceSection: None
+                                          WriteNameNodeGen SourceSection: None
+                                            Identifier: __module__
+                                          WriteNameNodeGen SourceSection: None
+                                            Identifier: __qualname__
                                         FunctionBodyNode SourceSection: [30,34]`pass`
                                           ExpressionStatementNode SourceSection: [30,34]`pass`
                                             EmptyNode SourceSection: [30,34]`pass`
