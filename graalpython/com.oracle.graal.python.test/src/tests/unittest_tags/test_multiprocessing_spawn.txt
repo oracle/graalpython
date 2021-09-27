@@ -174,6 +174,7 @@
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestSharedMemory.test_shared_memory_cleaned_after_process_termination
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestSubclassingProcess.test_stderr_flush
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestSubclassingProcess.test_subclassing
+*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestSubclassingProcess.test_sys_exit
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestValue.test_getobj_getlock
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestValue.test_rawvalue
 *graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestValue.test_value
