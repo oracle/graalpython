@@ -60,9 +60,9 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -382,7 +382,7 @@ public abstract class HashingStorage {
         @Specialization
         HashingStorage[] doit(HashingStorage[] accumulator, Object key,
                         @Cached PRaiseNode raise,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary hashLib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage self = accumulator[0];
             HashingStorage other = accumulator[1];
@@ -394,7 +394,7 @@ public abstract class HashingStorage {
             if (selfValue == null) {
                 throw raise.raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.DICT_CHANGED_DURING_COMPARISON);
             }
-            if (hashLib.equals(selfValue, otherValue, hashLib)) {
+            if (eqNode.execute(null, selfValue, otherValue)) {
                 return accumulator;
             } else {
                 throw AbortIteration.INSTANCE;

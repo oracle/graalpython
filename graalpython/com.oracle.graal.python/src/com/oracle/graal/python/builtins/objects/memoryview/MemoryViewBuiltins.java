@@ -73,10 +73,10 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -103,7 +103,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMemoryView)
@@ -263,7 +262,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean eq(VirtualFrame frame, PMemoryView self, PMemoryView other,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached MemoryViewNodes.ReadItemAtNode readSelf,
                         @Cached MemoryViewNodes.ReadItemAtNode readOther) {
             if (self.isReleased() || other.isReleased()) {
@@ -290,10 +289,10 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             if (ndim == 0) {
                 Object selfItem = readSelf.execute(frame, self, self.getBufferPointer(), 0);
                 Object otherItem = readOther.execute(frame, other, other.getBufferPointer(), 0);
-                return lib.equalsWithFrame(selfItem, otherItem, lib, frame);
+                return eqNode.execute(frame, selfItem, otherItem);
             }
 
-            return recursive(frame, lib, self, other, readSelf, readOther, 0, ndim,
+            return recursive(frame, eqNode, self, other, readSelf, readOther, 0, ndim,
                             self.getBufferPointer(), self.getOffset(), other.getBufferPointer(), other.getOffset());
         }
 
@@ -301,7 +300,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         Object eq(VirtualFrame frame, PMemoryView self, Object other,
                         @Cached PyMemoryViewFromObject memoryViewNode,
                         @Cached MemoryViewNodes.ReleaseNode releaseNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached MemoryViewNodes.ReadItemAtNode readSelf,
                         @Cached MemoryViewNodes.ReadItemAtNode readOther) {
             PMemoryView memoryView;
@@ -311,7 +310,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             try {
-                return eq(frame, self, memoryView, lib, readSelf, readOther);
+                return eq(frame, self, memoryView, eqNode, readSelf, readOther);
             } finally {
                 releaseNode.execute(memoryView);
             }
@@ -323,9 +322,9 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        private boolean recursive(VirtualFrame frame, PythonObjectLibrary lib, PMemoryView self, PMemoryView other,
-                        MemoryViewNodes.ReadItemAtNode readSelf, MemoryViewNodes.ReadItemAtNode readOther,
-                        int dim, int ndim, Object selfPtr, int initialSelfOffset, Object otherPtr, int initialOtherOffset) {
+        private boolean recursive(VirtualFrame frame, PyObjectRichCompareBool.EqNode eqNode, PMemoryView self, PMemoryView other,
+                                  MemoryViewNodes.ReadItemAtNode readSelf, MemoryViewNodes.ReadItemAtNode readOther,
+                                  int dim, int ndim, Object selfPtr, int initialSelfOffset, Object otherPtr, int initialOtherOffset) {
             int selfOffset = initialSelfOffset;
             int otherOffset = initialOtherOffset;
             for (int i = 0; i < self.getBufferShape()[dim]; i++) {
@@ -344,11 +343,11 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 if (dim == ndim - 1) {
                     Object selfItem = readSelf.execute(frame, self, selfXPtr, selfXOffset);
                     Object otherItem = readOther.execute(frame, other, otherXPtr, otherXOffset);
-                    if (!lib.equals(selfItem, otherItem, lib)) {
+                    if (!eqNode.execute(frame, selfItem, otherItem)) {
                         return false;
                     }
                 } else {
-                    if (!recursive(frame, lib, self, other, readSelf, readOther, dim + 1, ndim, selfXPtr, selfXOffset, otherXPtr, otherXOffset)) {
+                    if (!recursive(frame, eqNode, self, other, readSelf, readOther, dim + 1, ndim, selfXPtr, selfXOffset, otherXPtr, otherXOffset)) {
                         return false;
                     }
                 }

@@ -97,14 +97,11 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetLenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.VerifyNativeItemNodeGen;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins.NextNode;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltinsFactory.NextNodeFactory;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
@@ -112,6 +109,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -1742,29 +1740,16 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         boolean doGeneric(VirtualFrame frame, SequenceStorage left, SequenceStorage right,
-                        @Cached ConditionProfile hasFrame,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
             int llen = getLenNode().execute(left);
             int rlen = getLenNode().execute(right);
             if (testingEqualsWithDifferingLengths(llen, rlen)) {
                 return false;
             }
-            ThreadState state;
-            if (hasFrame.profile(frame != null)) {
-                state = PArguments.getThreadState(frame);
-            } else {
-                state = null;
-            }
             for (int i = 0; i < Math.min(llen, rlen); i++) {
                 Object leftItem = getGetItemNode().execute(left, i);
                 Object rightItem = getGetRightItemNode().execute(right, i);
-                boolean isEqual;
-                if (hasFrame.profile(state != null)) {
-                    isEqual = lib.equalsWithState(leftItem, rightItem, lib, state);
-                } else {
-                    isEqual = lib.equals(leftItem, rightItem, lib);
-                }
-                if (!isEqual) {
+                if (!eqNode.execute(frame, leftItem, rightItem)) {
                     return cmpGeneric(frame, leftItem, rightItem);
                 }
             }
@@ -2555,10 +2540,10 @@ public abstract class SequenceStorageNodes {
         static int doGeneric(VirtualFrame frame, SequenceStorage left, Object item,
                         @Cached LenNode lenNode,
                         @Cached GetItemScalarNode getItemNode,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
             for (int i = 0; i < lenNode.execute(left); i++) {
                 Object leftItem = getItemNode.execute(left, i);
-                if (lib.equalsWithFrame(item, leftItem, lib, frame)) {
+                if (eqNode.execute(frame, item, leftItem)) {
                     return i;
                 }
             }
@@ -3567,11 +3552,10 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         int doGeneric(VirtualFrame frame, SequenceStorage s, Object item, int start, int end,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
-            ThreadState state = PArguments.getThreadState(frame);
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
             for (int i = start; i < getLength(s, end); i++) {
                 Object object = getItemScalarNode().execute(s, i);
-                if (lib.equalsWithState(object, item, lib, state)) {
+                if (eqNode.execute(frame, object, item)) {
                     return i;
                 }
             }

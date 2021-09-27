@@ -67,10 +67,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
  * Performs one of comparison operations. The nodes for all operations are inner classes of this
- * class - {@link Eq}, {@link Ne}, {@link Lt}, {@link Le}, {@link Gt} and {@link Ge}. Equivalent of
- * CPython's {@code PyObject_RichCompareBool} with the difference that the operation is selected by
- * picking particular inner class. Note there is a small difference in behavior between
- * {@code PyObject_RichCompareBool} and {@code PyObject_RichCompare} followed by
+ * class - {@link EqNode}, {@link NeNode}, {@link LtNode}, {@link LeNode}, {@link GtNode} and
+ * {@link GeNode}. Equivalent of CPython's {@code PyObject_RichCompareBool} with the difference that
+ * the operation is selected by picking particular inner class. Note there is a small difference in
+ * behavior between {@code PyObject_RichCompareBool} and {@code PyObject_RichCompare} followed by
  * {@code PyObject_IsTrue} - the objects are compared for referential equality first (when doing
  * equality comparison) before calling the special method. This makes a difference for objects that
  * report they are unequal to themselves (i.e. {@code NaN}).
@@ -282,7 +282,7 @@ public abstract class PyObjectRichCompareBool {
     }
 
     @GenerateUncached
-    public abstract static class Eq extends ComparisonBaseNode {
+    public abstract static class EqNode extends ComparisonBaseNode {
         @Override
         public boolean execute(Frame frame, Object a, Object b) {
             /*
@@ -339,10 +339,18 @@ public abstract class PyObjectRichCompareBool {
             // The objects were already compared for identity in the beginning
             return false;
         }
+
+        public static EqNode create() {
+            return PyObjectRichCompareBoolFactory.EqNodeNodeGen.create();
+        }
+
+        public static EqNode getUncached() {
+            return PyObjectRichCompareBoolFactory.EqNodeNodeGen.getUncached();
+        }
     }
 
     @GenerateUncached
-    public abstract static class Ne extends ComparisonBaseNode {
+    public abstract static class NeNode extends ComparisonBaseNode {
         @Override
         public boolean execute(Frame frame, Object a, Object b) {
             if (a == b) {
@@ -393,10 +401,18 @@ public abstract class PyObjectRichCompareBool {
             // The objects were already compared for identity in the beginning
             return true;
         }
+
+        public static NeNode create() {
+            return PyObjectRichCompareBoolFactory.NeNodeNodeGen.create();
+        }
+
+        public static NeNode getUncached() {
+            return PyObjectRichCompareBoolFactory.NeNodeNodeGen.getUncached();
+        }
     }
 
     @GenerateUncached
-    public abstract static class Lt extends ComparisonBaseNode {
+    public abstract static class LtNode extends ComparisonBaseNode {
         @Override
         protected boolean op(boolean a, boolean b) {
             return !a && b;
@@ -431,10 +447,18 @@ public abstract class PyObjectRichCompareBool {
         protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<", a, b);
         }
+
+        public static LtNode create() {
+            return PyObjectRichCompareBoolFactory.LtNodeNodeGen.create();
+        }
+
+        public static LtNode getUncached() {
+            return PyObjectRichCompareBoolFactory.LtNodeNodeGen.getUncached();
+        }
     }
 
     @GenerateUncached
-    public abstract static class Le extends ComparisonBaseNode {
+    public abstract static class LeNode extends ComparisonBaseNode {
         @Override
         protected boolean op(boolean a, boolean b) {
             return b || a == b;
@@ -469,10 +493,18 @@ public abstract class PyObjectRichCompareBool {
         protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<=", a, b);
         }
+
+        public static LeNode create() {
+            return PyObjectRichCompareBoolFactory.LeNodeNodeGen.create();
+        }
+
+        public static LeNode getUncached() {
+            return PyObjectRichCompareBoolFactory.LeNodeNodeGen.getUncached();
+        }
     }
 
     @GenerateUncached
-    public abstract static class Gt extends ComparisonBaseNode {
+    public abstract static class GtNode extends ComparisonBaseNode {
         @Override
         protected boolean op(boolean a, boolean b) {
             return a && !b;
@@ -507,10 +539,18 @@ public abstract class PyObjectRichCompareBool {
         protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, ">", a, b);
         }
+
+        public static GtNode create() {
+            return PyObjectRichCompareBoolFactory.GtNodeNodeGen.create();
+        }
+
+        public static GtNode getUncached() {
+            return PyObjectRichCompareBoolFactory.GtNodeNodeGen.getUncached();
+        }
     }
 
     @GenerateUncached
-    public abstract static class Ge extends ComparisonBaseNode {
+    public abstract static class GeNode extends ComparisonBaseNode {
         @Override
         protected boolean op(boolean a, boolean b) {
             return a || a == b;
@@ -544,6 +584,14 @@ public abstract class PyObjectRichCompareBool {
         @Override
         protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, ">=", a, b);
+        }
+
+        public static GeNode create() {
+            return PyObjectRichCompareBoolFactory.GeNodeNodeGen.create();
+        }
+
+        public static GeNode getUncached() {
+            return PyObjectRichCompareBoolFactory.GeNodeNodeGen.getUncached();
         }
     }
 }

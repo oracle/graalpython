@@ -334,24 +334,6 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * @see #equalsWithState
-     */
-    public final boolean equals(Object receiver, Object other, PythonObjectLibrary otherLibrary) {
-        return equalsWithState(receiver, other, otherLibrary, null);
-    }
-
-    /**
-     * @see #equalsWithState
-     */
-    public final boolean equalsWithFrame(Object receiver, Object other, PythonObjectLibrary otherLibrary, VirtualFrame frame) {
-        if (profileHasFrame(frame)) {
-            return equalsWithState(receiver, other, otherLibrary, PArguments.getThreadState(frame));
-        } else {
-            return equals(receiver, other, otherLibrary);
-        }
-    }
-
-    /**
      * Compare {@code receiver} to {@code other} using {@code __eq__}.
      *
      * @param threadState may be {@code null}

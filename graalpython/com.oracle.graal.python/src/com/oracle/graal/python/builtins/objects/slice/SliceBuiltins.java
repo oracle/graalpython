@@ -36,9 +36,9 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -60,7 +60,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSlice)
 public class SliceBuiltins extends PythonBuiltins {
@@ -104,12 +103,11 @@ public class SliceBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static boolean sliceCmpWithLib(PSlice left, PSlice right,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary libLeft,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary libRight) {
-            return libLeft.equals(left.getStart(), right.getStart(), libRight) &&
-                            libLeft.equals(left.getStop(), right.getStop(), libRight) &&
-                            libLeft.equals(left.getStep(), right.getStep(), libRight);
+        static boolean sliceCmpWithLib(VirtualFrame frame, PSlice left, PSlice right,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+            return eqNode.execute(frame, left.getStart(), right.getStart()) &&
+                            eqNode.execute(frame, left.getStop(), right.getStop()) &&
+                            eqNode.execute(frame, left.getStep(), right.getStep());
         }
 
     }

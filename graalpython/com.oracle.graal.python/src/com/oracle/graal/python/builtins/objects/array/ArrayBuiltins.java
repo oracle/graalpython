@@ -72,7 +72,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -81,6 +80,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -252,15 +252,15 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "left.getFormat() != right.getFormat()")
-        static boolean eqItems(PArray left, PArray right,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+        static boolean eqItems(VirtualFrame frame, PArray left, PArray right,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ArrayNodes.GetValueNode getLeft,
                         @Cached ArrayNodes.GetValueNode getRight) {
             if (left.getLength() != right.getLength()) {
                 return false;
             }
             for (int i = 0; i < left.getLength(); i++) {
-                if (!lib.equals(getLeft.execute(left, i), getRight.execute(right, i), lib)) {
+                if (!eqNode.execute(frame, getLeft.execute(left, i), getRight.execute(right, i))) {
                     return false;
                 }
             }
@@ -305,7 +305,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isFloatingPoint(left.getFormat()) || (left.getFormat() != right.getFormat())")
         boolean cmpItems(VirtualFrame frame, PArray left, PArray right,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached("createComparison()") BinaryComparisonNode compareNode,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
                         @Cached ArrayNodes.GetValueNode getLeft,
@@ -314,7 +314,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             for (int i = 0; i < commonLength; i++) {
                 Object leftValue = getLeft.execute(left, i);
                 Object rightValue = getRight.execute(right, i);
-                if (!lib.equals(leftValue, rightValue, lib)) {
+                if (!eqNode.execute(frame, leftValue, rightValue)) {
                     return coerceToBooleanNode.executeBoolean(frame, compareNode.executeObject(frame, leftValue, rightValue));
                 }
             }
@@ -420,10 +420,10 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
         static boolean contains(VirtualFrame frame, PArray self, Object value,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             for (int i = 0; i < self.getLength(); i++) {
-                if (lib.equalsWithFrame(getValueNode.execute(self, i), value, lib, frame)) {
+                if (eqNode.execute(frame, getValueNode.execute(self, i), value)) {
                     return true;
                 }
             }
@@ -879,11 +879,11 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class RemoveNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object remove(VirtualFrame frame, PArray self, Object value,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             for (int i = 0; i < self.getLength(); i++) {
                 Object item = getValueNode.execute(self, i);
-                if (lib.equalsWithFrame(item, value, lib, frame)) {
+                if (eqNode.execute(frame, item, value)) {
                     self.checkCanResize(this);
                     self.delSlice(i, 1);
                     return PNone.NONE;
@@ -1217,10 +1217,10 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class IndexNode extends PythonBinaryBuiltinNode {
         @Specialization
         int index(VirtualFrame frame, PArray self, Object value,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             for (int i = 0; i < self.getLength(); i++) {
-                if (lib.equalsWithFrame(getValueNode.execute(self, i), value, lib, frame)) {
+                if (eqNode.execute(frame, getValueNode.execute(self, i), value)) {
                     return i;
                 }
             }
@@ -1233,11 +1233,11 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class CountNode extends PythonBinaryBuiltinNode {
         @Specialization
         static int count(VirtualFrame frame, PArray self, Object value,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             int count = 0;
             for (int i = 0; i < self.getLength(); i++) {
-                if (lib.equalsWithFrame(getValueNode.execute(self, i), value, lib, frame)) {
+                if (eqNode.execute(frame, getValueNode.execute(self, i), value)) {
                     count++;
                 }
             }

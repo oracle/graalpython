@@ -49,9 +49,9 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.dsl.Cached;
@@ -165,21 +165,15 @@ public class KeywordsStorage extends HashingStorage {
         static Object notString(KeywordsStorage self, Object key, ThreadState state,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @Cached PyObjectHashNode hashNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Shared("gotState") @Cached ConditionProfile gotState) {
             VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             long hash = hashNode.execute(frame, key);
             for (int i = 0; i < self.keywords.length; i++) {
                 String currentKey = self.keywords[i].getName();
                 long keyHash = hashNode.execute(frame, currentKey);
-                if (gotState.profile(state != null)) {
-                    if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
-                        return self.keywords[i].getValue();
-                    }
-                } else {
-                    if (keyHash == hash && lib.equals(key, currentKey, lib)) {
-                        return self.keywords[i].getValue();
-                    }
+                if (keyHash == hash && eqNode.execute(frame, key, currentKey)) {
+                    return self.keywords[i].getValue();
                 }
             }
             return null;

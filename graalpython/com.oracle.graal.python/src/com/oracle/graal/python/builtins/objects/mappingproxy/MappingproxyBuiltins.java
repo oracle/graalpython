@@ -44,11 +44,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -60,7 +60,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMappingproxy)
 public final class MappingproxyBuiltins extends PythonBuiltins {
@@ -186,11 +185,10 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         Object eq(VirtualFrame frame, PMappingproxy self, Object other,
-                        @CachedLibrary("self.getMapping()") PythonObjectLibrary lib,
-                        @CachedLibrary("other") PythonObjectLibrary otherLib) {
-            return lib.equalsWithFrame(self.getMapping(), other, otherLib, frame);
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
+            return eqNode.execute(frame, self.getMapping(), other);
         }
     }
 

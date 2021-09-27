@@ -74,12 +74,12 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -181,7 +181,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         static boolean contains(VirtualFrame frame, PDictItemsView self, PTuple key,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary hlib,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ConditionProfile hasFrame,
                         @Cached ConditionProfile tupleLenProfile,
                         @Cached SequenceStorageNodes.LenNode lenNode,
@@ -193,14 +193,14 @@ public final class DictViewBuiltins extends PythonBuiltins {
             HashingStorage dictStorage = self.getWrappedDict().getDictStorage();
             Object value = hlib.getItemWithFrame(dictStorage, getTupleItemNode.execute(frame, tupleStorage, 0), hasFrame, frame);
             if (value != null) {
-                return lib.equalsWithFrame(value, getTupleItemNode.execute(frame, tupleStorage, 1), lib, frame);
+                return eqNode.execute(frame, value, getTupleItemNode.execute(frame, tupleStorage, 1));
             } else {
                 return false;
             }
         }
 
         protected static boolean isFallback(Object self, Object key) {
-            return !(self instanceof PDictView || self instanceof PDictKeysView || self instanceof PDictItemsView) || (self instanceof PDictItemsView && !(key instanceof PTuple));
+            return !(self instanceof PDictView) || self instanceof PDictItemsView && !(key instanceof PTuple);
         }
 
         @SuppressWarnings("unused")

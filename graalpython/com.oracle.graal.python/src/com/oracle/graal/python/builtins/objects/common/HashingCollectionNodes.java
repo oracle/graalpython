@@ -47,10 +47,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFac
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -113,14 +112,12 @@ public abstract class HashingCollectionNodes {
 
         @Specialization
         static HashingStorage doEconomicStorage(VirtualFrame frame, EconomicMapStorage map, Object value,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached.Exclusive @Cached ConditionProfile findProfile,
-                        @Cached.Exclusive @Cached ConditionProfile gotState) {
-            PArguments.ThreadState state = frame == null ? null : PArguments.getThreadState(frame);
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached.Exclusive @Cached ConditionProfile findProfile) {
             // We want to avoid calling __hash__() during map.put
             HashingStorageLibrary.HashingStorageIterable<EconomicMapStorage.DictKey> iter = map.dictKeys();
             for (EconomicMapStorage.DictKey key : iter) {
-                map.setValue(key, value, lib, findProfile, gotState, state);
+                map.setValue(frame, key, value, findProfile, eqNode);
             }
             return map;
         }
