@@ -1237,12 +1237,13 @@ def update_import_cmd(args):
             repos_updated.append(repo)
 
     # push all repos
-    for repo in repos_updated:
-        try:
-            mx._opts.very_verbose = True
-            vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
-        finally:
-            mx._opts.very_verbose = prev_verbosity
+    if "--no-push" not in args:
+        for repo in repos_updated:
+            try:
+                mx._opts.very_verbose = True
+                vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
+            finally:
+                mx._opts.very_verbose = prev_verbosity
 
     if repos_updated:
         mx.log("\n  ".join(["These repos were updated:"] + repos_updated))
@@ -2254,7 +2255,7 @@ mx.update_commands(SUITE, {
     'python3': [python, '[Python args|@VM options]'],
     'deploy-binary-if-master': [deploy_binary_if_main, ''],
     'python-gate': [python_gate, '--tags [gates]'],
-    'python-update-import': [update_import_cmd, '[--no-pull] [import-name, default: truffle]'],
+    'python-update-import': [update_import_cmd, '[--no-pull] [--no-push] [import-name, default: truffle]'],
     'python-style': [python_style_checks, '[--fix] [--no-spotbugs]'],
     'python-svm': [python_svm, ''],
     'python-gvm': [python_gvm, ''],
