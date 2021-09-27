@@ -2000,6 +2000,9 @@ public class GraalHPyNodes {
                 // process legacy slots; this is of type 'cpy_PyTypeSlot legacy_slots[]'
                 Object legacySlots = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_GET_LEGECY_SLOTS, typeSpec);
                 if (!ptrLib.isNull(legacySlots)) {
+                    if (legacy == 0) {
+                        throw raiseNode.raise(TypeError, "cannot specify .legacy_slots without setting .legacy=true");
+                    }
                     int nLegacySlots = PInt.intValueExact(ptrLib.getArraySize(legacySlots));
                     for (int i = 0; i < nLegacySlots; i++) {
                         Object legacySlotDef = ptrLib.readArrayElement(legacySlots, i);
