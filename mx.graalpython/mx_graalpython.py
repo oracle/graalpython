@@ -1249,7 +1249,7 @@ def update_import_cmd(args):
             finally:
                 mx._opts.very_verbose = prev_verbosity
 
-        if repos_updated and input('Use automation tool to create PRs (Y/n)? ').lower() != "y":
+        if repos_updated and input('Use automation tool to create PRs (Y/n)? ').lower() != "n":
             username = input('Username: ')
             password = getpass.getpass('Password: ')
             cmds = []
@@ -1264,7 +1264,7 @@ def update_import_cmd(args):
                 cmds.append(cmd)
                 print(" ".join(cmd))
             for cmd in cmds:
-                cmd.replace("${SSO_PASSWORD}", password)
+                cmd[3].replace("${SSO_PASSWORD}", password)
                 mx.run(cmd, nonZeroIsFatal=False)
 
     if repos_updated:
