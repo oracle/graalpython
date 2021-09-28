@@ -113,7 +113,7 @@ public final class BoolBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "atLeastOneIsNotBoolean(self, other)")
         Object doOther(VirtualFrame frame, Object self, Object other,
-                       @Cached IntBuiltins.OrNode orNode) {
+                        @Cached IntBuiltins.OrNode orNode) {
             return orNode.call(frame, self, other);
         }
     }
@@ -129,7 +129,7 @@ public final class BoolBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "atLeastOneIsNotBoolean(self, other)")
         Object doOther(VirtualFrame frame, Object self, Object other,
-                       @Cached IntBuiltins.XorNode xorNode) {
+                        @Cached IntBuiltins.XorNode xorNode) {
             return xorNode.call(frame, self, other);
         }
     }
