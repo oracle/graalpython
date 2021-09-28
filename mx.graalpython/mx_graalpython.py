@@ -2068,10 +2068,10 @@ def update_hpy_import_cmd(args):
 
     # do sanity check of the HPy repo
     hpy_repo_include_dir = join(hpy_repo_path, "hpy", "devel", "include")
-    hpy_repo_runtime_dir = join(hpy_repo_path, "hpy", "devel", "src")
+    hpy_repo_src_dir = join(hpy_repo_path, "hpy", "devel", "src")
     hpy_repo_debug_dir = join(hpy_repo_path, "hpy", "debug")
     hpy_repo_test_dir = join(hpy_repo_path, "test")
-    for d in [hpy_repo_path, hpy_repo_include_dir, hpy_repo_runtime_dir, hpy_repo_test_dir]:
+    for d in [hpy_repo_path, hpy_repo_include_dir, hpy_repo_src_dir, hpy_repo_test_dir]:
         if not os.path.isdir(d):
             mx.abort("HPy import repo is missing directory {}".format(d))
 
@@ -2139,6 +2139,15 @@ def update_hpy_import_cmd(args):
     # headers go into 'com.oracle.graal.python.cext/include'
     header_dest = join(mx.project("com.oracle.graal.python.cext").dir, "include")
 
+    # copy 'hpy/devel/__init__.py' to 'lib-graalpython/module/hpy/devel/__init__.py'
+    dest_devel_file = join(_get_core_home(), "modules", "hpy", "devel", "__init__.py")
+    src_devel_file = join(hpy_repo_path, "hpy", "devel", "__init__.py")
+    if not os.path.exists(src_devel_file):
+        SUITE.vc.git_command(SUITE.dir, ["reset", "--hard"])
+        SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
+        mx.abort("File '{}' is missing but required.".format(src_devel_file))
+    import_file(src_devel_file, dest_devel_file)
+
     # 'version.py' goes to 'lib-graalpython/module/hpy/devel/'
     dest_version_file = join(_get_core_home(), "modules", "hpy", "devel", "version.py")
     src_version_file = join(hpy_repo_path, "hpy", "devel", "version.py")
@@ -2156,11 +2165,11 @@ def update_hpy_import_cmd(args):
 
     # runtime sources go into 'lib-graalpython/module/hpy/devel/src'
     runtime_files_dest = join(_get_core_home(), "modules", "hpy", "devel", "src")
-    import_files(hpy_repo_runtime_dir, runtime_files_dest)
-    remove_inexistent_files(hpy_repo_runtime_dir, runtime_files_dest)
+    import_files(hpy_repo_src_dir, runtime_files_dest)
+    remove_inexistent_files(hpy_repo_src_dir, runtime_files_dest)
 
     # 'ctx_tracker.c' also goes to 'com.oracle.graal.python.jni/src/ctx_tracker.c'
-    tracker_file_src = join(hpy_repo_runtime_dir, "ctx_tracker.c")
+    tracker_file_src = join(hpy_repo_src_dir, "runtime", "ctx_tracker.c")
     if not os.path.exists(tracker_file_src):
         mx.abort("File '{}' is missing but required.".format(tracker_file_src))
     tracker_file_dest = join(mx.project("com.oracle.graal.python.jni").dir, "src", "ctx_tracker.c")
@@ -2190,10 +2199,10 @@ def update_hpy_import_cmd(args):
     SUITE.vc.git_command(SUITE.dir, ["merge", HPY_IMPORT_ORPHAN_BRANCH_NAME])
 
     # update PKG-INFO version
-    pkg_info_file = join(_get_core_home(), "modules", "hpy.devel.egg-info", "PKG-INFO")
+    pkg_info_file = join(_get_core_home(), "modules", "hpy.egg-info", "PKG-INFO")
     with open(pkg_info_file, "w") as f:
         f.write("Metadata-Version: 2.1\n"
-                "Name: hpy.devel\n"
+                "Name: hpy\n"
                 "Version: {}\n"
                 "Summary: UNKNOWN\n"
                 "Home-page: UNKNOWN\n"

@@ -103,7 +103,6 @@ class TestCustomLegacyFeatures(HPyTest):
         assert mod.h(4, 5, 6) == 456
         assert mod.k(c=6, b=5, a=4) == 456
 
-    @pytest.mark.xfail
     def test_legacy_inherits_from_pure_raises(self):
         import pytest
         mod_src = """
