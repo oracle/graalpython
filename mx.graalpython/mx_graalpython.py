@@ -286,9 +286,11 @@ def run_cpython_test(args):
     testfiles = []
     for g in globs:
         testfiles += glob.glob(os.path.join(SUITE.dir, "graalpython/lib-python/3/test", "%s*" % g))
-    mx.run([python_gvm_with_assertions()] + interp_args + [
-        os.path.join(SUITE.dir, "graalpython/com.oracle.graal.python.test/src/tests/run_cpython_test.py"),
-    ] + test_args + testfiles)
+    interp_args.insert(0, "--python.CAPI=%s" % _get_capi_home())
+    with _dev_pythonhome_context():
+        mx.run([python_gvm_with_assertions()] + interp_args + [
+            os.path.join(SUITE.dir, "graalpython/com.oracle.graal.python.test/src/tests/run_cpython_test.py"),
+        ] + test_args + testfiles)
 
 
 def retag_unittests(args):
