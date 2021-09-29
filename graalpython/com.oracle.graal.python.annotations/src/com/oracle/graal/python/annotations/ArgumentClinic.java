@@ -148,6 +148,11 @@ public @interface ArgumentClinic {
          */
         CodePoint,
         /**
+         * Corresponds to CPython's {@code object(subclass_of="&PyTuple_Type"))} converter. Supports
+         * {@link #defaultValue()}, and {@link #useDefaultForNone()}.
+         */
+        Tuple,
+        /**
          * Deprecated. Legacy converter for PythonObjectLibrary buffers.
          */
         Buffer,
