@@ -49,6 +49,7 @@ import _sysconfig
 __dir__ = __file__.rpartition("/")[0]
 cflags_warnings = [ "-Wno-int-to-pointer-cast"
                   , "-Wno-int-conversion"
+                  , "-Wno-void-pointer-to-int-cast"
                   , "-Wno-incompatible-pointer-types-discards-qualifiers"
                   , "-Wno-pointer-type-mismatch"
                   , "-Wno-braced-scalar-init"
