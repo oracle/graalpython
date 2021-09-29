@@ -43,31 +43,33 @@ package com.oracle.graal.python.nodes.expression;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.expression.IsExpressionNodeGen.IsNodeGen;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -89,32 +91,24 @@ public abstract class IsExpressionNode extends BinaryOpNode {
 
         protected abstract boolean executeInternal(Object left, Object right);
 
+        protected abstract boolean executeInternal(boolean left, Object right);
+
         public final boolean execute(Object left, Object right) {
             return left == right || executeInternal(left, right);
+        }
+
+        public boolean isTrue(Object object) {
+            return executeInternal(true, object);
+        }
+
+        public boolean isFalse(Object object) {
+            return executeInternal(false, object);
         }
 
         // Primitives
         @Specialization
         static boolean doBB(boolean left, boolean right) {
             return left == right;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        static boolean doBI(boolean left, int right) {
-            return false;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        static boolean doBL(boolean left, long right) {
-            return false;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        static boolean doBD(boolean left, double right) {
-            return false;
         }
 
         @Specialization
@@ -127,12 +121,6 @@ public abstract class IsExpressionNode extends BinaryOpNode {
             }
         }
 
-        @SuppressWarnings("unused")
-        @Specialization
-        static boolean doIB(int left, boolean right) {
-            return false;
-        }
-
         @Specialization
         static boolean doII(int left, int right) {
             return left == right;
@@ -141,12 +129,6 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         @Specialization
         static boolean doIL(int left, long right) {
             return left == right;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        static boolean doID(int left, double right) {
-            return false;
         }
 
         @Specialization
@@ -163,12 +145,6 @@ public abstract class IsExpressionNode extends BinaryOpNode {
             }
         }
 
-        @SuppressWarnings("unused")
-        @Specialization
-        static boolean doLB(long left, boolean right) {
-            return false;
-        }
-
         @Specialization
         static boolean doLI(long left, int right) {
             return left == right;
@@ -177,12 +153,6 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         @Specialization
         static boolean doLL(long left, long right) {
             return left == right;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        static boolean doLD(long left, double right) {
-            return false;
         }
 
         @Specialization
@@ -197,24 +167,6 @@ public abstract class IsExpressionNode extends BinaryOpNode {
             } else {
                 return false;
             }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        static boolean doDB(double left, boolean right) {
-            return false;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        static boolean doDI(double left, int right) {
-            return false;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        static boolean doDL(double left, long right) {
-            return false;
         }
 
         @Specialization
@@ -303,65 +255,28 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         }
 
         // pstring (may be interned)
-        @Specialization(limit = "1")
+        @Specialization
         static boolean doPString(PString left, PString right,
-                        @CachedLibrary("left") PythonObjectLibrary lib) {
-            return lib.isSame(left, right);
+                        @Cached StringNodes.StringMaterializeNode materializeNode,
+                        @Cached StringNodes.IsInternedStringNode isInternedStringNode) {
+            if (isInternedStringNode.execute(left) && isInternedStringNode.execute(right)) {
+                return materializeNode.execute(left).equals(materializeNode.execute(right));
+            }
+            return left == right;
         }
 
         // everything else
-        @Specialization(guards = "isFallbackCase(left, right)")
+        @Fallback
         static boolean doOther(Object left, Object right,
                         @Cached IsForeignObjectNode isForeignObjectNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib) {
             if (left == right) {
                 return true;
             }
             if (isForeignObjectNode.execute(left)) {
-                // If left is foreign, this will check its identity via the interop message. If left
-                // is an object that is a wrapped Python object and uses a ReflectionLibrary, it
-                // will not appear foreign, but the isSame call will unpack it from its wrapper and
-                // may lead straight back to this node, but this time with the unwrapped Python
-                // object that will no longer satisfy the isForeignObject condition.
-                return lib.isSame(left, right);
+                return lib.isIdentical(left, right, lib);
             }
             return false;
-        }
-
-        private static boolean isPrimitive(Object object) {
-            return object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof Double;
-        }
-
-        private static boolean isBuiltinClassCase(Object left, Object right) {
-            return left instanceof PythonBuiltinClassType && right instanceof PythonBuiltinClass;
-        }
-
-        static boolean isFallbackCase(Object left, Object right) {
-            if (isPrimitive(left) && isPrimitive(right)) {
-                return false;
-            }
-            if (left instanceof Boolean && right instanceof PInt || left instanceof PInt && right instanceof Boolean) {
-                return false;
-            }
-            if (left instanceof Integer && right instanceof PInt || left instanceof PInt && right instanceof Integer) {
-                return false;
-            }
-            if (left instanceof PythonAbstractNativeObject && right instanceof PythonAbstractNativeObject) {
-                return false;
-            }
-            if (left instanceof PString && right instanceof PString) {
-                return false;
-            }
-            if (isBuiltinClassCase(left, right) || isBuiltinClassCase(right, left)) {
-                return false;
-            }
-            if (left instanceof PCode && right instanceof PCode) {
-                return false;
-            }
-            if (left instanceof PNone || right instanceof PNone) {
-                return false;
-            }
-            return true;
         }
 
         public static IsNode create() {

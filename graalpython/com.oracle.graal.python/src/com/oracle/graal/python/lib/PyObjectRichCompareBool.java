@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
@@ -64,6 +65,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * Performs one of comparison operations. The nodes for all operations are inner classes of this
@@ -107,7 +109,7 @@ public abstract class PyObjectRichCompareBool {
             throw CompilerDirectives.shouldNotReachHere("abstract method");
         }
 
-        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
+        protected boolean doDefault(PRaiseNode raiseNode, IsExpressionNode.IsNode isNode, Object a, Object b) {
             throw CompilerDirectives.shouldNotReachHere("abstract method");
         }
 
@@ -225,13 +227,14 @@ public abstract class PyObjectRichCompareBool {
 
         @Specialization
         boolean doSS(String a, String b) {
-            return op(a.compareTo(b), 0);
+            return op(a, b);
         }
 
         @Specialization
         boolean doGeneric(VirtualFrame frame, Object a, Object b,
                         @Cached GetClassNode getClassA,
                         @Cached GetClassNode getClassB,
+                        @Cached ConditionProfile reversedFirst,
                         @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached(parameters = "getSlot()") LookupSpecialMethodSlotNode lookupMethod,
@@ -239,11 +242,12 @@ public abstract class PyObjectRichCompareBool {
                         @Cached CallBinaryMethodNode callMethod,
                         @Cached CallBinaryMethodNode callReverseMethod,
                         @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached IsExpressionNode.IsNode isNode,
                         @Cached PRaiseNode raiseNode) {
             boolean checkedReverseOp = false;
             Object aType = getClassA.execute(a);
             Object bType = getClassB.execute(b);
-            if (!isSameTypeNode.execute(aType, bType) && isSubtypeNode.execute(bType, aType)) {
+            if (reversedFirst.profile(!isSameTypeNode.execute(aType, bType) && isSubtypeNode.execute(bType, aType))) {
                 checkedReverseOp = true;
                 Object reverseMethod = lookupMethodIgnoreDescriptorError(frame, lookupReverseMethod, bType, b);
                 if (reverseMethod != PNone.NO_VALUE) {
@@ -269,7 +273,7 @@ public abstract class PyObjectRichCompareBool {
                     }
                 }
             }
-            return doDefault(raiseNode, a, b);
+            return doDefault(raiseNode, isNode, a, b);
         }
 
         private Object lookupMethodIgnoreDescriptorError(VirtualFrame frame, LookupSpecialMethodSlotNode lookupMethod, Object aType, Object a) {
@@ -286,10 +290,9 @@ public abstract class PyObjectRichCompareBool {
         @Override
         public boolean execute(Frame frame, Object a, Object b) {
             /*
-             * Technically, we have objects that are considered identical even if they are not the
-             * same Java objects. But that only happens for certain builtins, so it shouldn't be
-             * observable if we don't make proper identity comparison here and make them go through
-             * __eq__ for simplicity
+             * CPython uses pointer equality here, so we should technically use IsNode. But since
+             * that haves a lot of logic that only applies to corner cases, we compare references
+             * here and use IsNode later as a fallback if there is no __eq__.
              */
             if (a == b) {
                 return true;
@@ -335,17 +338,16 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Override
-        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
-            // The objects were already compared for identity in the beginning
-            return false;
+        protected boolean doDefault(PRaiseNode raiseNode, IsExpressionNode.IsNode isNode, Object a, Object b) {
+            return isNode.execute(a, b);
         }
 
         public static EqNode create() {
-            return PyObjectRichCompareBoolFactory.EqNodeNodeGen.create();
+            return PyObjectRichCompareBoolFactory.EqNodeGen.create();
         }
 
         public static EqNode getUncached() {
-            return PyObjectRichCompareBoolFactory.EqNodeNodeGen.getUncached();
+            return PyObjectRichCompareBoolFactory.EqNodeGen.getUncached();
         }
     }
 
@@ -397,17 +399,16 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Override
-        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
-            // The objects were already compared for identity in the beginning
-            return true;
+        protected boolean doDefault(PRaiseNode raiseNode, IsExpressionNode.IsNode isNode, Object a, Object b) {
+            return !isNode.execute(a, b);
         }
 
         public static NeNode create() {
-            return PyObjectRichCompareBoolFactory.NeNodeNodeGen.create();
+            return PyObjectRichCompareBoolFactory.NeNodeGen.create();
         }
 
         public static NeNode getUncached() {
-            return PyObjectRichCompareBoolFactory.NeNodeNodeGen.getUncached();
+            return PyObjectRichCompareBoolFactory.NeNodeGen.getUncached();
         }
     }
 
@@ -444,16 +445,16 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Override
-        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
+        protected boolean doDefault(PRaiseNode raiseNode, IsExpressionNode.IsNode isNode, Object a, Object b) {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<", a, b);
         }
 
         public static LtNode create() {
-            return PyObjectRichCompareBoolFactory.LtNodeNodeGen.create();
+            return PyObjectRichCompareBoolFactory.LtNodeGen.create();
         }
 
         public static LtNode getUncached() {
-            return PyObjectRichCompareBoolFactory.LtNodeNodeGen.getUncached();
+            return PyObjectRichCompareBoolFactory.LtNodeGen.getUncached();
         }
     }
 
@@ -461,7 +462,7 @@ public abstract class PyObjectRichCompareBool {
     public abstract static class LeNode extends ComparisonBaseNode {
         @Override
         protected boolean op(boolean a, boolean b) {
-            return b || a == b;
+            return b || !a;
         }
 
         @Override
@@ -490,16 +491,16 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Override
-        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
+        protected boolean doDefault(PRaiseNode raiseNode, IsExpressionNode.IsNode isNode, Object a, Object b) {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<=", a, b);
         }
 
         public static LeNode create() {
-            return PyObjectRichCompareBoolFactory.LeNodeNodeGen.create();
+            return PyObjectRichCompareBoolFactory.LeNodeGen.create();
         }
 
         public static LeNode getUncached() {
-            return PyObjectRichCompareBoolFactory.LeNodeNodeGen.getUncached();
+            return PyObjectRichCompareBoolFactory.LeNodeGen.getUncached();
         }
     }
 
@@ -536,16 +537,16 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Override
-        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
+        protected boolean doDefault(PRaiseNode raiseNode, IsExpressionNode.IsNode isNode, Object a, Object b) {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, ">", a, b);
         }
 
         public static GtNode create() {
-            return PyObjectRichCompareBoolFactory.GtNodeNodeGen.create();
+            return PyObjectRichCompareBoolFactory.GtNodeGen.create();
         }
 
         public static GtNode getUncached() {
-            return PyObjectRichCompareBoolFactory.GtNodeNodeGen.getUncached();
+            return PyObjectRichCompareBoolFactory.GtNodeGen.getUncached();
         }
     }
 
@@ -553,7 +554,7 @@ public abstract class PyObjectRichCompareBool {
     public abstract static class GeNode extends ComparisonBaseNode {
         @Override
         protected boolean op(boolean a, boolean b) {
-            return a || a == b;
+            return a || !b;
         }
 
         @Override
@@ -582,16 +583,16 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Override
-        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
+        protected boolean doDefault(PRaiseNode raiseNode, IsExpressionNode.IsNode isNode, Object a, Object b) {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, ">=", a, b);
         }
 
         public static GeNode create() {
-            return PyObjectRichCompareBoolFactory.GeNodeNodeGen.create();
+            return PyObjectRichCompareBoolFactory.GeNodeGen.create();
         }
 
         public static GeNode getUncached() {
-            return PyObjectRichCompareBoolFactory.GeNodeNodeGen.getUncached();
+            return PyObjectRichCompareBoolFactory.GeNodeGen.getUncached();
         }
     }
 }
