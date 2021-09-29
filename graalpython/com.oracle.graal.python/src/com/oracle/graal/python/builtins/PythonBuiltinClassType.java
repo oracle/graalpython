@@ -769,12 +769,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     @ExportMessage
-    static int equalsInternal(PythonBuiltinClassType self, Object other, @SuppressWarnings("unused") ThreadState state,
-                    @CachedLibrary("self") PythonObjectLibrary selfLib) {
-        return selfLib.isSame(self, other) ? 1 : 0;
-    }
-
-    @ExportMessage
     @SuppressWarnings("static-method")
     public boolean isCallable() {
         return true;

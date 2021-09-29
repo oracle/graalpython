@@ -287,61 +287,6 @@ public abstract class PythonObjectLibrary extends Library {
     public abstract boolean isSame(Object receiver, Object other);
 
     /**
-     * Compare {@code receiver} to {@code other}. If the receiver does not know how to compare
-     * itself to the argument, the comparison is tried in reverse. This implements
-     * {@code PyObject_RichCompareBool} (which calls {@code do_richcompare}) for the {@code __eq__}
-     * operator.
-     *
-     * Exporters of this library can override this message for performance.
-     *
-     * @param receiver - the lhs, tried first
-     * @param other - the rhs, tried only if lhs does not know how to compare itself here
-     * @param otherLibrary - a PythonObjectLibrary that accepts {@code other}. Used for the reverse
-     *            dispatch.
-     */
-    public boolean equalsWithState(Object receiver, Object other, PythonObjectLibrary otherLibrary, ThreadState threadState) {
-        if (isSame(receiver, other)) {
-            return true; // guarantee
-        }
-
-        boolean checkedReverseOp = false;
-
-        Object leftClass = getDefaultNodes().getGetClassNode().execute(receiver);
-        Object rightClass = otherLibrary.getDefaultNodes().getGetClassNode().execute(other);
-        int result;
-        boolean isSameType = getDefaultNodes().getIsSameTypeNode().execute(leftClass, rightClass);
-        if (!isSameType && getDefaultNodes().getIsSubtypeNode().execute(rightClass, leftClass)) {
-            getDefaultNodes().enterSubtypeCompare();
-            checkedReverseOp = true;
-            result = otherLibrary.equalsInternal(other, receiver, threadState);
-            if (result != -1) {
-                return result == 1;
-            }
-        }
-        getDefaultNodes().enterLeftCompare();
-        result = equalsInternal(receiver, other, threadState);
-        if (result != -1) {
-            return result == 1;
-        }
-        if (!isSameType && !checkedReverseOp) {
-            getDefaultNodes().enterReverseCompare();
-            result = otherLibrary.equalsInternal(other, receiver, threadState);
-        }
-
-        // we already checked for identity equality above, so if neither side
-        // knows what to do, they are not equal
-        return result == 1;
-    }
-
-    /**
-     * Compare {@code receiver} to {@code other} using {@code __eq__}.
-     *
-     * @param threadState may be {@code null}
-     * @return 0 if not equal, 1 if equal, -1 if {@code __eq__} returns {@code NotImplemented}
-     */
-    public abstract int equalsInternal(Object receiver, Object other, ThreadState threadState);
-
-    /**
      * Return the file system path representation of the object. If the object is str or bytes, then
      * allow it to pass through. If the object defines __fspath__(), then return the result of that
      * method. All other types raise a TypeError.

@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -83,49 +82,6 @@ final class DefaultPythonDoubleExports {
         @SuppressWarnings("unused")
         static boolean dO(Double receiver, Object other) {
             return false;
-        }
-    }
-
-    @ExportMessage
-    static class EqualsInternal {
-        @Specialization
-        static int db(Double receiver, boolean other, @SuppressWarnings("unused") ThreadState threadState) {
-            return (receiver == 1 && other || receiver == 0 && !other) ? 1 : 0;
-        }
-
-        @Specialization
-        static int di(Double receiver, int other, @SuppressWarnings("unused") ThreadState threadState) {
-            return receiver == other ? 1 : 0;
-        }
-
-        @Specialization
-        static int dl(Double receiver, long other, @SuppressWarnings("unused") ThreadState threadState) {
-            return receiver == other ? 1 : 0;
-        }
-
-        @Specialization
-        static int dI(Double receiver, PInt other, @SuppressWarnings("unused") ThreadState threadState) {
-            if (receiver % 1 == 0) {
-                return other.compareTo(receiver.longValue()) == 0 ? 1 : 0;
-            } else {
-                return 0;
-            }
-        }
-
-        @Specialization
-        static int dd(Double receiver, double other, @SuppressWarnings("unused") ThreadState threadState) {
-            return receiver == other ? 1 : 0;
-        }
-
-        @Specialization
-        static int dF(Double receiver, PFloat other, @SuppressWarnings("unused") ThreadState threadState) {
-            return receiver == other.getValue() ? 1 : 0;
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static int dO(Double receiver, Object other, @SuppressWarnings("unused") ThreadState threadState) {
-            return -1;
         }
     }
 

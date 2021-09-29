@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
@@ -98,7 +97,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
@@ -650,34 +648,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isSame(Object other,
-                    @Shared("isNode") @Cached IsNode isNode) {
+                    @Cached IsNode isNode) {
         return isNode.execute(this, other);
-    }
-
-    @ExportMessage
-    public int equalsInternal(Object other, ThreadState state,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Cached PyObjectIsTrueNode isTrue,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("isNode") @Cached IsNode isNode) {
-        Object eqMethod = lib.lookupAttributeOnType(this, __EQ__);
-        if (eqMethod == PNone.NO_VALUE) {
-            // isNode specialization represents the branch profile
-            // c.f.: Python always falls back to identity comparison in this case
-            return isNode.execute(this, other) ? 1 : -1;
-        } else {
-            Object result = methodLib.callUnboundMethodIgnoreGetExceptionWithState(eqMethod, state, this, other);
-            if (result == PNotImplemented.NOT_IMPLEMENTED || result == PNone.NO_VALUE) {
-                return -1;
-            } else {
-                if (gotState.profile(state == null)) {
-                    return isTrue.execute(null, result) ? 1 : 0;
-                } else {
-                    return isTrue.execute(PArguments.frameForCall(state), result) ? 1 : 0;
-                }
-            }
-        }
     }
 
     @ExportMessage

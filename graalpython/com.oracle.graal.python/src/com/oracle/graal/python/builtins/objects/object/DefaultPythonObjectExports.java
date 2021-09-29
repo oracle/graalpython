@@ -75,21 +75,6 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    @SuppressWarnings("unused")
-    static int equalsInternal(Object receiver, Object other, ThreadState threadState,
-                    @CachedLibrary("receiver") InteropLibrary receiverLib,
-                    @CachedLibrary(limit = "3") InteropLibrary otherLib) {
-        return receiverLib.isIdentical(receiver, other, otherLib) ? 1 : 0;
-    }
-
-    @ExportMessage
-    static boolean equalsWithState(Object receiver, Object other, PythonObjectLibrary oLib, ThreadState state,
-                    @CachedLibrary("receiver") InteropLibrary receiverLib,
-                    @CachedLibrary(limit = "3") InteropLibrary otherLib) {
-        return receiverLib.isIdentical(receiver, other, otherLib) || oLib.equalsInternal(receiver, other, state) == 1;
-    }
-
-    @ExportMessage
     static Object lookupAttributeInternal(Object receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup,

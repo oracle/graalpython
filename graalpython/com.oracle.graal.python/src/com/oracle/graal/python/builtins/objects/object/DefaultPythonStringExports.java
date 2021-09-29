@@ -45,11 +45,8 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
@@ -76,33 +73,6 @@ final class DefaultPythonStringExports {
         @SuppressWarnings("unused")
         static boolean sO(String receiver, Object other) {
             return false;
-        }
-    }
-
-    @ExportMessage
-    static class EqualsInternal {
-        @Specialization
-        static int ss(String receiver, String other, @SuppressWarnings("unused") ThreadState threadState) {
-            return PString.equals(receiver, other) ? 1 : 0;
-        }
-
-        @Specialization
-        static int sP(String receiver, Object other, @SuppressWarnings("unused") ThreadState threadState,
-                        @Cached CastToJavaStringNode castNode,
-                        @Shared("gil") @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                // n.b.: subclassing is ignored in this direction in CPython
-                String otherString;
-                try {
-                    otherString = castNode.execute(other);
-                } catch (CannotCastException e) {
-                    return -1;
-                }
-                return ss(receiver, otherString, threadState);
-            } finally {
-                gil.release(mustRelease);
-            }
         }
     }
 
