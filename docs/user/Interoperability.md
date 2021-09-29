@@ -188,7 +188,7 @@ print(java.instanceof(my_list, ArrayList))
 # prints True
 ```
 
-See [Polyglot Programming](../polyglot-programming.md) and [Embed Languages](../embedding/embed-languages.md) for more information about interoperability with other programming languages.
+See [Polyglot Programming](https://github.com/oracle/graal/blob/master/docs/reference-manual/polyglot-programming.md) and [Embed Languages](https://github.com/oracle/graal/blob/master/docs/reference-manual/embedding/embed-languages.md) for more information about interoperability with other programming languages.
 
 ## The Behaviour of Types
 
@@ -197,18 +197,12 @@ ways and have restrictions on how they can interact with Python.
 
 ### Interop Types to Python
 
-Most importantly and upfront - all foreign objects passing into Python have the
-Python type `foreign`. There is no emulation of i.e., objects that are interop
-booleans to have the Python type `bool`. This is because interop types can
-overlap in ways that the Python builtin types cannot, and it would not be clear
-what should take precendence. Instead, the `foreign` type defines all of the
-Python special methods for type conversion that are used throughout the
-interpreter (methods like `__add__`, `__int__`, `__str__`, `__getitem__` etc)
-and these try to do the right thing based on the interop type (or raise an
-exception.)
+Most importantly and upfront - all foreign objects passing into Python have the Python type `foreign`.
+There is no emulation of i.e., objects that are interop booleans to have the Python type `bool`.
+This is because interop types can overlap in ways that the Python builtin types cannot, and it would not be clear what should take precendence.
+Instead, the `foreign` type defines all of the Python special methods for type conversion that are used throughout the interpreter (methods like `__add__`, `__int__`, `__str__`, `__getitem__`, etc.) and these try to do the right thing based on the interop type (or raise an exception.)
 
-Types not listed in the below table have no special interpretation in Python
-right now.
+Types not listed in the below table have no special interpretation in Python right now.
 
 | Interop type | Python interpretation                                                                                                                                                                                                                                                                                                |
 |:-------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

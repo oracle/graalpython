@@ -7,8 +7,7 @@ permalink: /reference-manual/python/OSInterface/
 
 # Operating System Interfaces
 
-Truffle-based GraalVM languages usually implement the system related functions using the [Truffle abstraction layer](../../../truffle/docs/README.md), which is OS independent
-and provides extension points for the users when embedding GraalVM Python or other Truffle based languages into Java applications.
+Truffle-based GraalVM languages usually implement the system related functions using the [Truffle abstraction layer](https://github.com/oracle/graal/blob/master/truffle/docs/README.md), which is OS independent and provides extension points for the users when embedding GraalVM Python or other Truffle based languages into Java applications.
 See, for example, [Truffle FileSystem service-provider](https://www.graalvm.org/truffle/javadoc/org/graalvm/polyglot/io/FileSystem.html).
 
 The Python standard library also provides OS abstraction, but exposes lower level interfaces, for instance, the OS module directly exposes some POSIX functions.
@@ -37,10 +36,10 @@ Known limitations:
 
 ## Java backend
 
-The `java` backend uses the [Truffle abstraction layer](../../../truffle/docs/README.md) and therefore supports custom Polyglot API providers related to system interfaces and sandboxing.
+The `java` backend uses the [Truffle abstraction layer](https://github.com/oracle/graal/blob/master/truffle/docs/README.md) and therefore supports custom Polyglot API providers related to system interfaces and sandboxing.
 Since this abstraction is POSIX agnostic, it does not expose all the necessary functionality. Some functionality is emulated, and some functionality is not supported at all.
 
-The java backend is the default when GraalVM Python is run via the `Context` API, i.e., [embedded in Java applications](../embedding/embed-languages.md), or when it is launched using Python related launchers with `-managed` suffix available only in GraalVM Enterprise.
+The java backend is the default when GraalVM Python is run via the `Context` API, i.e., [embedded in Java applications](https://github.com/oracle/graal/blob/master/docs/reference-manual/embedding/embed-languages.md), or when it is launched using Python related launchers with `-managed` suffix available only in GraalVM Enterprise.
 
 ### Limitations of the emulated backend
 
