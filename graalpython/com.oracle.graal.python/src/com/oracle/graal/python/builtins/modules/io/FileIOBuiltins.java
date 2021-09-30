@@ -197,7 +197,7 @@ public class FileIOBuiltins extends PythonBuiltins {
         int fd = self.getFD();
         if (fd >= 0) {
             self.setClosed();
-            posixClose.call(frame, fd);
+            posixClose.execute(frame, fd);
         }
     }
 
@@ -475,7 +475,7 @@ public class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isClosed()", "self.isReadable()", "size < 0"})
         static Object readall(VirtualFrame frame, PFileIO self, @SuppressWarnings("unused") int size,
                         @Cached ReadallNode readallNode) {
-            return readallNode.call(frame, self);
+            return readallNode.execute(frame, self);
         }
 
         @Specialization(guards = {"!self.isClosed()", "self.isReadable()", "size == 0"})

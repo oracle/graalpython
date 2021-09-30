@@ -713,7 +713,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         Object doit(VirtualFrame frame, PBytesIO self,
                         @Cached GetValueNode getValueNode,
                         @Cached GetOrCreateDictNode getDict) {
-            Object initValue = getValueNode.call(frame, self);
+            Object initValue = getValueNode.execute(frame, self);
             Object[] state = new Object[]{initValue, self.getPos(), getDict.execute(self)};
             return factory().createTuple(state);
         }

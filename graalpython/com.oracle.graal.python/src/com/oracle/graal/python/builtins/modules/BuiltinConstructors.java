@@ -2391,7 +2391,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     // Check valid slot name
                     if (element instanceof String) {
                         slotName = (String) element;
-                        if (!(boolean) isIdentifier.call(frame, slotName)) {
+                        if (!(boolean) isIdentifier.execute(frame, slotName)) {
                             throw raise(TypeError, ErrorMessages.SLOTS_MUST_BE_IDENTIFIERS);
                         }
                     } else {

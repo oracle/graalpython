@@ -79,7 +79,7 @@ public class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached GetClassNode getRawClass) {
             self.setOK(false);
             self.setDetached(false);
-            checkReadableNode.call(frame, raw);
+            checkReadableNode.execute(frame, raw);
             self.setRaw(raw, isFileIO(self, raw, PBufferedReader, getSelfClass, getRawClass));
             bufferedInitNode.execute(frame, self, bufferSize, factory);
             self.resetRead();

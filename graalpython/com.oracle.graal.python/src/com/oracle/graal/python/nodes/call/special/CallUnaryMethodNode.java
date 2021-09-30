@@ -89,7 +89,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
     Object callUnarySpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") UnaryBuiltinDescriptor info, Object receiver,
                     @SuppressWarnings("unused") @Cached("info") UnaryBuiltinDescriptor cachedInfo,
                     @Cached("cachedInfo.createNode()") PythonUnaryBuiltinNode node) {
-        return node.call(frame, receiver);
+        return node.execute(frame, receiver);
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -131,7 +131,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, receiver);
+        return builtinNode.execute(frame, receiver);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -139,7 +139,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached(value = "func.getCallTarget()") RootCallTarget ct,
                     @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, receiver);
+        return builtinNode.execute(frame, receiver);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg",
@@ -149,7 +149,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getUnary(frame, func.getFunction())") PythonUnaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, receiver);
+        return builtinNode.execute(frame, receiver);
     }
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "!takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -159,7 +159,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getUnary(frame, func.getFunction())") PythonUnaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, receiver);
+        return builtinNode.execute(frame, receiver);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg",

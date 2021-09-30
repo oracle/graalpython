@@ -449,7 +449,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             if (isEmptyProfile.profile(self.getLength() != 0)) {
                 if (isUnicodeProfile.profile(self.getFormat() == BufferFormat.UNICODE)) {
                     PythonUtils.append(sb, ", ");
-                    PythonUtils.append(sb, cast.execute(reprNode.executeObject(frame, toUnicodeNode.call(frame, self))));
+                    PythonUtils.append(sb, cast.execute(reprNode.executeObject(frame, toUnicodeNode.execute(frame, self))));
                 } else {
                     PythonUtils.append(sb, ", [");
                     for (int i = 0; i < self.getLength(); i++) {
@@ -672,7 +672,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
-            PTuple args = factory().createTuple(new Object[]{self.getFormatString(), toListNode.call(frame, self)});
+            PTuple args = factory().createTuple(new Object[]{self.getFormatString(), toListNode.execute(frame, self)});
             return factory().createTuple(new Object[]{cls, args, dict});
         }
 
@@ -691,7 +691,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 dict = PNone.NONE;
             }
             Object reconstructor = getReconstructor.execute(frame, arrayModule, "_array_reconstructor");
-            PTuple args = factory().createTuple(new Object[]{cls, self.getFormatString(), mformat.code, toBytesNode.call(frame, self)});
+            PTuple args = factory().createTuple(new Object[]{cls, self.getFormatString(), mformat.code, toBytesNode.execute(frame, self)});
             return factory().createTuple(new Object[]{reconstructor, args, dict});
         }
     }
@@ -1116,7 +1116,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached ToBytesNode toBytesNode) {
             warnNode.warnEx(frame, DeprecationWarning, "tostring() is deprecated. Use tobytes() instead.", 1);
-            return toBytesNode.call(frame, self);
+            return toBytesNode.execute(frame, self);
         }
     }
 

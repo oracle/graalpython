@@ -884,7 +884,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     private static boolean isTupleInstanceCheck(VirtualFrame frame, Object result, int len, TupleBuiltins.LenNode lenNode) throws PException {
-        return (result instanceof PTuple) && ((int) lenNode.call(frame, result) == len);
+        return (result instanceof PTuple) && ((int) lenNode.execute(frame, result) == len);
     }
 
     @TruffleBoundary
@@ -1061,7 +1061,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     private static Object codec_getItem(VirtualFrame frame, String encoding, int index, LookupNode lookupNode, SequenceStorageNodes.GetItemNode getItemNode) {
-        PTuple t = (PTuple) lookupNode.call(frame, encoding);
+        PTuple t = (PTuple) lookupNode.execute(frame, encoding);
         return getItemNode.execute(frame, t.getSequenceStorage(), index);
     }
 

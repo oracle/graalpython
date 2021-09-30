@@ -81,7 +81,7 @@ public abstract class BuiltinCallNode extends Node {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return node.call(frame, arg.execute(frame));
+            return node.execute(frame, arg.execute(frame));
         }
 
         @Override

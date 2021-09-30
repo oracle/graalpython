@@ -77,7 +77,7 @@ public class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached GetClassNode getRawClass) {
             self.setOK(false);
             self.setDetached(false);
-            checkWritableNode.call(frame, raw);
+            checkWritableNode.execute(frame, raw);
             self.setRaw(raw, isFileIO(self, raw, PBufferedWriter, getSelfClass, getRawClass));
             bufferedInitNode.execute(frame, self, bufferSize, factory);
             self.resetWrite();

@@ -112,8 +112,8 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
                         @Cached IOBaseBuiltins.CheckWritableNode checkWritableNode,
                         @Cached BufferedReaderBuiltins.BufferedReaderInit initReaderNode,
                         @Cached BufferedWriterBuiltins.BufferedWriterInit initWriterNode) {
-            checkReadableNode.call(frame, reader);
-            checkWritableNode.call(frame, writer);
+            checkReadableNode.execute(frame, reader);
+            checkWritableNode.execute(frame, writer);
             self.setReader(factory().createBufferedReader(PBufferedReader));
             initReaderNode.execute(frame, self.getReader(), reader, bufferSize, factory());
             self.setWriter(factory().createBufferedWriter(PBufferedWriter));

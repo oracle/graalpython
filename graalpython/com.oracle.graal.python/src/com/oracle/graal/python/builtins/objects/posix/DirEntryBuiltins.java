@@ -127,7 +127,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode reprNode,
                         @Cached CastToJavaStringNode castToStringNode) {
             StringBuilder sb = PythonUtils.newStringBuilder("<DirEntry ");
-            PythonUtils.append(sb, castToStringNode.execute(reprNode.executeObject(frame, nameNode.call(frame, self))));
+            PythonUtils.append(sb, castToStringNode.execute(reprNode.executeObject(frame, nameNode.execute(frame, self))));
             PythonUtils.append(sb, '>');
             return PythonUtils.sbToString(sb);
         }
@@ -202,7 +202,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         @Specialization
         static Object fspath(VirtualFrame frame, PDirEntry self,
                         @Cached PathNode pathNode) {
-            return pathNode.call(frame, self);
+            return pathNode.execute(frame, self);
         }
     }
 

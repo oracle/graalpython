@@ -140,7 +140,7 @@ public class StgDictBuiltins extends PythonBuiltins {
                         @Cached GetDictIfExistsNode getDict,
                         @Cached ObjectBuiltins.SizeOfNode sizeOfNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
-            long size = asSizeNode.executeLossy(frame, sizeOfNode.call(frame, getDict.execute(self)));
+            long size = asSizeNode.executeLossy(frame, sizeOfNode.execute(frame, getDict.execute(self)));
             // size += sizeof(StgDictObject) - sizeof(PyDictObject);
             if (self.format != null) {
                 size += PString.length(self.format) + 1;

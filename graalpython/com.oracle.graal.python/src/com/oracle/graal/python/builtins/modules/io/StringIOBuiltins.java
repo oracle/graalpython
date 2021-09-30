@@ -554,7 +554,7 @@ public class StringIOBuiltins extends PythonBuiltins {
         Object doit(VirtualFrame frame, PStringIO self,
                         @Cached GetValueNode getValueNode,
                         @Cached GetOrCreateDictNode getDict) {
-            Object initValue = getValueNode.call(frame, self);
+            Object initValue = getValueNode.execute(frame, self);
             Object readnl = self.getReadNewline() == null ? PNone.NONE : self.getReadNewline();
             Object[] state = new Object[]{initValue, readnl, self.getPos(), getDict.execute(self)};
             return factory().createTuple(state);

@@ -376,7 +376,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                     } else {
                         fromBytesNode.execute(frame, array, bytes);
                         if (machineFormat.order != ByteOrder.nativeOrder()) {
-                            byteSwapNode.call(frame, array);
+                            byteSwapNode.execute(frame, array);
                         }
                     }
                 }

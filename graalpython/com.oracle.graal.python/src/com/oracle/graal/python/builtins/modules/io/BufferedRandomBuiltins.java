@@ -78,9 +78,9 @@ public class BufferedRandomBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached GetClassNode getRawClass) {
             self.setOK(false);
             self.setDetached(false);
-            checkSeekableNode.call(frame, raw);
-            checkReadableNode.call(frame, raw);
-            checkWritableNode.call(frame, raw);
+            checkSeekableNode.execute(frame, raw);
+            checkReadableNode.execute(frame, raw);
+            checkWritableNode.execute(frame, raw);
             self.setRaw(raw, isFileIO(self, raw, PBufferedRandom, getSelfClass, getRawClass));
             bufferedInitNode.execute(frame, self, bufferSize, factory);
             self.resetRead();

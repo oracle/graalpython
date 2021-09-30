@@ -2733,7 +2733,7 @@ public class IntBuiltins extends PythonBuiltins {
     abstract static class AsIntegerRatioNode extends PythonBuiltinNode {
         @Specialization
         Object get(VirtualFrame frame, Object self, @Cached IntNode intNode) {
-            return factory().createTuple(new Object[]{intNode.call(frame, self), 1});
+            return factory().createTuple(new Object[]{intNode.execute(frame, self), 1});
         }
     }
 
