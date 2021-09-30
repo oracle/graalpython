@@ -1248,7 +1248,7 @@ def update_import_cmd(args):
         for repo in repos_updated:
             try:
                 mx._opts.very_verbose = True
-                vc.git_command(repo, ["push", "-f", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
+                vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
             finally:
                 mx._opts.very_verbose = prev_verbosity
 
