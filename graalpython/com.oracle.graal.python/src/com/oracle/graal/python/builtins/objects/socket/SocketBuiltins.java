@@ -192,7 +192,7 @@ public class SocketBuiltins extends PythonBuiltins {
             auditNode.audit("socket.__new__", self, familyIn, typeIn, protoIn);
 
             if (fileno instanceof Double || fileno instanceof PFloat) {
-                throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
+                throw raise(TypeError, ErrorMessages.S_EXPECTED_GOT_P, "integer", "float");
             }
             int fd = asIntNode.execute(frame, fileno);
             if (fd < 0) {

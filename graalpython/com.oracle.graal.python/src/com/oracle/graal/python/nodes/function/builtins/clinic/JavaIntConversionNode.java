@@ -69,7 +69,7 @@ public abstract class JavaIntConversionNode extends IntConversionBaseNode {
                     @Cached PyLongAsIntNode asIntNode) {
         if (isSubtypeNode.execute(getClassNode.execute(value), PythonBuiltinClassType.PFloat)) {
             isFloatProfile.enter();
-            throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
+            throw raise(TypeError, ErrorMessages.S_EXPECTED_GOT_P, "integer", "float");
         }
         return asIntNode.execute(frame, value);
     }

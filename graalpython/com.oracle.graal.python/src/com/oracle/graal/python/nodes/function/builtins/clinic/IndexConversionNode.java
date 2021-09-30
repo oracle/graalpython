@@ -69,7 +69,7 @@ public abstract class IndexConversionNode extends IntConversionBaseNode {
                     @Cached PyNumberAsSizeNode asSizeNode) {
         if (isSubtypeNode.execute(getClassNode.execute(value), PythonBuiltinClassType.PFloat)) {
             isFloatProfile.enter();
-            throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
+            throw raise(TypeError, ErrorMessages.S_EXPECTED_GOT_P, "integer", "float");
         }
         return asSizeNode.executeExact(frame, value);
     }
