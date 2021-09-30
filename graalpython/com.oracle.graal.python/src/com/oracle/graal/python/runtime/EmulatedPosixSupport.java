@@ -1251,12 +1251,14 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     private static final class EmulatedDirStream {
         final TruffleFile file;
+        final int fd;
         DirectoryStream<TruffleFile> dirStream;
         Iterator<TruffleFile> iterator;
         boolean needsReopen;
 
-        private EmulatedDirStream(TruffleFile file) throws PosixException {
+        private EmulatedDirStream(TruffleFile file, int fd) throws PosixException {
             this.file = file;
+            this.fd = fd;
             reopen();
         }
 
@@ -1285,7 +1287,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public Object opendir(Object path,
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
-        return opendirImpl(pathToJavaStr(path));
+        return opendirImpl(pathToJavaStr(path), -1);
     }
 
     @ExportMessage
@@ -1296,12 +1298,12 @@ public final class EmulatedPosixSupport extends PosixResources {
             errorBranch.enter();
             throw posixException(OSErrorEnum.ENOENT);
         }
-        return opendirImpl(path);
+        return opendirImpl(path, fd);
     }
 
-    private EmulatedDirStream opendirImpl(String path) throws PosixException {
+    private EmulatedDirStream opendirImpl(String path, int fd) throws PosixException {
         TruffleFile file = getTruffleFile(path);
-        return new EmulatedDirStream(file);
+        return new EmulatedDirStream(file, fd);
     }
 
     @ExportMessage
@@ -1313,6 +1315,10 @@ public final class EmulatedPosixSupport extends PosixResources {
             dirStream.closeStream();
         } catch (IOException e) {
             throw posixException(OSErrorEnum.fromException(e));
+        } finally {
+            if (dirStream.fd != -1) {
+                close(dirStream.fd);
+            }
         }
     }
 
