@@ -211,6 +211,7 @@ import com.oracle.graal.python.builtins.objects.method.StaticmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.namespace.SimpleNamespaceBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.posix.DirEntryBuiltins;
@@ -288,7 +289,6 @@ public final class Python3Core implements ParserErrorCallback {
     private static String[] initializeCoreFiles() {
         // Order matters!
         List<String> coreFiles = new ArrayList<>(Arrays.asList(
-                        "_descriptor",
                         "object",
                         "sys",
                         "type",
@@ -296,7 +296,6 @@ public final class Python3Core implements ParserErrorCallback {
                         "function",
                         "_functools",
                         "method",
-                        "code",
                         "_frozen_importlib",
                         "__graalpython__",
                         "_weakref",
@@ -366,6 +365,7 @@ public final class Python3Core implements ParserErrorCallback {
                         new DecoratedMethodBuiltins(),
                         new ClassmethodBuiltins(),
                         new StaticmethodBuiltins(),
+                        new SimpleNamespaceBuiltins(),
                         new PolyglotModuleBuiltins(),
                         new ObjectBuiltins(),
                         new CellBuiltins(),
@@ -847,7 +847,6 @@ public final class Python3Core implements ParserErrorCallback {
         sysModule = builtinModules.get("sys");
         sysModules = (PDict) sysModule.getAttribute("modules");
 
-        createModule("_descriptor");
         PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
         bootstrapExternal.setAttribute(__PACKAGE__, "importlib");
         addBuiltinModule("_frozen_importlib_external", bootstrapExternal);

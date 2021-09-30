@@ -97,6 +97,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PByteArray("bytearray", BUILTINS),
     PBytes("bytes", BUILTINS),
     PCell("cell", Flags.PRIVATE_DERIVED_WODICT),
+    PSimpleNamespace("SimpleNamespace", Flags.PUBLIC_BASE_WODICT),
     PDefaultDict(DEFAULTDICT, "_collections", "collections", Flags.PUBLIC_BASE_WODICT),
     PDeque(DEQUE, "_collections", Flags.PUBLIC_BASE_WODICT),
     PTupleGetter(TUPLE_GETTER, "_collections", Flags.PUBLIC_BASE_WODICT),
@@ -409,7 +410,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         this.name = name;
         this.publishInModule = publishInModule;
         this.moduleName = flags.isPublic ? moduleName : null;
-        if (publishInModule != null && publishInModule != BUILTINS) {
+        if (moduleName != null && moduleName != BUILTINS) {
             printName = moduleName + "." + name;
         } else {
             printName = name;

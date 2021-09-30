@@ -375,7 +375,8 @@ public abstract class ErrorMessages {
     public static final String ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE = "issubclass() arg 2 must be a class or tuple of classes";
     public static final String ITER_V_MUST_BE_CALLABLE = "iter(v, w): v must be callable";
     public static final String KEYWORD_NAMES_MUST_BE_STR_GOT_P = "keyword names must be str, get %p";
-    public static final String KEYWORDS_MUST_BE_STRINGS = "%s() keywords must be strings";
+    public static final String KEYWORDS_S_MUST_BE_STRINGS = "%s() keywords must be strings";
+    public static final String KEYWORDS_MUST_BE_STRINGS = "keywords must be strings";
     public static final String KLASS_ARG_IS_NOT_HOST_OBJ = "klass argument '%p' is not a host object";
     public static final String LAZY_INITIALIZATION_FAILED = "lazy initialization of type %s failed";
     public static final String LEFT_BRACKET_WO_RIGHT_BRACKET_IN_ARG = "')' without '(' in argument parsing";
@@ -924,6 +925,7 @@ public abstract class ErrorMessages {
     public static final String THIS_FUNCTION_TAKES_D_ARGUMENT_S_D_GIVEN = "this function takes %d argument%s (%d given)";
     public static final String REQUIRED_ARGUMENT_S_MISSING = "required argument '%s' missing";
     public static final String NOT_ENOUGH_ARGUMENTS = "not enough arguments";
+    public static final String NO_POSITIONAL_ARGUMENTS_EXPECTED = "no positional arguments expected";
     public static final String NULL_STGDICT_UNEXPECTED = "NULL stgdict unexpected";
     public static final String S_OUT_PARAMETER_MUST_BE_PASSED_AS_DEFAULT_VALUE = "%s 'out' parameter must be passed as default value";
     public static final String PARAMFLAG_D_NOT_YET_IMPLEMENTED = "paramflag %d not yet implemented";
@@ -964,6 +966,7 @@ public abstract class ErrorMessages {
     public static final String UNICODE_STRING_EXPECTED_INSTEAD_OF_S_INSTANCE = "unicode string expected instead of %s instance";
     public static final String BYTES_EXPECTED_INSTEAD_OF_S_INSTANCE = "bytes expected instead of %s instance";
     public static final String BYTE_STRING_TOO_LONG = "byte string too long";
+    public static final String UNKNOWN_CLOCK = "unknown clock";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";

@@ -26,6 +26,8 @@
 
 package com.oracle.graal.python.builtins.objects.code;
 
+import static com.oracle.graal.python.annotations.ArgumentClinic.VALUE_EMPTY_STRING;
+import static com.oracle.graal.python.annotations.ArgumentClinic.VALUE_NONE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -33,15 +35,20 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -51,6 +58,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.source.SourceSection;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCode)
@@ -327,6 +335,72 @@ public class CodeBuiltins extends PythonBuiltins {
                 h = -2;
             }
             return h;
+        }
+    }
+
+    @Builtin(name = "replace", minNumOfPositionalArgs = 1, parameterNames = {"$self",
+                    "co_argcount", "co_posonlyargcount", "co_kwonlyargcount", "co_nlocals", "co_stacksize", "co_flags", "co_firstlineno",
+                    "co_code", "co_consts", "co_names", "co_varnames", "co_freevars", "co_cellvars", "co_filename", "co_name", "co_lnotab"})
+    @ArgumentClinic(name = "co_argcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
+    @ArgumentClinic(name = "co_posonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
+    @ArgumentClinic(name = "co_kwonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
+    @ArgumentClinic(name = "co_nlocals", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
+    @ArgumentClinic(name = "co_stacksize", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
+    @ArgumentClinic(name = "co_flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
+    @ArgumentClinic(name = "co_firstlineno", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
+    @ArgumentClinic(name = "co_code", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer, defaultValue = VALUE_NONE, useDefaultForNone = true)
+    @ArgumentClinic(name = "co_consts", conversion = ArgumentClinic.ClinicConversion.Tuple)
+    @ArgumentClinic(name = "co_names", conversion = ArgumentClinic.ClinicConversion.Tuple)
+    @ArgumentClinic(name = "co_varnames", conversion = ArgumentClinic.ClinicConversion.Tuple)
+    @ArgumentClinic(name = "co_freevars", conversion = ArgumentClinic.ClinicConversion.Tuple)
+    @ArgumentClinic(name = "co_cellvars", conversion = ArgumentClinic.ClinicConversion.Tuple)
+    @ArgumentClinic(name = "co_filename", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = VALUE_EMPTY_STRING, useDefaultForNone = true)
+    @ArgumentClinic(name = "co_name", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = VALUE_EMPTY_STRING, useDefaultForNone = true)
+    @ArgumentClinic(name = "co_lnotab", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer, defaultValue = VALUE_NONE, useDefaultForNone = true)
+    @GenerateNodeFactory
+    public abstract static class ReplaceNode extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return CodeBuiltinsClinicProviders.ReplaceNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PCode create(VirtualFrame frame, PCode self, int coArgcount,
+                        int coPosonlyargcount, int coKwonlyargcount,
+                        int coNlocals, int coStacksize, int coFlags,
+                        int coFirstlineno, Object coCode,
+                        Object[] coConsts, Object[] coNames,
+                        Object[] coVarnames, Object[] coFreevars,
+                        Object[] coCellvars, String coFilename,
+                        String coName, Object coLnotab,
+                        @Cached CodeNodes.CreateCodeNode createCodeNode,
+                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+            try {
+                return createCodeNode.execute(frame,
+                                coArgcount == -1 ? self.co_argcount() : coArgcount,
+                                coPosonlyargcount == -1 ? self.co_posonlyargcount() : coPosonlyargcount,
+                                coKwonlyargcount == -1 ? self.co_kwonlyargcount() : coKwonlyargcount,
+                                coNlocals == -1 ? self.co_nlocals() : coNlocals,
+                                coStacksize == -1 ? self.co_stacksize() : coStacksize,
+                                coFlags == -1 ? self.co_flags() : coFlags,
+                                PGuards.isNone(coCode) ? self.getCodestring() : bufferLib.getInternalOrCopiedByteArray(coCode),
+                                coConsts.length == 0 ? self.getConstants() : coConsts,
+                                coNames.length == 0 ? self.getNames() : coNames,
+                                coVarnames.length == 0 ? self.getVarnames() : coVarnames,
+                                coFreevars.length == 0 ? self.getFreeVars() : coFreevars,
+                                coCellvars.length == 0 ? self.getCellVars() : coCellvars,
+                                coFilename.isEmpty() ? self.co_filename() : coFilename,
+                                coName.isEmpty() ? self.co_name() : coName,
+                                coFirstlineno == -1 ? self.co_firstlineno() : coFirstlineno,
+                                PGuards.isNone(coLnotab) ? self.getLnotab() : bufferLib.getInternalOrCopiedByteArray(coLnotab));
+            } finally {
+                if (!PGuards.isNone(coCode)) {
+                    bufferLib.release(coCode);
+                }
+                if (!PGuards.isNone(coLnotab)) {
+                    bufferLib.release(coLnotab);
+                }
+            }
         }
     }
 }

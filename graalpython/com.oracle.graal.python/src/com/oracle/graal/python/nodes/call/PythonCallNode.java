@@ -323,7 +323,7 @@ public abstract class PythonCallNode extends ExpressionNode {
                     castToStringNode = insert(StringNodes.CastToJavaStringCheckedNode.create());
                 }
                 Object functionName = getNameAttributeNode().executeObject(frame, callable);
-                String keyName = castToStringNode.execute(ex.getKey(), ErrorMessages.KEYWORDS_MUST_BE_STRINGS, new Object[]{functionName});
+                String keyName = castToStringNode.execute(ex.getKey(), ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS, new Object[]{functionName});
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_ARG, functionName, keyName);
             } catch (NonMappingException ex) {
                 keywordsError.enter();
