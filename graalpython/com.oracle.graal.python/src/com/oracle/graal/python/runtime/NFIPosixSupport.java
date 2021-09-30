@@ -783,7 +783,7 @@ public final class NFIPosixSupport extends PosixSupport {
         if (ptr == 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
-        return new DirStream(ptr);
+        return ptr;
     }
 
     @ExportMessage
@@ -793,39 +793,27 @@ public final class NFIPosixSupport extends PosixSupport {
         if (ptr == 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
-        return new DirStream(ptr);
+        return ptr;
     }
 
     @ExportMessage
     public void closedir(Object dirStreamObj,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        DirStream dirStream = (DirStream) dirStreamObj;
-        synchronized (dirStream.lock) {
-            if (!dirStream.closed) {
-                dirStream.closed = true;
-                int res = invokeNode.callInt(this, PosixNativeFunction.call_closedir, dirStream.nativePtr);
-                if (res != 0) {
-                    throw getErrnoAndThrowPosixException(invokeNode);
-                }
-            }
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_closedir, dirStreamObj);
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
         }
     }
 
     @ExportMessage
     public Object readdir(Object dirStreamObj,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        DirStream dirStream = (DirStream) dirStreamObj;
         Buffer name = Buffer.allocate(DIRENT_NAME_BUF_LENGTH);
         long[] out = new long[2];
         int result;
-        synchronized (dirStream.lock) {
-            if (dirStream.closed) {
-                return null;
-            }
-            do {
-                result = invokeNode.callInt(this, PosixNativeFunction.call_readdir, dirStream.nativePtr, wrap(name), DIRENT_NAME_BUF_LENGTH, wrap(out));
-            } while (result != 0 && name.data[0] == '.' && (name.data[1] == 0 || (name.data[1] == '.' && name.data[2] == 0)));
-        }
+        do {
+            result = invokeNode.callInt(this, PosixNativeFunction.call_readdir, dirStreamObj, wrap(name), DIRENT_NAME_BUF_LENGTH, wrap(out));
+        } while (result != 0 && name.data[0] == '.' && (name.data[1] == 0 || (name.data[1] == '.' && name.data[2] == 0)));
         if (result != 0) {
             return new DirEntry(name.withLength(findZero(name.data)), out[0], (int) out[1]);
         }
@@ -839,12 +827,7 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public void rewinddir(Object dirStreamObj,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-        DirStream dirStream = (DirStream) dirStreamObj;
-        synchronized (dirStream.lock) {
-            if (!dirStream.closed) {
-                invokeNode.call(this, PosixNativeFunction.call_rewinddir, dirStream.nativePtr);
-            }
-        }
+        invokeNode.call(this, PosixNativeFunction.call_rewinddir, dirStreamObj);
     }
 
     @ExportMessage
@@ -2081,25 +2064,6 @@ public final class NFIPosixSupport extends PosixSupport {
 
     // ------------------
     // Objects/handles/pointers
-
-    private static class DirStream {
-        final long nativePtr;
-        final Object lock;
-        boolean closed;
-
-        DirStream(long nativePtr) {
-            this.nativePtr = nativePtr;
-            this.lock = new Object();
-        }
-
-        @Override
-        public String toString() {
-            return "DirStream{" +
-                            "nativePtr=" + nativePtr +
-                            ", closed=" + closed +
-                            '}';
-        }
-    }
 
     protected static class DirEntry {
         final Buffer name;

@@ -83,13 +83,8 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         @Specialization
         PNone close(PScandirIterator self,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            closedir(self, getPosixSupport(), posixLib);
+            self.ref.rewindAndClose(posixLib, getPosixSupport());
             return PNone.NONE;
-        }
-
-        static void closedir(PScandirIterator self, Object posixSupport, PosixSupportLibrary posixLib) {
-            self.ref.rewindAndClose(posixLib, posixSupport);
-            self.ref.markReleased();
         }
     }
 
@@ -114,12 +109,12 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
             try {
                 Object dirEntryData = posixLib.readdir(getPosixSupport(), self.ref.getReference());
                 if (dirEntryData == null) {
-                    CloseNode.closedir(self, getPosixSupport(), posixLib);
+                    self.ref.rewindAndClose(posixLib, getPosixSupport());
                     throw raise(PythonBuiltinClassType.StopIteration);
                 }
                 return factory().createDirEntry(dirEntryData, self.path);
             } catch (PosixException e) {
-                CloseNode.closedir(self, getPosixSupport(), posixLib);
+                self.ref.rewindAndClose(posixLib, getPosixSupport());
                 throw raiseOSErrorFromPosixException(frame, e);
             }
         }
@@ -141,7 +136,7 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         PNone exit(PScandirIterator self, Object type, Object value, Object traceback,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            CloseNode.closedir(self, getPosixSupport(), posixLib);
+            self.ref.rewindAndClose(posixLib, getPosixSupport());
             return PNone.NONE;
         }
     }
