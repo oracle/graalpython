@@ -1208,7 +1208,8 @@ def update_import_cmd(args):
 
     with open(join(overlaydir, "python", "vm-tests.json"), 'r') as fp:
         d = json.load(fp)
-        d['downloads']['JAVA_HOME']['version'] = oraclejdk8_ver
+        for job in d:
+            job['downloads']['JAVA_HOME']['version'] = oraclejdk8_ver
 
     with open(join(overlaydir, "python", "vm-tests.json"), 'w') as fp:
         json.dump(d, fp, indent=2)
