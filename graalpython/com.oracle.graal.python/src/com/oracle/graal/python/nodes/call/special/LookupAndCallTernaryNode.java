@@ -125,7 +125,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached("getBuiltinClass(v, getClassNode)") PythonBuiltinClassType clazz,
                     @Cached("getTernaryBuiltin(clazz)") PythonTernaryBuiltinNode function) {
-        return function.call(frame, v, w, z);
+        return function.execute(frame, v, w, z);
     }
 
     @Specialization(guards = {"!isReversible()", "arg1.getClass() == cachedArg1Class"}, limit = "getCallSiteInlineCacheMaxDepth()")

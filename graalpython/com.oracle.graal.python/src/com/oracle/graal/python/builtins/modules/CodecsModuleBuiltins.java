@@ -1079,7 +1079,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.call(frame, obj, "utf-8", errors);
+            return encode.execute(frame, obj, "utf-8", errors);
         }
     }
 
@@ -1099,7 +1099,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.call(frame, obj, "utf-7", errors);
+            return encode.execute(frame, obj, "utf-7", errors);
         }
     }
 
@@ -1119,7 +1119,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors, @SuppressWarnings("unused") Object byteorder,
                         @Cached CodecsEncodeNode encode) {
-            return encode.call(frame, obj, "utf-16", errors);
+            return encode.execute(frame, obj, "utf-16", errors);
         }
     }
 
@@ -1139,7 +1139,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.call(frame, obj, "utf-16-le", errors);
+            return encode.execute(frame, obj, "utf-16-le", errors);
         }
     }
 
@@ -1159,7 +1159,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.call(frame, obj, "utf-16-be", errors);
+            return encode.execute(frame, obj, "utf-16-be", errors);
         }
     }
 
@@ -1189,7 +1189,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors, @SuppressWarnings("unused") Object byteorder,
                         @Cached CodecsEncodeNode encode) {
-            return encode.call(frame, obj, "utf-32", errors);
+            return encode.execute(frame, obj, "utf-32", errors);
         }
     }
 
@@ -1209,7 +1209,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.call(frame, obj, "utf-32-le", errors);
+            return encode.execute(frame, obj, "utf-32-le", errors);
         }
     }
 
@@ -1229,7 +1229,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.call(frame, obj, "utf-32-be", errors);
+            return encode.execute(frame, obj, "utf-32-be", errors);
         }
     }
 
@@ -1279,7 +1279,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.call(frame, obj, "raw_unicode_escape", errors);
+            return encode.execute(frame, obj, "raw_unicode_escape", errors);
         }
     }
 
@@ -1299,7 +1299,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.call(frame, obj, "unicode_escape", errors);
+            return encode.execute(frame, obj, "unicode_escape", errors);
         }
     }
 
@@ -1319,7 +1319,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.call(frame, obj, "latin_1", errors);
+            return encode.execute(frame, obj, "latin_1", errors);
         }
     }
 
@@ -1339,7 +1339,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object encode(VirtualFrame frame, Object obj, Object errors,
                         @Cached CodecsEncodeNode encode) {
-            return encode.call(frame, obj, "ascii", errors);
+            return encode.execute(frame, obj, "ascii", errors);
         }
     }
 

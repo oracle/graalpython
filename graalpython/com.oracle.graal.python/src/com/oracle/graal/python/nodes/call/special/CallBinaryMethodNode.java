@@ -107,7 +107,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
                     @Cached("hasAllowedArgsNum(cachedInfo)") boolean hasValidArgsNum,
                     @Cached("cachedInfo.createNode()") PythonTernaryBuiltinNode node) {
         raiseInvalidArgsNumUncached(hasValidArgsNum, cachedInfo);
-        return node.call(frame, arg1, arg2, PNone.NO_VALUE);
+        return node.execute(frame, arg1, arg2, PNone.NO_VALUE);
     }
 
     protected static boolean isBinaryOrTernaryBuiltinDescriptor(Object value) {
@@ -170,7 +170,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getTernary(frame, func.getFunction())") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, func.getSelf(), arg1, arg2);
+        return builtinNode.execute(frame, func.getSelf(), arg1, arg2);
     }
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "!takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -190,7 +190,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getTernary(frame, func.getFunction())") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, func.getSelf(), arg1, arg2);
+        return builtinNode.execute(frame, func.getSelf(), arg1, arg2);
     }
 
     /**
@@ -205,9 +205,9 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
                     @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
         if (isReverse) {
-            return builtinNode.call(frame, arg2, arg1, PNone.NO_VALUE);
+            return builtinNode.execute(frame, arg2, arg1, PNone.NO_VALUE);
         }
-        return builtinNode.call(frame, arg1, arg2, PNone.NO_VALUE);
+        return builtinNode.execute(frame, arg1, arg2, PNone.NO_VALUE);
     }
 
     /**

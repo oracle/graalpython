@@ -766,7 +766,7 @@ public class FileIOBuiltins extends PythonBuiltins {
         @Specialization
         static Object tell(VirtualFrame frame, PFileIO self,
                         @Cached SeekNode seekNode) {
-            return seekNode.call(frame, self, 0, SEEK_CUR);
+            return seekNode.execute(frame, self, 0, SEEK_CUR);
         }
 
         public static long internalTell(PFileIO self,
@@ -805,7 +805,7 @@ public class FileIOBuiltins extends PythonBuiltins {
         static Object none(VirtualFrame frame, PFileIO self, @SuppressWarnings("unused") PNone posobj,
                         @Shared("ft") @Cached PosixModuleBuiltins.FtruncateNode posixTruncate,
                         @Cached PosixModuleBuiltins.LseekNode posixSeek) {
-            Object pos = posixSeek.call(frame, self.getFD(), 0, SEEK_CUR);
+            Object pos = posixSeek.execute(frame, self.getFD(), 0, SEEK_CUR);
             posixTruncate.execute(frame, self.getFD(), pos);
             return pos;
         }

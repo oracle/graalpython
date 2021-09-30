@@ -112,7 +112,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @Cached("hasAllowedArgsNum(cachedInfo)") boolean hasValidArgsNum,
                     @Cached("cachedInfo.createNode()") PythonTernaryBuiltinNode node) {
         raiseInvalidArgsNumUncached(hasValidArgsNum, cachedInfo);
-        return node.call(frame, receiver, PNone.NO_VALUE, PNone.NO_VALUE);
+        return node.execute(frame, receiver, PNone.NO_VALUE, PNone.NO_VALUE);
     }
 
     @Specialization(guards = "isBuiltinDescriptor(info)", replaces = {"callUnarySpecialMethodSlotInlined", "callBinarySpecialMethodSlotInlined", "callTernarySpecialMethodSlotInlined"})

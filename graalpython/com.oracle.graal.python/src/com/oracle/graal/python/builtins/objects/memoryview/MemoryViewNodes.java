@@ -445,7 +445,7 @@ public class MemoryViewNodes {
             byte[] bytes = new byte[itemSize];
             packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
             for (int i = 0; i < itemSize; i++) {
-                setItemNode.call(frame, self.getOwner(), offset + i, bytes[i]);
+                setItemNode.execute(frame, self.getOwner(), offset + i, bytes[i]);
             }
         }
 

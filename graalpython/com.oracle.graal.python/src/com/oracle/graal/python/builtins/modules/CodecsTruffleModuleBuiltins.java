@@ -358,7 +358,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         Object encode(VirtualFrame frame, PythonObject self, Object input, Object errors,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsEncodeNode encode) {
-            return encode.call(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), errors);
+            return encode.execute(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), errors);
         }
     }
 
@@ -381,7 +381,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsEncodeNode encode,
                         @Cached TupleBuiltins.GetItemNode getItemNode) {
-            PTuple result = (PTuple) encode.call(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), getAttrNode.execute(frame, self, ATTR_ERRORS));
+            PTuple result = (PTuple) encode.execute(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), getAttrNode.execute(frame, self, ATTR_ERRORS));
             return getItemNode.execute(frame, result, 0);
         }
     }

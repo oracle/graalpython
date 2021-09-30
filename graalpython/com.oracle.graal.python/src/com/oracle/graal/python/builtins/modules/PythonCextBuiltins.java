@@ -3436,7 +3436,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached DictBuiltins.SetItemNode setItemNode) {
             Object func = newClassMethodNode.execute(name, cfunc, flags, wrapper, owner, doc, factory());
             Object dict = asPythonObjectNode.execute(tpDict);
-            setItemNode.call(frame, dict, name, func);
+            setItemNode.execute(frame, dict, name, func);
             return 0;
         }
 

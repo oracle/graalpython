@@ -77,7 +77,7 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
     static Object callSpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") TernaryBuiltinDescriptor info, Object arg1, Object arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("info") TernaryBuiltinDescriptor cachedInfo,
                     @Cached("cachedInfo.createNode()") PythonTernaryBuiltinNode node) {
-        return node.call(frame, arg1, arg2, arg3);
+        return node.execute(frame, arg1, arg2, arg3);
     }
 
     @Specialization(replaces = "callSpecialMethodSlotInlined")
@@ -98,7 +98,7 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, arg1, arg2, arg3);
+        return builtinNode.execute(frame, arg1, arg2, arg3);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "isReverse",
@@ -108,7 +108,7 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, arg2, arg1, arg3);
+        return builtinNode.execute(frame, arg2, arg1, arg3);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "!isReverse", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -117,7 +117,7 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, arg1, arg2, arg3);
+        return builtinNode.execute(frame, arg1, arg2, arg3);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "isReverse", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -126,7 +126,7 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(func.getCallTarget())") boolean isReverse,
                     @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, arg2, arg1, arg3);
+        return builtinNode.execute(frame, arg2, arg1, arg3);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg",
@@ -136,7 +136,7 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getTernary(frame, func.getFunction())") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, arg1, arg2, arg3);
+        return builtinNode.execute(frame, arg1, arg2, arg3);
     }
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "!takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -146,7 +146,7 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getTernary(frame, func.getFunction())") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, arg1, arg2, arg3);
+        return builtinNode.execute(frame, arg1, arg2, arg3);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg",
