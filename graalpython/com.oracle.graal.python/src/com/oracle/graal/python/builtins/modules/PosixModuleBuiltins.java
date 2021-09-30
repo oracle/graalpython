@@ -1332,11 +1332,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.scandir", fd.originalObject);
-            try {
-                return factory().createScandirIterator(getContext(), posixLib.fdopendir(getPosixSupport(), fd.fd), fd, true);
-            } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e, fd.originalObject);
-            }
+            Object dirStream = dupAndFdopendir(frame, posixLib, getPosixSupport(), fd, this);
+            return factory().createScandirIterator(getContext(), dirStream, fd, true);
         }
     }
 
@@ -1367,11 +1364,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.listdir", fd.originalObject);
-            try {
-                return listdir(frame, posixLib.fdopendir(getPosixSupport(), fd.fd), false, true, posixLib);
-            } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e, fd.originalObject);
-            }
+            Object dirStream = dupAndFdopendir(frame, posixLib, getPosixSupport(), fd, this);
+            return listdir(frame, dirStream, false, true, posixLib);
         }
 
         private PList listdir(VirtualFrame frame, Object dirStream, boolean produceBytes, boolean needsRewind, PosixSupportLibrary posixLib) {
@@ -1411,6 +1405,24 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static Object[] listToArray(List<Object> list) {
             return list.toArray();
+        }
+    }
+
+    static Object dupAndFdopendir(VirtualFrame frame, PosixSupportLibrary posixLib, Object posixSupport, PosixFd fd, PythonBuiltinBaseNode node) {
+        int dupFd = -1;
+        try {
+            dupFd = posixLib.dup(posixSupport, fd.fd);
+            // when fdopenddir succeeds, we are no longer responsible for closing dupFd
+            return posixLib.fdopendir(posixSupport, dupFd);
+        } catch (PosixException e) {
+            if (dupFd != -1) {
+                try {
+                    posixLib.close(posixSupport, dupFd);
+                } catch (PosixException e1) {
+                    // ignored
+                }
+            }
+            throw node.raiseOSErrorFromPosixException(frame, e, fd.originalObject);
         }
     }
 
