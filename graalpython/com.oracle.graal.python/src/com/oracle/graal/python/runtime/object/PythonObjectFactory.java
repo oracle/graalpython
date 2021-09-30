@@ -1048,8 +1048,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSemLock(cls, getShape(cls), name, kind, sharedSemaphore));
     }
 
-    public final PScandirIterator createScandirIterator(PythonContext context, Object dirStream, PosixFileHandle path) {
-        return trace(new PScandirIterator(PythonBuiltinClassType.PScandirIterator, PythonBuiltinClassType.PScandirIterator.getInstanceShape(getLanguage()), context, dirStream, path));
+    public final PScandirIterator createScandirIterator(PythonContext context, Object dirStream, PosixFileHandle path, boolean needsRewind) {
+        return trace(new PScandirIterator(PythonBuiltinClassType.PScandirIterator, PythonBuiltinClassType.PScandirIterator.getInstanceShape(getLanguage()), context, dirStream, path, needsRewind));
     }
 
     public final PDirEntry createDirEntry(Object dirEntryData, PosixFileHandle path) {
