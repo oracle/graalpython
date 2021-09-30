@@ -45,51 +45,32 @@ import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_S_NOT_P;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class TupleConversionNode extends ArgumentCastNodeWithRaise {
-    private final Object defaultValue;
-    protected final boolean useDefaultForNone;
-
-    protected TupleConversionNode(Object defaultValue, boolean useDefaultForNone) {
-        this.defaultValue = defaultValue;
-        this.useDefaultForNone = useDefaultForNone;
-    }
-
-    protected boolean isHandledPNone(Object value) {
-        return isHandledPNone(useDefaultForNone, value);
-    }
-
-    @Specialization(guards = {"!useDefaultForNone", "isNoValue(none)"})
-    Object doNoValue(@SuppressWarnings("unused") PNone none) {
-        return defaultValue;
-    }
-
-    @Specialization(guards = "useDefaultForNone")
-    Object doNoValueAndNone(@SuppressWarnings("unused") PNone none) {
-        return defaultValue;
+    @Specialization
+    static Object[] doNone(@SuppressWarnings("unused") PNone none) {
+        return PythonUtils.EMPTY_OBJECT_ARRAY;
     }
 
     @Specialization
-    static Object doTuple(PTuple t) {
-        return t;
+    static Object[] doTuple(PTuple t,
+                    @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
+        return getInternalArrayNode.execute(t.getSequenceStorage());
     }
 
-    @Specialization(guards = "!isHandledPNone(value)")
+    @Specialization(guards = "!isPNone(value)")
     Object doOthers(Object value) {
         throw raise(PythonBuiltinClassType.TypeError, MUST_BE_S_NOT_P, value, "tuple", value);
     }
 
     @ClinicConverterFactory
-    public static TupleConversionNode create(@ClinicConverterFactory.DefaultValue Object defaultValue, @ClinicConverterFactory.UseDefaultForNone boolean useDefaultForNone) {
-        return TupleConversionNodeGen.create(defaultValue, useDefaultForNone);
-    }
-
-    @ClinicConverterFactory
-    public static TupleConversionNode create(@ClinicConverterFactory.UseDefaultForNone boolean useDefaultForNone) {
-        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
-        return TupleConversionNodeGen.create(PNone.NONE, false);
+    public static TupleConversionNode create() {
+        return TupleConversionNodeGen.create();
     }
 }
