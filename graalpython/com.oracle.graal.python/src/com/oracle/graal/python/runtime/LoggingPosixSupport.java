@@ -464,9 +464,13 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final void closedir(Object dirStream,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("closedir", "%s", dirStream);
-        lib.closedir(delegate, dirStream);
+        try {
+            lib.closedir(delegate, dirStream);
+        } catch (PosixException e) {
+            throw logException("closedir", e);
+        }
     }
 
     @ExportMessage
@@ -478,6 +482,13 @@ public class LoggingPosixSupport extends PosixSupport {
         } catch (PosixException e) {
             throw logException("readdir", e);
         }
+    }
+
+    @ExportMessage
+    final void rewinddir(Object dirStream,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("rewinddir", "%s", dirStream);
+        lib.rewinddir(delegate, dirStream);
     }
 
     @ExportMessage

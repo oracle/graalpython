@@ -388,7 +388,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
 
     @ExportMessage
     final void closedir(Object dirStream,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         if (ImageInfo.inImageBuildtimeCode()) {
             PosixSupportLibrary.getUncached().closedir(emulatedPosixSupport, removeDirStream(dirStream));
             return;
@@ -403,6 +403,15 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
             return PosixSupportLibrary.getUncached().readdir(emulatedPosixSupport, dirStream);
         }
         return nativeLib.readdir(nativePosixSupport, dirStream);
+    }
+
+    @ExportMessage
+    final void rewinddir(Object dirStream,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            PosixSupportLibrary.getUncached().rewinddir(emulatedPosixSupport, dirStream);
+        }
+        nativeLib.rewinddir(nativePosixSupport, dirStream);
     }
 
     @ExportMessage

@@ -170,7 +170,7 @@ public abstract class PosixSupportLibrary extends Library {
     /**
      * Implementations must deal with this being called more than once.
      */
-    public abstract void closedir(Object receiver, Object dirStream);
+    public abstract void closedir(Object receiver, Object dirStream) throws PosixException;
 
     /**
      * @return an opaque dir entry object to be used in calls to {@code dirEntry*()} methods or
@@ -178,6 +178,8 @@ public abstract class PosixSupportLibrary extends Library {
      *         {@code closedir}.
      */
     public abstract Object readdir(Object receiver, Object dirStream) throws PosixException;
+
+    public abstract void rewinddir(Object receiver, Object dirStream);
 
     /**
      * @return an opaque object representing the dir entry name
