@@ -245,4 +245,4 @@ There are no APIs particular to Python that are exposed, and everything is done 
 
 It is important to note that as long as your application is executed on GraalVM with the Python language installed,
 you can embed Python in your programs.
-For more details, refer to the [Embed Languages](https://www.graalvm.org/reference-manual/embed-languages/) guide.
+For more details, refer to the [Embed Languages](https://github.com/oracle/graal/blob/master/docs/reference-manual/embedding/embed-languages.md) guide.

@@ -21,7 +21,7 @@ To start debugging, open the following URL in Chrome:
     chrome-devtools://devtools/bundled/js_app.html?ws=127.0.1.1:9229/76fcb6dd-35267eb09c3
 ```
 
-The standard Python built-in `breakpoint()` will work using the [GraalVM's Chrome Inspector](https://www.graalvm.org/tools/chrome-debugger/) implementation.
+The standard Python built-in `breakpoint()` will work using the [GraalVM's Chrome Inspector](https://github.com/oracle/graal/blob/master/docs/tools/chrome-debugger.md) implementation.
 You can inspect variables, set watch expressions, interactively evaluate code snippets, etc.
 However, this only works if you pass `--inspect` or some other inspect option. Otherwise, `pdb` is triggered as on CPython (and does not currently work).
 

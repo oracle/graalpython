@@ -15,13 +15,12 @@ See [FAQ](FAQ.md) for commonly asked questions about this implementation.
 
 ## Installing Python
 
-The Python runtime is not provided by default, and can be added to GraalVM with the [GraalVM Updater](https://www.graalvm.org/reference-manual/graalvm-updater), `gu`, tool:
+The Python runtime is not provided by default, and can be added to GraalVM with the [GraalVM Updater](https://github.com/oracle/graal/blob/master/docs/reference-manual/graalvm-updater.md), `gu`, tool:
 ```shell
 gu install python
 ```
 
-The above command will install Python from the GitHub catalog for GraalVM Community Edition users.
-For GraalVM Enterprise users, the [manual installation](https://www.graalvm.org/reference-manual/graalvm-updater/#manual-installation) is required.
+The above command will install Python from the catalog.
 
 ## Running Python
 
@@ -70,7 +69,7 @@ For more information, continue reading to the [Installing Supported Packages](Pa
 
 ## Native Image and JVM Runtime
 
-By default, GraalVM runs Python from a binary, compiled ahead-of-time with [Native Image](https://www.graalvm.org/reference-manual/native-image/), yielding faster startup time and lower footprint.
+By default, GraalVM runs Python from a binary, compiled ahead-of-time with [Native Image](https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/README.md), yielding faster startup time and lower footprint.
 Although the ahead-of-time compiled binary includes the Python and LLVM interpreters, in order to interoperate with
 other languages you have to supply the `--jvm` argument.
 This instructs the launcher to run on the JVM instead of in Native Image mode.

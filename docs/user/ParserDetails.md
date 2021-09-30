@@ -14,7 +14,7 @@ This guide elaborates on how Python files are parsed on the GraalVM Python runti
 
 Creating the abstract syntax tree (AST) for a Python source has two phases.
 The first one creates a simple syntax tree (SST) and a scope tree.
-The second phase transforms the SST to the [Language Implementation framework](https://www.graalvm.org/graalvm-as-a-platform/language-implementation-framework/) tree.
+The second phase transforms the SST to the [Truffle Language Implementation framework](https://github.com/oracle/graal/blob/master/truffle/docs/README.md) tree.
 
 For the transformation, the scope tree it needed.
 The scope tree contains scope locations for variable and function definitions, and information about scopes.
