@@ -281,7 +281,7 @@ public class StringIOBuiltins extends PythonBuiltins {
 
             if (self.isReadUniversal()) {
                 Object incDecoder = factory().createNLDecoder(PIncrementalNewlineDecoder);
-                initNode.call(frame, incDecoder, self.getDecoder(), self.isReadTranslate(), PNone.NO_VALUE);
+                initNode.execute(frame, incDecoder, self.getDecoder(), self.isReadTranslate(), PNone.NO_VALUE);
                 self.setDecoder(incDecoder);
             }
 

@@ -44,9 +44,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class PythonQuaternaryBuiltinNode extends PythonBuiltinBaseNode {
-    public Object call(VirtualFrame frame, Object arg, Object arg2, Object arg3, Object arg4) {
-        return execute(frame, arg, arg2, arg3, arg4);
-    }
 
-    protected abstract Object execute(VirtualFrame frame, Object arg, Object arg2, Object arg3, Object arg4);
+    public abstract Object execute(VirtualFrame frame, Object arg, Object arg2, Object arg3, Object arg4);
 }

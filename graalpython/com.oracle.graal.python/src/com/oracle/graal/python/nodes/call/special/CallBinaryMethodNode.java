@@ -220,7 +220,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached("getMinArgs(func)") int minArgs,
                     @Cached("getQuaternary(frame, func)") PythonQuaternaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, arg1, arg2, PNone.NO_VALUE, PNone.NO_VALUE);
+        return builtinNode.execute(frame, arg1, arg2, PNone.NO_VALUE, PNone.NO_VALUE);
     }
 
     @Specialization(guards = "!isBinaryOrTernaryBuiltinDescriptor(func)", //

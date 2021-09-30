@@ -369,7 +369,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         Object decode(VirtualFrame frame, PythonObject self, Object input, Object errors,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsDecodeNode decode) {
-            return decode.call(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), errors, true);
+            return decode.execute(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), errors, true);
         }
     }
 
@@ -393,7 +393,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         Object decode(VirtualFrame frame, PythonObject self, Object input, Object errors, Object ffinal,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsDecodeNode decode) {
-            return decode.call(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), errors, ffinal);
+            return decode.execute(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), errors, ffinal);
         }
     }
 
@@ -404,7 +404,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         Object decode(VirtualFrame frame, PythonObject self, Object input, Object errors, Object ffinal,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsDecodeNode decode) {
-            return decode.call(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), errors, ffinal);
+            return decode.execute(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), errors, ffinal);
         }
     }
 
