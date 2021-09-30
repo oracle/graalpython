@@ -103,7 +103,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @Cached("hasAllowedArgsNum(cachedInfo)") boolean hasValidArgsNum,
                     @Cached("cachedInfo.createNode()") PythonBinaryBuiltinNode node) {
         raiseInvalidArgsNumUncached(hasValidArgsNum, cachedInfo);
-        return node.call(frame, receiver, PNone.NO_VALUE);
+        return node.execute(frame, receiver, PNone.NO_VALUE);
     }
 
     @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
@@ -169,7 +169,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBinary(frame, func.getFunction())") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, func.getSelf(), arg);
+        return builtinNode.execute(frame, func.getSelf(), arg);
     }
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -179,7 +179,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBinary(frame, func.getFunction())") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, func.getSelf(), arg);
+        return builtinNode.execute(frame, func.getSelf(), arg);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg", "minArgs == 1",
@@ -190,7 +190,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("getMinArgs(func)") int minArgs,
                     @Cached("getBinary(frame, func.getFunction())") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, receiver, PNone.NO_VALUE);
+        return builtinNode.execute(frame, receiver, PNone.NO_VALUE);
     }
 
     @Specialization(guards = {"builtinNode != null", "minArgs == 1", "getCallTarget(func, getCt) == ct", "!takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -201,7 +201,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("getMinArgs(func)") int minArgs,
                     @Cached("getBinary(frame, func.getFunction())") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, arg, PNone.NO_VALUE);
+        return builtinNode.execute(frame, arg, PNone.NO_VALUE);
     }
 
     @Specialization(guards = "!isBuiltinDescriptor(func)", replaces = {"callObjectSingle", "callObject", "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod",

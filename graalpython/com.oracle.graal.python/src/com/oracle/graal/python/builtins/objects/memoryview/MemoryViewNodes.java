@@ -363,7 +363,7 @@ public class MemoryViewNodes {
             int itemSize = self.getItemSize();
             byte[] bytes = new byte[itemSize];
             for (int i = 0; i < itemSize; i++) {
-                bytes[i] = castToByteNode.execute(frame, getItem.call(frame, self.getOwner(), offset + i));
+                bytes[i] = castToByteNode.execute(frame, getItem.execute(frame, self.getOwner(), offset + i));
             }
             Object ret = unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
             return ret;

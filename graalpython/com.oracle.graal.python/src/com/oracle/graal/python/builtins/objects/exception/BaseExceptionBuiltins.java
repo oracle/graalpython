@@ -314,7 +314,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
                         @Cached DictNode dictNode) {
             Object clazz = getClassNode.execute(self);
             Object args = argsNode.executeObject(frame, self, PNone.NO_VALUE);
-            Object dict = dictNode.call(frame, self, PNone.NO_VALUE);
+            Object dict = dictNode.execute(frame, self, PNone.NO_VALUE);
             return factory().createTuple(new Object[]{clazz, args, dict});
         }
     }

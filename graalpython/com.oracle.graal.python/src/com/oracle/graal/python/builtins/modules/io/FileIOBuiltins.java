@@ -797,7 +797,7 @@ public class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isClosed()", "self.isWritable()", "!isPNone(posobj)"})
         static Object num(VirtualFrame frame, PFileIO self, Object posobj,
                         @Shared("ft") @Cached PosixModuleBuiltins.FtruncateNode posixTruncate) {
-            posixTruncate.call(frame, self.getFD(), posobj);
+            posixTruncate.execute(frame, self.getFD(), posobj);
             return posobj;
         }
 
@@ -806,7 +806,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Shared("ft") @Cached PosixModuleBuiltins.FtruncateNode posixTruncate,
                         @Cached PosixModuleBuiltins.LseekNode posixSeek) {
             Object pos = posixSeek.call(frame, self.getFD(), 0, SEEK_CUR);
-            posixTruncate.call(frame, self.getFD(), pos);
+            posixTruncate.execute(frame, self.getFD(), pos);
             return pos;
         }
 

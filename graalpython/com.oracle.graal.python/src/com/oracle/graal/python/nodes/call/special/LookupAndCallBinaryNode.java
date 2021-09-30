@@ -200,7 +200,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached("getBuiltinClass(left, getClassNode)") PythonBuiltinClassType clazz,
                     @Cached("getBinaryBuiltin(clazz)") PythonBinaryBuiltinNode function) {
-        return function.call(frame, left, right);
+        return function.execute(frame, left, right);
     }
 
     @Specialization(guards = {"!isReversible()", "left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")

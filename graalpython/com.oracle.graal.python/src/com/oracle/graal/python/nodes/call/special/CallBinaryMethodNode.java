@@ -93,7 +93,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
     Object callBinarySpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") BinaryBuiltinDescriptor info, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("info") BinaryBuiltinDescriptor cachedInfo,
                     @Cached("cachedInfo.createNode()") PythonBinaryBuiltinNode node) {
-        return node.call(frame, arg1, arg2);
+        return node.execute(frame, arg1, arg2);
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -134,9 +134,9 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
         if (isReverse) {
-            return builtinNode.call(frame, arg2, arg1);
+            return builtinNode.execute(frame, arg2, arg1);
         } else {
-            return builtinNode.call(frame, arg1, arg2);
+            return builtinNode.execute(frame, arg1, arg2);
         }
     }
 
@@ -147,9 +147,9 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
                     @Cached("getBinary(frame, func)") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
         if (isReverse) {
-            return builtinNode.call(frame, arg2, arg1);
+            return builtinNode.execute(frame, arg2, arg1);
         } else {
-            return builtinNode.call(frame, arg1, arg2);
+            return builtinNode.execute(frame, arg1, arg2);
         }
     }
 
@@ -160,7 +160,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBinary(frame, func.getFunction())") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, arg1, arg2);
+        return builtinNode.execute(frame, arg1, arg2);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg",
@@ -180,7 +180,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBinary(frame, func.getFunction())") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, arg1, arg2);
+        return builtinNode.execute(frame, arg1, arg2);
     }
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")

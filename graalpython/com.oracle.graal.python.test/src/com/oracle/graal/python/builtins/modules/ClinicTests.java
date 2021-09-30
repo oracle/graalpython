@@ -193,7 +193,7 @@ public class ClinicTests {
         @Override
         public Object execute(VirtualFrame frame) {
             try {
-                return node.call(frame, frame.getArguments()[0], frame.getArguments()[1]);
+                return node.execute(frame, frame.getArguments()[0], frame.getArguments()[1]);
             } catch (PException ex) {
                 boolean expectTypeError = frame.getArguments().length >= 3 && (boolean) frame.getArguments()[2];
                 if (expectTypeError) {

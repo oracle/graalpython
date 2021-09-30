@@ -404,7 +404,7 @@ public final class TemplateFormatter {
         if (recursive) {
             spec = buildString(node, specStart, end, level, formatNode, getItemNode);
         }
-        Object rendered = formatNode.call(null, obj, spec);
+        Object rendered = formatNode.execute(null, obj, spec);
         return rendered;
     }
 

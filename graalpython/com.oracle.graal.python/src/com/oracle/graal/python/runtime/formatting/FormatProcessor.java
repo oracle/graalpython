@@ -118,7 +118,7 @@ abstract class FormatProcessor<T> {
                 // directly, so the only error can be IndexError, which we ignore and transform into
                 // the TypeError below.
                 try {
-                    ret = getTupleItemNode.call(null, args, argIndex++);
+                    ret = getTupleItemNode.execute(null, args, argIndex++);
                 } catch (PException e) {
                     // fall through
                 }

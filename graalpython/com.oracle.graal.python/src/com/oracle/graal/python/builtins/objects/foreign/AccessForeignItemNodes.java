@@ -195,7 +195,7 @@ abstract class AccessForeignItemNodes {
             } finally {
                 gil.acquire();
             }
-            return getItemNode.call(frame, string, idx);
+            return getItemNode.execute(frame, string, idx);
         }
 
         @Specialization(guards = {"lib.hasHashEntries(object)"})

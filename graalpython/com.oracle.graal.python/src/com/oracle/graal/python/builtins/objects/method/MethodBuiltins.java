@@ -125,10 +125,10 @@ public class MethodBuiltins extends PythonBuiltins {
             }
 
             try {
-                return objectGetattrNode.call(frame, self, key);
+                return objectGetattrNode.execute(frame, self, key);
             } catch (PException e) {
                 e.expectAttributeError(errorProfile);
-                return objectGetattrNode.call(frame, self.getFunction(), key);
+                return objectGetattrNode.execute(frame, self.getFunction(), key);
             }
         }
 

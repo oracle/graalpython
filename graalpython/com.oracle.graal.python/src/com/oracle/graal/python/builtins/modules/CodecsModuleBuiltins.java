@@ -827,7 +827,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile hasSearchPathProfile,
                         @Cached ConditionProfile hasTruffleEncodingProfile,
                         @Cached ConditionProfile isTupleProfile) {
-            String decoded = (String) ((PTuple) asciiDecodeNode.call(frame, encoding, PNone.NO_VALUE)).getSequenceStorage().getInternalArray()[0];
+            String decoded = (String) ((PTuple) asciiDecodeNode.execute(frame, encoding, PNone.NO_VALUE)).getSequenceStorage().getInternalArray()[0];
             return lookup(frame, decoded, callNode, lenNode, hasSearchPathProfile, hasTruffleEncodingProfile, isTupleProfile);
         }
 
@@ -936,7 +936,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object forget(VirtualFrame frame, PBytesLike encoding,
                         @Cached AsciiDecodeNode asciiDecodeNode) {
-            forget((String) ((PTuple) asciiDecodeNode.call(frame, encoding, PNone.NO_VALUE)).getSequenceStorage().getInternalArray()[0]);
+            forget((String) ((PTuple) asciiDecodeNode.execute(frame, encoding, PNone.NO_VALUE)).getSequenceStorage().getInternalArray()[0]);
             return PNone.NONE;
         }
 

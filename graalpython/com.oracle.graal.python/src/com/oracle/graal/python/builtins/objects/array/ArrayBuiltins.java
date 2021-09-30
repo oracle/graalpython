@@ -921,6 +921,11 @@ public class ArrayBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
     public abstract static class FromBytesNode extends PythonBinaryClinicBuiltinNode {
+
+        // make this method accessible
+        @Override
+        public abstract Object executeWithoutClinic(VirtualFrame frame, Object arg, Object arg2);
+
         @Specialization(limit = "3")
         Object frombytes(PArray self, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
@@ -972,7 +977,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             Object readResult = callMethod.execute(frame, file, "read", nbytes);
             if (readResult instanceof PBytes) {
                 int readLength = sizeNode.execute(frame, readResult);
-                fromBytesNode.execute(frame, self, readResult);
+                fromBytesNode.executeWithoutClinic(frame, self, readResult);
                 // It would make more sense to check this before the frombytes call, but CPython
                 // does it this way
                 if (readLength != nbytes) {
@@ -1036,7 +1041,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached FromBytesNode fromBytesNode) {
             warnNode.warnEx(frame, DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.", 1);
             Object bytes = callMethod.execute(frame, str, "encode", "utf-8");
-            return fromBytesNode.execute(frame, self, bytes);
+            return fromBytesNode.executeWithoutClinic(frame, self, bytes);
         }
 
         @Specialization(guards = "!isString(str)")
@@ -1045,7 +1050,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached FromBytesNode fromBytesNode) {
             warnNode.warnEx(frame, DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.", 1);
-            return fromBytesNode.execute(frame, self, bufferAcquireLib.acquireReadonly(str));
+            return fromBytesNode.executeWithoutClinic(frame, self, bufferAcquireLib.acquireReadonly(str));
         }
     }
 
