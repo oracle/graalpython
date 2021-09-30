@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
@@ -643,24 +642,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (includeInternal || !strKey.startsWith(PRIVATE_PREFIX)) {
                 keys.add(strKey);
             }
-        }
-    }
-
-    @ExportMessage
-    public String asPathWithState(ThreadState state,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Shared("raise") @Cached PRaiseNode raise,
-                    @Cached CastToJavaStringNode castToJavaStringNode) {
-        Object func = lib.lookupAttributeOnType(this, __FSPATH__);
-        if (func == PNone.NO_VALUE) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, this);
-        }
-        Object pathObject = methodLib.callUnboundMethodWithState(func, state, this);
-        try {
-            return castToJavaStringNode.execute(pathObject);
-        } catch (CannotCastException e) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, this, pathObject);
         }
     }
 
@@ -1769,7 +1750,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         @Cached("createIterMethodProfile(plib)") ValueProfile iterMethodProfile,
                         @Cached IteratorNodes.IsIteratorObjectNode isIteratorObjectNode,
                         @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise) {
+                        @Cached PRaiseNode raise) {
             Object v = plib.getDelegatedValue(self);
             Object iterMethod = iterMethodProfile.profile(plib.lookupAttributeOnType(self, __ITER__));
             if (iterMethod != PNone.NONE) {

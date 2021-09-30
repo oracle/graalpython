@@ -323,8 +323,8 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         }
 
         private boolean recursive(VirtualFrame frame, PyObjectRichCompareBool.EqNode eqNode, PMemoryView self, PMemoryView other,
-                                  MemoryViewNodes.ReadItemAtNode readSelf, MemoryViewNodes.ReadItemAtNode readOther,
-                                  int dim, int ndim, Object selfPtr, int initialSelfOffset, Object otherPtr, int initialOtherOffset) {
+                        MemoryViewNodes.ReadItemAtNode readSelf, MemoryViewNodes.ReadItemAtNode readOther,
+                        int dim, int ndim, Object selfPtr, int initialSelfOffset, Object otherPtr, int initialOtherOffset) {
             int selfOffset = initialSelfOffset;
             int otherOffset = initialOtherOffset;
             for (int i = 0; i < self.getBufferShape()[dim]; i++) {

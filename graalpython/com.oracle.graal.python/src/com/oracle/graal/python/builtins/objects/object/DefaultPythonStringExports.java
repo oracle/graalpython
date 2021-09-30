@@ -61,11 +61,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = String.class)
 final class DefaultPythonStringExports {
     @ExportMessage
-    static String asPathWithState(String value, @SuppressWarnings("unused") ThreadState state) {
-        return value;
-    }
-
-    @ExportMessage
     static Object lookupAttributeInternal(String receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup,

@@ -27,8 +27,6 @@ package com.oracle.graal.python.builtins.objects.str;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringMaterializeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -51,7 +49,6 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PString extends PSequence {
     public static final HiddenKey INTERNED = new HiddenKey("_interned");
 
@@ -72,17 +69,6 @@ public final class PString extends PSequence {
 
     void setCharSequence(String materialized) {
         this.value = materialized;
-    }
-
-    @ExportMessage
-    String asPathWithState(@SuppressWarnings("unused") ThreadState state,
-                    @Cached CastToJavaStringNode castToJavaStringNode) {
-        try {
-            return castToJavaStringNode.execute(this);
-        } catch (CannotCastException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("should not be reached");
-        }
     }
 
     @Override

@@ -282,22 +282,6 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Return the file system path representation of the object. If the object is str or bytes, then
-     * allow it to pass through. If the object defines __fspath__(), then return the result of that
-     * method. All other types raise a TypeError.
-     */
-    public String asPathWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState) {
-        throw getDefaultNodes().getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, receiver);
-    }
-
-    /**
-     * @see #asPathWithState
-     */
-    public final String asPath(Object receiver) {
-        return asPathWithState(receiver, null);
-    }
-
-    /**
      * Looks up an attribute for the given receiver like {@code PyObject_LookupAttr}.
      *
      * @param receiver self

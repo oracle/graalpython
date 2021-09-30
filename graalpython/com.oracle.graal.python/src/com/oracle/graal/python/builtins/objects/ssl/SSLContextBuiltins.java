@@ -90,14 +90,13 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertError;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -551,7 +550,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     abstract static class SetDefaultVerifyPathsNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object set(VirtualFrame frame, PSSLContext self,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached PyUnicodeFSDecoderNode asPath,
                         @Cached("createEnvironLookup()") GetAttributeNode getAttribute,
                         @CachedLibrary(limit = "1") HashingStorageLibrary environLib,
                         @Cached("createCertFileKey()") PBytes certFileKey,
@@ -561,8 +560,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
             PDict environ = (PDict) getAttribute.executeObject(frame, posix);
             HashingStorage storage = environ.getDictStorage();
 
-            TruffleFile file = toTruffleFile(lib, environLib.getItem(storage, certFileKey));
-            TruffleFile path = toTruffleFile(lib, environLib.getItem(storage, certDirKey));
+            TruffleFile file = toTruffleFile(frame, asPath, environLib.getItem(storage, certFileKey));
+            TruffleFile path = toTruffleFile(frame, asPath, environLib.getItem(storage, certDirKey));
             if (file != null || path != null) {
                 LOGGER.fine(() -> String.format("set_default_verify_paths file: %s. path: %s", file != null ? file.getPath() : "None", path != null ? path.getPath() : "None"));
                 List<Object> certificates = new ArrayList<>();
@@ -596,13 +595,13 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return GetAttributeNode.create("environ");
         }
 
-        private TruffleFile toTruffleFile(PythonObjectLibrary lib, Object path) throws PException {
+        private TruffleFile toTruffleFile(VirtualFrame frame, PyUnicodeFSDecoderNode asPath, Object path) throws PException {
             if (path == null) {
                 return null;
             }
             TruffleFile file;
             try {
-                file = getContext().getEnv().getPublicTruffleFile(lib.asPath(path));
+                file = getContext().getEnv().getPublicTruffleFile(asPath.execute(frame, path));
                 if (!file.exists()) {
                     return null;
                 }
@@ -643,10 +642,9 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LoadVerifyLocationsNode extends PythonQuaternaryBuiltinNode {
-        @Specialization(limit = "2")
+        @Specialization
         Object load(VirtualFrame frame, PSSLContext self, Object cafile, Object capath, Object cadata,
-                        @CachedLibrary("cafile") PythonObjectLibrary fileLib,
-                        @CachedLibrary("capath") PythonObjectLibrary pathLib,
+                        @Cached PyUnicodeFSDecoderNode asPath,
                         @Cached CastToJavaStringNode castToString,
                         @Cached ToByteArrayNode toBytes) {
             if (cafile instanceof PNone && capath instanceof PNone && cadata instanceof PNone) {
@@ -660,7 +658,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
             final TruffleFile file;
             if (!(cafile instanceof PNone)) {
-                file = toTruffleFile(frame, fileLib, cafile);
+                file = toTruffleFile(frame, asPath, cafile);
                 if (!file.exists()) {
                     throw raiseOSError(frame, OSErrorEnum.ENOENT);
                 }
@@ -669,7 +667,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
             }
             final TruffleFile path;
             if (!(capath instanceof PNone)) {
-                path = toTruffleFile(frame, pathLib, capath);
+                path = toTruffleFile(frame, asPath, capath);
             } else {
                 path = null;
             }
@@ -713,9 +711,9 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        private TruffleFile toTruffleFile(VirtualFrame frame, PythonObjectLibrary lib, Object fileObject) throws PException {
+        private TruffleFile toTruffleFile(VirtualFrame frame, PyUnicodeFSDecoderNode asPath, Object fileObject) throws PException {
             try {
-                return getContext().getEnv().getPublicTruffleFile(lib.asPath(fileObject));
+                return getContext().getEnv().getPublicTruffleFile(asPath.execute(frame, fileObject));
             } catch (Exception e) {
                 throw raiseOSError(frame, e);
             }
@@ -775,7 +773,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     abstract static class LoadCertChainNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         Object load(VirtualFrame frame, PSSLContext self, Object certfile, Object keyfile, Object password,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
+                        @Cached PyUnicodeFSDecoderNode asPath) {
             if (!PGuards.isString(certfile) && !PGuards.isBytes(certfile)) {
                 throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "certfile");
             }
@@ -783,8 +781,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.S_SHOULD_BE_A_VALID_FILESYSTEMPATH, "keyfile");
             }
             Object kf = keyfile instanceof PNone ? certfile : keyfile;
-            TruffleFile certTruffleFile = toTruffleFile(frame, lib.asPath(certfile));
-            TruffleFile keyTruffleFile = toTruffleFile(frame, lib.asPath(kf));
+            TruffleFile certTruffleFile = toTruffleFile(frame, asPath.execute(frame, certfile));
+            TruffleFile keyTruffleFile = toTruffleFile(frame, asPath.execute(frame, kf));
             try {
                 checkPassword(password);
                 return load(certTruffleFile, keyTruffleFile, self);
@@ -884,10 +882,12 @@ public class SSLContextBuiltins extends PythonBuiltins {
     abstract static class LoadDhParamsNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        PNone load(VirtualFrame frame, PSSLContext self, String filepath) {
+        PNone load(VirtualFrame frame, PSSLContext self, Object pathObject,
+                        @Cached PyUnicodeFSDecoderNode asPath) {
+            String path = asPath.execute(frame, pathObject);
             // not used yet so rather raise error
             throw raise(NotImplementedError);
-            // File file = new File(filepath);
+            // File file = new File(path);
             // if (!file.exists()) {
             // throw raiseOSError(frame, OSErrorEnum.ENOENT);
             // }
@@ -901,28 +901,6 @@ public class SSLContextBuiltins extends PythonBuiltins {
             // throw raise(SSLError, ex.getMessage());
             // }
             // return PNone.NONE;
-        }
-
-        @Specialization(limit = "3")
-        PNone load(VirtualFrame frame, PSSLContext self, PBytes filepath,
-                        @CachedLibrary("filepath") PythonObjectLibrary lib) {
-            load(frame, self, lib.asPath(filepath));
-
-            return PNone.NONE;
-        }
-
-        @Specialization(limit = "1")
-        PNone load(VirtualFrame frame, PSSLContext self, PythonObject filepath,
-                        @CachedLibrary("filepath") PythonObjectLibrary lib) {
-            load(frame, self, lib.asPath(filepath));
-
-            return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isString(filepath)", "!isBytes(filepath)", "!isPythonObject(filepath)"})
-        Object wrap(PSSLContext self, Object filepath) {
-            throw raise(TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, filepath);
         }
     }
 
