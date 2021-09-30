@@ -56,7 +56,6 @@ import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -66,8 +65,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -746,25 +743,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
             return lookup.execute(PythonClass, attributeName, strict);
         } finally {
             gil.release(mustRelease);
-        }
-    }
-
-    @ExportMessage
-    static class IsSame {
-        @Specialization
-        static boolean tt(PythonBuiltinClassType receiver, PythonBuiltinClassType other) {
-            return receiver == other;
-        }
-
-        @Specialization
-        static boolean tc(PythonBuiltinClassType receiver, PythonBuiltinClass other) {
-            return receiver == other.getType();
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static boolean tO(PythonBuiltinClassType receiver, Object other) {
-            return false;
         }
     }
 

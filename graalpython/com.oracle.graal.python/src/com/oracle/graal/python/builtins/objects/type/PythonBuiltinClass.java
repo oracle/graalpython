@@ -30,11 +30,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.expression.IsExpressionNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -158,9 +158,9 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         static TriState doOther(PythonBuiltinClass self, Object other,
                         @Shared("convert") @Cached PForeignToPTypeNode convert,
                         @CachedLibrary(limit = "3") InteropLibrary otherLib,
-                        @CachedLibrary("self") PythonObjectLibrary objectLib,
+                        @Cached IsExpressionNode.IsNode isNode,
                         @Exclusive @Cached GilNode gil) {
-            return self.isIdenticalOrUndefined(other, convert, otherLib, objectLib, gil);
+            return self.isIdenticalOrUndefined(other, convert, otherLib, isNode, gil);
         }
     }
 }

@@ -647,12 +647,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public boolean isSame(Object other,
-                    @Cached IsNode isNode) {
-        return isNode.execute(this, other);
-    }
-
-    @ExportMessage
     public String asPathWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
@@ -1735,7 +1729,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public TriState isIdenticalOrUndefined(Object otherInterop,
                     @Cached PForeignToPTypeNode convert,
                     @CachedLibrary(limit = "3") InteropLibrary otherLib,
-                    @CachedLibrary("this") PythonObjectLibrary objectLib,
+                    @Cached IsNode isNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -1743,7 +1737,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (this == other) {
                 return TriState.TRUE;
             } else if (otherLib.hasIdentity(other)) {
-                return objectLib.isSame(this, other) ? TriState.TRUE : TriState.FALSE;
+                return isNode.execute(this, other) ? TriState.TRUE : TriState.FALSE;
             } else {
                 return TriState.UNDEFINED;
             }

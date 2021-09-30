@@ -52,8 +52,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -62,20 +60,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = String.class)
 final class DefaultPythonStringExports {
-    @ExportMessage
-    static class IsSame {
-        @Specialization
-        static boolean ss(String receiver, String other) {
-            return receiver == other;
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static boolean sO(String receiver, Object other) {
-            return false;
-        }
-    }
-
     @ExportMessage
     static String asPathWithState(String value, @SuppressWarnings("unused") ThreadState state) {
         return value;

@@ -68,13 +68,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Object.class)
 final class DefaultPythonObjectExports {
     @ExportMessage
-    static boolean isSame(Object receiver, Object other,
-                    @CachedLibrary("receiver") InteropLibrary receiverLib,
-                    @CachedLibrary(limit = "3") InteropLibrary otherLib) {
-        return receiverLib.isIdentical(receiver, other, otherLib);
-    }
-
-    @ExportMessage
     static Object lookupAttributeInternal(Object receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup,

@@ -42,17 +42,13 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -61,30 +57,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Double.class)
 final class DefaultPythonDoubleExports {
-    @ExportMessage
-    static class IsSame {
-        @Specialization
-        static boolean dd(Double receiver, double other) {
-            return Double.compare(receiver, other) == 0;
-        }
-
-        @Specialization
-        static boolean dF(Double receiver, PFloat other,
-                        @Cached PyFloatCheckExactNode isFloat) {
-            if (isFloat.execute(other)) {
-                return dd(receiver, other.getValue());
-            } else {
-                return false;
-            }
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static boolean dO(Double receiver, Object other) {
-            return false;
-        }
-    }
-
     @ExportMessage
     static Object lookupAttributeInternal(Double receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,

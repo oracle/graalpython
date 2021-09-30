@@ -282,11 +282,6 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Compare {@code receiver} to {@code other} using CPython pointer comparison semantics.
-     */
-    public abstract boolean isSame(Object receiver, Object other);
-
-    /**
      * Return the file system path representation of the object. If the object is str or bytes, then
      * allow it to pass through. If the object defines __fspath__(), then return the result of that
      * method. All other types raise a TypeError.
