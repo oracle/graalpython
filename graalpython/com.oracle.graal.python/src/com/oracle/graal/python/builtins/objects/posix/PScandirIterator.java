@@ -87,6 +87,10 @@ public final class PScandirIterator extends PythonBuiltinObject {
         }
 
         void rewindAndClose(PosixSupportLibrary posixLib, Object posixSupport) {
+            if (isReleased()) {
+                return;
+            }
+            markReleased();
             Object dirStream = getReference();
             if (needsRewind) {
                 posixLib.rewinddir(posixSupport, dirStream);
