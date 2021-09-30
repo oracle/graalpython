@@ -205,6 +205,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PSSLSocket("_SSLSocket", "_ssl"),
     PMemoryBIO("MemoryBIO", "_ssl"),
 
+    // itertools
+    PTee("_tee", "itertools"),
+    PTeeDataObject("_tee_dataobject", "itertools"),
+
     // json
     JSONScanner("Scanner", "_json", Flags.PUBLIC_BASE_WODICT),
     JSONEncoder("Encoder", "_json", Flags.PUBLIC_BASE_WODICT),

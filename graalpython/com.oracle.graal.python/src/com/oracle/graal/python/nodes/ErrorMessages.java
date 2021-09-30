@@ -155,6 +155,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_LOAD = "cannot load %s: %s";
     public static final String CANNOT_LOAD_M = "cannot load %s: %m";
     public static final String CANNOT_RELEASE_UNAQUIRED_LOCK = "cannot release un-acquired lock";
+    public static final String CANNOT_REENTER_TEE_ITERATOR = "cannot re-enter the tee iterator";
     public static final String CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE = "Cannot specify both ',' and '_'.";
     public static final String CANNOT_SPECIFY_C_WITH_C = "Cannot specify '%c' with '%c'.";
     public static final String CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = "%s: cannot use fd and follow_symlinks together";
@@ -352,6 +353,7 @@ public abstract class ErrorMessages {
     public static final String INVALID_USE_OF_W_FORMAT_CHAR = "invalid use of 'w' format character";
     public static final String INVALID_BUFFER_ACCESS = "invalid buffer access";
     public static final String IS_EMPTY = "%s is empty";
+    public static final String IS_NOT_A = "%s is not a %s";
     public static final String IS_NOT_A_DICTIONARY = "%s is not a dictionary";
     public static final String IS_NOT_IN_RANGE = "%s is not in range";
     public static final String IS_NOT_A_UNICODE_OBJECT = "%s is not a unicode object";
@@ -604,6 +606,8 @@ public abstract class ErrorMessages {
     public static final String TAKES_EXACTLY_S_ARGUMENTS_D_GIVEN = "%s() takes exactly %s arguments (%d given)";
     public static final String TAKES_NO_KEYWORD_ARGS = "%s takes no keyword arguments";
     public static final String THROW_THIRD_ARG_MUST_BE_TRACEBACK = "throw() third argument must be a traceback object";
+    public static final String TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS = "_tee_dataobject should not have more than %s links";
+    public static final String TDATAOBJECT_SHOULDNT_HAVE_NEXT = "_tee_dataobject shouldn't have a next if not full";
     public static final String TIMED_OUT = "timed out";
     public static final String TIMEOUT_VALUE_MUST_BE_POSITIVE = "timeout value must be positive";
     public static final String TIMEOUT_VALUE_OUT_OF_RANGE = "Timeout value out of range";

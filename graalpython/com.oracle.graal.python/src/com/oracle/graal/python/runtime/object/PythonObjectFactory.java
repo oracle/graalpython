@@ -111,6 +111,8 @@ import com.oracle.graal.python.builtins.objects.iterator.PSentinelIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
+import com.oracle.graal.python.builtins.objects.itertools.PTee;
+import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
@@ -1103,6 +1105,14 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PFileIO createFileIO(Object clazz) {
         return trace(new PFileIO(clazz, getShape(clazz)));
+    }
+
+    public final PTee createTee() {
+        return trace(new PTee(PythonBuiltinClassType.PTee, PythonBuiltinClassType.PTee.getInstanceShape(getLanguage())));
+    }
+
+    public final PTeeDataObject createTeeDataObject() {
+        return trace(new PTeeDataObject(PythonBuiltinClassType.PTeeDataObject, PythonBuiltinClassType.PTeeDataObject.getInstanceShape(getLanguage())));
     }
 
     public final PTextIO createTextIO(Object clazz) {

@@ -732,7 +732,7 @@ public abstract class SequenceStorageNodes {
 
     @GenerateUncached
     @ImportStatic({ListStorageType.class, SequenceStorageBaseNode.class})
-    abstract static class GetItemSliceNode extends Node {
+    public abstract static class GetItemSliceNode extends Node {
 
         public abstract SequenceStorage execute(SequenceStorage s, int start, int stop, int step, int length);
 
