@@ -26,6 +26,7 @@ from __future__ import print_function
 
 import contextlib
 import datetime
+import getpass
 import glob
 import itertools
 import json
@@ -400,6 +401,9 @@ def update_unittest_tags(args):
         ('test_faulthandler.txt', '*graalpython.lib-python.3.test.test_faulthandler.FaultHandlerTests.test_sigill'),
         # Disabled due to transient failure
         ('test_multiprocessing_main_handling.txt', '*graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.test_module_in_package'),
+        ('test_multiprocessing_main_handling.txt', '*graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.test_module_in_subpackage_in_zipfile'),
+        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.TestNoForkBomb.test_noforkbomb'),
+        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_active_children'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
@@ -1188,6 +1192,9 @@ def update_import_cmd(args):
     shutil.copy(
         join(mx.suite("truffle").dir, "..", "common.json"),
         join(overlaydir, "python", "graal-common.json"))
+    with open(join(overlaydir, "fastr", "common.libsonnet")) as fastrCommon:
+        with open(join(overlaydir, "python", "fastr-common.libsonnet"), "w") as fastrCopy:
+            fastrCopy.write(fastrCommon.read().replace("graal_common.json", "../python/graal-common.json"))
 
     # update the graal-enterprise revision in the overlay (used by benchmarks)
     with open(join(overlaydir, "python", "imported-constants.json"), 'w') as fp:
@@ -1201,7 +1208,8 @@ def update_import_cmd(args):
 
     with open(join(overlaydir, "python", "vm-tests.json"), 'r') as fp:
         d = json.load(fp)
-        d['downloads']['JAVA_HOME']['version'] = oraclejdk8_ver
+        for job in d:
+            job['downloads']['JAVA_HOME']['version'] = oraclejdk8_ver
 
     with open(join(overlaydir, "python", "vm-tests.json"), 'w') as fp:
         json.dump(d, fp, indent=2)
@@ -1237,12 +1245,31 @@ def update_import_cmd(args):
             repos_updated.append(repo)
 
     # push all repos
-    for repo in repos_updated:
-        try:
-            mx._opts.very_verbose = True
-            vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
-        finally:
-            mx._opts.very_verbose = prev_verbosity
+    if "--no-push" not in args:
+        for repo in repos_updated:
+            try:
+                mx._opts.very_verbose = True
+                vc.git_command(repo, ["push", "-u", "origin", "HEAD:%s" % current_branch], abortOnError=True)
+            finally:
+                mx._opts.very_verbose = prev_verbosity
+
+        if repos_updated and input('Use automation tool to create PRs (Y/n)? ').lower() != "n":
+            username = input('Username: ')
+            password = getpass.getpass('Password: ')
+            cmds = []
+            for repo in repos_updated:
+                reponame = os.path.basename(repo)
+                cmd = [
+                    "ol-cli", "bitbucket", "--user='%s'" % username, "--password='${SSO_PASSWORD}'",
+                    "create-pr", "--project=G", "--repo=%s" % reponame,
+                    "--title='[GR-21590] Update Python imports'",
+                    "--from-branch='%s'" % current_branch, "--to-branch=master"
+                ]
+                cmds.append(cmd)
+                print(" ".join(cmd))
+            for cmd in cmds:
+                cmd[3].replace("${SSO_PASSWORD}", password)
+                mx.run(cmd, nonZeroIsFatal=False)
 
     if repos_updated:
         mx.log("\n  ".join(["These repos were updated:"] + repos_updated))
@@ -2263,7 +2290,7 @@ mx.update_commands(SUITE, {
     'python3': [python, '[Python args|@VM options]'],
     'deploy-binary-if-master': [deploy_binary_if_main, ''],
     'python-gate': [python_gate, '--tags [gates]'],
-    'python-update-import': [update_import_cmd, '[--no-pull] [import-name, default: truffle]'],
+    'python-update-import': [update_import_cmd, '[--no-pull] [--no-push] [import-name, default: truffle]'],
     'python-style': [python_style_checks, '[--fix] [--no-spotbugs]'],
     'python-svm': [python_svm, ''],
     'python-gvm': [python_gvm, ''],

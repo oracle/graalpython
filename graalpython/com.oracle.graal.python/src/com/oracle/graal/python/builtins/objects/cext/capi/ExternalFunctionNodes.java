@@ -103,6 +103,7 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -546,6 +547,7 @@ public abstract class ExternalFunctionNodes {
         @Child private InteropLibrary lib;
         @Child private PRaiseNode raiseNode;
         @Child private GetThreadStateNode getThreadStateNode = GetThreadStateNodeGen.create();
+        @Child private GilNode gilNode = GilNode.create();
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
@@ -612,8 +614,17 @@ public abstract class ExternalFunctionNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ensureRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
             } finally {
-                // special case after calling a C function: transfer caught exception back to frame
-                // to simulate the global state semantics
+                /*
+                 * Always re-acquire the GIL here. This is necessary because it could happen that C
+                 * extensions are releasing the GIL and if then an LLVM exception occurs, C code
+                 * wouldn't re-acquire it (unexpectedly).
+                 */
+                gilNode.acquire();
+
+                /*
+                 * Special case after calling a C function: transfer caught exception back to frame
+                 * to simulate the global state semantics.
+                 */
                 PArguments.setException(frame, threadState.getCaughtException());
                 IndirectCallContext.exit(frame, threadState, state);
             }

@@ -49,6 +49,7 @@ import _sysconfig
 __dir__ = __file__.rpartition("/")[0]
 cflags_warnings = [ "-Wno-int-to-pointer-cast"
                   , "-Wno-int-conversion"
+                  , "-Wno-void-pointer-to-int-cast"
                   , "-Wno-incompatible-pointer-types-discards-qualifiers"
                   , "-Wno-pointer-type-mismatch"
                   , "-Wno-braced-scalar-init"
@@ -269,7 +270,7 @@ class Bzip2Depedency(CAPIDependency):
             with open(makefile_path, "w") as f:
                 f.write(content)
 
-        parallel_arg =  "-j" + str(os.cpu_count()) if threaded else ""
+        parallel_arg =  "-j" + str(min(4, os.cpu_count())) if threaded else ""
         system("make -C '%s' %s -f '%s' CC='%s'" % (lib_src_folder, parallel_arg, self.makefile, get_config_var("CC")), msg="Could not build libbz2")
         return lib_src_folder
 
@@ -309,11 +310,11 @@ class LZMADepedency(CAPIDependency):
     def build(self, extracted_dir=None):
         if not extracted_dir:
             extracted_dir = self.download()
-        
+
         xz_src_path = os.path.join(extracted_dir, self.package_name + "-" + self.version)
         lzma_support_path = os.path.join(__dir__, 'lzma')
-        parallel_arg =  "-j" + str(min(4, os.cpu_count())) if threaded else ""
-        make_args = ['make', parallel_arg, '-C', lzma_support_path]
+        # not using parallel build for xz
+        make_args = ['make', '-C', lzma_support_path]
         make_args += ["CC='%s'" % get_config_var("CC")]
         make_args += ["XZ_ROOT='%s'" % xz_src_path]
         make_args += ["CONFIG_H_DIR='%s'" % lzma_support_path]
@@ -327,7 +328,7 @@ class LZMADepedency(CAPIDependency):
         if os.path.exists(lib_path):
             # library has been built earlier, so just return the install directory.
             return self.lib_install_dir
-        
+
         return self.build()
 
 
@@ -526,18 +527,18 @@ def build(capi_home):
     try:
         build_libhpy(capi_home)
         build_libposix(capi_home)
-        build_nativelibsupport(capi_home, 
-                                subdir="zlib", 
-                                libname="libzsupport", 
+        build_nativelibsupport(capi_home,
+                                subdir="zlib",
+                                libname="libzsupport",
                                 libs=['z'])
-        build_nativelibsupport(capi_home, 
-                                subdir="bz2", 
-                                libname="libbz2support", 
+        build_nativelibsupport(capi_home,
+                                subdir="bz2",
+                                libname="libbz2support",
                                 deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")],
                                 extra_link_args=["-Wl,-rpath,%s/lib/%s/" % (relative_rpath, SOABI)])
-        build_nativelibsupport(capi_home, 
-                                subdir="lzma", 
-                                libname="liblzmasupport", 
+        build_nativelibsupport(capi_home,
+                                subdir="lzma",
+                                libname="liblzmasupport",
                                 deps=[LZMADepedency("lzma", "xz==5.2.5", "XZ-5.2.5")],
                                 extra_link_args=["-Wl,-rpath,%s/lib/%s/" % (relative_rpath, SOABI)])
         build_libpython(capi_home)

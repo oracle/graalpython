@@ -58,6 +58,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -65,6 +67,10 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.interop.ExceptionType;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
@@ -190,6 +196,18 @@ public abstract class GetClassNode extends PNodeWithContext {
         return PythonBuiltinClassType.PInt;
     }
 
+    @Specialization(guards = "isForeignRuntimeException(object, lib)")
+    static Object getTruffleException(@SuppressWarnings("unused") AbstractTruffleException object,
+                    @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
+        /*
+         * Special case: if Python code asks for the class of a foreign exception, we return a
+         * Python type that inherits from BaseException. We do this because Python users usually
+         * expect that every exception inherits from BaseException.
+         */
+        assert !(object instanceof PException);
+        return PythonBuiltinClassType.PForeignException;
+    }
+
     @Fallback
     static Object getForeign(@SuppressWarnings("unused") Object object) {
         return PythonBuiltinClassType.ForeignObject;
@@ -197,5 +215,13 @@ public abstract class GetClassNode extends PNodeWithContext {
 
     protected static boolean hasInitialClass(Shape shape) {
         return (shape.getFlags() & PythonObject.CLASS_CHANGED_FLAG) == 0;
+    }
+
+    protected static boolean isForeignRuntimeException(AbstractTruffleException e, InteropLibrary lib) {
+        try {
+            return lib.isException(e) && lib.getExceptionType(e) == ExceptionType.RUNTIME_ERROR;
+        } catch (UnsupportedMessageException ex) {
+            throw CompilerDirectives.shouldNotReachHere(ex);
+        }
     }
 }
