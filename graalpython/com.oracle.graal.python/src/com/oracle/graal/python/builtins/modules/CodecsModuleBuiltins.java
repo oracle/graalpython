@@ -541,7 +541,10 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "final", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class CodecsDecodeNode extends PythonQuaternaryClinicBuiltinNode {
-        public abstract Object execute(Object input, Object encoding, Object errors, Object finalData);
+
+        public final Object call(VirtualFrame frame, Object input, Object encoding, Object errors, Object finalData) {
+            return execute(frame, input, encoding, errors, finalData);
+        }
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
