@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
 import com.oracle.graal.python.lib.PyObjectGetMethodNodeGen;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
-import com.oracle.graal.python.lib.PyObjectCallMethodObjArgsNodeGen;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -156,7 +155,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.util.Arrays;
 
 public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNode {
 
@@ -1485,10 +1483,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         throw CompilerDirectives.shouldNotReachHere("with blocks");
                     case LOAD_METHOD:
                         {
-                            String name = names[oparg];
+                            String methodName = names[oparg];
                             PyObjectGetMethod getMethod = insertChildNode((uncached) -> uncached ? PyObjectGetMethodNodeGen.getUncached() : PyObjectGetMethodNodeGen.create(), bci);
                             Object receiver = stack[stackTop];
-                            stack[stackTop] = getMethod.execute(frame, stack[stackTop], name);
+                            stack[stackTop] = getMethod.execute(frame, stack[stackTop], methodName);
                             stack[++stackTop] = receiver;
                         }
                         break;
@@ -1721,8 +1719,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
      */
     private long saveExceptionBlockstack(int bci, int stackTop, int[] blockstack, int blockstackTop) {
         CompilerAsserts.neverPartOfCompilation();
-        int[] currentBlockstack = Arrays.copyOf(blockstack, blockstackTop + 1);
-
         int stackTopAfterExceptUnwinding = stackTop;
         int stackTopAfterFinally = stackTop;
         int handlerBCI = 0;
@@ -1799,11 +1795,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     // Encoding for blockstack thumbprints is basically like for the target (since it is a target),
     // but in addition there's the stackTop for any except blocks on top.
-    private static final long encodeExceptBlockStackTop(int top) {
+    private static long encodeExceptBlockStackTop(int top) {
         return (long)encodeStackTop(top) << 32;
     }
 
-    private static final int decodeExceptBlockStackTop(long thumbprint) {
+    private static int decodeExceptBlockStackTop(long thumbprint) {
         return decodeStackTop((int)(thumbprint >>> 32));
     }
 
