@@ -1236,7 +1236,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case BUILD_STRING:
                         throw CompilerDirectives.shouldNotReachHere("build string");
                     case BUILD_TUPLE:
-                        throw CompilerDirectives.shouldNotReachHere("build tuple");
+                        {
+                            Object[] list = new Object[oparg];
+                            while (oparg > 0) {
+                                oparg--;
+                                list[oparg] = stack[stackTop];
+                                stack[stackTop--] = null;
+                            }
+                            stack[++stackTop] = factory.createTuple(list);
+                        }
+                        break;
                     case BUILD_LIST:
                         {
                             Object[] list = new Object[oparg];
