@@ -39,6 +39,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IterNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
 import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins.NewNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -126,6 +127,22 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "lib.isLazyPythonClass(cls)")
         protected PTeeDataObject construct(Object cls, Object[] arguments, PKeyword[] keywords, @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             return factory().createTeeDataObject();
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public PList construct(Object cls, Object[] arguments, PKeyword[] keywords) {
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+        }
+    }
+
+    @Builtin(name = "repeat", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PRepeat, doc = "repeat(object [,times]) -> create an iterator which returns the object for the specified number of times.  If not specified, returns the object endlessly.")
+    @GenerateNodeFactory
+    public abstract static class RepeatNode extends PythonVarargsBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization(guards = "lib.isLazyPythonClass(cls)")
+        protected PRepeat construct(Object cls, Object[] arguments, PKeyword[] keywords, @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+            return factory().createRepeat();
         }
 
         @Fallback

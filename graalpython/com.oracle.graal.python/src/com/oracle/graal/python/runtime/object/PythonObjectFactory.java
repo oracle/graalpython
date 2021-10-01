@@ -111,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PSentinelIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
+import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
 import com.oracle.graal.python.builtins.objects.itertools.PTee;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -1105,6 +1106,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PFileIO createFileIO(Object clazz) {
         return trace(new PFileIO(clazz, getShape(clazz)));
+    }
+
+    public final PRepeat createRepeat() {
+        return trace(new PRepeat(PythonBuiltinClassType.PRepeat, PythonBuiltinClassType.PRepeat.getInstanceShape(getLanguage())));
     }
 
     public final PTee createTee() {

@@ -401,6 +401,11 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static String integerToString(int i) {
+        return Integer.toString(i);
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static String substring(StringBuilder sb, int start, int end) {
         return sb.substring(start, end);
     }

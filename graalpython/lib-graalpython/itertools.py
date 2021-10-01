@@ -24,57 +24,6 @@
 import sys
 
 
-class repeat():
-    """
-    repeat(object [,times]) -> create an iterator which returns the object\n\
-    for the specified number of times.  If not specified, returns the object\n\
-    endlessly.
-    """
-    @__graalpython__.builtin_method
-    def __init__(self, object, times=None):
-        self.element = object
-        if times is not None and not isinstance(times, int):
-            raise TypeError(f"integer argument expected, got {times.__class__.__name__}")
-        if times is not None:
-            if times < 0:
-                self.cnt = 0
-            else:
-                self.cnt = times
-        else:
-            self.cnt = -1
-
-    @__graalpython__.builtin_method
-    def __iter__(self):
-        return self
-
-    @__graalpython__.builtin_method
-    def __next__(self):
-        if self.cnt == 0:
-            raise StopIteration
-        elif self.cnt > 0:
-            self.cnt -= 1
-        return self.element
-
-    @__graalpython__.builtin_method
-    def __length_hint__(self):
-        if self.cnt == -1:
-            raise TypeError("len() of unsized object")
-        return self.cnt
-
-    @__graalpython__.builtin_method
-    def __reduce__(self):
-        if self.cnt >= 0:
-            return type(self), (self.element, self.cnt)
-        return type(self), (self.element,)
-
-    @__graalpython__.builtin_method
-    def __repr__(self):
-        if self.cnt == -1:
-            return "{}({!r})".format(type(self).__name__, self.element)
-        else:
-            return "{}({!r}, {})".format(type(self).__name__, self.element, self.cnt)
-
-
 class chain():
     """
     Return a chain object whose .__next__() method returns elements from the

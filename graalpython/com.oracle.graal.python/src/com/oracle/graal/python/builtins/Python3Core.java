@@ -195,6 +195,7 @@ import com.oracle.graal.python.builtins.objects.iterator.ForeignIteratorBuiltins
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.RepeatBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -500,6 +501,7 @@ public final class Python3Core implements ParserErrorCallback {
                         new ZipImportModuleBuiltins(),
 
                         // itertools
+                        new RepeatBuiltins(),
                         new TeeBuiltins(),
                         new TeeDataObjectBuiltins(),
 
