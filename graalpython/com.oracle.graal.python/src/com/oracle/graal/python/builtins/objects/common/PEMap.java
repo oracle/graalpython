@@ -571,17 +571,16 @@ final class PEMap implements Iterable<DictKey> {
         return hashArray != null;
     }
 
-    @TruffleBoundary
-    public Object removeKey(DictKey key, PyObjectRichCompareBool.EqNode eqNode) {
+    public Object removeKey(VirtualFrame frame, DictKey key, PyObjectRichCompareBool.EqNode eqNode) {
         if (key == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new UnsupportedOperationException("null not supported as key!");
         }
         int index;
         if (hasHashArray()) {
-            index = this.findAndRemoveHash(null, key, eqNode);
+            index = this.findAndRemoveHash(frame, key, eqNode);
         } else {
-            index = this.findLinear(null, key, eqNode);
+            index = this.findLinear(frame, key, eqNode);
         }
 
         if (index != -1) {
@@ -596,6 +595,7 @@ final class PEMap implements Iterable<DictKey> {
      * Removes the element at the specific index and returns the index of the next element. This can
      * be a different value if graph compression was triggered.
      */
+    @TruffleBoundary
     private int remove(int indexToRemove) {
         int index = indexToRemove;
         int entriesAfterIndex = totalEntries - index - 1;

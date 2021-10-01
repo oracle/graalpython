@@ -109,7 +109,15 @@ public abstract class PyObjectRichCompareBool {
             throw CompilerDirectives.shouldNotReachHere("abstract method");
         }
 
-        protected boolean doDefault(PRaiseNode raiseNode, IsExpressionNode.IsNode isNode, Object a, Object b) {
+        protected boolean needsIdentityComparison() {
+            return false;
+        }
+
+        protected boolean identityComparisonResult() {
+            throw CompilerDirectives.shouldNotReachHere("abstract method");
+        }
+
+        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
             throw CompilerDirectives.shouldNotReachHere("abstract method");
         }
 
@@ -164,13 +172,13 @@ public abstract class PyObjectRichCompareBool {
 
         @Specialization(guards = "isBuiltinPInt(b)", rewriteOn = OverflowException.class)
         boolean doLPNoOVerflow(long a, PInt b) throws OverflowException {
-            return op(a, b.intValueExact());
+            return op(a, b.longValueExact());
         }
 
         @Specialization(guards = "isBuiltinPInt(b)", replaces = "doLPNoOVerflow")
         boolean doLP(long a, PInt b) {
             try {
-                return op(a, b.intValueExact());
+                return op(a, b.longValueExact());
             } catch (OverflowException e) {
                 return false;
             }
@@ -192,13 +200,13 @@ public abstract class PyObjectRichCompareBool {
 
         @Specialization(guards = "isBuiltinPInt(a)", rewriteOn = OverflowException.class)
         boolean doPLNoOverflow(PInt a, long b) throws OverflowException {
-            return op(a.intValueExact(), b);
+            return op(a.longValueExact(), b);
         }
 
         @Specialization(guards = "isBuiltinPInt(a)", replaces = "doPLNoOverflow")
         boolean doPL(PInt a, long b) {
             try {
-                return op(a.intValueExact(), b);
+                return op(a.longValueExact(), b);
             } catch (OverflowException e) {
                 return false;
             }
@@ -212,6 +220,7 @@ public abstract class PyObjectRichCompareBool {
 
         @Specialization
         boolean doDD(double a, double b) {
+            // nb: Eq subclass handles NaN identity
             return op(a, b);
         }
 
@@ -232,6 +241,7 @@ public abstract class PyObjectRichCompareBool {
 
         @Specialization
         boolean doGeneric(VirtualFrame frame, Object a, Object b,
+                        @Cached IsExpressionNode.IsNode isNode,
                         @Cached GetClassNode getClassA,
                         @Cached GetClassNode getClassB,
                         @Cached ConditionProfile reversedFirst,
@@ -242,8 +252,12 @@ public abstract class PyObjectRichCompareBool {
                         @Cached CallBinaryMethodNode callMethod,
                         @Cached CallBinaryMethodNode callReverseMethod,
                         @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached IsExpressionNode.IsNode isNode,
                         @Cached PRaiseNode raiseNode) {
+            if (needsIdentityComparison()) {
+                if (isNode.execute(a, b)) {
+                    return identityComparisonResult();
+                }
+            }
             boolean checkedReverseOp = false;
             Object aType = getClassA.execute(a);
             Object bType = getClassB.execute(b);
@@ -273,7 +287,7 @@ public abstract class PyObjectRichCompareBool {
                     }
                 }
             }
-            return doDefault(raiseNode, isNode, a, b);
+            return doDefault(raiseNode, a, b);
         }
 
         private Object lookupMethodIgnoreDescriptorError(VirtualFrame frame, LookupSpecialMethodSlotNode lookupMethod, Object aType, Object a) {
@@ -287,21 +301,6 @@ public abstract class PyObjectRichCompareBool {
 
     @GenerateUncached
     public abstract static class EqNode extends ComparisonBaseNode {
-        @Override
-        public boolean execute(Frame frame, Object a, Object b) {
-            /*
-             * CPython uses pointer equality here, so we should technically use IsNode. But since
-             * that haves a lot of logic that only applies to corner cases, we compare references
-             * here and use IsNode later as a fallback if there is no __eq__.
-             */
-            if (a == b) {
-                return true;
-            }
-            return executeInternal(frame, a, b);
-        }
-
-        protected abstract boolean executeInternal(Frame frame, Object a, Object b);
-
         @Override
         protected boolean op(boolean a, boolean b) {
             return a == b;
@@ -319,7 +318,7 @@ public abstract class PyObjectRichCompareBool {
 
         @Override
         protected boolean op(double a, double b) {
-            return a == b;
+            return a == b || (Double.isNaN(a) && Double.isNaN(b));
         }
 
         @Override
@@ -338,8 +337,19 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Override
-        protected boolean doDefault(PRaiseNode raiseNode, IsExpressionNode.IsNode isNode, Object a, Object b) {
-            return isNode.execute(a, b);
+        protected boolean needsIdentityComparison() {
+            return true;
+        }
+
+        @Override
+        protected boolean identityComparisonResult() {
+            return true;
+        }
+
+        @Override
+        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
+            // Already compared for identity
+            return false;
         }
 
         public static EqNode create() {
@@ -353,16 +363,6 @@ public abstract class PyObjectRichCompareBool {
 
     @GenerateUncached
     public abstract static class NeNode extends ComparisonBaseNode {
-        @Override
-        public boolean execute(Frame frame, Object a, Object b) {
-            if (a == b) {
-                return false;
-            }
-            return executeInternal(frame, a, b);
-        }
-
-        protected abstract boolean executeInternal(Frame frame, Object a, Object b);
-
         @Override
         protected boolean op(boolean a, boolean b) {
             return a != b;
@@ -399,8 +399,19 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Override
-        protected boolean doDefault(PRaiseNode raiseNode, IsExpressionNode.IsNode isNode, Object a, Object b) {
-            return !isNode.execute(a, b);
+        protected boolean needsIdentityComparison() {
+            return true;
+        }
+
+        @Override
+        protected boolean identityComparisonResult() {
+            return false;
+        }
+
+        @Override
+        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
+            // Already compared for identity
+            return true;
         }
 
         public static NeNode create() {
@@ -445,7 +456,7 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Override
-        protected boolean doDefault(PRaiseNode raiseNode, IsExpressionNode.IsNode isNode, Object a, Object b) {
+        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<", a, b);
         }
 
@@ -491,7 +502,7 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Override
-        protected boolean doDefault(PRaiseNode raiseNode, IsExpressionNode.IsNode isNode, Object a, Object b) {
+        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<=", a, b);
         }
 
@@ -537,7 +548,7 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Override
-        protected boolean doDefault(PRaiseNode raiseNode, IsExpressionNode.IsNode isNode, Object a, Object b) {
+        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, ">", a, b);
         }
 
@@ -583,7 +594,7 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Override
-        protected boolean doDefault(PRaiseNode raiseNode, IsExpressionNode.IsNode isNode, Object a, Object b) {
+        protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, ">=", a, b);
         }
 

@@ -283,7 +283,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         return false;
     }
 
-    @Specialization(guards = {"!isTypeDerived.execute(derived)", "!isTypeCls.execute(cls)"}, limit = "1")
+    @Specialization(guards = {"!isTypeDerived.execute(derived) || !isTypeCls.execute(cls)"}, limit = "1")
     @Megamorphic
     boolean fallback(VirtualFrame frame, Object derived, Object cls,
                     @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeDerived,

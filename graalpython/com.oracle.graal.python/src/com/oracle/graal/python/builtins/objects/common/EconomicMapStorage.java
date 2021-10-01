@@ -321,7 +321,7 @@ public class EconomicMapStorage extends HashingStorage {
                     @Shared("gotState") @Cached ConditionProfile gotState) {
         VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
         DictKey newKey = new DictKey(key, hashNode.execute(frame, key));
-        map.removeKey(newKey, eqNode);
+        map.removeKey(frame, newKey, eqNode);
         return this;
     }
 

@@ -43,7 +43,6 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -82,32 +81,15 @@ public abstract class PyUnicodeFSDecoderNode extends PNodeWithContext {
     @Specialization(limit = "1")
     String doBytes(PBytes object,
                     @CachedLibrary("object") PythonBufferAccessLibrary bufferLib) {
-        return checkString(fromBuffer(object, bufferLib));
-    }
-
-    private static String fromBuffer(Object object, PythonBufferAccessLibrary bufferLib) {
         // TODO PyUnicode_DecodeFSDefault
-        return PythonUtils.newString(bufferLib.getInternalOrCopiedByteArray(object), 0, bufferLib.getBufferLength(object));
+        return checkString(PythonUtils.newString(bufferLib.getInternalOrCopiedByteArray(object), 0, bufferLib.getBufferLength(object)));
     }
 
     @Fallback
     String doPathLike(VirtualFrame frame, Object object,
-                    @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
-                    @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                     @Cached PyOSFSPathNode fspathNode,
                     @Cached PyUnicodeFSDecoderNode recursive) {
-        Object path;
-        if (bufferAcquireLib.hasBuffer(object)) {
-            Object buffer = bufferAcquireLib.acquireReadonly(object);
-            try {
-                path = fromBuffer(buffer, bufferLib);
-            } finally {
-                bufferLib.release(buffer);
-            }
-        } else {
-            // The node ensures that it is a string or bytes
-            path = fspathNode.execute(frame, object);
-        }
+        Object path = fspathNode.execute(frame, object);
         assert path instanceof String || path instanceof PString || path instanceof PBytes;
         return recursive.execute(frame, path);
     }
