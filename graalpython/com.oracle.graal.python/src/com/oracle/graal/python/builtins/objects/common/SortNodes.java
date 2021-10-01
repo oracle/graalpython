@@ -71,7 +71,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -470,7 +469,7 @@ public abstract class SortNodes {
                  * Every sort node should get its own copy to be able to optimize sorts of different
                  * types. Don't put the call targets to the language cache.
                  */
-                comparatorCallTarget = Truffle.getRuntime().createCallTarget(new ObjectComparatorRootNode(language));
+                comparatorCallTarget = new ObjectComparatorRootNode(language).getCallTarget();
             }
             return comparatorCallTarget;
         }

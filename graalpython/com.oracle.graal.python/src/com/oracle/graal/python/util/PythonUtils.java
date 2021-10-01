@@ -73,7 +73,6 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -348,11 +347,7 @@ public final class PythonUtils {
      */
     @TruffleBoundary
     public static RootCallTarget getOrCreateCallTarget(RootNode rootNode) {
-        RootCallTarget ct = rootNode.getCallTarget();
-        if (ct == null) {
-            ct = Truffle.getRuntime().createCallTarget(rootNode);
-        }
-        return ct;
+        return rootNode.getCallTarget();
     }
 
     @TruffleBoundary

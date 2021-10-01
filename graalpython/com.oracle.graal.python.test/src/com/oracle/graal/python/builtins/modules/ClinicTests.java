@@ -70,7 +70,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -179,7 +178,7 @@ public class ClinicTests {
     }
 
     private static CallTarget createCallTarget(PythonBinaryClinicBuiltinNode node) {
-        return Truffle.getRuntime().createCallTarget(new BinaryBuiltinRoot(node));
+        return new BinaryBuiltinRoot(node).getCallTarget();
     }
 
     private static final class BinaryBuiltinRoot extends RootNode {

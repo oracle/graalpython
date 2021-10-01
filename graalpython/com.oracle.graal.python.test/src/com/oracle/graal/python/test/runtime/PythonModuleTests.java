@@ -46,7 +46,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.test.PythonTests;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 
@@ -59,7 +58,7 @@ public class PythonModuleTests {
         public PythonModuleTestRootNode(PythonLanguage language, CallNode body) {
             super(language);
             this.body = body;
-            Truffle.getRuntime().createCallTarget(this);
+            this.getCallTarget(); // Ensure call target is initialized
         }
 
         @Override

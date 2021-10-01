@@ -51,7 +51,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.graal.python.util.Consumer;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 
@@ -90,7 +89,7 @@ public class WithPythonContextRule implements MethodRule {
             public void evaluate() throws Throwable {
                 PythonTests.enterContext(getOptions(), new String[0]);
 
-                RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new RootNode(null) {
+                RootCallTarget callTarget = new RootNode(null) {
                     @Override
                     public Object execute(VirtualFrame frame) {
                         pythonContext = PythonContext.get(this);
@@ -101,7 +100,7 @@ public class WithPythonContextRule implements MethodRule {
                         }
                         return null;
                     }
-                });
+                }.getCallTarget();
                 Throwable result = (Throwable) callTarget.call();
                 PythonTests.closeContext();
                 if (result != null) {
