@@ -131,7 +131,6 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.ModuleGetNameNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -527,12 +526,10 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "isFallback(object, isForeignObjectNode)")
         static Object run(@SuppressWarnings("unused") CExtContext cextContext, Object object,
-                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
             assert object != null : "Java 'null' cannot be a Sulong value";
-            Object o = lib.getDelegatedValue(object);
-            assert CApiGuards.isNativeWrapper(o) : "unknown object cannot be a Sulong value";
-            return o;
+            assert CApiGuards.isNativeWrapper(object) : "unknown object cannot be a Sulong value";
+            return object;
         }
 
         protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
@@ -796,9 +793,8 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "isFallback(object, isForeignObjectNode)")
         static Object run(CExtContext cextContext, Object object,
-                        @Cached IsForeignObjectNode isForeignObjectNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            return ToSulongNode.run(cextContext, object, isForeignObjectNode, lib);
+                        @Cached IsForeignObjectNode isForeignObjectNode) {
+            return ToSulongNode.run(cextContext, object, isForeignObjectNode);
         }
 
         protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
@@ -972,9 +968,8 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "isFallback(object, isForeignObjectNode)")
         static Object run(CExtContext cextContext, Object object,
-                        @Cached IsForeignObjectNode isForeignObjectNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            return ToSulongNode.run(cextContext, object, isForeignObjectNode, lib);
+                        @Cached IsForeignObjectNode isForeignObjectNode) {
+            return ToSulongNode.run(cextContext, object, isForeignObjectNode);
         }
 
         protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
