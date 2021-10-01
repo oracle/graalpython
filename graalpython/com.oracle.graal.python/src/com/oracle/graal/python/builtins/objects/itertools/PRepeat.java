@@ -41,12 +41,11 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PRepeat extends PythonBuiltinObject {
-    @CompilationFinal private Object element;
-    @CompilationFinal private int cnt;
+    private Object element;
+    private int cnt;
 
     public PRepeat(Object cls, Shape instanceShape) {
         super(cls, instanceShape);

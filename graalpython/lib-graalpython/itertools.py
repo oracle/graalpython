@@ -23,67 +23,6 @@
 # DEALINGS IN THE SOFTWARE.
 import sys
 
-
-class chain():
-    """
-    Return a chain object whose .__next__() method returns elements from the
-    first iterable until it is exhausted, then elements from the next
-    iterable, until all of the iterables are exhausted.
-    """
-    @__graalpython__.builtin_method
-    def __init__(self, *iterables):
-        self._source = iter(iterables)
-        self._active = None
-
-    @__graalpython__.builtin_method
-    def __iter__(self):
-        return self
-
-    @__graalpython__.builtin_method
-    def __next__(self):
-        while self._source:
-            if not self._active:
-                try:
-                    self._active = iter(next(self._source))
-                except:
-                    self._source = None
-                    raise
-            try:
-                return next(self._active)
-            except StopIteration:
-                self._active = None
-        raise StopIteration
-
-    @classmethod
-    @__graalpython__.builtin_method
-    def from_iterable(cls, arg):
-        instance = cls()
-        instance._source = iter(arg)
-        return instance
-
-    @__graalpython__.builtin_method
-    def __reduce__(self):
-        if self._source:
-            if self._active:
-                return type(self), (), (self._source, self._active)
-            else:
-                return type(self), (), (self._source,)
-        else:
-            return type(self), ()
-
-    @__graalpython__.builtin_method
-    def __setstate__(self, state):
-        if not isinstance(state, tuple) or len(state) not in [1,2]:
-            raise TypeError("state is not a length 1 or 2 tuple")
-        self._source = state[0]
-        if not getattr(self._source, "__next__", None):
-            raise TypeError("Arguments must be iterators")
-        if len(state) == 2:
-            self._active = state[1]
-            if not getattr(self._active, "__next__", None):
-                raise TypeError("Arguments must be iterators")
-
-
 class starmap():
     """starmap(function, sequence) --> starmap object
 

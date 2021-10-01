@@ -40,8 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import com.oracle.graal.python.annotations.ArgumentClinic;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARG_D_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.TDATAOBJECT_SHOULDNT_HAVE_NEXT;
 import static com.oracle.graal.python.nodes.ErrorMessages.TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS;
@@ -51,12 +52,14 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.LenNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -75,7 +78,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PTeeDataObject})
-public class TeeDataObjectBuiltins extends PythonBuiltins {
+public final class TeeDataObjectBuiltins extends PythonBuiltins {
 
     static final int LINKCELLS = 128;
 
@@ -98,32 +101,46 @@ public class TeeDataObjectBuiltins extends PythonBuiltins {
         abstract Object execute(VirtualFrame frame, PTeeDataObject self, Object it, Object values, Object nxt);
 
         @Specialization(guards = "isNone(values)")
-        Object init(PTeeDataObject self, Object it, @SuppressWarnings("unused") Object values, Object nxt) {
-            self.setIt(it);
-            self.setValues(factory().createList());
-            self.setNumread(0);
-            self.setRunning(false);
-            self.setNextlink(nxt);
+        Object init(PTeeDataObject self, Object it, @SuppressWarnings("unused") Object values, @SuppressWarnings("unused") PNone nxt) {
+            init(self, it, null);
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isNone(values)")
-        Object init(VirtualFrame frame, PTeeDataObject self, Object it, Object values, Object nxt,
+        @Specialization(guards = "isNone(values)")
+        Object init(PTeeDataObject self, Object it, @SuppressWarnings("unused") Object values, PTeeDataObject nxt) {
+            init(self, it, nxt);
+            return PNone.NONE;
+        }
+
+        private static void init(PTeeDataObject self, Object it, PTeeDataObject nxt) {
+            self.setIt(it);
+            self.setValues(new Object[LINKCELLS]);
+            self.setNumread(0);
+            self.setRunning(false);
+            self.setNextlink(nxt);
+        }
+
+        @Specialization(guards = "isList(values)")
+        Object init(VirtualFrame frame, PTeeDataObject self, Object it, PList values, Object nxt,
                         @Cached LenNode lenNode,
+                        @Cached GetSequenceStorageNode getStorageNode,
                         @Cached BranchProfile numreadLCProfile,
                         @Cached BranchProfile numreadTooHighProfile,
                         @Cached BranchProfile nxtNotDOProfile,
                         @Cached BranchProfile nxtNotNoneProfile) {
             self.setIt(it);
-            self.setValues((PList) values);
-            int numread = (int) lenNode.call(frame, values);
+
+            int numread = (int) lenNode.execute(frame, values);
+            Object[] valuesArray = getStorageNode.execute(values).getInternalArray();
+            Object[] obj = new Object[LINKCELLS];
+            PythonUtils.arraycopy(valuesArray, 0, obj, 0, numread);
+            self.setValues(obj);
             if (numread == LINKCELLS) {
                 numreadLCProfile.enter();
                 if (!(nxt instanceof PTeeDataObject)) {
                     nxtNotDOProfile.enter();
                     throw raise(ValueError, S_MUST_BE_S, "_tee_dataobject next link", "_tee_dataobject");
                 }
-                self.setNextlink(nxt);
             } else if (numread > LINKCELLS) {
                 numreadTooHighProfile.enter();
                 throw raise(ValueError, TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS, LINKCELLS);
@@ -133,8 +150,14 @@ public class TeeDataObjectBuiltins extends PythonBuiltins {
             }
             self.setNumread(numread);
             self.setRunning(false);
-            self.setNextlink(nxt);
+            self.setNextlink(nxt == PNone.NONE ? null : (PTeeDataObject) nxt);
             return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!isList(values)", "!isNone(values)"})
+        Object init(VirtualFrame frame, PTeeDataObject self, Object it, Object values, Object nxt) {
+            throw raise(TypeError, ARG_D_MUST_BE_S_NOT_P, "teedataobject()", 2, "list", values);
         }
 
         protected LookupAndCallUnaryNode createCopyNode() {

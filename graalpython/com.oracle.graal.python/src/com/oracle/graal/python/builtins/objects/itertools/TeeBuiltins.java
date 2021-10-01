@@ -61,13 +61,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins.InitNode;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltins.GetItemNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -86,7 +83,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PTee})
-public class TeeBuiltins extends PythonBuiltins {
+public final class TeeBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -100,18 +97,13 @@ public class TeeBuiltins extends PythonBuiltins {
         Object newTee(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object iterable,
                         @Cached PyObjectGetIter getIter,
                         @Cached("createCopyNode()") LookupAndCallUnaryNode copyNode,
-                        @Cached InitNode initNode,
                         @Cached ConditionProfile isTeeInstanceProfile) {
             Object it = getIter.execute(frame, iterable);
             if (isTeeInstanceProfile.profile(it instanceof PTee)) {
                 return copyNode.executeObject(frame, it);
             } else {
-                PTee tee = factory().createTee();
-                PTeeDataObject dataObj = factory().createTeeDataObject();
-                initNode.execute(frame, dataObj, it, PNone.NONE, PNone.NONE);
-                tee.setDataObj(dataObj);
-                tee.setIndex(0);
-                return tee;
+                PTeeDataObject dataObj = factory().createTeeDataObject(it);
+                return factory().createTee(dataObj, 0);
             }
         }
 
@@ -125,10 +117,7 @@ public class TeeBuiltins extends PythonBuiltins {
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object copy(PTee self) {
-            PTee tee = factory().createTee();
-            tee.setDataObj(self.getDataobj());
-            tee.setIndex(self.getIndex());
-            return tee;
+            return factory().createTee(self.getDataobj(), self.getIndex());
         }
     }
 
@@ -147,22 +136,17 @@ public class TeeBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getIndex() < LINKCELLS")
         Object next(VirtualFrame frame, PTee self,
-                        @Cached GetItemNode getItemNode,
-                        @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached AppendNode appendNode) {
-            Object value = self.getDataobj().getItem(frame, self.getIndex(), getItemNode, nextNode, appendNode, this);
+                        @Cached BuiltinFunctions.NextNode nextNode) {
+            Object value = self.getDataobj().getItem(frame, self.getIndex(), nextNode, this);
             self.setIndex(self.getIndex() + 1);
             return value;
         }
 
         @Specialization(guards = "self.getIndex() >= LINKCELLS")
-        Object next(VirtualFrame frame, PTee self,
-                        @Cached InitNode initNode,
-                        @Cached GetItemNode getItemNode,
-                        @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached AppendNode appendNode) {
-            self.setDataObj(self.getDataobj().jumplink(frame, initNode, factory()));
-            Object value = self.getDataobj().getItem(frame, 0, getItemNode, nextNode, appendNode, this);
+        Object nextNext(VirtualFrame frame, PTee self,
+                        @Cached BuiltinFunctions.NextNode nextNode) {
+            self.setDataObj(self.getDataobj().jumplink(factory()));
+            Object value = self.getDataobj().getItem(frame, 0, nextNode, this);
             self.setIndex(1);
             return value;
         }
@@ -198,7 +182,7 @@ public class TeeBuiltins extends PythonBuiltins {
                         @Cached BranchProfile isNotTeeDOProfile,
                         @Cached BranchProfile wrongIndexProfile) {
 
-            if (!(state instanceof PTuple) || (int) lenNode.call(frame, state) != 2) {
+            if (!(state instanceof PTuple) || (int) lenNode.execute(frame, state) != 2) {
                 isNotTupleProfile.enter();
                 throw raise(TypeError, IS_NOT_A, "state", "2-tuple");
             }

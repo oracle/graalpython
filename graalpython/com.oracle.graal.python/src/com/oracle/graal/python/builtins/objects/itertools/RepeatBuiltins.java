@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
@@ -77,7 +78,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PRepeat})
-public class RepeatBuiltins extends PythonBuiltins {
+public final class RepeatBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -203,7 +204,7 @@ public class RepeatBuiltins extends PythonBuiltins {
             PythonUtils.append(sb, "(");
             PythonUtils.append(sb, castNode.execute(reprNode.execute(frame, self.getElement())));
             PythonUtils.append(sb, ", ");
-            PythonUtils.append(sb, PythonUtils.integerToString(self.getCnt()));
+            PythonUtils.append(sb, PInt.toString(self.getCnt()));
             PythonUtils.append(sb, ")");
             return PythonUtils.sbToString(sb);
         }

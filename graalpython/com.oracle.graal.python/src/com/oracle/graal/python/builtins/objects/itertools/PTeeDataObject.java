@@ -45,25 +45,31 @@ import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_REENTER_TEE_ITE
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
-import com.oracle.graal.python.builtins.objects.list.PList;
+import static com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins.LINKCELLS;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PTeeDataObject extends PythonBuiltinObject {
-    @CompilationFinal private Object it;
-    @CompilationFinal private PList values;
+    private Object it;
+    private Object[] values;
     private int numread;
     private boolean running;
-    private Object nextlink;
+    private PTeeDataObject nextlink;
 
     public PTeeDataObject(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
+    }
+
+    public PTeeDataObject(Object it, Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
+        this.it = it;
+        this.values = new Object[LINKCELLS];
+        this.numread = 0;
+        this.running = false;
+        this.nextlink = null;
     }
 
     public Object getIt() {
@@ -74,11 +80,11 @@ public final class PTeeDataObject extends PythonBuiltinObject {
         this.it = it;
     }
 
-    public PList getValues() {
+    public Object[] getValues() {
         return values;
     }
 
-    public void setValues(PList values) {
+    public void setValues(Object[] values) {
         this.values = values;
     }
 
@@ -98,27 +104,26 @@ public final class PTeeDataObject extends PythonBuiltinObject {
         this.running = running;
     }
 
-    public Object getNextlink() {
+    public PTeeDataObject getNextlink() {
         return nextlink;
     }
 
-    public void setNextlink(Object nextlink) {
+    public void setNextlink(PTeeDataObject nextlink) {
         this.nextlink = nextlink;
     }
 
-    PTeeDataObject jumplink(VirtualFrame frame, TeeDataObjectBuiltins.InitNode initNode, PythonObjectFactory factory) {
-        if (getNextlink() instanceof PNone) {
-            PTeeDataObject dataObj = factory.createTeeDataObject();
-            initNode.execute(frame, dataObj, getIt(), PNone.NONE, PNone.NONE);
+    PTeeDataObject jumplink(PythonObjectFactory factory) {
+        if (getNextlink() == null) {
+            PTeeDataObject dataObj = factory.createTeeDataObject(getIt());
             nextlink = dataObj;
         }
-        return (PTeeDataObject) nextlink;
+        return nextlink;
     }
 
-    Object getItem(VirtualFrame frame, int i, ListBuiltins.GetItemNode getItemNode, BuiltinFunctions.NextNode nextNode, ListNodes.AppendNode appendNode, PNodeWithRaise node) {
+    Object getItem(VirtualFrame frame, int i, BuiltinFunctions.NextNode nextNode, PNodeWithRaise node) {
         assert i < TeeDataObjectBuiltins.LINKCELLS;
         if (i < numread) {
-            return getItemNode.execute(frame, values, i);
+            return values[i];
         } else {
             assert i == numread;
             if (running) {
@@ -132,8 +137,7 @@ public final class PTeeDataObject extends PythonBuiltinObject {
             } finally {
                 running = false;
             }
-            numread = numread + 1;
-            appendNode.execute(values, value);
+            values[numread++] = value;
             return value;
         }
     }

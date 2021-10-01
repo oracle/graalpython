@@ -43,34 +43,28 @@ package com.oracle.graal.python.builtins.objects.itertools;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
-public final class PTee extends PythonBuiltinObject {
-    private PTeeDataObject dataObj;
-    private int index;
+public final class PChain extends PythonBuiltinObject {
+    private Object source;
+    private Object active;
 
-    public PTee(Object cls, Shape instanceShape) {
+    public PChain(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
     }
 
-    public PTee(PTeeDataObject dataObj, int index, Object cls, Shape instanceShape) {
-        super(cls, instanceShape);
-        this.dataObj = dataObj;
-        this.index = index;
+    public Object getSource() {
+        return source;
     }
 
-    public PTeeDataObject getDataobj() {
-        return dataObj;
+    public void setSource(Object source) {
+        this.source = source;
     }
 
-    public void setDataObj(PTeeDataObject dataobj) {
-        this.dataObj = dataobj;
+    public Object getActive() {
+        return active;
     }
 
-    public int getIndex() {
-        return index;
-    }
-
-    public void setIndex(int index) {
-        this.index = index;
+    public void setActive(Object active) {
+        this.active = active;
     }
 
 }
