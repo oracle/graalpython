@@ -666,7 +666,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     case UNARY_NOT:
-                        stack[stackTop] = PyObjectIsTrueNode.getUncached().execute(frame, stack[stackTop]);
+                        {
+                            boolean result = insertChildNode((uncached) -> uncached ? PyObjectIsTrueNode.getUncached() : PyObjectIsTrueNode.create(), bci).execute(frame, stack[stackTop]);
+                            stack[stackTop] = !result;
+                        }
                         break;
                     case UNARY_INVERT:
                         {
