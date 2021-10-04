@@ -161,7 +161,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNativeClass(klass)")
         Object setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object klass) {
-            throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
+            throw raise(TypeError, ErrorMessages.CLASS_ASSIGNMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
         }
 
         @Specialization(guards = "isPythonClass(value) || isPythonBuiltinClassType(value)")
@@ -173,7 +173,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode) {
             Object type = getClassNode.execute(self);
             if (isBuiltinClassNotModule(value, classProfile1) || PGuards.isNativeClass(value) || isBuiltinClassNotModule(type, classProfile2) || PGuards.isNativeClass(type)) {
-                throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
+                throw raise(TypeError, ErrorMessages.CLASS_ASSIGNMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
             }
 
             checkCompatibleForAssigmentNode.execute(frame, type, value);
@@ -187,7 +187,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isPythonClass(value) || isPythonBuiltinClassType(value)", "!isPythonObject(self)"})
         Object getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value) {
-            throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
+            throw raise(TypeError, ErrorMessages.CLASS_ASSIGNMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
         }
 
         @Fallback

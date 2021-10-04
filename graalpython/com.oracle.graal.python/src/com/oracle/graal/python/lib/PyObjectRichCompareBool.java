@@ -78,6 +78,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  * report they are unequal to themselves (i.e. {@code NaN}).
  */
 public abstract class PyObjectRichCompareBool {
+    @SuppressWarnings("unused")
     protected static abstract class ComparisonBaseNode extends PNodeWithContext {
         public abstract boolean execute(Frame frame, Object a, Object b);
 
@@ -290,7 +291,7 @@ public abstract class PyObjectRichCompareBool {
             return doDefault(raiseNode, a, b);
         }
 
-        private Object lookupMethodIgnoreDescriptorError(VirtualFrame frame, LookupSpecialMethodSlotNode lookupMethod, Object aType, Object a) {
+        private static Object lookupMethodIgnoreDescriptorError(VirtualFrame frame, LookupSpecialMethodSlotNode lookupMethod, Object aType, Object a) {
             try {
                 return lookupMethod.execute(frame, aType, a);
             } catch (PException e) {
@@ -409,6 +410,7 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Override
+        @SuppressWarnings("unused")
         protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
             // Already compared for identity
             return true;
@@ -456,6 +458,7 @@ public abstract class PyObjectRichCompareBool {
         }
 
         @Override
+        @SuppressWarnings("unused")
         protected boolean doDefault(PRaiseNode raiseNode, Object a, Object b) {
             throw raiseNode.raise(TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, "<", a, b);
         }

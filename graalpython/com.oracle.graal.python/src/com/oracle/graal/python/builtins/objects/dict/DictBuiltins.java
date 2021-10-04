@@ -590,6 +590,12 @@ public final class DictBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
+        @Specialization(guards = "args.length > 1")
+        @SuppressWarnings("unused")
+        Object error(PDict self, Object[] args, PKeyword[] kwargs) {
+            throw raise(TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, "update", 1, args.length);
+        }
+
         protected static boolean isDict(Object[] args) {
             return args.length == 1 && args[0] instanceof PDict;
         }

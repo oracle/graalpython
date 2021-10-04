@@ -830,6 +830,7 @@ public abstract class TypeNodes {
     public abstract static class CheckCompatibleForAssigmentNode extends PNodeWithContext {
 
         @Child private GetBaseClassNode getBaseClassNode;
+        @Child private IsSameTypeNode isSameTypeNode;
         @Child private LookupAttributeInMRONode lookupSlotsNode;
         @Child private LookupAttributeInMRONode lookupNewNode;
         @Child private PyObjectSizeNode sizeNode;
@@ -842,19 +843,13 @@ public abstract class TypeNodes {
         public abstract boolean execute(VirtualFrame frame, Object oldBase, Object newBase);
 
         @Specialization
-        boolean isCompatible(VirtualFrame frame, Object oldBase, PythonAbstractClass newBase,
+        boolean isCompatible(VirtualFrame frame, Object oldBase, Object newBase,
                         @Cached BranchProfile errorSlotsBranch) {
             if (!compatibleForAssignment(frame, oldBase, newBase)) {
                 errorSlotsBranch.enter();
-                throw getRaiseNode().raise(TypeError, ErrorMessages.CLASS_ASIGMENT_S_LAYOUT_DIFFERS_FROM_S, getTypeName(newBase), getTypeName(oldBase));
+                throw getRaiseNode().raise(TypeError, ErrorMessages.CLASS_ASSIGNMENT_S_LAYOUT_DIFFERS_FROM_S, getTypeName(newBase), getTypeName(oldBase));
             }
             return true;
-        }
-
-        @Specialization
-        boolean isCompatible(VirtualFrame frame, Object oldBase, PythonBuiltinClassType newBase,
-                        @Cached BranchProfile errorSlotsBranch) {
-            return isCompatible(frame, oldBase, PythonContext.get(this).getCore().lookupType(newBase), errorSlotsBranch);
         }
 
         /**
@@ -876,7 +871,7 @@ public abstract class TypeNodes {
                 oldParent = getBaseClassNode().execute(oldBase);
             }
 
-            return newBase == oldBase || (newParent == oldParent && sameSlotsAdded(frame, newBase, oldBase));
+            return getIsSameTypeNode().execute(newBase, oldBase) || (getIsSameTypeNode().execute(newParent, oldParent) && sameSlotsAdded(frame, newBase, oldBase));
         }
 
         /**
@@ -920,7 +915,7 @@ public abstract class TypeNodes {
 
         private boolean sameSlotsAdded(VirtualFrame frame, Object a, Object b) {
             // !(a->tp_flags & Py_TPFLAGS_HEAPTYPE) || !(b->tp_flags & Py_TPFLAGS_HEAPTYPE))
-            if (a instanceof PythonBuiltinClass || b instanceof PythonBuiltinClass) {
+            if (PGuards.isKindOfBuiltinClass(a) || PGuards.isKindOfBuiltinClass(b)) {
                 return false;
             }
             Object aSlots = getSlotsFromType(a);
@@ -953,6 +948,14 @@ public abstract class TypeNodes {
                 getBaseClassNode = insert(GetBaseClassNodeGen.create());
             }
             return getBaseClassNode;
+        }
+
+        private IsSameTypeNode getIsSameTypeNode() {
+            if (isSameTypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSameTypeNode = insert(IsSameTypeNode.create());
+            }
+            return isSameTypeNode;
         }
 
         private String getTypeName(Object clazz) {
@@ -1210,6 +1213,10 @@ public abstract class TypeNodes {
         @Fallback
         boolean doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
             return false;
+        }
+
+        public static IsSameTypeNode create() {
+            return IsSameTypeNodeGen.create();
         }
 
         public static IsSameTypeNode getUncached() {
