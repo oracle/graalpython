@@ -555,6 +555,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PythonContext context = PythonContext.get(this);
         PythonModule builtins = context.getBuiltins();
 
+        boolean inInterpreter = CompilerDirectives.inInterpreter();
+
         Object globals = PArguments.getGlobals((Object[])originalArgs);
         Object locals = PArguments.getSpecialArgument((Object[])originalArgs);
         Object[] stack = (Object[])FrameUtil.getObjectSafe(frame, STACK_SLOT);
@@ -604,7 +606,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                 raiseNode = insertChildNode(() -> PRaiseNode.create(), bci);
                             }
                             Object value = fastlocals[oparg];
-                            if (!CompilerDirectives.inInterpreter()) {
+                            if (!inInterpreter) {
                                 if (value == BOOLEAN_MARKER) {
                                     value = longlocals[oparg] == 1;
                                 } else if (value == INTEGER_MARKER) {
@@ -655,7 +657,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         {
                             Object value = stack[stackTop];
                             if (value instanceof Boolean) {
-                                if (CompilerDirectives.inInterpreter()) {
+                                if (inInterpreter) {
                                     fastlocals[oparg] = value;
                                 } else {
                                     fastlocals[oparg] = BOOLEAN_MARKER;
@@ -673,7 +675,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         {
                             Object value = stack[stackTop];
                             if (value instanceof Integer) {
-                                if (CompilerDirectives.inInterpreter()) {
+                                if (inInterpreter) {
                                     fastlocals[oparg] = value;
                                 } else {
                                     fastlocals[oparg] = INTEGER_MARKER;
@@ -695,14 +697,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         {
                             Object value = stack[stackTop];
                             if (value instanceof Long) {
-                                if (CompilerDirectives.inInterpreter()) {
+                                if (inInterpreter) {
                                     fastlocals[oparg] = value;
                                 } else {
                                     fastlocals[oparg] = LONG_MARKER;
                                     longlocals[oparg] = (long)value;
                                 }
                             } else if (value instanceof Integer) {
-                                if (CompilerDirectives.inInterpreter()) {
+                                if (inInterpreter) {
                                     fastlocals[oparg] = value;
                                 } else {
                                     fastlocals[oparg] = LONG_MARKER;
@@ -720,7 +722,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         {
                             Object value = stack[stackTop];
                             if (value instanceof Double) {
-                                if (CompilerDirectives.inInterpreter()) {
+                                if (inInterpreter) {
                                     fastlocals[oparg] = value;
                                 } else {
                                     fastlocals[oparg] = DOUBLE_MARKER;
@@ -1090,7 +1092,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     case RETURN_VALUE:
-                        if (CompilerDirectives.inInterpreter()) {
+                        if (inInterpreter) {
                             LoopNode.reportLoopCount(this, loopCount);
                         }
                         return stack[stackTop];
@@ -1560,15 +1562,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     case JUMP_ABSOLUTE:
                         if (oparg < bci) {
-                            if (CompilerDirectives.inInterpreter()) {
+                            if (inInterpreter) {
                                 loopCount++;
                                 if (BytecodeOSRNode.pollOSRBackEdge(this)) {
-                                    // we're in the interpreter, so the unboxed storage for locals is not used yet
+                                    // we're in the interpreter, so the unboxed storage for locals is not used
                                     Object osrResult = BytecodeOSRNode.tryOSR(this, encodeBCI(oparg) | encodeStackTop(stackTop) | encodeBlockstackTop(blockstackTop), originalArgs, null, frame);
                                     if (osrResult != null) {
-                                        if (CompilerDirectives.inInterpreter()) {
-                                            LoopNode.reportLoopCount(this, loopCount);
-                                        }
+                                        LoopNode.reportLoopCount(this, loopCount);
                                         return osrResult;
                                     }
                                 }
