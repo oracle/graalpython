@@ -538,6 +538,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return 0;
     }
 
+    private static final Object BOOLEAN_MARKER = new Object();
+    private static final Object INTEGER_MARKER = new Object();
+    private static final Object LONG_MARKER = new Object();
+    private static final Object DOUBLE_MARKER = new Object();
+
     /**
      * @param target - encodes bci (16bit), stackTop (12bit), and blockstackTop (4bit)
      */
@@ -554,6 +559,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object locals = PArguments.getSpecialArgument((Object[])originalArgs);
         Object[] stack = (Object[])FrameUtil.getObjectSafe(frame, STACK_SLOT);
         Object[] fastlocals = (Object[])FrameUtil.getObjectSafe(frame, FAST_SLOT);
+        long[] longlocals = new long[varnames.length];
         Object[] celllocals = (Object[])FrameUtil.getObjectSafe(frame, CELL_SLOT);
         Object[] freelocals = (Object[])FrameUtil.getObjectSafe(frame, FREE_SLOT);
         int[] blockstack = (int[])FrameUtil.getObjectSafe(frame, BLOCKSTACK_SLOT);
@@ -598,6 +604,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                 raiseNode = insertChildNode(() -> PRaiseNode.create(), bci);
                             }
                             Object value = fastlocals[oparg];
+                            if (!CompilerDirectives.inInterpreter()) {
+                                if (value == BOOLEAN_MARKER) {
+                                    value = longlocals[oparg] == 1;
+                                } else if (value == INTEGER_MARKER) {
+                                    // CompilerDirectives.transferToInterpreterAndInvalidate();
+                                    // bytecode[bci] = LOAD_FAST_INT;
+                                    value = (int) longlocals[oparg];
+                                } else if (value == LONG_MARKER) {
+                                    value = longlocals[oparg];
+                                } else if (value == DOUBLE_MARKER) {
+                                    value = Double.longBitsToDouble(longlocals[oparg]);
+                                }
+                            }
                             if (value == null) {
                                 if (extraArgs[bci >> 1] == 0) {
                                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -614,6 +633,108 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stack[++stackTop] = consts[oparg];
                         break;
                     case STORE_FAST:
+                        {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            Object value = stack[stackTop];
+                            fastlocals[oparg] = value;
+                            if (value instanceof Boolean) {
+                                bytecode[bci] = STORE_FAST_BOOLEAN;
+                            } else if (value instanceof Integer) {
+                                bytecode[bci] = STORE_FAST_INT;
+                            } else if (value instanceof Long) {
+                                bytecode[bci] = STORE_FAST_LONG;
+                            } else if (value instanceof Double) {
+                                bytecode[bci] = STORE_FAST_DOUBLE;
+                            } else {
+                                bytecode[bci] = STORE_FAST_GENERIC;
+                            }
+                            stack[stackTop--] = null;
+                        }
+                        break;
+                    case STORE_FAST_BOOLEAN:
+                        {
+                            Object value = stack[stackTop];
+                            if (value instanceof Boolean) {
+                                if (CompilerDirectives.inInterpreter()) {
+                                    fastlocals[oparg] = value;
+                                } else {
+                                    fastlocals[oparg] = BOOLEAN_MARKER;
+                                    longlocals[oparg] = value == Boolean.TRUE ? 1 : 0;
+                                }
+                            } else {
+                                CompilerDirectives.transferToInterpreterAndInvalidate();
+                                bytecode[bci] = STORE_FAST_GENERIC;
+                                fastlocals[oparg] = value;
+                            }
+                            stack[stackTop--] = null;
+                        }
+                        break;
+                    case STORE_FAST_INT:
+                        {
+                            Object value = stack[stackTop];
+                            if (value instanceof Integer) {
+                                if (CompilerDirectives.inInterpreter()) {
+                                    fastlocals[oparg] = value;
+                                } else {
+                                    fastlocals[oparg] = INTEGER_MARKER;
+                                    longlocals[oparg] = (int)value;
+                                }
+                            } else {
+                                CompilerDirectives.transferToInterpreterAndInvalidate();
+                                if (value instanceof Long) {
+                                    bytecode[bci] = STORE_FAST_LONG;
+                                } else {
+                                    bytecode[bci] = STORE_FAST_GENERIC;
+                                }
+                                fastlocals[oparg] = value;
+                            }
+                            stack[stackTop--] = null;
+                        }
+                        break;
+                    case STORE_FAST_LONG:
+                        {
+                            Object value = stack[stackTop];
+                            if (value instanceof Long) {
+                                if (CompilerDirectives.inInterpreter()) {
+                                    fastlocals[oparg] = value;
+                                } else {
+                                    fastlocals[oparg] = LONG_MARKER;
+                                    longlocals[oparg] = (long)value;
+                                }
+                            } else if (value instanceof Integer) {
+                                if (CompilerDirectives.inInterpreter()) {
+                                    fastlocals[oparg] = value;
+                                } else {
+                                    fastlocals[oparg] = LONG_MARKER;
+                                    longlocals[oparg] = (int)value;
+                                }
+                            } else {
+                                CompilerDirectives.transferToInterpreterAndInvalidate();
+                                bytecode[bci] = STORE_FAST_GENERIC;
+                                fastlocals[oparg] = value;
+                            }
+                            stack[stackTop--] = null;
+                        }
+                        break;
+                    case STORE_FAST_DOUBLE:
+                        {
+                            Object value = stack[stackTop];
+                            if (value instanceof Double) {
+                                if (CompilerDirectives.inInterpreter()) {
+                                    fastlocals[oparg] = value;
+                                } else {
+                                    fastlocals[oparg] = DOUBLE_MARKER;
+                                    longlocals[oparg] = Double.doubleToRawLongBits((double)value);
+                                }
+                            } else {
+                                CompilerDirectives.transferToInterpreterAndInvalidate();
+                                bytecode[bci] = STORE_FAST_GENERIC;
+                                fastlocals[oparg] = value;
+                            }
+                            stack[stackTop--] = null;
+                        }
+                        break;
+                    case STORE_FAST_GENERIC:
                         fastlocals[oparg] = stack[stackTop];
                         stack[stackTop--] = null;
                         break;
@@ -1441,14 +1562,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         if (oparg < bci) {
                             if (CompilerDirectives.inInterpreter()) {
                                 loopCount++;
-                            }
-                            if (BytecodeOSRNode.pollOSRBackEdge(this)) {
-                                Object osrResult = BytecodeOSRNode.tryOSR(this, encodeBCI(oparg) | encodeStackTop(stackTop) | encodeBlockstackTop(blockstackTop), originalArgs, null, frame);
-                                if (osrResult != null) {
-                                    if (CompilerDirectives.inInterpreter()) {
-                                        LoopNode.reportLoopCount(this, loopCount);
+                                if (BytecodeOSRNode.pollOSRBackEdge(this)) {
+                                    // we're in the interpreter, so the unboxed storage for locals is not used yet
+                                    Object osrResult = BytecodeOSRNode.tryOSR(this, encodeBCI(oparg) | encodeStackTop(stackTop) | encodeBlockstackTop(blockstackTop), originalArgs, null, frame);
+                                    if (osrResult != null) {
+                                        if (CompilerDirectives.inInterpreter()) {
+                                            LoopNode.reportLoopCount(this, loopCount);
+                                        }
+                                        return osrResult;
                                     }
-                                    return osrResult;
                                 }
                             }
                         }
@@ -2035,4 +2157,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final byte CALL_METHOD =                  (byte) 161;
     private static final byte CALL_FINALLY =                 (byte) 162;
     private static final byte POP_FINALLY =                  (byte) 163;
+
+    // our own stuff
+    private static final byte STORE_FAST_BOOLEAN =           (byte) 164;
+    private static final byte STORE_FAST_INT =               (byte) 165;
+    private static final byte STORE_FAST_LONG =              (byte) 166;
+    private static final byte STORE_FAST_DOUBLE =            (byte) 167;
+    private static final byte STORE_FAST_GENERIC =           (byte) 168;
 }
