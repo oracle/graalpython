@@ -213,6 +213,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PTeeDataObject("_tee_dataobject", "itertools", Flags.PUBLIC_DERIVED_WODICT),
     PRepeat("repeat", "itertools"),
     PChain("chain", "itertools"),
+    PIslice("islice", "itertools"),
     PStarmap("starmap", "itertools"),
 
     // json

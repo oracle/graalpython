@@ -113,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
+import com.oracle.graal.python.builtins.objects.itertools.PIslice;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
 import com.oracle.graal.python.builtins.objects.itertools.PStarmap;
 import com.oracle.graal.python.builtins.objects.itertools.PTee;
@@ -1155,6 +1156,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PChain(PythonBuiltinClassType.PChain, PythonBuiltinClassType.PChain.getInstanceShape(getLanguage())));
     }
 
+    public final PIslice createIslice() {
+        return trace(new PIslice(PythonBuiltinClassType.PIslice, PythonBuiltinClassType.PIslice.getInstanceShape(getLanguage())));
+    }
+
     public final PRepeat createRepeat() {
         return trace(new PRepeat(PythonBuiltinClassType.PRepeat, PythonBuiltinClassType.PRepeat.getInstanceShape(getLanguage())));
     }
@@ -1166,7 +1171,7 @@ public abstract class PythonObjectFactory extends Node {
     public final PTee createTee(PTeeDataObject dataObj, int index) {
         return trace(new PTee(dataObj, index, PythonBuiltinClassType.PTee, PythonBuiltinClassType.PTee.getInstanceShape(getLanguage())));
     }
-    
+
     public final PStarmap createStarmap() {
         return trace(new PStarmap(PythonBuiltinClassType.PStarmap, PythonBuiltinClassType.PStarmap.getInstanceShape(getLanguage())));
     }

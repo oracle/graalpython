@@ -265,6 +265,7 @@ public abstract class ErrorMessages {
     public static final String FIRST_ARG_MUST_BE_CALLABLE_S = "first argument must be callable%s";
     public static final String FIRST_ARG_MUST_BE_S_OR_TUPLE_NOT_P = "%s first arg must be %s or a tuple of str, not %p";
     public static final String FIRST_TWO_MAKETRANS_ARGS_MUST_HAVE_EQ_LENGTH = "the first two maketrans arguments must have equal length";
+    public static final String S_FOR_ISLICE_MUST_BE = "% for islice() must be None or an integer: 0 <= x <= sys.maxsize.";
     public static final String FLOAT_ARG_REQUIRED = "float argument required, not %p";
     public static final String FOREIGN_INVOCATION_DOESNT_SUPPORT_KEYWORD_ARG = "foreign invocation does not support keyword arguments";
     public static final String FOREIGN_OBJ_HAS_NO_ATTR_S = "foreign object has no attribute '%s'";
@@ -355,6 +356,7 @@ public abstract class ErrorMessages {
     public static final String INVALID_SYNTAX = "invalid syntax";
     public static final String INVALID_USE_OF_W_FORMAT_CHAR = "invalid use of 'w' format character";
     public static final String INVALID_BUFFER_ACCESS = "invalid buffer access";
+    public static final String ISLICE_WRONG_ARGS = "islice(seq, stop) or islice(seq, start, stop[, step])";
     public static final String IS_EMPTY = "%s is empty";
     public static final String IS_NOT_A = "%s is not a %s";
     public static final String IS_NOT_A_DICTIONARY = "%s is not a dictionary";
@@ -586,6 +588,7 @@ public abstract class ErrorMessages {
     public static final String STATE_VECTOR_INVALID = "state vector invalid.";
     public static final String STATE_VECTOR_MUST_BE_A_TUPLE = "state vector must be a tuple";
     public static final String STEP_1_NOT_SUPPORTED = "step != 1 not supported";
+    public static final String STEP_FOR_ISLICE_MUST_BE = "Step for islice() must be a positive integer or None.";
     public static final String STRING_ARG_WO_ENCODING = "string argument without an encoding";
     public static final String ENCODING_ARG_WO_STRING = "encoding without a string argument";
     public static final String ENCODING_ERROR_WITH_CODE = "decoding error; unknown error handling code: %s";

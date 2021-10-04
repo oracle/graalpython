@@ -40,6 +40,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IterNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
+import com.oracle.graal.python.builtins.objects.itertools.PIslice;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
 import com.oracle.graal.python.builtins.objects.itertools.PStarmap;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
@@ -187,7 +188,23 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        public PList construct(Object cls, Object[] arguments, PKeyword[] keywords) {
+        protected Object construct(Object cls, Object[] arguments, PKeyword[] keywords) {
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+        }
+    }
+
+    @Builtin(name = "islice", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PIslice)
+    @GenerateNodeFactory
+    public abstract static class IsliceNode extends PythonVarargsBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization(guards = "lib.isLazyPythonClass(cls)")
+        protected PIslice construct(Object cls, Object[] arguments, PKeyword[] keywords, @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+            return factory().createIslice();
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        protected Object construct(Object cls, Object[] arguments, PKeyword[] keywords) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
     }
