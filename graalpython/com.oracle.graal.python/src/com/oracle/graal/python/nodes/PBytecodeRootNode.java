@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -1069,7 +1070,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     case PRINT_EXPR:
-                        throw CompilerDirectives.shouldNotReachHere("PRINT_EXPR");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "bc print expr");
                     case RAISE_VARARGS:
                         {
                             RaiseNode raiseNode = insertChildNode(() -> RaiseNode.create(null, null), bci);
@@ -1099,10 +1100,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case GET_AITER:
                     case GET_ANEXT:
                     case GET_AWAITABLE:
-                        throw CompilerDirectives.shouldNotReachHere("async bytecodes");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "async bytecodes");
                     case YIELD_FROM:
                     case YIELD_VALUE:
-                        throw CompilerDirectives.shouldNotReachHere("yield bytecodes");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "yield bytecodes");
                     case POP_EXCEPT:
                         {
                             assert isBlockTypeExcept(blockstack[blockstackTop]);
@@ -1206,7 +1207,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     case END_ASYNC_FOR:
-                        throw CompilerDirectives.shouldNotReachHere("async bytecodes");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "async bytecodes");
                     case LOAD_BUILD_CLASS:
                         {
                             ReadGlobalOrBuiltinNode read = insertChildNode((uncached) -> uncached ? ReadGlobalOrBuiltinNode.getUncached() : ReadGlobalOrBuiltinNode.create(__BUILD_CLASS__), bci);
@@ -1260,7 +1261,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     case UNPACK_SEQUENCE:
                     case UNPACK_EX:
-                        throw CompilerDirectives.shouldNotReachHere("unpack bytecodes");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "unpack bytecodes");
                     case STORE_ATTR:
                         {
                             PyObjectSetAttr callNode = insertChildNode((uncached) -> uncached ? PyObjectSetAttr.getUncached() : PyObjectSetAttr.create(), bci);
@@ -1351,16 +1352,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     case DELETE_DEREF:
-                        throw CompilerDirectives.shouldNotReachHere("DELETE_DEREF");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "DELETE_DEREF");
                     case LOAD_CLOSURE:
-                        throw CompilerDirectives.shouldNotReachHere("LOAD_CLOSURE");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "LOAD_CLOSURE");
                     case LOAD_CLASSDEREF:
-                        throw CompilerDirectives.shouldNotReachHere("LOAD_CLASSDEREF");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "LOAD_CLASSDEREF");
                     case LOAD_DEREF:
                     case STORE_DEREF:
-                        throw CompilerDirectives.shouldNotReachHere("deref load/store");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "deref load/store");
                     case BUILD_STRING:
-                        throw CompilerDirectives.shouldNotReachHere("build string");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "build string");
                     case BUILD_TUPLE:
                         {
                             Object[] list = new Object[oparg];
@@ -1389,9 +1390,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case BUILD_SET:
                     case BUILD_SET_UNPACK:
                     case BUILD_MAP:
-                        throw CompilerDirectives.shouldNotReachHere("build bytecodes");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "build bytecodes");
                     case SETUP_ANNOTATIONS:
-                        throw CompilerDirectives.shouldNotReachHere("setup annotations");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "setup annotations");
                     case BUILD_CONST_KEY_MAP:
                         {
                             PTuple keys = ((PTuple) stack[stackTop]);
@@ -1411,9 +1412,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     case BUILD_MAP_UNPACK:
                     case BUILD_MAP_UNPACK_WITH_CALL:
-                        throw CompilerDirectives.shouldNotReachHere("build bytecodes");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "build bytecodes");
                     case MAP_ADD:
-                        throw CompilerDirectives.shouldNotReachHere("MAP_ADD");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "MAP_ADD");
                     case LOAD_ATTR:
                         {
                             PyObjectGetAttr getAttr = insertChildNode((uncached) -> uncached ? PyObjectGetAttr.getUncached() : PyObjectGetAttr.create(), bci);
@@ -1505,7 +1506,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     case IMPORT_STAR:
                     case IMPORT_FROM:
-                        throw CompilerDirectives.shouldNotReachHere("import start / import from");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "import start / import from");
                     case JUMP_FORWARD:
                         bci += oparg + 2;
                         oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
@@ -1614,7 +1615,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case SETUP_WITH:
                     case WITH_CLEANUP_START:
                     case WITH_CLEANUP_FINISH:
-                        throw CompilerDirectives.shouldNotReachHere("with blocks");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "with blocks");
                     case LOAD_METHOD:
                         {
                             String methodName = names[oparg];
@@ -1758,15 +1759,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         break;
                     case BUILD_SLICE:
-                        throw CompilerDirectives.shouldNotReachHere("BUILD_SLICE");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "BUILD_SLICE");
                     case FORMAT_VALUE:
-                        throw CompilerDirectives.shouldNotReachHere("FORMAT_VALUE");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "FORMAT_VALUE");
                     case EXTENDED_ARG:
                         bci += 2;
                         oparg = Byte.toUnsignedInt(bytecode[bci + 1]) | (oparg << 8);
                         continue;
                     default:
-                        throw CompilerDirectives.shouldNotReachHere("not implemented bytecode");
+                        throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "not implemented bytecode");
                 }
                 // prepare next loop
                 bci += 2;
