@@ -23,31 +23,6 @@
 # DEALINGS IN THE SOFTWARE.
 import sys
 
-class starmap():
-    """starmap(function, sequence) --> starmap object
-
-    Return an iterator whose values are returned from the function evaluated
-    with an argument tuple taken from the given sequence.
-    """
-    @__graalpython__.builtin_method
-    def __init__(self, fun, iterable):
-        self.fun = fun
-        self.iterable = iter(iterable)
-
-    @__graalpython__.builtin_method
-    def __iter__(self):
-        return self
-
-    @__graalpython__.builtin_method
-    def __next__(self):
-        obj = next(self.iterable)
-        return self.fun(*obj)
-
-    @__graalpython__.builtin_method
-    def __reduce__(self):
-        return type(self), (self.fun, self.iterable)
-
-
 class islice(object):
     @__graalpython__.builtin_method
     def __init__(self, iterable, *args):
