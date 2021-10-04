@@ -2158,10 +2158,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final byte CALL_FINALLY =                 (byte) 162;
     private static final byte POP_FINALLY =                  (byte) 163;
 
-    // our own stuff
-    private static final byte STORE_FAST_BOOLEAN =           (byte) 164;
-    private static final byte STORE_FAST_INT =               (byte) 165;
-    private static final byte STORE_FAST_LONG =              (byte) 166;
-    private static final byte STORE_FAST_DOUBLE =            (byte) 167;
-    private static final byte STORE_FAST_GENERIC =           (byte) 168;
+    // our own quickened bytecodes, counting down towards the CPython codes
+    private static final byte STORE_FAST_BOOLEAN =           (byte) 255;
+    private static final byte STORE_FAST_INT =               (byte) 254;
+    private static final byte STORE_FAST_LONG =              (byte) 253;
+    private static final byte STORE_FAST_DOUBLE =            (byte) 252;
+    private static final byte STORE_FAST_GENERIC =           (byte) 251;
 }
