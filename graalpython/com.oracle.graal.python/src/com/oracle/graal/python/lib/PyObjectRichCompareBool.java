@@ -79,7 +79,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  */
 public abstract class PyObjectRichCompareBool {
     @SuppressWarnings("unused")
-    protected static abstract class ComparisonBaseNode extends PNodeWithContext {
+    protected abstract static class ComparisonBaseNode extends PNodeWithContext {
         public abstract boolean execute(Frame frame, Object a, Object b);
 
         protected boolean op(boolean a, boolean b) {
