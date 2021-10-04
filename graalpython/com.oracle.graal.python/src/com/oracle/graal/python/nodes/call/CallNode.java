@@ -111,8 +111,9 @@ public abstract class CallNode extends PNodeWithContext {
     }
 
     @Specialization
-    protected Object boundDescriptor(VirtualFrame frame, BoundDescriptor descriptor, Object[] arguments, PKeyword[] keywords) {
-        return executeInternal(frame, descriptor.descriptor, PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length), keywords);
+    protected Object boundDescriptor(VirtualFrame frame, BoundDescriptor descriptor, Object[] arguments, PKeyword[] keywords,
+                    @Cached CallNode subNode) {
+        return subNode.executeInternal(frame, descriptor.descriptor, PythonUtils.arrayCopyOfRange(arguments, 1, arguments.length), keywords);
     }
 
     @Specialization
