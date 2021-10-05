@@ -449,7 +449,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             if (isEmptyProfile.profile(self.getLength() != 0)) {
                 if (isUnicodeProfile.profile(self.getFormat() == BufferFormat.UNICODE)) {
                     PythonUtils.append(sb, ", ");
-                    PythonUtils.append(sb, cast.execute(reprNode.executeObject(frame, toUnicodeNode.call(frame, self))));
+                    PythonUtils.append(sb, cast.execute(reprNode.executeObject(frame, toUnicodeNode.execute(frame, self))));
                 } else {
                     PythonUtils.append(sb, ", [");
                     for (int i = 0; i < self.getLength(); i++) {
@@ -672,7 +672,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
-            PTuple args = factory().createTuple(new Object[]{self.getFormatString(), toListNode.call(frame, self)});
+            PTuple args = factory().createTuple(new Object[]{self.getFormatString(), toListNode.execute(frame, self)});
             return factory().createTuple(new Object[]{cls, args, dict});
         }
 
@@ -691,7 +691,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 dict = PNone.NONE;
             }
             Object reconstructor = getReconstructor.execute(frame, arrayModule, "_array_reconstructor");
-            PTuple args = factory().createTuple(new Object[]{cls, self.getFormatString(), mformat.code, toBytesNode.call(frame, self)});
+            PTuple args = factory().createTuple(new Object[]{cls, self.getFormatString(), mformat.code, toBytesNode.execute(frame, self)});
             return factory().createTuple(new Object[]{reconstructor, args, dict});
         }
     }
@@ -921,6 +921,11 @@ public class ArrayBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
     public abstract static class FromBytesNode extends PythonBinaryClinicBuiltinNode {
+
+        // make this method accessible
+        @Override
+        public abstract Object executeWithoutClinic(VirtualFrame frame, Object arg, Object arg2);
+
         @Specialization(limit = "3")
         Object frombytes(PArray self, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
@@ -972,7 +977,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             Object readResult = callMethod.execute(frame, file, "read", nbytes);
             if (readResult instanceof PBytes) {
                 int readLength = sizeNode.execute(frame, readResult);
-                fromBytesNode.execute(frame, self, readResult);
+                fromBytesNode.executeWithoutClinic(frame, self, readResult);
                 // It would make more sense to check this before the frombytes call, but CPython
                 // does it this way
                 if (readLength != nbytes) {
@@ -1036,7 +1041,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached FromBytesNode fromBytesNode) {
             warnNode.warnEx(frame, DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.", 1);
             Object bytes = callMethod.execute(frame, str, "encode", "utf-8");
-            return fromBytesNode.execute(frame, self, bytes);
+            return fromBytesNode.executeWithoutClinic(frame, self, bytes);
         }
 
         @Specialization(guards = "!isString(str)")
@@ -1045,7 +1050,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached FromBytesNode fromBytesNode) {
             warnNode.warnEx(frame, DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.", 1);
-            return fromBytesNode.execute(frame, self, bufferAcquireLib.acquireReadonly(str));
+            return fromBytesNode.executeWithoutClinic(frame, self, bufferAcquireLib.acquireReadonly(str));
         }
     }
 
@@ -1116,7 +1121,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached ToBytesNode toBytesNode) {
             warnNode.warnEx(frame, DeprecationWarning, "tostring() is deprecated. Use tobytes() instead.", 1);
-            return toBytesNode.call(frame, self);
+            return toBytesNode.execute(frame, self);
         }
     }
 

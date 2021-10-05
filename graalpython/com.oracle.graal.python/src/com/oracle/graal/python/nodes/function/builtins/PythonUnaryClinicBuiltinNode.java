@@ -68,8 +68,10 @@ public abstract class PythonUnaryClinicBuiltinNode extends PythonUnaryBuiltinNod
         return castNode.execute(frame, value);
     }
 
+    protected abstract Object executeWithoutClinic(VirtualFrame frame, Object arg);
+
     @Override
-    public final Object call(VirtualFrame frame, Object arg) {
-        return execute(frame, cast(frame, arg));
+    public final Object execute(VirtualFrame frame, Object arg) {
+        return executeWithoutClinic(frame, cast(frame, arg));
     }
 }

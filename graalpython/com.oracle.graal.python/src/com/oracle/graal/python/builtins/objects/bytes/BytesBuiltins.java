@@ -1786,9 +1786,6 @@ public class BytesBuiltins extends PythonBuiltins {
         protected static final byte[] WHITESPACE = new byte[]{' '};
 
         @Override
-        public abstract PList execute(VirtualFrame frame, Object bytes, Object sep, Object maxsplit);
-
-        @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             CompilerAsserts.neverPartOfCompilation();
             throw new RuntimeException();

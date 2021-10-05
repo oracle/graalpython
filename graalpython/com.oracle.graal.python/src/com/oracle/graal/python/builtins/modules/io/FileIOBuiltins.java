@@ -197,7 +197,7 @@ public class FileIOBuiltins extends PythonBuiltins {
         int fd = self.getFD();
         if (fd >= 0) {
             self.setClosed();
-            posixClose.call(frame, fd);
+            posixClose.execute(frame, fd);
         }
     }
 
@@ -475,7 +475,7 @@ public class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isClosed()", "self.isReadable()", "size < 0"})
         static Object readall(VirtualFrame frame, PFileIO self, @SuppressWarnings("unused") int size,
                         @Cached ReadallNode readallNode) {
-            return readallNode.call(frame, self);
+            return readallNode.execute(frame, self);
         }
 
         @Specialization(guards = {"!self.isClosed()", "self.isReadable()", "size == 0"})
@@ -766,7 +766,7 @@ public class FileIOBuiltins extends PythonBuiltins {
         @Specialization
         static Object tell(VirtualFrame frame, PFileIO self,
                         @Cached SeekNode seekNode) {
-            return seekNode.call(frame, self, 0, SEEK_CUR);
+            return seekNode.execute(frame, self, 0, SEEK_CUR);
         }
 
         public static long internalTell(PFileIO self,
@@ -797,7 +797,7 @@ public class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isClosed()", "self.isWritable()", "!isPNone(posobj)"})
         static Object num(VirtualFrame frame, PFileIO self, Object posobj,
                         @Shared("ft") @Cached PosixModuleBuiltins.FtruncateNode posixTruncate) {
-            posixTruncate.call(frame, self.getFD(), posobj);
+            posixTruncate.execute(frame, self.getFD(), posobj);
             return posobj;
         }
 
@@ -805,8 +805,8 @@ public class FileIOBuiltins extends PythonBuiltins {
         static Object none(VirtualFrame frame, PFileIO self, @SuppressWarnings("unused") PNone posobj,
                         @Shared("ft") @Cached PosixModuleBuiltins.FtruncateNode posixTruncate,
                         @Cached PosixModuleBuiltins.LseekNode posixSeek) {
-            Object pos = posixSeek.call(frame, self.getFD(), 0, SEEK_CUR);
-            posixTruncate.call(frame, self.getFD(), pos);
+            Object pos = posixSeek.execute(frame, self.getFD(), 0, SEEK_CUR);
+            posixTruncate.execute(frame, self.getFD(), pos);
             return pos;
         }
 

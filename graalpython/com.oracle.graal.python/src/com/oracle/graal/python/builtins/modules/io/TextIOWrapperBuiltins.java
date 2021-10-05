@@ -534,7 +534,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodDeallocWarn,
                         @Cached PyObjectCallMethodObjArgs callMethodClose,
                         @Cached PyObjectIsTrueNode isTrueNode) {
-            Object res = closedNode.call(frame, self);
+            Object res = closedNode.execute(frame, self);
             if (isTrueNode.execute(frame, res)) {
                 return PNone.NONE;
             } else {

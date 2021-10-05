@@ -172,7 +172,7 @@ public class StringIOBuiltins extends PythonBuiltins {
         String decoded;
         if (self.getDecoder() != null) {
             // (mq) IncrementalNewlineDecoderBuiltins.DecodeNode always returns a String
-            decoded = (String) decodeNode.call(frame, self.getDecoder(), obj, true /*- always final */);
+            decoded = (String) decodeNode.execute(frame, self.getDecoder(), obj, true /*- always final */);
         } else {
             decoded = obj;
         }
@@ -281,7 +281,7 @@ public class StringIOBuiltins extends PythonBuiltins {
 
             if (self.isReadUniversal()) {
                 Object incDecoder = factory().createNLDecoder(PIncrementalNewlineDecoder);
-                initNode.call(frame, incDecoder, self.getDecoder(), self.isReadTranslate(), PNone.NO_VALUE);
+                initNode.execute(frame, incDecoder, self.getDecoder(), self.isReadTranslate(), PNone.NO_VALUE);
                 self.setDecoder(incDecoder);
             }
 
@@ -554,7 +554,7 @@ public class StringIOBuiltins extends PythonBuiltins {
         Object doit(VirtualFrame frame, PStringIO self,
                         @Cached GetValueNode getValueNode,
                         @Cached GetOrCreateDictNode getDict) {
-            Object initValue = getValueNode.call(frame, self);
+            Object initValue = getValueNode.execute(frame, self);
             Object readnl = self.getReadNewline() == null ? PNone.NONE : self.getReadNewline();
             Object[] state = new Object[]{initValue, readnl, self.getPos(), getDict.execute(self)};
             return factory().createTuple(state);
@@ -578,7 +578,7 @@ public class StringIOBuiltins extends PythonBuiltins {
             if (array.length < 4) {
                 return notTuple(self, state);
             }
-            initNode.call(frame, self, array[0], array[1]);
+            initNode.execute(frame, self, array[0], array[1]);
             /*
              * Restore the buffer state. Even if __init__ did initialize the buffer, we have to
              * initialize it again since __init__ may translate the newlines in the initial_value

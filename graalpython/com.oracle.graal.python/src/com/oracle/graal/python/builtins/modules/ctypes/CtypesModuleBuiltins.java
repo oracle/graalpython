@@ -487,7 +487,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
             if (typ != null) {
                 return callNode.execute(frame, typ, arg);
             }
-            typ = callPOINTER.call(frame, getClassNode.execute(arg));
+            typ = callPOINTER.execute(frame, getClassNode.execute(arg));
             return callNode.execute(frame, typ, arg);
         }
     }

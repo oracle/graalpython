@@ -195,7 +195,7 @@ public class LockBuiltins extends PythonBuiltins {
         @Specialization
         Object acquire(VirtualFrame frame, PLock self, Object blocking, Object timeout,
                         @Cached AcquireLockNode acquireLockNode) {
-            return acquireLockNode.call(frame, self, blocking, timeout);
+            return acquireLockNode.execute(frame, self, blocking, timeout);
         }
     }
 
@@ -205,7 +205,7 @@ public class LockBuiltins extends PythonBuiltins {
         @Specialization
         Object acquire(VirtualFrame frame, AbstractPythonLock self, Object blocking, Object timeout,
                         @Cached AcquireLockNode acquireLockNode) {
-            return acquireLockNode.call(frame, self, blocking, timeout);
+            return acquireLockNode.execute(frame, self, blocking, timeout);
         }
     }
 

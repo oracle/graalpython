@@ -56,7 +56,6 @@ final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
     @CompilationFinal FrameSlot iteratorSlot;
     @Child ForNextElementNode nextElement;
     @Child StatementNode body;
-    @Child PRaiseNode raise;
 
     public ForRepeatingNode(StatementNode target, StatementNode body) {
         this.nextElement = ForNextElementNodeGen.create(target);

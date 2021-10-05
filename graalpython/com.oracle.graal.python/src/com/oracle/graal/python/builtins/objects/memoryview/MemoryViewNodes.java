@@ -363,7 +363,7 @@ public class MemoryViewNodes {
             int itemSize = self.getItemSize();
             byte[] bytes = new byte[itemSize];
             for (int i = 0; i < itemSize; i++) {
-                bytes[i] = castToByteNode.execute(frame, getItem.call(frame, self.getOwner(), offset + i));
+                bytes[i] = castToByteNode.execute(frame, getItem.execute(frame, self.getOwner(), offset + i));
             }
             Object ret = unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
             return ret;
@@ -445,7 +445,7 @@ public class MemoryViewNodes {
             byte[] bytes = new byte[itemSize];
             packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
             for (int i = 0; i < itemSize; i++) {
-                setItemNode.call(frame, self.getOwner(), offset + i, bytes[i]);
+                setItemNode.execute(frame, self.getOwner(), offset + i, bytes[i]);
             }
         }
 

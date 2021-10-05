@@ -65,7 +65,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -194,20 +193,19 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             PArray arrayWithBytesInitializer(VirtualFrame frame, Object cls, String typeCode, PBytesLike bytes,
                             @Cached ArrayBuiltins.FromBytesNode fromBytesNode) {
                 PArray array = getFactory().createArray(cls, typeCode, getFormatChecked(typeCode));
-                fromBytesNode.execute(frame, array, bytes);
+                fromBytesNode.executeWithoutClinic(frame, array, bytes);
                 return array;
             }
 
             @Specialization(guards = "isString(initializer)")
             PArray arrayWithStringInitializer(VirtualFrame frame, Object cls, String typeCode, Object initializer,
-                            @Cached CastToJavaStringNode cast,
                             @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode) {
                 BufferFormat format = getFormatChecked(typeCode);
                 if (format != BufferFormat.UNICODE) {
                     throw raise(TypeError, "cannot use a str to initialize an array with typecode '%s'", typeCode);
                 }
                 PArray array = getFactory().createArray(cls, typeCode, format);
-                fromUnicodeNode.execute(frame, array, cast.execute(initializer));
+                fromUnicodeNode.execute(frame, array, initializer);
                 return array;
             }
 
@@ -366,7 +364,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 PArray array;
                 if (machineFormat == MachineFormat.forFormat(format)) {
                     array = factory().createArray(arrayType, typeCode, machineFormat.format);
-                    fromBytesNode.execute(frame, array, bytes);
+                    fromBytesNode.executeWithoutClinic(frame, array, bytes);
                 } else {
                     String newTypeCode = machineFormat.format == format ? typeCode : machineFormat.format.baseTypeCode;
                     array = factory().createArray(arrayType, newTypeCode, machineFormat.format);
@@ -374,9 +372,9 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         Object decoded = callDecode.execute(frame, bytes, "decode", machineFormat.unicodeEncoding);
                         fromUnicodeNode.execute(frame, array, decoded);
                     } else {
-                        fromBytesNode.execute(frame, array, bytes);
+                        fromBytesNode.executeWithoutClinic(frame, array, bytes);
                         if (machineFormat.order != ByteOrder.nativeOrder()) {
-                            byteSwapNode.call(frame, array);
+                            byteSwapNode.execute(frame, array);
                         }
                     }
                 }

@@ -116,7 +116,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached("getBuiltinClass(receiver, getClassNode)") PythonBuiltinClassType clazz,
                     @Cached("getUnaryBuiltin(clazz)") PythonUnaryBuiltinNode function) {
-        return function.call(frame, receiver);
+        return function.execute(frame, receiver);
     }
 
     @Specialization(guards = "getObjectClass(receiver) == cachedClass")

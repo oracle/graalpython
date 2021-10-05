@@ -96,7 +96,7 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
             final Object klass = getClassNode.execute(self);
             final String name = getNameNode.execute(klass);
             final Object factoryRepr = reprNode.executeObject(self.getDefaultFactory(), __REPR__);
-            final Object dictRepr = dictReprNode.call(frame, self);
+            final Object dictRepr = dictReprNode.execute(frame, self);
             return getDefaultDictReprInternal(name, factoryRepr, dictRepr);
         }
 

@@ -45,10 +45,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class PythonBinaryBuiltinNode extends PythonBuiltinBaseNode {
 
-    public Object call(VirtualFrame frame, Object arg, Object arg2) {
-        return execute(frame, arg, arg2);
-    }
-
     // ----------------------
     // execute methods
 

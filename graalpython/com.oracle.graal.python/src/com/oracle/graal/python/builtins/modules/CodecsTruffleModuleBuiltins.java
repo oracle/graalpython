@@ -358,7 +358,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         Object encode(VirtualFrame frame, PythonObject self, Object input, Object errors,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsEncodeNode encode) {
-            return encode.call(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), errors);
+            return encode.execute(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), errors);
         }
     }
 
@@ -369,7 +369,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         Object decode(VirtualFrame frame, PythonObject self, Object input, Object errors,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsDecodeNode decode) {
-            return decode.call(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), errors, true);
+            return decode.execute(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), errors, true);
         }
     }
 
@@ -381,7 +381,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsEncodeNode encode,
                         @Cached TupleBuiltins.GetItemNode getItemNode) {
-            PTuple result = (PTuple) encode.call(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), getAttrNode.execute(frame, self, ATTR_ERRORS));
+            PTuple result = (PTuple) encode.execute(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), getAttrNode.execute(frame, self, ATTR_ERRORS));
             return getItemNode.execute(frame, result, 0);
         }
     }
@@ -393,7 +393,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         Object decode(VirtualFrame frame, PythonObject self, Object input, Object errors, Object ffinal,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsDecodeNode decode) {
-            return decode.call(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), errors, ffinal);
+            return decode.execute(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), errors, ffinal);
         }
     }
 
@@ -404,7 +404,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         Object decode(VirtualFrame frame, PythonObject self, Object input, Object errors, Object ffinal,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached CodecsDecodeNode decode) {
-            return decode.call(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), errors, ffinal);
+            return decode.execute(frame, input, getAttrNode.execute(frame, self, ATTR_ENCODING), errors, ffinal);
         }
     }
 
@@ -415,7 +415,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         Object lookup(VirtualFrame frame, String encoding, String alternateCommand,
                         @Cached CodecsModuleBuiltins.LookupNode lookupNode,
                         @Cached("createGetAttributeNode()") GetAttributeNode getAttributeNode) {
-            Object codecInfo = lookupNode.call(frame, encoding);
+            Object codecInfo = lookupNode.execute(frame, encoding);
             Object isTextObj = getAttributeNode.executeObject(frame, codecInfo);
             if (!(codecInfo instanceof PTuple) || !((isTextObj instanceof Boolean) && (boolean) isTextObj)) {
                 throw raise(LookupError, IS_NOT_TEXT_ENCODING, encoding, alternateCommand);

@@ -271,7 +271,7 @@ public class ModuleBuiltins extends PythonBuiltins {
                         @Shared("getattr") @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
                         @Shared("handleException") @Cached HandleGetattrExceptionNode handleException) {
             try {
-                return objectGetattrNode.call(frame, self, key);
+                return objectGetattrNode.execute(frame, self, key);
             } catch (PException e) {
                 return handleException.execute(frame, self, key, e);
             }

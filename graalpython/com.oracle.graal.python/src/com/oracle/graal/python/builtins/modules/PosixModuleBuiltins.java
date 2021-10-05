@@ -293,7 +293,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         public static PTuple generic(VirtualFrame frame, Object cls, Object sequence, Object dict,
                         @Cached("create(STAT_RESULT_DESC)") StructSequence.NewNode newNode) {
-            PTuple p = (PTuple) newNode.call(frame, cls, sequence, dict);
+            PTuple p = (PTuple) newNode.execute(frame, cls, sequence, dict);
             Object[] data = CompilerDirectives.castExact(p.getSequenceStorage(), ObjectSequenceStorage.class).getInternalArray();
             for (int i = 7; i <= 9; i++) {
                 if (data[i + 3] == PNone.NONE) {
@@ -2197,7 +2197,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         static Object noCheck(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
                         @Cached FspathNode fspathNode,
                         @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
-            return stringOrBytesToOpaquePathNode.execute(fspathNode.call(frame, obj));
+            return stringOrBytesToOpaquePathNode.execute(fspathNode.execute(frame, obj));
         }
 
         @Specialization(guards = "checkEmpty")
@@ -2205,7 +2205,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached FspathNode fspathNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
-            Object stringOrBytes = fspathNode.call(frame, obj);
+            Object stringOrBytes = fspathNode.execute(frame, obj);
             if (sizeNode.execute(frame, obj) == 0) {
                 throw raise(ValueError, ErrorMessages.EXECV_ARG2_FIRST_ELEMENT_CANNOT_BE_EMPTY);
             }
@@ -2369,7 +2369,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         static PBytes convert(VirtualFrame frame, Object value,
                         @Cached FspathNode fspathNode,
                         @Cached StringOrBytesToBytesNode stringOrBytesToBytesNode) {
-            return stringOrBytesToBytesNode.execute(fspathNode.call(frame, value));
+            return stringOrBytesToBytesNode.execute(fspathNode.execute(frame, value));
         }
 
         @ClinicConverterFactory

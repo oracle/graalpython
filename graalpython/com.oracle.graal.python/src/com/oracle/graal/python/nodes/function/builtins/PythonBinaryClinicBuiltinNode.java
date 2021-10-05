@@ -74,11 +74,13 @@ public abstract class PythonBinaryClinicBuiltinNode extends PythonBinaryBuiltinN
         return castNode1.execute(frame, value);
     }
 
+    protected abstract Object executeWithoutClinic(VirtualFrame frame, Object arg, Object arg2);
+
     @Override
-    public final Object call(VirtualFrame frame, Object arg, Object arg2) {
+    public final Object execute(VirtualFrame frame, Object arg, Object arg2) {
         ArgumentClinicProvider clinic = getArgumentClinic();
         Object val = clinic.hasCastNode(0) ? cast0WithNode(clinic, frame, arg) : arg;
         Object val2 = clinic.hasCastNode(1) ? cast1WithNode(clinic, frame, arg2) : arg2;
-        return execute(frame, val, val2);
+        return executeWithoutClinic(frame, val, val2);
     }
 }

@@ -309,7 +309,7 @@ public class IOBaseBuiltins extends PythonBuiltins {
         @Specialization
         static PythonObject enter(VirtualFrame frame, PythonObject self,
                         @Cached CheckClosedNode checkClosedNode) {
-            checkClosedNode.call(frame, self);
+            checkClosedNode.execute(frame, self);
             return self;
         }
     }
@@ -339,7 +339,7 @@ public class IOBaseBuiltins extends PythonBuiltins {
         @Specialization
         static boolean isatty(VirtualFrame frame, PythonObject self,
                         @Cached CheckClosedNode checkClosedNode) {
-            checkClosedNode.call(frame, self);
+            checkClosedNode.execute(frame, self);
             return false;
         }
     }
@@ -350,7 +350,7 @@ public class IOBaseBuiltins extends PythonBuiltins {
         @Specialization
         static PythonObject iter(VirtualFrame frame, PythonObject self,
                         @Cached CheckClosedNode checkClosedNode) {
-            checkClosedNode.call(frame, self);
+            checkClosedNode.execute(frame, self);
             return self;
         }
     }
@@ -380,7 +380,7 @@ public class IOBaseBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectGetIter getIter) {
-            checkClosedNode.call(frame, self);
+            checkClosedNode.execute(frame, self);
             Object iter = getIter.execute(frame, lines);
             while (true) {
                 Object line;

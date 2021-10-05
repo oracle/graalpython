@@ -518,6 +518,11 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "toreadonly", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ToReadonlyNode extends PythonUnaryBuiltinNode {
+
+        public final Object call(VirtualFrame frame, Object arg) {
+            return execute(frame, arg);
+        }
+
         @Specialization
         PMemoryView toreadonly(PMemoryView self) {
             self.checkReleased(this);

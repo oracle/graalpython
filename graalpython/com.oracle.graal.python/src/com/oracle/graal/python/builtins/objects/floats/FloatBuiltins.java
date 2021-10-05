@@ -635,7 +635,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         PTuple doGenericFloat(VirtualFrame frame, Object left, Object right,
                         @Cached FloorDivNode floorDivNode,
                         @Cached ModNode modNode) {
-            return factory().createTuple(new Object[]{floorDivNode.call(frame, left, right), modNode.call(frame, left, right)});
+            return factory().createTuple(new Object[]{floorDivNode.execute(frame, left, right), modNode.execute(frame, left, right)});
         }
 
         @SuppressWarnings("unused")

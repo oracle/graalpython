@@ -834,7 +834,7 @@ public abstract class BytesNodes {
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached CastToJavaStringNode toString,
                         @Cached PosixModuleBuiltins.FspathNode fsPath) {
-            Object path = fsPath.call(frame, value);
+            Object path = fsPath.execute(frame, value);
             if (bufferAcquireLib.hasBuffer(path)) {
                 Object buffer = bufferAcquireLib.acquireReadonly(path);
                 try {

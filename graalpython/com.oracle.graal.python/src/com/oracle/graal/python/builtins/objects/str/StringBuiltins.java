@@ -1436,7 +1436,7 @@ public final class StringBuiltins extends PythonBuiltins {
             }
 
             appendNode.execute(list, remainder);
-            reverseNode.call(frame, list);
+            reverseNode.execute(frame, list);
             return list;
         }
 
@@ -1491,7 +1491,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 appendNode.execute(list, s.substring(0, end));
             }
 
-            reverseNode.call(frame, list);
+            reverseNode.execute(frame, list);
             return list;
         }
     }
@@ -1824,7 +1824,7 @@ public final class StringBuiltins extends PythonBuiltins {
         Object doStringEncoding(VirtualFrame frame, String self, String encoding, String errors,
                         @Cached CodecsModuleBuiltins.EncodeNode encodeNode,
                         @Cached SequenceStorageNodes.CopyNode copyNode) {
-            Object result = encodeNode.call(frame, self, encoding, errors);
+            Object result = encodeNode.execute(frame, self, encoding, errors);
             if (!(result instanceof PBytes)) {
                 if (result instanceof PByteArray) {
                     return factory().createBytes(copyNode.execute(((PByteArray) result).getSequenceStorage()));

@@ -545,7 +545,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
                     e.expectStopIteration(errorProfile);
                     break;
                 }
-                writeNode.call(frame, self, line);
+                writeNode.execute(frame, self, line);
             }
             return PNone.NONE;
         }
@@ -713,7 +713,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         Object doit(VirtualFrame frame, PBytesIO self,
                         @Cached GetValueNode getValueNode,
                         @Cached GetOrCreateDictNode getDict) {
-            Object initValue = getValueNode.call(frame, self);
+            Object initValue = getValueNode.execute(frame, self);
             Object[] state = new Object[]{initValue, self.getPos(), getDict.execute(self)};
             return factory().createTuple(state);
         }
@@ -744,7 +744,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
              * Set the value of the internal buffer. If state[0] does not support the buffer
              * protocol, bytesio_write will raise the appropriate TypeError.
              */
-            writeNode.call(frame, self, array[0]);
+            writeNode.execute(frame, self, array[0]);
             /*
              * Set carefully the position value. Alternatively, we could use the seek method instead
              * of modifying self.getPos() directly to better protect the object internal state

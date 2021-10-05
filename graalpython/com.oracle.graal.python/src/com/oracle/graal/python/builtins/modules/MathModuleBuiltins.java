@@ -449,7 +449,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public Object factorialObject(VirtualFrame frame, Object value,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached FactorialNode recursiveNode) {
-            return recursiveNode.call(frame, indexNode.execute(frame, value));
+            return recursiveNode.execute(frame, indexNode.execute(frame, value));
         }
 
         protected boolean isInteger(double value) {
@@ -603,7 +603,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object perm(VirtualFrame frame, Object n, @SuppressWarnings("unused") PNone k,
                         @Cached FactorialNode factorialNode) {
-            return factorialNode.call(frame, n);
+            return factorialNode.execute(frame, n);
         }
 
         @Specialization(guards = "!isPNone(k)")
@@ -2219,7 +2219,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         static Object doGeneral(VirtualFrame frame, Object x,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached IsqrtNode recursiveNode) {
-            return recursiveNode.call(frame, indexNode.execute(frame, x));
+            return recursiveNode.execute(frame, indexNode.execute(frame, x));
         }
 
         @TruffleBoundary

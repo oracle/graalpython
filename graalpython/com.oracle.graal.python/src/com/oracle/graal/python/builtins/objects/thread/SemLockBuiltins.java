@@ -184,7 +184,7 @@ public class SemLockBuiltins extends PythonBuiltins {
             if (!blocking) {
                 tout = LockBuiltins.UNSET_TIMEOUT;
             }
-            return acquireLockNode.call(frame, self, blocking, tout);
+            return acquireLockNode.execute(frame, self, blocking, tout);
         }
     }
 
@@ -194,7 +194,7 @@ public class SemLockBuiltins extends PythonBuiltins {
         @Specialization
         Object doEnter(VirtualFrame frame, AbstractPythonLock self, Object blocking, Object timeout,
                         @Cached AcquireLockNode acquireLockNode) {
-            return acquireLockNode.call(frame, self, blocking, timeout);
+            return acquireLockNode.execute(frame, self, blocking, timeout);
         }
     }
 

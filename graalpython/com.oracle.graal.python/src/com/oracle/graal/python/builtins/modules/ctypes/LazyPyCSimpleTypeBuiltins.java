@@ -184,7 +184,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
 
             Object as_parameter = lookupAsParam.execute(value);
             if (as_parameter != null) {
-                return cwCharPFromParamNode.call(frame, type, as_parameter);
+                return cwCharPFromParamNode.execute(frame, type, as_parameter);
             }
             /* XXX better message */
             throw raise(TypeError, WRONG_TYPE);
@@ -301,7 +301,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
 
             Object as_parameter = lookupAsParam.execute(value);
             if (as_parameter != null) {
-                return cVoidPFromParamNode.call(frame, type, as_parameter);
+                return cVoidPFromParamNode.execute(frame, type, as_parameter);
             }
             /* XXX better message */
             throw raise(TypeError, WRONG_TYPE);
@@ -363,7 +363,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
 
             Object as_parameter = lookupAsParam.execute(value);
             if (as_parameter != null) {
-                return cCharPFromParamNode.call(frame, type, as_parameter);
+                return cCharPFromParamNode.execute(frame, type, as_parameter);
             }
             /* XXX better message */
             throw raise(TypeError, WRONG_TYPE);
