@@ -58,7 +58,6 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class ConversionNodeTests {
@@ -69,7 +68,7 @@ public class ConversionNodeTests {
         PythonLanguage language = PythonLanguage.get(castNode);
         final PythonContext pythonContext = PythonContext.get(castNode);
 
-        RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new PRootNode(language) {
+        RootCallTarget callTarget = new PRootNode(language) {
             @Child private CalleeContext calleeContext = CalleeContext.create();
             @Child private ArgumentCastNode node = castNode;
 
@@ -95,7 +94,7 @@ public class ConversionNodeTests {
             public boolean isPythonInternal() {
                 return true;
             }
-        });
+        }.getCallTarget();
         try {
             Object[] arguments = PArguments.create(1);
             PArguments.setGlobals(arguments, PythonObjectFactory.getUncached().createDict());

@@ -102,6 +102,7 @@ import com.oracle.truffle.api.source.Source.SourceBuilder;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
+                implementationName = PythonLanguage.IMPLEMENTATION_NAME, //
                 version = PythonLanguage.VERSION, //
                 characterMimeTypes = {PythonLanguage.MIME_TYPE,
                                 PythonLanguage.MIME_TYPE_COMPILE0, PythonLanguage.MIME_TYPE_COMPILE1, PythonLanguage.MIME_TYPE_COMPILE2,
@@ -126,6 +127,7 @@ import com.oracle.truffle.api.source.Source.SourceBuilder;
 public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String ID = "python";
     public static final String NAME = "Python";
+    public static final String IMPLEMENTATION_NAME = "GraalVM Python";
     public static final int MAJOR = 3;
     public static final int MINOR = 8;
     public static final int MICRO = 5;

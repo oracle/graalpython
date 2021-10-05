@@ -46,7 +46,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.test.PythonTests;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import org.junit.After;
@@ -145,35 +144,35 @@ public class CastToJavaUnsignedLongNodeTests {
     }
 
     private static long castInt(int arg) {
-        return (Long) Truffle.getRuntime().createCallTarget(new RootNode(null) {
+        return (Long) new RootNode(null) {
             @Child private CastToJavaUnsignedLongNode castNode = CastToJavaUnsignedLongNode.create();
 
             @Override
             public Object execute(VirtualFrame frame) {
                 return castNode.execute(arg);
             }
-        }).call();
+        }.getCallTarget().call();
     }
 
     private static long castLong(long arg) {
-        return (Long) Truffle.getRuntime().createCallTarget(new RootNode(null) {
+        return (Long) new RootNode(null) {
             @Child private CastToJavaUnsignedLongNode castNode = CastToJavaUnsignedLongNode.create();
 
             @Override
             public Object execute(VirtualFrame frame) {
                 return castNode.execute(arg);
             }
-        }).call();
+        }.getCallTarget().call();
     }
 
     private static long castObject(Object arg) {
-        return (Long) Truffle.getRuntime().createCallTarget(new RootNode(null) {
+        return (Long) new RootNode(null) {
             @Child private CastToJavaUnsignedLongNode castNode = CastToJavaUnsignedLongNode.create();
 
             @Override
             public Object execute(VirtualFrame frame) {
                 return castNode.execute(arg);
             }
-        }).call();
+        }.getCallTarget().call();
     }
 }
