@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.ssl;
 
-import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.LOGGER;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_CA_ISSUERS;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_CRL_DISTRIBUTION_POINTS;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_ISSUER;
@@ -54,6 +53,7 @@ import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.JAVA_X509_
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_AUTHORITY_INFO_ACCESS;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CA_ISSUERS;
 import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_CRL_DISTRIBUTION_POINTS;
+import static com.oracle.graal.python.builtins.objects.ssl.ASN1Helper.OID_OCSP;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -89,12 +89,12 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.logging.Level;
 
 import javax.crypto.interfaces.DHPrivateKey;
 import javax.crypto.interfaces.DHPublicKey;
@@ -109,17 +109,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.nodes.Node;
-
-import sun.security.util.DerValue;
-import sun.security.x509.AccessDescription;
-import sun.security.x509.AuthorityInfoAccessExtension;
-import sun.security.x509.CRLDistributionPointsExtension;
-import sun.security.x509.DistributionPoint;
-import sun.security.x509.GeneralName;
-import sun.security.x509.GeneralNameInterface;
-import sun.security.x509.GeneralNames;
-import sun.security.x509.URIName;
-import sun.security.x509.X509CertImpl;
 
 public final class CertUtils {
 
@@ -161,7 +150,7 @@ public final class CertUtils {
      * _ssl.c#_decode_certificate
      */
     @TruffleBoundary
-    public static PDict decodeCertificate(Node node, X509Certificate cert) throws IOException, CertificateParsingException {
+    public static PDict decodeCertificate(Node node, X509Certificate cert) throws CertificateParsingException {
         PythonObjectFactory factory = PythonObjectFactory.getUncached();
         PDict dict = factory.createDict();
         HashingStorage storage = dict.getDictStorage();
@@ -292,89 +281,269 @@ public final class CertUtils {
         return null;
     }
 
-    @TruffleBoundary
-    private static PTuple parseCRLPoints(X509Certificate cert, PythonObjectFactory factory) throws IOException {
-        List<String> result = new ArrayList<>();
-        byte[] bytes = cert.getExtensionValue(OID_CRL_DISTRIBUTION_POINTS);
-        if (bytes != null) {
-            DerValue val = new DerValue(bytes);
-            bytes = val.getOctetString();
-            CRLDistributionPointsExtension cdpe;
+    // private static
+
+    private static final class DerValue {
+        private static final byte OCTET_STRING = 0x04;
+        private static final byte OBJECT_IDENTIFIER = 0x06;
+        private static final byte SEQUENCE = 0x10;
+
+        private static final String ERROR_MESSAGE = "Invalid DER encoded data";
+
+        final byte[] data;
+        final boolean isContextTag;
+        final int contentLen;
+        final int contentStart;
+        int contentTag;
+
+        DerValue(byte[] data) throws CertificateParsingException {
+            this(data, 0, data.length);
+        }
+
+        DerValue(byte[] data, int offset, int end) throws CertificateParsingException {
+            if (offset == data.length) {
+                // this is a 0-length value at the end of the data
+                this.data = data;
+                this.contentTag = 0;
+                this.isContextTag = false;
+                this.contentStart = offset;
+                this.contentLen = 0;
+            } else if (offset < data.length) {
+                this.data = data;
+
+                this.contentTag = data[offset] & 0b11111;
+                this.isContextTag = (data[offset] & 0b11000000) == 0b10000000;
+                int[] lenAndOffset = readLength(data, offset);
+                this.contentStart = lenAndOffset[0];
+                this.contentLen = lenAndOffset[1];
+
+                assert this.contentTag != 0b11111 : "extended tag range not supported";
+                assert contentStart + contentLen <= end;
+            } else {
+                throw new CertificateParsingException(ERROR_MESSAGE);
+            }
+        }
+
+        private static int[] readLength(byte[] data, int offset) throws CertificateParsingException {
             try {
-                cdpe = new CRLDistributionPointsExtension(false, bytes);
-            } catch (IOException ex) {
-                // just ignore
-                LOGGER.log(Level.FINER, "", ex);
+                int lenBase = data[offset + 1] & 0xff;
+                if (lenBase < 128) {
+                    return new int[]{offset + 2, lenBase};
+                } else {
+                    int lengthOfLength = lenBase - 128;
+                    if (lengthOfLength > 4) {
+                        throw new IllegalArgumentException("longer than int-range DER values not supported");
+                    }
+                    int fullLength = 0;
+                    for (int i = 0; i < lengthOfLength; i++) {
+                        fullLength = (fullLength << 8) | (data[offset + 2 + i] & 0xff);
+                    }
+                    return new int[]{offset + 2 + lengthOfLength, fullLength};
+                }
+            } catch (ArrayIndexOutOfBoundsException e) {
+                throw new CertificateParsingException(ERROR_MESSAGE);
+            }
+        }
+
+        byte[] getRawData() {
+            return Arrays.copyOfRange(data, contentStart, contentStart + contentLen);
+        }
+
+        DerValue getObjectIdentifier() throws CertificateParsingException {
+            if (contentTag != OBJECT_IDENTIFIER) {
+                return null;
+            } else {
+                return new DerValue(data, contentStart, contentStart + contentLen);
+            }
+        }
+
+        DerValue getContextTag(int tag) throws CertificateParsingException {
+            if (contentTag != tag || !isContextTag) {
+                return null;
+            } else {
+                return new DerValue(data, contentStart, contentStart + contentLen);
+            }
+        }
+
+        DerValue getOctetString() throws CertificateParsingException {
+            if (contentTag != OCTET_STRING) {
+                return null;
+            } else {
+                return new DerValue(data, contentStart, contentStart + contentLen);
+            }
+        }
+
+        DerValue getSequence() throws CertificateParsingException {
+            if (contentTag != SEQUENCE) {
+                return null;
+            } else {
+                return new DerValue(data, contentStart, contentStart + contentLen);
+            }
+        }
+
+        String getGeneralNameURI() {
+            // GeneralName ::= CHOICE {
+            // otherName [0] AnotherName,
+            // rfc822Name [1] IA5String,
+            // dNSName [2] IA5String,
+            // x400Address [3] ORAddress,
+            // directoryName [4] Name,
+            // ediPartyName [5] EDIPartyName,
+            // uniformResourceIdentifier [6] IA5String,
+            // iPAddress [7] OCTET STRING,
+            // registeredID [8] OBJECT IDENTIFIER }
+            if (contentTag == 6) {
+                // we're only interested in URIs, which are encoded as 7-bit ASCII
+                return new String(getRawData());
+            } else {
                 return null;
             }
-            List<DistributionPoint> points = cdpe.get("points");
-            if (points != null) {
-                for (DistributionPoint point : points) {
-                    GeneralNames fullName = point.getFullName();
-                    if (fullName != null) {
-                        List<GeneralName> names = fullName.names();
-                        if (names != null) {
-                            for (GeneralName generalName : names) {
-                                GeneralNameInterface n = generalName.getName();
-                                if (n instanceof URIName) {
-                                    result.add(((URIName) n).getURI().toString());
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            return factory.createTuple(result.toArray(new String[result.size()]));
         }
-        return null;
+
+        List<DerValue> getSequenceElements() throws CertificateParsingException {
+            List<DerValue> result = new ArrayList<>();
+            iterateSequence((e, r) -> {
+                result.add(e);
+            }, result);
+            return result;
+        }
+
+        @FunctionalInterface
+        private interface DerSequenceConsumer<A, B> {
+            abstract void accept(A a, B b) throws CertificateParsingException;
+        }
+
+        <T> void iterateSequence(DerSequenceConsumer<DerValue, T> consumer, T value) throws CertificateParsingException {
+            int sequenceStart = contentStart;
+            int sequenceEnd = contentStart + contentLen;
+            DerValue sequenceData = getSequence();
+            if (sequenceData == null) {
+                return;
+            }
+            int i = sequenceStart;
+            while (i < sequenceEnd) {
+                DerValue element = new DerValue(data, i, sequenceEnd);
+                i = element.contentStart + element.contentLen;
+                consumer.accept(element, value);
+            }
+        }
     }
 
     @TruffleBoundary
-    private static PTuple parseCAIssuers(X509Certificate cert, PythonObjectFactory factory) throws IOException {
+    private static PTuple parseCRLPoints(X509Certificate cert, PythonObjectFactory factory) throws CertificateParsingException {
         List<String> result = new ArrayList<>();
-        byte[] bytes = cert.getExtensionValue(OID_AUTHORITY_INFO_ACCESS);
-        if (bytes != null) {
-            DerValue val = new DerValue(bytes);
-            bytes = val.getOctetString();
-            AuthorityInfoAccessExtension aiae = new AuthorityInfoAccessExtension(false, bytes);
-            for (AccessDescription ad : aiae.getAccessDescriptions()) {
-                if (ad.getAccessMethod().toString().equals(OID_CA_ISSUERS)) {
-                    GeneralName gn = ad.getAccessLocation();
-                    if (gn != null) {
-                        GeneralNameInterface n = gn.getName();
-                        if (n instanceof URIName) {
-                            result.add(((URIName) n).getURI().toString());
-                        }
-                    }
-                }
-            }
-            return factory.createTuple(result.toArray(new String[result.size()]));
-        }
-        return null;
-    }
-
-    @TruffleBoundary
-    private static PTuple parseOCSP(X509Certificate cert, PythonObjectFactory factory) {
-        // Inlined from sun.security.provider.certpath.OCSP#getResponderURI
-        // Examine the certificate's AuthorityInfoAccess extension
-        X509CertImpl certImpl = (X509CertImpl) cert;
-        AuthorityInfoAccessExtension aia = certImpl.getAuthorityInfoAccessExtension();
-        if (aia == null) {
+        byte[] bytes = cert.getExtensionValue(OID_CRL_DISTRIBUTION_POINTS);
+        if (bytes == null) {
             return null;
         }
-
-        List<AccessDescription> descriptions = aia.getAccessDescriptions();
-        for (AccessDescription description : descriptions) {
-            if (description.getAccessMethod().equals(
-                            (Object) AccessDescription.Ad_OCSP_Id)) {
-                GeneralName generalName = description.getAccessLocation();
-                if (generalName.getType() == GeneralNameInterface.NAME_URI) {
-                    URIName uri = (URIName) generalName.getName();
-                    return factory.createTuple(new String[]{uri.getURI().toString()});
+        DerValue data = new DerValue(bytes).getOctetString();
+        if (data == null) {
+            return null;
+        }
+        // CRLDistributionPoints ::= SEQUENCE SIZE (1..MAX) OF DistributionPoint
+        data.iterateSequence((element, r) -> {
+            // DistributionPoint ::= SEQUENCE {
+            // distributionPoint [0] DistributionPointName OPTIONAL,
+            // reasons [1] ReasonFlags OPTIONAL,
+            // cRLIssuer [2] GeneralNames OPTIONAL }
+            DerValue dp = element.getSequence();
+            if (dp != null) {
+                DerValue dpn = dp.getContextTag(0);
+                if (dpn != null) {
+                    // DistributionPointName ::= CHOICE {
+                    // fullName [0] GeneralNames,
+                    // nameRelativeToCRLIssuer [1] RelativeDistinguishedName }
+                    DerValue fullName = dp.getContextTag(0);
+                    if (fullName != null) {
+                        fullName.contentTag = DerValue.SEQUENCE; // implicitly a SEQUENCE
+                        // GeneralNames ::= SEQUENCE SIZE (1..MAX) OF GeneralName
+                        fullName.iterateSequence((name, r2) -> {
+                            String nextUri = name.getGeneralNameURI();
+                            if (nextUri != null) {
+                                r2.add(nextUri);
+                            }
+                        }, r);
+                    }
                 }
             }
+        }, result);
+        if (result.size() > 0) {
+            return factory.createTuple(result.toArray(new String[result.size()]));
+        } else {
+            return null;
         }
-        return null;
+    }
+
+    @TruffleBoundary
+    private static PTuple parseCAIssuers(X509Certificate cert, PythonObjectFactory factory) throws CertificateParsingException {
+        List<String> result = new ArrayList<>();
+        byte[] bytes = cert.getExtensionValue(OID_AUTHORITY_INFO_ACCESS);
+        if (bytes == null) {
+            return null;
+        }
+        DerValue data = new DerValue(bytes).getOctetString();
+        if (data == null) {
+            return null;
+        }
+        // AuthorityInfoAccessSyntax ::= SEQUENCE SIZE (1..MAX) OF AccessDescription
+        data.iterateSequence((element, r) -> {
+            // AccessDescription ::= SEQUENCE {
+            // accessMethod OBJECT IDENTIFIER,
+            // accessLocation GeneralName }
+            List<DerValue> elements = element.getSequenceElements();
+            if (elements.size() == 2) {
+                DerValue accessMethod = elements.get(0).getObjectIdentifier();
+                if (accessMethod != null) {
+                    if (Arrays.equals(accessMethod.getRawData(), OID_CA_ISSUERS)) {
+                        String uri = elements.get(1).getGeneralNameURI();
+                        if (uri != null) {
+                            r.add(uri);
+                        }
+                    }
+                }
+            }
+        }, result);
+        if (result.size() > 0) {
+            return factory.createTuple(result.toArray(new String[result.size()]));
+        } else {
+            return null;
+        }
+    }
+
+    @TruffleBoundary
+    private static PTuple parseOCSP(X509Certificate cert, PythonObjectFactory factory) throws CertificateParsingException {
+        List<String> result = new ArrayList<>();
+        byte[] bytes = cert.getExtensionValue(OID_AUTHORITY_INFO_ACCESS);
+        if (bytes == null) {
+            return null;
+        }
+        DerValue data = new DerValue(bytes).getOctetString();
+        if (data == null) {
+            return null;
+        }
+        // AuthorityInfoAccessSyntax ::= SEQUENCE SIZE (1..MAX) OF AccessDescription
+        data.iterateSequence((element, r) -> {
+            // AccessDescription ::= SEQUENCE {
+            // accessMethod OBJECT IDENTIFIER,
+            // accessLocation GeneralName }
+            List<DerValue> elements = element.getSequenceElements();
+            if (elements.size() == 2) {
+                DerValue accessMethod = elements.get(0).getObjectIdentifier();
+                if (accessMethod != null) {
+                    if (Arrays.equals(accessMethod.getRawData(), OID_OCSP)) {
+                        String uri = elements.get(1).getGeneralNameURI();
+                        if (uri != null) {
+                            r.add(uri);
+                        }
+                    }
+                }
+            }
+        }, result);
+        if (result.size() > 0) {
+            return factory.createTuple(result.toArray(new String[result.size()]));
+        } else {
+            return null;
+        }
     }
 
     public enum LoadCertError {

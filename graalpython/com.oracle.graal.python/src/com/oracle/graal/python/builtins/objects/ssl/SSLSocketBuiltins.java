@@ -41,10 +41,8 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
@@ -320,8 +318,6 @@ public class SSLSocketBuiltins extends PythonBuiltins {
                     return CertUtils.decodeCertificate(this, (X509Certificate) certificate);
                 } catch (CertificateParsingException e) {
                     return factory().createDict();
-                } catch (IOException ex) {
-                    throw raise(SSLError, ex);
                 }
             }
             return factory().createDict();

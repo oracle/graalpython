@@ -982,7 +982,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                     }
                 }
                 return factory().createList(result.toArray(new Object[result.size()]));
-            } catch (KeyStoreException | NoSuchAlgorithmException | IOException | CertificateParsingException ex) {
+            } catch (KeyStoreException | NoSuchAlgorithmException | CertificateParsingException ex) {
                 throw PRaiseSSLErrorNode.raiseUncached(this, SSLErrorCode.ERROR_SSL, ex);
             }
         }
