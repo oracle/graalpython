@@ -37,48 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from _descriptor import SimpleNamespace
-
 @__graalpython__.builtin
 def strptime(data_string, format="%a %b %d %H:%M:%S %Y"):
     from _strptime import _strptime_time
     return _strptime_time(data_string, format)
-
-@__graalpython__.builtin
-def get_clock_info(name):
-    if not isinstance(name, str):
-        raise(TypeError("argument 1 must be str, not int"))
-
-    # cpython gives resolution 1e-9 in some cases, 
-    # but jdks System.nanoTime() does not guarantee that
-    resolution = 1e-6
-    if name == 'monotonic':
-        adjustable = False
-        implementation = "monotonic"
-        monotonic = True
-    elif name == 'perf_counter':
-        adjustable = False
-        implementation = "perf_counter"
-        monotonic = True
-    elif name == 'process_time':    
-        adjustable = False
-        implementation = "process_time"
-        monotonic = True
-    elif name == 'thread_time':
-        adjustable = False
-        implementation = "thread_time"
-        monotonic = True
-    elif name == 'time':
-        adjustable = True
-        implementation = "time"
-        monotonic = False
-    else:
-        raise(ValueError("unknown clock"))
-
-    result = SimpleNamespace(
-        adjustable = adjustable,
-        implementation=implementation,
-        monotonic=monotonic,
-        resolution=resolution
-    )
-    return result

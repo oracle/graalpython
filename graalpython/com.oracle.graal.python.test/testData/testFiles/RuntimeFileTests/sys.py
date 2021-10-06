@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 def make_implementation_info():
-    from _descriptor import SimpleNamespace, make_named_tuple_class
+    from types import SimpleNamespace, make_named_tuple_class
     version_info_type = make_named_tuple_class(
         "version_info", ["major", "minor", "micro", "releaselevel", "serial"]
     )

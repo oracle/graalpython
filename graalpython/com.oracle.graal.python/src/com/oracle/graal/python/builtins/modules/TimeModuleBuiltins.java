@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TIMESTAMP_OUT_OF_RANGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_CLOCK;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -58,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectAr
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
@@ -70,6 +72,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -985,4 +988,54 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    // time.get_clock_info(name)
+    @Builtin(name = "get_clock_info", maxNumOfPositionalArgs = 1, parameterNames = {"name"}, doc = "get_clock_info(name: str) -> dict\n" +
+            "\n" +
+            "Get information of the specified clock.")
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    @GenerateNodeFactory
+    public abstract static class GetClockInfoNode extends PythonUnaryClinicBuiltinNode {
+        public static final String TIME_IMPL_MONOTONIC = "monotonic";
+        public static final String TIME_IMPL_PERF_COUNTER = "perf_counter";
+        public static final String TIME_IMPL_PROCESS_TIME = "process_time";
+        public static final String TIME_IMPL_THREAD_TIME = "thread_time";
+        public static final String TIME_IMPL_TIME = "time";
+
+        // cpython gives resolution 1e-9 in some cases, but jdks System.nanoTime() does not guarantee that
+        public static final double TIME_RESOLUTION = 1e-6;
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return TimeModuleBuiltinsClinicProviders.GetClockInfoNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        public Object getClockInfo(String name) {
+            final boolean adjustable;
+            final boolean monotonic;
+
+            switch (name) {
+                case TIME_IMPL_MONOTONIC:
+                case TIME_IMPL_PERF_COUNTER:
+                case TIME_IMPL_THREAD_TIME:
+                case TIME_IMPL_PROCESS_TIME:
+                    adjustable = false;
+                    monotonic = true;
+                    break;
+                case TIME_IMPL_TIME:
+                    adjustable = true;
+                    monotonic = false;
+                    break;
+                default:
+                    throw raise(PythonBuiltinClassType.ValueError, UNKNOWN_CLOCK);
+            }
+
+            final PSimpleNamespace ns = factory().creteSimpleNamespace();
+            ns.setAttribute("adjustable", adjustable);
+            ns.setAttribute("implementation", name);
+            ns.setAttribute("monotonic", monotonic);
+            ns.setAttribute("resolution", TIME_RESOLUTION);
+            return ns;
+        }
+    }
 }
