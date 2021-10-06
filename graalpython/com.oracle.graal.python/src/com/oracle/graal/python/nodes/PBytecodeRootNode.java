@@ -159,6 +159,72 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNode {
 
+    private static final Function<Object, Node> COMPARE_OP_FACTORY = new Function<Object, Node>() {
+        public Node apply(Object op) {
+            switch ((int) op) {
+                case 0:
+                    return BinaryComparisonNode.LtNode.create();
+                case 1:
+                    return BinaryComparisonNode.LeNode.create();
+                case 2:
+                    return BinaryComparisonNode.EqNode.create();
+                case 3:
+                    return BinaryComparisonNode.NeNode.create();
+                case 4:
+                    return BinaryComparisonNode.GtNode.create();
+                case 5:
+                    return BinaryComparisonNode.GeNode.create();
+                case 6:
+                    return ContainsNode.create();
+                case 7:
+                    return ContainsNode.create();
+                case 8:
+                    return IsNode.create();
+                case 9:
+                    return IsNode.create();
+                case 10:
+                    return ExceptMatchNode.create();
+                default:
+                    throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+    };
+    private static final Function<Object, LookupAndCallInplaceNode> INPLACE_ARITH_FACTORY = new Function<Object, LookupAndCallInplaceNode>() {
+
+        public LookupAndCallInplaceNode apply(Object op) {
+            switch ((int) op) {
+                case INPLACE_POWER:
+                    return InplaceArithmetic.IPow.create();
+                case INPLACE_MULTIPLY:
+                    return InplaceArithmetic.IMul.create();
+                case INPLACE_MATRIX_MULTIPLY:
+                    return InplaceArithmetic.IMatMul.create();
+                case INPLACE_TRUE_DIVIDE:
+                    return InplaceArithmetic.ITrueDiv.create();
+                case INPLACE_FLOOR_DIVIDE:
+                    return InplaceArithmetic.IFloorDiv.create();
+                case INPLACE_MODULO:
+                    return InplaceArithmetic.IMod.create();
+                case INPLACE_ADD:
+                    return InplaceArithmetic.IAdd.create();
+                case INPLACE_SUBTRACT:
+                    return InplaceArithmetic.ISub.create();
+                case INPLACE_LSHIFT:
+                    return InplaceArithmetic.ILShift.create();
+                case INPLACE_RSHIFT:
+                    return InplaceArithmetic.IRShift.create();
+                case INPLACE_AND:
+                    return InplaceArithmetic.IAnd.create();
+                case INPLACE_XOR:
+                    return InplaceArithmetic.IXor.create();
+                case INPLACE_OR:
+                    return InplaceArithmetic.IOr.create();
+                default:
+                    throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+    };
+
     private final int stacksize;
     private final Signature signature;
     private final String name;
@@ -340,7 +406,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @FunctionalInterface
-    private static interface NodeFunction<Object, T> {
+    private static interface NodeFunction<T> {
         T apply(Object argument, boolean uncached);
     }
 
@@ -370,7 +436,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Node> T insertChildNode(NodeFunction<Object, T> nodeSupplier, int bytecodeIndex, Object argument) {
+    private <T extends Node> T insertChildNode(NodeFunction<T> nodeSupplier, int bytecodeIndex, Object argument) {
         CompilerAsserts.partialEvaluationConstant(nodeSupplier);
         CompilerAsserts.partialEvaluationConstant(bytecodeIndex);
         T node = (T) adoptedNodes[bytecodeIndex];
@@ -602,10 +668,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case NOP:
                         break;
                     case LOAD_FAST: {
-                        PRaiseNode raiseNode = null;
-                        if (extraArgs[bci >> 1] != 0) {
-                            raiseNode = insertChildNode(() -> PRaiseNode.create(), bci);
-                        }
                         Object value = fastlocals[oparg];
                         if (!inInterpreter) {
                             if (value == BOOLEAN_MARKER) {
@@ -626,6 +688,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                                 extraArgs[bci >> 1] = 1;
                                 throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
                             } else {
+                                PRaiseNode raiseNode = insertChildNode(() -> PRaiseNode.create(), bci);
                                 throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
                             }
                         }
@@ -797,10 +860,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                         break;
                     case BINARY_MULTIPLY: {
-                        MulNode mulNode = insertChildNode(() -> MulNodeGen.create(null, null), bci);
-                        Object right = stack[stackTop];
-                        stack[stackTop--] = null;
-                        stack[stackTop] = mulNode.executeObject(frame, stack[stackTop], right);
+                        stackTop = bytecodeBinaryMultiply(frame, stack, stackTop, bci);
                     }
                         break;
                     case BINARY_MATRIX_MULTIPLY: {
@@ -902,104 +962,20 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         callNode.execute(frame, stack[stackTop], "add", value);
                     }
                         break;
-                    case INPLACE_POWER: {
-                        LookupAndCallInplaceNode opNode = insertChildNode(() -> InplaceArithmetic.IPow.create(), bci);
-                        Object right = stack[stackTop];
-                        stack[stackTop--] = null;
-                        Object left = stack[stackTop];
-                        stack[stackTop] = opNode.execute(frame, left, right);
-                    }
-                        break;
-                    case INPLACE_MULTIPLY: {
-                        LookupAndCallInplaceNode opNode = insertChildNode(() -> InplaceArithmetic.IMul.create(), bci);
-                        Object right = stack[stackTop];
-                        stack[stackTop--] = null;
-                        Object left = stack[stackTop];
-                        stack[stackTop] = opNode.execute(frame, left, right);
-                    }
-                        break;
-                    case INPLACE_MATRIX_MULTIPLY: {
-                        LookupAndCallInplaceNode opNode = insertChildNode(() -> InplaceArithmetic.IMatMul.create(), bci);
-                        Object right = stack[stackTop];
-                        stack[stackTop--] = null;
-                        Object left = stack[stackTop];
-                        stack[stackTop] = opNode.execute(frame, left, right);
-                    }
-                        break;
-                    case INPLACE_TRUE_DIVIDE: {
-                        LookupAndCallInplaceNode opNode = insertChildNode(() -> InplaceArithmetic.ITrueDiv.create(), bci);
-                        Object right = stack[stackTop];
-                        stack[stackTop--] = null;
-                        Object left = stack[stackTop];
-                        stack[stackTop] = opNode.execute(frame, left, right);
-                    }
-                        break;
-                    case INPLACE_FLOOR_DIVIDE: {
-                        LookupAndCallInplaceNode opNode = insertChildNode(() -> InplaceArithmetic.IFloorDiv.create(), bci);
-                        Object right = stack[stackTop];
-                        stack[stackTop--] = null;
-                        Object left = stack[stackTop];
-                        stack[stackTop] = opNode.execute(frame, left, right);
-                    }
-                        break;
-                    case INPLACE_MODULO: {
-                        LookupAndCallInplaceNode opNode = insertChildNode(() -> InplaceArithmetic.IMod.create(), bci);
-                        Object right = stack[stackTop];
-                        stack[stackTop--] = null;
-                        Object left = stack[stackTop];
-                        stack[stackTop] = opNode.execute(frame, left, right);
-                    }
-                        break;
-                    case INPLACE_ADD: {
-                        LookupAndCallInplaceNode opNode = insertChildNode(() -> InplaceArithmetic.IAdd.create(), bci);
-                        Object right = stack[stackTop];
-                        stack[stackTop--] = null;
-                        Object left = stack[stackTop];
-                        stack[stackTop] = opNode.execute(frame, left, right);
-                    }
-                        break;
-                    case INPLACE_SUBTRACT: {
-                        LookupAndCallInplaceNode opNode = insertChildNode(() -> InplaceArithmetic.ISub.create(), bci);
-                        Object right = stack[stackTop];
-                        stack[stackTop--] = null;
-                        Object left = stack[stackTop];
-                        stack[stackTop] = opNode.execute(frame, left, right);
-                    }
-                        break;
-                    case INPLACE_LSHIFT: {
-                        LookupAndCallInplaceNode opNode = insertChildNode(() -> InplaceArithmetic.ILShift.create(), bci);
-                        Object right = stack[stackTop];
-                        stack[stackTop--] = null;
-                        Object left = stack[stackTop];
-                        stack[stackTop] = opNode.execute(frame, left, right);
-                    }
-                        break;
-                    case INPLACE_RSHIFT: {
-                        LookupAndCallInplaceNode opNode = insertChildNode(() -> InplaceArithmetic.IRShift.create(), bci);
-                        Object right = stack[stackTop];
-                        stack[stackTop--] = null;
-                        Object left = stack[stackTop];
-                        stack[stackTop] = opNode.execute(frame, left, right);
-                    }
-                        break;
-                    case INPLACE_AND: {
-                        LookupAndCallInplaceNode opNode = insertChildNode(() -> InplaceArithmetic.IAnd.create(), bci);
-                        Object right = stack[stackTop];
-                        stack[stackTop--] = null;
-                        Object left = stack[stackTop];
-                        stack[stackTop] = opNode.execute(frame, left, right);
-                    }
-                        break;
-                    case INPLACE_XOR: {
-                        LookupAndCallInplaceNode opNode = insertChildNode(() -> InplaceArithmetic.IXor.create(), bci);
-                        Object right = stack[stackTop];
-                        stack[stackTop--] = null;
-                        Object left = stack[stackTop];
-                        stack[stackTop] = opNode.execute(frame, left, right);
-                    }
-                        break;
+                    case INPLACE_POWER:
+                    case INPLACE_MULTIPLY:
+                    case INPLACE_MATRIX_MULTIPLY:
+                    case INPLACE_TRUE_DIVIDE:
+                    case INPLACE_FLOOR_DIVIDE:
+                    case INPLACE_MODULO:
+                    case INPLACE_ADD:
+                    case INPLACE_SUBTRACT:
+                    case INPLACE_LSHIFT:
+                    case INPLACE_RSHIFT:
+                    case INPLACE_AND:
+                    case INPLACE_XOR:
                     case INPLACE_OR: {
-                        LookupAndCallInplaceNode opNode = insertChildNode(() -> InplaceArithmetic.IOr.create(), bci);
+                        LookupAndCallInplaceNode opNode = insertChildNode(INPLACE_ARITH_FACTORY, bci, (int) bc);
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
                         Object left = stack[stackTop];
@@ -1372,34 +1348,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
                         Object left = stack[stackTop];
-                        Node opNode = insertChildNode((op) -> {
-                            switch ((int) op) {
-                                case 0:
-                                    return BinaryComparisonNode.LtNode.create();
-                                case 1:
-                                    return BinaryComparisonNode.LeNode.create();
-                                case 2:
-                                    return BinaryComparisonNode.EqNode.create();
-                                case 3:
-                                    return BinaryComparisonNode.NeNode.create();
-                                case 4:
-                                    return BinaryComparisonNode.GtNode.create();
-                                case 5:
-                                    return BinaryComparisonNode.GeNode.create();
-                                case 6:
-                                    return ContainsNode.create();
-                                case 7:
-                                    return ContainsNode.create();
-                                case 8:
-                                    return IsNode.create();
-                                case 9:
-                                    return IsNode.create();
-                                case 10:
-                                    return ExceptMatchNode.create();
-                                default:
-                                    throw CompilerDirectives.shouldNotReachHere();
-                            }
-                        }, bci, oparg);
+                        Node opNode = insertChildNode(COMPARE_OP_FACTORY, bci, oparg);
                         if (opNode instanceof BinaryComparisonNode) {
                             stack[stackTop] = ((BinaryComparisonNode) opNode).executeObject(frame, left, right);
                         } else if (opNode instanceof ContainsNode) {
@@ -1655,37 +1604,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stack[stackTop] = callNode.execute(frame, func, callargs, kwargs);
                     }
                         break;
-                    case MAKE_FUNCTION: {
-                        String qualname = insertChildNode((uncached) -> uncached ? CastToJavaStringNode.getUncached() : CastToJavaStringNode.create(), bci).execute(stack[stackTop]);
-                        stack[stackTop--] = null;
-                        PCode codeobj = (PCode) stack[stackTop];
-                        stack[stackTop--] = null;
-                        PCell[] closure = null;
-                        Object annotations = null;
-                        PKeyword[] kwdefaults = null;
-                        Object[] defaults = null;
-                        if ((oparg & 0x08) != 0) {
-                            closure = (PCell[]) ((PTuple) stack[stackTop]).getSequenceStorage().getInternalArray();
-                            stack[stackTop--] = null;
-                        }
-                        if ((oparg & 0x04) != 0) {
-                            annotations = stack[stackTop];
-                            stack[stackTop--] = null;
-                        }
-                        if ((oparg & 0x02) != 0) {
-                            PDict kwDict = (PDict) stack[stackTop];
-                            stack[stackTop--] = null;
-                            kwdefaults = dictToPKeywords(kwDict, bci + 1);
-                        }
-                        if ((oparg & 0x01) != 0) {
-                            defaults = ((PTuple) stack[stackTop]).getSequenceStorage().getInternalArray();
-                            stack[stackTop--] = null;
-                        }
-                        stack[++stackTop] = factory.createFunction(qualname, null, codeobj, (PythonObject) globals, defaults, kwdefaults, closure);
-                        if (annotations != null) {
-                            DynamicObjectLibrary.getUncached().put((DynamicObject) stack[stackTop], __ANNOTATIONS__, annotations);
-                        }
-                    }
+                    case MAKE_FUNCTION:
+                        stackTop = bytecodeMakeFunction(globals, stack, stackTop, bci, oparg);
                         break;
                     case BUILD_SLICE:
                         throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "BUILD_SLICE");
@@ -1750,6 +1670,49 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 throw e;
             }
         }
+    }
+
+    private int bytecodeBinaryMultiply(VirtualFrame frame, Object[] stack, int lastStackTop, int bci) {
+        int stackTop = lastStackTop;
+        MulNode mulNode = insertChildNode(() -> MulNodeGen.create(null, null), bci);
+        Object right = stack[stackTop];
+        stack[stackTop--] = null;
+        stack[stackTop] = mulNode.executeObject(frame, stack[stackTop], right);
+        return stackTop;
+    }
+
+    private int bytecodeMakeFunction(Object globals, Object[] stack, int lastStackTop, int bci, int oparg) {
+        int stackTop = lastStackTop;
+        String qualname = insertChildNode((uncached) -> uncached ? CastToJavaStringNode.getUncached() : CastToJavaStringNode.create(), bci).execute(stack[stackTop]);
+        stack[stackTop--] = null;
+        PCode codeobj = (PCode) stack[stackTop];
+        stack[stackTop--] = null;
+        PCell[] closure = null;
+        Object annotations = null;
+        PKeyword[] kwdefaults = null;
+        Object[] defaults = null;
+        if ((oparg & 0x08) != 0) {
+            closure = (PCell[]) ((PTuple) stack[stackTop]).getSequenceStorage().getInternalArray();
+            stack[stackTop--] = null;
+        }
+        if ((oparg & 0x04) != 0) {
+            annotations = stack[stackTop];
+            stack[stackTop--] = null;
+        }
+        if ((oparg & 0x02) != 0) {
+            PDict kwDict = (PDict) stack[stackTop];
+            stack[stackTop--] = null;
+            kwdefaults = dictToPKeywords(kwDict, bci + 1);
+        }
+        if ((oparg & 0x01) != 0) {
+            defaults = ((PTuple) stack[stackTop]).getSequenceStorage().getInternalArray();
+            stack[stackTop--] = null;
+        }
+        stack[++stackTop] = factory.createFunction(qualname, null, codeobj, (PythonObject) globals, defaults, kwdefaults, closure);
+        if (annotations != null) {
+            DynamicObjectLibrary.getUncached().put((DynamicObject) stack[stackTop], __ANNOTATIONS__, annotations);
+        }
+        return stackTop;
     }
 
     /**
