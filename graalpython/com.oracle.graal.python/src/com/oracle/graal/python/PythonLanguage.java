@@ -128,7 +128,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String ID = "python";
     public static final String NAME = "Python";
     public static final String IMPLEMENTATION_NAME = "GraalVM Python";
-    public static final String GRAAL_NAME = "graalpython";
     public static final int MAJOR = 3;
     public static final int MINOR = 8;
     public static final int MICRO = 5;
