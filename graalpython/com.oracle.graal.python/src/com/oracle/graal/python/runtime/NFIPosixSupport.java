@@ -179,8 +179,9 @@ public final class NFIPosixSupport extends PosixSupport {
         call_isatty("(sint32):sint32"),
         call_opendir("([sint8]):sint64"),
         call_fdopendir("(sint32):sint64"),
-        call_closedir("(sint64, sint32):sint32"),
+        call_closedir("(sint64):sint32"),
         call_readdir("(sint64, [sint8], uint64, [sint64]):sint32"),
+        call_rewinddir("(sint64):void"),
         call_utimensat("(sint32, [sint8], [sint64], sint32):sint32"),
         call_futimens("(sint32, [sint64]):sint32"),
         call_futimes("(sint32, [sint64]):sint32"),
@@ -782,7 +783,7 @@ public final class NFIPosixSupport extends PosixSupport {
         if (ptr == 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
-        return new DirStream(ptr, false);
+        return ptr;
     }
 
     @ExportMessage
@@ -792,39 +793,27 @@ public final class NFIPosixSupport extends PosixSupport {
         if (ptr == 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode));
         }
-        return new DirStream(ptr, true);
+        return ptr;
     }
 
     @ExportMessage
     public void closedir(Object dirStreamObj,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-        DirStream dirStream = (DirStream) dirStreamObj;
-        synchronized (dirStream.lock) {
-            if (!dirStream.closed) {
-                dirStream.closed = true;
-                int res = invokeNode.callInt(this, PosixNativeFunction.call_closedir, dirStream.nativePtr, dirStream.needsRewind ? 1 : 0);
-                if (res != 0 && LOGGER.isLoggable(Level.INFO)) {
-                    log(Level.INFO, "Error occured during closedir, errno=%d", getErrno(invokeNode));
-                }
-            }
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_closedir, dirStreamObj);
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
         }
     }
 
     @ExportMessage
     public Object readdir(Object dirStreamObj,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        DirStream dirStream = (DirStream) dirStreamObj;
         Buffer name = Buffer.allocate(DIRENT_NAME_BUF_LENGTH);
         long[] out = new long[2];
         int result;
-        synchronized (dirStream.lock) {
-            if (dirStream.closed) {
-                return null;
-            }
-            do {
-                result = invokeNode.callInt(this, PosixNativeFunction.call_readdir, dirStream.nativePtr, wrap(name), DIRENT_NAME_BUF_LENGTH, wrap(out));
-            } while (result != 0 && name.data[0] == '.' && (name.data[1] == 0 || (name.data[1] == '.' && name.data[2] == 0)));
-        }
+        do {
+            result = invokeNode.callInt(this, PosixNativeFunction.call_readdir, dirStreamObj, wrap(name), DIRENT_NAME_BUF_LENGTH, wrap(out));
+        } while (result != 0 && name.data[0] == '.' && (name.data[1] == 0 || (name.data[1] == '.' && name.data[2] == 0)));
         if (result != 0) {
             return new DirEntry(name.withLength(findZero(name.data)), out[0], (int) out[1]);
         }
@@ -833,6 +822,12 @@ public final class NFIPosixSupport extends PosixSupport {
             return null;
         }
         throw newPosixException(invokeNode, errno);
+    }
+
+    @ExportMessage
+    public void rewinddir(Object dirStreamObj,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        invokeNode.call(this, PosixNativeFunction.call_rewinddir, dirStreamObj);
     }
 
     @ExportMessage
@@ -2069,28 +2064,6 @@ public final class NFIPosixSupport extends PosixSupport {
 
     // ------------------
     // Objects/handles/pointers
-
-    private static class DirStream {
-        final long nativePtr;
-        final boolean needsRewind;
-        final Object lock;
-        boolean closed;
-
-        DirStream(long nativePtr, boolean needsRewind) {
-            this.nativePtr = nativePtr;
-            this.needsRewind = needsRewind;
-            this.lock = new Object();
-        }
-
-        @Override
-        public String toString() {
-            return "DirStream{" +
-                            "nativePtr=" + nativePtr +
-                            ", needsRewind=" + needsRewind +
-                            ", closed=" + closed +
-                            '}';
-        }
-    }
 
     protected static class DirEntry {
         final Buffer name;

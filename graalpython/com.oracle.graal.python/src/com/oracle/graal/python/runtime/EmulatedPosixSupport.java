@@ -163,6 +163,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.LinkOption;
 import java.nio.file.StandardCopyOption;
@@ -1249,25 +1250,44 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     private static final class EmulatedDirStream {
-        final DirectoryStream<TruffleFile> dirStream;
-        final Iterator<TruffleFile> iterator;
+        final TruffleFile file;
+        final int fd;
+        DirectoryStream<TruffleFile> dirStream;
+        Iterator<TruffleFile> iterator;
+        boolean needsReopen;
 
-        private EmulatedDirStream(DirectoryStream<TruffleFile> dirStream) {
-            this.dirStream = dirStream;
-            iterator = getIterator(dirStream);
+        private EmulatedDirStream(TruffleFile file, int fd) throws PosixException {
+            this.file = file;
+            this.fd = fd;
+            reopen();
+        }
+
+        private void closeStream() throws IOException {
+            DirectoryStream<TruffleFile> oldStream = dirStream;
+            dirStream = null;
+            iterator = null;
+            if (oldStream != null) {
+                oldStream.close();
+            }
         }
 
         @TruffleBoundary
-        static Iterator<TruffleFile> getIterator(DirectoryStream<TruffleFile> dirStream) {
-            return dirStream.iterator();
+        void reopen() throws PosixException {
+            try {
+                closeStream();
+                needsReopen = false;
+                dirStream = file.newDirectoryStream();
+                iterator = dirStream.iterator();
+            } catch (Exception e) {
+                throw posixException(OSErrorEnum.fromException(e));
+            }
         }
     }
 
     @ExportMessage
     public Object opendir(Object path,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
-        return opendirImpl(pathToJavaStr(path), errorBranch);
+        return opendirImpl(pathToJavaStr(path), -1);
     }
 
     @ExportMessage
@@ -1278,43 +1298,55 @@ public final class EmulatedPosixSupport extends PosixResources {
             errorBranch.enter();
             throw posixException(OSErrorEnum.ENOENT);
         }
-        return opendirImpl(path, errorBranch);
+        return opendirImpl(path, fd);
     }
 
-    private EmulatedDirStream opendirImpl(String path, BranchProfile errorBranch) throws PosixException {
+    private EmulatedDirStream opendirImpl(String path, int fd) throws PosixException {
         TruffleFile file = getTruffleFile(path);
+        return new EmulatedDirStream(file, fd);
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    @SuppressWarnings("static-method")
+    public void closedir(Object dirStreamObj) throws PosixException {
+        EmulatedDirStream dirStream = (EmulatedDirStream) dirStreamObj;
         try {
-            return new EmulatedDirStream(file.newDirectoryStream());
+            dirStream.closeStream();
         } catch (IOException e) {
-            errorBranch.enter();
             throw posixException(OSErrorEnum.fromException(e));
+        } finally {
+            if (dirStream.fd != -1) {
+                close(dirStream.fd);
+            }
         }
     }
 
     @ExportMessage
     @TruffleBoundary
     @SuppressWarnings("static-method")
-    public void closedir(Object dirStreamObj,
-                    @Shared("errorBranch") @Cached BranchProfile errorBranch) {
+    public Object readdir(Object dirStreamObj) throws PosixException {
         EmulatedDirStream dirStream = (EmulatedDirStream) dirStreamObj;
+        if (dirStream.needsReopen) {
+            dirStream.reopen();
+        }
         try {
-            dirStream.dirStream.close();
-        } catch (IOException e) {
-            errorBranch.enter();
-            LOGGER.log(Level.WARNING, "Closing a directory threw an exception", e);
+            if (dirStream.iterator.hasNext()) {
+                return dirStream.iterator.next();
+            } else {
+                return null;
+            }
+        } catch (DirectoryIteratorException e) {
+            throw posixException(OSErrorEnum.fromException(e.getCause()));
         }
     }
 
     @ExportMessage
-    @TruffleBoundary
     @SuppressWarnings("static-method")
-    public Object readdir(Object dirStreamObj) {
+    public void rewinddir(Object dirStreamObj) {
         EmulatedDirStream dirStream = (EmulatedDirStream) dirStreamObj;
-        if (dirStream.iterator.hasNext()) {
-            return dirStream.iterator.next();
-        } else {
-            return null;
-        }
+        // rewind must not fail => postpone reopen until readdir() is called
+        dirStream.needsReopen = true;
     }
 
     @ExportMessage

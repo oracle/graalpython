@@ -47,6 +47,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.AsyncHandler.SharedFinalizer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -58,9 +60,9 @@ public final class PScandirIterator extends PythonBuiltinObject {
     final PosixFileHandle path;
     final DirStreamRef ref;
 
-    public PScandirIterator(Object cls, Shape instanceShape, PythonContext context, Object dirStream, PosixFileHandle path) {
+    public PScandirIterator(Object cls, Shape instanceShape, PythonContext context, Object dirStream, PosixFileHandle path, boolean needsRewind) {
         super(cls, instanceShape);
-        this.ref = new DirStreamRef(this, dirStream, context.getSharedFinalizer());
+        this.ref = new DirStreamRef(this, dirStream, context.getSharedFinalizer(), needsRewind);
         this.path = path;
     }
 
@@ -72,13 +74,32 @@ public final class PScandirIterator extends PythonBuiltinObject {
 
     static class DirStreamRef extends SharedFinalizer.FinalizableReference {
 
-        DirStreamRef(PScandirIterator referent, Object dirStream, SharedFinalizer finalizer) {
+        final boolean needsRewind;
+
+        DirStreamRef(PScandirIterator referent, Object dirStream, SharedFinalizer finalizer, boolean needsRewind) {
             super(referent, dirStream, finalizer);
+            this.needsRewind = needsRewind;
         }
 
         @Override
         public AsyncAction release() {
             return new ScandirIteratorBuiltins.ReleaseCallback(this);
+        }
+
+        void rewindAndClose(PosixSupportLibrary posixLib, Object posixSupport) {
+            if (isReleased()) {
+                return;
+            }
+            markReleased();
+            Object dirStream = getReference();
+            if (needsRewind) {
+                posixLib.rewinddir(posixSupport, dirStream);
+            }
+            try {
+                posixLib.closedir(posixSupport, dirStream);
+            } catch (PosixException e) {
+                // ignored (CPython does not chek the return value of closedir)
+            }
         }
     }
 }

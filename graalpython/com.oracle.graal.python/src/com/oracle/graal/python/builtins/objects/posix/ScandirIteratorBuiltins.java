@@ -83,13 +83,8 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         @Specialization
         PNone close(PScandirIterator self,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            closedir(self, getPosixSupport(), posixLib);
+            self.ref.rewindAndClose(posixLib, getPosixSupport());
             return PNone.NONE;
-        }
-
-        static void closedir(PScandirIterator self, Object posixSupport, PosixSupportLibrary posixLib) {
-            posixLib.closedir(posixSupport, self.ref.getReference());
-            self.ref.markReleased();
         }
     }
 
@@ -114,12 +109,12 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
             try {
                 Object dirEntryData = posixLib.readdir(getPosixSupport(), self.ref.getReference());
                 if (dirEntryData == null) {
-                    CloseNode.closedir(self, getPosixSupport(), posixLib);
+                    self.ref.rewindAndClose(posixLib, getPosixSupport());
                     throw raise(PythonBuiltinClassType.StopIteration);
                 }
                 return factory().createDirEntry(dirEntryData, self.path);
             } catch (PosixException e) {
-                CloseNode.closedir(self, getPosixSupport(), posixLib);
+                self.ref.rewindAndClose(posixLib, getPosixSupport());
                 throw raiseOSErrorFromPosixException(frame, e);
             }
         }
@@ -141,7 +136,7 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         PNone exit(PScandirIterator self, Object type, Object value, Object traceback,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            CloseNode.closedir(self, getPosixSupport(), posixLib);
+            self.ref.rewindAndClose(posixLib, getPosixSupport());
             return PNone.NONE;
         }
     }
@@ -160,8 +155,8 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
                 return;
             }
             PythonLanguage language = context.getLanguage();
-            CallTarget callTarget = language.createCachedCallTarget(l -> new ReleaserRootNode(l), ReleaserRootNode.class);
-            callTarget.call(ref.getReference());
+            CallTarget callTarget = language.createCachedCallTarget(ReleaserRootNode::new, ReleaserRootNode.class);
+            callTarget.call(ref);
         }
 
         private static class ReleaserRootNode extends RootNode {
@@ -173,9 +168,8 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
 
             @Override
             public Object execute(VirtualFrame frame) {
-                PythonContext context = PythonContext.get(this);
-                Object dirStream = frame.getArguments()[0];
-                posixSupportLibrary.closedir(context.getPosixSupport(), dirStream);
+                PScandirIterator.DirStreamRef ref = (PScandirIterator.DirStreamRef) frame.getArguments()[0];
+                ref.rewindAndClose(posixSupportLibrary, PythonContext.get(this).getPosixSupport());
                 return null;
             }
         }

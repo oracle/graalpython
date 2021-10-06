@@ -340,21 +340,10 @@ intptr_t call_opendir(const char *name) {
 }
 
 intptr_t call_fdopendir(int32_t fd) {
-    int fd2 = dup(fd);
-    if (fd2 == -1) {
-        return 0;
-    }
-    DIR *dirp = fdopendir(fd2);
-    if (dirp == NULL) {
-        close(fd2);
-    }
-    return (intptr_t) dirp;
+    return (intptr_t) fdopendir(fd);
 }
 
-int32_t call_closedir(intptr_t dirp, int32_t rewind) {
-    if (rewind) {
-        rewinddir((DIR *) dirp);
-    }
+int32_t call_closedir(intptr_t dirp) {
     return closedir((DIR *) dirp);
 }
 
@@ -368,6 +357,10 @@ int32_t call_readdir(intptr_t dirp, char *nameBuf, uint64_t nameBufSize, int64_t
         return 1;
     }
     return 0;
+}
+
+void call_rewinddir(intptr_t dirp) {
+    rewinddir((DIR *) dirp);
 }
 
 #ifdef __gnu_linux__
