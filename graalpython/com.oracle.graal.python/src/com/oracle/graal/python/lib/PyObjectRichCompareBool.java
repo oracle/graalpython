@@ -54,8 +54,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.expression.IsExpressionNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -242,7 +242,7 @@ public abstract class PyObjectRichCompareBool {
 
         @Specialization
         boolean doGeneric(VirtualFrame frame, Object a, Object b,
-                        @Cached IsExpressionNode.IsNode isNode,
+                        @Cached IsNode isNode,
                         @Cached GetClassNode getClassA,
                         @Cached GetClassNode getClassB,
                         @Cached ConditionProfile reversedFirst,

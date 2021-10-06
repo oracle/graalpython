@@ -34,9 +34,9 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.expression.IsExpressionNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -158,7 +158,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         static TriState doOther(PythonBuiltinClass self, Object other,
                         @Shared("convert") @Cached PForeignToPTypeNode convert,
                         @CachedLibrary(limit = "3") InteropLibrary otherLib,
-                        @Cached IsExpressionNode.IsNode isNode,
+                        @Cached IsNode isNode,
                         @Exclusive @Cached GilNode gil) {
             return self.isIdenticalOrUndefined(other, convert, otherLib, isNode, gil);
         }

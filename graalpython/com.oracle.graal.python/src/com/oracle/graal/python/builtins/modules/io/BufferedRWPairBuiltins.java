@@ -71,12 +71,12 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.nodes.expression.IsExpressionNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -321,7 +321,7 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
         Object doit(VirtualFrame frame, PRWPair self,
                         @Cached PyObjectCallMethodObjArgs callMethodWriter,
                         @Cached PyObjectCallMethodObjArgs callMethodReader,
-                        @Cached IsExpressionNode.IsNode isNode,
+                        @Cached IsNode isNode,
                         @Cached ConditionProfile isSameProfile) {
             Object res = callMethodWriter.execute(frame, self.getWriter(), ISATTY);
             if (isSameProfile.profile(isNode.isTrue(res))) {
