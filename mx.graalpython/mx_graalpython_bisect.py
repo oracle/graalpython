@@ -172,7 +172,7 @@ class BisectResult:
         return ''
 
 
-def _bisect_benchmark(argv, initial_branch, email_to):
+def _bisect_benchmark(argv, bisect_id, email_to):
     if 'BISECT_BENCHMARK_CONFIG' in os.environ:
         import configparser
         cp = configparser.ConfigParser()
@@ -252,7 +252,7 @@ def _bisect_benchmark(argv, initial_branch, email_to):
             args.benchmark_command))
 
     send_email(
-        initial_branch,
+        bisect_id,
         email_to,
         "Bisection job has finished successfully.\n{}\n".format(summary)
         + "Note I'm just a script and I don't validate statistical significance of the above result.\n"
@@ -264,21 +264,23 @@ def _bisect_benchmark(argv, initial_branch, email_to):
 def bisect_benchmark(argv):
     suite = mx.primary_suite()
     initial_branch = suite.vc.git_command(suite.vc_dir, ['rev-parse', '--abbrev-ref', 'HEAD']).strip()
+    initial_commit = suite.vc.git_command(suite.vc_dir, ['log', '--format=%s', '-n', '1']).strip()
     email_to = suite.vc.git_command(suite.vc_dir, ['log', '--format=%cE', '-n', '1']).strip()
+    bisect_id = f'{initial_branch}: {initial_commit}'
     try:
-        _bisect_benchmark(argv, initial_branch, email_to)
+        _bisect_benchmark(argv, bisect_id, email_to)
     except Exception:
-        send_email(initial_branch, email_to, "Job failed.\n {}".format(os.environ.get('BUILD_URL', 'Unknown URL')))
+        send_email(bisect_id, email_to, "Job failed.\n {}".format(os.environ.get('BUILD_URL', 'Unknown URL')))
         raise
 
 
-def send_email(initial_branch, email_to, content):
+def send_email(bisect_id, email_to, content):
     if 'BISECT_EMAIL_SMTP_SERVER' in os.environ:
         import smtplib
         from email.message import EmailMessage
 
         msg = EmailMessage()
-        msg['Subject'] = "Bisection result for {}".format(initial_branch)
+        msg['Subject'] = "Bisection result for {}".format(bisect_id)
         msg['From'] = os.environ['BISECT_EMAIL_FROM']
         validate_to = os.environ['BISECT_EMAIL_TO_PATTERN']
         if not re.match(validate_to, email_to):

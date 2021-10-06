@@ -404,6 +404,8 @@ def update_unittest_tags(args):
         ('test_multiprocessing_main_handling.txt', '*graalpython.lib-python.3.test.test_multiprocessing_main_handling.SpawnCmdLineTest.test_module_in_subpackage_in_zipfile'),
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.TestNoForkBomb.test_noforkbomb'),
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_active_children'),
+        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_error_on_stdio_flush_1'),
+        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithThreadsTestProcess.test_error_on_stdio_flush_1'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
