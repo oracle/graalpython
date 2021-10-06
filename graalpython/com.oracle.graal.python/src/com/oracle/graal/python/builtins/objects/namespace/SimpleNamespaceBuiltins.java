@@ -69,7 +69,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -116,10 +116,8 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
     abstract static class SimpleNamespaceDictNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getDict(PSimpleNamespace self,
-                        @Cached GetDictIfExistsNode getDict) {
-            final PDict dict = getDict.execute(self);
-            assert dict != null : "SimpleNamespace objects must have a dict";
-            return dict;
+                        @Cached GetOrCreateDictNode getDict) {
+            return getDict.execute(self);
         }
     }
 
@@ -129,7 +127,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
         @Specialization
         Object reduce(PSimpleNamespace self,
                         @Cached GetClassNode getClassNode,
-                        @Cached GetDictIfExistsNode getDict) {
+                        @Cached GetOrCreateDictNode getDict) {
             PTuple args = factory().createEmptyTuple();
             final PDict dict = getDict.execute(self);
             assert dict != null : "SimpleNamespace objects must have a dict";
@@ -225,7 +223,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
         public static Object repr(PSimpleNamespace ns,
                         @Cached GetClassNode getClassNode,
                         @Cached TypeNodes.GetNameNode getNameNode,
-                        @Cached GetDictIfExistsNode getDict,
+                        @Cached GetOrCreateDictNode getDict,
                         @Cached("create(3)") ForEachNSRepr consumerNode,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             final Object klass = getClassNode.execute(ns);
