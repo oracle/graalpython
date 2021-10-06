@@ -693,8 +693,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             }
                         }
                         stack[++stackTop] = value;
-                    }
                         break;
+                    }
                     case LOAD_CONST:
                         stack[++stackTop] = consts[oparg];
                         break;
@@ -714,8 +714,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             bytecode[bci] = STORE_FAST_GENERIC;
                         }
                         stack[stackTop--] = null;
-                    }
                         break;
+                    }
                     case STORE_FAST_BOOLEAN: {
                         Object value = stack[stackTop];
                         if (value instanceof Boolean) {
@@ -731,8 +731,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             fastlocals[oparg] = value;
                         }
                         stack[stackTop--] = null;
-                    }
                         break;
+                    }
                     case STORE_FAST_INT: {
                         Object value = stack[stackTop];
                         if (value instanceof Integer) {
@@ -752,8 +752,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             fastlocals[oparg] = value;
                         }
                         stack[stackTop--] = null;
-                    }
                         break;
+                    }
                     case STORE_FAST_LONG: {
                         Object value = stack[stackTop];
                         if (value instanceof Long) {
@@ -776,8 +776,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             fastlocals[oparg] = value;
                         }
                         stack[stackTop--] = null;
-                    }
                         break;
+                    }
                     case STORE_FAST_DOUBLE: {
                         Object value = stack[stackTop];
                         if (value instanceof Double) {
@@ -793,8 +793,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             fastlocals[oparg] = value;
                         }
                         stack[stackTop--] = null;
-                    }
                         break;
+                    }
                     case STORE_FAST_GENERIC:
                         fastlocals[oparg] = stack[stackTop];
                         stack[stackTop--] = null;
@@ -835,133 +835,133 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case UNARY_POSITIVE: {
                         PosNode posNode = insertChildNode(() -> PosNodeGen.create(null), bci);
                         stack[stackTop] = posNode.execute(frame, stack[stackTop]);
-                    }
                         break;
+                    }
                     case UNARY_NEGATIVE: {
                         NegNode negNode = insertChildNode(() -> NegNodeGen.create(null), bci);
                         stack[stackTop] = negNode.execute(frame, stack[stackTop]);
-                    }
                         break;
+                    }
                     case UNARY_NOT: {
                         boolean result = insertChildNode((uncached) -> uncached ? PyObjectIsTrueNode.getUncached() : PyObjectIsTrueNode.create(), bci).execute(frame, stack[stackTop]);
                         stack[stackTop] = !result;
-                    }
                         break;
+                    }
                     case UNARY_INVERT: {
                         InvertNode invertNode = insertChildNode(() -> InvertNodeGen.create(null), bci);
                         stack[stackTop] = invertNode.execute(frame, stack[stackTop]);
-                    }
                         break;
+                    }
                     case BINARY_POWER: {
                         PowNode powNode = insertChildNode(() -> PowNodeGen.create(null, null), bci);
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
                         stack[stackTop] = powNode.executeObject(frame, stack[stackTop], right);
-                    }
                         break;
+                    }
                     case BINARY_MULTIPLY: {
                         stackTop = bytecodeBinaryMultiply(frame, stack, stackTop, bci);
-                    }
                         break;
+                    }
                     case BINARY_MATRIX_MULTIPLY: {
                         MatMulNode matMulNode = insertChildNode(() -> MatMulNodeGen.create(null, null), bci);
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
                         stack[stackTop] = matMulNode.executeObject(frame, stack[stackTop], right);
-                    }
                         break;
+                    }
                     case BINARY_TRUE_DIVIDE: {
                         TrueDivNode trueDivNode = insertChildNode(() -> TrueDivNodeGen.create(null, null), bci);
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
                         stack[stackTop] = trueDivNode.executeObject(frame, stack[stackTop], right);
-                    }
                         break;
+                    }
                     case BINARY_FLOOR_DIVIDE: {
                         FloorDivNode floorDivNode = insertChildNode(() -> FloorDivNodeGen.create(null, null), bci);
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
                         stack[stackTop] = floorDivNode.executeObject(frame, stack[stackTop], right);
-                    }
                         break;
+                    }
                     case BINARY_MODULO: {
                         ModNode modNode = insertChildNode(() -> ModNodeGen.create(null, null), bci);
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
                         stack[stackTop] = modNode.executeObject(frame, stack[stackTop], right);
-                    }
                         break;
+                    }
                     case BINARY_ADD: {
                         AddNode addNode = insertChildNode(() -> AddNodeGen.create(null, null), bci);
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
                         stack[stackTop] = addNode.executeObject(frame, stack[stackTop], right);
-                    }
                         break;
+                    }
                     case BINARY_SUBTRACT: {
                         SubNode subNode = insertChildNode(() -> SubNodeGen.create(null, null), bci);
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
                         stack[stackTop] = subNode.executeObject(frame, stack[stackTop], right);
-                    }
                         break;
+                    }
                     case BINARY_SUBSCR: {
                         GetItemNode getItemNode = insertChildNode(() -> GetItemNode.create(), bci);
                         Object slice = stack[stackTop];
                         stack[stackTop--] = null;
                         stack[stackTop] = getItemNode.execute(frame, stack[stackTop], slice);
-                    }
                         break;
+                    }
                     case BINARY_LSHIFT: {
                         LShiftNode lShiftNode = insertChildNode(() -> LShiftNodeGen.create(null, null), bci);
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
                         stack[stackTop] = lShiftNode.executeObject(frame, stack[stackTop], right);
-                    }
                         break;
+                    }
                     case BINARY_RSHIFT: {
                         RShiftNode rShiftNode = insertChildNode(() -> RShiftNodeGen.create(null, null), bci);
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
                         stack[stackTop] = rShiftNode.executeObject(frame, stack[stackTop], right);
-                    }
                         break;
+                    }
                     case BINARY_AND: {
                         BitAndNode bitAndNode = insertChildNode(() -> BitAndNodeGen.create(null, null), bci);
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
                         stack[stackTop] = bitAndNode.executeObject(frame, stack[stackTop], right);
-                    }
                         break;
+                    }
                     case BINARY_XOR: {
                         BitXorNode bitXorNode = insertChildNode(() -> BitXorNodeGen.create(null, null), bci);
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
                         stack[stackTop] = bitXorNode.executeObject(frame, stack[stackTop], right);
-                    }
                         break;
+                    }
                     case BINARY_OR: {
                         BitOrNode bitOrNode = insertChildNode(() -> BitOrNodeGen.create(null, null), bci);
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
                         stack[stackTop] = bitOrNode.executeObject(frame, stack[stackTop], right);
-                    }
                         break;
+                    }
                     case LIST_APPEND: {
                         PyObjectCallMethodObjArgs callNode = insertChildNode((uncached) -> uncached ? PyObjectCallMethodObjArgs.getUncached() : PyObjectCallMethodObjArgs.create(), bci);
                         Object list = stack[stackTop - oparg];
                         Object value = stack[stackTop];
                         stack[stackTop--] = null;
                         callNode.execute(frame, list, "append", value);
-                    }
                         break;
+                    }
                     case SET_ADD: {
                         PyObjectCallMethodObjArgs callNode = insertChildNode((uncached) -> uncached ? PyObjectCallMethodObjArgs.getUncached() : PyObjectCallMethodObjArgs.create(), bci);
                         Object value = stack[stackTop];
                         stack[stackTop--] = null;
                         callNode.execute(frame, stack[stackTop], "add", value);
-                    }
                         break;
+                    }
                     case INPLACE_POWER:
                     case INPLACE_MULTIPLY:
                     case INPLACE_MATRIX_MULTIPLY:
@@ -980,8 +980,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stack[stackTop--] = null;
                         Object left = stack[stackTop];
                         stack[stackTop] = opNode.execute(frame, left, right);
-                    }
                         break;
+                    }
                     case STORE_SUBSCR: {
                         PyObjectSetItem setItem = insertChildNode((uncached) -> uncached ? PyObjectSetItem.getUncached() : PyObjectSetItem.create(), bci);
                         Object index = stack[stackTop];
@@ -991,8 +991,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object value = stack[stackTop];
                         stack[stackTop--] = null;
                         setItem.execute(frame, container, index, value);
-                    }
                         break;
+                    }
                     case DELETE_SUBSCR: {
                         DeleteItemNode delItem = insertChildNode(() -> DeleteItemNode.create(), bci);
                         Object slice = stack[stackTop];
@@ -1000,8 +1000,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object container = stack[stackTop];
                         stack[stackTop--] = null;
                         delItem.executeWith(frame, container, slice);
-                    }
                         break;
+                    }
                     case PRINT_EXPR:
                         throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "bc print expr");
                     case RAISE_VARARGS: {
@@ -1022,8 +1022,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             exception = PNone.NO_VALUE;
                         }
                         raiseNode.execute(frame, exception, cause);
-                    }
                         break;
+                    }
                     case RETURN_VALUE:
                         if (inInterpreter) {
                             LoopNode.reportLoopCount(this, loopCount);
@@ -1043,8 +1043,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stack[stackTop--] = null;
                         stack[stackTop--] = null;
                         stack[stackTop--] = null;
-                    }
                         break;
+                    }
                     case POP_BLOCK:
                         blockstackTop--;
                         break;
@@ -1084,8 +1084,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         } else {
                             stackTop = decodeStackTop(savedStackTop);
                         }
-                    }
                         break;
+                    }
                     case CALL_FINALLY:
                         stack[++stackTop] = bci + 2;
                         bci = oparg + 2;
@@ -1134,15 +1134,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             // throw the exception again for the next handler to run
                             throw (AbstractTruffleException) exc;
                         }
-                    }
                         break;
+                    }
                     case END_ASYNC_FOR:
                         throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "async bytecodes");
                     case LOAD_BUILD_CLASS: {
                         ReadGlobalOrBuiltinNode read = insertChildNode((uncached) -> uncached ? ReadGlobalOrBuiltinNode.getUncached() : ReadGlobalOrBuiltinNode.create(__BUILD_CLASS__), bci);
                         stack[++stackTop] = read.read(frame, globals, __BUILD_CLASS__);
-                    }
                         break;
+                    }
                     case STORE_NAME: {
                         String varname = names[oparg];
                         Object value = stack[stackTop];
@@ -1174,8 +1174,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             WriteGlobalNode writeGlobalNode = insertChildNode((a, uncached) -> uncached ? WriteGlobalNode.getUncached() : WriteGlobalNode.create((String) a), bci + 1, varname);
                             writeGlobalNode.write(frame, globals, varname, value);
                         }
-                    }
                         break;
+                    }
                     case DELETE_NAME: {
                         String varname = names[oparg];
                         if (locals != null) {
@@ -1185,8 +1185,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             DeleteGlobalNode deleteGlobalNode = insertChildNode((a) -> DeleteGlobalNode.create((String) a), bci + 1, varname);
                             deleteGlobalNode.executeWithGlobals(frame, globals);
                         }
-                    }
                         break;
+                    }
                     case UNPACK_SEQUENCE:
                     case UNPACK_EX:
                         throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "unpack bytecodes");
@@ -1198,29 +1198,29 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object value = stack[stackTop];
                         stack[stackTop--] = null;
                         callNode.execute(frame, owner, varname, value);
-                    }
                         break;
+                    }
                     case DELETE_ATTR: {
                         PyObjectSetAttr callNode = insertChildNode((uncached) -> uncached ? PyObjectSetAttr.getUncached() : PyObjectSetAttr.create(), bci);
                         String varname = names[oparg];
                         Object owner = stack[stackTop];
                         stack[stackTop--] = null;
                         callNode.delete(frame, owner, varname);
-                    }
                         break;
+                    }
                     case STORE_GLOBAL: {
                         String varname = names[oparg];
                         WriteGlobalNode writeGlobalNode = insertChildNode((a, uncached) -> uncached ? WriteGlobalNode.getUncached() : WriteGlobalNode.create((String) a), bci, varname);
                         writeGlobalNode.write(frame, globals, varname, stack[stackTop]);
                         stack[stackTop--] = null;
-                    }
                         break;
+                    }
                     case DELETE_GLOBAL: {
                         String varname = names[oparg];
                         DeleteGlobalNode deleteGlobalNode = insertChildNode((a) -> DeleteGlobalNode.create((String) a), bci, varname);
                         deleteGlobalNode.executeWithGlobals(frame, globals);
-                    }
                         break;
+                    }
                     case LOAD_NAME: {
                         String varname = names[oparg];
                         Object result = null;
@@ -1257,14 +1257,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             result = read.read(frame, globals, varname);
                         }
                         stack[++stackTop] = result;
-                    }
                         break;
+                    }
                     case LOAD_GLOBAL: {
                         String varname = names[oparg];
                         ReadGlobalOrBuiltinNode read = insertChildNode((a, uncached) -> uncached ? ReadGlobalOrBuiltinNode.getUncached() : ReadGlobalOrBuiltinNode.create((String) a), bci, varname);
                         stack[++stackTop] = read.read(frame, globals, varname);
-                    }
                         break;
+                    }
                     case DELETE_FAST: {
                         Object value = fastlocals[oparg];
                         if (value == null) {
@@ -1272,8 +1272,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
                         }
                         fastlocals[oparg] = null;
-                    }
                         break;
+                    }
                     case DELETE_DEREF:
                         throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "DELETE_DEREF");
                     case LOAD_CLOSURE:
@@ -1293,8 +1293,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             stack[stackTop--] = null;
                         }
                         stack[++stackTop] = factory.createTuple(list);
-                    }
                         break;
+                    }
                     case BUILD_LIST: {
                         Object[] list = new Object[oparg];
                         while (oparg > 0) {
@@ -1303,8 +1303,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             stack[stackTop--] = null;
                         }
                         stack[++stackTop] = factory.createList(list);
-                    }
                         break;
+                    }
                     case BUILD_TUPLE_UNPACK_WITH_CALL:
                     case BUILD_TUPLE_UNPACK:
                     case BUILD_LIST_UNPACK:
@@ -1329,8 +1329,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         }
                         stackTop = stackTop - oparg;
                         stack[++stackTop] = factory.createDict(map);
-                    }
                         break;
+                    }
                     case BUILD_MAP_UNPACK:
                     case BUILD_MAP_UNPACK_WITH_CALL:
                         throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "build bytecodes");
@@ -1342,8 +1342,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object owner = stack[stackTop];
                         Object value = getAttr.execute(frame, owner, varname);
                         stack[stackTop] = value;
-                    }
                         break;
+                    }
                     case COMPARE_OP: {
                         Object right = stack[stackTop];
                         stack[stackTop--] = null;
@@ -1373,8 +1373,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         } else {
                             throw CompilerDirectives.shouldNotReachHere();
                         }
-                    }
                         break;
+                    }
                     case IMPORT_NAME: {
                         CastToJavaIntExactNode castNode = insertChildNode((uncached) -> uncached ? CastToJavaIntExactNode.getUncached() : CastToJavaIntExactNode.create(), bci);
                         String modname = names[oparg];
@@ -1395,8 +1395,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         ImportName importNode = insertChildNode((uncached) -> uncached ? ImportName.getUncached() : ImportName.create(), bci + 1);
                         Object result = importNode.execute(frame, context, builtins, modname, globals, fromlistArg, level);
                         stack[stackTop] = result;
-                    }
                         break;
+                    }
                     case IMPORT_STAR:
                     case IMPORT_FROM:
                         throw insertChildNode(() -> PRaiseNode.create(), bci).raise(SystemError, "import start / import from");
@@ -1413,8 +1413,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
                             continue;
                         }
-                    }
                         break;
+                    }
                     case POP_JUMP_IF_TRUE: {
                         PyObjectIsTrueNode isTrue = insertChildNode((uncached) -> uncached ? PyObjectIsTrueNode.getUncached() : PyObjectIsTrueNode.create(), bci);
                         Object cond = stack[stackTop];
@@ -1424,8 +1424,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
                             continue;
                         }
-                    }
                         break;
+                    }
                     case JUMP_IF_FALSE_OR_POP: {
                         PyObjectIsTrueNode isTrue = insertChildNode((uncached) -> uncached ? PyObjectIsTrueNode.getUncached() : PyObjectIsTrueNode.create(), bci);
                         Object cond = stack[stackTop];
@@ -1436,8 +1436,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         } else {
                             stack[stackTop--] = null;
                         }
-                    }
                         break;
+                    }
                     case JUMP_IF_TRUE_OR_POP: {
                         PyObjectIsTrueNode isTrue = insertChildNode((uncached) -> uncached ? PyObjectIsTrueNode.getUncached() : PyObjectIsTrueNode.create(), bci);
                         Object cond = stack[stackTop];
@@ -1448,8 +1448,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         } else {
                             stack[stackTop--] = null;
                         }
-                    }
                         break;
+                    }
                     case JUMP_ABSOLUTE:
                         if (oparg < bci) {
                             if (inInterpreter) {
@@ -1478,8 +1478,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             PyObjectGetIter getIter = insertChildNode((uncached) -> uncached ? PyObjectGetIter.getUncached() : PyObjectGetIter.create(), bci);
                             stack[stackTop] = getIter.execute(frame, iterable);
                         }
-                    }
                         break;
+                    }
                     case FOR_ITER: {
                         try {
                             Object next = insertChildNode((uncached) -> uncached ? GetNextNode.getUncached() : GetNextNode.create(), bci).execute(frame, stack[stackTop]);
@@ -1491,12 +1491,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             oparg = Byte.toUnsignedInt(bytecode[bci + 1]);
                             continue;
                         }
-                    }
                         break;
+                    }
                     case SETUP_FINALLY: {
                         blockstack[++blockstackTop] = encodeBCI(bci + oparg) | encodeStackTop(stackTop) | encodeBlockTypeFinally();
-                    }
                         break;
+                    }
                     case BEFORE_ASYNC_WITH:
                     case SETUP_ASYNC_WITH:
                     case SETUP_WITH:
@@ -1509,8 +1509,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         Object receiver = stack[stackTop];
                         stack[stackTop] = getMethod.execute(frame, stack[stackTop], methodName);
                         stack[++stackTop] = receiver;
-                    }
                         break;
+                    }
                     case CALL_METHOD:
                         // Python's LOAD_METHOD/CALL_METHOD optimization is not useful for us, we
                         // use BoundDescriptor as wrapper from LOAD_METHOD when it's not a normal
@@ -1560,8 +1560,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             }
                                 break;
                         }
-                    }
                         break;
+                    }
                     case CALL_FUNCTION_KW: {
                         CallNode callNode = insertChildNode((uncached) -> uncached ? CallNode.getUncached() : CallNode.create(), bci);
                         Object[] kwNamesArray = ((PTuple) stack[stackTop]).getSequenceStorage().getInternalArray();
@@ -1585,8 +1585,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                             stack[stackTop--] = null;
                         }
                         stack[stackTop] = callNode.execute(frame, func, arguments, kwArgs);
-                    }
                         break;
+                    }
                     case CALL_FUNCTION_EX: {
                         CallNode callNode = insertChildNode((uncached) -> uncached ? CallNode.getUncached() : CallNode.create(), bci);
                         Object func;
@@ -1602,8 +1602,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stack[stackTop--] = null;
                         func = stack[stackTop];
                         stack[stackTop] = callNode.execute(frame, func, callargs, kwargs);
-                    }
                         break;
+                    }
                     case MAKE_FUNCTION:
                         stackTop = bytecodeMakeFunction(globals, stack, stackTop, bci, oparg);
                         break;
