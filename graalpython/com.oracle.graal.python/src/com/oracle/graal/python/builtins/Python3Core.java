@@ -305,7 +305,6 @@ public final class Python3Core implements ParserErrorCallback {
                         PythonCextBuiltins.PYTHON_CEXT,
                         "bytes",
                         "bytearray",
-                        "time",
                         "unicodedata",
                         "_locale",
                         "_sre",

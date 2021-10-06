@@ -100,7 +100,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
             if (args.length > 0) {
                 throw raise(PythonBuiltinClassType.TypeError, NO_POSITIONAL_ARGUMENTS_EXPECTED);
             }
-            for (PKeyword keyword: kwargs) {
+            for (PKeyword keyword : kwargs) {
                 final String name = keyword.getName();
                 if (!PGuards.isString(name)) {
                     throw raise(PythonBuiltinClassType.TypeError, KEYWORDS_MUST_BE_STRINGS);
@@ -118,7 +118,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
         Object getDict(PSimpleNamespace self,
                         @Cached GetDictIfExistsNode getDict) {
             final PDict dict = getDict.execute(self);
-            assert dict != null: "SimpleNamespace objects must have a dict";
+            assert dict != null : "SimpleNamespace objects must have a dict";
             return dict;
         }
     }
@@ -132,7 +132,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
                         @Cached GetDictIfExistsNode getDict) {
             PTuple args = factory().createEmptyTuple();
             final PDict dict = getDict.execute(self);
-            assert dict != null: "SimpleNamespace objects must have a dict";
+            assert dict != null : "SimpleNamespace objects must have a dict";
             return factory().createTuple(new Object[]{getClassNode.execute(self), args, dict});
         }
     }
@@ -239,7 +239,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
             }
             try {
                 final PDict dict = getDict.execute(ns);
-                assert dict != null: "SimpleNamespace objects must have a dict";
+                assert dict != null : "SimpleNamespace objects must have a dict";
                 HashingStorage dictStorage = dict.getDictStorage();
                 lib.forEach(dictStorage, consumerNode, new NSReprState(dictStorage, sb));
                 PythonUtils.append(sb, ")");

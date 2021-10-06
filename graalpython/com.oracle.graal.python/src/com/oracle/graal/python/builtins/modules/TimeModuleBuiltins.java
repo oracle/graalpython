@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TIMESTAMP_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_CLOCK;
+import static com.oracle.graal.python.nodes.statement.AbstractImportNode.importModule;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -53,7 +54,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.TimeModuleBuiltinsClinicProviders.GetClockInfoNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltinsClinicProviders.StrfTimeNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.TimeModuleBuiltinsClinicProviders.StrptimeNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -68,6 +71,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -106,15 +110,15 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
     private static final StructSequence.BuiltinTypeDescriptor STRUCT_TIME_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStructTime,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "The time value as returned by gmtime(), localtime(), and strptime(), and\n" +
+            // @formatter:off The formatter joins these lines making it less readable
+            "The time value as returned by gmtime(), localtime(), and strptime(), and\n" +
                     " accepted by asctime(), mktime() and strftime().  May be considered as a\n" +
                     " sequence of 9 integers.\n\n" +
                     " Note that several fields' values are not the same as those defined by\n" +
                     " the C language standard for struct tm.  For example, the value of the\n" +
                     " field tm_year is the actual year, not year - 1900.  See individual\n" +
                     " fields' descriptions for details.",
-                    // @formatter:on
+            // @formatter:on
                     9,
                     new String[]{
                                     "tm_year", "tm_mon", "tm_mday", "tm_hour", "tm_min", "tm_sec",
@@ -990,8 +994,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
     // time.get_clock_info(name)
     @Builtin(name = "get_clock_info", maxNumOfPositionalArgs = 1, parameterNames = {"name"}, doc = "get_clock_info(name: str) -> dict\n" +
-            "\n" +
-            "Get information of the specified clock.")
+                    "\n" +
+                    "Get information of the specified clock.")
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
     public abstract static class GetClockInfoNode extends PythonUnaryClinicBuiltinNode {
@@ -1001,12 +1005,13 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         public static final String TIME_IMPL_THREAD_TIME = "thread_time";
         public static final String TIME_IMPL_TIME = "time";
 
-        // cpython gives resolution 1e-9 in some cases, but jdks System.nanoTime() does not guarantee that
+        // cpython gives resolution 1e-9 in some cases, but jdks System.nanoTime() does not
+        // guarantee that
         public static final double TIME_RESOLUTION = 1e-6;
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return TimeModuleBuiltinsClinicProviders.GetClockInfoNodeClinicProviderGen.INSTANCE;
+            return GetClockInfoNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
@@ -1036,6 +1041,33 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             ns.setAttribute("monotonic", monotonic);
             ns.setAttribute("resolution", TIME_RESOLUTION);
             return ns;
+        }
+    }
+
+    // time.strptime(string[, format])
+    @Builtin(name = "strptime", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, parameterNames = {"data_string", "format"}, doc = "strftime(format[, tuple]) -> string\n" +
+                    "\n" +
+                    "Convert a time tuple to a string according to a format specification.\n" +
+                    "See the library reference manual for formatting codes. When the time tuple\n" +
+                    "is not present, current time as returned by localtime() is used.\n" +
+                    "\n")
+    @ArgumentClinic(name = "data_string", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"%a %b %d %H:%M:%S %Y\"", useDefaultForNone = true)
+    @GenerateNodeFactory
+    public abstract static class StrptimeNode extends PythonBinaryClinicBuiltinNode {
+        public final static String MODULE_STRPTIME = "_strptime";
+        public final static String FUNC_STRPTIME_TIME = "_strptime_time";
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StrptimeNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        public Object strptime(String dataString, String format,
+                        @Cached CallNode callNode) {
+            final Object strptimeTime = importModule(MODULE_STRPTIME, new String[]{FUNC_STRPTIME_TIME});
+            return callNode.execute(strptimeTime, dataString, format);
         }
     }
 }
