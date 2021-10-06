@@ -993,7 +993,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.get_clock_info(name)
-    @Builtin(name = "get_clock_info", maxNumOfPositionalArgs = 1, parameterNames = {"name"}, doc = "get_clock_info(name: str) -> dict\n" +
+    @Builtin(name = "get_clock_info", parameterNames = {"name"}, doc = "get_clock_info(name: str) -> dict\n" +
                     "\n" +
                     "Get information of the specified clock.")
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
@@ -1035,7 +1035,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     throw raise(PythonBuiltinClassType.ValueError, UNKNOWN_CLOCK);
             }
 
-            final PSimpleNamespace ns = factory().creteSimpleNamespace();
+            final PSimpleNamespace ns = factory().createSimpleNamespace();
             ns.setAttribute("adjustable", adjustable);
             ns.setAttribute("implementation", name);
             ns.setAttribute("monotonic", monotonic);
@@ -1045,7 +1045,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.strptime(string[, format])
-    @Builtin(name = "strptime", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, parameterNames = {"data_string", "format"}, doc = "strftime(format[, tuple]) -> string\n" +
+    @Builtin(name = "strptime", parameterNames = {"data_string", "format"}, doc = "strftime(format[, tuple]) -> string\n" +
                     "\n" +
                     "Convert a time tuple to a string according to a format specification.\n" +
                     "See the library reference manual for formatting codes. When the time tuple\n" +

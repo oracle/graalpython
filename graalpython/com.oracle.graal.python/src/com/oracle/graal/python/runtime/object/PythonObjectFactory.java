@@ -716,15 +716,15 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDict(cls, instanceShape, storage));
     }
 
-    public final PSimpleNamespace creteSimpleNamespace() {
-        return creteSimpleNamespace(PythonBuiltinClassType.PSimpleNamespace);
+    public final PSimpleNamespace createSimpleNamespace() {
+        return createSimpleNamespace(PythonBuiltinClassType.PSimpleNamespace);
     }
 
-    public final PSimpleNamespace creteSimpleNamespace(Object cls) {
-        return creteSimpleNamespace(cls, getShape(cls));
+    public final PSimpleNamespace createSimpleNamespace(Object cls) {
+        return createSimpleNamespace(cls, getShape(cls));
     }
 
-    public final PSimpleNamespace creteSimpleNamespace(Object cls, Shape instanceShape) {
+    public final PSimpleNamespace createSimpleNamespace(Object cls, Shape instanceShape) {
         return trace(new PSimpleNamespace(cls, instanceShape));
     }
 

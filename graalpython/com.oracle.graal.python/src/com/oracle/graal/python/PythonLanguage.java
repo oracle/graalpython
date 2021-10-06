@@ -128,11 +128,38 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String ID = "python";
     public static final String NAME = "Python";
     public static final String IMPLEMENTATION_NAME = "GraalVM Python";
+    public static final String GRAAL_NAME = "graalpython";
     public static final int MAJOR = 3;
     public static final int MINOR = 8;
     public static final int MICRO = 5;
-    // Note: update hexversion in sys.py when updating release level
-    public static final String RELEASE_LEVEL = "alpha";
+    public static final int RELEASE_LEVEL_ALPHA = 0xA;
+    public static final int RELEASE_LEVEL_BETA = 0xB;
+    public static final int RELEASE_LEVEL_GAMMA = 0xC;
+    public static final int RELEASE_LEVEL_FINAL = 0xF;
+    public static final int RELEASE_LEVEL = RELEASE_LEVEL_ALPHA;
+    public static final String RELEASE_LEVEL_STRING;
+    static {
+        switch (RELEASE_LEVEL) {
+            case RELEASE_LEVEL_ALPHA:
+                RELEASE_LEVEL_STRING = "alpha";
+                break;
+            case RELEASE_LEVEL_BETA:
+                RELEASE_LEVEL_STRING = "beta";
+                break;
+            case RELEASE_LEVEL_GAMMA:
+                RELEASE_LEVEL_STRING = "rc";
+                break;
+            case RELEASE_LEVEL_FINAL:
+            default:
+                RELEASE_LEVEL_STRING = "final";
+        }
+    }
+    public static final int RELEASE_SERIAL = 0;
+    public static final int VERSION_HEX = MAJOR << 24 |
+            MINOR << 16 |
+            MICRO << 8 |
+            RELEASE_LEVEL_ALPHA << 4 |
+            RELEASE_SERIAL;
     public static final String VERSION = MAJOR + "." + MINOR + "." + MICRO;
     // Rarely updated version of the C API, we should take it from the imported CPython version
     public static final int API_VERSION = 1013;

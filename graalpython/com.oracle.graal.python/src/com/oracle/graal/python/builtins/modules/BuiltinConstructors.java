@@ -3387,13 +3387,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     @Builtin(name = "SimpleNamespace", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, isPublic = false, constructsClass = PythonBuiltinClassType.PSimpleNamespace, doc = "A simple attribute-based namespace.\n" +
-            "\n" +
-            "SimpleNamespace(**kwargs)")
+                    "\n" +
+                    "SimpleNamespace(**kwargs)")
     @GenerateNodeFactory
     public abstract static class SimpleNamespaceNode extends PythonVarargsBuiltinNode {
         @Specialization
         PSimpleNamespace doit(Object self, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords) {
-            return factory().creteSimpleNamespace(self);
+            return factory().createSimpleNamespace(self);
         }
     }
 
