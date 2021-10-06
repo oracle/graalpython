@@ -298,8 +298,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     protected static PSimpleNamespace makeImplementation(Python3Core core, PTuple versionInfo, String gmultiarch) {
         final PSimpleNamespace ns = core.factory().createSimpleNamespace();
-        ns.setAttribute("name", PythonLanguage.IMPLEMENTATION_NAME);
-        ns.setAttribute("cache_tag", PythonLanguage.IMPLEMENTATION_NAME + "-"+ PythonLanguage.MAJOR + PythonLanguage.MINOR);
+        ns.setAttribute("name", "graalpython");
+        ns.setAttribute("cache_tag", "graalpython-"+ PythonLanguage.MAJOR + PythonLanguage.MINOR);
         ns.setAttribute("version", versionInfo);
         ns.setAttribute("_multiarch", gmultiarch);
         ns.setAttribute("hexversion", PythonLanguage.VERSION_HEX);
