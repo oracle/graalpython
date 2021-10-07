@@ -383,6 +383,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("stderr", stderr);
         builtinConstants.put("__stderr__", stderr);
         builtinConstants.put("implementation", makeImplementation(core, versionInfo, gmultiarch));
+        builtinConstants.put("hexversion", PythonLanguage.VERSION_HEX);
 
         builtinConstants.put("float_repr_style", "short");
         builtinConstants.put("meta_path", core.factory().createList());
