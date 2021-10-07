@@ -299,7 +299,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     protected static PSimpleNamespace makeImplementation(Python3Core core, PTuple versionInfo, String gmultiarch) {
         final PSimpleNamespace ns = core.factory().createSimpleNamespace();
         ns.setAttribute("name", "graalpython");
-        ns.setAttribute("cache_tag", "graalpython-"+ PythonLanguage.MAJOR + PythonLanguage.MINOR);
+        ns.setAttribute("cache_tag", "graalpython-" + PythonLanguage.MAJOR + PythonLanguage.MINOR);
         ns.setAttribute("version", versionInfo);
         ns.setAttribute("_multiarch", gmultiarch);
         ns.setAttribute("hexversion", PythonLanguage.VERSION_HEX);
@@ -323,7 +323,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("path", core.factory().createList());
         builtinConstants.put("builtin_module_names", core.factory().createTuple(core.builtinModuleNames()));
         builtinConstants.put("maxsize", MAXSIZE);
-        final PTuple versionInfo = core.factory().createStructSeq(VERSION_INFO_DESC, PythonLanguage.MAJOR, PythonLanguage.MINOR, PythonLanguage.MICRO, PythonLanguage.RELEASE_LEVEL_STRING, PythonLanguage.RELEASE_SERIAL);
+        final PTuple versionInfo = core.factory().createStructSeq(VERSION_INFO_DESC, PythonLanguage.MAJOR, PythonLanguage.MINOR, PythonLanguage.MICRO, PythonLanguage.RELEASE_LEVEL_STRING,
+                        PythonLanguage.RELEASE_SERIAL);
         builtinConstants.put("version_info", versionInfo);
         builtinConstants.put("api_version", PythonLanguage.API_VERSION);
         builtinConstants.put("version", PythonLanguage.VERSION +

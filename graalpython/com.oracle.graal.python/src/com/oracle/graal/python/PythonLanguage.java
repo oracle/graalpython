@@ -155,10 +155,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
     public static final int RELEASE_SERIAL = 0;
     public static final int VERSION_HEX = MAJOR << 24 |
-            MINOR << 16 |
-            MICRO << 8 |
-            RELEASE_LEVEL_ALPHA << 4 |
-            RELEASE_SERIAL;
+                    MINOR << 16 |
+                    MICRO << 8 |
+                    RELEASE_LEVEL_ALPHA << 4 |
+                    RELEASE_SERIAL;
     public static final String VERSION = MAJOR + "." + MINOR + "." + MICRO;
     // Rarely updated version of the C API, we should take it from the imported CPython version
     public static final int API_VERSION = 1013;

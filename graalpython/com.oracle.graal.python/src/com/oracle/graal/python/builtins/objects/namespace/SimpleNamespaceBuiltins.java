@@ -214,7 +214,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
             }
 
             @Specialization(guards = "!isString(key)")
-            public static NSReprState doNonStringKey(Object key, NSReprState state) {
+            public static NSReprState doNonStringKey(@SuppressWarnings("unused") Object key, NSReprState state) {
                 return state;
             }
         }
@@ -236,9 +236,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
                 return PythonUtils.sbToString(sb);
             }
             try {
-                final PDict dict = getDict.execute(ns);
-                assert dict != null : "SimpleNamespace objects must have a dict";
-                HashingStorage dictStorage = dict.getDictStorage();
+                HashingStorage dictStorage = getDict.execute(ns).getDictStorage();
                 lib.forEach(dictStorage, consumerNode, new NSReprState(dictStorage, sb));
                 PythonUtils.append(sb, ")");
                 return PythonUtils.sbToString(sb);
