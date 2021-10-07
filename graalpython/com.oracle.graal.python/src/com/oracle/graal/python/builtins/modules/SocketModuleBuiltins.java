@@ -589,7 +589,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             } else if (PGuards.isString(portObjectProfiled)) {
                 port = posixLib.createPathFromString(getPosixSupport(), castToString.execute(portObjectProfiled));
             } else if (PGuards.isBytes(portObjectProfiled)) {
-                port = posixLib.createPathFromBytes(getPosixSupport(), toBytes.execute(portObjectProfiled));
+                port = posixLib.createPathFromBytes(getPosixSupport(), toBytes.execute(frame, portObjectProfiled));
             } else if (portObject == PNone.NONE) {
                 port = null;
             } else {

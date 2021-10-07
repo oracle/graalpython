@@ -675,7 +675,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Shared("e") @Cached BranchProfile errorProfile,
                         @Shared("g") @Cached GilNode gil) {
             try {
-                return posixWrite.write(self.getFD(), toBytes.execute(data), toBytes.execute(data).length, posixLib, errorProfile, gil);
+                return posixWrite.write(self.getFD(), toBytes.execute(frame, data), toBytes.execute(frame, data).length, posixLib, errorProfile, gil);
             } catch (PosixSupportLibrary.PosixException e) {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;

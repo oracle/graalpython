@@ -165,7 +165,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             Object[] result = new Object[length];
             for (int i = 0; i < length; ++i) {
                 Object o = getItem.execute(frame, env, i);
-                byte[] bytes = toBytesNode.execute(o);
+                byte[] bytes = toBytesNode.execute(frame, o);
                 Object o1 = posixLib.createPathFromBytes(getContext().getPosixSupport(), bytes);
                 if (o1 == null) {
                     throw raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
@@ -249,7 +249,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             int length = sizeNode.execute(frame, executableList);
             Object[] executables = new Object[length];
             for (int i = 0; i < length; ++i) {
-                byte[] bytes = toBytesNode.execute(getItem.execute(frame, executableList, i));
+                byte[] bytes = toBytesNode.execute(frame, getItem.execute(frame, executableList, i));
                 if (Arrays.equals(bytes, sysExecutable)) {
                     if (length != 1) {
                         throw raise(ValueError, ErrorMessages.UNSUPPORTED_USE_OF_SYS_EXECUTABLE);

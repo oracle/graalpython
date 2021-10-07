@@ -1812,7 +1812,11 @@ public abstract class SequenceStorageNodes {
      */
     public abstract static class GetInternalBytesNode extends PNodeWithContext {
 
-        public abstract byte[] execute(Object bytes);
+        public final byte[] execute(PBytesLike bytes) {
+            return execute(null, bytes);
+        }
+
+        public abstract byte[] execute(VirtualFrame frame, Object bytes);
 
         protected static boolean isByteSequenceStorage(PBytesLike bytes) {
             return bytes.getSequenceStorage() instanceof ByteSequenceStorage;
@@ -1823,15 +1827,15 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization(guards = "isByteSequenceStorage(bytes)")
-        byte[] doBytes(PBytesLike bytes,
+        static byte[] doBytes(PBytesLike bytes,
                         @Cached SequenceStorageNodes.GetInternalArrayNode internalArray) {
             return (byte[]) internalArray.execute(bytes.getSequenceStorage());
         }
 
         @Specialization(guards = "!isSimple(bytes)")
-        byte[] doGeneric(Object bytes,
+        static byte[] doGeneric(VirtualFrame frame, Object bytes,
                         @Cached BytesNodes.ToBytesNode toBytesNode) {
-            return toBytesNode.execute(bytes);
+            return toBytesNode.execute(frame, bytes);
         }
     }
 

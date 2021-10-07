@@ -173,10 +173,10 @@ public class LZMACompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isFlushed()"})
-        PBytes doObject(LZMACompressor self, Object data,
+        PBytes doObject(VirtualFrame frame, LZMACompressor self, Object data,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("c") @Cached LZMANodes.CompressNode compress) {
-            byte[] bytes = toBytes.execute(data);
+            byte[] bytes = toBytes.execute(frame, data);
             int len = bytes.length;
             return factory().createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
         }

@@ -162,7 +162,7 @@ public abstract class BytesNodes {
             Object iterator = getIter.execute(frame, iterable);
             while (true) {
                 try {
-                    partsTotalSize += append(parts, toBytesNode.execute(getNextNode.execute(frame, iterator)));
+                    partsTotalSize += append(parts, toBytesNode.execute(frame, getNextNode.execute(frame, iterator)));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return joinArrays(sep, parts, partsTotalSize);
@@ -209,6 +209,10 @@ public abstract class BytesNodes {
         ToBytesNode(PythonBuiltinClassType errorType, String errorMessageFormat) {
             this.errorType = errorType;
             this.errorMessageFormat = errorMessageFormat;
+        }
+        
+        public final byte[] execute(PBytesLike obj) {
+            return execute(null, obj);
         }
 
         public abstract byte[] execute(VirtualFrame frame, Object obj);

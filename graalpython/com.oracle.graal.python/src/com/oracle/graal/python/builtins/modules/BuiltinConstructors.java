@@ -325,7 +325,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     if (cls == PythonBuiltinClassType.PBytes) {
                         return (PBytes) bytes;
                     } else {
-                        return factory().createBytes(cls, toBytesNode.execute(bytes));
+                        return factory().createBytes(cls, toBytesNode.execute(frame, bytes));
                     }
                 } else {
                     throw raise(TypeError, ErrorMessages.RETURNED_NONBYTES, __BYTES__, bytes);

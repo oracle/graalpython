@@ -272,10 +272,10 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNone(table)")
-        PBytes translate(PBytes self, Object table, @SuppressWarnings("unused") PNone delete,
+        PBytes translate(VirtualFrame frame, PBytes self, Object table, @SuppressWarnings("unused") PNone delete,
                         @Cached.Shared("profile") @Cached ConditionProfile isLenTable256Profile,
                         @Cached.Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
-            byte[] bTable = toBytesNode.execute(table);
+            byte[] bTable = toBytesNode.execute(frame, table);
             checkLengthOfTable(bTable, isLenTable256Profile);
             byte[] bSelf = toBytesNode.execute(self);
 
@@ -287,10 +287,10 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNone(table)")
-        PBytes delete(PBytes self, @SuppressWarnings("unused") PNone table, Object delete,
+        PBytes delete(VirtualFrame frame, PBytes self, @SuppressWarnings("unused") PNone table, Object delete,
                         @Cached.Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
             byte[] bSelf = toBytesNode.execute(self);
-            byte[] bDelete = toBytesNode.execute(delete);
+            byte[] bDelete = toBytesNode.execute(frame, delete);
 
             Result result = delete(bSelf, bDelete);
             if (result.changed) {
@@ -300,12 +300,12 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPNone(table)", "!isPNone(delete)"})
-        PBytes translateAndDelete(PBytes self, Object table, Object delete,
+        PBytes translateAndDelete(VirtualFrame frame, PBytes self, Object table, Object delete,
                         @Cached.Shared("profile") @Cached ConditionProfile isLenTable256Profile,
                         @Cached.Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
-            byte[] bTable = toBytesNode.execute(table);
+            byte[] bTable = toBytesNode.execute(frame, table);
             checkLengthOfTable(bTable, isLenTable256Profile);
-            byte[] bDelete = toBytesNode.execute(delete);
+            byte[] bDelete = toBytesNode.execute(frame, delete);
             byte[] bSelf = toBytesNode.execute(self);
 
             Result result = translateAndDelete(bSelf, bTable, bDelete);
@@ -379,7 +379,7 @@ public class BytesBuiltins extends PythonBuiltins {
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public PBytesLike add(PBytesLike self, PBytesLike other,
+        PBytesLike add(PBytesLike self, PBytesLike other,
                         @Cached("createWithOverflowError()") SequenceStorageNodes.ConcatNode concatNode,
                         @Cached BytesNodes.CreateBytesNode create) {
             SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
@@ -672,20 +672,20 @@ public class BytesBuiltins extends PythonBuiltins {
         // common and specialized cases --------------------
 
         @Specialization(guards = "!isPTuple(substr)")
-        boolean doPrefixStartEnd(PBytesLike self, Object substr, int start, int end,
+        boolean doPrefixStartEnd(VirtualFrame frame, PBytesLike self, Object substr, int start, int end,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createToBytes()") BytesNodes.ToBytesNode tobytes) {
             byte[] bytes = getBytes.execute(self.getSequenceStorage());
             int len = lenNode.execute(self.getSequenceStorage());
-            byte[] substrBytes = tobytes.execute(substr);
+            byte[] substrBytes = tobytes.execute(frame, substr);
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
             return doIt(bytes, substrBytes, begin, last);
         }
 
         @Specialization
-        boolean doTuplePrefixStartEnd(PBytesLike self, PTuple substrs, int start, int end,
+        boolean doTuplePrefixStartEnd(VirtualFrame frame, PBytesLike self, PTuple substrs, int start, int end,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createToBytesFromTuple()") BytesNodes.ToBytesNode tobytes,
@@ -694,7 +694,7 @@ public class BytesBuiltins extends PythonBuiltins {
             int len = lenNode.execute(self.getSequenceStorage());
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
-            return doIt(bytes, substrs, begin, last, tobytes, getObjectArrayNode);
+            return doIt(frame, bytes, substrs, begin, last, tobytes, getObjectArrayNode);
         }
 
         @Fallback
@@ -710,11 +710,11 @@ public class BytesBuiltins extends PythonBuiltins {
             throw new IllegalStateException("should not reach");
         }
 
-        private boolean doIt(byte[] self, PTuple substrs, int start, int stop,
+        private boolean doIt(VirtualFrame frame, byte[] self, PTuple substrs, int start, int stop,
                         BytesNodes.ToBytesNode tobytes,
                         SequenceNodes.GetObjectArrayNode getObjectArrayNode) {
             for (Object element : getObjectArrayNode.execute(substrs)) {
-                byte[] bytes = tobytes.execute(element);
+                byte[] bytes = tobytes.execute(frame, element);
                 if (doIt(self, bytes, start, stop)) {
                     return true;
                 }
@@ -2294,10 +2294,10 @@ public class BytesBuiltins extends PythonBuiltins {
     public abstract static class MakeTransNode extends PythonBuiltinNode {
 
         @Specialization
-        PBytes maketrans(@SuppressWarnings("unused") Object cls, Object from, Object to,
+        PBytes maketrans(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object from, Object to,
                         @Cached BytesNodes.ToBytesNode toByteNode) {
-            byte[] fromB = toByteNode.execute(from);
-            byte[] toB = toByteNode.execute(to);
+            byte[] fromB = toByteNode.execute(frame, from);
+            byte[] toB = toByteNode.execute(frame, to);
             if (fromB.length != toB.length) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.ARGS_MUST_HAVE_SAME_LENGTH, "maketrans");
             }
@@ -2670,27 +2670,27 @@ public class BytesBuiltins extends PythonBuiltins {
         return endIn;
     }
 
-    @CompilerDirectives.TruffleBoundary
+    @TruffleBoundary
     protected static byte[] copyOfRange(byte[] bytes, int from, int to) {
         return Arrays.copyOfRange(bytes, from, to);
     }
 
-    @CompilerDirectives.TruffleBoundary(allowInlining = true)
+    @TruffleBoundary(allowInlining = true)
     protected static Iterator<byte[]> iterator(List<byte[]> bytes) {
         return bytes.iterator();
     }
 
-    @CompilerDirectives.TruffleBoundary(allowInlining = true)
+    @TruffleBoundary(allowInlining = true)
     protected static byte[] next(Iterator<byte[]> it) {
         return it.next();
     }
 
-    @CompilerDirectives.TruffleBoundary(allowInlining = true)
+    @TruffleBoundary(allowInlining = true)
     protected static boolean hasNext(Iterator<byte[]> it) {
         return it.hasNext();
     }
 
-    @CompilerDirectives.TruffleBoundary
+    @TruffleBoundary
     protected static byte[] getStringBytes(Object o) {
         return ((String) o).getBytes();
     }
