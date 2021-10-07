@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.namespace;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.NO_POSITIONAL_ARGUMENTS_EXPECTED;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -53,8 +54,10 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -65,10 +68,12 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -76,10 +81,12 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -113,6 +120,23 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
         Object getDict(PSimpleNamespace self,
                         @Cached GetOrCreateDictNode getDict) {
             return getDict.execute(self);
+        }
+    }
+
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class SimpleNamespaceEqNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object eq(VirtualFrame frame, PSimpleNamespace self, PSimpleNamespace other,
+                        @Cached GetOrCreateDictNode getDict,
+                        @Cached DictBuiltins.EqNode eqNode) {
+            return eqNode.execute(frame, getDict.execute(self), getDict.execute(other));
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static PNotImplemented doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -216,12 +240,13 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
         @Specialization
         public static Object repr(PSimpleNamespace ns,
                         @Cached GetClassNode getClassNode,
+                        @Cached IsBuiltinClassProfile clsProfile,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetOrCreateDictNode getDict,
                         @Cached("create(3)") ForEachNSRepr consumerNode,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             final Object klass = getClassNode.execute(ns);
-            final String name = klass instanceof PSimpleNamespace ? "namespace" : getNameNode.execute(klass);
+            final String name = clsProfile.profileClass(klass, PythonBuiltinClassType.PSimpleNamespace) ? "namespace" : getNameNode.execute(klass);
             StringBuilder sb = PythonUtils.newStringBuilder(name);
             PythonUtils.append(sb, "(");
             PythonContext ctxt = PythonContext.get(lib);
