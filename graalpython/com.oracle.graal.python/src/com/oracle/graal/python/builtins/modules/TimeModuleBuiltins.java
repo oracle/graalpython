@@ -68,10 +68,10 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -1055,8 +1055,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"%a %b %d %H:%M:%S %Y\"", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class StrptimeNode extends PythonBinaryClinicBuiltinNode {
-        public final static String MODULE_STRPTIME = "_strptime";
-        public final static String FUNC_STRPTIME_TIME = "_strptime_time";
+        public static final String MODULE_STRPTIME = "_strptime";
+        public static final String FUNC_STRPTIME_TIME = "_strptime_time";
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1064,10 +1064,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object strptime(String dataString, String format,
-                        @Cached CallNode callNode) {
-            final Object strptimeTime = importModule(MODULE_STRPTIME, new String[]{FUNC_STRPTIME_TIME});
-            return callNode.execute(strptimeTime, dataString, format);
+        public Object strptime(VirtualFrame frame, String dataString, String format,
+                        @Cached PyObjectCallMethodObjArgs callNode) {
+            final Object module = importModule(MODULE_STRPTIME);
+            return callNode.execute(frame, module, FUNC_STRPTIME_TIME, dataString, format);
         }
     }
 }
