@@ -49,7 +49,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__PREPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
@@ -78,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -114,7 +114,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectGetBasesNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectIsSubclassNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -373,6 +373,11 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        static Object doBuiltinDescriptor(BuiltinMethodDescriptor descriptor, @SuppressWarnings("unused") Object type) {
+            return descriptor;
+        }
+
+        @Specialization
         static Object doFunction(PFunction descriptor, @SuppressWarnings("unused") Object type) {
             return descriptor;
         }
@@ -397,10 +402,10 @@ public class TypeBuiltins extends PythonBuiltins {
     @ReportPolymorphism
     protected abstract static class CallNodeHelper extends PNodeWithRaise {
         @Child private CallVarargsMethodNode dispatchNew = CallVarargsMethodNode.create();
-        @Child private LookupAttributeInMRONode lookupNew = LookupAttributeInMRONode.create(__NEW__);
+        @Child private LookupCallableSlotInMRONode lookupNew = LookupCallableSlotInMRONode.create(SpecialMethodSlot.New);
         @Child private BindNew bindNew = BindNew.create();
         @Child private CallVarargsMethodNode dispatchInit;
-        @Child private LookupSpecialMethodNode lookupInit;
+        @Child private LookupSpecialMethodSlotNode lookupInit;
         @Child private IsSubtypeNode isSubTypeNode;
         @Child private TypeNodes.GetNameNode getNameNode;
         @Child private GetClassNode getClassNode;
@@ -514,10 +519,10 @@ public class TypeBuiltins extends PythonBuiltins {
             }
         }
 
-        private LookupSpecialMethodNode getInitNode() {
+        private LookupSpecialMethodSlotNode getInitNode() {
             if (lookupInit == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupInit = insert(LookupSpecialMethodNode.create(__INIT__));
+                lookupInit = insert(LookupSpecialMethodSlotNode.create(SpecialMethodSlot.Init));
             }
             return lookupInit;
         }
