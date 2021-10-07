@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.namespace;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.KEYWORDS_MUST_BE_STRINGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.NO_POSITIONAL_ARGUMENTS_EXPECTED;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
@@ -101,11 +100,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.TypeError, NO_POSITIONAL_ARGUMENTS_EXPECTED);
             }
             for (PKeyword keyword : kwargs) {
-                final String name = keyword.getName();
-                if (!PGuards.isString(name)) {
-                    throw raise(PythonBuiltinClassType.TypeError, KEYWORDS_MUST_BE_STRINGS);
-                }
-                self.setAttribute(name, keyword.getValue());
+                self.setAttribute(keyword.getName(), keyword.getValue());
             }
             return PNone.NONE;
         }
@@ -130,7 +125,6 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
                         @Cached GetOrCreateDictNode getDict) {
             PTuple args = factory().createEmptyTuple();
             final PDict dict = getDict.execute(self);
-            assert dict != null : "SimpleNamespace objects must have a dict";
             return factory().createTuple(new Object[]{getClassNode.execute(self), args, dict});
         }
     }

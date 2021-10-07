@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TIMESTAMP_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_CLOCK;
-import static com.oracle.graal.python.nodes.statement.AbstractImportNode.importModule;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -78,6 +77,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
@@ -1015,7 +1015,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object getClockInfo(String name) {
+        public Object getClockInfo(String name,
+                        @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib) {
             final boolean adjustable;
             final boolean monotonic;
 
@@ -1036,10 +1037,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             }
 
             final PSimpleNamespace ns = factory().createSimpleNamespace();
-            ns.setAttribute("adjustable", adjustable);
-            ns.setAttribute("implementation", name);
-            ns.setAttribute("monotonic", monotonic);
-            ns.setAttribute("resolution", TIME_RESOLUTION);
+            dyLib.put(ns, "adjustable", adjustable);
+            dyLib.put(ns, "implementation", name);
+            dyLib.put(ns, "monotonic", monotonic);
+            dyLib.put(ns, "resolution", TIME_RESOLUTION);
             return ns;
         }
     }
@@ -1055,8 +1056,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"%a %b %d %H:%M:%S %Y\"", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class StrptimeNode extends PythonBinaryClinicBuiltinNode {
-        public static final String MODULE_STRPTIME = "_strptime";
+        public static final String MOD_STRPTIME = "_strptime";
         public static final String FUNC_STRPTIME_TIME = "_strptime_time";
+
+        static ImportNode.ImportExpression createImportStrptime() {
+            return ImportNode.createAsExpression(MOD_STRPTIME);
+        }
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1065,8 +1070,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object strptime(VirtualFrame frame, String dataString, String format,
+                        @Cached("createImportStrptime()") ImportNode.ImportExpression importNode,
                         @Cached PyObjectCallMethodObjArgs callNode) {
-            final Object module = importModule(MODULE_STRPTIME);
+            final Object module = importNode.execute(frame);
             return callNode.execute(frame, module, FUNC_STRPTIME_TIME, dataString, format);
         }
     }
