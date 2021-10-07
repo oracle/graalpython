@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,108 +36,28 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-def make_implementation_info():
-    from types import SimpleNamespace, make_named_tuple_class
-    version_info_type = make_named_tuple_class(
-        "version_info", ["major", "minor", "micro", "releaselevel", "serial"]
-    )
-    return SimpleNamespace(
-        name="graalpython",
-        cache_tag="graalpython",
-        version=version_info_type(version_info),
-        _multiarch=__gmultiarch
-    )
-implementation = make_implementation_info()
-del make_implementation_info
-del __gmultiarch
-version_info = implementation.version
+from builtins import BaseException
 
 
-def make_flags_class():
-    from _descriptor import make_named_tuple_class
-    get_set_descriptor = type(type(make_flags_class).__code__)
+# Stub audit hooks implementation for PEP 578
+def audit(str, *args):
+    pass
 
-    names = ["bytes_warning", "debug", "dont_write_bytecode",
-             "hash_randomization", "ignore_environment", "inspect",
-             "interactive", "isolated", "no_site", "no_user_site", "optimize",
-             "quiet", "verbose", "dev_mode", "utf8_mode"]
-
-    flags_class = make_named_tuple_class("sys.flags", names)
-
-    def make_func(i):
-        def func(self):
-            return __flags__[i]
-        return func
-
-    for i, f in enumerate(names):
-        setattr(flags_class, f, get_set_descriptor(fget=make_func(i), name=f, owner=flags_class))
-
-    return flags_class
+def addaudithook(hook):
+    pass
 
 
-flags = make_flags_class()()
-del make_flags_class
-
-
-def make_float_info_class():
-    from _descriptor import make_named_tuple_class
-    return make_named_tuple_class(
-        "float_info",
-        ["max",
-         "max_exp",
-         "max_10_exp",
-         "min",
-         "min_exp",
-         "min_10_exp",
-         "dig",
-         "mant_dig",
-         "epsilon",
-         "radix",
-         "rounds"]
-    )
-float_info = make_float_info_class()(float_info)
-del make_float_info_class
-
-
-def make_hash_info_class():
-    from _descriptor import make_named_tuple_class
-    return make_named_tuple_class(
-        "hash_info",
-        ["algorithm",
-         "cutoff",
-         "hash_bits",
-         "imag",
-         "inf",
-         "modulus",
-         "nan",
-         "seed_bits",
-         "width"]
-    )
-hash_info = make_hash_info_class()(
-    ("java", 0, 64, 0, float('inf').__hash__(), 7, float('nan').__hash__(), 0, 64)
-)
-del make_hash_info_class
-
-
-meta_path = []
-path_hooks = []
-path_importer_cache = {}
-# these will be initialized explicitly from Java:
-# prefix, base_prefix, exec_prefix, base_exec_prefix
-warnoptions = []
-
-
-# default prompt for interactive shell
-ps1 = ">>> "
-
-# continue prompt for interactive shell
-ps2 = "... "
+# CPython builds for distros report empty strings too, because they are built from tarballs, not git
+_git = ("graalpython", '', '')
 
 
 @__graalpython__.builtin
-def exit(arg=0):
-    raise SystemExit(arg)
+def exit(arg=None):
+    # see SystemExit_init, tuple of size 1 is unpacked
+    code = arg
+    if isinstance(arg, tuple) and len(arg) == 1:
+        code = arg[0]
+    raise SystemExit(code)
 
 
 def make_excepthook():
@@ -158,9 +78,40 @@ def make_excepthook():
             print(type(e).__qualname__, file=stderr)
 
     def __print_traceback__(typ, value, tb):
+        if not isinstance(value, BaseException):
+            msg = "TypeError: print_exception(): Exception expected for value, {} found\n".format(type(value).__name__)
+            print(msg, file=stderr, end="")
+            return
         try:
+            # CPython's C traceback printer diverges from traceback.print_exception in some details marked as (*)
+            import sys
             import traceback
-            traceback.print_exception(typ, value, tb)
+            no_traceback = False
+            limit = getattr(sys, 'tracebacklimit', None)
+            if isinstance(limit, int):
+                if limit <= 0:
+                    # (*) the C traceback printer does nothing if the limit is <= 0,
+                    # but the exception message is still printed
+                    limit = 0
+                    no_traceback = True
+                else:
+                    # (*) CPython convert 'limit' to C long and if it overflows, it uses 'LONG_MAX'; we use Java int
+                    if limit > sys.maxsize:
+                        limit = sys.maxsize
+                    # (*) in the C printer limit is interpreted as -limit in format_exception
+                    limit = -limit
+            else:
+                # (*) non integer values of limit are interpreted as the default limit
+                limit = None
+            lines = traceback.format_exception(typ, value, tb, limit=limit)
+            # (*) if the exception cannot be printed, then the message differs between the C driver and format_exception
+            # We'd like to contribute to CPython to fix the divergence, but for now we do just a string substitution
+            # to pass the tests
+            lines[-1] = lines[-1].replace(f'<unprintable {typ.__name__} object>', f'<exception str() failed>')
+            if no_traceback:
+                lines = lines[-1:]
+            for line in lines:
+                print(line, file=stderr, end="")
         except BaseException as exc:
             print("Error in sys.excepthook:\n", file=stderr)
             simple_print_traceback(exc)
@@ -173,6 +124,33 @@ def make_excepthook():
 __excepthook__ = make_excepthook()
 excepthook = __excepthook__
 del make_excepthook
+
+
+def make_unraisablehook():
+    def __unraisablehook__(unraisable, /):
+        try:
+            if unraisable.object:
+                try:
+                    r = repr(unraisable.object)
+                except Exception:
+                    r = "<object repr() failed>"
+                if unraisable.err_msg:
+                    print(f"{unraisable.err_msg}: {r}", file=stderr)
+                else:
+                    print(f"Exception ignored in: {r}", file=stderr)
+            elif unraisable.err_msg:
+                print(f"{unraisable.err_msg}:", file=stderr)
+        except BaseException:
+            # let it fall through to the exception printer
+            pass
+        __excepthook__(unraisable.exc_type, unraisable.exc_value, unraisable.exc_traceback)
+
+    return __unraisablehook__
+
+
+__unraisablehook__ = make_unraisablehook()
+unraisablehook = __unraisablehook__
+del make_unraisablehook
 
 
 @__graalpython__.builtin
@@ -192,19 +170,50 @@ def breakpointhook(*args, **kws):
         hook = getattr(module, funcname)
     except:
         warnings.warn(
-            'Ignoring unimportable $PYTHONBREAKPOINT: {}'.format(
+            'Ignoring unimportable $PYTHONBREAKPOINT: "{}"'.format(
                 hookname),
             RuntimeWarning)
-    return hook(*args, **kws)
+    else:
+        return hook(*args, **kws)
 
 
 __breakpointhook__ = breakpointhook
 
-
 @__graalpython__.builtin
 def getrecursionlimit():
-    return 1000
+    return __graalpython__.sys_state.recursionlimit
 
+@__graalpython__.builtin
+def setrecursionlimit(value):
+    if not isinstance(value, int):
+        raise TypeError("an integer is required")
+    if value <= 0:
+        raise ValueError("recursion limit must be greater or equal than 1")
+    __graalpython__.sys_state.recursionlimit = value
+
+@__graalpython__.builtin
+def getcheckinterval():
+    return __graalpython__.sys_state.checkinterval
+
+@__graalpython__.builtin
+def setcheckinterval(value):
+    import warnings
+    warnings.warn("sys.getcheckinterval() and sys.setcheckinterval() are deprecated. Use sys.setswitchinterval() instead.", DeprecationWarning)
+    if not isinstance(value, int):
+        raise TypeError("an integer is required")
+    __graalpython__.sys_state.checkinterval = value
+
+@__graalpython__.builtin
+def getswitchinterval():
+    return __graalpython__.sys_state.switchinterval
+
+@__graalpython__.builtin
+def setswitchinterval(value):
+    if not isinstance(value, (int, float)):
+        raise TypeError("must be real number, not str")
+    if value <= 0:
+        raise ValueError("switch interval must be strictly positive")
+    __graalpython__.sys_state.switchinterval = value
 
 @__graalpython__.builtin
 def displayhook(value):
@@ -215,15 +224,19 @@ def displayhook(value):
     builtins._ = None
     text = repr(value)
     try:
-        stdout.write(text)
+        local_stdout = stdout
+    except NameError as e:
+        raise RuntimeError("lost sys.stdout") from e
+    try:
+        local_stdout.write(text)
     except UnicodeEncodeError:
-        bytes = text.encode(stdout.encoding, 'backslashreplace')
-        if hasattr(stdout, 'buffer'):
-            stdout.buffer.write(bytes)
+        bytes = text.encode(local_stdout.encoding, 'backslashreplace')
+        if hasattr(local_stdout, 'buffer'):
+            local_stdout.buffer.write(bytes)
         else:
-            text = bytes.decode(stdout.encoding, 'strict')
-            stdout.write(text)
-    stdout.write("\n")
+            text = bytes.decode(local_stdout.encoding, 'strict')
+            local_stdout.write(text)
+    local_stdout.write("\n")
     builtins._ = value
 
 
