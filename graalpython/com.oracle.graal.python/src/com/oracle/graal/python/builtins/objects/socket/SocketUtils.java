@@ -68,8 +68,7 @@ public class SocketUtils {
      * with timeouts and retrying the call on EINTR. Must be called with GIL held.
      */
     public static <T> T callSocketFunctionWithRetry(PNodeWithRaise node, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket socket, SocketFunction<T> function,
-                    boolean writing, boolean connect)
-                    throws PosixException {
+                    boolean writing, boolean connect) throws PosixException {
         return callSocketFunctionWithRetry(node, posixLib, posixSupport, gil, socket, function, writing, connect, null);
     }
 
@@ -78,8 +77,7 @@ public class SocketUtils {
      * connections with timeouts and retrying the call on EINTR. Must be called with GIL held.
      */
     public static <T> T callSocketFunctionWithRetry(PNodeWithRaise node, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket socket, SocketFunction<T> function,
-                    boolean writing, boolean connect, TimeoutHelper timeoutHelperIn)
-                    throws PosixException {
+                    boolean writing, boolean connect, TimeoutHelper timeoutHelperIn) throws PosixException {
         TimeoutHelper timeoutHelper = timeoutHelperIn;
         if (timeoutHelper == null && socket.getTimeoutNs() > 0) {
             timeoutHelper = new TimeoutHelper(socket.getTimeoutNs());
