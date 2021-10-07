@@ -225,7 +225,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SliceLiteralNode.SliceUnpack unpack,
                         @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
-            Object buffer = bufferAcquireLib.acquireReadonly(value);
+            Object buffer = bufferAcquireLib.acquireReadonly(value, frame, this);
             try {
                 // TODO avoid copying if possible. Note that it is possible that value is self
                 PBytes bytes = factory().createBytes(bufferLib.getCopiedByteArray(value));
@@ -351,13 +351,13 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isBytes(other)", limit = "3")
-        PByteArray add(PByteArray self, Object other,
+        PByteArray add(VirtualFrame frame, PByteArray self, Object other,
                         @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached SequenceStorageNodes.ConcatNode concatNode) {
             Object buffer;
             try {
-                buffer = bufferAcquireLib.acquireReadonly(other);
+                buffer = bufferAcquireLib.acquireReadonly(other, frame, this);
             } catch (PException e) {
                 throw raise(TypeError, ErrorMessages.CANT_CONCAT_P_TO_S, other, "bytearray");
             }
@@ -554,7 +554,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             self.checkCanResize(this);
             byte[] b;
             if (bufferProfile.profile(bufferAcquireLib.hasBuffer(source))) {
-                Object buffer = bufferAcquireLib.acquireReadonly(source);
+                Object buffer = bufferAcquireLib.acquireReadonly(source, frame, this);
                 try {
                     // TODO avoid copying
                     b = bufferLib.getCopiedByteArray(buffer);

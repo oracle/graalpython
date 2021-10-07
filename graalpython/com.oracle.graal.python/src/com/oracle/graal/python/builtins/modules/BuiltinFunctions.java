@@ -847,7 +847,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             String filename;
             // TODO use PyUnicode_FSDecode
             if (acquireLib.hasBuffer(wFilename)) {
-                Object filenameBuffer = acquireLib.acquireReadonly(wFilename);
+                Object filenameBuffer = acquireLib.acquireReadonly(wFilename, frame, this);
                 try {
                     filename = PythonUtils.newString(bufferLib.getCopiedByteArray(filenameBuffer));
                     if (!(wFilename instanceof PBytes)) {
@@ -920,7 +920,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 // buffers, since that's fast for us anyway
                 Object buffer;
                 try {
-                    buffer = acquireLib.acquireReadonly(source);
+                    buffer = acquireLib.acquireReadonly(source, frame, this);
                 } catch (PException e) {
                     throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S, "compile()", 1, "string, bytes or AST object");
                 }

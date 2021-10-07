@@ -1045,12 +1045,12 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isString(str)")
-        static Object fromother(VirtualFrame frame, PArray self, Object str,
+        Object fromother(VirtualFrame frame, PArray self, Object str,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached FromBytesNode fromBytesNode) {
             warnNode.warnEx(frame, DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.", 1);
-            return fromBytesNode.executeWithoutClinic(frame, self, bufferAcquireLib.acquireReadonly(str));
+            return fromBytesNode.executeWithoutClinic(frame, self, bufferAcquireLib.acquireReadonly(str, frame, this));
         }
     }
 

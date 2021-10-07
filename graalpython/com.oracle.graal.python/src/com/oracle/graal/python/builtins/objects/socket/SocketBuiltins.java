@@ -86,6 +86,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBui
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -643,7 +644,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil) {
-            Object buffer = bufferAcquireLib.acquireWritable(bufferObj);
+            Object buffer = bufferAcquireLib.acquireWritable(bufferObj, frame, this);
             try {
                 if (recvlenIn < 0) {
                     throw raise(ValueError, "negative buffersize in recv_into");
@@ -707,7 +708,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode) {
-            Object buffer = bufferAcquireLib.acquireWritable(bufferObj);
+            Object buffer = bufferAcquireLib.acquireWritable(bufferObj, frame, this);
             try {
                 if (recvlenIn < 0) {
                     throw raise(ValueError, "negative buffersize in recvfrom_into");
@@ -768,7 +769,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil) {
-            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj);
+            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, this);
             try {
                 checkSelectable(this, socket);
 
@@ -804,7 +805,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil) {
-            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj);
+            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, this);
             try {
                 checkSelectable(this, socket);
 
@@ -872,7 +873,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 flags = asIntNode.execute(frame, flagsOrAddress);
             }
 
-            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj);
+            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, this);
             try {
                 checkSelectable(this, socket);
 

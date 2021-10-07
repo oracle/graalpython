@@ -109,7 +109,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached SSLOperationNode sslOperationNode) {
-            Object buffer = bufferAcquireLib.acquireWritableWithTypeError(bufferObj, "read");
+            Object buffer = bufferAcquireLib.acquireWritableWithTypeError(bufferObj, "read", frame, this);
             try {
                 int bufferLen = bufferLib.getBufferLength(buffer);
                 int toReadLen = len;

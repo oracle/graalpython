@@ -86,6 +86,7 @@ import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -431,7 +432,8 @@ public class TextIOWrapperNodes {
     /*
      * cpython/Modules/_io/textio.c:textiowrapper_read_chunk
      */
-    protected abstract static class ReadChunkNode extends PNodeWithRaise {
+    protected abstract static class ReadChunkNode extends PNodeWithRaiseAndIndirectCall {
+
         public abstract boolean execute(VirtualFrame frame, PTextIO self, int size_hint);
 
         @Specialization(guards = "self.hasDecoder()")
@@ -493,7 +495,7 @@ public class TextIOWrapperNodes {
 
             Object inputChunkBuf;
             try {
-                inputChunkBuf = bufferAcquireLib.acquireReadonly(inputChunk);
+                inputChunkBuf = bufferAcquireLib.acquireReadonly(inputChunk, frame, this);
             } catch (PException e) {
                 throw raise(TypeError, S_SHOULD_HAVE_RETURNED_A_BYTES_LIKE_OBJECT_NOT_P, (self.isHasRead1() ? READ1 : READ), inputChunk);
             }

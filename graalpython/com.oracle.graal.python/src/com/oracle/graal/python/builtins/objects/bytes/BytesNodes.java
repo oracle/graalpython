@@ -79,6 +79,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -200,7 +201,7 @@ public abstract class BytesNodes {
     }
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
-    public abstract static class ToBytesNode extends PNodeWithRaise {
+    public abstract static class ToBytesNode extends PNodeWithRaiseAndIndirectCall {
 
         private final PythonBuiltinClassType errorType;
         private final String errorMessageFormat;
@@ -210,15 +211,15 @@ public abstract class BytesNodes {
             this.errorMessageFormat = errorMessageFormat;
         }
 
-        public abstract byte[] execute(Object obj);
+        public abstract byte[] execute(VirtualFrame frame, Object obj);
 
         @Specialization(limit = "3")
-        byte[] doBuffer(Object object,
+        byte[] doBuffer(VirtualFrame frame, Object object,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             Object buffer;
             try {
-                buffer = bufferAcquireLib.acquireReadonly(object);
+                buffer = bufferAcquireLib.acquireReadonly(object, frame, this);
             } catch (PException e) {
                 throw raise(errorType, errorMessageFormat, object);
             }
@@ -820,7 +821,7 @@ public abstract class BytesNodes {
         }
     }
 
-    public abstract static class DecodeUTF8FSPathNode extends PNodeWithRaise {
+    public abstract static class DecodeUTF8FSPathNode extends PNodeWithRaiseAndIndirectCall {
 
         public byte[] getBytes(VirtualFrame frame, Object value) {
             return utf8StringToBytes(execute(frame, value));
@@ -829,14 +830,14 @@ public abstract class BytesNodes {
         public abstract String execute(VirtualFrame frame, Object value);
 
         @Specialization
-        static String doit(VirtualFrame frame, Object value,
+        String doit(VirtualFrame frame, Object value,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached CastToJavaStringNode toString,
                         @Cached PosixModuleBuiltins.FspathNode fsPath) {
             Object path = fsPath.execute(frame, value);
             if (bufferAcquireLib.hasBuffer(path)) {
-                Object buffer = bufferAcquireLib.acquireReadonly(path);
+                Object buffer = bufferAcquireLib.acquireReadonly(path, frame, this);
                 try {
                     return encodeFSDefault(bufferLib.getCopiedByteArray(path));
                 } finally {

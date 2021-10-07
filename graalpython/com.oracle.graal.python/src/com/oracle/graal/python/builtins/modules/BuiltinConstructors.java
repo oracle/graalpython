@@ -1392,7 +1392,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     if (truncResult == PNone.NO_VALUE) {
                         Object buffer;
                         try {
-                            buffer = bufferAcquireLib.acquireReadonly(obj);
+                            buffer = bufferAcquireLib.acquireReadonly(obj, frame, this);
                         } catch (PException e) {
                             throw raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER, "int()", obj);
                         }
@@ -1892,7 +1892,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             Object buffer;
             try {
-                buffer = acquireLib.acquireReadonly(obj);
+                buffer = acquireLib.acquireReadonly(obj, frame, this);
             } catch (PException e) {
                 throw raise(TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
             }

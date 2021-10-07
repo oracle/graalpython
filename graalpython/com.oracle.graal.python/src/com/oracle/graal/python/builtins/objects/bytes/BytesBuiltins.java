@@ -387,14 +387,14 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isBytes(other)", limit = "3")
-        public PBytesLike add(PBytesLike self, Object other,
+        PBytesLike add(VirtualFrame frame, PBytesLike self, Object other,
                         @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached("createWithOverflowError()") SequenceStorageNodes.ConcatNode concatNode,
                         @Cached BytesNodes.CreateBytesNode create) {
             Object buffer;
             try {
-                buffer = bufferAcquireLib.acquireReadonly(other);
+                buffer = bufferAcquireLib.acquireReadonly(other, frame, this);
             } catch (PException e) {
                 throw raise(TypeError, ErrorMessages.CANT_CONCAT_P_TO_S, other, "bytearray");
             }
@@ -1010,7 +1010,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 byte[] bytes = toBytesNode.execute(self.getSequenceStorage());
                 return countSingle(bytes, begin, last, cast.execute(elem));
             } else if (bufferAcquireLib.hasBuffer(sub)) {
-                Object buffer = bufferAcquireLib.acquireReadonly(sub);
+                Object buffer = bufferAcquireLib.acquireReadonly(sub, frame, this);
                 try {
                     byte[] elems = bufferLib.getInternalOrCopiedByteArray(sub);
                     int elemsLen = bufferLib.getBufferLength(sub);
@@ -2150,12 +2150,12 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPNone(object)")
-        PBytesLike strip(PBytesLike self, Object object,
+        PBytesLike strip(VirtualFrame frame, PBytesLike self, Object object,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached.Shared("createByte") @Cached BytesNodes.CreateBytesNode create,
                         @Cached.Shared("toByteSelf") @Cached BytesNodes.ToBytesNode selfToBytesNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(object);
+            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, this);
             try {
                 byte[] stripBs = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int stripBsLen = bufferLib.getBufferLength(buffer);

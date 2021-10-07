@@ -487,13 +487,13 @@ public class BytesIOBuiltins extends PythonBuiltins {
     abstract static class WriteNode extends ClosedCheckPythonBinaryBuiltinNode {
 
         @Specialization(guards = {"self.hasBuf()", "checkExports(self)"}, limit = "3")
-        Object doWrite(PBytesIO self, Object b,
+        Object doWrite(VirtualFrame frame, PBytesIO self, Object b,
                         @CachedLibrary("b") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached GetInternalArrayNode internalArray,
                         @Cached EnsureCapacityNode ensureCapacityNode,
                         @Cached SetLenNode setLenNode) {
-            Object buffer = acquireLib.acquireReadonly(b);
+            Object buffer = acquireLib.acquireReadonly(b, frame, this);
             try {
                 int len = bufferLib.getBufferLength(buffer);
                 if (len == 0) {
