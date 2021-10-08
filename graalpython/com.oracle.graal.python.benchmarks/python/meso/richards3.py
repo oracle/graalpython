@@ -45,7 +45,7 @@
 #  Translation from C++, Mario Wolczko
 #  Outer loop added by Alex Jacoby
 
-from __future__ import print_function
+# from __future__ import print_function
 
 # Task IDs
 I_IDLE = 1
