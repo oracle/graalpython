@@ -40,31 +40,37 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_S_NOT_P;
+
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 
-public abstract class ReadableBufferConversionNode extends ObjectConversionBaseNode {
-    protected ReadableBufferConversionNode(Object defaultValue, boolean useDefaultForNone) {
-        super(defaultValue, useDefaultForNone);
+public abstract class TupleConversionNode extends ArgumentCastNodeWithRaise {
+    @Specialization
+    static Object[] doNone(@SuppressWarnings("unused") PNone none) {
+        return PythonUtils.EMPTY_OBJECT_ARRAY;
     }
 
-    @Specialization(guards = "!isHandledPNone(value)", limit = "getCallSiteInlineCacheMaxDepth()")
-    Object doObject(Object value,
-                    @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib) {
-        return acquireLib.acquireReadonly(value);
+    @Specialization
+    static Object[] doTuple(PTuple t,
+                    @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
+        return getInternalArrayNode.execute(t.getSequenceStorage());
+    }
+
+    @Specialization(guards = "!isPNone(value)")
+    Object doOthers(Object value) {
+        throw raise(PythonBuiltinClassType.TypeError, MUST_BE_S_NOT_P, value, "tuple", value);
     }
 
     @ClinicConverterFactory
-    public static ReadableBufferConversionNode create(@ClinicConverterFactory.DefaultValue Object defaultValue, @ClinicConverterFactory.UseDefaultForNone boolean useDefaultForNone) {
-        return ReadableBufferConversionNodeGen.create(defaultValue, useDefaultForNone);
-    }
-
-    @ClinicConverterFactory
-    public static ReadableBufferConversionNode create(@ClinicConverterFactory.UseDefaultForNone boolean useDefaultForNone) {
-        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
-        return ReadableBufferConversionNodeGen.create(PNone.NONE, false);
+    public static TupleConversionNode create() {
+        return TupleConversionNodeGen.create();
     }
 }

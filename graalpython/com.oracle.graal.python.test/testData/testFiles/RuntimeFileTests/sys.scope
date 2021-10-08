@@ -5,7 +5,32 @@ Scope: []
     FreeVars: Empty
     Scope: displayhook
         Kind: Function
-        FrameDescriptor: [builtins, bytes, text, value, <return_val>]
+        FrameDescriptor: [builtins, local_stdout, e, bytes, text, value, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: setswitchinterval
+        Kind: Function
+        FrameDescriptor: [value, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: getswitchinterval
+        Kind: Function
+        FrameDescriptor: [<return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: setcheckinterval
+        Kind: Function
+        FrameDescriptor: [warnings, value, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: getcheckinterval
+        Kind: Function
+        FrameDescriptor: [<return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+    Scope: setrecursionlimit
+        Kind: Function
+        FrameDescriptor: [value, <return_val>]
         CellVars: Empty
         FreeVars: Empty
     Scope: getrecursionlimit
@@ -18,6 +43,16 @@ Scope: []
         FrameDescriptor: [hookname, funcname, os, <>temp14, <>temp13, kws, warnings, module, modname, dot, <>temp12, args, importlib, hook, <return_val>]
         CellVars: Empty
         FreeVars: Empty
+    Scope: make_unraisablehook
+        Kind: Function
+        FrameDescriptor: [__unraisablehook__, <return_val>]
+        CellVars: Empty
+        FreeVars: Empty
+        Scope: __unraisablehook__
+            Kind: Function
+            FrameDescriptor: [r, unraisable, <return_val>]
+            CellVars: Empty
+            FreeVars: Empty
     Scope: make_excepthook
         Kind: Function
         FrameDescriptor: [simple_print_traceback, __print_traceback__, <return_val>]
@@ -25,7 +60,7 @@ Scope: []
         FreeVars: Empty
         Scope: __print_traceback__
             Kind: Function
-            FrameDescriptor: [exc, simple_print_traceback, typ, value, traceback, <return_val>, tb]
+            FrameDescriptor: [msg, line, typ, sys, tb, exc, simple_print_traceback, limit, lines, value, traceback, <return_val>, no_traceback]
             CellVars: Empty
             FreeVars: [simple_print_traceback]
         Scope: simple_print_traceback
@@ -35,36 +70,16 @@ Scope: []
             FreeVars: Empty
     Scope: exit
         Kind: Function
-        FrameDescriptor: [arg, <return_val>]
+        FrameDescriptor: [code, arg, <return_val>]
         CellVars: Empty
         FreeVars: Empty
-    Scope: make_hash_info_class
+    Scope: addaudithook
         Kind: Function
-        FrameDescriptor: [make_named_tuple_class, <return_val>]
+        FrameDescriptor: [hook, <return_val>]
         CellVars: Empty
         FreeVars: Empty
-    Scope: make_float_info_class
+    Scope: audit
         Kind: Function
-        FrameDescriptor: [make_named_tuple_class, <return_val>]
-        CellVars: Empty
-        FreeVars: Empty
-    Scope: make_flags_class
-        Kind: Function
-        FrameDescriptor: [flags_class, make_func, make_named_tuple_class, names, get_set_descriptor, <>temp7, f, <>temp8, i, <return_val>]
-        CellVars: Empty
-        FreeVars: Empty
-        Scope: make_func
-            Kind: Function
-            FrameDescriptor: [func, i, <return_val>]
-            CellVars: [i]
-            FreeVars: Empty
-            Scope: func
-                Kind: Function
-                FrameDescriptor: [self, i, <return_val>]
-                CellVars: Empty
-                FreeVars: [i]
-    Scope: make_implementation_info
-        Kind: Function
-        FrameDescriptor: [make_named_tuple_class, version_info_type, <return_val>, SimpleNamespace]
+        FrameDescriptor: [str, args, <return_val>]
         CellVars: Empty
         FreeVars: Empty

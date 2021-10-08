@@ -168,7 +168,7 @@ public class ArgumentClinicModel {
                 applicableFactories.removeIf(x -> !x.hasParameter(Param.DefaultValue));
                 if (applicableFactories.size() == 0) {
                     throw new ProcessingError(type, "None of the factory methods of conversion %s takes the provided default value '%s'. Found factories: %s",
-                                    factories[0].fullClassName, annotation.args().length, annotation.defaultValue(), Arrays.toString(factories));
+                                    factories[0].fullClassName, annotation.defaultValue(), Arrays.toString(factories));
                 }
             }
 
@@ -177,7 +177,7 @@ public class ArgumentClinicModel {
                 applicableFactories.removeIf(x -> !x.hasParameter(Param.UseDefaultForNone));
                 if (applicableFactories.size() == 0) {
                     throw new ProcessingError(type, "None of the factory methods of conversion %s takes the 'UseDefaultForNone' argument. Found factories: %s",
-                                    factories[0].fullClassName, annotation.args().length, annotation.defaultValue(), Arrays.toString(factories));
+                                    factories[0].fullClassName, Arrays.toString(factories));
                 }
             }
 

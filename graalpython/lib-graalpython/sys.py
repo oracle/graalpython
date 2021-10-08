@@ -39,42 +39,6 @@
 from builtins import BaseException
 
 
-def make_implementation_info():
-    from _descriptor import SimpleNamespace
-    result = SimpleNamespace(
-        name="graalpython",
-        cache_tag="graalpython-"+str(version_info.major) + str(version_info.minor),
-        version=version_info,
-        _multiarch=__gmultiarch
-    )
-    return result
-implementation = make_implementation_info()
-del make_implementation_info
-del __gmultiarch
-implementation.hexversion = hexversion = ((version_info.major << 24) |
-              (version_info.minor << 16) |
-              (version_info.micro << 8) |
-              (0xa << 4) | # 0xA is alpha, 0xB is beta, 0xC is rc, 0xF is final
-              (version_info.serial << 0))
-
-
-float_repr_style = 'short'
-
-
-meta_path = []
-path_hooks = []
-path_importer_cache = {}
-# these will be initialized explicitly from Java:
-# prefix, base_prefix, exec_prefix, base_exec_prefix
-warnoptions = []
-
-
-# default prompt for interactive shell
-ps1 = ">>> "
-
-# continue prompt for interactive shell
-ps2 = "... "
-
 # Stub audit hooks implementation for PEP 578
 def audit(str, *args):
     pass

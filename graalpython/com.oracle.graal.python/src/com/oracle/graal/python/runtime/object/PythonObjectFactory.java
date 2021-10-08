@@ -122,6 +122,7 @@ import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
@@ -713,6 +714,18 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PDict createDict(Object cls, Shape instanceShape, HashingStorage storage) {
         return trace(new PDict(cls, instanceShape, storage));
+    }
+
+    public final PSimpleNamespace createSimpleNamespace() {
+        return createSimpleNamespace(PythonBuiltinClassType.PSimpleNamespace);
+    }
+
+    public final PSimpleNamespace createSimpleNamespace(Object cls) {
+        return createSimpleNamespace(cls, getShape(cls));
+    }
+
+    public final PSimpleNamespace createSimpleNamespace(Object cls, Shape instanceShape) {
+        return trace(new PSimpleNamespace(cls, instanceShape));
     }
 
     public final PDefaultDict createDefaultDict(Object cls) {

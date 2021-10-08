@@ -72,11 +72,13 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -294,6 +296,16 @@ public class SysModuleBuiltins extends PythonBuiltins {
         return SysModuleBuiltinsFactory.getFactories();
     }
 
+    protected static PSimpleNamespace makeImplementation(Python3Core core, PTuple versionInfo, String gmultiarch) {
+        final PSimpleNamespace ns = core.factory().createSimpleNamespace();
+        ns.setAttribute("name", "graalpython");
+        ns.setAttribute("cache_tag", "graalpython-" + PythonLanguage.MAJOR + PythonLanguage.MINOR);
+        ns.setAttribute("version", versionInfo);
+        ns.setAttribute("_multiarch", gmultiarch);
+        ns.setAttribute("hexversion", PythonLanguage.VERSION_HEX);
+        return ns;
+    }
+
     @Override
     public void initialize(Python3Core core) {
         StructSequence.initType(core, VERSION_INFO_DESC);
@@ -311,7 +323,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("path", core.factory().createList());
         builtinConstants.put("builtin_module_names", core.factory().createTuple(core.builtinModuleNames()));
         builtinConstants.put("maxsize", MAXSIZE);
-        builtinConstants.put("version_info", core.factory().createStructSeq(VERSION_INFO_DESC, PythonLanguage.MAJOR, PythonLanguage.MINOR, PythonLanguage.MICRO, PythonLanguage.RELEASE_LEVEL, 0));
+        final PTuple versionInfo = core.factory().createStructSeq(VERSION_INFO_DESC, PythonLanguage.MAJOR, PythonLanguage.MINOR, PythonLanguage.MICRO, PythonLanguage.RELEASE_LEVEL_STRING,
+                        PythonLanguage.RELEASE_SERIAL);
+        builtinConstants.put("version_info", versionInfo);
         builtinConstants.put("api_version", PythonLanguage.API_VERSION);
         builtinConstants.put("version", PythonLanguage.VERSION +
                         " (" + COMPILE_TIME + ")" +
@@ -350,7 +364,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
         if (os.equals(PLATFORM_DARWIN)) {
             builtinConstants.put("_framework", FRAMEWORK);
         }
-        builtinConstants.put("__gmultiarch", PythonUtils.getPythonArch() + "-" + os);
+        final String gmultiarch = PythonUtils.getPythonArch() + "-" + os;
+        builtinConstants.put("__gmultiarch", gmultiarch);
 
         PFileIO stdin = core.factory().createFileIO(PythonBuiltinClassType.PFileIO);
         FileIOBuiltins.FileIOInit.internalInit(stdin, "<stdin>", 0, "r");
@@ -367,6 +382,18 @@ public class SysModuleBuiltins extends PythonBuiltins {
         FileIOBuiltins.FileIOInit.internalInit(stderr, "<stderr>", 2, "w");
         builtinConstants.put("stderr", stderr);
         builtinConstants.put("__stderr__", stderr);
+        builtinConstants.put("implementation", makeImplementation(core, versionInfo, gmultiarch));
+        builtinConstants.put("hexversion", PythonLanguage.VERSION_HEX);
+
+        builtinConstants.put("float_repr_style", "short");
+        builtinConstants.put("meta_path", core.factory().createList());
+        builtinConstants.put("path_hooks", core.factory().createList());
+        builtinConstants.put("path_importer_cache", core.factory().createDict());
+
+        // default prompt for interactive shell
+        builtinConstants.put("ps1", ">>> ");
+        // continue prompt for interactive shell
+        builtinConstants.put("ps2", "... ");
 
         super.initialize(core);
 

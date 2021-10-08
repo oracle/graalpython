@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,33 +38,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function.builtins.clinic;
+package com.oracle.graal.python.builtins.objects.namespace;
 
-import com.oracle.graal.python.annotations.ClinicConverterFactory;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.object.Shape;
 
-public abstract class ReadableBufferConversionNode extends ObjectConversionBaseNode {
-    protected ReadableBufferConversionNode(Object defaultValue, boolean useDefaultForNone) {
-        super(defaultValue, useDefaultForNone);
-    }
-
-    @Specialization(guards = "!isHandledPNone(value)", limit = "getCallSiteInlineCacheMaxDepth()")
-    Object doObject(Object value,
-                    @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib) {
-        return acquireLib.acquireReadonly(value);
-    }
-
-    @ClinicConverterFactory
-    public static ReadableBufferConversionNode create(@ClinicConverterFactory.DefaultValue Object defaultValue, @ClinicConverterFactory.UseDefaultForNone boolean useDefaultForNone) {
-        return ReadableBufferConversionNodeGen.create(defaultValue, useDefaultForNone);
-    }
-
-    @ClinicConverterFactory
-    public static ReadableBufferConversionNode create(@ClinicConverterFactory.UseDefaultForNone boolean useDefaultForNone) {
-        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
-        return ReadableBufferConversionNodeGen.create(PNone.NONE, false);
+public final class PSimpleNamespace extends PythonBuiltinObject {
+    public PSimpleNamespace(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
     }
 }
