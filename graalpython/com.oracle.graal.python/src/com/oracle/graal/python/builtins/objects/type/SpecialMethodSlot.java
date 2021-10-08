@@ -77,7 +77,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__PREPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
@@ -162,7 +161,6 @@ public enum SpecialMethodSlot {
 
     New(__NEW__, NO_BUILTIN_DESCRIPTORS),
     Init(__INIT__, NO_BUILTIN_DESCRIPTORS),
-    Prepare(__PREPARE__),
     SetName(__SET_NAME__, NO_BUILTIN_DESCRIPTORS),
     InstanceCheck(__INSTANCECHECK__),
     Subclasscheck(__SUBCLASSCHECK__),
@@ -667,8 +665,6 @@ public enum SpecialMethodSlot {
                 return Delete;
             case __DICT__:
                 return Dict;
-            case __PREPARE__:
-                return Prepare;
             case __GT__:
                 return Gt;
             case __GE__:
