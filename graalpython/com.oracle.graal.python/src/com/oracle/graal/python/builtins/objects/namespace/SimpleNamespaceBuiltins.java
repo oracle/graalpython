@@ -47,7 +47,11 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+
+import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -90,7 +94,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSimpleNamespace)
 public class SimpleNamespaceBuiltins extends PythonBuiltins {
@@ -161,13 +164,28 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
         @CompilerDirectives.ValueType
         protected static final class NSReprState {
             private final HashingStorage dictStorage;
-            private final StringBuilder result;
-            private final int initialLength;
+            private final List<Pair<String, String>> items;
 
-            NSReprState(HashingStorage dictStorage, StringBuilder result) {
+            @CompilerDirectives.TruffleBoundary
+            NSReprState(HashingStorage dictStorage) {
                 this.dictStorage = dictStorage;
-                this.result = result;
-                initialLength = result.length();
+                this.items = new ArrayList<>();
+            }
+
+            @Override
+            public String toString() {
+                StringBuilder sb = new StringBuilder();
+                items.sort(Comparator.comparing(Pair::getLeft));
+                for (int i = 0; i < items.size(); i++) {
+                    Pair<String, String> item = items.get(i);
+                    if (i > 0) {
+                        sb.append(", ");
+                    }
+                    sb.append(item.getLeft());
+                    sb.append("=");
+                    sb.append(item.getRight());
+                }
+                return sb.toString();
             }
         }
 
@@ -197,12 +215,6 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
                 }
             }
 
-            protected static void appendSeparator(NSReprState s, ConditionProfile lengthCheck) {
-                if (lengthCheck.profile(s.result.length() > s.initialLength)) {
-                    PythonUtils.append(s.result, ", ");
-                }
-            }
-
             @Override
             public abstract NSReprState execute(Object key, NSReprState state);
 
@@ -211,10 +223,9 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
                             @Cached LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToJavaStringNode castStr,
                             @Cached PRaiseNode raiseNode,
-                            @Cached ConditionProfile lengthCheck,
                             @Cached BranchProfile valueNullBranch,
                             @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {
-                return doStringKey(key.getValue(), state, valueReprNode, castStr, raiseNode, lengthCheck, valueNullBranch, lib);
+                return doStringKey(key.getValue(), state, valueReprNode, castStr, raiseNode, valueNullBranch, lib);
             }
 
             @Specialization
@@ -222,15 +233,16 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
                             @Cached LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToJavaStringNode castStr,
                             @Cached PRaiseNode raiseNode,
-                            @Cached ConditionProfile lengthCheck,
                             @Cached BranchProfile valueNullBranch,
                             @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {
                 String valueReprString = getReprString(lib.getItem(state.dictStorage, key), valueReprNode, castStr, valueNullBranch, raiseNode);
-                appendSeparator(state, lengthCheck);
-                PythonUtils.append(state.result, key);
-                PythonUtils.append(state.result, "=");
-                PythonUtils.append(state.result, valueReprString);
+                appendItem(state, key, valueReprString);
                 return state;
+            }
+
+            @CompilerDirectives.TruffleBoundary
+            private static void appendItem(NSReprState state, String key, String valueReprString) {
+                state.items.add(Pair.create(key, valueReprString));
             }
 
             @Specialization(guards = "!isString(key)")
@@ -258,7 +270,9 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
             }
             try {
                 HashingStorage dictStorage = getDict.execute(ns).getDictStorage();
-                lib.forEach(dictStorage, consumerNode, new NSReprState(dictStorage, sb));
+                final NSReprState state = new NSReprState(dictStorage);
+                lib.forEach(dictStorage, consumerNode, state);
+                PythonUtils.append(sb, state.toString());
                 PythonUtils.append(sb, ")");
                 return PythonUtils.sbToString(sb);
             } finally {
