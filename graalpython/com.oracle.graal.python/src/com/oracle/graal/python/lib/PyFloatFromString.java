@@ -43,11 +43,11 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
+import com.oracle.graal.python.builtins.objects.buffer.BufferAcquireGenerateUncachedNode;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithIndirectCall;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -66,7 +66,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
  * {@code double}). Raises {@code ValueError} when the conversion fails.
  */
 @GenerateUncached
-public abstract class PyFloatFromString extends PNodeWithIndirectCall {
+public abstract class PyFloatFromString extends PNodeWithContext {
     public abstract double execute(Frame frame, Object obj);
 
     public abstract double execute(Frame frame, String obj);
@@ -80,7 +80,7 @@ public abstract class PyFloatFromString extends PNodeWithIndirectCall {
 
     @Specialization
     double doGeneric(VirtualFrame frame, Object object,
-                    @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                    @Cached(parameters = "3") BufferAcquireGenerateUncachedNode acquireNode,
                     @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                     @Cached CastToJavaStringNode cast,
                     @Shared("repr") @Cached PyObjectReprAsJavaStringNode reprNode,
@@ -91,7 +91,7 @@ public abstract class PyFloatFromString extends PNodeWithIndirectCall {
         } catch (CannotCastException e) {
             Object buffer = null;
             try {
-                buffer = bufferAcquireLib.acquireReadonly(object, frame, this);
+                buffer = acquireNode.acquireReadonly(frame, object);
             } catch (PException e1) {
                 // fallthrough
             }
