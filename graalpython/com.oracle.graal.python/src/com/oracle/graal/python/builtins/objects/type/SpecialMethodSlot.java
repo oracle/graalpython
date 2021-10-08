@@ -164,7 +164,7 @@ public enum SpecialMethodSlot {
     SetName(__SET_NAME__, NO_BUILTIN_DESCRIPTORS),
     InstanceCheck(__INSTANCECHECK__),
     Subclasscheck(__SUBCLASSCHECK__),
-    Call(__CALL__),
+    Call(__CALL__, NO_BUILTIN_DESCRIPTORS),
 
     GetItem(__GETITEM__),
     SetItem(__SETITEM__),
