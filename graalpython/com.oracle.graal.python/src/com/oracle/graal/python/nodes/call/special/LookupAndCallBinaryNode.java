@@ -47,9 +47,11 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -174,6 +176,15 @@ public abstract class LookupAndCallBinaryNode extends Node {
     }
 
     protected final PythonBinaryBuiltinNode getBinaryBuiltin(PythonBuiltinClassType clazz) {
+        if (SpecialMethodSlot.canBeSpecial(name)) {
+            SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(name);
+            if (slot != null) {
+                Object attribute = slot.getValue(clazz);
+                if (attribute instanceof BinaryBuiltinDescriptor) {
+                    return ((BinaryBuiltinDescriptor) attribute).createNode();
+                }
+            }
+        }
         Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(clazz, name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
