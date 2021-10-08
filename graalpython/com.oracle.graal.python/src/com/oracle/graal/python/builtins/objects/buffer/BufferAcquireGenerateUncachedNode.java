@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.buffer;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PNodeWithIndirectCall;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
@@ -57,16 +56,21 @@ import com.oracle.truffle.api.utilities.NeverValidAssumption;
 /**
  * Helper node for using {@link PythonBufferAcquireLibrary} in a node annotated with
  * {@link com.oracle.truffle.api.dsl.GenerateUncached}.<br/>
- * In order to correctly use {@link PythonBufferAcquireLibrary}, one needs to setup an indirect
+ * In order to correctly use {@link PythonBufferAcquireLibrary}, one needs to se tup an indirect
  * call. Following methods of the library already do that but the caller needs to provide
  * appropriate nodes.
  * <ul>
- * <li>{@link PythonBufferAcquireLibrary#acquireReadonly(Object, VirtualFrame, PNodeWithRaiseAndIndirectCall)}</li>
- * <li>{@link PythonBufferAcquireLibrary#acquireReadonly(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallNode)}
+ * <li>
+ * {@link PythonBufferAcquireLibrary#acquireReadonly(Object, VirtualFrame, PNodeWithRaiseAndIndirectCall)}
  * </li>
- * <li>{@link PythonBufferAcquireLibrary#acquireWritable(Object, VirtualFrame, PNodeWithIndirectCall)}
+ * <li>
+ * {@link PythonBufferAcquireLibrary#acquireReadonly(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallNode)}
  * </li>
- * <li>{@link PythonBufferAcquireLibrary#acquireWritable(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallNode)}
+ * <li>
+ * {@link PythonBufferAcquireLibrary#acquireWritable(Object, VirtualFrame, PNodeWithRaiseAndIndirectCall)}
+ * </li>
+ * <li>
+ * {@link PythonBufferAcquireLibrary#acquireWritable(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallNode)}
  * </li>
  * </ul>
  * However, if the caller is a node with annotation

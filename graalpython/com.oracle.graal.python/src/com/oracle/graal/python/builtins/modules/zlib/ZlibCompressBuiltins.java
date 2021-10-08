@@ -107,8 +107,8 @@ public class ZlibCompressBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.isInitialized()", "!isBytes(data)"})
         PBytes doNativeObject(VirtualFrame frame, ZLibCompObject.NativeZlibCompObject self, Object data,
-                              @Shared("bb") @Cached BytesNodes.ToBytesNode toBytes,
-                              @Shared("co") @Cached ZlibNodes.ZlibNativeCompressObj compressObj) {
+                        @Shared("bb") @Cached BytesNodes.ToBytesNode toBytes,
+                        @Shared("co") @Cached ZlibNodes.ZlibNativeCompressObj compressObj) {
             synchronized (self) {
                 assert self.isInitialized();
                 byte[] bytes = toBytes.execute(frame, data);

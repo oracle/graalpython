@@ -124,8 +124,8 @@ public class BZ2DecompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isEOF()"})
         PBytes doNativeObject(VirtualFrame frame, BZ2Object.BZ2Decompressor self, Object data, int maxLength,
-                              @Cached BytesNodes.ToBytesNode toBytes,
-                              @Shared("d") @Cached Bz2Nodes.Bz2NativeDecompress decompress) {
+                        @Cached BytesNodes.ToBytesNode toBytes,
+                        @Shared("d") @Cached Bz2Nodes.Bz2NativeDecompress decompress) {
             synchronized (self) {
                 byte[] bytes = toBytes.execute(frame, data);
                 int len = bytes.length;

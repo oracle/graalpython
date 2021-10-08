@@ -102,7 +102,8 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * <b>IMPORTANT:</b> This method may only be used in the context of an indirect call (see
      * {@link IndirectCallContext}). If a frame is available, prefer using convenience methods
      * {@link #acquireReadonly(Object, VirtualFrame, PNodeWithRaiseAndIndirectCall)} or
-     * {@link #acquireReadonly(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallNode)}.
+     * {@link #acquireReadonly(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallNode)}
+     * .
      * </p>
      */
     public final Object acquireReadonly(Object receiver) {
@@ -143,8 +144,8 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * Acquire a buffer object meant for writing. Equivalent of CPython's {@code PyObject_GetBuffer}
      * with flag {@code PyBUF_WRITABLE}. For equivalents of clinic and {@code PyArg_Parse*}
      * converters, see
-     * {@link #acquireWritableWithTypeError(Object, String, VirtualFrame, PNodeWithRaiseAndIndirectCall)}.Will
-     * raise exception if the acquisition fails. Must call
+     * {@link #acquireWritableWithTypeError(Object, String, VirtualFrame, PNodeWithRaiseAndIndirectCall)}
+     * . Will raise exception if the acquisition fails. Must call
      * {@link PythonBufferAccessLibrary#release(Object)} on the returned object after the access is
      * finished. When intrinsifying CPython {PyObject_GetBuffer} calls, pay attention to what it
      * does to the exception. More often than not, it replaces the exception raised here with
@@ -153,7 +154,8 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * <b>IMPORTANT:</b> This method may only be used in the context of an indirect call (see
      * {@link IndirectCallContext}). If a frame is available, prefer using convenience methods
      * {@link #acquireWritable(Object, VirtualFrame, PNodeWithRaiseAndIndirectCall)} or
-     * {@link #acquireWritable(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallNode)}.
+     * {@link #acquireWritable(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallNode)}
+     * .
      * </p>
      */
     public final Object acquireWritable(Object receiver) {

@@ -140,8 +140,8 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isFlushed()"})
         PBytes doNativeObject(VirtualFrame frame, BZ2Object.BZ2Compressor self, Object data,
-                              @Cached BytesNodes.ToBytesNode toBytes,
-                              @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
+                        @Cached BytesNodes.ToBytesNode toBytes,
+                        @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
             byte[] bytes = toBytes.execute(frame, data);
             int len = bytes.length;
             return factory().createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
