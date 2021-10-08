@@ -86,6 +86,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
@@ -144,10 +145,10 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doSet(CDataObject self, Object value,
+        Object doSet(VirtualFrame frame, CDataObject self, Object value,
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary qlib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary alib) {
-            Object buf = qlib.acquire(value, BufferFlags.PyBUF_SIMPLE);
+            Object buf = qlib.acquire(value, BufferFlags.PyBUF_SIMPLE, frame, this);
             byte[] bytes = alib.getInternalOrCopiedByteArray(buf);
             if (bytes.length > self.b_size) {
                 throw raise(ValueError, BYTE_STRING_TOO_LONG);

@@ -118,6 +118,7 @@ import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -586,7 +587,7 @@ public class BytesBuiltins extends PythonBuiltins {
     abstract static class ModNode extends PythonBinaryBuiltinNode {
 
         @Specialization(limit = "2")
-        Object mod(PBytesLike self, Object right,
+        Object mod(VirtualFrame frame, PBytesLike self, Object right,
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create,
                         @Cached PyObjectGetItem getItemNode,
@@ -594,8 +595,13 @@ public class BytesBuiltins extends PythonBuiltins {
             byte[] bytes = bufferLib.getInternalOrCopiedByteArray(self);
             int bytesLen = bufferLib.getBufferLength(self);
             BytesFormatProcessor formatter = new BytesFormatProcessor(PythonContext.get(this).getCore(), getRaiseNode(), getItemNode, getTupleItemNode, bytes, bytesLen);
-            byte[] data = formatter.format(right);
-            return create.execute(factory(), self, data);
+            Object savedState = IndirectCallContext.enter(frame, this);
+            try {
+                byte[] data = formatter.format(right);
+                return create.execute(factory(), self, data);
+            } finally {
+                IndirectCallContext.exit(frame, this, savedState);
+            }
         }
 
     }

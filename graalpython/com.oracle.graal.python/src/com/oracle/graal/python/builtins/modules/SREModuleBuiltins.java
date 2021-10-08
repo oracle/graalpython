@@ -54,7 +54,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -78,7 +78,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
@@ -96,9 +95,9 @@ public class SREModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    abstract static class ToRegexSourceNode extends Node {
+    abstract static class ToRegexSourceNode extends PNodeWithRaiseAndIndirectCall {
 
-        public abstract Source execute(Object pattern, String flags);
+        public abstract Source execute(VirtualFrame frame, Object pattern, String flags);
 
         @TruffleBoundary
         private static String decodeLatin1(byte[] bytes, int length) {
@@ -123,11 +122,10 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "3")
-        protected Source doGeneric(Object pattern, String flags,
+        protected Source doGeneric(VirtualFrame frame, Object pattern, String flags,
                         @CachedLibrary("pattern") InteropLibrary interopLib,
                         @CachedLibrary("pattern") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                        @Cached PRaiseNode raise) {
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             if (interopLib.isString(pattern)) {
                 try {
                     return doString(interopLib.asString(pattern), flags);
@@ -137,9 +135,9 @@ public class SREModuleBuiltins extends PythonBuiltins {
             }
             Object buffer;
             try {
-                buffer = bufferAcquireLib.acquireReadonly(pattern);
+                buffer = bufferAcquireLib.acquireReadonly(pattern, frame, this);
             } catch (PException e) {
-                throw raise.raise(TypeError, "expected string or bytes-like object");
+                throw raise(TypeError, "expected string or bytes-like object");
             }
             try {
                 String options = "Flavor=PythonBytes,Encoding=BYTES";
@@ -170,12 +168,11 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "2") InteropLibrary compiledRegexLib) {
             try {
                 String flagsStr = toStringNode.execute(flags);
-                Source regexSource = toRegexSourceNode.execute(pattern, flagsStr);
-                PythonContext context = PythonContext.get(this);
-                Object compiledRegex = context.getEnv().parseInternal(regexSource).call();
+                Source regexSource = toRegexSourceNode.execute(frame, pattern, flagsStr);
+                Object compiledRegex = getContext().getEnv().parseInternal(regexSource).call();
                 if (compiledRegexLib.isNull(compiledRegex)) {
                     unsupportedRegexError.enter();
-                    if (context.getLanguage().getEngineOption(PythonOptions.TRegexUsesSREFallback)) {
+                    if (getLanguage().getEngineOption(PythonOptions.TRegexUsesSREFallback)) {
                         return callFallbackCompilerNode.execute(frame, fallbackCompiler, pattern, flags);
                     } else {
                         throw raise(ValueError, "regular expression not supported, no fallback engine present");
