@@ -30,6 +30,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeErr
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.ABS;
+import static com.oracle.graal.python.nodes.BuiltinNames.ALL;
 import static com.oracle.graal.python.nodes.BuiltinNames.ASCII;
 import static com.oracle.graal.python.nodes.BuiltinNames.BIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINT;
@@ -1278,6 +1279,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return sizeNode.execute(frame, obj);
         }
     }
+
+    @Builtin(name = ALL, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class AllNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static boolean doList(PList object) {
+            System.out.println("list_all");
+            return true;
+        }
+
+       @Specialization
+       static boolean doObject(VirtualFrame frame, Object object) {
+            System.out.println("obj_all");
+            return true;
+        }
+    }
+
+
 
     public abstract static class MinMaxNode extends PythonBuiltinNode {
 
