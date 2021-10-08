@@ -173,6 +173,7 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
             }
 
             @Override
+            @CompilerDirectives.TruffleBoundary
             public String toString() {
                 StringBuilder sb = new StringBuilder();
                 items.sort(Comparator.comparing(Pair::getLeft));
