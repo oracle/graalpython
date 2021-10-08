@@ -2142,7 +2142,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached BranchProfile updatedStorage,
                         @Cached("create(New)") LookupInheritedSlotNode getNewFuncNode,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
-                        @Cached("create(__SET_NAME__)") LookupInheritedAttributeNode getSetNameNode,
+                        @Cached("create(SetName)") LookupInheritedSlotNode getSetNameNode,
                         @Cached("create(__MRO_ENTRIES__)") LookupInheritedAttributeNode lookupMroEntriesNode,
                         @Cached CastToJavaStringNode castStr,
                         @Cached CallNode callSetNameNode,

@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
@@ -159,10 +160,10 @@ public enum SpecialMethodSlot {
     Iter(__ITER__),
     Next(__NEXT__),
 
-    New(__NEW__, false),
-    Init(__INIT__, false),
+    New(__NEW__, NO_BUILTIN_DESCRIPTORS),
+    Init(__INIT__, NO_BUILTIN_DESCRIPTORS),
     Prepare(__PREPARE__),
-    SetName(__SET_NAME__),
+    SetName(__SET_NAME__, NO_BUILTIN_DESCRIPTORS),
     InstanceCheck(__INSTANCECHECK__),
     Subclasscheck(__SUBCLASSCHECK__),
     Call(__CALL__),
@@ -201,6 +202,10 @@ public enum SpecialMethodSlot {
 
     Reversed(__REVERSED__),
     Bytes(__BYTES__);
+
+    static class Flags {
+        static final boolean NO_BUILTIN_DESCRIPTORS = false;
+    }
 
     public static final SpecialMethodSlot[] VALUES = values();
     private final String name;
