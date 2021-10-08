@@ -88,6 +88,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -101,13 +102,14 @@ public class SimpleNamespaceBuiltins extends PythonBuiltins {
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class SimpleNamespaceInitNode extends PythonVarargsBuiltinNode {
-        @Specialization
-        Object init(PSimpleNamespace self, Object[] args, PKeyword[] kwargs) {
+        @Specialization(limit = "1")
+        Object init(PSimpleNamespace self, Object[] args, PKeyword[] kwargs,
+                        @CachedLibrary(value = "self") DynamicObjectLibrary dyLib) {
             if (args.length > 0) {
                 throw raise(PythonBuiltinClassType.TypeError, NO_POSITIONAL_ARGUMENTS_EXPECTED);
             }
             for (PKeyword keyword : kwargs) {
-                self.setAttribute(keyword.getName(), keyword.getValue());
+                dyLib.put(self, keyword.getName(), keyword.getValue());
             }
             return PNone.NONE;
         }
