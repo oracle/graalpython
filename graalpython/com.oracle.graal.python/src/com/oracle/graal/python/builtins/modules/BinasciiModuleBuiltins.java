@@ -68,7 +68,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -78,6 +78,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -90,11 +91,11 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         return BinasciiModuleBuiltinsFactory.getFactories();
     }
 
-    abstract static class AsciiBufferConverter extends ArgumentCastNode.ArgumentCastNodeWithRaise {
+    abstract static class AsciiBufferConverter extends ArgumentCastNodeWithRaiseAndIndirectCall {
         @Specialization(guards = "acquireLib.hasBuffer(value)", limit = "getCallSiteInlineCacheMaxDepth()")
-        Object doObject(Object value,
+        Object doObject(VirtualFrame frame, Object value,
                         @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib) {
-            return acquireLib.acquireReadonly(value);
+            return acquireLib.acquireReadonly(value, frame, getContext(), getLanguage(), this);
         }
 
         @ExportLibrary(PythonBufferAccessLibrary.class)

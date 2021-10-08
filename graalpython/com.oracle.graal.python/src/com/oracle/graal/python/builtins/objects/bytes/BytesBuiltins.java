@@ -111,6 +111,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBui
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -1116,7 +1117,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class SepExpectByteNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
+    public abstract static class SepExpectByteNode extends ArgumentCastNodeWithRaiseAndIndirectCall {
         private final Object defaultValue;
 
         protected SepExpectByteNode(Object defaultValue) {
@@ -1143,10 +1144,10 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "bufferAcquireLib.hasBuffer(object)", limit = "3")
-        byte doBuffer(Object object,
+        byte doBuffer(VirtualFrame frame, Object object,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-            Object buffer = bufferAcquireLib.acquireReadonly(object);
+            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, getContext(), getLanguage(), this);
             try {
                 if (bufferLib.getBufferLength(buffer) != 1) {
                     throw raise(ValueError, SEP_MUST_BE_LENGTH_1);
@@ -1753,7 +1754,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class ExpectByteLikeNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
+    public abstract static class ExpectByteLikeNode extends ArgumentCastNodeWithRaiseAndIndirectCall {
         private final byte[] defaultValue;
 
         protected ExpectByteLikeNode(byte[] defaultValue) {
@@ -1769,10 +1770,10 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPNone(object)"}, limit = "3")
-        static byte[] doBuffer(Object object,
+        byte[] doBuffer(VirtualFrame frame, Object object,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-            Object buffer = bufferAcquireLib.acquireReadonly(object);
+            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, getContext(), getLanguage(), this);
             try {
                 // TODO avoid copying
                 return bufferLib.getCopiedByteArray(buffer);

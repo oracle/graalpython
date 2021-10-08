@@ -41,10 +41,10 @@
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaiseAndIndirectCall;
 import com.oracle.truffle.api.dsl.Specialization;
 
-public abstract class ObjectConversionBaseNode extends ArgumentCastNodeWithRaise {
+public abstract class ObjectConversionBaseNode extends ArgumentCastNodeWithRaiseAndIndirectCall {
     private final Object defaultValue;
     protected final boolean useDefaultForNone;
 
