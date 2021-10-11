@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -67,6 +68,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
@@ -94,6 +96,8 @@ public abstract class LookupAndCallBinaryNode extends Node {
         public abstract Object execute(VirtualFrame frame, Object arg, Object arg2);
     }
 
+    protected final SpecialMethodSlot slot;
+    protected final SpecialMethodSlot rslot;
     protected final String name;
     protected final String rname;
     protected final Supplier<NotImplementedHandler> handlerFactory;
@@ -109,8 +113,24 @@ public abstract class LookupAndCallBinaryNode extends Node {
     public abstract Object executeObject(VirtualFrame frame, Object arg, Object arg2);
 
     LookupAndCallBinaryNode(String name, String rname, Supplier<NotImplementedHandler> handlerFactory, boolean alwaysCheckReverse, boolean ignoreDescriptorException) {
+        if (SpecialMethodSlot.findSpecialSlot(name) != null) {
+            // new RuntimeException().printStackTrace();
+            // System.out.println(name);
+        }
         this.name = name;
         this.rname = rname;
+        this.slot = null;
+        this.rslot = null;
+        this.handlerFactory = handlerFactory;
+        this.alwaysCheckReverse = alwaysCheckReverse;
+        this.ignoreDescriptorException = ignoreDescriptorException;
+    }
+
+    LookupAndCallBinaryNode(SpecialMethodSlot slot, SpecialMethodSlot rslot, Supplier<NotImplementedHandler> handlerFactory, boolean alwaysCheckReverse, boolean ignoreDescriptorException) {
+        this.name = slot.getName();
+        this.rname = rslot.getName();
+        this.slot = slot;
+        this.rslot = rslot;
         this.handlerFactory = handlerFactory;
         this.alwaysCheckReverse = alwaysCheckReverse;
         this.ignoreDescriptorException = ignoreDescriptorException;
@@ -131,6 +151,22 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     public static LookupAndCallBinaryNode create(String name, Supplier<NotImplementedHandler> handlerFactory) {
         return LookupAndCallBinaryNodeGen.create(name, null, handlerFactory, false, false);
+    }
+
+    public static LookupAndCallBinaryNode create(SpecialMethodSlot slot) {
+        return LookupAndCallBinaryNodeGen.create(slot, null, null, false, false);
+    }
+
+    public static LookupAndCallBinaryNode createReversible(SpecialMethodSlot slot, SpecialMethodSlot rslot, Supplier<NotImplementedHandler> handlerFactory) {
+        return LookupAndCallBinaryNodeGen.create(slot, rslot, handlerFactory, false, false);
+    }
+
+    public static LookupAndCallBinaryNode create(SpecialMethodSlot slot, SpecialMethodSlot rslot, boolean alwaysCheckReverse, boolean ignoreDescriptorException) {
+        return LookupAndCallBinaryNodeGen.create(slot, rslot, null, alwaysCheckReverse, ignoreDescriptorException);
+    }
+
+    public static LookupAndCallBinaryNode create(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handlerFactory) {
+        return LookupAndCallBinaryNodeGen.create(slot, null, handlerFactory, false, false);
     }
 
     protected Object getMethod(Object receiver, String methodName) {
@@ -176,14 +212,13 @@ public abstract class LookupAndCallBinaryNode extends Node {
     }
 
     protected final PythonBinaryBuiltinNode getBinaryBuiltin(PythonBuiltinClassType clazz) {
-        if (SpecialMethodSlot.canBeSpecial(name)) {
-            SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(name);
-            if (slot != null) {
-                Object attribute = slot.getValue(clazz);
-                if (attribute instanceof BinaryBuiltinDescriptor) {
-                    return ((BinaryBuiltinDescriptor) attribute).createNode();
-                }
+        if (slot != null) {
+            Object attribute = slot.getValue(clazz);
+            if (attribute instanceof BinaryBuiltinDescriptor) {
+                return ((BinaryBuiltinDescriptor) attribute).createNode();
             }
+            // If the slot does not contain builtin, full lookup wouldn't find a builtin either
+            return null;
         }
         Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(clazz, name);
         if (attribute instanceof PBuiltinFunction) {
@@ -257,8 +292,10 @@ public abstract class LookupAndCallBinaryNode extends Node {
     Object callObjectGenericR(VirtualFrame frame, Object left, Object right,
                     @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
                     @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
-                    @Cached("create(name)") LookupSpecialMethodNode getattr,
-                    @Cached("create(rname)") LookupSpecialMethodNode getattrR,
+                    @Cached("create(name)") LookupSpecialBaseNode getattr,
+                    @Cached("create(rname)") LookupSpecialBaseNode getattrR,
+                    @Cached("create(name)") LookupSpecialMethodNode getattrNormal,
+                    @Cached("create(rname)") LookupSpecialMethodNode getattrRNormal,
                     @Cached GetClassNode getLeftClassNode,
                     @Cached GetClassNode getRightClassNode,
                     @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
@@ -266,12 +303,13 @@ public abstract class LookupAndCallBinaryNode extends Node {
                     @Cached ConditionProfile hasLeftCallable,
                     @Cached ConditionProfile hasRightCallable,
                     @Cached ConditionProfile notImplementedProfile,
-                    @Cached ConditionProfile hasEnclosingBuiltin,
                     @Cached BranchProfile noLeftBuiltinClassType,
                     @Cached BranchProfile noRightBuiltinClassType,
-                    @Cached BranchProfile gotResultBranch) {
+                    @Cached BranchProfile gotResultBranch,
+                    @Cached AreSameCallables areSameCallables,
+                    @Cached GetEnclosingType getEnclosingType) {
         return doCallObjectR(frame, left, right, getattr, getattrR, getLeftClassNode, getRightClassNode, isSameTypeNode, isSubtype, hasLeftCallable, hasRightCallable, notImplementedProfile,
-                        hasEnclosingBuiltin, noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch);
+                        noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch, areSameCallables, getEnclosingType);
     }
 
     @Specialization(guards = "isReversible()", replaces = "callObjectGenericR")
@@ -279,6 +317,8 @@ public abstract class LookupAndCallBinaryNode extends Node {
     Object callObjectRMegamorphic(VirtualFrame frame, Object left, Object right,
                     @Cached("create(name)") LookupSpecialMethodNode getattr,
                     @Cached("create(rname)") LookupSpecialMethodNode getattrR,
+                    @Cached("create(name)") LookupSpecialMethodNode getattrNormal,
+                    @Cached("create(rname)") LookupSpecialMethodNode getattrRNormal,
                     @Cached GetClassNode getLeftClassNode,
                     @Cached GetClassNode getRightClassNode,
                     @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
@@ -286,18 +326,19 @@ public abstract class LookupAndCallBinaryNode extends Node {
                     @Cached ConditionProfile hasLeftCallable,
                     @Cached ConditionProfile hasRightCallable,
                     @Cached ConditionProfile notImplementedProfile,
-                    @Cached ConditionProfile hasEnclosingBuiltin,
                     @Cached BranchProfile noLeftBuiltinClassType,
                     @Cached BranchProfile noRightBuiltinClassType,
-                    @Cached BranchProfile gotResultBranch) {
+                    @Cached BranchProfile gotResultBranch,
+                    @Cached AreSameCallables areSameCallables,
+                    @Cached GetEnclosingType getEnclosingType) {
         return doCallObjectR(frame, left, right, getattr, getattrR, getLeftClassNode, getRightClassNode, isSameTypeNode, isSubtype, hasLeftCallable, hasRightCallable, notImplementedProfile,
-                        hasEnclosingBuiltin, noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch);
+                        noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch, areSameCallables, getEnclosingType);
     }
 
-    private Object doCallObjectR(VirtualFrame frame, Object left, Object right, LookupSpecialMethodNode getattr, LookupSpecialMethodNode getattrR, GetClassNode getLeftClassNode,
+    private Object doCallObjectR(VirtualFrame frame, Object left, Object right, LookupSpecialBaseNode getattr, LookupSpecialBaseNode getattrR, GetClassNode getLeftClassNode,
                     GetClassNode getRightClassNode, TypeNodes.IsSameTypeNode isSameTypeNode, IsSubtypeNode isSubtype, ConditionProfile hasLeftCallable, ConditionProfile hasRightCallable,
-                    ConditionProfile notImplementedProfile, ConditionProfile hasEnclosingBuiltin, BranchProfile noLeftBuiltinClassType, BranchProfile noRightBuiltinClassType,
-                    BranchProfile gotResultBranch) {
+                    ConditionProfile notImplementedProfile, BranchProfile noLeftBuiltinClassType, BranchProfile noRightBuiltinClassType,
+                    BranchProfile gotResultBranch, AreSameCallables areSameCallables, GetEnclosingType getEnclosingType) {
         // This specialization implements the logic from cpython://Objects/abstract.c#binary_op1
         // (the structure is modelled closely on it), as well as the additional logic in
         // cpython://Objects/typeobject.c#SLOT1BINFULL. The latter has the addition that it swaps
@@ -332,7 +373,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
             }
         }
 
-        if (!alwaysCheckReverse && leftCallable == rightCallable) {
+        if (!alwaysCheckReverse && areSameCallables.execute(leftCallable, rightCallable)) {
             rightCallable = PNone.NO_VALUE;
         }
 
@@ -340,21 +381,21 @@ public abstract class LookupAndCallBinaryNode extends Node {
             if (hasRightCallable.profile(rightCallable != PNone.NO_VALUE) &&
                             (!isSameTypeNode.execute(leftClass, rightClass) && isSubtype.execute(frame, rightClass, leftClass) ||
                                             isFlagSequenceCompat(leftClass, rightClass, name, noLeftBuiltinClassType, noRightBuiltinClassType))) {
-                result = dispatch(frame, ensureReverseDispatch(), rightCallable, right, left, rightClass, rname, isSubtype, hasEnclosingBuiltin);
+                result = dispatch(frame, ensureReverseDispatch(), rightCallable, right, left, rightClass, rname, isSubtype, getEnclosingType);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
                     return result;
                 }
                 gotResultBranch.enter();
                 rightCallable = PNone.NO_VALUE;
             }
-            result = dispatch(frame, ensureDispatch(), leftCallable, left, right, leftClass, name, isSubtype, hasEnclosingBuiltin);
+            result = dispatch(frame, ensureDispatch(), leftCallable, left, right, leftClass, name, isSubtype, getEnclosingType);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
             gotResultBranch.enter();
         }
         if (notImplementedProfile.profile(rightCallable != PNone.NO_VALUE)) {
-            result = dispatch(frame, ensureReverseDispatch(), rightCallable, right, left, rightClass, rname, isSubtype, hasEnclosingBuiltin);
+            result = dispatch(frame, ensureReverseDispatch(), rightCallable, right, left, rightClass, rname, isSubtype, getEnclosingType);
         }
         if (handlerFactory != null && result == PNotImplemented.NOT_IMPLEMENTED) {
             return runErrorHandler(frame, left, right);
@@ -362,16 +403,79 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return result;
     }
 
-    private Object dispatch(VirtualFrame frame, CallBinaryMethodNode dispatch, Object callable, Object leftValue, Object rightValue, Object leftClass, String op, IsSubtypeNode isSubtype,
-                    ConditionProfile hasEnclosingBuiltin) {
-        // see descrobject.c/wrapperdescr_call()
-        Object enclosing = null;
-        if (callable instanceof PBuiltinFunction) {
-            enclosing = ((PBuiltinFunction) callable).getEnclosingType();
-        } else if (callable instanceof PBuiltinMethod) {
-            enclosing = ((PBuiltinMethod) callable).getFunction().getEnclosingType();
+    @ImportStatic(PGuards.class)
+    protected static abstract class AreSameCallables extends Node {
+        public abstract boolean execute(Object left, Object right);
+
+        @Specialization(guards = "a == b")
+        static boolean areIdenticalFastPath(@SuppressWarnings("unused") Object a, @SuppressWarnings("unused") Object b) {
+            return true;
         }
-        if (hasEnclosingBuiltin.profile(enclosing != null) && !isSubtype.execute(leftClass, enclosing)) {
+
+        @Specialization(replaces = "areIdenticalFastPath")
+        static boolean doDescrs(BuiltinMethodDescriptor a, BuiltinMethodDescriptor b) {
+            return a == b;
+        }
+
+        @SuppressWarnings("StringEquality")
+        @Specialization(replaces = "areIdenticalFastPath")
+        static boolean doDescrFun1(BuiltinMethodDescriptor a, PBuiltinFunction b) {
+            return a.getFactory() == b.getBuiltinNodeFactory() && a.getName() == b.getName();
+        }
+
+        @SuppressWarnings("StringEquality")
+        @Specialization(replaces = "areIdenticalFastPath")
+        static boolean doDescrFun2(PBuiltinFunction a, BuiltinMethodDescriptor b) {
+            return b.getFactory() == a.getBuiltinNodeFactory() && a.getName() == b.getName();
+        }
+
+        @Specialization(replaces = "areIdenticalFastPath")
+        static boolean doDescrMeth1(BuiltinMethodDescriptor a, PBuiltinMethod b) {
+            return doDescrFun1(a, b.getFunction());
+        }
+
+        @Specialization(replaces = "areIdenticalFastPath")
+        static boolean doDescrMeth2(PBuiltinMethod a, BuiltinMethodDescriptor b) {
+            return doDescrFun2(a.getFunction(), b);
+        }
+
+        @Fallback
+        static boolean doGenericRuntimeObjects(Object a, Object b) {
+            // Note: this handles also situations such as BuiltinMethodDescriptor vs PNone.None
+            return a == b;
+        }
+    }
+
+    @ImportStatic(PGuards.class)
+    protected static abstract class GetEnclosingType extends Node {
+        public abstract Object execute(Object callable);
+
+        @Specialization
+        static Object doDescrs(BuiltinMethodDescriptor descriptor) {
+            return descriptor.getEnclosingType();
+        }
+
+        @Specialization
+        static Object doBuiltinFun(PBuiltinFunction fun) {
+            return fun.getEnclosingType();
+        }
+
+        @Specialization
+        static Object doBuiltinMethod(PBuiltinMethod a) {
+            return doBuiltinFun(a.getFunction());
+        }
+
+        @Fallback
+        static Object doOthers(@SuppressWarnings("unused") Object callable) {
+            return null;
+        }
+    }
+
+    private Object dispatch(VirtualFrame frame, CallBinaryMethodNode dispatch, Object callable, Object leftValue, Object rightValue, Object leftClass, String op, IsSubtypeNode isSubtype,
+                    GetEnclosingType getEnclosingType) {
+        // see descrobject.c/wrapperdescr_call()
+        Object enclosing = getEnclosingType.execute(callable);
+        if (enclosing != null && !isSubtype.execute(leftClass, enclosing)) {
             throw ensureRaiseNode().raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, op, ensureGetNameNode().execute(leftClass), leftValue);
         }
         return dispatch.executeObject(frame, callable, leftValue, rightValue);

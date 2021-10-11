@@ -192,11 +192,6 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
     }
 
     public abstract static class GetFixedAttributeNode extends GetAttributeBaseNode {
-        private static final BuiltinMethodDescriptor OBJ_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ObjectBuiltinsFactory.GetAttributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonObject);
-        private static final BuiltinMethodDescriptor MODULE_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ModuleBuiltinsFactory.ModuleGetattritbuteNodeFactory.getInstance(),
-                        PythonBuiltinClassType.PythonModule);
-        private static final BuiltinMethodDescriptor TYPE_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(TypeBuiltinsFactory.GetattributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonClass);
-
         private final String key;
 
         public GetFixedAttributeNode(String key) {
@@ -224,15 +219,15 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
         }
 
         protected static boolean isObjectGetAttribute(Object lazyClass) {
-            return getAttributeIs(lazyClass, OBJ_GET_ATTRIBUTE);
+            return getAttributeIs(lazyClass, BuiltinMethodDescriptor.OBJ_GET_ATTRIBUTE);
         }
 
         protected static boolean isModuleGetAttribute(Object lazyClass) {
-            return getAttributeIs(lazyClass, MODULE_GET_ATTRIBUTE);
+            return getAttributeIs(lazyClass, BuiltinMethodDescriptor.MODULE_GET_ATTRIBUTE);
         }
 
         protected static boolean isTypeGetAttribute(Object lazyClass) {
-            return getAttributeIs(lazyClass, TYPE_GET_ATTRIBUTE);
+            return getAttributeIs(lazyClass, BuiltinMethodDescriptor.TYPE_GET_ATTRIBUTE);
         }
 
         /*

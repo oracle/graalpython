@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -162,6 +163,11 @@ public enum BinaryArithmetic {
             };
         }
 
+        static LookupAndCallBinaryNode createCallNode(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handler) {
+            assert slot.getReverse() != null;
+            return LookupAndCallBinaryNode.createReversible(slot, slot.getReverse(), handler);
+        }
+
         static LookupAndCallBinaryNode createCallNode(String name, Supplier<NotImplementedHandler> handler) {
             return LookupAndCallBinaryNode.createReversible(name, "__r" + name.substring(2), handler);
         }
@@ -214,7 +220,7 @@ public enum BinaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createCallNode(__ADD__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+                        @Cached("createCallNode(Add, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
 
@@ -259,7 +265,7 @@ public enum BinaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createCallNode(__SUB__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+                        @Cached("createCallNode(Sub, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
     }
@@ -300,7 +306,7 @@ public enum BinaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createCallNode(__MUL__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+                        @Cached("createCallNode(Mul, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
     }
@@ -362,7 +368,7 @@ public enum BinaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createCallNode(__TRUEDIV__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+                        @Cached("createCallNode(TrueDiv, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
     }
@@ -406,7 +412,7 @@ public enum BinaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createCallNode(__FLOORDIV__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+                        @Cached("createCallNode(FloorDiv, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
     }
@@ -447,7 +453,7 @@ public enum BinaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createCallNode(__MOD__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+                        @Cached("createCallNode(Mod, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
     }
@@ -476,7 +482,7 @@ public enum BinaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createCallNode(__LSHIFT__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+                        @Cached("createCallNode(LShift, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
     }
@@ -497,7 +503,7 @@ public enum BinaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createCallNode(__RSHIFT__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+                        @Cached("createCallNode(RShift, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
     }
@@ -518,7 +524,7 @@ public enum BinaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createCallNode(__AND__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+                        @Cached("createCallNode(And, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
 
@@ -543,7 +549,7 @@ public enum BinaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createCallNode(__OR__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+                        @Cached("createCallNode(Or, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
 
@@ -568,7 +574,7 @@ public enum BinaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createCallNode(__XOR__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+                        @Cached("createCallNode(Xor, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
 
@@ -583,7 +589,7 @@ public enum BinaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createCallNode(__MATMUL__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+                        @Cached("createCallNode(MatMul, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
     }
@@ -594,7 +600,7 @@ public enum BinaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createCallNode(__POW__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+                        @Cached("createCallNode(Pow, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
     }
@@ -640,7 +646,7 @@ public enum BinaryArithmetic {
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object left, Object right,
-                        @Cached("createCallNode(__DIVMOD__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+                        @Cached("createCallNode(DivMod, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
     }

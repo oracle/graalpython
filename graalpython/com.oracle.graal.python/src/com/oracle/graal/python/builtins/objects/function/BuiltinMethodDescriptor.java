@@ -40,12 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -74,6 +79,10 @@ public abstract class BuiltinMethodDescriptor {
      */
     private static final ConcurrentHashMap<BuiltinMethodDescriptor, BuiltinMethodDescriptor> CACHE = new ConcurrentHashMap<>();
 
+    public static final BuiltinMethodDescriptor OBJ_GET_ATTRIBUTE = get(__GETATTRIBUTE__, ObjectBuiltinsFactory.GetAttributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonObject);
+    public static final BuiltinMethodDescriptor MODULE_GET_ATTRIBUTE = get(__GETATTRIBUTE__, ModuleBuiltinsFactory.ModuleGetattritbuteNodeFactory.getInstance(), PythonBuiltinClassType.PythonModule);
+    public static final BuiltinMethodDescriptor TYPE_GET_ATTRIBUTE = get(__GETATTRIBUTE__, TypeBuiltinsFactory.GetattributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonClass);
+
     public static BuiltinMethodDescriptor get(PBuiltinFunction function) {
         CompilerAsserts.neverPartOfCompilation();
         NodeFactory<? extends PythonBuiltinBaseNode> factory = function.getBuiltinNodeFactory();
@@ -91,22 +100,22 @@ public abstract class BuiltinMethodDescriptor {
             assert enclosing == null;
         }
 
-        return get(factory, type);
+        return get(function.getName(), factory, type);
     }
 
-    public static BuiltinMethodDescriptor get(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+    private static BuiltinMethodDescriptor get(String name, NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
         CompilerAsserts.neverPartOfCompilation();
         Class<? extends PythonBuiltinBaseNode> nodeClass = factory.getNodeClass();
         BuiltinMethodDescriptor result = null;
         if (PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
-            result = new UnaryBuiltinDescriptor(factory, type);
-            assert result.getBuiltinAnnotation().minNumOfPositionalArgs() <= 1 : result.getBuiltinAnnotation().name();
+            result = new UnaryBuiltinDescriptor(name, factory, type);
+            assert result.getBuiltinAnnotation().minNumOfPositionalArgs() <= 1 : name;
         } else if (PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
-            result = new BinaryBuiltinDescriptor(factory, type);
-            assert result.getBuiltinAnnotation().minNumOfPositionalArgs() <= 2 : result.getBuiltinAnnotation().name();
+            result = new BinaryBuiltinDescriptor(name, factory, type);
+            assert result.getBuiltinAnnotation().minNumOfPositionalArgs() <= 2 : name;
         } else if (PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
-            result = new TernaryBuiltinDescriptor(factory, type);
-            assert result.getBuiltinAnnotation().minNumOfPositionalArgs() <= 3 : result.getBuiltinAnnotation().name();
+            result = new TernaryBuiltinDescriptor(name, factory, type);
+            assert result.getBuiltinAnnotation().minNumOfPositionalArgs() <= 3 : name;
         }
         if (result != null) {
             return CACHE.computeIfAbsent(result, x -> x);
@@ -115,7 +124,7 @@ public abstract class BuiltinMethodDescriptor {
     }
 
     public static boolean isInstance(Object obj) {
-        return obj instanceof UnaryBuiltinDescriptor || obj instanceof BinaryBuiltinDescriptor || obj instanceof TernaryBuiltinDescriptor;
+        return obj instanceof BuiltinMethodDescriptor;
     }
 
     private static boolean needsFrame(NodeFactory<? extends PythonBuiltinBaseNode> factory) {
@@ -129,8 +138,12 @@ public abstract class BuiltinMethodDescriptor {
 
     private final NodeFactory<? extends PythonBuiltinBaseNode> factory;
     private final PythonBuiltinClassType type;
+    // Name allows us to differentiate between builtins shared for reversible operations, such as
+    // int.__mul__ and int.__rmul__, which have the same node factory
+    private final String name;
 
-    private BuiltinMethodDescriptor(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+    private BuiltinMethodDescriptor(String name, NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+        this.name = name;
         this.factory = factory;
         this.type = type;
     }
@@ -139,12 +152,21 @@ public abstract class BuiltinMethodDescriptor {
         return factory;
     }
 
-    public Builtin getBuiltinAnnotation() {
+    public final PythonBuiltinClassType getEnclosingType() {
+        return type;
+    }
+
+    public final String getName() {
+        return name;
+    }
+
+    public final Builtin getBuiltinAnnotation() {
         return factory.getNodeClass().getAnnotationsByType(Builtin.class)[0];
     }
 
+    @SuppressWarnings("StringEquality")
     @Override
-    public boolean equals(Object o) {
+    public final boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -152,20 +174,20 @@ public abstract class BuiltinMethodDescriptor {
             return false;
         }
         BuiltinMethodDescriptor that = (BuiltinMethodDescriptor) o;
-        return factory == that.factory && type == that.type;
+        return factory == that.factory && type == that.type && name == that.name;
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(factory, type);
+    public final int hashCode() {
+        return Objects.hash(factory, type, System.identityHashCode(name));
     }
 
     // Note: manually written subclass for each builtin works better with Truffle DSL than one
     // generic class that would parametrize the 'factory' field
 
     public static final class UnaryBuiltinDescriptor extends BuiltinMethodDescriptor {
-        public UnaryBuiltinDescriptor(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
-            super(factory, type);
+        public UnaryBuiltinDescriptor(String name, NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+            super(name, factory, type);
         }
 
         public PythonUnaryBuiltinNode createNode() {
@@ -174,8 +196,8 @@ public abstract class BuiltinMethodDescriptor {
     }
 
     public static final class BinaryBuiltinDescriptor extends BuiltinMethodDescriptor {
-        public BinaryBuiltinDescriptor(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
-            super(factory, type);
+        public BinaryBuiltinDescriptor(String name, NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+            super(name, factory, type);
         }
 
         public PythonBinaryBuiltinNode createNode() {
@@ -184,8 +206,8 @@ public abstract class BuiltinMethodDescriptor {
     }
 
     public static final class TernaryBuiltinDescriptor extends BuiltinMethodDescriptor {
-        public TernaryBuiltinDescriptor(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
-            super(factory, type);
+        public TernaryBuiltinDescriptor(String name, NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+            super(name, factory, type);
         }
 
         public PythonTernaryBuiltinNode createNode() {
