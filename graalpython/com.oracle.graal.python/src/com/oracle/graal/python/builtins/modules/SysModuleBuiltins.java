@@ -296,8 +296,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
         return SysModuleBuiltinsFactory.getFactories();
     }
 
-    protected static PSimpleNamespace makeImplementation(Python3Core core, PTuple versionInfo, String gmultiarch) {
-        final PSimpleNamespace ns = core.factory().createSimpleNamespace();
+    protected static PSimpleNamespace makeImplementation(PythonObjectFactory factory, PTuple versionInfo, String gmultiarch) {
+        final PSimpleNamespace ns = factory.createSimpleNamespace();
         ns.setAttribute("name", "graalpython");
         ns.setAttribute("cache_tag", "graalpython-" + PythonLanguage.MAJOR + PythonLanguage.MINOR);
         ns.setAttribute("version", versionInfo);
@@ -319,11 +319,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("abiflags", "");
         builtinConstants.put("byteorder", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "little" : "big");
         builtinConstants.put("copyright", LICENSE);
-        builtinConstants.put("modules", core.factory().createDict());
-        builtinConstants.put("path", core.factory().createList());
-        builtinConstants.put("builtin_module_names", core.factory().createTuple(core.builtinModuleNames()));
+        final PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        builtinConstants.put("modules", factory.createDict());
+        builtinConstants.put("path", factory.createList());
+        builtinConstants.put("builtin_module_names", factory.createTuple(core.builtinModuleNames()));
         builtinConstants.put("maxsize", MAXSIZE);
-        final PTuple versionInfo = core.factory().createStructSeq(VERSION_INFO_DESC, PythonLanguage.MAJOR, PythonLanguage.MINOR, PythonLanguage.MICRO, PythonLanguage.RELEASE_LEVEL_STRING,
+        final PTuple versionInfo = factory.createStructSeq(VERSION_INFO_DESC, PythonLanguage.MAJOR, PythonLanguage.MINOR, PythonLanguage.MICRO, PythonLanguage.RELEASE_LEVEL_STRING,
                         PythonLanguage.RELEASE_SERIAL);
         builtinConstants.put("version_info", versionInfo);
         builtinConstants.put("api_version", PythonLanguage.API_VERSION);
@@ -331,7 +332,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         " (" + COMPILE_TIME + ")" +
                         "\n[Graal, " + Truffle.getRuntime().getName() + ", Java " + System.getProperty("java.version") + "]");
         // the default values taken from JPython
-        builtinConstants.put("float_info", core.factory().createStructSeq(FLOAT_INFO_DESC,
+        builtinConstants.put("float_info", factory.createStructSeq(FLOAT_INFO_DESC,
                         Double.MAX_VALUE,           // DBL_MAX
                         Double.MAX_EXPONENT + 1,    // DBL_MAX_EXP
                         308,                        // DBL_MIN_10_EXP
@@ -344,8 +345,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         2,                          // FLT_RADIX
                         1                           // FLT_ROUNDS
         ));
-        builtinConstants.put("int_info", core.factory().createStructSeq(INT_INFO_DESC, 32, 4));
-        builtinConstants.put("hash_info", core.factory().createStructSeq(HASH_INFO_DESC,
+        builtinConstants.put("int_info", factory.createStructSeq(INT_INFO_DESC, 32, 4));
+        builtinConstants.put("hash_info", factory.createStructSeq(HASH_INFO_DESC,
                         64,                         // width
                         HASH_MODULUS,               // modulus
                         HASH_INF,                   // inf
@@ -356,7 +357,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         0,                          // seed_bits
                         0                           // cutoff
         ));
-        builtinConstants.put("thread_info", core.factory().createStructSeq(THREAD_INFO_DESC, PNone.NONE, PNone.NONE, PNone.NONE));
+        builtinConstants.put("thread_info", factory.createStructSeq(THREAD_INFO_DESC, PNone.NONE, PNone.NONE, PNone.NONE));
         builtinConstants.put("maxunicode", IntegerFormatter.LIMIT_UNICODE.intValue() - 1);
 
         String os = PythonUtils.getPythonOSName();
@@ -367,28 +368,28 @@ public class SysModuleBuiltins extends PythonBuiltins {
         final String gmultiarch = PythonUtils.getPythonArch() + "-" + os;
         builtinConstants.put("__gmultiarch", gmultiarch);
 
-        PFileIO stdin = core.factory().createFileIO(PythonBuiltinClassType.PFileIO);
+        PFileIO stdin = factory.createFileIO(PythonBuiltinClassType.PFileIO);
         FileIOBuiltins.FileIOInit.internalInit(stdin, "<stdin>", 0, "r");
         builtinConstants.put("stdin", stdin);
         builtinConstants.put("__stdin__", stdin);
 
-        PFileIO stdout = core.factory().createFileIO(PythonBuiltinClassType.PFileIO);
+        PFileIO stdout = factory.createFileIO(PythonBuiltinClassType.PFileIO);
         FileIOBuiltins.FileIOInit.internalInit(stdout, "<stdout>", 1, "w");
         builtinConstants.put("stdout", stdout);
         builtinConstants.put("__stdout__", stdout);
 
-        PFileIO stderr = core.factory().createFileIO(PythonBuiltinClassType.PFileIO);
+        PFileIO stderr = factory.createFileIO(PythonBuiltinClassType.PFileIO);
         stderr.setUTF8Write(true);
         FileIOBuiltins.FileIOInit.internalInit(stderr, "<stderr>", 2, "w");
         builtinConstants.put("stderr", stderr);
         builtinConstants.put("__stderr__", stderr);
-        builtinConstants.put("implementation", makeImplementation(core, versionInfo, gmultiarch));
+        builtinConstants.put("implementation", makeImplementation(factory, versionInfo, gmultiarch));
         builtinConstants.put("hexversion", PythonLanguage.VERSION_HEX);
 
         builtinConstants.put("float_repr_style", "short");
-        builtinConstants.put("meta_path", core.factory().createList());
-        builtinConstants.put("path_hooks", core.factory().createList());
-        builtinConstants.put("path_importer_cache", core.factory().createDict());
+        builtinConstants.put("meta_path", factory.createList());
+        builtinConstants.put("path_hooks", factory.createList());
+        builtinConstants.put("path_importer_cache", factory.createDict());
 
         // default prompt for interactive shell
         builtinConstants.put("ps1", ">>> ");
@@ -407,7 +408,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
         PythonModule sys = core.lookupBuiltinModule("sys");
         PythonContext context = core.getContext();
         String[] args = context.getEnv().getApplicationArguments();
-        sys.setAttribute("argv", core.factory().createList(Arrays.copyOf(args, args.length, Object[].class)));
+        final PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        sys.setAttribute("argv", factory.createList(Arrays.copyOf(args, args.length, Object[].class)));
 
         String prefix = context.getSysPrefix();
         for (String name : SysModuleBuiltins.SYS_PREFIX_ATTRIBUTES) {
@@ -440,7 +442,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         } else {
             warnoptions = PythonUtils.EMPTY_OBJECT_ARRAY;
         }
-        sys.setAttribute("warnoptions", core.factory().createList(warnoptions));
+        sys.setAttribute("warnoptions", factory.createList(warnoptions));
 
         Env env = context.getEnv();
         String option = context.getOption(PythonOptions.PythonPath);
@@ -467,9 +469,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
             // include our native modules on the path
             path[pathIdx++] = capiHome + env.getFileNameSeparator() + "modules";
         }
-        PList sysPaths = core.factory().createList(path);
+        PList sysPaths = factory.createList(path);
         sys.setAttribute("path", sysPaths);
-        sys.setAttribute("flags", core.factory().createStructSeq(SysModuleBuiltins.FLAGS_DESC,
+        sys.setAttribute("flags", factory.createStructSeq(SysModuleBuiltins.FLAGS_DESC,
                         PInt.intValue(!context.getOption(PythonOptions.PythonOptimizeFlag)), // debug
                         PInt.intValue(context.getOption(PythonOptions.InspectFlag)), // inspect
                         PInt.intValue(context.getOption(PythonOptions.TerminalIsInteractive)), // interactive
