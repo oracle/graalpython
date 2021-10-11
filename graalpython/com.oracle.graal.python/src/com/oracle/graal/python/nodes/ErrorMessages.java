@@ -76,6 +76,7 @@ public abstract class ErrorMessages {
     public static final String KEY_IN_S_MUST_BE_STRING = "Key in %s.%s must be str, not %p";
     public static final String ITEM_IN_S_MUST_BE_STRING = "Item in %s.%s must be str, not %p";
     public static final String ATTR_NAME_MUST_BE_STRING = "attribute name must be string, not '%p'";
+    public static final String S_MUST_BE_STRING_NOT_S = "\"%s\" must be string, not %.200s";
     public static final String ATTR_S_OF_S_IS_NOT_READABLE = "attribute %s of %s objects is not readable";
     public static final String ATTR_S_OF_S_IS_NOT_WRITABLE = "attribute %s of %s is not writable";
     public static final String ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE = "attribute %s of %s object is not writable";
@@ -238,6 +239,7 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_AT_MOST_D_ARGS_GOT_D = "%s expected at most %d arguments, got %d";
     public static final String EXPECTED_BYTESLIKE_GOT_P = "expected a bytes-like object, %p found";
     public static final String EXPECTED_CHARACTER_BUT_STRING_FOUND = "%s expected a character, but string of length %d found";
+    public static final String MUST_BE_ONE_CHARACTER_STRING = "\"%s\" must be a 1-character string";
     public static final String EXPECTED_CONVERSION = "expected conversion";
     public static final String EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES = "expected %p.__fspath__() to return str or bytes, not %p";
     public static final String EXPECTED_OBJ_TYPE_S_GOT_P = "expected object of type %s, got %p";
@@ -425,7 +427,8 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_A_CELL = "%s must be a cell";
     public static final String MUST_BE_BYTE_STRING_LEGTH1_NOT_P = "must be a byte string of length 1, not %p";
     public static final String MUST_BE_EITHER_OR = "%s: '%s' must be either %s or %s";
-    public static final String MUST_BE_INTEGER = "%s must be an integer, not %p";
+    public static final String MUST_BE_INTEGER = "%s must be an integer";
+    public static final String MUST_BE_INTEGER_NOT_P = "%s must be an integer, not %p";
     public static final String MUST_BE_NON_NEGATIVE = "%s must be non-negative";
     public static final String MUST_BE_NON_NEGATIVE_INTEGER = "%s must be non-negative integer";
     public static final String MUST_BE_NUMERIC = "must be numeric, not %p";

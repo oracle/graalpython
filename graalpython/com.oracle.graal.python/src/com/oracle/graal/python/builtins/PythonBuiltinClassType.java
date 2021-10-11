@@ -25,30 +25,6 @@
  */
 package com.oracle.graal.python.builtins;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
-import static com.oracle.graal.python.nodes.BuiltinNames.DEFAULTDICT;
-import static com.oracle.graal.python.nodes.BuiltinNames.DEQUE;
-import static com.oracle.graal.python.nodes.BuiltinNames.DEQUE_ITER;
-import static com.oracle.graal.python.nodes.BuiltinNames.DEQUE_REV_ITER;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_ITEMITERATOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_ITEMS;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_KEYITERATOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_KEYS;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_REVERSE_ITEMITERATOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_REVERSE_KEYITERATOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_REVERSE_VALUEITERATOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUEITERATOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUES;
-import static com.oracle.graal.python.nodes.BuiltinNames.FOREIGN;
-import static com.oracle.graal.python.nodes.BuiltinNames.MEMBER_DESCRIPTOR;
-import static com.oracle.graal.python.nodes.BuiltinNames.PROPERTY;
-import static com.oracle.graal.python.nodes.BuiltinNames.SIMPLE_QUEUE;
-import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE_GETTER;
-import static com.oracle.graal.python.nodes.BuiltinNames.WRAPPER_DESCRIPTOR;
-
-import java.util.Arrays;
-import java.util.HashSet;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -77,6 +53,30 @@ import com.oracle.truffle.api.library.Message;
 import com.oracle.truffle.api.library.ReflectionLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+
+import java.util.Arrays;
+import java.util.HashSet;
+
+import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
+import static com.oracle.graal.python.nodes.BuiltinNames.DEFAULTDICT;
+import static com.oracle.graal.python.nodes.BuiltinNames.DEQUE;
+import static com.oracle.graal.python.nodes.BuiltinNames.DEQUE_ITER;
+import static com.oracle.graal.python.nodes.BuiltinNames.DEQUE_REV_ITER;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_ITEMITERATOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_ITEMS;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_KEYITERATOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_KEYS;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_REVERSE_ITEMITERATOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_REVERSE_KEYITERATOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_REVERSE_VALUEITERATOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUEITERATOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUES;
+import static com.oracle.graal.python.nodes.BuiltinNames.FOREIGN;
+import static com.oracle.graal.python.nodes.BuiltinNames.MEMBER_DESCRIPTOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.PROPERTY;
+import static com.oracle.graal.python.nodes.BuiltinNames.SIMPLE_QUEUE;
+import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE_GETTER;
+import static com.oracle.graal.python.nodes.BuiltinNames.WRAPPER_DESCRIPTOR;
 
 @ExportLibrary(PythonObjectLibrary.class)
 // InteropLibrary is proxied through ReflectionLibrary
@@ -221,6 +221,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // json
     JSONScanner("Scanner", "_json", Flags.PUBLIC_BASE_WODICT),
     JSONEncoder("Encoder", "_json", Flags.PUBLIC_BASE_WODICT),
+
+    // csv
+    CSVDialect("Dialect", "_csv", Flags.PUBLIC_BASE_WODICT),
 
     // _ast (rest of the classes are not builtin, they are generated in AstModuleBuiltins)
     AST("AST", "_ast", Flags.PUBLIC_BASE_WDICT),

@@ -83,145 +83,115 @@ SETTINGS:
 __version__ = "1.0"
 
 QUOTE_MINIMAL, QUOTE_ALL, QUOTE_NONNUMERIC, QUOTE_NONE = range(4)
-_dialects = {}
 _field_limit = 128 * 1024 # max parsed field size
 
 class Error(Exception):
     pass
 
-class Dialect(object):
-    """CSV dialect
-
-    The Dialect type records CSV parsing and generation options."""
-
-    __slots__ = ["_delimiter", "_doublequote", "_escapechar",
-                 "_lineterminator", "_quotechar", "_quoting",
-                 "_skipinitialspace", "_strict"]
-
-    def __new__(cls, dialect = None, **kwargs):
-
-        for name in kwargs:
-            if '_' + name not in Dialect.__slots__:
-                raise TypeError("unexpected keyword argument '%s'" %
-                                (name,))
-
-        if dialect is not None:
-            if isinstance(dialect, str):
-                dialect = get_dialect(dialect)
-        
-            # Can we reuse this instance?
-            if (isinstance(dialect, Dialect)
-                and all(value is None for value in kwargs.values())):
-                return dialect
-
-        self = object.__new__(cls)
-
-
-        # equivalent of '_csv.c: _set_char'
-        def set_char(x):
-            if x is not None:
-                if not isinstance(x, str):
-                    raise TypeError('"%s" must be string, not %s' % (name, type(x).__name__))
-                n = len(x)
-                if n > 1:
-                    raise TypeError('"%s" must be a 1-character string' % (name,))
-                if n > 0:
-                    return x
-            return ""
-        def set_str(x):
-            if isinstance(x, str):
-                return x
-            raise TypeError('"%s" must be a string' % (name))
-        def set_quoting(x):
-            if x in range(4):
-                return x
-            raise TypeError("bad 'quoting' value")
-        
-        attributes = {"delimiter": (',', set_char),
-                      "doublequote": (True, bool),
-                      "escapechar": (None, set_char),
-                      "lineterminator": ("\r\n", set_str),
-                      "quotechar": ('"', set_char),
-                      "quoting": (QUOTE_MINIMAL, set_quoting),
-                      "skipinitialspace": (False, bool),
-                      "strict": (False, bool),
-                      }
-
-        # Copy attributes
-        notset = object()
-        for name in Dialect.__slots__:
-            name = name[1:]
-            value = notset
-            if name in kwargs:
-                value = kwargs[name]
-            elif dialect is not None:
-                value = getattr(dialect, name, notset)
-
-            # mapping by name: (default, converter)
-            if value is notset:
-                value = attributes[name][0]
-                if name == 'quoting' and not self.quotechar:
-                    value = QUOTE_NONE
-            else:
-                converter = attributes[name][1]
-                if converter:
-                    value = converter(value)
-
-            setattr(self, '_' + name, value)
-
-        if not self.delimiter:
-            raise TypeError('"delimiter" must be a 1-character string')
-
-        if self.quoting != QUOTE_NONE and not self.quotechar:
-            raise TypeError("quotechar must be set if quoting enabled")
-
-        if not self.lineterminator:
-            raise TypeError("lineterminator must be set")
-
-        return self
-
-    delimiter        = property(lambda self: self._delimiter)
-    doublequote      = property(lambda self: self._doublequote)
-    escapechar       = property(lambda self: self._escapechar)
-    lineterminator   = property(lambda self: self._lineterminator)
-    quotechar        = property(lambda self: self._quotechar)
-    quoting          = property(lambda self: self._quoting)
-    skipinitialspace = property(lambda self: self._skipinitialspace)
-    strict           = property(lambda self: self._strict)
-
+# class Dialect(object):
+#     """CSV dialect
+#
+#     The Dialect type records CSV parsing and generation options."""
+#
+#     __slots__ = ["_delimiter", "_doublequote", "_escapechar",
+#                  "_lineterminator", "_quotechar", "_quoting",
+#                  "_skipinitialspace", "_strict"]
+#
+#     def __new__(cls, dialect = None, **kwargs):
+#
+#         # TypeError if we have an unknown Keyword Argument
+#         for name in kwargs:
+#             if '_' + name not in Dialect.__slots__:
+#                 raise TypeError("unexpected keyword argument '%s'" %
+#                                 (name,))
+#
+#         # Reuse dialect instance if given or previously registered AND no new values are getting set
+#         if dialect is not None:
+#             if isinstance(dialect, str):
+#                 dialect = get_dialect(dialect)
+#
+#             # Can we reuse this instance?
+#             if (isinstance(dialect, Dialect)
+#                 and all(value is None for value in kwargs.values())):
+#                 return dialect
+#
+#         self = object.__new__(cls)
+#
+#
+#         # equivalent of '_csv.c: _set_char'
+#         def set_char(x):
+#             if x is not None:
+#                 if not isinstance(x, str):
+#                     raise TypeError('"%s" must be string, not %s' % (name, type(x).__name__))
+#                 n = len(x)
+#                 if n > 1:
+#                     raise TypeError('"%s" must be a 1-character string' % (name,))
+#                 if n > 0:
+#                     return x
+#             return ""
+#         def set_str(x):
+#             if isinstance(x, str):
+#                 return x
+#             raise TypeError('"%s" must be a string' % (name))
+#         def set_quoting(x):
+#             if x in range(4):
+#                 return x
+#             raise TypeError("bad 'quoting' value")
+#
+#         attributes = {"delimiter": (',', set_char),
+#                       "doublequote": (True, bool),
+#                       "escapechar": (None, set_char),
+#                       "lineterminator": ("\r\n", set_str),
+#                       "quotechar": ('"', set_char),
+#                       "quoting": (QUOTE_MINIMAL, set_quoting),
+#                       "skipinitialspace": (False, bool),
+#                       "strict": (False, bool),
+#                       }
+#
+#         # Copy attributes
+#         notset = object()
+#         for name in Dialect.__slots__:
+#             name = name[1:]
+#             value = notset
+#             if name in kwargs:
+#                 value = kwargs[name]
+#             elif dialect is not None:
+#                 value = getattr(dialect, name, notset)
+#
+#             # mapping by name: (default, converter)
+#             if value is notset:
+#                 value = attributes[name][0]
+#                 if name == 'quoting' and not self.quotechar:
+#                     value = QUOTE_NONE
+#             else:
+#                 converter = attributes[name][1]
+#                 if converter:
+#                     value = converter(value)
+#
+#             setattr(self, '_' + name, value)
+#
+#         if not self.delimiter:
+#             raise TypeError('"delimiter" must be a 1-character string')
+#
+#         if self.quoting != QUOTE_NONE and not self.quotechar:
+#             raise TypeError("quotechar must be set if quoting enabled")
+#
+#         if not self.lineterminator:
+#             raise TypeError("lineterminator must be set")
+#
+#         return self
+#
+#     delimiter        = property(lambda self: self._delimiter)
+#     doublequote      = property(lambda self: self._doublequote)
+#     escapechar       = property(lambda self: self._escapechar)
+#     lineterminator   = property(lambda self: self._lineterminator)
+#     quotechar        = property(lambda self: self._quotechar)
+#     quoting          = property(lambda self: self._quoting)
+#     skipinitialspace = property(lambda self: self._skipinitialspace)
+#     strict           = property(lambda self: self._strict)
 
 def _call_dialect(dialect_inst, kwargs):
     return Dialect(dialect_inst, **kwargs)
-
-def register_dialect(name, dialect=None, **kwargs):
-    """Create a mapping from a string name to a dialect class.
-    dialect = csv.register_dialect(name, dialect)"""
-    if not isinstance(name, str):
-        raise TypeError("dialect name must be a string or unicode")
-
-    dialect = _call_dialect(dialect, kwargs)
-    _dialects[name] = dialect
-
-def unregister_dialect(name):
-    """Delete the name/dialect mapping associated with a string name.\n
-    csv.unregister_dialect(name)"""
-    try:
-        del _dialects[name]
-    except KeyError:
-        raise Error("unknown dialect")
-
-def get_dialect(name):
-    """Return the dialect instance associated with name.
-    dialect = csv.get_dialect(name)"""
-    try:
-        return _dialects[name]
-    except KeyError:
-        raise Error("unknown dialect")
-
-def list_dialects():
-    """Return a list of all know dialect names
-    names = csv.list_dialects()"""
-    return list(_dialects)
 
 class Reader(object):
     """CSV reader

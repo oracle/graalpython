@@ -40,19 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.ctypes;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCArray;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCArrayType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCData;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCFuncPtr;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCFuncPtrType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointer;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointerType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCSimpleType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCStructType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SimpleCData;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnionType;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_DEREF_HANDLE;
-
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -66,6 +53,19 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
+
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCArray;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCArrayType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCData;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCFuncPtr;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCFuncPtrType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointer;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCPointerType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCSimpleType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PyCStructType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SimpleCData;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnionType;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_DEREF_HANDLE;
 
 public class CtypesNodes {
 
