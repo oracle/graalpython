@@ -104,7 +104,9 @@ import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -207,6 +209,7 @@ import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.PythonUtils;
@@ -1287,42 +1290,33 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class AllNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean doList(VirtualFrame frame,
-                              PList list,
+                              PSequence seq,
                               @Cached PyObjectIsTrueNode isTrue) {
-            Object[] internalArray = list.getSequenceStorage().getInternalArray();
-            for (int i = 0; i < list.getSequenceStorage().length(); i++)
+            System.out.println("seq_all");
+            Object[] internalArray = seq.getSequenceStorage().getInternalArray();
+            for (int i = 0; i < seq.getSequenceStorage().length(); i++)
                 if (!isTrue.execute(frame, internalArray[i]))
+                    return false;
+            return true;
+        }
+
+        @Specialization
+        static boolean doHashColl(VirtualFrame frame,
+                              PHashingCollection hc,
+                              @Cached PyObjectIsTrueNode isTrue) {
+            System.out.println("hash_all");
+
+            for (HashingStorage.DictEntry entry: hc.entries())
+                if (!isTrue.execute(frame, entry.key))
                     return false;
             return true;
         }
 
        @Specialization
        static boolean doObject(VirtualFrame frame, Object object) {
-//            System.out.println("obj_all");
+            System.out.println("obj_all :" + object.getClass());
 //           throw raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE);
-           return true;
-        }
-    }
-
-    @Builtin(name = ANY, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class AnyNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static boolean doList(VirtualFrame frame,
-                              PList list,
-                              @Cached PyObjectIsTrueNode isTrue) {
-            Object[] internalArray = list.getSequenceStorage().getInternalArray();
-            for (int i = 0; i < list.getSequenceStorage().length(); i++)
-                if (isTrue.execute(frame, internalArray[i]))
-                    return true;
-            return false;
-        }
-
-        @Specialization
-        static boolean doObject(VirtualFrame frame, Object object) {
-//            System.out.println("obj_all");
-//           throw raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE);
-            return true;
+            return true; // should be a void type instead
         }
     }
 
