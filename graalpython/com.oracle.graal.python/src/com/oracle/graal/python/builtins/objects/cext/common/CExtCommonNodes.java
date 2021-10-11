@@ -482,7 +482,8 @@ public abstract class CExtCommonNodes {
          *
          * @param array The interop array.
          * @param arrayLibrary An interop library for the {@code array} parameter.
-         * @param elementLibrary An interop library to convert the {@code array} parameter's elements into integers.
+         * @param elementLibrary An interop library to convert the {@code array} parameter's
+         *            elements into integers.
          * @param offset The interop array index to read from.
          * @param sizeofWchar {@code sizeof(wchar_t)}. For performance reasons, this value should be
          *            PE-constant. Valid values are {@code 1, 2, 4}.
@@ -500,8 +501,8 @@ public abstract class CExtCommonNodes {
                 }
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 /*
-                 * This should not be reached because that's checked using the appropriate
-                 * interop messages in the caller.
+                 * This should not be reached because that's checked using the appropriate interop
+                 * messages in the caller.
                  */
             }
             throw CompilerDirectives.shouldNotReachHere();
@@ -515,11 +516,11 @@ public abstract class CExtCommonNodes {
          * @param elemLib InteropLibrary for the elements of the interop array.
          * @param arr The interop array.
          * @param size The size of the interop array (must be {@code arrLib.getArraySize(arr)}).
-         * @param elementSize The size of the interop array's elements in bytes.
-         *            Valid values are {@code 1, 2, 4}.
+         * @param elementSize The size of the interop array's elements in bytes. Valid values are
+         *            {@code 1, 2, 4}.
          * @return The code points as Java characters.
          * @throws UnsupportedMessageException Thrown if an element of the interop array cannot be
-         *            converted to an integer.
+         *             converted to an integer.
          * @throws UnexpectedCodepointException
          */
         private static char[] readUnicodeBMPWithSize(InteropLibrary arrLib, InteropLibrary elemLib, Object arr, int size, int elementSize)
