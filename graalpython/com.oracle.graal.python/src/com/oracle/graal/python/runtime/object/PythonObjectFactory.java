@@ -113,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
+import com.oracle.graal.python.builtins.objects.itertools.PCount;
 import com.oracle.graal.python.builtins.objects.itertools.PIslice;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
 import com.oracle.graal.python.builtins.objects.itertools.PStarmap;
@@ -1154,6 +1155,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PChain createChain() {
         return trace(new PChain(PythonBuiltinClassType.PChain, PythonBuiltinClassType.PChain.getInstanceShape(getLanguage())));
+    }
+
+    public final PCount createCount() {
+        return trace(new PCount(PythonBuiltinClassType.PCount, PythonBuiltinClassType.PCount.getInstanceShape(getLanguage())));
     }
 
     public final PIslice createIslice() {

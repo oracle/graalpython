@@ -23,38 +23,6 @@
 # DEALINGS IN THE SOFTWARE.
 import sys
 
-class count(object):
-    @__graalpython__.builtin_method
-    def __init__(self, start=0, step=1):
-        valid_start = valid_step = False
-        for o in [start, step]:
-            if not isinstance(o, complex):
-                for mm in ["__index__", "__float__", "__int__"]:
-                    if hasattr(o, mm):
-                        break
-                else:
-                    raise TypeError("a number is required")
-        self._cnt = start
-        self._step = step
-
-    @__graalpython__.builtin_method
-    def __next__(self):
-        _cnt = self._cnt
-        self._cnt += self._step
-        return _cnt
-
-    @__graalpython__.builtin_method
-    def __repr__(self):
-        _repr = '{}({}'.format(type(self).__name__, self._cnt)
-        if not isinstance(self._step, int) or self._step != 1:
-            _repr += ', {}'.format(self._step)
-        return _repr + ')'
-
-    @__graalpython__.builtin_method
-    def __iter__(self):
-        return self
-
-
 class permutations():
     """permutations(iterable[, r]) --> permutations object
 

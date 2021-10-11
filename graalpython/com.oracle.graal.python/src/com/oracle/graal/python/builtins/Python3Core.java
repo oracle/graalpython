@@ -196,6 +196,7 @@ import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ChainBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CountBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.IsliceBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.RepeatBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.StarmapBuiltins;
@@ -502,6 +503,7 @@ public abstract class Python3Core extends ParserErrorCallback {
 
                         // itertools
                         new ChainBuiltins(),
+                        new CountBuiltins(),
                         new IsliceBuiltins(),
                         new RepeatBuiltins(),
                         new StarmapBuiltins(),
