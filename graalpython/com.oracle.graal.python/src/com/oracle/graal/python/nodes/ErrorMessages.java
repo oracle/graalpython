@@ -971,6 +971,8 @@ public abstract class ErrorMessages {
     public static final String BYTES_EXPECTED_INSTEAD_OF_S_INSTANCE = "bytes expected instead of %s instance";
     public static final String BYTE_STRING_TOO_LONG = "byte string too long";
     public static final String UNKNOWN_CLOCK = "unknown clock";
+    public static final String S_ARG_N_MUST_SUPPORT_ITERATION = "%s arg %d must support iteration";
+    public static final String REDUCE_EMPTY_SEQ = "reduce() of empty sequence with no initial value";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";

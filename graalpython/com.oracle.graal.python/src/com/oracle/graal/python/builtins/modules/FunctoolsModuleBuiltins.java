@@ -40,18 +40,97 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.ArrayList;
+import static com.oracle.graal.python.nodes.ErrorMessages.REDUCE_EMPTY_SEQ;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_N_MUST_SUPPORT_ITERATION;
+
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "_functools")
 public class FunctoolsModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+        return FunctoolsModuleBuiltinsFactory.getFactories();
+    }
+
+    // functools.reduce(function, iterable[, initializer])
+    @Builtin(name = "replace", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, doc = "reduce(function, sequence[, initial]) -> value\n" +
+                    "\n" +
+                    "Apply a function of two arguments cumulatively to the items of a sequence,\n" +
+                    "from left to right, so as to reduce the sequence to a single value.\n" +
+                    "For example, reduce(lambda x, y: x+y, [1, 2, 3, 4, 5]) calculates\n" +
+                    "((((1+2)+3)+4)+5).  If initial is present, it is placed before the items\n" +
+                    "of the sequence in the calculation, and serves as a default when the\n" +
+                    "sequence is empty.")
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonTernaryBuiltinNode {
+        @Specialization(guards = "isNoValue(initial)")
+        Object doReduceNoInitial(VirtualFrame frame, Object function, Object sequence, @SuppressWarnings("unused") PNone initial,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached GetNextNode nextNode,
+                        @Cached CallNode callNode,
+                        @Cached IsBuiltinClassProfile stopIterProfile,
+                        @Cached IsBuiltinClassProfile typeError) {
+            return doReduce(frame, function, sequence, null, getIter, nextNode, callNode, stopIterProfile, typeError);
+        }
+
+        @Specialization(guards = "!isNoValue(initial)")
+        Object doReduce(VirtualFrame frame, Object function, Object sequence, Object initial,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached GetNextNode nextNode,
+                        @Cached CallNode callNode,
+                        @Cached IsBuiltinClassProfile stopIterProfile,
+                        @Cached IsBuiltinClassProfile typeError) {
+            Object seqIterator, result = initial;
+            try {
+                seqIterator = getIter.execute(frame, sequence);
+            } catch (PException pe) {
+                pe.expectTypeError(typeError);
+                throw raise(PythonBuiltinClassType.TypeError, S_ARG_N_MUST_SUPPORT_ITERATION, "reduce()", 2);
+            }
+
+            Object[] args = new Object[2];
+
+            while (true) {
+                Object op2;
+                try {
+                    op2 = nextNode.execute(frame, seqIterator);
+                    if (result == null) {
+                        result = op2;
+                    } else {
+                        // Update the args tuple in-place
+                        args[0] = result;
+                        args[1] = op2;
+                        result = callNode.execute(frame, function, args);
+                    }
+                } catch (PException e) {
+                    e.expectStopIteration(stopIterProfile);
+                    break;
+                }
+            }
+
+            if (result == null) {
+                throw raise(PythonBuiltinClassType.TypeError, REDUCE_EMPTY_SEQ);
+            }
+
+            return result;
+        }
     }
 }
