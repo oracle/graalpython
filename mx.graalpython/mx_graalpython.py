@@ -454,7 +454,7 @@ class GraalPythonTags(object):
 
 def python_gate(args):
     if not os.environ.get("JDT"):
-        find_jdt()
+        os.environ["JDT"] = "builtin"
     if not os.environ.get("ECLIPSE_EXE"):
         find_eclipse()
     if "--tags" not in args:
@@ -474,15 +474,6 @@ def python_gate(args):
 
 
 python_gate.__doc__ = 'Custom gates are %s' % ", ".join([getattr(GraalPythonTags, t) for t in dir(GraalPythonTags) if not t.startswith("__")])
-
-
-def find_jdt():
-    pardir = os.path.abspath(os.path.join(SUITE.dir, ".."))
-    for f in [os.path.join(SUITE.dir, f) for f in os.listdir(SUITE.dir)] + [os.path.join(pardir, f) for f in os.listdir(pardir)]:
-        if os.path.basename(f).startswith("ecj-") and os.path.basename(f).endswith(".jar"):
-            mx.log("Automatically choosing %s for JDT" % f)
-            os.environ["JDT"] = f
-            return
 
 
 def find_eclipse():
