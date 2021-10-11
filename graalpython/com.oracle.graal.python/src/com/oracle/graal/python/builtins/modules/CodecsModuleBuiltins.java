@@ -72,6 +72,7 @@ import java.util.List;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -87,10 +88,12 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import static com.oracle.graal.python.nodes.BuiltinNames.ENCODE;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
@@ -111,6 +114,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -120,6 +124,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -552,14 +557,31 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        Object decode(PBytesLike input, Object encoding, Object errors, Object finalData,
+                        @Cached InternalCodecsDecodeNode internalNode) {
+            return internalNode.execute(input, encoding, errors, finalData);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class InternalCodecsDecodeNode extends PNodeWithContext {
+        abstract Object execute(Object input, Object encoding, Object errors, Object finalData);
+
+        public final Object call(Object input, Object encoding, Object errors, Object finalData) {
+            return execute(input, encoding, errors, finalData);
+        }
+
+        @Specialization
         Object decode(PBytesLike input, String encoding, String errors, boolean finalData,
                         @Cached GetInternalByteArrayNode getBytes,
-                        @Cached HandleDecodingErrorNode errorHandler) {
+                        @Cached HandleDecodingErrorNode errorHandler,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PythonObjectFactory factory) {
             byte[] bytes = getBytes.execute(input.getSequenceStorage());
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
             Charset charset = CharsetMapping.getCharset(encoding);
             if (charset == null) {
-                throw raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
+                throw raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
             }
             TruffleDecoder decoder;
             try {
@@ -569,14 +591,15 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 }
             } catch (OutOfMemoryError e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(MemoryError);
+                throw raiseNode.raise(MemoryError);
             }
-            return factory().createTuple(new Object[]{decoder.getString(), decoder.getInputPosition()});
+            return factory.createTuple(new Object[]{decoder.getString(), decoder.getInputPosition()});
         }
 
         @Fallback
-        Object decode(Object bytes, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors, @SuppressWarnings("unused") Object finalData) {
-            throw raise(TypeError, BYTESLIKE_OBJ_REQUIRED, bytes);
+        Object decode(Object bytes, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors, @SuppressWarnings("unused") Object finalData,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(TypeError, BYTESLIKE_OBJ_REQUIRED, bytes);
         }
     }
 
@@ -823,24 +846,39 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LookupNode extends PythonUnaryBuiltinNode {
         @Specialization
+        PTuple lookup(VirtualFrame frame, Object encoding,
+                        @Cached InternalLookupNode internalNode) {
+            return internalNode.execute(frame, encoding);
+        }
+    }
+
+    @GenerateUncached
+    abstract static class InternalLookupNode extends PNodeWithContext {
+        abstract PTuple execute(Frame frame, Object encoding);
+
+        @Specialization
         PTuple lookup(VirtualFrame frame, PBytesLike encoding,
-                        @Cached AsciiDecodeNode asciiDecodeNode,
+                        @Cached InternalCodecsDecodeNode decodeNode,
+                        @Cached PyObjectTypeCheck typeCheck,
                         @Cached CallUnaryMethodNode callNode,
-                        @Cached TupleBuiltins.LenNode lenNode,
+                        @Cached PyObjectSizeNode sizeNode,
                         @Cached ConditionProfile hasSearchPathProfile,
                         @Cached ConditionProfile hasTruffleEncodingProfile,
-                        @Cached ConditionProfile isTupleProfile) {
-            String decoded = (String) ((PTuple) asciiDecodeNode.execute(frame, encoding, PNone.NO_VALUE)).getSequenceStorage().getInternalArray()[0];
-            return lookup(frame, decoded, callNode, lenNode, hasSearchPathProfile, hasTruffleEncodingProfile, isTupleProfile);
+                        @Cached ConditionProfile isTupleProfile,
+                        @Cached PRaiseNode raiseNode) {
+            String decoded = (String) ((PTuple) decodeNode.execute(encoding, "ascii", PNone.NO_VALUE, true)).getSequenceStorage().getInternalArray()[0];
+            return lookup(frame, decoded, callNode, typeCheck, sizeNode, hasSearchPathProfile, hasTruffleEncodingProfile, isTupleProfile, raiseNode);
         }
 
         @Specialization
         PTuple lookup(VirtualFrame frame, String encoding,
                         @Cached CallUnaryMethodNode callNode,
-                        @Cached TupleBuiltins.LenNode lenNode,
+                        @Cached PyObjectTypeCheck typeCheck,
+                        @Cached PyObjectSizeNode sizeNode,
                         @Cached ConditionProfile hasSearchPathProfile,
                         @Cached ConditionProfile hasTruffleEncodingProfile,
-                        @Cached ConditionProfile isTupleProfile) {
+                        @Cached ConditionProfile isTupleProfile,
+                        @Cached PRaiseNode raiseNode) {
             String normalized_encoding = normalizeString(encoding);
             PythonContext context = getContext();
             PTuple result = getSearchPath(context, normalized_encoding);
@@ -849,13 +887,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             }
             if (hasTruffleEncodingProfile.profile(hasTruffleEncoding(encoding))) {
                 PythonModule codecs = context.getCore().lookupBuiltinModule("_codecs_truffle");
-                result = CodecsTruffleModuleBuiltins.codecsInfo(codecs, encoding, context, factory());
+                result = CodecsTruffleModuleBuiltins.codecsInfo(codecs, encoding, context, getContext().getCore().factory());
             } else {
                 for (Object func : getSearchPaths(context)) {
                     Object obj = callNode.executeObject(func, normalized_encoding);
                     if (obj != PNone.NONE) {
-                        if (isTupleProfile.profile(!isTupleInstanceCheck(frame, obj, 4, lenNode))) {
-                            throw raise(TypeError, CODEC_SEARCH_MUST_RETURN_4);
+                        if (isTupleProfile.profile(!isTupleInstanceCheck(frame, obj, 4, typeCheck, sizeNode))) {
+                            throw raiseNode.raise(TypeError, CODEC_SEARCH_MUST_RETURN_4);
                         }
                         result = (PTuple) obj;
                         break;
@@ -866,7 +904,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 putSearchPath(context, normalized_encoding, result);
                 return result;
             }
-            throw raise(LookupError, UNKNOWN_ENCODING, encoding);
+            throw raiseNode.raise(LookupError, UNKNOWN_ENCODING, encoding);
         }
 
         @TruffleBoundary
@@ -886,8 +924,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static boolean isTupleInstanceCheck(VirtualFrame frame, Object result, int len, TupleBuiltins.LenNode lenNode) throws PException {
-        return (result instanceof PTuple) && ((int) lenNode.execute(frame, result) == len);
+    private static boolean isTupleInstanceCheck(VirtualFrame frame, Object result, int len, PyObjectTypeCheck typeCheck, PyObjectSizeNode sizeNode) throws PException {
+        return typeCheck.execute(result, PythonBuiltinClassType.PTuple) && sizeNode.execute(frame, result) == len;
     }
 
     @TruffleBoundary
@@ -1024,11 +1062,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetItemNode getResultItemNode,
                         @Cached LookupNode lookupNode,
                         @Cached CallBinaryMethodNode callEncoderNode,
-                        @Cached TupleBuiltins.LenNode lenNode,
+                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached PyObjectTypeCheck typeCheck,
                         @Cached ConditionProfile isTupleProfile) {
             Object encoder = CodecsModuleBuiltins.encoder(frame, encoding, lookupNode, getItemNode);
             Object result = callEncoderNode.executeObject(encoder, obj, errors);
-            if (isTupleProfile.profile(!isTupleInstanceCheck(frame, result, 2, lenNode))) {
+            if (isTupleProfile.profile(!isTupleInstanceCheck(frame, result, 2, typeCheck, sizeNode))) {
                 throw raise(TypeError, S_MUST_RETURN_TUPLE, "encoder");
             }
             return getResultItemNode.execute(frame, ((PTuple) result).getSequenceStorage(), 0);
@@ -1052,11 +1091,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetItemNode getResultItemNode,
                         @Cached LookupNode lookupNode,
                         @Cached CallBinaryMethodNode callEncoderNode,
-                        @Cached TupleBuiltins.LenNode lenNode,
+                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached PyObjectTypeCheck typeCheck,
                         @Cached ConditionProfile isTupleProfile) {
             Object decoder = CodecsModuleBuiltins.decoder(frame, encoding, lookupNode, getItemNode);
             Object result = callEncoderNode.executeObject(decoder, obj, errors);
-            if (isTupleProfile.profile(!isTupleInstanceCheck(frame, result, 2, lenNode))) {
+            if (isTupleProfile.profile(!isTupleInstanceCheck(frame, result, 2, typeCheck, sizeNode))) {
                 throw raise(TypeError, S_MUST_RETURN_TUPLE, "decoder");
             }
             return getResultItemNode.execute(frame, ((PTuple) result).getSequenceStorage(), 0);
