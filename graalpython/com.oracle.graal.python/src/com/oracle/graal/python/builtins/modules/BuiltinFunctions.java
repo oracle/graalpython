@@ -31,6 +31,7 @@ import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.ABS;
 import static com.oracle.graal.python.nodes.BuiltinNames.ALL;
+import static com.oracle.graal.python.nodes.BuiltinNames.ANY;
 import static com.oracle.graal.python.nodes.BuiltinNames.ASCII;
 import static com.oracle.graal.python.nodes.BuiltinNames.BIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINT;
@@ -135,6 +136,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -1284,19 +1286,45 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AllNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static boolean doList(PList object) {
-            System.out.println("list_all");
+        static boolean doList(VirtualFrame frame,
+                              PList list,
+                              @Cached PyObjectIsTrueNode isTrue) {
+            Object[] internalArray = list.getSequenceStorage().getInternalArray();
+            for (int i = 0; i < list.getSequenceStorage().length(); i++)
+                if (!isTrue.execute(frame, internalArray[i]))
+                    return false;
             return true;
         }
 
        @Specialization
        static boolean doObject(VirtualFrame frame, Object object) {
-            System.out.println("obj_all");
-            return true;
+//            System.out.println("obj_all");
+//           throw raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE);
+           return true;
         }
     }
 
+    @Builtin(name = ANY, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class AnyNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static boolean doList(VirtualFrame frame,
+                              PList list,
+                              @Cached PyObjectIsTrueNode isTrue) {
+            Object[] internalArray = list.getSequenceStorage().getInternalArray();
+            for (int i = 0; i < list.getSequenceStorage().length(); i++)
+                if (isTrue.execute(frame, internalArray[i]))
+                    return true;
+            return false;
+        }
 
+        @Specialization
+        static boolean doObject(VirtualFrame frame, Object object) {
+//            System.out.println("obj_all");
+//           throw raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE);
+            return true;
+        }
+    }
 
     public abstract static class MinMaxNode extends PythonBuiltinNode {
 
