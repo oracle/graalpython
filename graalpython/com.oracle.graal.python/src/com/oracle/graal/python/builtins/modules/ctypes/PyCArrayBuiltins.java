@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
@@ -91,6 +92,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PyCArray)
 public class PyCArrayBuiltins extends PythonBuiltins {
@@ -236,8 +238,9 @@ public class PyCArrayBuiltins extends PythonBuiltins {
             return pyCDataGetNode.execute(stgdict.proto, stgdict.getfunc, self, index, size, self.b_ptr.ref(offset), factory());
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object Array_subscript(CDataObject self, PSlice slice,
+                        @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Cached PyCDataGetNode pyCDataGetNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
@@ -253,7 +256,7 @@ public class PyCArrayBuiltins extends PythonBuiltins {
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.b_length, sliceUnpack.execute(slice));
             int slicelen = sliceInfo.sliceLength;
             if (itemdict.getfunc == FieldDesc.c.getfunc) {
-                byte[] ptr = self.getBufferBytes();
+                byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
 
                 if (slicelen <= 0) {
                     return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
@@ -269,7 +272,7 @@ public class PyCArrayBuiltins extends PythonBuiltins {
                 return factory().createBytes(dest);
             }
             if (itemdict.getfunc == FieldDesc.u.getfunc) { // CTYPES_UNICODE
-                byte[] ptr = self.getBufferBytes();
+                byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
 
                 if (slicelen <= 0) {
                     return "";

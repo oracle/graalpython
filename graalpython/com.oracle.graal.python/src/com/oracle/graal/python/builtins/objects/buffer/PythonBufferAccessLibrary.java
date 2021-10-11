@@ -102,7 +102,12 @@ public abstract class PythonBufferAccessLibrary extends Library {
     /**
      * Return the buffer length in bytes. Equivalent of CPython's {@code Py_buffer.len}.
      */
-    public abstract int getBufferLength(Object receiver);
+
+    @Abstract
+    @SuppressWarnings("unused")
+    public int getBufferLength(Object receiver) {
+        throw CompilerDirectives.shouldNotReachHere("getBufferLength");
+    }
 
     /**
      * Returns whether the buffer is considered readonly. Equivalent of CPython's
@@ -227,7 +232,11 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * 
      * @param byteOffset offset in bytes
      */
-    public abstract byte readByte(Object receiver, int byteOffset);
+    @Abstract
+    @SuppressWarnings("unused")
+    public byte readByte(Object receiver, int byteOffset) {
+        throw CompilerDirectives.shouldNotReachHere("readByte");
+    }
 
     /**
      * Read a single short from the buffer. Bounds checks are responsibility of the caller.
