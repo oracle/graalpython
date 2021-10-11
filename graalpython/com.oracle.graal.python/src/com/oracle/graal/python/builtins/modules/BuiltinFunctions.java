@@ -173,6 +173,7 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
@@ -1289,7 +1290,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AllNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static boolean doList(VirtualFrame frame,
+        static boolean doSeq(VirtualFrame frame,
                               PSequence seq,
                               @Cached PyObjectIsTrueNode isTrue) {
             System.out.println("seq_all");
@@ -1313,10 +1314,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
        @Specialization
-       static boolean doObject(VirtualFrame frame, Object object) {
+       static boolean doObject(VirtualFrame frame,
+                               Object object,
+                               @Cached GetClassNode getClassNode,
+                               @Cached(parameters = "Iter") LookupSpecialMethodSlotNode lookupLen,
+                               @Cached PRaiseNode raiseNode) {
             System.out.println("obj_all :" + object.getClass());
-//           throw raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE);
-            return true; // should be a void type instead
+
+            Object lenDescr = lookupLen.execute(frame, getClassNode.execute(object), object);
+            if (lenDescr == PNone.NO_VALUE)
+                throw raiseNode.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, object);
+
+            // TODO should iterate through the object instead
+            return true;
         }
     }
 
