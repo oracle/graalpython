@@ -123,6 +123,9 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.set.PBaseSet;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -297,24 +300,31 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AllNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static boolean doSeq(VirtualFrame frame,
-                             PSequence seq,
-                             @Cached PyObjectIsTrueNode isTrue) {
-            Object[] internalArray = seq.getSequenceStorage().getInternalArray();
-            for (int i = 0; i < seq.getSequenceStorage().length(); i++)
-                if (!isTrue.execute(frame, internalArray[i]))
-                    return false;
-            return true;
+        static boolean doList(VirtualFrame frame,
+                             PList list,
+                             @Cached PyObjectIsTrueNode isTrueNode) {
+            return checkSequenceStorage(list, frame, isTrueNode);
         }
 
         @Specialization
-        static boolean doHashColl(VirtualFrame frame,
-                                  PHashingCollection hc,
-                                  @Cached PyObjectIsTrueNode isTrue) {
-            for (HashingStorage.DictEntry entry: hc.entries())
-                if (!isTrue.execute(frame, entry.key))
-                    return false;
-            return true;
+        static boolean doTuple(VirtualFrame frame,
+                               PTuple tuple,
+                               @Cached PyObjectIsTrueNode isTrueNode) {
+            return checkSequenceStorage(tuple, frame, isTrueNode);
+        }
+
+        @Specialization
+        static boolean doDict(VirtualFrame frame,
+                              PDict hc,
+                              @Cached PyObjectIsTrueNode isTrueNode) {
+            return checkHashEntries(hc, frame, isTrueNode);
+        }
+
+        @Specialization
+        static boolean doSet(VirtualFrame frame,
+                             PSet hc,
+                             @Cached PyObjectIsTrueNode isTrueNode) {
+            return checkHashEntries(hc, frame, isTrueNode);
         }
 
         @Specialization
@@ -323,12 +333,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
                                 @Cached PyObjectGetIter getIter,
                                 @Cached("create(__NEXT__)") LookupAndCallUnaryNode callNode,
                                 @Cached IsBuiltinClassProfile errorProfile,
-                                @Cached PyObjectIsTrueNode isTrue) {
+                                @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = getIter.execute(frame, object);
             while (true) {
                 try {
                     Object next = callNode.executeObject(frame, iterator);
-                    if (!isTrue.execute(frame, next))
+                    if (!isTrueNode.execute(frame, next))
                         return false;
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
@@ -338,30 +348,57 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             return true;
         }
+
+        static boolean checkSequenceStorage(PSequence seq,
+                                            VirtualFrame frame,
+                                            PyObjectIsTrueNode isTrueNode) {
+            SequenceStorage sequenceStorage = seq.getSequenceStorage();
+            Object[] internalArray = sequenceStorage.getInternalArray();
+            for (int i = 0; i < sequenceStorage.length(); i++)
+                if (!isTrueNode.execute(frame, internalArray[i]))
+                    return false;
+            return true;
+        }
+
+        static boolean checkHashEntries(PHashingCollection hashingCollection,
+                                        VirtualFrame frame,
+                                        PyObjectIsTrueNode isTrueNode) {
+            for (HashingStorage.DictEntry entry: hashingCollection.entries())
+                if (!isTrueNode.execute(frame, entry.key))
+                    return false;
+            return true;
+        }
     }
 
     @Builtin(name = ANY, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class AnyNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static boolean doSeq(VirtualFrame frame,
-                             PSequence seq,
-                             @Cached PyObjectIsTrueNode isTrue) {
-            Object[] internalArray = seq.getSequenceStorage().getInternalArray();
-            for (int i = 0; i < seq.getSequenceStorage().length(); i++)
-                if (isTrue.execute(frame, internalArray[i]))
-                    return true;
-            return false;
+        static boolean doList(VirtualFrame frame,
+                              PList list,
+                              @Cached PyObjectIsTrueNode isTrueNode) {
+            return checkSequenceStorage(list, frame, isTrueNode);
         }
 
         @Specialization
-        static boolean doHashColl(VirtualFrame frame,
-                                  PHashingCollection hc,
-                                  @Cached PyObjectIsTrueNode isTrue) {
-            for (HashingStorage.DictEntry entry: hc.entries())
-                if (isTrue.execute(frame, entry.key))
-                    return true;
-            return false;
+        static boolean doTuple(VirtualFrame frame,
+                               PTuple tuple,
+                               @Cached PyObjectIsTrueNode isTrueNode) {
+            return checkSequenceStorage(tuple, frame, isTrueNode);
+        }
+
+        @Specialization
+        static boolean doDict(VirtualFrame frame,
+                              PDict hc,
+                              @Cached PyObjectIsTrueNode isTrueNode) {
+            return checkHashEntries(hc, frame, isTrueNode);
+        }
+
+        @Specialization
+        static boolean doSet(VirtualFrame frame,
+                             PSet hc,
+                             @Cached PyObjectIsTrueNode isTrueNode) {
+            return checkHashEntries(hc, frame, isTrueNode);
         }
 
         @Specialization
@@ -370,12 +407,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
                                 @Cached PyObjectGetIter getIter,
                                 @Cached("create(__NEXT__)") LookupAndCallUnaryNode callNode,
                                 @Cached IsBuiltinClassProfile errorProfile,
-                                @Cached PyObjectIsTrueNode isTrue) {
+                                @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = getIter.execute(frame, object);
             while (true) {
                 try {
                     Object next = callNode.executeObject(frame, iterator);
-                    if (isTrue.execute(frame, next))
+                    if (isTrueNode.execute(frame, next))
                         return true;
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
@@ -383,6 +420,26 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
             }
 
+            return false;
+        }
+
+        static boolean checkSequenceStorage(PSequence seq,
+                                            VirtualFrame frame,
+                                            PyObjectIsTrueNode isTrueNode) {
+            SequenceStorage sequenceStorage = seq.getSequenceStorage();
+            Object[] internalArray = sequenceStorage.getInternalArray();
+            for (int i = 0; i < sequenceStorage.length(); i++)
+                if (isTrueNode.execute(frame, internalArray[i]))
+                    return true;
+            return false;
+        }
+
+        static boolean checkHashEntries(PHashingCollection hashingCollection,
+                                        VirtualFrame frame,
+                                        PyObjectIsTrueNode isTrueNode) {
+            for (HashingStorage.DictEntry entry: hashingCollection.entries())
+                if (isTrueNode.execute(frame, entry.key))
+                    return true;
             return false;
         }
     }
