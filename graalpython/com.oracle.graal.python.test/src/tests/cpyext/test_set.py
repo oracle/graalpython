@@ -182,3 +182,23 @@ class TestPySet(CPyExtTestCase):
         arguments=["PyObject* o", "PyObject* item"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PySet_GET_SIZE = CPyExtFunction(
+        lambda args: len(args[0]),
+        lambda: (
+            (set(),),
+            (set(),),
+            (set([1, 2, 3]),),
+            (set({'a', 'b'}),),
+            (frozenset([1, 2, 3]),),
+            (frozenset({'a', 'b'}),),
+            (frozenset([None]),),
+            (FrozenSetSubclass(),),
+            (SetSubclass([None]),),
+        ),
+        resultspec="n",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )
+
