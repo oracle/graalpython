@@ -1291,8 +1291,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class AllNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean doSeq(VirtualFrame frame,
-                              PSequence seq,
-                              @Cached PyObjectIsTrueNode isTrue) {
+                             PSequence seq,
+                             @Cached PyObjectIsTrueNode isTrue) {
             System.out.println("seq_all");
             Object[] internalArray = seq.getSequenceStorage().getInternalArray();
             for (int i = 0; i < seq.getSequenceStorage().length(); i++)
@@ -1303,8 +1303,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         static boolean doHashColl(VirtualFrame frame,
-                              PHashingCollection hc,
-                              @Cached PyObjectIsTrueNode isTrue) {
+                                  PHashingCollection hc,
+                                  @Cached PyObjectIsTrueNode isTrue) {
             System.out.println("hash_all");
 
             for (HashingStorage.DictEntry entry: hc.entries())
@@ -1316,17 +1316,34 @@ public final class BuiltinFunctions extends PythonBuiltins {
        @Specialization
        static boolean doObject(VirtualFrame frame,
                                Object object,
-                               @Cached GetClassNode getClassNode,
-                               @Cached(parameters = "Iter") LookupSpecialMethodSlotNode lookupLen,
-                               @Cached PRaiseNode raiseNode) {
+                               @Cached PyObjectGetIter getIter,
+                               @Cached("createNextCall()") LookupAndCallUnaryNode callNode,
+                               @Cached IsBuiltinClassProfile errorProfile,
+                               @Cached PyObjectIsTrueNode isTrue) {
             System.out.println("obj_all :" + object.getClass());
 
-            Object lenDescr = lookupLen.execute(frame, getClassNode.execute(object), object);
-            if (lenDescr == PNone.NO_VALUE)
-                throw raiseNode.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, object);
+            Object iterator = getIter.execute(frame, object);
+            while (true) {
+                try {
+                    Object next = callNode.executeObject(frame, iterator);
+                    if (!isTrue.execute(frame, next))
+                        return false;
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    break;
+                }
+            }
 
-            // TODO should iterate through the object instead
             return true;
+        }
+
+        protected LookupAndCallUnaryNode createNextCall() {
+            return LookupAndCallUnaryNode.create(__NEXT__, () -> new LookupAndCallUnaryNode.NoAttributeHandler() {
+                @Override
+                public Object execute(Object iterator) {
+                    throw raise(TypeError, ErrorMessages.OBJ_ISNT_ITERATOR, iterator);
+                }
+            });
         }
     }
 
