@@ -52,9 +52,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Has
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.util.PythonUtils;
@@ -160,7 +160,7 @@ public final class LocalsStorage extends HashingStorage {
         @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
         static Object notString(LocalsStorage self, Object key, ThreadState state,
                         @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached PyObjectHashNode hashNode,
                         @Shared("gotState") @Cached ConditionProfile gotState) {
             CompilerDirectives.bailout("accessing locals storage with non-string keys is slow");
@@ -170,14 +170,8 @@ public final class LocalsStorage extends HashingStorage {
                 Object currentKey = slot.getIdentifier();
                 if (currentKey instanceof String) {
                     long keyHash = hashNode.execute(frame, currentKey);
-                    if (gotState.profile(state != null)) {
-                        if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
-                            return self.getValue(slot);
-                        }
-                    } else {
-                        if (keyHash == hash && lib.equals(key, currentKey, lib)) {
-                            return self.getValue(slot);
-                        }
+                    if (keyHash == hash && eqNode.execute(frame, key, currentKey)) {
+                        return self.getValue(slot);
                     }
                 }
             }

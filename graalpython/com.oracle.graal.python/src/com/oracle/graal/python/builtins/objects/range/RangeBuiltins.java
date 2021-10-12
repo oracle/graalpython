@@ -50,10 +50,7 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.CoerceToBigRange;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfIntRangeNodeExact;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.PRangeStartNode;
@@ -70,6 +67,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -96,7 +94,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRange)
@@ -658,28 +655,17 @@ public class RangeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!canBeInteger(elem) || !isBuiltinPInt(elem, isBuiltin)", limit = "1")
         static boolean containsIterator(VirtualFrame frame, PRange self, Object elem,
-                        @Cached ConditionProfile hasFrame,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @SuppressWarnings("unused") @Shared("isBuiltinPInt") @Cached PyLongCheckExactNode isBuiltin) {
-            ThreadState state = null;
-            if (hasFrame.profile(frame != null)) {
-                state = PArguments.getThreadState(frame);
-            }
             Object iter = getIter.execute(frame, self);
             while (true) {
                 try {
                     Object item = nextNode.execute(frame, iter);
-                    if (hasFrame.profile(frame != null)) {
-                        if (lib.equalsWithState(elem, item, lib, state)) {
-                            return true;
-                        }
-                    } else {
-                        if (lib.equals(elem, item, lib)) {
-                            return true;
-                        }
+                    if (eqNode.execute(frame, elem, item)) {
+                        return true;
                     }
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
@@ -764,28 +750,17 @@ public class RangeBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = "!canBeInteger(elem)")
         Object containsIterator(VirtualFrame frame, PIntRange self, Object elem,
-                        @Cached ConditionProfile hasFrame,
                         @Cached GetNextNode nextNode,
                         @Cached PyObjectGetIter getIter,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            ThreadState state = null;
-            if (hasFrame.profile(frame != null)) {
-                state = PArguments.getThreadState(frame);
-            }
             int idx = 0;
             Object iter = getIter.execute(frame, self);
             while (true) {
                 try {
                     Object item = nextNode.execute(frame, iter);
-                    if (hasFrame.profile(frame != null)) {
-                        if (lib.equalsWithState(elem, item, lib, state)) {
-                            return idx;
-                        }
-                    } else {
-                        if (lib.equals(elem, item, lib)) {
-                            return idx;
-                        }
+                    if (eqNode.execute(frame, elem, item)) {
+                        return idx;
                     }
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
@@ -879,27 +854,16 @@ public class RangeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isFallback(elem)")
         int doGeneric(VirtualFrame frame, PRange self, Object elem,
                         @Cached PyObjectGetIter getIter,
-                        @Cached ConditionProfile hasFrame,
                         @Cached GetNextNode nextNode,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             int count = 0;
-            ThreadState state = null;
-            if (hasFrame.profile(frame != null)) {
-                state = PArguments.getThreadState(frame);
-            }
             Object iter = getIter.execute(frame, self);
             while (true) {
                 try {
                     Object item = nextNode.execute(frame, iter);
-                    if (hasFrame.profile(frame != null)) {
-                        if (lib.equalsWithState(elem, item, lib, state)) {
-                            count = incCount(count);
-                        }
-                    } else {
-                        if (lib.equals(elem, item, lib)) {
-                            count = incCount(count);
-                        }
+                    if (eqNode.execute(frame, elem, item)) {
+                        count = incCount(count);
                     }
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);

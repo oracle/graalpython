@@ -88,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -108,6 +107,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.truffle.api.dsl.Cached;
@@ -192,9 +192,9 @@ public class IOBaseBuiltins extends PythonBuiltins {
         @Specialization
         boolean doCheckSeekable(VirtualFrame frame, PythonObject self,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary isSame) {
+                        @Cached IsNode isNode) {
             Object v = callMethod.execute(frame, self, SEEKABLE);
-            if (isSame.isSame(v, getCore().getTrue())) {
+            if (isNode.isTrue(v)) {
                 return true;
             }
             throw unsupported(getRaiseNode(), ErrorMessages.FILE_OR_STREAM_IS_NOT_SEEKABLE);
@@ -207,9 +207,9 @@ public class IOBaseBuiltins extends PythonBuiltins {
         @Specialization
         boolean doCheckReadable(VirtualFrame frame, PythonObject self,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary isSame) {
+                        @Cached IsNode isNode) {
             Object v = callMethod.execute(frame, self, READABLE);
-            if (isSame.isSame(v, getCore().getTrue())) {
+            if (isNode.isTrue(v)) {
                 return true;
             }
             throw unsupported(getRaiseNode(), ErrorMessages.FILE_OR_STREAM_IS_NOT_READABLE);
@@ -222,9 +222,9 @@ public class IOBaseBuiltins extends PythonBuiltins {
         @Specialization
         boolean doCheckWritable(VirtualFrame frame, PythonObject self,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary isSame) {
+                        @Cached IsNode isNode) {
             Object result = callMethod.execute(frame, self, WRITABLE);
-            if (isSame.isSame(result, true)) {
+            if (isNode.isTrue(result)) {
                 return true;
             }
             throw unsupported(getRaiseNode(), ErrorMessages.FILE_OR_STREAM_IS_NOT_WRITABLE);

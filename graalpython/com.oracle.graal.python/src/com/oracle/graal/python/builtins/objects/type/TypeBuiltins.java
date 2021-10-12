@@ -85,7 +85,6 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDelet
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
@@ -299,20 +298,18 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = MRO, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class MroNode extends PythonBuiltinNode {
-        @Specialization(guards = "lib.isLazyPythonClass(klass)")
-        @SuppressWarnings("unused")
+    public abstract static class MroNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = "isTypeNode.execute(klass)", limit = "1")
         Object doit(Object klass,
-                        @Cached GetMroNode getMroNode,
-                        @Shared("pythonLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached GetMroNode getMroNode) {
             PythonAbstractClass[] mro = getMroNode.execute(klass);
             return factory().createList(Arrays.copyOf(mro, mro.length, Object[].class));
         }
 
-        @Specialization(guards = "!lib.isLazyPythonClass(object)")
+        @Fallback
         @SuppressWarnings("unused")
-        Object doit(Object object,
-                        @Shared("pythonLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+        Object doit(Object object) {
             throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, MRO, "type", object);
         }
     }
@@ -844,11 +841,11 @@ public class TypeBuiltins extends PythonBuiltins {
             return null;
         }
 
-        @Specialization(guards = "plib.isLazyPythonClass(cls)")
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
         boolean isInstance(VirtualFrame frame, Object cls, Object instance,
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "4") PythonObjectLibrary plib) {
+                        @Cached IsSubtypeNode isSubtypeNode) {
             if (instance instanceof PythonObject && isSubtypeNode.execute(frame, getClassNode.execute(instance), cls)) {
                 return true;
             }

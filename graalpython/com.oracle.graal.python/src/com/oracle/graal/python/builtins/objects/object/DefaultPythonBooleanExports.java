@@ -42,24 +42,14 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -67,146 +57,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Boolean.class)
 final class DefaultPythonBooleanExports {
-    @ExportMessage
-    static class IsSame {
-        @Specialization
-        static boolean bb(Boolean receiver, boolean other) {
-            return receiver == other;
-        }
-
-        @Specialization
-        static boolean bI(Boolean receiver, PInt other,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
-            PythonContext context = PythonContext.get(lib);
-            if (receiver) {
-                if (other == context.getCore().getTrue()) {
-                    return true; // avoid the TruffleBoundary isOne call if we can
-                } else if (isBuiltin.profileObject(other, PythonBuiltinClassType.Boolean)) {
-                    return other.isOne();
-                }
-            } else {
-                if (other == context.getCore().getFalse()) {
-                    return true;
-                } else if (isBuiltin.profileObject(other, PythonBuiltinClassType.Boolean)) {
-                    return other.isZero();
-                }
-            }
-            return false;
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static boolean bO(Boolean receiver, Object other) {
-            return false;
-        }
-    }
-
-    @ExportMessage
-    static class EqualsInternal {
-        @Specialization
-        static int bb(Boolean receiver, boolean other, @SuppressWarnings("unused") ThreadState threadState) {
-            return receiver == other ? 1 : 0;
-        }
-
-        @Specialization
-        static int bi(Boolean receiver, int other, @SuppressWarnings("unused") ThreadState threadState) {
-            return (receiver && other == 1 || !receiver && other == 0) ? 1 : 0;
-        }
-
-        @Specialization
-        static int bl(Boolean receiver, long other, @SuppressWarnings("unused") ThreadState threadState) {
-            return (receiver && other == 1 || !receiver && other == 0) ? 1 : 0;
-        }
-
-        @Specialization
-        static int bI(Boolean receiver, PInt other, @SuppressWarnings("unused") ThreadState threadState) {
-            return (receiver && other.isOne() || !receiver && other.isZero()) ? 1 : 0;
-        }
-
-        @Specialization
-        static int bd(Boolean receiver, double other, @SuppressWarnings("unused") ThreadState threadState) {
-            return (receiver && other == 1 || receiver && other == 0) ? 1 : 0;
-        }
-
-        @Specialization
-        static int bF(Boolean receiver, PFloat other, @SuppressWarnings("unused") ThreadState threadState,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
-                        @Shared("getClass") @Cached GetClassNode getClassNode) {
-            // n.b.: long objects cannot compare here, but if its a builtin float we can shortcut
-            if (isBuiltin.profileIsAnyBuiltinClass(getClassNode.execute(other))) {
-                return (receiver && other.getValue() == 1 || receiver && other.getValue() == 0) ? 1 : 0;
-            } else {
-                return -1;
-            }
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static int bO(Boolean receiver, Object other, @SuppressWarnings("unused") ThreadState threadState) {
-            return -1;
-        }
-    }
-
-    @ImportStatic(PythonOptions.class)
-    @ExportMessage
-    @SuppressWarnings("unused")
-    static class EqualsWithState {
-        @Specialization
-        static boolean bb(Boolean receiver, boolean other, PythonObjectLibrary oLib, ThreadState threadState) {
-            return receiver == other;
-        }
-
-        @Specialization
-        static boolean bi(Boolean receiver, int other, PythonObjectLibrary oLib, ThreadState threadState) {
-            return receiver ? other == 1 : other == 0;
-        }
-
-        @Specialization
-        static boolean bl(Boolean receiver, long other, PythonObjectLibrary oLib, ThreadState threadState) {
-            return receiver ? other == 1 : other == 0;
-        }
-
-        @Specialization
-        static boolean bI(Boolean receiver, PInt other, PythonObjectLibrary oLib, ThreadState threadState) {
-            // n.b.: subclassing is ignored in this direction in CPython
-            return receiver ? other.isOne() : other.isZero();
-        }
-
-        @Specialization
-        static boolean bd(Boolean receiver, double other, PythonObjectLibrary oLib, ThreadState threadState) {
-            return receiver ? other == 1 : other == 0;
-        }
-
-        @Specialization
-        static boolean bF(Boolean receiver, PFloat other, PythonObjectLibrary oLib, ThreadState threadState,
-                        @Shared("getClass") @Cached GetClassNode getClassNode,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
-            if (isBuiltin.profileIsAnyBuiltinClass(getClassNode.execute(other))) {
-                return receiver ? other.getValue() == 1 : other.getValue() == 0;
-            } else {
-                return oLib.equalsInternal(other, receiver, threadState) == 1;
-            }
-        }
-
-        @Specialization(replaces = {"bb", "bi", "bl", "bI", "bd", "bF"})
-        static boolean bO(Boolean receiver, Object other, PythonObjectLibrary oLib, ThreadState threadState) {
-            if (other instanceof Boolean) {
-                return bb(receiver, (boolean) other, oLib, threadState);
-            } else if (other instanceof Integer) {
-                return bi(receiver, (int) other, oLib, threadState);
-            } else if (other instanceof Long) {
-                return bl(receiver, (long) other, oLib, threadState);
-            } else if (other instanceof PInt) {
-                return bI(receiver, (PInt) other, oLib, threadState);
-            } else if (other instanceof Double) {
-                return bd(receiver, (double) other, oLib, threadState);
-            } else {
-                return oLib.equalsInternal(other, receiver, threadState) == 1;
-            }
-        }
-    }
-
     @ExportMessage
     static Object lookupAttributeInternal(Boolean receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,

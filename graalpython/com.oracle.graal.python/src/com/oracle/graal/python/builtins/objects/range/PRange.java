@@ -29,12 +29,8 @@ package com.oracle.graal.python.builtins.objects.range;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 
-@ExportLibrary(PythonObjectLibrary.class)
 public abstract class PRange extends PythonBuiltinObject {
 
     public PRange(PythonLanguage lang) {
@@ -57,11 +53,6 @@ public abstract class PRange extends PythonBuiltinObject {
     @Override
     public int compareTo(Object o) {
         return this.hashCode() - o.hashCode();
-    }
-
-    @ExportMessage
-    public boolean isIterable() {
-        return true;
     }
 
     protected abstract boolean withStep();

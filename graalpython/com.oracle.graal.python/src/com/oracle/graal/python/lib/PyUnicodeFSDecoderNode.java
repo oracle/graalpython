@@ -40,55 +40,65 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 /**
- * Equivalent of CPython's {@code PyLong_CheckExact}.
+ * Equivalent of CPython's {@code PyUnicode_FSDecoder}. Converts a string, bytes or path-like object
+ * to a string path.
  */
 @GenerateUncached
-public abstract class PyLongCheckExactNode extends PNodeWithContext {
-    public abstract boolean execute(Object object);
+public abstract class PyUnicodeFSDecoderNode extends PNodeWithContext {
+    public abstract String execute(Frame frame, Object object);
 
     @Specialization
-    static boolean doInt(@SuppressWarnings("unused") Integer object) {
-        return true;
-    }
-
-    @Specialization
-    static boolean doLong(@SuppressWarnings("unused") Long object) {
-        return true;
-    }
-
-    @Specialization(guards = "isBuiltinPInt(object)")
-    static boolean doBuiltinPInt(@SuppressWarnings("unused") PInt object) {
-        return true;
-    }
-
-    @Specialization(guards = "!isBuiltinPInt(object)")
-    static boolean doOtherPInt(@SuppressWarnings("unused") PInt object) {
-        return false;
-    }
-
-    @Specialization(guards = "!canBeBuiltinInt(object)")
-    static boolean doOther(@SuppressWarnings("unused") Object object) {
-        return false;
+    String doString(String object) {
+        return checkString(object);
     }
 
     @Specialization
-    static boolean doNativePtr(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
-        return true;
+    String doPString(PString object,
+                    @Cached CastToJavaStringNode cast) {
+        return checkString(cast.execute(object));
     }
 
-    protected static boolean canBeBuiltinInt(Object object) {
-        // Boolean is a subclass, don't put it here
-        return object instanceof Integer || object instanceof Long || object instanceof PInt || object instanceof PythonNativeVoidPtr;
+    @Specialization(limit = "1")
+    String doBytes(PBytes object,
+                    @CachedLibrary("object") PythonBufferAccessLibrary bufferLib) {
+        // TODO PyUnicode_DecodeFSDefault
+        return checkString(PythonUtils.newString(bufferLib.getInternalOrCopiedByteArray(object), 0, bufferLib.getBufferLength(object)));
     }
 
-    public static PyLongCheckExactNode getUncached() {
-        return PyLongCheckExactNodeGen.getUncached();
+    @Fallback
+    String doPathLike(VirtualFrame frame, Object object,
+                    @Cached PyOSFSPathNode fspathNode,
+                    @Cached PyUnicodeFSDecoderNode recursive) {
+        Object path = fspathNode.execute(frame, object);
+        assert path instanceof String || path instanceof PString || path instanceof PBytes;
+        return recursive.execute(frame, path);
+    }
+
+    @TruffleBoundary
+    private String checkString(String str) {
+        if (str.indexOf(0) > 0) {
+            throw PRaiseNode.raiseUncached(this, ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+        }
+        return str;
     }
 }

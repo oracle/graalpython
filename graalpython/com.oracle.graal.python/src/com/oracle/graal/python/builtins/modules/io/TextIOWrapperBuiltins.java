@@ -120,7 +120,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
@@ -130,6 +129,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -637,7 +637,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodFlush,
                         @Cached PyObjectCallMethodObjArgs callMethodSeek,
                         @Cached PyObjectCallMethodObjArgs callMethodRead,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             checkClosedNode.execute(frame, self);
             if (!self.isSeekable()) {
@@ -649,7 +649,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
             switch (whence) {
                 case SEEK_CUR:
                     /* seek relative to current position */
-                    if (!lib.equalsWithFrame(cookieObj, 0, lib, frame)) {
+                    if (!eqNode.execute(frame, cookieObj, 0)) {
                         throw raise(IOUnsupportedOperation, CAN_T_DO_NONZERO_CUR_RELATIVE_SEEKS);
                     }
 
@@ -662,7 +662,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
 
                 case SEEK_END:
                     /* seek relative to end of file */
-                    if (!lib.equalsWithFrame(cookieObj, 0, lib, frame)) {
+                    if (!eqNode.execute(frame, cookieObj, 0)) {
                         throw raise(IOUnsupportedOperation, CAN_T_DO_NONZERO_END_RELATIVE_SEEKS);
                     }
 
@@ -677,7 +677,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                     Object res = callMethodSeek.execute(frame, self.getBuffer(), SEEK, 0, 2);
                     if (self.hasEncoder()) {
                         /* If seek() == 0, we are at the start of stream, otherwise not */
-                        encoderResetNode.execute(frame, self, lib.equalsWithFrame(res, 0, lib, frame));
+                        encoderResetNode.execute(frame, self, eqNode.execute(frame, res, 0));
                     }
                     return res;
 

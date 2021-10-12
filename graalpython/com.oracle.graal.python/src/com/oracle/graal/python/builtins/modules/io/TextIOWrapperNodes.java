@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -83,6 +82,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -675,10 +675,10 @@ public class TextIOWrapperNodes {
         static void fixEncoderState(VirtualFrame frame, PTextIO self,
                         @Cached PyObjectCallMethodObjArgs callMethodTell,
                         @Cached PyObjectCallMethodObjArgs callMethodSetState,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libCookie) {
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
             self.setEncodingStartOfStream(true);
             Object cookieObj = callMethodTell.execute(frame, self.getBuffer(), TELL);
-            if (!libCookie.equals(cookieObj, 0, libCookie)) {
+            if (!eqNode.execute(frame, cookieObj, 0)) {
                 self.setEncodingStartOfStream(false);
                 callMethodSetState.execute(frame, self.getEncoder(), SETSTATE, 0);
             }

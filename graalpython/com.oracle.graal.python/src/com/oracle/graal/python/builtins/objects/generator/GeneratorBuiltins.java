@@ -52,11 +52,11 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -82,6 +82,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -90,7 +91,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -299,30 +299,29 @@ public class GeneratorBuiltins extends PythonBuiltins {
             }
 
             @Specialization(guards = "!isPNone(value)")
-            static PBaseException doException(@SuppressWarnings("unused") PBaseException exc, @SuppressWarnings("unused") Object value,
-                            @Cached PRaiseNode raise) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
+            PBaseException doException(@SuppressWarnings("unused") PBaseException exc, @SuppressWarnings("unused") Object value) {
+                throw raise().raise(PythonBuiltinClassType.TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
             }
 
-            @Specialization(guards = "lib.isLazyPythonClass(type)")
+            @Specialization(guards = "isTypeNode.execute(type)", limit = "1")
             PBaseException doException(VirtualFrame frame, Object type, PBaseException value,
+                            @SuppressWarnings("unused") @Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
                             @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
                             @Cached BranchProfile isNotInstanceProfile,
-                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor,
-                            @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor) {
                 if (isInstanceNode.executeWith(frame, value, type)) {
                     checkExceptionClass(type);
                     return value;
                 } else {
                     isNotInstanceProfile.enter();
-                    return doCreateObject(frame, type, value, callConstructor, lib);
+                    return doCreateObject(frame, type, value, isTypeNode, callConstructor);
                 }
             }
 
-            @Specialization(guards = "lib.isLazyPythonClass(type)")
+            @Specialization(guards = "isTypeNode.execute(type)", limit = "1")
             PBaseException doCreate(VirtualFrame frame, Object type, @SuppressWarnings("unused") PNone value,
-                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor,
-                            @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                            @SuppressWarnings("unused") @Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
+                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor) {
                 checkExceptionClass(type);
                 Object instance = callConstructor.execute(frame, type, new Object[]{type});
                 if (instance instanceof PBaseException) {
@@ -332,11 +331,11 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 }
             }
 
-            @Specialization(guards = "lib.isLazyPythonClass(type)")
+            @Specialization(guards = "isTypeNode.execute(type)", limit = "1")
             PBaseException doCreateTuple(VirtualFrame frame, Object type, PTuple value,
+                            @SuppressWarnings("unused") @Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
                             @Cached GetObjectArrayNode getObjectArrayNode,
-                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor,
-                            @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor) {
                 checkExceptionClass(type);
                 Object[] array = getObjectArrayNode.execute(value);
                 Object[] args = new Object[array.length + 1];
@@ -350,10 +349,10 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 }
             }
 
-            @Specialization(guards = {"lib.isLazyPythonClass(type)", "!isPNone(value)", "!isPTuple(value)", "!isPBaseException(value)"})
+            @Specialization(guards = {"isTypeNode.execute(type)", "!isPNone(value)", "!isPTuple(value)", "!isPBaseException(value)"}, limit = "1")
             PBaseException doCreateObject(VirtualFrame frame, Object type, Object value,
-                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor,
-                            @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                            @SuppressWarnings("unused") @Shared("isType") @Cached TypeNodes.IsTypeNode isTypeNode,
+                            @Cached("create(__CALL__)") LookupAndCallVarargsNode callConstructor) {
                 checkExceptionClass(type);
                 Object instance = callConstructor.execute(frame, type, new Object[]{type, value});
                 if (instance instanceof PBaseException) {

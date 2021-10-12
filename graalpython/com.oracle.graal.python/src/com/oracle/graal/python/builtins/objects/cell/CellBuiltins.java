@@ -61,12 +61,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltinsFactory.GetRefNodeGen;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -78,7 +75,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -94,14 +90,14 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class EqNode extends PythonBuiltinNode {
         @Specialization
         public boolean eq(VirtualFrame frame, PCell self, PCell other,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
             Object left = getRefL.execute(self);
             Object right = getRefR.execute(other);
             if (nonEmptyProfile.profile(left != null && right != null)) {
-                return lib.equalsWithState(left, right, lib, PArguments.getThreadState(frame));
+                return eqNode.execute(frame, left, right);
             }
             return left == null && right == null;
         }
@@ -121,14 +117,14 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class NeNode extends PythonBuiltinNode {
         @Specialization
         public boolean ne(VirtualFrame frame, PCell self, PCell other,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.NeNode neNode,
                         @Cached ConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
             Object left = getRefL.execute(self);
             Object right = getRefR.execute(other);
             if (nonEmptyProfile.profile(left != null && right != null)) {
-                return !lib.equalsWithState(left, right, lib, PArguments.getThreadState(frame));
+                return neNode.execute(frame, left, right);
             }
             return left != null || right != null;
         }
@@ -148,15 +144,14 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class LtNode extends PythonBuiltinNode {
         @Specialization
         public boolean lt(VirtualFrame frame, PCell self, PCell other,
-                        @Cached BinaryComparisonNode.LtNode compareNode,
-                        @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached PyObjectRichCompareBool.LtNode ltNode,
                         @Cached ConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
             Object left = getRefL.execute(self);
             Object right = getRefR.execute(other);
             if (nonEmptyProfile.profile(left != null && right != null)) {
-                return coerceToBooleanNode.executeBoolean(frame, compareNode.executeObject(frame, left, right));
+                return ltNode.execute(frame, left, right);
             }
             return right != null;
         }
@@ -176,15 +171,14 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class LeNode extends PythonBuiltinNode {
         @Specialization
         public boolean le(VirtualFrame frame, PCell self, PCell other,
-                        @Cached BinaryComparisonNode.LeNode compareNode,
-                        @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached PyObjectRichCompareBool.LeNode leNode,
                         @Cached ConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
             Object left = getRefL.execute(self);
             Object right = getRefR.execute(other);
             if (nonEmptyProfile.profile(left != null && right != null)) {
-                return coerceToBooleanNode.executeBoolean(frame, compareNode.executeObject(frame, left, right));
+                return leNode.execute(frame, left, right);
             }
             return left == null;
         }
@@ -204,15 +198,14 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class GtNode extends PythonBuiltinNode {
         @Specialization
         public boolean gt(VirtualFrame frame, PCell self, PCell other,
-                        @Cached BinaryComparisonNode.GtNode compareNode,
-                        @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached PyObjectRichCompareBool.GtNode gtNode,
                         @Cached ConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
             Object left = getRefL.execute(self);
             Object right = getRefR.execute(other);
             if (nonEmptyProfile.profile(left != null && right != null)) {
-                return coerceToBooleanNode.executeBoolean(frame, compareNode.executeObject(frame, left, right));
+                return gtNode.execute(frame, left, right);
             }
             return left != null;
         }
@@ -232,15 +225,14 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class GeNode extends PythonBuiltinNode {
         @Specialization
         public boolean ge(VirtualFrame frame, PCell self, PCell other,
-                        @Cached BinaryComparisonNode.GeNode compareNode,
-                        @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached PyObjectRichCompareBool.GeNode geNode,
                         @Cached ConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
             Object left = getRefL.execute(self);
             Object right = getRefR.execute(other);
             if (nonEmptyProfile.profile(left != null && right != null)) {
-                return coerceToBooleanNode.executeBoolean(frame, compareNode.executeObject(frame, left, right));
+                return geNode.execute(frame, left, right);
             }
             return right == null;
         }

@@ -54,9 +54,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -72,7 +72,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMap)
@@ -147,7 +146,7 @@ public final class MapBuiltins extends PythonBuiltins {
         @Specialization
         boolean doit(VirtualFrame frame, PMap self, Object x,
                         @Cached BranchProfile moreThanOne,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode next,
                         @Cached IsBuiltinClassProfile profile) {
@@ -166,7 +165,7 @@ public final class MapBuiltins extends PythonBuiltins {
             while (true) {
                 try {
                     Object n = next.execute(frame, iterMap);
-                    if (lib.equalsWithFrame(n, x, lib, frame)) {
+                    if (eqNode.execute(frame, n, x)) {
                         return true;
                     }
                 } catch (PException e) {

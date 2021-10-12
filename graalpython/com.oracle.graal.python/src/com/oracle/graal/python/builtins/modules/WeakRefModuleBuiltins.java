@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.WeakRefStorage;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -77,7 +76,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 
 @CoreFunctions(defineModule = "_weakref", isEager = true)
@@ -159,14 +157,9 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             return factory().createReferenceType(cls, object, null, getWeakReferenceQueue());
         }
 
-        @Specialization(guards = {"lib.isLazyPythonClass(cls)", "!isNativeObject(object)"})
-        public PReferenceType refType(Object cls, Object object, Object callback,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            if (callback instanceof PNone) {
-                return factory().createReferenceType(cls, object, null, getWeakReferenceQueue());
-            } else {
-                return factory().createReferenceType(cls, object, callback, getWeakReferenceQueue());
-            }
+        @Specialization(guards = {"!isNativeObject(object)", "!isPNone(callback)"})
+        public PReferenceType refTypeWithCallback(Object cls, Object object, Object callback) {
+            return factory().createReferenceType(cls, object, callback, getWeakReferenceQueue());
         }
 
         @Specialization

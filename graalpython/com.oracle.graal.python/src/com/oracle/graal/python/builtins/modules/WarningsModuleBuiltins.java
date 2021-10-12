@@ -60,9 +60,9 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -70,6 +70,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -172,7 +173,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Child DynamicObjectLibrary warningsModuleLib;
         @Child CastToJavaStringNode castStr;
         @Child PRaiseNode raiseNode;
-        @Child PythonObjectLibrary pylib;
+        @Child PyObjectRichCompareBool.EqNode eqNode;
         @Child GetClassNode getClassNode;
         @Child PyNumberAsSizeNode asSizeNode;
         @Child PyObjectIsTrueNode isTrueNode;
@@ -189,6 +190,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Child CallNode callNode;
         @Child SequenceStorageNodes.LenNode sequenceLenNode;
         @Child SequenceStorageNodes.GetItemScalarNode sequenceGetItemNode;
+        @Child TypeNodes.IsTypeNode isTypeNode;
 
         static WarningsModuleNode create() {
             return new WarningsModuleNode();
@@ -215,16 +217,20 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             return warningsModuleLib;
         }
 
-        private PythonObjectLibrary getPyLib() {
-            if (pylib == null) {
+        private PyObjectRichCompareBool.EqNode getEqNode() {
+            if (eqNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                // used for: sys and warnings modules, modules and registry dicts, a regex,
-                // filters tuple, boolean results, a category type, line and filters-version
-                // int-like objects
-                reportPolymorphicSpecialize();
-                pylib = insert(PythonObjectLibrary.getFactory().createDispatched(7));
+                eqNode = insert(PyObjectRichCompareBool.EqNode.create());
             }
-            return pylib;
+            return eqNode;
+        }
+
+        private TypeNodes.IsTypeNode getIsTypeNode() {
+            if (isTypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isTypeNode = insert(TypeNodes.IsTypeNode.create());
+            }
+            return isTypeNode;
         }
 
         private PyObjectLookupAttr getLookupAttrNode() {
@@ -572,7 +578,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
          * The variant of alreadyWarned that should not set and that must be on the fast path.
          */
         private boolean alreadyWarnedShouldNotSet(VirtualFrame frame, PythonModule _warnings, PDict registry, Object key) {
-            return alreadyWarned(frame, _warnings, registry, key, false, getPyLib(), getCallMethodNode(), getDictGetItemNode(), getSetItemNode(), getIsTrueNode(), getWarnLib());
+            return alreadyWarned(frame, _warnings, registry, key, false, getEqNode(), getCallMethodNode(), getDictGetItemNode(), getSetItemNode(), getIsTrueNode(), getWarnLib());
         }
 
         /**
@@ -580,19 +586,19 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
          * warnings will be printed.
          */
         private static boolean alreadyWarnedShouldSet(PythonModule _warnings, PDict registry, Object key) {
-            return alreadyWarned(null, _warnings, registry, key, true, PythonObjectLibrary.getUncached(), PyObjectCallMethodObjArgs.getUncached(), PyDictGetItem.getUncached(),
+            return alreadyWarned(null, _warnings, registry, key, true, PyObjectRichCompareBool.EqNode.getUncached(), PyObjectCallMethodObjArgs.getUncached(), PyDictGetItem.getUncached(),
                             PyObjectSetItem.getUncached(), PyObjectIsTrueNode.getUncached(), DynamicObjectLibrary.getUncached());
         }
 
         /**
          * Used on both fast and slow path.
          */
-        private static boolean alreadyWarned(VirtualFrame frame, PythonModule _warnings, PDict registry, Object key, boolean shouldSet, PythonObjectLibrary polib,
+        private static boolean alreadyWarned(VirtualFrame frame, PythonModule _warnings, PDict registry, Object key, boolean shouldSet, PyObjectRichCompareBool.EqNode eqNode,
                         PyObjectCallMethodObjArgs callMethod, PyDictGetItem getItem, PyObjectSetItem setItem, PyObjectIsTrueNode isTrueNode,
                         DynamicObjectLibrary warnLib) {
             Object versionObj = getItem.execute(frame, registry, "version");
             long stateFiltersVersion = getStateFiltersVersion(_warnings, warnLib);
-            if (versionObj == null || !polib.equals(stateFiltersVersion, versionObj, polib)) {
+            if (versionObj == null || !eqNode.execute(frame, stateFiltersVersion, versionObj)) {
                 callMethod.execute(frame, registry, "clear");
                 setItem.execute(frame, registry, "version", stateFiltersVersion);
             } else {
@@ -868,7 +874,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 return messageType;
             } else if (category == null || category == PNone.NONE) {
                 return PythonBuiltinClassType.UserWarning;
-            } else if (!getPyLib().isLazyPythonClass(category) || !getIsSubtype().execute(frame, category, PythonBuiltinClassType.Warning)) {
+            } else if (!getIsTypeNode().execute(category) || !getIsSubtype().execute(frame, category, PythonBuiltinClassType.Warning)) {
                 throw getRaise().raise(PythonBuiltinClassType.TypeError, "category must be a Warning subclass, not '%P'", category);
             } else {
                 return category;

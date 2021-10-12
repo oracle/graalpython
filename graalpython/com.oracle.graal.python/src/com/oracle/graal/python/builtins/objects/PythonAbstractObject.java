@@ -45,8 +45,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
@@ -98,7 +96,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
@@ -117,11 +114,11 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
-import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -172,6 +169,9 @@ import com.oracle.truffle.api.utilities.TriState;
 public abstract class PythonAbstractObject extends DynamicObject implements TruffleObject, Comparable<Object> {
     private static final String PRIVATE_PREFIX = "__";
     private DynamicObjectNativeWrapper nativeWrapper;
+
+    // @ImportStatic doesn't work for this for some reason
+    protected static final SpecialMethodSlot Iter = SpecialMethodSlot.Iter;
 
     public static final Assumption singleContextAssumption() {
         return PythonLanguage.get(null).singleContextAssumption;
@@ -531,7 +531,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @TruffleBoundary
     public Object getMembers(boolean includeInternal,
                     @Cached CastToListInteropNode castToList,
-                    @Shared("getClassThis") @Cached GetClassNode getClass,
+                    @Shared("getClass") @Cached GetClassNode getClass,
                     @Cached PyMappingCheckNode checkMapping,
                     @Shared("lookup") @Cached PyObjectLookupAttr lookupKeys,
                     @Cached CallNode callKeys,
@@ -596,7 +596,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isInstantiable(
-                    @Cached TypeNodes.IsTypeNode isTypeNode,
+                    @Shared("isTypeNode") @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -642,56 +642,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (includeInternal || !strKey.startsWith(PRIVATE_PREFIX)) {
                 keys.add(strKey);
             }
-        }
-    }
-
-    @ExportMessage
-    public boolean isSame(Object other,
-                    @Shared("isNode") @Cached IsNode isNode) {
-        return isNode.execute(this, other);
-    }
-
-    @ExportMessage
-    public int equalsInternal(Object other, ThreadState state,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Cached PyObjectIsTrueNode isTrue,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("isNode") @Cached IsNode isNode) {
-        Object eqMethod = lib.lookupAttributeOnType(this, __EQ__);
-        if (eqMethod == PNone.NO_VALUE) {
-            // isNode specialization represents the branch profile
-            // c.f.: Python always falls back to identity comparison in this case
-            return isNode.execute(this, other) ? 1 : -1;
-        } else {
-            Object result = methodLib.callUnboundMethodIgnoreGetExceptionWithState(eqMethod, state, this, other);
-            if (result == PNotImplemented.NOT_IMPLEMENTED || result == PNone.NO_VALUE) {
-                return -1;
-            } else {
-                if (gotState.profile(state == null)) {
-                    return isTrue.execute(null, result) ? 1 : 0;
-                } else {
-                    return isTrue.execute(PArguments.frameForCall(state), result) ? 1 : 0;
-                }
-            }
-        }
-    }
-
-    @ExportMessage
-    public String asPathWithState(ThreadState state,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Shared("raise") @Cached PRaiseNode raise,
-                    @Cached CastToJavaStringNode castToJavaStringNode) {
-        Object func = lib.lookupAttributeOnType(this, __FSPATH__);
-        if (func == PNone.NO_VALUE) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, this);
-        }
-        Object pathObject = methodLib.callUnboundMethodWithState(func, state, this);
-        try {
-            return castToJavaStringNode.execute(pathObject);
-        } catch (CannotCastException e) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, this, pathObject);
         }
     }
 
@@ -844,9 +794,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     private static final String TIME_TYPE = "time";
     private static final String STRUCT_TIME_TYPE = "struct_time";
 
-    private static Object readType(ReadAttributeFromObjectNode readTypeNode, Object module, String typename, PythonObjectLibrary plib) {
+    private static Object readType(ReadAttributeFromObjectNode readTypeNode, Object module, String typename, TypeNodes.IsTypeNode isTypeNode) {
         Object type = readTypeNode.execute(module, typename);
-        if (plib.isLazyPythonClass(type)) {
+        if (isTypeNode.execute(type)) {
             return type;
         } else {
             CompilerDirectives.transferToInterpreter();
@@ -855,7 +805,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public boolean isDate(@CachedLibrary(limit = "3") PythonObjectLibrary plib,
+    public boolean isDate(
+                    @Shared("isTypeNode") @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
@@ -868,13 +819,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
-                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE, plib))) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, isTypeNode)) ||
+                                isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE, isTypeNode))) {
                     return true;
                 }
             }
             module = importedModules.getItem(TIME_MODULE_NAME);
             if (timeModuleLoaded.profile(module != null)) {
-                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, isTypeNode))) {
                     return true;
                 }
             }
@@ -886,7 +838,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public LocalDate asDate(
-                    @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                    @Shared("isTypeNode") @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
@@ -901,7 +853,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
-                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE, plib))) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, isTypeNode)) ||
+                                isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE, isTypeNode))) {
                     try {
                         int year = castToIntNode.execute(lib.readMember(this, "year"));
                         int month = castToIntNode.execute(lib.readMember(this, "month"));
@@ -914,7 +867,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             }
             module = importedModules.getItem(TIME_MODULE_NAME);
             if (timeModuleLoaded.profile(module != null)) {
-                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, isTypeNode))) {
                     try {
                         int year = castToIntNode.execute(lib.readMember(this, "tm_year"));
                         int month = castToIntNode.execute(lib.readMember(this, "tm_mon"));
@@ -932,7 +885,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public boolean isTime(@CachedLibrary(limit = "3") PythonObjectLibrary plib,
+    public boolean isTime(
+                    @Shared("isTypeNode") @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtype,
@@ -945,13 +899,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
-                if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtype.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
+                if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, isTypeNode)) || isSubtype.execute(objType, readType(readTypeNode, module, TIME_TYPE, isTypeNode))) {
                     return true;
                 }
             }
             module = importedModules.getItem(TIME_MODULE_NAME);
             if (timeModuleLoaded.profile(module != null)) {
-                if (isSubtype.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
+                if (isSubtype.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, isTypeNode))) {
                     return true;
                 }
             }
@@ -962,7 +916,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public LocalTime asTime(@CachedLibrary(limit = "3") PythonObjectLibrary plib,
+    public LocalTime asTime(
+                    @Shared("isTypeNode") @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
@@ -977,7 +932,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
-                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, isTypeNode)) ||
+                                isSubtypeNode.execute(objType, readType(readTypeNode, module, TIME_TYPE, isTypeNode))) {
                     try {
                         int hour = castToIntNode.execute(lib.readMember(this, "hour"));
                         int min = castToIntNode.execute(lib.readMember(this, "minute"));
@@ -991,7 +947,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             }
             module = importedModules.getItem(TIME_MODULE_NAME);
             if (timeModuleLoaded.profile(module != null)) {
-                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, isTypeNode))) {
                     try {
                         int hour = castToIntNode.execute(lib.readMember(this, "tm_hour"));
                         int min = castToIntNode.execute(lib.readMember(this, "tm_min"));
@@ -1009,7 +965,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public boolean isTimeZone(@CachedLibrary(limit = "3") PythonObjectLibrary plib,
+    public boolean isTimeZone(
+                    @Shared("isTypeNode") @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtype,
@@ -1023,7 +980,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
-                if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib))) {
+                if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, isTypeNode))) {
                     try {
                         Object tzinfo = lib.readMember(this, "tzinfo");
                         if (tzinfo != PNone.NONE) {
@@ -1035,7 +992,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
                         return false;
                     }
-                } else if (isSubtype.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
+                } else if (isSubtype.execute(objType, readType(readTypeNode, module, TIME_TYPE, isTypeNode))) {
                     try {
                         Object tzinfo = lib.readMember(this, "tzinfo");
                         if (tzinfo != PNone.NONE) {
@@ -1051,7 +1008,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             }
             module = importedModules.getItem(TIME_MODULE_NAME);
             if (timeModuleLoaded.profile(module != null)) {
-                if (isSubtype.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
+                if (isSubtype.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, isTypeNode))) {
                     try {
                         Object tm_zone = lib.readMember(this, "tm_zone");
                         if (tm_zone != PNone.NONE) {
@@ -1069,7 +1026,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public ZoneId asTimeZone(@CachedLibrary(limit = "3") PythonObjectLibrary plib,
+    public ZoneId asTimeZone(
+                    @Shared("isTypeNode") @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("readTypeNode") @Cached ReadAttributeFromObjectNode readTypeNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
@@ -1087,7 +1045,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             PDict importedModules = PythonContext.get(getClassNode).getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
-                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib))) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, isTypeNode))) {
                     try {
                         Object tzinfo = lib.readMember(this, "tzinfo");
                         if (tzinfo != PNone.NONE) {
@@ -1100,7 +1058,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException ex) {
                         throw UnsupportedMessageException.create();
                     }
-                } else if (isSubtypeNode.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
+                } else if (isSubtypeNode.execute(objType, readType(readTypeNode, module, TIME_TYPE, isTypeNode))) {
                     try {
                         Object tzinfo = lib.readMember(this, "tzinfo");
                         if (tzinfo != PNone.NONE) {
@@ -1117,7 +1075,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             }
             module = importedModules.getItem(TIME_MODULE_NAME);
             if (timeModuleLoaded.profile(module != null)) {
-                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, plib))) {
+                if (isSubtypeNode.execute(objType, readType(readTypeNode, module, STRUCT_TIME_TYPE, isTypeNode))) {
                     try {
                         Object tm_zone = lib.readMember(this, "tm_zone");
                         if (tm_zone != PNone.NONE) {
@@ -1630,11 +1588,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
     }
 
-    @TruffleBoundary
-    private static boolean objectHasAttribute(Object object, Object field) {
-        return ((PythonObject) object).getAttributeNames().contains(field);
-    }
-
     @ExportMessage
     public boolean hasLanguage() {
         return true;
@@ -1726,7 +1679,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public Object getMetaObject(@Shared("getClassThis") @Cached GetClassNode getClass,
+    public Object getMetaObject(
+                    @Shared("getClass") @Cached GetClassNode getClass,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -1756,7 +1710,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public TriState isIdenticalOrUndefined(Object otherInterop,
                     @Cached PForeignToPTypeNode convert,
                     @CachedLibrary(limit = "3") InteropLibrary otherLib,
-                    @CachedLibrary("this") PythonObjectLibrary objectLib,
+                    @Cached IsNode isNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
@@ -1764,7 +1718,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             if (this == other) {
                 return TriState.TRUE;
             } else if (otherLib.hasIdentity(other)) {
-                return objectLib.isSame(this, other) ? TriState.TRUE : TriState.FALSE;
+                return isNode.execute(this, other) ? TriState.TRUE : TriState.FALSE;
             } else {
                 return TriState.UNDEFINED;
             }
@@ -1796,7 +1750,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         @Cached("createIterMethodProfile(plib)") ValueProfile iterMethodProfile,
                         @Cached IteratorNodes.IsIteratorObjectNode isIteratorObjectNode,
                         @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise) {
+                        @Cached PRaiseNode raise) {
             Object v = plib.getDelegatedValue(self);
             Object iterMethod = iterMethodProfile.profile(plib.lookupAttributeOnType(self, __ITER__));
             if (iterMethod != PNone.NONE) {
@@ -1818,8 +1772,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean hasIterator(
-                    @CachedLibrary("this") PythonObjectLibrary lib) {
-        return lib.isIterable(this);
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter) {
+        return lookupIter.execute(getClassNode.execute(this)) != PNone.NO_VALUE;
     }
 
     @ExportMessage

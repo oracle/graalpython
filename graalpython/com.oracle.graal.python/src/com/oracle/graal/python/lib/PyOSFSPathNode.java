@@ -40,55 +40,63 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
+
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
- * Equivalent of CPython's {@code PyLong_CheckExact}.
+ * Equivalent of CPython's {@code PyOS_FSPath}. Converts objects to path-like using their
+ * {@code __fspath__} method. Strings and bytes are passed as is.
  */
 @GenerateUncached
-public abstract class PyLongCheckExactNode extends PNodeWithContext {
-    public abstract boolean execute(Object object);
+public abstract class PyOSFSPathNode extends PNodeWithContext {
+    public abstract Object execute(Frame frame, Object object);
 
     @Specialization
-    static boolean doInt(@SuppressWarnings("unused") Integer object) {
-        return true;
-    }
-
-    @Specialization
-    static boolean doLong(@SuppressWarnings("unused") Long object) {
-        return true;
-    }
-
-    @Specialization(guards = "isBuiltinPInt(object)")
-    static boolean doBuiltinPInt(@SuppressWarnings("unused") PInt object) {
-        return true;
-    }
-
-    @Specialization(guards = "!isBuiltinPInt(object)")
-    static boolean doOtherPInt(@SuppressWarnings("unused") PInt object) {
-        return false;
-    }
-
-    @Specialization(guards = "!canBeBuiltinInt(object)")
-    static boolean doOther(@SuppressWarnings("unused") Object object) {
-        return false;
+    static Object doString(String object) {
+        return object;
     }
 
     @Specialization
-    static boolean doNativePtr(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
-        return true;
+    static Object doPString(PString object) {
+        return object;
     }
 
-    protected static boolean canBeBuiltinInt(Object object) {
-        // Boolean is a subclass, don't put it here
-        return object instanceof Integer || object instanceof Long || object instanceof PInt || object instanceof PythonNativeVoidPtr;
+    @Specialization
+    static Object doBytes(PBytes object) {
+        return object;
     }
 
-    public static PyLongCheckExactNode getUncached() {
-        return PyLongCheckExactNodeGen.getUncached();
+    @Fallback
+    static Object callFspath(VirtualFrame frame, Object object,
+                    @Cached GetClassNode getClassNode,
+                    @Cached LookupSpecialMethodNode.Dynamic lookupFSPath,
+                    @Cached CallUnaryMethodNode callFSPath,
+                    @Cached PRaiseNode raiseNode) {
+        Object type = getClassNode.execute(object);
+        Object fspathMethod = lookupFSPath.execute(frame, type, __FSPATH__, object);
+        if (fspathMethod == PNone.NO_VALUE) {
+            throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, object);
+        }
+        Object result = callFSPath.executeObject(frame, fspathMethod, object);
+        if (result instanceof String || result instanceof PString || result instanceof PBytes) {
+            return result;
+        }
+        throw raiseNode.raise(TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, object, result);
     }
 }

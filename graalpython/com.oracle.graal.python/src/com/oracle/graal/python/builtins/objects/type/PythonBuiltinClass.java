@@ -30,13 +30,13 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -57,7 +57,6 @@ import com.oracle.truffle.api.utilities.TriState;
  * A Python built-in class that is immutable.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PythonBuiltinClass extends PythonManagedClass {
     private final PythonBuiltinClassType type;
 
@@ -106,7 +105,6 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         PythonClass.updateMroShapeSubTypes(this);
     }
 
-    @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")
     @ExportMessage(library = InteropLibrary.class)
     @SuppressWarnings("static-method")
     boolean isMetaObject() {
@@ -160,9 +158,9 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         static TriState doOther(PythonBuiltinClass self, Object other,
                         @Shared("convert") @Cached PForeignToPTypeNode convert,
                         @CachedLibrary(limit = "3") InteropLibrary otherLib,
-                        @CachedLibrary("self") PythonObjectLibrary objectLib,
+                        @Cached IsNode isNode,
                         @Exclusive @Cached GilNode gil) {
-            return self.isIdenticalOrUndefined(other, convert, otherLib, objectLib, gil);
+            return self.isIdenticalOrUndefined(other, convert, otherLib, isNode, gil);
         }
     }
 }

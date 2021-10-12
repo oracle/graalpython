@@ -51,14 +51,12 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
@@ -84,55 +82,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @DefaultExport(DefaultPythonObjectExports.class)
 @SuppressWarnings("unused")
 public abstract class PythonObjectLibrary extends Library {
-    /**
-     * @return true if the receiver of a Python type.<br>
-     *         <br>
-     *
-     *         Note: this is similar to {@link InteropLibrary#isMetaObject(Object)} but without the
-     *         {@link InteropLibrary#isMetaInstance(Object, Object)} assertion.
-     */
-    public boolean isLazyPythonClass(Object receiver) {
-        return false;
-    }
-
-    /**
-     * Sets the {@code __class__} value of the receiver. This is not supported for all kinds of
-     * objects.
-     */
-    public void setLazyPythonClass(Object receiver, Object cls) {
-        throw getDefaultNodes().getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES_NOT_P, receiver);
-    }
-
-    /**
-     * Checks whether the receiver is a Python iterable object. As described in the
-     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
-     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
-     * Containers</a>
-     *
-     * <br>
-     * Specifically the default implementation checks for the implementation of the <b>__iter__</b>
-     * special method. If not defined, it will also check for iterable objects that implement the
-     * following special methods: <b>
-     * <ul>
-     * <li>__getitem__</li>
-     * <li>__next__</li>
-     * </ul>
-     * </b>
-     *
-     * @param receiver the receiver Object
-     * @return True if object is iterable
-     */
-    public boolean isIterable(Object receiver) {
-        if (!(lookupAttributeOnType(receiver, SpecialMethodNames.__ITER__) instanceof PNone)) {
-            return true;
-        } else if (lookupAttributeOnType(receiver, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE) {
-            return true;
-        } else {
-            return isCallable(receiver) &&
-                            lookupAttributeOnType(receiver, SpecialMethodNames.__NEXT__) != PNone.NO_VALUE;
-        }
-    }
-
     /**
      * Checks whether the receiver is a Python callable object. As described in the
      * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
@@ -330,100 +279,6 @@ public abstract class PythonObjectLibrary extends Library {
         } else {
             return frame != null;
         }
-    }
-
-    /**
-     * Compare {@code receiver} to {@code other} using CPython pointer comparison semantics.
-     */
-    public abstract boolean isSame(Object receiver, Object other);
-
-    /**
-     * Compare {@code receiver} to {@code other}. If the receiver does not know how to compare
-     * itself to the argument, the comparison is tried in reverse. This implements
-     * {@code PyObject_RichCompareBool} (which calls {@code do_richcompare}) for the {@code __eq__}
-     * operator.
-     *
-     * Exporters of this library can override this message for performance.
-     *
-     * @param receiver - the lhs, tried first
-     * @param other - the rhs, tried only if lhs does not know how to compare itself here
-     * @param otherLibrary - a PythonObjectLibrary that accepts {@code other}. Used for the reverse
-     *            dispatch.
-     */
-    public boolean equalsWithState(Object receiver, Object other, PythonObjectLibrary otherLibrary, ThreadState threadState) {
-        if (isSame(receiver, other)) {
-            return true; // guarantee
-        }
-
-        boolean checkedReverseOp = false;
-
-        Object leftClass = getDefaultNodes().getGetClassNode().execute(receiver);
-        Object rightClass = otherLibrary.getDefaultNodes().getGetClassNode().execute(other);
-        int result;
-        boolean isSameType = getDefaultNodes().getIsSameTypeNode().execute(leftClass, rightClass);
-        if (!isSameType && getDefaultNodes().getIsSubtypeNode().execute(rightClass, leftClass)) {
-            getDefaultNodes().enterSubtypeCompare();
-            checkedReverseOp = true;
-            result = otherLibrary.equalsInternal(other, receiver, threadState);
-            if (result != -1) {
-                return result == 1;
-            }
-        }
-        getDefaultNodes().enterLeftCompare();
-        result = equalsInternal(receiver, other, threadState);
-        if (result != -1) {
-            return result == 1;
-        }
-        if (!isSameType && !checkedReverseOp) {
-            getDefaultNodes().enterReverseCompare();
-            result = otherLibrary.equalsInternal(other, receiver, threadState);
-        }
-
-        // we already checked for identity equality above, so if neither side
-        // knows what to do, they are not equal
-        return result == 1;
-    }
-
-    /**
-     * @see #equalsWithState
-     */
-    public final boolean equals(Object receiver, Object other, PythonObjectLibrary otherLibrary) {
-        return equalsWithState(receiver, other, otherLibrary, null);
-    }
-
-    /**
-     * @see #equalsWithState
-     */
-    public final boolean equalsWithFrame(Object receiver, Object other, PythonObjectLibrary otherLibrary, VirtualFrame frame) {
-        if (profileHasFrame(frame)) {
-            return equalsWithState(receiver, other, otherLibrary, PArguments.getThreadState(frame));
-        } else {
-            return equals(receiver, other, otherLibrary);
-        }
-    }
-
-    /**
-     * Compare {@code receiver} to {@code other} using {@code __eq__}.
-     *
-     * @param threadState may be {@code null}
-     * @return 0 if not equal, 1 if equal, -1 if {@code __eq__} returns {@code NotImplemented}
-     */
-    public abstract int equalsInternal(Object receiver, Object other, ThreadState threadState);
-
-    /**
-     * Return the file system path representation of the object. If the object is str or bytes, then
-     * allow it to pass through. If the object defines __fspath__(), then return the result of that
-     * method. All other types raise a TypeError.
-     */
-    public String asPathWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState) {
-        throw getDefaultNodes().getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, receiver);
-    }
-
-    /**
-     * @see #asPathWithState
-     */
-    public final String asPath(Object receiver) {
-        return asPathWithState(receiver, null);
     }
 
     /**

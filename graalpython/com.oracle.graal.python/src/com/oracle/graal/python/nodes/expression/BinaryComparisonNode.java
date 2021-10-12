@@ -44,8 +44,7 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory.GtNo
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory.LeNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory.LtNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory.NeNodeGen;
-import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
-import com.oracle.graal.python.nodes.expression.IsExpressionNodeGen.IsNodeGen;
+import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -77,7 +76,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         protected final IsNode ensureIsNode() {
             if (isNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                isNode = insert(IsNodeGen.create());
+                isNode = insert(IsNode.create());
             }
             return isNode;
         }

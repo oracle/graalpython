@@ -31,9 +31,6 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -47,7 +44,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 public final class PBytes extends PBytesLike {
@@ -101,12 +97,6 @@ public final class PBytes extends PBytesLike {
             return Arrays.hashCode(((ByteSequenceStorage) store).getInternalByteArray());
         }
         return store.hashCode();
-    }
-
-    @ExportMessage
-    public String asPathWithState(@SuppressWarnings("unused") ThreadState state,
-                    @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
-        return BytesUtils.createASCIIString(toBytes.execute(getSequenceStorage()));
     }
 
     @ExportMessage

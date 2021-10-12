@@ -45,18 +45,13 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -65,57 +60,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = String.class)
 final class DefaultPythonStringExports {
-    @ExportMessage
-    static boolean isIterable(@SuppressWarnings("unused") String str) {
-        return true;
-    }
-
-    @ExportMessage
-    static class IsSame {
-        @Specialization
-        static boolean ss(String receiver, String other) {
-            return receiver == other;
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static boolean sO(String receiver, Object other) {
-            return false;
-        }
-    }
-
-    @ExportMessage
-    static class EqualsInternal {
-        @Specialization
-        static int ss(String receiver, String other, @SuppressWarnings("unused") ThreadState threadState) {
-            return PString.equals(receiver, other) ? 1 : 0;
-        }
-
-        @Specialization
-        static int sP(String receiver, Object other, @SuppressWarnings("unused") ThreadState threadState,
-                        @Cached CastToJavaStringNode castNode,
-                        @Shared("gil") @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                // n.b.: subclassing is ignored in this direction in CPython
-                String otherString;
-                try {
-                    otherString = castNode.execute(other);
-                } catch (CannotCastException e) {
-                    return -1;
-                }
-                return ss(receiver, otherString, threadState);
-            } finally {
-                gil.release(mustRelease);
-            }
-        }
-    }
-
-    @ExportMessage
-    static String asPathWithState(String value, @SuppressWarnings("unused") ThreadState state) {
-        return value;
-    }
-
     @ExportMessage
     static Object lookupAttributeInternal(String receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,

@@ -119,7 +119,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -140,6 +139,7 @@ import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
@@ -839,7 +839,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode,
                         @Cached PyObjectStrAsJavaStringNode asStrNode,
                         @CachedLibrary("wSource") InteropLibrary interopLib,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @Cached PyUnicodeFSDecoderNode asPath,
                         @Cached WarnNode warnNode) {
             if (wSource instanceof PCode) {
                 return (PCode) wSource;
@@ -857,7 +857,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     bufferLib.release(filenameBuffer);
                 }
             } else {
-                filename = lib.asPathWithState(wFilename, PArguments.getThreadState(frame));
+                filename = asPath.execute(frame, wFilename);
             }
             String mode;
             try {
