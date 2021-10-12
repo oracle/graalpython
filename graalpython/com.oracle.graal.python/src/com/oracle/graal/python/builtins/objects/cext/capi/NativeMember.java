@@ -191,6 +191,9 @@ public enum NativeMember {
     // PyLongObject
     OB_DIGIT("ob_digit"),
 
+    // PyComplexObject
+    COMPLEX_CVAL("cval"),
+
     // PySliceObject
     START("start", OBJECT),
     STOP("stop", OBJECT),

@@ -98,7 +98,7 @@ class TestPyComplex(CPyExtTestCase):
         code='''int isNaN(double d) {
             return d != d;
         }
-        
+
         int wrap_PyComplex_AsCComplex(PyObject* obj, double expectedReal, double expectedImag) {
             Py_complex res = PyComplex_AsCComplex(obj);
             if ((res.real == expectedReal && res.imag == expectedImag) || (isNaN(res.real) && isNaN(expectedReal))) {
@@ -118,6 +118,26 @@ class TestPyComplex(CPyExtTestCase):
         arguments=["PyObject* obj", "double expectedReal", "double expectedImag"],
         resulttype="int",
         callfunction="wrap_PyComplex_AsCComplex",
+    )
+
+    test_PyComplex_cval = CPyExtFunction(
+        lambda args: (args[0].real, args[0].imag) if type(args[0]) is complex else None,
+        lambda: (
+            (complex(1.0, 2.0), ),
+            (DummyComplexSubclass(2.0, 3.0), ),
+        ),
+        code='''
+        PyObject* wrap_PyComplex_cval(PyObject* obj) {
+            if (PyComplex_CheckExact(obj)) {
+                Py_complex res = ((PyComplexObject *)obj)->cval;
+                return PyTuple_Pack(2, PyFloat_FromDouble(res.real), PyFloat_FromDouble(res.imag));
+            }
+            return Py_None;
+        }''',
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* obj"],
+        callfunction="wrap_PyComplex_cval",
     )
 
     test_PyComplex_RealAsDouble = CPyExtFunction(
@@ -147,4 +167,3 @@ class TestPyComplex(CPyExtTestCase):
         arguments=["PyObject* obj"],
         cmpfunc=unhandled_error_compare
     )
-
