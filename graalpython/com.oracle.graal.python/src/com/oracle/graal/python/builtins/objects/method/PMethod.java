@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.method;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -37,7 +36,6 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PMethod extends PythonBuiltinObject {
 
     final Object function;
@@ -61,12 +59,6 @@ public final class PMethod extends PythonBuiltinObject {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return "<method '" + function + "' of " + self + " object at " + function.hashCode() + ">";
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public boolean isCallable() {
-        return true;
     }
 
     @ExportMessage

@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.mmap;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -57,7 +56,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
-@ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
 public final class PMMap extends PythonObject {
@@ -68,7 +66,7 @@ public final class PMMap extends PythonObject {
 
     private Object handle;
     private long pos;
-    private final int fd; // -1 for annonymous mapping
+    private final int fd; // -1 for anonymous mapping
     private final long length;
     private final int access;
 
@@ -133,24 +131,6 @@ public final class PMMap extends PythonObject {
     int getBufferLength(
                     @Exclusive @Cached CastToJavaIntExactNode castToIntNode) {
         return castToIntNode.execute(length);
-    }
-
-    @ExportMessage
-    byte[] getBufferBytes(
-                    @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
-                    @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                    @Cached BranchProfile gotException,
-                    @Cached PConstructAndRaiseNode raiseNode) {
-        try {
-            int len = castToIntNode.execute(length);
-            byte[] buffer = new byte[len];
-            posixLib.mmapReadBytes(PythonContext.get(raiseNode).getPosixSupport(), getPosixSupportHandle(), getPos(), buffer, buffer.length);
-            return buffer;
-        } catch (PosixException e) {
-            // TODO(fa) how to handle?
-            gotException.enter();
-            throw raiseNode.raiseOSError(null, e.getErrorCode(), e.getMessage(), null, null);
-        }
     }
 
     @ExportMessage

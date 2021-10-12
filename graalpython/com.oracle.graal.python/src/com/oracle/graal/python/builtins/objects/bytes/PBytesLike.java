@@ -42,20 +42,16 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
 public abstract class PBytesLike extends PSequence {
@@ -104,20 +100,8 @@ public abstract class PBytesLike extends PSequence {
         return true;
     }
 
-    @ExportMessage(library = PythonObjectLibrary.class)
-    int getBufferLength(
-                    @Cached SequenceStorageNodes.LenNode lenNode) {
-        return lenNode.execute(store);
-    }
-
     @ExportMessage
-    protected byte[] getBufferBytes(
-                    @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-        return toByteArrayNode.execute(store);
-    }
-
-    @ExportMessage(library = PythonBufferAccessLibrary.class, name = "getBufferLength")
-    int getBufferLengthMessage(
+    int getBufferLength(
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
         return bufferLib.getBufferLength(store);
     }

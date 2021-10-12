@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -259,7 +260,7 @@ public class CDataTypeBuiltins extends PythonBuiltins {
 
     // PyArg_ParseTuple(args, "y*|n:from_buffer_copy", &buffer, &offset);
     @Builtin(name = from_buffer_copy, minNumOfPositionalArgs = 2, parameterNames = {"self", "buffer", "offset"})
-    @ArgumentClinic(name = "buffer", conversion = ClinicConversion.Buffer)
+    @ArgumentClinic(name = "buffer", conversion = ClinicConversion.ReadableBuffer)
     @ArgumentClinic(name = "offset", conversion = ClinicConversion.Int, defaultValue = "0", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class FromBufferCopyNode extends PythonTernaryClinicBuiltinNode {
@@ -269,27 +270,37 @@ public class CDataTypeBuiltins extends PythonBuiltins {
             return CDataTypeBuiltinsClinicProviders.FromBufferCopyNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization
-        Object CDataType_from_buffer_copy(Object type, byte[] bytes, int offset,
+        @Specialization(limit = "3")
+        Object CDataType_from_buffer_copy(Object type, Object buffer, int offset,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached AuditNode auditNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode) {
-            StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
+            try {
+                StgDictObject dict = pyTypeStgDictNode.checkAbstractClass(type, getRaiseNode());
 
-            if (offset < 0) {
-                throw raise(ValueError, OFFSET_CANNOT_BE_NEGATIVE);
+                if (offset < 0) {
+                    throw raise(ValueError, OFFSET_CANNOT_BE_NEGATIVE);
+                }
+
+                int bufferLen = bufferLib.getBufferLength(buffer);
+
+                if (dict.size > bufferLen - offset) {
+                    throw raise(ValueError, BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES, bufferLen, dict.size + offset);
+                }
+
+                // This prints the raw pointer in C, so just print 0
+                auditNode.audit("ctypes.cdata/buffer", 0, bufferLen, offset);
+
+                CDataObject result = factory().createCDataObject(type);
+                GenericPyCDataNew(dict, result);
+                // memcpy(result.b_ptr, buffer.buf + offset, dict.size);
+                byte[] slice = new byte[dict.size];
+                bufferLib.readIntoByteArray(buffer, offset, slice, 0, dict.size);
+                result.b_ptr = PtrValue.bytes(dict.ffi_type_pointer, slice);
+                return result;
+            } finally {
+                bufferLib.release(buffer);
             }
-
-            if (dict.size > bytes.length - offset) {
-                throw raise(ValueError, BUFFER_SIZE_TOO_SMALL_D_INSTEAD_OF_AT_LEAST_D_BYTES, bytes.length, dict.size + offset);
-            }
-
-            auditNode.audit("ctypes.cdata/buffer", bytes, bytes.length, offset);
-
-            CDataObject result = factory().createCDataObject(type);
-            GenericPyCDataNew(dict, result);
-            // memcpy(result.b_ptr, buffer.buf + offset, dict.size);
-            result.b_ptr = PtrValue.bytes(dict.ffi_type_pointer, PythonUtils.arrayCopyOfRange(bytes, offset, dict.size + offset));
-            return result;
         }
     }
 

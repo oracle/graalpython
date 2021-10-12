@@ -26,17 +26,12 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 /**
  * This is the base class for all builtin iterator types that cannot be subclassed from Python code.
  */
-@ExportLibrary(PythonObjectLibrary.class)
 public abstract class PBuiltinIterator extends PythonBuiltinObject {
 
     private boolean exhausted = false;
@@ -65,11 +60,5 @@ public abstract class PBuiltinIterator extends PythonBuiltinObject {
     @Override
     public final String toString() {
         return "<iterator object at " + hashCode() + ">";
-    }
-
-    /* this is correct because it cannot be subclassed in Python */
-    @ExportMessage
-    public final PBuiltinIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState) {
-        return this;
     }
 }

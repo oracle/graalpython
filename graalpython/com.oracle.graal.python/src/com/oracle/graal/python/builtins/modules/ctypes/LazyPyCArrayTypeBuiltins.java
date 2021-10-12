@@ -55,10 +55,10 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCArrayTypeBuiltinsFactory.CharArrayRawNodeFactory;
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCArrayTypeBuiltinsFactory.CharArrayValueNodeFactory;
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCArrayTypeBuiltinsFactory.WCharArrayValueNodeFactory;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -136,10 +136,10 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CharArrayRawNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "isNoValue(value)")
-        Object doGet(CDataObject self, @SuppressWarnings("unused") PNone value) {
-            assert self.b_ptr.ptr instanceof ByteArrayStorage;
-            return factory().createBytes(self.getBufferBytes());
+        @Specialization(guards = "isNoValue(value)", limit = "1")
+        Object doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
+                        @CachedLibrary("self") PythonBufferAccessLibrary bufferLib) {
+            return factory().createBytes(bufferLib.getInternalOrCopiedByteArray(self));
         }
 
         @Specialization

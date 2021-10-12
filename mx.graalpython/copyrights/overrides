@@ -455,7 +455,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/If
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/LoopNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/ReturnNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/ReturnTargetNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/StopIterationTargetNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/control/WhileNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/expression/BinaryComparisonNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/expression/BinaryOpNode.java,zippy.copyright

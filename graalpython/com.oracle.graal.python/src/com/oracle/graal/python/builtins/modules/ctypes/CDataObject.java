@@ -41,11 +41,12 @@
 package com.oracle.graal.python.builtins.modules.ctypes;
 
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.DeRefHandleNode;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -57,7 +58,8 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
-@ExportLibrary(PythonObjectLibrary.class)
+@ExportLibrary(PythonBufferAcquireLibrary.class)
+@ExportLibrary(PythonBufferAccessLibrary.class)
 public class CDataObject extends PythonBuiltinObject {
 
     /*
@@ -94,8 +96,19 @@ public class CDataObject extends PythonBuiltinObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    boolean hasBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    Object acquire(@SuppressWarnings("unused") int flags) {
+        return this;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isBuffer() {
-        return b_ptr.ptr instanceof ByteArrayStorage;
+        return true;
     }
 
     @ExportMessage
@@ -104,14 +117,51 @@ public class CDataObject extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    byte[] getBufferBytes() {
-        assert isBuffer();
-        byte[] bytes = ((ByteArrayStorage) b_ptr.ptr).value;
-        if (b_ptr.offset > 0) {
-            return PythonUtils.arrayCopyOfRange(bytes, b_ptr.offset, b_size);
+    byte readByte(int byteIndex,
+                    @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        if (b_ptr.ptr != null) {
+            return bufferLib.readByte(b_ptr.ptr, b_ptr.offset + byteIndex);
         }
-        return bytes;
+        throw CompilerDirectives.shouldNotReachHere("buffer read from empty CDataObject");
     }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isReadonly() {
+        return false;
+    }
+
+    @ExportMessage
+    void writeByte(int byteIndex, byte value,
+                    @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        if (b_ptr.ptr != null) {
+            bufferLib.writeByte(b_ptr.ptr, b_ptr.offset + byteIndex, value);
+        }
+        throw CompilerDirectives.shouldNotReachHere("buffer write to empty CDataObject");
+    }
+
+    @ExportMessage
+    boolean hasInternalByteArray(
+                    @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        if (b_ptr.offset != 0) {
+            return false;
+        }
+        if (b_ptr.ptr != null) {
+            return bufferLib.hasInternalByteArray(b_ptr.ptr);
+        }
+        return true;
+    }
+
+    @ExportMessage
+    byte[] getInternalByteArray(
+                    @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        assert hasInternalByteArray(bufferLib);
+        if (b_ptr.ptr != null) {
+            return bufferLib.getInternalByteArray(b_ptr.ptr);
+        }
+        return PythonUtils.EMPTY_BYTE_ARRAY;
+    }
+
     /*-
     static int PyCData_NewGetBuffer(Object myself, Py_buffer *view, int flags)
     {

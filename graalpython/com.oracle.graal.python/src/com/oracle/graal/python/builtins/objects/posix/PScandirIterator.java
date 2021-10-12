@@ -42,19 +42,14 @@
 package com.oracle.graal.python.builtins.objects.posix;
 
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.AsyncHandler.SharedFinalizer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PScandirIterator extends PythonBuiltinObject {
 
     final PosixFileHandle path;
@@ -64,12 +59,6 @@ public final class PScandirIterator extends PythonBuiltinObject {
         super(cls, instanceShape);
         this.ref = new DirStreamRef(this, dirStream, context.getSharedFinalizer(), needsRewind);
         this.path = path;
-    }
-
-    /* this is correct because it cannot be subclassed in Python */
-    @ExportMessage
-    PScandirIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState) {
-        return this;
     }
 
     static class DirStreamRef extends SharedFinalizer.FinalizableReference {

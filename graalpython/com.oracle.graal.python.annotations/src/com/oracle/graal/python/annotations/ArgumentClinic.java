@@ -156,10 +156,6 @@ public @interface ArgumentClinic {
          */
         Tuple,
         /**
-         * Deprecated. Legacy converter for PythonObjectLibrary buffers.
-         */
-        Buffer,
-        /**
          * Corresponds to CPython's {@code Py_buffer} converter for a readonly contiguous buffer.
          * Returns an opaque buffer object that is accessed using {@code PythonBufferAccessLibrary}.
          * Must be explicitly released using {@code PythonBufferAccessLibrary.release}, typically in

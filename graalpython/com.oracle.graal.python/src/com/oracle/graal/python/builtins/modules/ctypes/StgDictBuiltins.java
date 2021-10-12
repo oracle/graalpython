@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeOnTypeNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -76,6 +75,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -262,6 +262,7 @@ public class StgDictBuiltins extends PythonBuiltins {
         }
     }
 
+    @ImportStatic(StgDictBuiltins.class)
     protected abstract static class MakeAnonFieldsNode extends PNodeWithRaise {
 
         abstract void execute(VirtualFrame frame, Object type, PythonObjectFactory factory);
@@ -277,8 +278,8 @@ public class StgDictBuiltins extends PythonBuiltins {
                         @Cached MakeFieldsNode makeFieldsNode,
                         @Cached GetClassNode getClassNode,
                         @Cached GetAnyAttributeNode getAttr,
-                        @Cached LookupAttributeOnTypeNode lookupAnon) {
-            Object anon = lookupAnon.execute(type, _anonymous_, false);
+                        @Cached(parameters = "_anonymous_") LookupAttributeInMRONode lookupAnon) {
+            Object anon = lookupAnon.execute(type);
             if (PGuards.isPNone(anon)) {
                 return;
             }

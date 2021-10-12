@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -64,7 +63,6 @@ import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 
 // TODO interop library
-@ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
 public final class PMemoryView extends PythonBuiltinObject {
@@ -261,19 +259,14 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    int getBufferLength() {
-        return getLength();
-    }
-
-    @ExportMessage
-    byte[] getBufferBytes(@Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode) {
-        return toJavaBytesNode.execute(this);
-    }
-
-    @ExportMessage
     @SuppressWarnings("static-method")
     boolean hasBuffer() {
         return true;
+    }
+
+    @ExportMessage
+    int getBufferLength() {
+        return getLength();
     }
 
     @ExportMessage

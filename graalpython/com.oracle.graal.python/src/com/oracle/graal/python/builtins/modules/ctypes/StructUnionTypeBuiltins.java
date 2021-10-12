@@ -74,7 +74,6 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.MakeAnonFieldsNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeOnTypeNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.CheckIsSequenceNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
@@ -89,6 +88,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -190,6 +190,7 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
         }
     }
 
+    @ImportStatic(StructUnionTypeBuiltins.class)
     protected abstract static class PyCStructUnionTypeUpdateStgDict extends PNodeWithRaise {
         abstract void execute(VirtualFrame frame, Object type, Object fields, boolean isStruct, PythonObjectFactory factory);
 
@@ -213,9 +214,9 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached SetAttributeNode.Dynamic setAttr,
                         @Cached IsBuiltinClassProfile isBuiltinClassProfile,
-                        @Cached LookupAttributeOnTypeNode lookupSwappedbytes,
-                        @Cached LookupAttributeOnTypeNode lookupPack,
-                        @Cached LookupAttributeOnTypeNode lookupBrokenCtypes) {
+                        @Cached(parameters = "_swappedbytes_") LookupAttributeInMRONode lookupSwappedbytes,
+                        @Cached(parameters = "_pack_") LookupAttributeInMRONode lookupPack,
+                        @Cached(parameters = "_use_broken_old_ctypes_structure_semantics_") LookupAttributeInMRONode lookupBrokenCtypes) {
             /*
              * HACK Alert: I cannot be bothered to fix ctypes.com, so there has to be a way to use
              * the old, broken semantics: _fields_ are not extended but replaced in subclasses.
@@ -223,15 +224,15 @@ public class StructUnionTypeBuiltins extends PythonBuiltins {
              * XXX Remove this in ctypes 1.0!
              */
             boolean use_broken_old_ctypes_semantics;
-            Object tmp = lookupSwappedbytes.execute(type, _swappedbytes_, false);
+            Object tmp = lookupSwappedbytes.execute(type);
             boolean big_endian;
             // PY_BIG_ENDIAN;
             big_endian = tmp == PNone.NO_VALUE; // !PY_BIG_ENDIAN;
 
-            tmp = lookupBrokenCtypes.execute(type, _use_broken_old_ctypes_structure_semantics_, false);
+            tmp = lookupBrokenCtypes.execute(type);
             use_broken_old_ctypes_semantics = tmp != PNone.NO_VALUE;
 
-            tmp = lookupPack.execute(type, _pack_, false);
+            tmp = lookupPack.execute(type);
             boolean isPacked = tmp != PNone.NO_VALUE;
             int pack = 0;
             if (tmp != PNone.NO_VALUE) {

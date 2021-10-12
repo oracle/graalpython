@@ -40,18 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.ellipsis;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PEllipsis extends PythonAbstractObject {
 
     public static final PEllipsis INSTANCE = new PEllipsis();
@@ -68,11 +59,5 @@ public final class PEllipsis extends PythonAbstractObject {
     @Override
     public int compareTo(Object o) {
         return this.hashCode() - o.hashCode();
-    }
-
-    @ExportMessage
-    Object getIteratorWithState(@SuppressWarnings("unused") ThreadState state,
-                    @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);
     }
 }
