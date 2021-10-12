@@ -51,21 +51,12 @@ import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -73,9 +64,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.Message;
 import com.oracle.truffle.api.library.ReflectionLibrary;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@ExportLibrary(PythonObjectLibrary.class)
 // InteropLibrary is proxied through ReflectionLibrary
 @ExportLibrary(ReflectionLibrary.class)
 public enum PythonBuiltinClassType implements TruffleObject {
@@ -723,59 +712,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return lib.send(PythonContext.get(lib).getCore().lookupType(this), message, args);
     }
 
-    @ExportMessage
-    public Object lookupAttributeInternal(ThreadState state, String attribName, boolean strict,
-                    @Cached ConditionProfile gotState,
-                    @Cached.Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
-        VirtualFrame frame = null;
-        if (gotState.profile(state != null)) {
-            frame = PArguments.frameForCall(state);
-        }
-        return lookup.execute(frame, this, attribName, strict);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object lookupAttributeOnTypeInternal(String attributeName, boolean strict,
-                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup,
-                    @Cached.Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return lookup.execute(PythonClass, attributeName, strict);
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public boolean isCallable() {
-        return true;
-    }
-
-    @ExportMessage
-    public Object callObjectWithState(ThreadState state, Object[] arguments,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        return lib.callObjectWithState(PythonContext.get(lib).getCore().lookupType(this), state, arguments);
-    }
-
     public static boolean isExceptionType(PythonBuiltinClassType type) {
         return type.isException;
-    }
-
-    @ExportMessage
-    public Object lookupAndCallSpecialMethodWithState(ThreadState state, String methodName, Object[] arguments,
-                    @CachedLibrary("this") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        Object method = plib.lookupAttributeOnTypeStrict(this, methodName);
-        return methodLib.callUnboundMethodWithState(method, state, this, arguments);
-    }
-
-    @ExportMessage
-    public Object lookupAndCallRegularMethodWithState(ThreadState state, String methodName, Object[] arguments,
-                    @CachedLibrary("this") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        Object method = plib.lookupAttributeStrictWithState(this, state, methodName);
-        return methodLib.callObjectWithState(method, state, arguments);
     }
 }

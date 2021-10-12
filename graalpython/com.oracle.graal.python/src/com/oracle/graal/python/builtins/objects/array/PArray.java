@@ -32,7 +32,6 @@ import java.nio.ByteOrder;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.util.BufferFormat;
@@ -45,7 +44,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.Shape;
 
 // TODO interop library
-@ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
 public final class PArray extends PythonBuiltinObject {
@@ -242,16 +240,6 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    byte[] getBufferBytes() {
-        return PythonUtils.arrayCopyOf(buffer, getBufferLength());
-    }
-
-    @ExportMessage
-    int getBufferLength() {
-        return length * format.bytesize;
-    }
-
-    @ExportMessage
     @SuppressWarnings("static-method")
     boolean hasBuffer() {
         return true;
@@ -261,6 +249,11 @@ public final class PArray extends PythonBuiltinObject {
     @SuppressWarnings("static-method")
     boolean isBuffer() {
         return true;
+    }
+
+    @ExportMessage
+    int getBufferLength() {
+        return length * format.bytesize;
     }
 
     @ExportMessage

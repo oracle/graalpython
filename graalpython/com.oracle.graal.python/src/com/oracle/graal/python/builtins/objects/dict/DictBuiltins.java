@@ -63,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltinsFactory.DispatchMissingNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -134,7 +133,6 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"args.length == 1"})
         Object doVarargs(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary storageLib) {
             self.setDictStorage(storageLib.addAllToOther(getInitNode().execute(frame, args[0], kwargs), self.getDictStorage()));
             return PNone.NONE;

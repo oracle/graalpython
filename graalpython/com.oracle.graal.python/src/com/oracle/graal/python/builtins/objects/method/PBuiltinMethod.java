@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.method;
 
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -35,7 +34,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 // Corresponds to PyCFunction, but that name is just confusing
-@ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(InteropLibrary.class)
 public final class PBuiltinMethod extends PythonBuiltinObject {
 
@@ -60,12 +58,6 @@ public final class PBuiltinMethod extends PythonBuiltinObject {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return "<builtin-method '" + function + "' of '" + self + "' objects>";
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public boolean isCallable() {
-        return true;
     }
 
     @ExportMessage
