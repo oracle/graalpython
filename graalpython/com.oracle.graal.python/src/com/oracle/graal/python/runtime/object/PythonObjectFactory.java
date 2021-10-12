@@ -115,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
 import com.oracle.graal.python.builtins.objects.itertools.PCount;
 import com.oracle.graal.python.builtins.objects.itertools.PIslice;
+import com.oracle.graal.python.builtins.objects.itertools.PPermutations;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
 import com.oracle.graal.python.builtins.objects.itertools.PStarmap;
 import com.oracle.graal.python.builtins.objects.itertools.PTee;
@@ -1163,6 +1164,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PIslice createIslice() {
         return trace(new PIslice(PythonBuiltinClassType.PIslice, PythonBuiltinClassType.PIslice.getInstanceShape(getLanguage())));
+    }
+
+    public final PPermutations createPermutations() {
+        return trace(new PPermutations(PythonBuiltinClassType.PPermutations, PythonBuiltinClassType.PPermutations.getInstanceShape(getLanguage())));
     }
 
     public final PRepeat createRepeat() {
