@@ -55,6 +55,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
@@ -71,7 +72,7 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
     }
 
     // functools.reduce(function, iterable[, initializer])
-    @Builtin(name = "replace", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, doc = "reduce(function, sequence[, initial]) -> value\n" +
+    @Builtin(name = "reduce", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, doc = "reduce(function, sequence[, initial]) -> value\n" +
                     "\n" +
                     "Apply a function of two arguments cumulatively to the items of a sequence,\n" +
                     "from left to right, so as to reduce the sequence to a single value.\n" +
@@ -131,6 +132,16 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
             }
 
             return result;
+        }
+    }
+
+    // functools.cmp_to_key(func)
+    @Builtin(name = "cmp_to_key", minNumOfPositionalArgs = 1, parameterNames = {"mycmp"}, doc = "Convert a cmp= function into a key= function.")
+    @GenerateNodeFactory
+    public abstract static class CmpToKeyNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doConvert(Object myCmp) {
+            return factory().createKeyWrapper(myCmp);
         }
     }
 }

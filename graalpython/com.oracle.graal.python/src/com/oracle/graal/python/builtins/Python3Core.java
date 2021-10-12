@@ -199,6 +199,7 @@ import com.oracle.graal.python.builtins.objects.itertools.ChainBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.RepeatBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.keywrapper.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
@@ -380,6 +381,7 @@ public final class Python3Core implements ParserErrorCallback {
                         new TypeBuiltins(),
                         new IntBuiltins(),
                         new ForeignObjectBuiltins(),
+                        new KeyWrapperBuiltins(),
                         new ListBuiltins(),
                         new DictBuiltins(),
                         new DictReprBuiltin(),

@@ -973,6 +973,7 @@ public abstract class ErrorMessages {
     public static final String UNKNOWN_CLOCK = "unknown clock";
     public static final String S_ARG_N_MUST_SUPPORT_ITERATION = "%s arg %d must support iteration";
     public static final String REDUCE_EMPTY_SEQ = "reduce() of empty sequence with no initial value";
+    public static final String OTHER_ARG_MUST_BE_KEY = "other argument must be K instance";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";

@@ -111,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PSentinelIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
+import com.oracle.graal.python.builtins.objects.keywrapper.PKeyWrapper;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
 import com.oracle.graal.python.builtins.objects.itertools.PTee;
@@ -730,6 +731,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PSimpleNamespace createSimpleNamespace(Object cls, Shape instanceShape) {
         return trace(new PSimpleNamespace(cls, instanceShape));
+    }
+
+    public final PKeyWrapper createKeyWrapper(Object cmp) {
+        return trace(new PKeyWrapper(PythonBuiltinClassType.PKeyWrapper, getShape(PythonBuiltinClassType.PKeyWrapper), cmp));
     }
 
     public final PDefaultDict createDefaultDict(Object cls) {
