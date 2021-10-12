@@ -85,6 +85,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PCell("cell", Flags.PRIVATE_DERIVED_WODICT),
     PSimpleNamespace("SimpleNamespace", null, "types", Flags.PUBLIC_BASE_WDICT),
     PKeyWrapper("KeyWrapper", "_functools", "functools", Flags.PUBLIC_DERIVED_WODICT),
+    PPartial("partial", "_functools", "functools", Flags.PUBLIC_BASE_WDICT),
     PDefaultDict(DEFAULTDICT, "_collections", "collections", Flags.PUBLIC_BASE_WODICT),
     PDeque(DEQUE, "_collections", Flags.PUBLIC_BASE_WODICT),
     PTupleGetter(TUPLE_GETTER, "_collections", Flags.PUBLIC_BASE_WODICT),
