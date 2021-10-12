@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -78,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -286,7 +286,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached SetFuncNode setFuncNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached LookupAttributeNode lookupAsParam) {
+                        @Cached PyObjectLookupAttr lookupAsParam) {
             /*
              * If the value is already an instance of the requested type, we can use it as is
              */
@@ -314,7 +314,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
                 // pass through to check for _as_parameter_
             }
 
-            Object as_parameter = lookupAsParam.execute(frame, value, _as_parameter_, false);
+            Object as_parameter = lookupAsParam.execute(frame, value, _as_parameter_);
             if (as_parameter != null) {
                 // Py_EnterRecursiveCall("while processing _as_parameter_"); TODO
                 Object r = PyCSimpleType_from_param(frame, type, as_parameter, setFuncNode, isInstanceNode, pyTypeStgDictNode, lookupAsParam);
