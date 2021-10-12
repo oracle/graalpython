@@ -293,6 +293,100 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = ALL, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class AllNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static boolean doSeq(VirtualFrame frame,
+                             PSequence seq,
+                             @Cached PyObjectIsTrueNode isTrue) {
+            Object[] internalArray = seq.getSequenceStorage().getInternalArray();
+            for (int i = 0; i < seq.getSequenceStorage().length(); i++)
+                if (!isTrue.execute(frame, internalArray[i]))
+                    return false;
+            return true;
+        }
+
+        @Specialization
+        static boolean doHashColl(VirtualFrame frame,
+                                  PHashingCollection hc,
+                                  @Cached PyObjectIsTrueNode isTrue) {
+            for (HashingStorage.DictEntry entry: hc.entries())
+                if (!isTrue.execute(frame, entry.key))
+                    return false;
+            return true;
+        }
+
+        @Specialization
+        static boolean doObject(VirtualFrame frame,
+                                Object object,
+                                @Cached PyObjectGetIter getIter,
+                                @Cached("create(__NEXT__)") LookupAndCallUnaryNode callNode,
+                                @Cached IsBuiltinClassProfile errorProfile,
+                                @Cached PyObjectIsTrueNode isTrue) {
+            Object iterator = getIter.execute(frame, object);
+            while (true) {
+                try {
+                    Object next = callNode.executeObject(frame, iterator);
+                    if (!isTrue.execute(frame, next))
+                        return false;
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    break;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    @Builtin(name = ANY, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class AnyNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static boolean doSeq(VirtualFrame frame,
+                             PSequence seq,
+                             @Cached PyObjectIsTrueNode isTrue) {
+            Object[] internalArray = seq.getSequenceStorage().getInternalArray();
+            for (int i = 0; i < seq.getSequenceStorage().length(); i++)
+                if (isTrue.execute(frame, internalArray[i]))
+                    return true;
+            return false;
+        }
+
+        @Specialization
+        static boolean doHashColl(VirtualFrame frame,
+                                  PHashingCollection hc,
+                                  @Cached PyObjectIsTrueNode isTrue) {
+            for (HashingStorage.DictEntry entry: hc.entries())
+                if (isTrue.execute(frame, entry.key))
+                    return true;
+            return false;
+        }
+
+        @Specialization
+        static boolean doObject(VirtualFrame frame,
+                                Object object,
+                                @Cached PyObjectGetIter getIter,
+                                @Cached("create(__NEXT__)") LookupAndCallUnaryNode callNode,
+                                @Cached IsBuiltinClassProfile errorProfile,
+                                @Cached PyObjectIsTrueNode isTrue) {
+            Object iterator = getIter.execute(frame, object);
+            while (true) {
+                try {
+                    Object next = callNode.executeObject(frame, iterator);
+                    if (isTrue.execute(frame, next))
+                        return true;
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    break;
+                }
+            }
+
+            return false;
+        }
+    }
+
     // bin(object)
     @Builtin(name = BIN, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -1283,67 +1377,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public int len(VirtualFrame frame, Object obj,
                         @Cached PyObjectSizeNode sizeNode) {
             return sizeNode.execute(frame, obj);
-        }
-    }
-
-    @Builtin(name = ALL, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class AllNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static boolean doSeq(VirtualFrame frame,
-                             PSequence seq,
-                             @Cached PyObjectIsTrueNode isTrue) {
-            System.out.println("seq_all");
-            Object[] internalArray = seq.getSequenceStorage().getInternalArray();
-            for (int i = 0; i < seq.getSequenceStorage().length(); i++)
-                if (!isTrue.execute(frame, internalArray[i]))
-                    return false;
-            return true;
-        }
-
-        @Specialization
-        static boolean doHashColl(VirtualFrame frame,
-                                  PHashingCollection hc,
-                                  @Cached PyObjectIsTrueNode isTrue) {
-            System.out.println("hash_all");
-
-            for (HashingStorage.DictEntry entry: hc.entries())
-                if (!isTrue.execute(frame, entry.key))
-                    return false;
-            return true;
-        }
-
-       @Specialization
-       static boolean doObject(VirtualFrame frame,
-                               Object object,
-                               @Cached PyObjectGetIter getIter,
-                               @Cached("createNextCall()") LookupAndCallUnaryNode callNode,
-                               @Cached IsBuiltinClassProfile errorProfile,
-                               @Cached PyObjectIsTrueNode isTrue) {
-            System.out.println("obj_all :" + object.getClass());
-
-            Object iterator = getIter.execute(frame, object);
-            while (true) {
-                try {
-                    Object next = callNode.executeObject(frame, iterator);
-                    if (!isTrue.execute(frame, next))
-                        return false;
-                } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
-                    break;
-                }
-            }
-
-            return true;
-        }
-
-        protected LookupAndCallUnaryNode createNextCall() {
-            return LookupAndCallUnaryNode.create(__NEXT__, () -> new LookupAndCallUnaryNode.NoAttributeHandler() {
-                @Override
-                public Object execute(Object iterator) {
-                    throw raise(TypeError, ErrorMessages.OBJ_ISNT_ITERATOR, iterator);
-                }
-            });
         }
     }
 
