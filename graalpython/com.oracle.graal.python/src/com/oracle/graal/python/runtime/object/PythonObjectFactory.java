@@ -129,6 +129,7 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.partial.PPartial;
 import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.property.PProperty;
@@ -735,6 +736,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PKeyWrapper createKeyWrapper(Object cmp) {
         return trace(new PKeyWrapper(PythonBuiltinClassType.PKeyWrapper, getShape(PythonBuiltinClassType.PKeyWrapper), cmp));
+    }
+
+    public final PPartial createPartial(Object cls, Object function, Object[] args, PKeyword[] keywords) {
+        return trace(new PPartial(cls, getShape(cls), function, args, keywords));
     }
 
     public final PDefaultDict createDefaultDict(Object cls) {

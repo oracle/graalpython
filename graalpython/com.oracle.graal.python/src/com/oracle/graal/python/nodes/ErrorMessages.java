@@ -59,6 +59,7 @@ public abstract class ErrorMessages {
     public static final String S_BRACKETS_ARG_MUST_BE_S_NOT_P = "%s() argument must be a %s, not %p";
     public static final String S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P = "%s() argument must be read-write bytes-like object, not %p";
     public static final String ARG_MUST_BE_CALLABLE = "argument must be callable";
+    public static final String S_ARG_MUST_BE_CALLABLE = "%s argument must be callable";
     public static final String ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER = "%s argument must be a string, a bytes-like object or a number, not %p";
     public static final String ARG_MUST_BE_STRING_OR_NUMBER = "%s argument must be a string or a number, not '%p'";
     public static final String ARG_MUST_NOT_BE_ZERO = "%s arg %d must not be zero";
@@ -974,6 +975,7 @@ public abstract class ErrorMessages {
     public static final String S_ARG_N_MUST_SUPPORT_ITERATION = "%s arg %d must support iteration";
     public static final String REDUCE_EMPTY_SEQ = "reduce() of empty sequence with no initial value";
     public static final String OTHER_ARG_MUST_BE_KEY = "other argument must be K instance";
+    public static final String INVALID_PARTIAL_STATE = "invalid partial state";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";

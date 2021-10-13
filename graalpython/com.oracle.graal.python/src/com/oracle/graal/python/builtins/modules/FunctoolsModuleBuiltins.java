@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.REDUCE_EMPTY_SEQ;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_N_MUST_SUPPORT_ITERATION;
 
 import java.util.List;
@@ -50,19 +51,26 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.partial.PPartial;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "_functools")
 public class FunctoolsModuleBuiltins extends PythonBuiltins {
@@ -142,6 +150,64 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doConvert(Object myCmp) {
             return factory().createKeyWrapper(myCmp);
+        }
+    }
+
+    // functools.partial(func, /, *args, **keywords)
+    @Builtin(name = "partial", minNumOfPositionalArgs = 1, varArgsMarker = true, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PPartial, doc = "partial(func, *args, **keywords) - new function with partial application\n" +
+                    "of the given arguments and keywords.\n")
+    @GenerateNodeFactory
+    public abstract static class PartialNode extends PythonBuiltinNode {
+        protected boolean isPartial(Object func) {
+            return func instanceof PPartial;
+        }
+
+        protected boolean hasDict(GetDictIfExistsNode getDict, Object func) {
+            return getDict.execute(func) != null;
+        }
+
+        protected boolean hasDictOrNotPartial(GetDictIfExistsNode getDict, Object func) {
+            return hasDict(getDict, func) || !isPartial(func);
+        }
+
+        @Specialization(guards = "!hasDict(getDict, partial)")
+        Object createFromPartialWoDict(Object cls, PPartial partial, Object[] args, PKeyword[] keywords,
+                        @Cached GetDictIfExistsNode getDict,
+                        @Cached ConditionProfile hasArgsProfile,
+                        @Cached ConditionProfile hasKeywordsProfile) {
+            final Object[] pArgs = partial.getArgs();
+            final PKeyword[] pKeywords = partial.getKw();
+
+            Object[] newArgs;
+            if (hasArgsProfile.profile(args.length > 0)) {
+                newArgs = new Object[pArgs.length + args.length];
+                PythonUtils.arraycopy(pArgs, 0, newArgs, 0, pArgs.length);
+                PythonUtils.arraycopy(args, 0, newArgs, pArgs.length, args.length);
+            } else {
+                newArgs = pArgs;
+            }
+
+            PKeyword[] newKeywords;
+            if (hasKeywordsProfile.profile(keywords.length > 0)) {
+                newKeywords = new PKeyword[pKeywords.length + keywords.length];
+                PythonUtils.arraycopy(pKeywords, 0, newKeywords, 0, pKeywords.length);
+                PythonUtils.arraycopy(keywords, 0, newKeywords, pKeywords.length, keywords.length);
+            } else {
+                newKeywords = pKeywords;
+            }
+
+            return factory().createPartial(cls, partial.getFn(), newArgs, newKeywords);
+        }
+
+        @Specialization(guards = {"hasDictOrNotPartial(getDict, function)"})
+        Object createGeneric(Object cls, Object function, Object[] args, PKeyword[] keywords,
+                        @Cached GetDictIfExistsNode getDict,
+                        @Cached PyCallableCheckNode callableCheckNode) {
+            if (!callableCheckNode.execute(function)) {
+                throw raise(PythonBuiltinClassType.TypeError, S_ARG_MUST_BE_CALLABLE, "the first");
+            }
+
+            return factory().createPartial(cls, function, args, keywords);
         }
     }
 }
