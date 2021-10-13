@@ -154,7 +154,7 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
     }
 
     // functools.partial(func, /, *args, **keywords)
-    @Builtin(name = "partial", minNumOfPositionalArgs = 1, varArgsMarker = true, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PPartial, doc = "partial(func, *args, **keywords) - new function with partial application\n" +
+    @Builtin(name = "partial", minNumOfPositionalArgs = 1, parameterNames = {"function"}, varArgsMarker = true, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PPartial, doc = "partial(func, *args, **keywords) - new function with partial application\n" +
                     "of the given arguments and keywords.\n")
     @GenerateNodeFactory
     public abstract static class PartialNode extends PythonBuiltinNode {
@@ -170,13 +170,15 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
             return hasDict(getDict, func) || !isPartial(func);
         }
 
-        @Specialization(guards = "!hasDict(getDict, partial)")
-        Object createFromPartialWoDict(Object cls, PPartial partial, Object[] args, PKeyword[] keywords,
+        abstract Object execute(Object cls, Object function, Object[] args, PKeyword[] keywords);
+
+        @Specialization(guards = "!hasDict(getDict, function)")
+        Object createFromPartialWoDict(Object cls, PPartial function, Object[] args, PKeyword[] keywords,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached ConditionProfile hasArgsProfile,
                         @Cached ConditionProfile hasKeywordsProfile) {
-            final Object[] pArgs = partial.getArgs();
-            final PKeyword[] pKeywords = partial.getKw();
+            final Object[] pArgs = function.getArgs();
+            final PKeyword[] pKeywords = function.getKw();
 
             Object[] newArgs;
             if (hasArgsProfile.profile(args.length > 0)) {
@@ -196,7 +198,7 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
                 newKeywords = pKeywords;
             }
 
-            return factory().createPartial(cls, partial.getFn(), newArgs, newKeywords);
+            return factory().createPartial(cls, function.getFn(), newArgs, newKeywords);
         }
 
         @Specialization(guards = {"hasDictOrNotPartial(getDict, function)"})

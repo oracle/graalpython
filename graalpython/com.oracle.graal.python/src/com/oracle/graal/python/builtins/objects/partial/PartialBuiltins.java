@@ -3,6 +3,7 @@ package com.oracle.graal.python.builtins.objects.partial;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_PARTIAL_STATE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
 
 import java.util.List;
@@ -18,7 +19,10 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
@@ -29,6 +33,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -161,6 +166,62 @@ public class PartialBuiltins extends PythonBuiltins {
             }
 
             return callNode.execute(frame, self.getFn(), callArgs, callKeywords);
+        }
+    }
+
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PartialReprNode extends PythonUnaryBuiltinNode {
+        private static void reprArgs(VirtualFrame frame, PPartial partial, StringBuilder sb, PyObjectReprAsJavaStringNode reprNode) {
+            final Object[] args = partial.getArgs();
+            for (int i = 0; i < args.length; i++) {
+                if (i > 0) {
+                    PythonUtils.append(sb, ", ");
+                }
+                PythonUtils.append(sb, reprNode.execute(frame, args[i]));
+            }
+        }
+
+        private static void reprKwArgs(VirtualFrame frame, PPartial partial, StringBuilder sb, PyObjectReprAsJavaStringNode reprNode, PyObjectStrAsJavaStringNode strNode) {
+            final PKeyword[] kw = partial.getKw();
+            for (int i = 0; i < kw.length; i++) {
+                if (i > 0) {
+                    PythonUtils.append(sb, ", ");
+                }
+                PythonUtils.append(sb, strNode.execute(frame, kw[i].getName()));
+                PythonUtils.append(sb, "=");
+                PythonUtils.append(sb, reprNode.execute(frame, kw[i].getValue()));
+            }
+        }
+
+        @Specialization
+        public static Object repr(VirtualFrame frame, PPartial partial,
+                        @Cached PyObjectStrAsJavaStringNode strNode,
+                        @Cached PyObjectReprAsJavaStringNode reprNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached TypeNodes.GetNameNode getNameNode) {
+            final Object klass = getClassNode.execute(partial);
+            final String name = getNameNode.execute(klass);
+            StringBuilder sb = PythonUtils.newStringBuilder(name);
+            PythonUtils.append(sb, "(");
+            PythonContext ctxt = PythonContext.get(getClassNode);
+            if (!ctxt.reprEnter(partial)) {
+                return "...";
+            }
+            try {
+                // pack the function
+                PythonUtils.append(sb, reprNode.execute(frame, partial.getFn()));
+                // pack positional arguments
+                PythonUtils.append(sb, ", ");
+                reprArgs(frame, partial, sb, reprNode);
+                // pack keyword arguments
+                PythonUtils.append(sb, ", ");
+                reprKwArgs(frame, partial, sb, reprNode, strNode);
+                PythonUtils.append(sb, ")");
+                return PythonUtils.sbToString(sb);
+            } finally {
+                ctxt.reprLeave(partial);
+            }
         }
     }
 }
