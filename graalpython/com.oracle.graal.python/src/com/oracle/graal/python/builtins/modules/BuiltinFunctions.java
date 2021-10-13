@@ -317,7 +317,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         static boolean doDict(VirtualFrame frame,
                               PDict hc,
                               @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashEntries(hc, frame, isTrueNode);
+            return true;
         }
 
         @Specialization
