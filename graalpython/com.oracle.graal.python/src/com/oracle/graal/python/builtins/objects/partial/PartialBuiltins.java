@@ -12,10 +12,15 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -23,6 +28,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -85,12 +91,36 @@ public class PartialBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PartialSetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public static Object setState(VirtualFrame frame, PPartial self, PTuple state,
+        public Object setState(VirtualFrame frame, PPartial self, PTuple state,
+                        @Cached ExpandKeywordStarargsNode starargsNode,
+                        @Cached SetDictNode setDictNode,
+                        @Cached SequenceNodes.GetSequenceStorageNode storageNode,
+                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode arrayNode,
+                        @Cached PyCallableCheckNode callableCheckNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode) {
             final Object function = getItemNode.execute(frame, state, 0);
             final Object fnArgs = getItemNode.execute(frame, state, 1);
             final Object fnKwargs = getItemNode.execute(frame, state, 2);
             final Object dict = getItemNode.execute(frame, state, 3);
+
+            if (!callableCheckNode.execute(function) ||
+                            !PGuards.isPTuple(fnArgs) ||
+                            (fnKwargs != PNone.NONE && !PGuards.isDict(fnKwargs))) {
+                throw raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
+            }
+
+            self.setFn(function);
+
+            assert fnArgs instanceof PTuple;
+            self.setArgs((PTuple) fnArgs, storageNode, arrayNode);
+
+            assert fnKwargs instanceof PDict;
+            self.setKw((PDict) fnKwargs, starargsNode);
+
+            if (dict != PNone.NONE) {
+                assert dict instanceof PDict;
+                setDictNode.execute(self, (PDict) dict);
+            }
 
             return PNone.NONE;
         }

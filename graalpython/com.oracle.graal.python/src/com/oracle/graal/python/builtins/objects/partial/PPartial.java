@@ -1,9 +1,12 @@
 package com.oracle.graal.python.builtins.objects.partial;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.object.Shape;
 
@@ -40,8 +43,9 @@ public final class PPartial extends PythonBuiltinObject {
         return argsTuple;
     }
 
-    public void setArgs(Object[] args) {
-        this.args = args;
+    public void setArgs(PTuple args, SequenceNodes.GetSequenceStorageNode storageNode, SequenceStorageNodes.GetInternalObjectArrayNode arrayNode) {
+        this.argsTuple = args;
+        this.args = arrayNode.execute(storageNode.execute(args));
     }
 
     public PKeyword[] getKw() {
@@ -55,7 +59,8 @@ public final class PPartial extends PythonBuiltinObject {
         return kwDict;
     }
 
-    public void setKw(PKeyword[] kw) {
-        this.kw = kw;
+    public void setKw(PDict kwArgs, ExpandKeywordStarargsNode expandNode) {
+        this.kwDict = kwArgs;
+        this.kw = expandNode.execute(kwArgs);
     }
 }
