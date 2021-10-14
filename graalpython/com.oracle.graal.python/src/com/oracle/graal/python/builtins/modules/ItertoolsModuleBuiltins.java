@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PChain;
 import com.oracle.graal.python.builtins.objects.itertools.PCount;
 import com.oracle.graal.python.builtins.objects.itertools.PIslice;
 import com.oracle.graal.python.builtins.objects.itertools.PPermutations;
+import com.oracle.graal.python.builtins.objects.itertools.PProduct;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
 import com.oracle.graal.python.builtins.objects.itertools.PStarmap;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
@@ -149,6 +150,30 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "lib.isLazyPythonClass(cls)")
         protected PPermutations construct(Object cls, Object[] arguments, PKeyword[] keywords, @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             return factory().createPermutations();
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        protected Object construct(Object cls, Object[] arguments, PKeyword[] keywords) {
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+        }
+    }
+
+    @Builtin(name = "product", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PProduct, doc = "Cartesian product of input iterables.\n\n" +
+                    "Equivalent to nested for-loops in a generator expression. For example,\n" + " ``product(A, B)`` returns the same as ``((x,y) for x in A for y in B)``.\n\n" +
+                    "The nested loops cycle like an odometer with the rightmost element advancing\n" + " on every iteration.  This pattern creates a lexicographic ordering so that if\n" +
+                    " the input's iterables are sorted, the product tuples are emitted in sorted\n" + " order.\n\n" + "To compute the product of an iterable with itself, specify the number of\n" +
+                    " repetitions with the optional *repeat* keyword argument.  For example,\n" + " ``product(A, repeat=4)`` means the same as ``product(A, A, A, A)``.\n\n" +
+                    "This function is equivalent to the following code, except that the\n" + " actual implementation does not build up intermediate results in memory::\n\n" +
+                    "def product(*args, **kwds):\n" + "\t# product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy\n" + "\t# product(range(2), repeat=3) --> 000 001 010 011 100 101 110 111\n" +
+                    "\tpools = map(tuple, args) * kwds.get('repeat', 1)\n" + "\tresult = [[]]\n" + "\tfor pool in pools:\n" + "\t\tresult = [x+[y] for x in result for y in pool]\n" +
+                    "\tfor prod in result:\n" + "\t\tyield tuple(prod)")
+    @GenerateNodeFactory
+    public abstract static class ProductNode extends PythonVarargsBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization(guards = "lib.isLazyPythonClass(cls)")
+        protected PProduct construct(Object cls, Object[] arguments, PKeyword[] keywords, @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+            return factory().createProduct();
         }
 
         @Fallback

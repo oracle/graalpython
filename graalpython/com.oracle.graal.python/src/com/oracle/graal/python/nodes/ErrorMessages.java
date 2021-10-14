@@ -46,6 +46,7 @@ public abstract class ErrorMessages {
     public static final String ARG_AFTER_MUST_BE_ITERABLE = "argument after * must be an iterable, not %p";
     public static final String ARG_AFTER_MUST_BE_MAPPING = "%s() argument after ** must be a mapping, not %p";
     public static final String ARG_CONVERTED_NOT_EXECUTABLE = "argument converted is not executable";
+    public static final String ARG_CANNOT_BE_NEGATIVE = "%s argument cannot be negative";
     public static final String ARG_D_MUST_BE_S = "%s arg %d must be a %s";
     public static final String ARG_D_MUST_BE_S_NOT_P = "%s argument %d must be %s, not %p";
     public static final String ARG_S_MUST_BE_S_NOT_P = "%s argument %s must be %s, not %p";
