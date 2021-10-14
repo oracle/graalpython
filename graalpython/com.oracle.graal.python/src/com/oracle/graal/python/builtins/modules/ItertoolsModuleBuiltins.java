@@ -39,6 +39,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IterNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.itertools.PAccumulate;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
 import com.oracle.graal.python.builtins.objects.itertools.PCount;
 import com.oracle.graal.python.builtins.objects.itertools.PIslice;
@@ -72,6 +73,24 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ItertoolsModuleBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = "accumulate", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PAccumulate, doc = "accumulate(iterable) --> accumulate object\n\nReturn series of accumulated sums.")
+    @GenerateNodeFactory
+    public abstract static class AcumulateNode extends PythonVarargsBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PAccumulate construct(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @Cached TypeNodes.IsTypeNode isTypeNode) {
+            return factory().createAccumulate();
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        protected Object notype(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+        }
     }
 
     @Builtin(name = "tee", minNumOfPositionalArgs = 1, parameterNames = {"iterable", "n"})

@@ -1,0 +1,196 @@
+/*
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * The Universal Permissive License (UPL), Version 1.0
+ *
+ * Subject to the condition set forth below, permission is hereby granted to any
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
+ *
+ * (a) the Software, and
+ *
+ * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
+ *
+ * without restriction, including without limitation the rights to copy, create
+ * derivative works of, display, perform, and distribute the Software and make,
+ * use, sell, offer for sale, import, export, have made, and have sold the
+ * Software and the Larger Work(s), and to sublicense the foregoing rights on
+ * either these or other terms.
+ *
+ * This license is subject to the following condition:
+ *
+ * The above copyright notice and either this complete permission notice or at a
+ * minimum a reference to the UPL must be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.oracle.graal.python.builtins.objects.itertools;
+
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
+
+import com.oracle.graal.python.builtins.Builtin;
+import java.util.List;
+
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
+
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.PAccumulate})
+public final class AccumulateBuiltins extends PythonBuiltins {
+
+    @Override
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
+        return AccumulateBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "iterable", "func", "initial"})
+    @GenerateNodeFactory
+    public abstract static class InitNode extends PythonQuaternaryBuiltinNode {
+        @Specialization
+        Object init(VirtualFrame frame, PAccumulate self, Object iterable, Object func, Object initial,
+                        @Cached PyObjectGetIter getIter) {
+            self.setIterable(getIter.execute(frame, iterable));
+            self.setFunc(func instanceof PNone ? null : func);
+            self.setTotal(PAccumulate.MARKER);
+            self.setInitial(initial instanceof PNone ? null : initial);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class IterNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object iter(PAccumulate self) {
+            return self;
+        }
+    }
+
+    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class NextNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object next(VirtualFrame frame, PAccumulate self,
+                        @Cached BuiltinFunctions.NextNode nextNode,
+                        @Cached BinaryArithmetic.AddNode addNode,
+                        @Cached CallNode callNode,
+                        @Cached BranchProfile hasInitialProfile,
+                        @Cached BranchProfile markerProfile,
+                        @Cached ConditionProfile hasFuncProfile) {
+
+            if (self.getInitial() != null) {
+                hasInitialProfile.enter();
+                self.setTotal(self.getInitial());
+                self.setInitial(null);
+                return self.getTotal();
+            }
+            Object value = nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
+            if (self.getTotal() == PAccumulate.MARKER) {
+                markerProfile.enter();
+                self.setTotal(value);
+                return value;
+            }
+            if (hasFuncProfile.profile(self.getFunc() == null)) {
+                self.setTotal(addNode.executeObject(frame, self.getTotal(), value));
+            } else {
+                self.setTotal(callNode.execute(self.getFunc(), self.getTotal(), value));
+            }
+            return self.getTotal();
+        }
+    }
+
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object reduce(VirtualFrame frame, PAccumulate self,
+                        @Cached GetClassNode getClassNode,
+                        @Cached BranchProfile hasInitialProfile,
+                        @Cached BranchProfile hasTotalProfile,
+                        @Cached BranchProfile elseProfile,
+                        @Cached PyObjectGetIter getIter) {
+            if (self.getInitial() != null) {
+                hasInitialProfile.enter();
+                Object type = getClassNode.execute(self);
+                PTuple inititalTuple = factory().createTuple(new Object[]{self.getInitial()});
+                PChain chain = factory().createChain();
+                chain.setSource(inititalTuple);
+                chain.setActive(self.getIterable());
+
+                PTuple tuple = factory().createTuple(new Object[]{chain, self.getFunc()});
+                return factory().createTuple(new Object[]{type, tuple, PNone.NONE});
+            } else if (self.getTotal() == PNone.NONE) {
+                hasTotalProfile.enter();
+                PChain chain = factory().createChain();
+                PList noneList = factory().createList(new Object[]{PNone.NONE});
+                Object noneIter = getIter.execute(frame, noneList);
+                chain.setSource(getIter.execute(frame, factory().createList(new Object[]{noneIter, self.getIterable()})));
+                chain.setActive(PNone.NONE);
+
+                PAccumulate accumulate = factory().createAccumulate();
+                accumulate.setIterable(chain);
+                accumulate.setFunc(self.getFunc());
+
+                PTuple tuple = factory().createTuple(new Object[]{accumulate, 1, PNone.NONE});
+                return factory().createTuple(new Object[]{PythonBuiltinClassType.PIslice, tuple});
+            } else {
+                elseProfile.enter();
+                Object type = getClassNode.execute(self);
+
+                Object func = self.getFunc() != null ? self.getFunc() : PNone.NONE;
+                PTuple tuple = factory().createTuple(new Object[]{self.getIterable(), func});
+
+                Object total = self.getTotal() != PAccumulate.MARKER || self.getTotal() != null ? self.getTotal() : PNone.NONE;
+                return factory().createTuple(new Object[]{type, tuple, total});
+            }
+        }
+    }
+
+    @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object setState(PAccumulate self, Object state) {
+            self.setTotal(state);
+            return PNone.NONE;
+        }
+    }
+
+}
