@@ -709,6 +709,7 @@ public abstract class ErrorMessages {
     public static final String METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P = "Method requires a 'bytes' object, got '%p'";
     public static final String FIRST_ARG_MUST_BE_BYTES_OR_A_TUPLE_OF_BYTES_NOT_P = "first arg must be bytes or a tuple of bytes, not %p";
     public static final String A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P = "a bytes-like object is required, not '%p'";
+    public static final String TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT = "type '%s' takes at least one argument";
     public static final String S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN = "%s() takes at least %d arguments (%d given)";
     public static final String S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN = "%s() takes at most %d arguments (%d given)";
     public static final String RES_O_O_RANGE = "%s result out of range";

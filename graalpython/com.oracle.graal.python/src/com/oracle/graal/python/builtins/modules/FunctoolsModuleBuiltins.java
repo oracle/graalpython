@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.nodes.ErrorMessages.REDUCE_EMPTY_SEQ;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_N_MUST_SUPPORT_ITERATION;
+import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT;
 
 import java.util.List;
 
@@ -154,37 +155,33 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
     }
 
     // functools.partial(func, /, *args, **keywords)
-    @Builtin(name = "partial", minNumOfPositionalArgs = 1, parameterNames = {"function"}, varArgsMarker = true, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PPartial, doc = "partial(func, *args, **keywords) - new function with partial application\n" +
+    @Builtin(name = "partial", minNumOfPositionalArgs = 1, varArgsMarker = true, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PPartial, doc = "partial(func, *args, **keywords) - new function with partial application\n" +
                     "of the given arguments and keywords.\n")
     @GenerateNodeFactory
     public abstract static class PartialNode extends PythonBuiltinNode {
-        protected boolean isPartial(Object func) {
-            return func instanceof PPartial;
+        protected boolean isPartialWithoutDict(GetDictIfExistsNode getDict, Object[] args) {
+            return getDict.execute(args[0]) == null && args[0] instanceof PPartial;
         }
 
-        protected boolean hasDict(GetDictIfExistsNode getDict, Object func) {
-            return getDict.execute(func) != null;
+        protected boolean atLeastOneArg(Object[] args) {
+            return args.length >= 1;
         }
 
-        protected boolean hasDictOrNotPartial(GetDictIfExistsNode getDict, Object func) {
-            return hasDict(getDict, func) || !isPartial(func);
-        }
-
-        abstract Object execute(Object cls, Object function, Object[] args, PKeyword[] keywords);
-
-        @Specialization(guards = "!hasDict(getDict, function)")
-        Object createFromPartialWoDict(Object cls, PPartial function, Object[] args, PKeyword[] keywords,
+        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args)"})
+        Object createFromPartialWoDict(Object cls, Object[] args, PKeyword[] keywords,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached ConditionProfile hasArgsProfile,
                         @Cached ConditionProfile hasKeywordsProfile) {
+            assert args[0] instanceof PPartial;
+            final PPartial function = (PPartial) args[0];
             final Object[] pArgs = function.getArgs();
             final PKeyword[] pKeywords = function.getKw();
 
             Object[] newArgs;
-            if (hasArgsProfile.profile(args.length > 0)) {
-                newArgs = new Object[pArgs.length + args.length];
+            if (hasArgsProfile.profile(args.length > 1)) {
+                newArgs = new Object[pArgs.length + args.length - 1];
                 PythonUtils.arraycopy(pArgs, 0, newArgs, 0, pArgs.length);
-                PythonUtils.arraycopy(args, 0, newArgs, pArgs.length, args.length);
+                PythonUtils.arraycopy(args, 1, newArgs, pArgs.length, args.length);
             } else {
                 newArgs = pArgs;
             }
@@ -201,15 +198,23 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
             return factory().createPartial(cls, function.getFn(), newArgs, newKeywords);
         }
 
-        @Specialization(guards = {"hasDictOrNotPartial(getDict, function)"})
-        Object createGeneric(Object cls, Object function, Object[] args, PKeyword[] keywords,
+        @Specialization(guards = {"atLeastOneArg(args)", "!isPartialWithoutDict(getDict, args)"})
+        Object createGeneric(Object cls, Object[] args, PKeyword[] keywords,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached PyCallableCheckNode callableCheckNode) {
+            Object function = args[0];
             if (!callableCheckNode.execute(function)) {
                 throw raise(PythonBuiltinClassType.TypeError, S_ARG_MUST_BE_CALLABLE, "the first");
             }
 
-            return factory().createPartial(cls, function, args, keywords);
+            final Object[] funcArgs = PythonUtils.arrayCopyOfRange(args, 1, args.length);
+            return factory().createPartial(cls, function, funcArgs, keywords);
+        }
+
+        @Specialization(guards = "!atLeastOneArg(args)")
+        @SuppressWarnings("unused")
+        Object noCallable(Object cls, Object[] args, PKeyword[] keywords) {
+            throw raise(PythonBuiltinClassType.TypeError, TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT, "partial");
         }
     }
 }
