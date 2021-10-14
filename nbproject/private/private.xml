@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-private xmlns="http://www.netbeans.org/ns/project-private/1">
+    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
+        <group>
+            <file>file:/home/petr/labs/python_peg_parser/README.md</file>
+            <file>file:/home/petr/labs/python_peg_parser/testData/tokenizer/goldenFiles/testFloat.token</file>
+            <file>file:/home/petr/labs/python_peg_parser/test/toyparser/ToyParserTest.java</file>
+            <file>file:/home/petr/labs/python_peg_parser/test/com/oracle/graal/python/parser/GenParserTest.java</file>
+            <file>file:/home/petr/labs/python_peg_parser/testData/tokenizer/goldenFiles/testComparison.token</file>
+            <file>file:/home/petr/labs/python_peg_parser/testData/tokenizer/generateGoldenFiles.py</file>
+            <file>file:/home/petr/labs/python_peg_parser/test/com/oracle/graal/python/tokenizer/TokenizerTest.java</file>
+        </group>
+    </open-files>
+</project-private>
