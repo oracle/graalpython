@@ -5,12 +5,7 @@
  */
 package com.oracle.graal.python.parser.tokenizer;
 
-import com.oracle.graal.python.parser.tokenizer.Token;
 
-/**
- *
- * @author petr
- */
 public class Tokenizer {
 
     private String text;

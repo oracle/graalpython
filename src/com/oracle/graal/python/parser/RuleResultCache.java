@@ -5,12 +5,11 @@
  */
 package com.oracle.graal.python.parser;
 
-import com.oracle.graal.python.parser.Parser;
 import java.util.HashMap;
 
 /**
- *
- * @author petr
+ * Cache that is used in the generated parser. 
+ * @param <T> 
  */
 public class RuleResultCache <T> {
 
