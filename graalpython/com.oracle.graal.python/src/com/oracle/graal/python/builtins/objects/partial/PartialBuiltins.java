@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.partial;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_PARTIAL_STATE;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -63,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
@@ -72,12 +75,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -107,6 +112,30 @@ public class PartialBuiltins extends PythonBuiltins {
             return self.getArgsTuple(factory());
         }
     }
+
+    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
+    public abstract static class PartialDictNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        protected Object getDict(PPartial self, @SuppressWarnings("unused") PNone mapping,
+                                 @Cached GetOrCreateDictNode getDict) {
+            return getDict.execute(self);
+        }
+
+        @Specialization
+        protected Object setDict(PPartial self, PDict mapping,
+                                 @Cached SetDictNode setDict) {
+            setDict.execute(self, mapping);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
+        protected Object setDict(@SuppressWarnings("unused") PPartial self, Object mapping) {
+            throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
+        }
+    }
+
 
     @Builtin(name = "keywords", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, doc = "dictionary of keyword arguments to future partial calls")
     @GenerateNodeFactory
