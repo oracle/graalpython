@@ -152,8 +152,14 @@ public class PartialBuiltins extends PythonBuiltins {
         @Specialization
         Object reduce(PPartial self,
                         @Cached GetClassNode getClassNode,
-                        @Cached GetDictIfExistsNode getDictIfExistsNode) {
-            final PDict dict = getDictIfExistsNode.execute(self);
+                        @Cached GetDictIfExistsNode getDictIfExistsNode,
+                        @Cached GetOrCreateDictNode getOrCreateDictNode) {
+            final PDict dict;
+            if (self.getShape().getPropertyCount() > 0) {
+                dict = getOrCreateDictNode.execute(self);
+            } else {
+                dict = getDictIfExistsNode.execute(self);
+            }
             return factory().createTuple(new Object[]{
                             getClassNode.execute(self),
                             factory().createTuple(new Object[]{self.getFn()}),
@@ -171,7 +177,12 @@ public class PartialBuiltins extends PythonBuiltins {
                         @Cached SequenceNodes.GetSequenceStorageNode storageNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode arrayNode,
                         @Cached PyCallableCheckNode callableCheckNode,
-                        @Cached TupleBuiltins.GetItemNode getItemNode) {
+                        @Cached TupleBuiltins.GetItemNode getItemNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
+            if (lenNode.execute(state.getSequenceStorage()) != 4) {
+                throw raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
+            }
+
             final Object function = getItemNode.execute(frame, state, 0);
             final Object fnArgs = getItemNode.execute(frame, state, 1);
             final Object fnKwargs = getItemNode.execute(frame, state, 2);
@@ -209,6 +220,15 @@ public class PartialBuiltins extends PythonBuiltins {
     @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PartialCallNode extends PythonVarargsBuiltinNode {
+        private int indexOf(PKeyword[] keywords, PKeyword kw) {
+            for (int i = 0; i < keywords.length; i ++) {
+                if (keywords[i].getName().equals(kw.getName())) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         @Specialization
         Object call(VirtualFrame frame, PPartial self, Object[] args, PKeyword[] keywords,
                         @Cached ConditionProfile hasArgsProfile,
@@ -229,7 +249,18 @@ public class PartialBuiltins extends PythonBuiltins {
             if (hasKeywordsProfile.profile(keywords.length > 0)) {
                 callKeywords = new PKeyword[pKeywords.length + keywords.length];
                 PythonUtils.arraycopy(pKeywords, 0, callKeywords, 0, pKeywords.length);
-                PythonUtils.arraycopy(keywords, 0, callKeywords, pKeywords.length, keywords.length);
+                int kwIndex = pKeywords.length;
+                // check for overriding keywords and store the new ones
+                for (PKeyword kw: keywords) {
+                    int idx = indexOf(pKeywords, kw);
+                    if (idx == -1) {
+                        callKeywords[kwIndex] = kw;
+                        kwIndex += 1;
+                    } else {
+                        callKeywords[idx] = kw;
+                    }
+                }
+                callKeywords = PythonUtils.arrayCopyOfRange(callKeywords, 0, kwIndex);
             } else {
                 callKeywords = pKeywords;
             }
