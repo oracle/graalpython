@@ -17,9 +17,9 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
@@ -88,7 +88,7 @@ public class PartialBuiltins extends PythonBuiltins {
             return factory().createTuple(new Object[]{
                             getClassNode.execute(self),
                             factory().createTuple(new Object[]{self.getFn()}),
-                            factory().createTuple(new Object[]{self.getFn(), self.getArgs(), self.getKw(), (dict != null) ? dict : PNone.NONE})});
+                            factory().createTuple(new Object[]{self.getFn(), self.getArgsTuple(factory()), self.getKwDict(factory()), (dict != null) ? dict : PNone.NONE})});
         }
     }
 
@@ -173,24 +173,18 @@ public class PartialBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PartialReprNode extends PythonUnaryBuiltinNode {
         private static void reprArgs(VirtualFrame frame, PPartial partial, StringBuilder sb, PyObjectReprAsJavaStringNode reprNode) {
-            final Object[] args = partial.getArgs();
-            for (int i = 0; i < args.length; i++) {
-                if (i > 0) {
-                    PythonUtils.append(sb, ", ");
-                }
-                PythonUtils.append(sb, reprNode.execute(frame, args[i]));
+            for (Object arg : partial.getArgs()) {
+                PythonUtils.append(sb, ", ");
+                PythonUtils.append(sb, reprNode.execute(frame, arg));
             }
         }
 
         private static void reprKwArgs(VirtualFrame frame, PPartial partial, StringBuilder sb, PyObjectReprAsJavaStringNode reprNode, PyObjectStrAsJavaStringNode strNode) {
-            final PKeyword[] kw = partial.getKw();
-            for (int i = 0; i < kw.length; i++) {
-                if (i > 0) {
-                    PythonUtils.append(sb, ", ");
-                }
-                PythonUtils.append(sb, strNode.execute(frame, kw[i].getName()));
+            for (PKeyword pKeyword : partial.getKw()) {
+                PythonUtils.append(sb, ", ");
+                PythonUtils.append(sb, strNode.execute(frame, pKeyword.getName()));
                 PythonUtils.append(sb, "=");
-                PythonUtils.append(sb, reprNode.execute(frame, kw[i].getValue()));
+                PythonUtils.append(sb, reprNode.execute(frame, pKeyword.getValue()));
             }
         }
 
@@ -198,24 +192,17 @@ public class PartialBuiltins extends PythonBuiltins {
         public static Object repr(VirtualFrame frame, PPartial partial,
                         @Cached PyObjectStrAsJavaStringNode strNode,
                         @Cached PyObjectReprAsJavaStringNode reprNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached TypeNodes.GetNameNode getNameNode) {
-            final Object klass = getClassNode.execute(partial);
-            final String name = getNameNode.execute(klass);
+                        @Cached ObjectNodes.GetFullyQualifiedClassNameNode classNameNode) {
+            final String name = classNameNode.execute(frame, partial);
             StringBuilder sb = PythonUtils.newStringBuilder(name);
             PythonUtils.append(sb, "(");
-            PythonContext ctxt = PythonContext.get(getClassNode);
+            PythonContext ctxt = PythonContext.get(classNameNode);
             if (!ctxt.reprEnter(partial)) {
                 return "...";
             }
             try {
-                // pack the function
                 PythonUtils.append(sb, reprNode.execute(frame, partial.getFn()));
-                // pack positional arguments
-                PythonUtils.append(sb, ", ");
                 reprArgs(frame, partial, sb, reprNode);
-                // pack keyword arguments
-                PythonUtils.append(sb, ", ");
                 reprKwArgs(frame, partial, sb, reprNode, strNode);
                 PythonUtils.append(sb, ")");
                 return PythonUtils.sbToString(sb);
