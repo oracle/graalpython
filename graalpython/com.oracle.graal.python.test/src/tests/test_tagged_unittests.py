@@ -83,7 +83,7 @@ def make_test_function(working_test):
             cmd.append("--inspect")
         if "-debug-java" in sys.argv:
             cmd.append("-debug-java")
-        cmd += [RUNNER]
+        cmd += [RUNNER, "-v"]
         for testpattern in working_test[1]:
             cmd.extend(["-k", testpattern])
         print("Running test:", working_test[0])
