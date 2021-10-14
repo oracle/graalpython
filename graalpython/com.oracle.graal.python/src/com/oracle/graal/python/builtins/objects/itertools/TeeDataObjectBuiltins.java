@@ -128,13 +128,7 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
                         @Cached BranchProfile numreadTooHighProfile,
                         @Cached BranchProfile nxtNotDOProfile,
                         @Cached BranchProfile nxtNotNoneProfile) {
-            self.setIt(it);
-
             int numread = (int) lenNode.execute(frame, values);
-            Object[] valuesArray = getStorageNode.execute(values).getInternalArray();
-            Object[] obj = new Object[LINKCELLS];
-            PythonUtils.arraycopy(valuesArray, 0, obj, 0, numread);
-            self.setValues(obj);
             if (numread == LINKCELLS) {
                 numreadLCProfile.enter();
                 if (!(nxt instanceof PTeeDataObject)) {
@@ -148,6 +142,11 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
                 nxtNotNoneProfile.enter();
                 throw raise(ValueError, TDATAOBJECT_SHOULDNT_HAVE_NEXT);
             }
+            self.setIt(it);
+            Object[] valuesArray = getStorageNode.execute(values).getInternalArray();
+            Object[] obj = new Object[LINKCELLS];
+            PythonUtils.arraycopy(valuesArray, 0, obj, 0, numread);
+            self.setValues(obj);
             self.setNumread(numread);
             self.setRunning(false);
             self.setNextlink(nxt == PNone.NONE ? null : (PTeeDataObject) nxt);
