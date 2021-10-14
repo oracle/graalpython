@@ -130,7 +130,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
         protected PTeeDataObject construct(Object cls, Object[] arguments, PKeyword[] keywords,
-                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
+                        @Cached TypeNodes.IsTypeNode isTypeNode) {
             return factory().createTeeDataObject();
         }
 
@@ -147,8 +147,9 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PermutationsNode extends PythonVarargsBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "lib.isLazyPythonClass(cls)")
-        protected PPermutations construct(Object cls, Object[] arguments, PKeyword[] keywords, @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PPermutations construct(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @Cached TypeNodes.IsTypeNode isTypeNode) {
             return factory().createPermutations();
         }
 
@@ -171,8 +172,9 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ProductNode extends PythonVarargsBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "lib.isLazyPythonClass(cls)")
-        protected PProduct construct(Object cls, Object[] arguments, PKeyword[] keywords, @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PProduct construct(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @Cached TypeNodes.IsTypeNode isTypeNode) {
             return factory().createProduct();
         }
 
@@ -190,7 +192,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
         protected PRepeat construct(Object cls, Object[] arguments, PKeyword[] keywords,
-                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
+                        @Cached TypeNodes.IsTypeNode isTypeNode) {
             return factory().createRepeat();
         }
 
@@ -208,7 +210,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
         protected PChain construct(Object cls, Object[] arguments, PKeyword[] keywords,
-                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
+                        @Cached TypeNodes.IsTypeNode isTypeNode) {
             return factory().createChain();
         }
 
@@ -223,8 +225,9 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CountNode extends PythonVarargsBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "lib.isLazyPythonClass(cls)")
-        protected PCount construct(Object cls, Object[] arguments, PKeyword[] keywords, @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PCount construct(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @Cached TypeNodes.IsTypeNode isTypeNode) {
             return factory().createCount();
         }
 
@@ -241,8 +244,9 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class StarmapNode extends PythonVarargsBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "lib.isLazyPythonClass(cls)")
-        protected PStarmap construct(Object cls, Object[] arguments, PKeyword[] keywords, @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PStarmap construct(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @Cached TypeNodes.IsTypeNode isTypeNode) {
             return factory().createStarmap();
         }
 
@@ -257,8 +261,9 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsliceNode extends PythonVarargsBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "lib.isLazyPythonClass(cls)")
-        protected PIslice construct(Object cls, Object[] arguments, PKeyword[] keywords, @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PIslice construct(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @Cached TypeNodes.IsTypeNode isTypeNode) {
             return factory().createIslice();
         }
 
