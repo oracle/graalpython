@@ -182,7 +182,7 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
             if (hasArgsProfile.profile(args.length > 1)) {
                 newArgs = new Object[pArgs.length + args.length - 1];
                 PythonUtils.arraycopy(pArgs, 0, newArgs, 0, pArgs.length);
-                PythonUtils.arraycopy(args, 1, newArgs, pArgs.length, args.length);
+                PythonUtils.arraycopy(args, 1, newArgs, pArgs.length, args.length - 1);
             } else {
                 newArgs = pArgs;
             }
