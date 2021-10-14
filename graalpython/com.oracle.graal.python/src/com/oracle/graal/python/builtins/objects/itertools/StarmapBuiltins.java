@@ -92,7 +92,7 @@ public final class StarmapBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object iter(PStarmap self) {
+        static Object iter(PStarmap self) {
             return self;
         }
     }
@@ -101,7 +101,7 @@ public final class StarmapBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object nextPos(VirtualFrame frame, PStarmap self,
+        static Object nextPos(VirtualFrame frame, PStarmap self,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached CallNode callNode,
                         @Cached ExecutePositionalStarargsNode getArgsNode) {

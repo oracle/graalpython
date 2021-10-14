@@ -168,7 +168,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object iter(PPermutations self) {
+        static Object iter(PPermutations self) {
             return self;
         }
     }

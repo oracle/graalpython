@@ -215,7 +215,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object iter(PIslice self) {
+        static Object iter(PIslice self) {
             return self;
         }
     }

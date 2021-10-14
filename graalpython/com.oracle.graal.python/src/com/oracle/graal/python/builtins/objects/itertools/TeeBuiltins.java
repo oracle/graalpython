@@ -125,7 +125,7 @@ public final class TeeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object iter(PTee self) {
+        static Object iter(PTee self) {
             return self;
         }
     }

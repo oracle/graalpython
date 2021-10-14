@@ -96,21 +96,21 @@ public final class RepeatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object initNone(PRepeat self, Object object, @SuppressWarnings("unused") PNone times) {
+        static Object initNone(PRepeat self, Object object, @SuppressWarnings("unused") PNone times) {
             self.setElement(object);
             self.setCnt(-1);
             return PNone.NONE;
         }
 
         @Specialization(guards = "times < 0")
-        Object initNeg(PRepeat self, Object object, @SuppressWarnings("unused") int times) {
+        static Object initNeg(PRepeat self, Object object, @SuppressWarnings("unused") int times) {
             self.setElement(object);
             self.setCnt(0);
             return PNone.NONE;
         }
 
         @Specialization(guards = "times >= 0")
-        Object init(PRepeat self, Object object, int times) {
+        static Object init(PRepeat self, Object object, int times) {
             self.setElement(object);
             self.setCnt(times);
             return PNone.NONE;
@@ -128,7 +128,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object iter(PRepeat self) {
+        static Object iter(PRepeat self) {
             return self;
         }
     }
@@ -137,7 +137,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getCnt() > 0")
-        Object nextPos(PRepeat self) {
+        static Object nextPos(PRepeat self) {
             self.setCnt(self.getCnt() - 1);
             return self.getElement();
         }
@@ -149,7 +149,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.getCnt() < 0")
-        Object nextNeg(PRepeat self) {
+        static Object nextNeg(PRepeat self) {
             return self.getElement();
         }
     }
@@ -158,7 +158,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LengthHintNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getCnt() >= 0")
-        Object hintPos(PRepeat self) {
+        static Object hintPos(PRepeat self) {
             return self.getCnt();
         }
 

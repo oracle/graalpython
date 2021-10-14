@@ -105,7 +105,7 @@ public final class ChainBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object iter(PChain self) {
+        static Object iter(PChain self) {
             return self;
         }
     }
