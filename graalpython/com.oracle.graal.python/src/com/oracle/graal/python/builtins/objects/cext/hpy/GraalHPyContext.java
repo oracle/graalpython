@@ -197,7 +197,6 @@ import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -772,7 +771,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     @CompilationFinal private RootCallTarget referenceCleanerCallTarget;
     private Thread hpyReferenceCleanerThread;
 
-    private PythonObjectSlowPathFactory slowPathFactory;
+    private PythonObjectFactory slowPathFactory;
 
     public GraalHPyContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, GraalHPyConversionNodeSupplier.HANDLE);
@@ -1301,9 +1300,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
      * Returns a Python object factory that should only be used on the slow path. The factory object
      * is initialized lazily.
      */
-    private PythonObjectSlowPathFactory factory() {
+    private PythonObjectFactory factory() {
         if (slowPathFactory == null) {
-            slowPathFactory = new PythonObjectSlowPathFactory(getContext().getAllocationReporter());
+            slowPathFactory = getContext().getCore().factory();
         }
         return slowPathFactory;
     }

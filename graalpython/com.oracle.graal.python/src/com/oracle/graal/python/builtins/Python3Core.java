@@ -44,6 +44,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -606,7 +607,7 @@ public final class Python3Core implements ParserErrorCallback {
      */
     private volatile boolean initialized;
 
-    private final PythonObjectFactory objectFactory = PythonObjectFactory.getUncached();
+    private PythonObjectSlowPathFactory objectFactory;
 
     public Python3Core(PythonParser parser, boolean isNativeSupportAllowed) {
         this.parser = parser;
@@ -643,6 +644,7 @@ public final class Python3Core implements ParserErrorCallback {
      */
     public void initialize(PythonContext context) {
         singletonContext = context;
+        objectFactory = new PythonObjectSlowPathFactory(context.getAllocationReporter());
         initializeJavaCore();
         initializePython3Core(context.getCoreHomeOrFail());
         assert SpecialMethodSlot.checkSlotOverrides(this);
