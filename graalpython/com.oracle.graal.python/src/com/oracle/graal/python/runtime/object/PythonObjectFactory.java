@@ -115,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.itertools.PAccumulate;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
 import com.oracle.graal.python.builtins.objects.itertools.PCount;
+import com.oracle.graal.python.builtins.objects.itertools.PDropwhile;
 import com.oracle.graal.python.builtins.objects.itertools.PIslice;
 import com.oracle.graal.python.builtins.objects.itertools.PPermutations;
 import com.oracle.graal.python.builtins.objects.itertools.PProduct;
@@ -1182,6 +1183,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PAccumulate createAccumulate() {
         return trace(new PAccumulate(PythonBuiltinClassType.PAccumulate, PythonBuiltinClassType.PAccumulate.getInstanceShape(getLanguage())));
+    }
+
+    public final PDropwhile createDropwhile() {
+        return trace(new PDropwhile(PythonBuiltinClassType.PDropwhile, PythonBuiltinClassType.PDropwhile.getInstanceShape(getLanguage())));
     }
 
     public final PTee createTee() {

@@ -23,36 +23,6 @@
 # DEALINGS IN THE SOFTWARE.
 import sys
 
-class dropwhile(object):
-    """
-    dropwhile(predicate, iterable) --> dropwhile object
-
-    Drop items from the iterable while predicate(item) is true.
-    Afterwards, return every element until the iterable is exhausted.
-    """
-
-    @__graalpython__.builtin_method
-    def __init__(self, predicate, iterable):
-        self.predicate = predicate
-        self.iterable = iter(iterable)
-        self.done_dropping = False
-
-    @__graalpython__.builtin_method
-    def __iter__(self):
-        return self
-
-    @__graalpython__.builtin_method
-    def __next__(self):
-        while not self.done_dropping:
-            n = next(self.iterable)
-            if self.predicate(n):
-                continue
-            else:
-                self.done_dropping = True
-                return n
-        return next(self.iterable)
-
-
 class filterfalse(object):
     """
     filterfalse(function or None, sequence) --> filterfalse object

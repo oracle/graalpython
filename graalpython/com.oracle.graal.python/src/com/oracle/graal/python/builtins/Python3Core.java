@@ -198,6 +198,7 @@ import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltin
 import com.oracle.graal.python.builtins.objects.itertools.AccumulateBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ChainBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CountBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.DropwhileBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.IsliceBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.PermutationsBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ProductBuiltins;
@@ -506,6 +507,7 @@ public abstract class Python3Core extends ParserErrorCallback {
 
                         // itertools
                         new AccumulateBuiltins(),
+                        new DropwhileBuiltins(),
                         new ChainBuiltins(),
                         new CountBuiltins(),
                         new IsliceBuiltins(),
