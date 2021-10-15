@@ -576,7 +576,8 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary
-    public static void createConstructor(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Class<?> nodeClass, Supplier<PythonBuiltinBaseNode> nodeSupplier, Object... callTargetCacheKeys) {
+    public static void createConstructor(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Class<?> nodeClass, Supplier<PythonBuiltinBaseNode> nodeSupplier,
+                    Object... callTargetCacheKeys) {
         Builtin builtin = nodeClass.getAnnotation(Builtin.class);
         assert __NEW__.equals(builtin.name());
         assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);

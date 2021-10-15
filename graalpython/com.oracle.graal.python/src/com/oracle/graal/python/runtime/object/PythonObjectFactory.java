@@ -211,7 +211,8 @@ import com.oracle.truffle.api.object.Shape;
  * repeated context lookups inside the factory.</li>
  * <li>When the current context is not available, but multiple objects will be created: lookup the
  * context and use {@link Python3Core#factory()}. This executes only one context lookup. Note: first
- * check if the caller could pass the context to avoid looking it up behind {@code TruffleBoundary}.</li>
+ * check if the caller could pass the context to avoid looking it up behind {@code TruffleBoundary}.
+ * </li>
  * <li>When the current context is not available, and only one object is to be created: use
  * {@link PythonObjectFactory#getUncached()}.</li>
  * </ul>

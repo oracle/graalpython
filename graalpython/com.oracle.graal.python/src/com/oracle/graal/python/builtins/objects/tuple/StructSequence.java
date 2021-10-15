@@ -69,7 +69,6 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.Disa
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.NewNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.ReduceNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.ReprNodeGen;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.ReprNode;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
@@ -277,11 +276,13 @@ public class StructSequence {
         PythonUtils.createMember(factory, language, klass, GetStructMemberNode.class, name, doc, idx, (l) -> new GetStructMemberNode(l, idx));
     }
 
-    private static void createMethod(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Descriptor desc, Class<?> nodeClass, Function<Descriptor, PythonBuiltinBaseNode> nodeSupplier) {
+    private static void createMethod(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Descriptor desc, Class<?> nodeClass,
+                    Function<Descriptor, PythonBuiltinBaseNode> nodeSupplier) {
         PythonUtils.createMethod(factory, language, klass, nodeClass, PythonBuiltinClassType.PTuple, 0, () -> nodeSupplier.apply(desc), desc);
     }
 
-    private static void createConstructor(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Descriptor desc, Class<?> nodeClass, Function<Descriptor, PythonBuiltinBaseNode> nodeSupplier) {
+    private static void createConstructor(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Descriptor desc, Class<?> nodeClass,
+                    Function<Descriptor, PythonBuiltinBaseNode> nodeSupplier) {
         PythonUtils.createConstructor(factory, language, klass, nodeClass, () -> nodeSupplier.apply(desc), desc);
     }
 
