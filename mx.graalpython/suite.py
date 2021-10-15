@@ -5,7 +5,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "5.303.0",
+    "mxversion": "5.311.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -466,7 +466,6 @@ suite = {
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"
             },
-            "sourcesPath": "graalpython.src.zip",
             "description": "GraalPython engine",
         },
 
@@ -474,7 +473,6 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.processor",
             ],
-            "sourcesPath": "graalpython-processor.src.zip",
             "description": "GraalPython Java annotations processor",
             "overlaps": ["GRAALPYTHON"], # sharing the annotations
         },
@@ -496,7 +494,6 @@ suite = {
                 "GRAALPYTHON-LAUNCHER",
                 "truffle:TRUFFLE_TCK",
             ],
-            "sourcesPath": "graalpython.tests.src.zip",
             "testDistribution": True,
         },
 
@@ -509,7 +506,6 @@ suite = {
                 "GRAALPYTHON-LAUNCHER",
                 "sdk:GRAAL_SDK",
             ],
-            "sourcesPath": "graalpython.bench.src.zip",
             "testDistribution" : True,
             "maven": False,
         },
@@ -523,7 +519,6 @@ suite = {
             "distDependencies": [
                 "sdk:POLYGLOT_TCK",
             ],
-            "sourcesPath": "graalpython.tests.src.zip",
             "testDistribution": True,
         },
 

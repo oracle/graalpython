@@ -18,7 +18,6 @@
 *graalpython.lib-python.3.test.test_fileio.CAutoFileTests.testOpenDirFD
 *graalpython.lib-python.3.test.test_fileio.CAutoFileTests.testOpendir
 *graalpython.lib-python.3.test.test_fileio.CAutoFileTests.testReadintoByteArray
-*graalpython.lib-python.3.test.test_fileio.CAutoFileTests.testRecursiveRepr
 *graalpython.lib-python.3.test.test_fileio.CAutoFileTests.testRepr
 *graalpython.lib-python.3.test.test_fileio.CAutoFileTests.testReprNoCloseFD
 *graalpython.lib-python.3.test.test_fileio.CAutoFileTests.testSeekTell
@@ -65,7 +64,6 @@
 *graalpython.lib-python.3.test.test_fileio.PyAutoFileTests.testOpenDirFD
 *graalpython.lib-python.3.test.test_fileio.PyAutoFileTests.testOpendir
 *graalpython.lib-python.3.test.test_fileio.PyAutoFileTests.testReadintoByteArray
-*graalpython.lib-python.3.test.test_fileio.PyAutoFileTests.testRecursiveRepr
 *graalpython.lib-python.3.test.test_fileio.PyAutoFileTests.testRepr
 *graalpython.lib-python.3.test.test_fileio.PyAutoFileTests.testReprNoCloseFD
 *graalpython.lib-python.3.test.test_fileio.PyAutoFileTests.testSeekTell

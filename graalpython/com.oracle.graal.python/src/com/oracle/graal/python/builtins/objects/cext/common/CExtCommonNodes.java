@@ -312,7 +312,7 @@ public abstract class CExtCommonNodes {
         // most common cases (decoding from native pointer) are first
 
         @Specialization(guards = "!isNativeWrapper(arr)", rewriteOn = UnexpectedCodepointException.class)
-        static String doUnicodeBMP(Object arr, @SuppressWarnings("unused") int elementSize,
+        static String doUnicodeBMP(Object arr, int elementSize,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @CachedLibrary(limit = "1") InteropLibrary elemLib,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) throws UnexpectedCodepointException {
@@ -321,7 +321,7 @@ public abstract class CExtCommonNodes {
                     throw raiseNode.raise(SystemError, ErrorMessages.PROVIDED_OBJ_NOT_ARRAY);
                 }
                 long arraySize = lib.getArraySize(arr);
-                char[] chars = readUnicodeBMPWithSize(lib, elemLib, arr, PInt.intValueExact(arraySize));
+                char[] chars = readUnicodeBMPWithSize(lib, elemLib, arr, PInt.intValueExact(arraySize), elementSize);
                 return PythonUtils.newString(chars);
             } catch (OverflowException e) {
                 throw raiseNode.raise(ValueError, ErrorMessages.ARRAY_SIZE_TOO_LARGE);
@@ -333,7 +333,7 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(guards = "!isNativeWrapper(arr)", replaces = "doUnicodeBMP")
-        static String doUnicode(Object arr, @SuppressWarnings("unused") int elementSize,
+        static String doUnicode(Object arr, int elementSize,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @CachedLibrary(limit = "1") InteropLibrary elemLib,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
@@ -342,7 +342,7 @@ public abstract class CExtCommonNodes {
                     throw raiseNode.raise(SystemError, ErrorMessages.PROVIDED_OBJ_NOT_ARRAY);
                 }
                 long arraySize = lib.getArraySize(arr);
-                int[] codePoints = readWithSize(lib, elemLib, arr, PInt.intValueExact(arraySize));
+                int[] codePoints = readWithSize(lib, elemLib, arr, PInt.intValueExact(arraySize), elementSize);
                 return PythonUtils.newString(codePoints, 0, codePoints.length);
             } catch (OverflowException e) {
                 throw raiseNode.raise(ValueError, ErrorMessages.ARRAY_SIZE_TOO_LARGE);
@@ -478,6 +478,37 @@ public abstract class CExtCommonNodes {
         }
 
         /**
+         * Get a single Unicode codepoint from an interop array at the given offset.
+         *
+         * @param array The interop array.
+         * @param arrayLibrary An interop library for the {@code array} parameter.
+         * @param elementLibrary An interop library to convert the {@code array} parameter's
+         *            elements into integers.
+         * @param offset The interop array index to read from.
+         * @param sizeofWchar {@code sizeof(wchar_t)}. For performance reasons, this value should be
+         *            PE-constant. Valid values are {@code 1, 2, 4}.
+         * @return The Unicode codepoint.
+         */
+        private static int getCodepoint(Object array, InteropLibrary arrayLibrary, InteropLibrary elementLibrary, int offset, int sizeofWchar) {
+            try {
+                switch (sizeofWchar) {
+                    case 1:
+                        return elementLibrary.asInt(arrayLibrary.readArrayElement(array, offset)) & 0xff;
+                    case 2:
+                        return elementLibrary.asInt(arrayLibrary.readArrayElement(array, offset)) & 0xffff;
+                    case 4:
+                        return elementLibrary.asInt(arrayLibrary.readArrayElement(array, offset));
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                /*
+                 * This should not be reached because that's checked using the appropriate interop
+                 * messages in the caller.
+                 */
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        /**
          * Very much like {@link #decodeBytesBMP(byte[], int)} but reads from an interop array
          * rather than from a Java array.
          * 
@@ -485,26 +516,18 @@ public abstract class CExtCommonNodes {
          * @param elemLib InteropLibrary for the elements of the interop array.
          * @param arr The interop array.
          * @param size The size of the interop array (must be {@code arrLib.getArraySize(arr)}).
+         * @param elementSize The size of the interop array's elements in bytes. Valid values are
+         *            {@code 1, 2, 4}.
          * @return The code points as Java characters.
          * @throws UnsupportedMessageException Thrown if an element of the interop array cannot be
          *             converted to an integer.
          * @throws UnexpectedCodepointException
          */
-        private static char[] readUnicodeBMPWithSize(InteropLibrary arrLib, InteropLibrary elemLib, Object arr, int size)
+        private static char[] readUnicodeBMPWithSize(InteropLibrary arrLib, InteropLibrary elemLib, Object arr, int size, int elementSize)
                         throws UnsupportedMessageException, UnexpectedCodepointException {
             char[] decoded = new char[size];
             for (int i = 0; i < size; i++) {
-                Object elem;
-                try {
-                    elem = arrLib.readArrayElement(arr, i);
-                } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                    /*
-                     * This should not be reached because that's checked using the appropriate
-                     * interop messages in the caller.
-                     */
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-                int ielem = elemLib.asInt(elem);
+                int ielem = getCodepoint(arr, arrLib, elemLib, i, elementSize);
                 if (Character.isBmpCodePoint(ielem)) {
                     decoded[i] = (char) ielem;
                 } else {
@@ -515,20 +538,10 @@ public abstract class CExtCommonNodes {
             return decoded;
         }
 
-        private static int[] readWithSize(InteropLibrary arrLib, InteropLibrary elemLib, Object arr, int size) throws UnsupportedMessageException {
+        private static int[] readWithSize(InteropLibrary arrLib, InteropLibrary elemLib, Object arr, int size, int elementSize) {
             int[] codePoints = new int[size];
             for (int i = 0; i < codePoints.length; i++) {
-                Object elem;
-                try {
-                    elem = arrLib.readArrayElement(arr, i);
-                } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                    /*
-                     * This should not be reached because that's checked using the appropriate
-                     * interop messages in the caller.
-                     */
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-                codePoints[i] = elemLib.asInt(elem);
+                codePoints[i] = getCodepoint(arr, arrLib, elemLib, i, elementSize);
             }
             return codePoints;
         }

@@ -50,11 +50,8 @@ import com.ibm.icu.lang.UProperty;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -165,11 +162,6 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
         builtinConstants.put("unidata_version", getUnicodeVersion());
-        PythonBuiltinClass objectType = core.lookupType(PythonBuiltinClassType.PythonObject);
-        PythonObject ucd_3_2_0 = core.factory().createPythonObject(objectType);
-        ucd_3_2_0.setAttribute("unidata_version", "3.2.0");
-        builtinConstants.put("ucd_3_2_0", ucd_3_2_0); // TODO this is a fake object, just satisfy
-                                                      // pip installer import
     }
 
     // unicodedata.normalize(form, unistr)

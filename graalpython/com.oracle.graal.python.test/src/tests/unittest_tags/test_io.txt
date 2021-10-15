@@ -62,7 +62,6 @@
 *graalpython.lib-python.3.test.test_io.CBufferedRandomTest.test_readinto_array
 *graalpython.lib-python.3.test.test_io.CBufferedRandomTest.test_readlines
 *graalpython.lib-python.3.test.test_io.CBufferedRandomTest.test_readonly_attributes
-*graalpython.lib-python.3.test.test_io.CBufferedRandomTest.test_recursive_repr
 *graalpython.lib-python.3.test.test_io.CBufferedRandomTest.test_repr
 *graalpython.lib-python.3.test.test_io.CBufferedRandomTest.test_seek_and_tell
 *graalpython.lib-python.3.test.test_io.CBufferedRandomTest.test_sizeof
@@ -122,7 +121,6 @@
 *graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_readinto_array
 *graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_readlines
 *graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_readonly_attributes
-*graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_recursive_repr
 *graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_repr
 *graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_sizeof
 *graalpython.lib-python.3.test.test_io.CBufferedReaderTest.test_threads
@@ -149,7 +147,6 @@
 *graalpython.lib-python.3.test.test_io.CBufferedWriterTest.test_nonnormalized_close_error_on_close
 *graalpython.lib-python.3.test.test_io.CBufferedWriterTest.test_override_destructor
 *graalpython.lib-python.3.test.test_io.CBufferedWriterTest.test_readonly_attributes
-*graalpython.lib-python.3.test.test_io.CBufferedWriterTest.test_recursive_repr
 *graalpython.lib-python.3.test.test_io.CBufferedWriterTest.test_repr
 *graalpython.lib-python.3.test.test_io.CBufferedWriterTest.test_sizeof
 *graalpython.lib-python.3.test.test_io.CBufferedWriterTest.test_slow_close_from_thread
@@ -298,7 +295,6 @@
 *graalpython.lib-python.3.test.test_io.CTextIOWrapperTest.test_reconfigure_write_fromascii
 *graalpython.lib-python.3.test.test_io.CTextIOWrapperTest.test_reconfigure_write_non_seekable
 *graalpython.lib-python.3.test.test_io.CTextIOWrapperTest.test_reconfigure_write_through
-*graalpython.lib-python.3.test.test_io.CTextIOWrapperTest.test_recursive_repr
 *graalpython.lib-python.3.test.test_io.CTextIOWrapperTest.test_repr
 *graalpython.lib-python.3.test.test_io.CTextIOWrapperTest.test_rwpair_cleared_before_textio
 *graalpython.lib-python.3.test.test_io.CTextIOWrapperTest.test_seek_and_tell
@@ -374,7 +370,6 @@
 *graalpython.lib-python.3.test.test_io.PyBufferedRandomTest.test_readinto_array
 *graalpython.lib-python.3.test.test_io.PyBufferedRandomTest.test_readlines
 *graalpython.lib-python.3.test.test_io.PyBufferedRandomTest.test_readonly_attributes
-*graalpython.lib-python.3.test.test_io.PyBufferedRandomTest.test_recursive_repr
 *graalpython.lib-python.3.test.test_io.PyBufferedRandomTest.test_repr
 *graalpython.lib-python.3.test.test_io.PyBufferedRandomTest.test_seek_and_tell
 *graalpython.lib-python.3.test.test_io.PyBufferedRandomTest.test_slow_close_from_thread
@@ -428,7 +423,6 @@
 *graalpython.lib-python.3.test.test_io.PyBufferedReaderTest.test_readinto_array
 *graalpython.lib-python.3.test.test_io.PyBufferedReaderTest.test_readlines
 *graalpython.lib-python.3.test.test_io.PyBufferedReaderTest.test_readonly_attributes
-*graalpython.lib-python.3.test.test_io.PyBufferedReaderTest.test_recursive_repr
 *graalpython.lib-python.3.test.test_io.PyBufferedReaderTest.test_repr
 *graalpython.lib-python.3.test.test_io.PyBufferedReaderTest.test_threads
 *graalpython.lib-python.3.test.test_io.PyBufferedReaderTest.test_uninitialized
@@ -450,7 +444,6 @@
 *graalpython.lib-python.3.test.test_io.PyBufferedWriterTest.test_nonnormalized_close_error_on_close
 *graalpython.lib-python.3.test.test_io.PyBufferedWriterTest.test_override_destructor
 *graalpython.lib-python.3.test.test_io.PyBufferedWriterTest.test_readonly_attributes
-*graalpython.lib-python.3.test.test_io.PyBufferedWriterTest.test_recursive_repr
 *graalpython.lib-python.3.test.test_io.PyBufferedWriterTest.test_repr
 *graalpython.lib-python.3.test.test_io.PyBufferedWriterTest.test_slow_close_from_thread
 *graalpython.lib-python.3.test.test_io.PyBufferedWriterTest.test_threads
@@ -589,7 +582,6 @@
 *graalpython.lib-python.3.test.test_io.PyTextIOWrapperTest.test_reconfigure_write_fromascii
 *graalpython.lib-python.3.test.test_io.PyTextIOWrapperTest.test_reconfigure_write_non_seekable
 *graalpython.lib-python.3.test.test_io.PyTextIOWrapperTest.test_reconfigure_write_through
-*graalpython.lib-python.3.test.test_io.PyTextIOWrapperTest.test_recursive_repr
 *graalpython.lib-python.3.test.test_io.PyTextIOWrapperTest.test_repr
 *graalpython.lib-python.3.test.test_io.PyTextIOWrapperTest.test_seek_and_tell
 *graalpython.lib-python.3.test.test_io.PyTextIOWrapperTest.test_seek_append_bom

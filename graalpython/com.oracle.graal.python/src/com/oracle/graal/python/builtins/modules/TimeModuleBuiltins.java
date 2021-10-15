@@ -110,7 +110,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
     private static final StructSequence.BuiltinTypeDescriptor STRUCT_TIME_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStructTime,
-            // @formatter:off The formatter joins these lines making it less readable
+                    // @formatter:off The formatter joins these lines making it less readable
             "The time value as returned by gmtime(), localtime(), and strptime(), and\n" +
                     " accepted by asctime(), mktime() and strftime().  May be considered as a\n" +
                     " sequence of 9 integers.\n\n" +

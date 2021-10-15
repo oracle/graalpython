@@ -286,9 +286,11 @@ def run_cpython_test(args):
     testfiles = []
     for g in globs:
         testfiles += glob.glob(os.path.join(SUITE.dir, "graalpython/lib-python/3/test", "%s*" % g))
-    mx.run([python_gvm_with_assertions()] + interp_args + [
-        os.path.join(SUITE.dir, "graalpython/com.oracle.graal.python.test/src/tests/run_cpython_test.py"),
-    ] + test_args + testfiles)
+    interp_args.insert(0, "--python.CAPI=%s" % _get_capi_home())
+    with _dev_pythonhome_context():
+        mx.run([python_gvm_with_assertions()] + interp_args + [
+            os.path.join(SUITE.dir, "graalpython/com.oracle.graal.python.test/src/tests/run_cpython_test.py"),
+        ] + test_args + testfiles)
 
 
 def retag_unittests(args):
@@ -452,7 +454,7 @@ class GraalPythonTags(object):
 
 def python_gate(args):
     if not os.environ.get("JDT"):
-        find_jdt()
+        os.environ["JDT"] = "builtin"
     if not os.environ.get("ECLIPSE_EXE"):
         find_eclipse()
     if "--tags" not in args:
@@ -472,15 +474,6 @@ def python_gate(args):
 
 
 python_gate.__doc__ = 'Custom gates are %s' % ", ".join([getattr(GraalPythonTags, t) for t in dir(GraalPythonTags) if not t.startswith("__")])
-
-
-def find_jdt():
-    pardir = os.path.abspath(os.path.join(SUITE.dir, ".."))
-    for f in [os.path.join(SUITE.dir, f) for f in os.listdir(SUITE.dir)] + [os.path.join(pardir, f) for f in os.listdir(pardir)]:
-        if os.path.basename(f).startswith("ecj-") and os.path.basename(f).endswith(".jar"):
-            mx.log("Automatically choosing %s for JDT" % f)
-            os.environ["JDT"] = f
-            return
 
 
 def find_eclipse():
@@ -873,7 +866,7 @@ def run_shared_lib_test(args=None):
     if args is None:
         args = []
     launcher = python_so(args)
-    svm_lib_path = os.path.abspath(os.path.join(launcher, "..", "..", "jre", "lib", "polyglot"))
+    svm_lib_path = os.path.abspath(os.path.join(launcher, "..", "..", "lib", "polyglot"))
     fd = name = progname = None
     try:
         fd, name = tempfile.mkstemp(suffix='.c')
@@ -1775,7 +1768,7 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                     f.name
                 ])
 
-        home_launcher = os.path.join(os.path.dirname(os.path.dirname(executable)), 'jre/languages/python')
+        home_launcher = os.path.join(os.path.dirname(os.path.dirname(executable)), 'languages/python')
         # merge all generated lcov files
         for f in os.listdir(SUITE.dir):
             if f.endswith(".lcov") and os.path.getsize(f):
