@@ -56,7 +56,9 @@ import com.oracle.truffle.api.object.Shape;
  * explicitly available.
  * 
  * Objects of this class should not be created directly, but retrieved from
- * {@link com.oracle.graal.python.builtins.Python3Core}.
+ * {@link com.oracle.graal.python.builtins.Python3Core}. Note that
+ * {@link PythonObjectSlowPathFactory} is context dependent object. It must not be stored in AST or
+ * in {@link com.oracle.graal.python.PythonLanguage}, for example.
  */
 public final class PythonObjectSlowPathFactory extends PythonObjectFactory {
 

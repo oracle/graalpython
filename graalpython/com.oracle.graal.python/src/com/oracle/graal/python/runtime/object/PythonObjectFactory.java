@@ -34,6 +34,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
@@ -197,6 +198,26 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 
+/**
+ * Factory for Python objects that also reports to Truffle's {@link AllocationReporter}. The
+ * reporting needs current context. There are several implementations of this abstract class. Use
+ * this rule of thumb when choosing which one to use:
+ * <ul>
+ * <li>In partially evaluated code: use adopted (@Child/@Cached) {@link PythonObjectFactory} node
+ * </li>
+ * <li>Behind {@code TruffleBoundary}:
+ * <ul>
+ * <li>When the current context is already available, use {@link Python3Core#factory()}. This avoids
+ * repeated context lookups inside the factory.</li>
+ * <li>When the current context is not available, but multiple objects will be created: lookup the
+ * context and use {@link Python3Core#factory()}. This executes only one context lookup. Note: first
+ * check if the caller could pass the context to avoid looking it up behind {@code TruffleBoundary}.</li>
+ * <li>When the current context is not available, and only one object is to be created: use
+ * {@link PythonObjectFactory#getUncached()}.</li>
+ * </ul>
+ * </li>
+ * </ul>
+ */
 @GenerateUncached
 @ImportStatic(PythonOptions.class)
 public abstract class PythonObjectFactory extends Node {
