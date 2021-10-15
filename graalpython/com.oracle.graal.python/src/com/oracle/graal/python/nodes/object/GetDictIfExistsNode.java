@@ -60,12 +60,28 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.Shape;
 
 @GenerateUncached
 public abstract class GetDictIfExistsNode extends PNodeWithContext {
     public abstract PDict execute(Object object);
 
     public abstract PDict execute(PythonObject object);
+
+    @Specialization(guards = {"object.getShape() == cachedShape", "hasNoDict(cachedShape)"}, limit = "1")
+    static PDict getNoDictCachedShape(@SuppressWarnings("unused") PythonObject object,
+                    @SuppressWarnings("unused") @Cached("object.getShape()") Shape cachedShape) {
+        return null;
+    }
+
+    @Specialization(guards = "hasNoDict(object.getShape())", replaces = "getNoDictCachedShape")
+    static PDict getNoDict(@SuppressWarnings("unused") PythonObject object) {
+        return null;
+    }
+
+    protected static boolean hasNoDict(Shape shape) {
+        return (shape.getFlags() & PythonObject.HAS_MATERIALIZED_DICT) == 0;
+    }
 
     @Specialization(guards = {"object == cached", "dictIsConstant(cached)", "dict != null"}, assumptions = "singleContextAssumption()", limit = "1")
     static PDict getConstant(@SuppressWarnings("unused") PythonObject object,

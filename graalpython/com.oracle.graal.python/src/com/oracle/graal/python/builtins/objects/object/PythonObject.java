@@ -33,6 +33,7 @@ import java.util.List;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.HiddenAttributes;
@@ -47,13 +48,20 @@ import com.oracle.truffle.api.object.Shape;
 
 public class PythonObject extends PythonAbstractObject {
     public static final HiddenKey DICT = HiddenAttributes.DICT;
-    public static final byte CLASS_CHANGED_FLAG = 1;
-    public static final byte HAS_SLOTS_BUT_NO_DICT_FLAG = 2;
+    public static final byte CLASS_CHANGED_FLAG = 0b1;
+    /**
+     * Indicates that the object doesn't allow {@code __dict__}, but may have slots
+     */
+    public static final byte HAS_SLOTS_BUT_NO_DICT_FLAG = 0b10;
     /**
      * Indicates that the shape has some properties that may contain {@link PNone#NO_VALUE} and
      * therefore the shape itself is not enough to resolve any lookups.
      */
-    public static final byte HAS_NO_VALUE_PROPERTIES = 4;
+    public static final byte HAS_NO_VALUE_PROPERTIES = 0b100;
+    /**
+     * Indicates that the object has a dict in the form of an actual dictionary
+     */
+    public static final byte HAS_MATERIALIZED_DICT = 0b1000;
 
     private final Object initialPythonClass;
 
@@ -83,6 +91,11 @@ public class PythonObject extends PythonAbstractObject {
         // transition
         dylib.setShapeFlags(this, dylib.getShapeFlags(this) | CLASS_CHANGED_FLAG);
         dylib.put(this, CLASS, cls);
+    }
+
+    public void setDict(DynamicObjectLibrary dylib, PDict dict) {
+        dylib.setShapeFlags(this, dylib.getShapeFlags(this) | HAS_MATERIALIZED_DICT);
+        dylib.put(this, DICT, dict);
     }
 
     public Object getInitialPythonClass() {
