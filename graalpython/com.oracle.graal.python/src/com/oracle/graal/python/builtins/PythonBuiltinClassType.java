@@ -206,8 +206,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PMemoryBIO("MemoryBIO", "_ssl"),
 
     // itertools
-    PTee("_tee", "itertools"),
-    PTeeDataObject("_tee_dataobject", "itertools"),
+    PTee("_tee", "itertools", Flags.PUBLIC_DERIVED_WODICT),
+    PTeeDataObject("_tee_dataobject", "itertools", Flags.PUBLIC_DERIVED_WODICT),
     PRepeat("repeat", "itertools"),
     PChain("chain", "itertools"),
 
