@@ -135,17 +135,6 @@ def test_recursive_import_from():
         import package.recpkg
         assert package.recpkg.context is package.recpkg.reduction.context
 
-
-if sys.implementation.name == "graalpython":
-    def test_imp_cached_imports():
-        import _imp
-
-        finder = _imp.CachedImportFinder
-
-        spec = finder.find_spec("encodings", None)
-        assert spec.submodule_search_locations
-
-
 def test_import_package_all() :
     import package1
     expected_syms = ["moduleX", "lib1_hello", "lib1_world"]

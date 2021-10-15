@@ -62,8 +62,14 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.GetFrameNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedWriterBuiltins;
 import com.oracle.graal.python.builtins.modules.io.FileIOBuiltins;
+import com.oracle.graal.python.builtins.modules.io.PBuffered;
 import com.oracle.graal.python.builtins.modules.io.PFileIO;
+import com.oracle.graal.python.builtins.modules.io.PTextIO;
+import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.TextIOWrapperInitNode;
+import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.TextIOWrapperInitNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -73,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
@@ -81,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
@@ -92,6 +100,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -113,6 +122,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.util.Map;
 
 @CoreFunctions(defineModule = "sys", isEager = true)
 public class SysModuleBuiltins extends PythonBuiltins {
@@ -398,11 +408,10 @@ public class SysModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
 
         // we need these during core initialization, they are re-set in postInitialize
-        postInitialize(core);
+        postInitialize0(core);
     }
 
-    @Override
-    public void postInitialize(Python3Core core) {
+    public void postInitialize0(Python3Core core) {
         super.postInitialize(core);
         PythonModule sys = core.lookupBuiltinModule("sys");
         PythonContext context = core.getContext();
@@ -486,6 +495,74 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         false, // dev_mode
                         0 // utf8_mode
         ));
+    }
+
+    @Override
+    public void postInitialize(Python3Core core) {
+        postInitialize0(core);
+        initStd(core);
+    }
+
+    @TruffleBoundary
+    public void initStd(Python3Core core) {
+        TextIOWrapperInitNode textIOWrapperInitNode = TextIOWrapperInitNodeGen.getUncached();
+        PythonObjectFactory factory = PythonObjectFactory.getUncached();
+
+        // wrap std in/out/err
+        GraalPythonModuleBuiltins gp = (GraalPythonModuleBuiltins) core.lookupBuiltinModule("__graalpython__").getBuiltins();
+        String stdioEncoding = gp.getStdIOEncoding();
+        String stdioError = gp.getStdIOError();
+        Object posixSupport = core.getContext().getPosixSupport();
+        PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
+        PythonModule sysModule = core.lookupBuiltinModule("sys");
+
+        PBuffered reader = factory.createBufferedReader(PythonBuiltinClassType.PBufferedReader);
+        BufferedReaderBuiltins.BufferedReaderInit.internalInit(reader, (PFileIO) get(builtinConstants, "stdin"), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
+                        posixLib);
+        setWrapper("stdin", "__stdin__", "r", stdioEncoding, stdioError, reader, sysModule, textIOWrapperInitNode, core.factory());
+
+        PBuffered writer = factory.createBufferedWriter(PythonBuiltinClassType.PBufferedWriter);
+        BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, (PFileIO) get(builtinConstants, "stdout"), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
+                        posixLib);
+        PTextIO stdout = setWrapper("stdout", "__stdout__", "w", stdioEncoding, stdioError, writer, sysModule, textIOWrapperInitNode, core.factory());
+
+        writer = factory.createBufferedWriter(PythonBuiltinClassType.PBufferedWriter);
+        BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, (PFileIO) get(builtinConstants, "stderr"), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
+                        posixLib);
+        PTextIO stderr = setWrapper("stderr", "__stderr__", "w", stdioEncoding, "backslashreplace", writer, sysModule, textIOWrapperInitNode, core.factory());
+
+        // register atexit close std out/err
+        core.getContext().registerAtexitHook((ctx) -> {
+            callClose(stdout);
+            callClose(stderr);
+        });
+    }
+
+    private static Object get(Map<Object, Object> builtinConstants, Object key) {
+        return builtinConstants.get(key);
+    }
+
+    private static PTextIO setWrapper(String name, String specialName, String mode, String encoding, String error, PBuffered buffered, PythonModule sysModule,
+                    TextIOWrapperInitNode textIOWrapperInitNode, PythonObjectFactory factory) {
+        PTextIO textIOWrapper = factory.createTextIO(PythonBuiltinClassType.PTextIOWrapper);
+        textIOWrapperInitNode.execute(null, textIOWrapper, buffered, encoding, error, PNone.NONE, true, true);
+
+        setAttribute(textIOWrapper, "mode", mode);
+        setAttribute(sysModule, name, textIOWrapper);
+        setAttribute(sysModule, specialName, textIOWrapper);
+
+        return textIOWrapper;
+    }
+
+    private static void setAttribute(PythonObject obj, String key, Object value) {
+        obj.setAttribute(key, value);
+    }
+
+    private static void callClose(Object obj) {
+        try {
+            PyObjectCallMethodObjArgs.getUncached().execute(null, obj, "close");
+        } catch (PException e) {
+        }
     }
 
     @Builtin(name = "exc_info", needsFrame = true)

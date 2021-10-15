@@ -74,7 +74,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
-    protected static final int DEFAULT_BUFFER_SIZE = IOModuleBuiltins.DEFAULT_BUFFER_SIZE;
+    public static final int DEFAULT_BUFFER_SIZE = IOModuleBuiltins.DEFAULT_BUFFER_SIZE;
 
     public abstract static class BufferedInitNode extends PNodeWithRaise {
 

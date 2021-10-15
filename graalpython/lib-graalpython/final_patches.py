@@ -40,6 +40,16 @@
 import _imp
 import sys
 
+# - make sure encodings gets frozen in scope of _imp.cache_all_file_modules
+# - at this point during context startup, sys.path isn't initialized, 
+#   so we need to set it up
+sys.path.append(__graalpython__.stdlib_home)
+try:
+    import encodings
+finally:
+    assert len(sys.path) == 1
+    sys.path.pop()
+    
 _imp.cache_all_file_modules()
 
 from importlib._bootstrap import BuiltinImporter
