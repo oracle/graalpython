@@ -942,7 +942,7 @@ public final class Python3Core implements ParserErrorCallback {
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(mod));
     }
 
-    public PythonObjectFactory factory() {
+    public PythonObjectSlowPathFactory factory() {
         return objectFactory;
     }
 
