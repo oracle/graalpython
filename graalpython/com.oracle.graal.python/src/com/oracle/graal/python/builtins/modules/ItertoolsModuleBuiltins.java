@@ -42,8 +42,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
-import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins.NewNode;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -60,7 +59,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(defineModule = "itertools")
@@ -97,14 +95,15 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                         @Cached IterNode iterNode,
                         @Cached PyObjectLookupAttr getAttrNode,
                         @Cached PyCallableCheckNode callableCheckNode,
-                        @Cached NewNode newNode,
                         @Cached CallVarargsMethodNode callNode,
                         @Cached BranchProfile notCallableProfile) {
             Object it = iterNode.execute(frame, iterable, PNone.NO_VALUE);
             Object copyCallable = getAttrNode.execute(frame, it, __COPY__);
             if (!callableCheckNode.execute(copyCallable)) {
                 notCallableProfile.enter();
-                it = newNode.execute(frame, PythonBuiltinClassType.PTee, it);
+                // as in Tee.__NEW__()
+                PTeeDataObject dataObj = factory().createTeeDataObject(it);
+                it = factory().createTee(dataObj, 0);
             }
 
             // return tuple([it] + [it.__copy__() for i in range(1, n)])
@@ -124,14 +123,16 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TeeDataObjectNode extends PythonVarargsBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "lib.isLazyPythonClass(cls)")
-        protected PTeeDataObject construct(Object cls, Object[] arguments, PKeyword[] keywords, @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PTeeDataObject construct(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
             return factory().createTeeDataObject();
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        protected Object construct(Object cls, Object[] arguments, PKeyword[] keywords) {
+        protected Object notype(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
     }
@@ -141,14 +142,15 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class RepeatNode extends PythonVarargsBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "lib.isLazyPythonClass(cls)")
-        protected PRepeat construct(Object cls, Object[] arguments, PKeyword[] keywords, @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PRepeat construct(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
             return factory().createRepeat();
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        protected Object construct(Object cls, Object[] arguments, PKeyword[] keywords) {
+        protected Object notype(Object cls, Object[] arguments, PKeyword[] keywords) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
     }
@@ -158,14 +160,15 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ChainNode extends PythonVarargsBuiltinNode {
         @SuppressWarnings("unused")
-        @Specialization(guards = "lib.isLazyPythonClass(cls)")
-        protected PChain construct(Object cls, Object[] arguments, PKeyword[] keywords, @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PChain construct(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
             return factory().createChain();
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        protected Object construct(Object cls, Object[] arguments, PKeyword[] keywords) {
+        protected Object notype(Object cls, Object[] arguments, PKeyword[] keywords) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
     }
