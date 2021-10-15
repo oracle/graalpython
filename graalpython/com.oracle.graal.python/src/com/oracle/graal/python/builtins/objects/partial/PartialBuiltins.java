@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
@@ -292,8 +293,11 @@ public class PartialBuiltins extends PythonBuiltins {
         public static Object repr(VirtualFrame frame, PPartial partial,
                         @Cached PyObjectStrAsJavaStringNode strNode,
                         @Cached PyObjectReprAsJavaStringNode reprNode,
+                        @Cached GetClassNode classNode,
+                        @Cached TypeNodes.GetNameNode nameNode,
                         @Cached ObjectNodes.GetFullyQualifiedClassNameNode classNameNode) {
-            final String name = classNameNode.execute(frame, partial);
+            final Object cls = classNode.execute(partial);
+            final String name = (cls == PythonBuiltinClassType.PPartial) ? classNameNode.execute(frame, partial) : nameNode.execute(cls);
             StringBuilder sb = PythonUtils.newStringBuilder(name);
             PythonUtils.append(sb, "(");
             PythonContext ctxt = PythonContext.get(classNameNode);
