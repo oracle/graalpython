@@ -313,8 +313,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected PythonContext createContext(Env env) {
-        Python3Core newCore = new Python3Core(new PythonParserImpl(env), env.isNativeAccessAllowed());
-        final PythonContext context = new PythonContext(this, env, newCore);
+        final PythonContext context = new PythonContext(this, env, new PythonParserImpl(env));
         context.initializeHomeAndPrefixPaths(env, getLanguageHome());
 
         Object[] engineOptionsUnroll = this.engineOptionsStorage;
@@ -391,7 +390,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                     gil.release(context, wasAcquired);
                 }
             }
-            if (core.isInitialized()) {
+            if (core.isCoreInitialized()) {
                 return PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, root, source));
             } else {
                 return PythonUtils.getOrCreateCallTarget(root);
@@ -718,7 +717,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder) throws IOException {
-        boolean coreIsInitialized = ctxt.getCore().isInitialized();
+        boolean coreIsInitialized = ctxt.getCore().isCoreInitialized();
         boolean internal = !coreIsInitialized && !ctxt.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources);
         if (internal) {
             srcBuilder.internal(true);

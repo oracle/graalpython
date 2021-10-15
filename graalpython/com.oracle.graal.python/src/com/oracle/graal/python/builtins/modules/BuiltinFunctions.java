@@ -818,7 +818,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return PythonUtils.getOrCreateCallTarget((RootNode) getCore().getParser().parse(pm, kwOptimize, getCore(), source, null, null));
                 }
             };
-            if (getCore().isInitialized()) {
+            if (getCore().isCoreInitialized()) {
                 ct = createCode.get();
             } else {
                 ct = getCore().getLanguage().cacheCode(filename, createCode);

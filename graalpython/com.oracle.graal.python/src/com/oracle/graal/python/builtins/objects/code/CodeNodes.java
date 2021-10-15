@@ -144,7 +144,7 @@ public abstract class CodeNodes {
             };
 
             PythonObjectFactory factory = context.getCore().factory();
-            if (context.getCore().isInitialized() || isNotAModule) {
+            if (context.getCore().isCoreInitialized() || isNotAModule) {
                 return factory.createCode(createCode, flags, firstlineno, lnotab, filename);
             } else {
                 RootCallTarget ct = (RootCallTarget) language.cacheCode(filename, createCode);
