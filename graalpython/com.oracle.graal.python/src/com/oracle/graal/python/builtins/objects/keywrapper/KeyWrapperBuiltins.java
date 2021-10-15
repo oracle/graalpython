@@ -165,7 +165,7 @@ public class KeyWrapperBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, parameterNames = {"obj"})
+    @Builtin(name = __CALL__, minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"$self", "obj"})
     @GenerateNodeFactory
     public abstract static class KWCallNode extends PythonBinaryBuiltinNode {
         @Specialization
