@@ -827,9 +827,9 @@ public final class Python3Core implements ParserErrorCallback {
             }
         }
         // now initialize well-known objects
-        pyTrue = PythonObjectFactory.getUncached().createInt(PythonBuiltinClassType.Boolean, BigInteger.ONE);
-        pyFalse = PythonObjectFactory.getUncached().createInt(PythonBuiltinClassType.Boolean, BigInteger.ZERO);
-        pyNaN = PythonObjectFactory.getUncached().createFloat(Double.NaN);
+        pyTrue = factory().createInt(PythonBuiltinClassType.Boolean, BigInteger.ONE);
+        pyFalse = factory().createInt(PythonBuiltinClassType.Boolean, BigInteger.ZERO);
+        pyNaN = factory().createFloat(Double.NaN);
     }
 
     private void populateBuiltins() {

@@ -134,8 +134,9 @@ public final class TopLevelExceptionHandler extends RootNode {
                     }
                     throw handlePythonException(ee);
                 } catch (StackOverflowError e) {
-                    getContext().reacquireGilAfterStackOverflow();
-                    PBaseException newException = PythonObjectFactory.getUncached().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{});
+                    PythonContext context = getContext();
+                    context.reacquireGilAfterStackOverflow();
+                    PBaseException newException = context.getCore().factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{});
                     PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, newException);
                     throw handlePythonException(pe.getEscapedException());
                 } catch (ThreadDeath e) {

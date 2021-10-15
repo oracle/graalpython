@@ -428,12 +428,12 @@ public class GraalHPyNodes {
             }
 
             PythonLanguage lang = PythonLanguage.get(raiseNode);
-            PBuiltinFunction getterObject = HPyLegacyGetSetDescriptorGetterRoot.createLegacyFunction(lang, owner, getSetDescrName, getterFunPtr, closurePtr);
+            PBuiltinFunction getterObject = HPyLegacyGetSetDescriptorGetterRoot.createLegacyFunction(context, lang, owner, getSetDescrName, getterFunPtr, closurePtr);
             Object setterObject;
             if (readOnly) {
                 setterObject = HPyGetSetDescriptorNotWritableRootNode.createFunction(context.getContext(), owner, getSetDescrName);
             } else {
-                setterObject = HPyLegacyGetSetDescriptorSetterRoot.createLegacyFunction(lang, owner, getSetDescrName, setterFunPtr, closurePtr);
+                setterObject = HPyLegacyGetSetDescriptorSetterRoot.createLegacyFunction(context, lang, owner, getSetDescrName, setterFunPtr, closurePtr);
             }
 
             GetSetDescriptor getSetDescriptor = factory.createGetSetDescriptor(getterObject, setterObject, getSetDescrName, owner, !readOnly);

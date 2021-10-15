@@ -202,7 +202,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
         loadDefaults();
         PythonModule module = core.lookupBuiltinModule("_ssl");
-        PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        PythonObjectFactory factory = core.factory();
         module.setAttribute("OPENSSL_VERSION_NUMBER", 0);
         PTuple versionInfo = factory.createTuple(new int[]{0, 0, 0, 0, 0});
         module.setAttribute("OPENSSL_VERSION_INFO", versionInfo);
@@ -379,7 +379,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
                 if (!(cert instanceof X509Certificate)) {
                     throw raise(SSLError, "Error decoding PEM-encoded file: unexpected type " + cert.getClass().getName());
                 }
-                return CertUtils.decodeCertificate(this, (X509Certificate) l.get(0));
+                return CertUtils.decodeCertificate(this, getContext().getCore().factory(), (X509Certificate) l.get(0));
             } catch (IOException ex) {
                 throw raise(SSLError, "Can't open file: " + ex.toString());
             } catch (CertificateException | CRLException ex) {

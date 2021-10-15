@@ -785,6 +785,10 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         return "HPy Universal ABI (GraalVM backend)";
     }
 
+    public PythonObjectSlowPathFactory getSlowPathFactory() {
+        return slowPathFactory;
+    }
+
     /**
      * Reference cleaner action that will be executed by the {@link AsyncHandler}.
      */
@@ -835,7 +839,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 PythonLanguage language = pythonContext.getLanguage();
                 GraalHPyContext hPyContext = pythonContext.getHPyContext();
                 RootCallTarget callTarget = hPyContext.getReferenceCleanerCallTarget();
-                PDict dummyGlobals = PythonObjectFactory.getUncached().createDict();
+                PDict dummyGlobals = pythonContext.getCore().factory().createDict();
                 boolean isLoggable = LOGGER.isLoggable(Level.FINE);
                 /*
                  * Intentionally retrieve the thread state every time since this will kill the

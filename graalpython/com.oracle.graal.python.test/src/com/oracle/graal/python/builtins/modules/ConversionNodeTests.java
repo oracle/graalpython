@@ -97,7 +97,7 @@ public class ConversionNodeTests {
         }.getCallTarget();
         try {
             Object[] arguments = PArguments.create(1);
-            PArguments.setGlobals(arguments, PythonObjectFactory.getUncached().createDict());
+            PArguments.setGlobals(arguments, pythonContext.getCore().factory().createDict());
             PArguments.setException(arguments, PException.NO_EXCEPTION);
             PArguments.setArgument(arguments, 0, arg);
             PythonThreadState threadState = pythonContext.getThreadState(language);

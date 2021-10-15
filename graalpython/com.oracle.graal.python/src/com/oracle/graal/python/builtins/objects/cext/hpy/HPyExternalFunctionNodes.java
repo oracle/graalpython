@@ -1319,7 +1319,7 @@ public abstract class HPyExternalFunctionNodes {
         public static PBuiltinFunction createFunction(GraalHPyContext hpyContext, Object enclosingType, String propertyName, Object target, Object closure) {
             PythonLanguage lang = hpyContext.getContext().getLanguage();
             RootCallTarget callTarget = lang.createCachedCallTarget(l -> new HPyGetSetDescriptorGetterRootNode(l, propertyName), HPyGetSetDescriptorGetterRootNode.class, propertyName);
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            PythonObjectFactory factory = hpyContext.getSlowPathFactory();
             return factory.createGetSetBuiltinFunction(propertyName, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(target, closure, hpyContext), callTarget);
         }
     }
@@ -1358,8 +1358,8 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction createLegacyFunction(PythonLanguage lang, Object owner, String propertyName, Object target, Object closure) {
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        public static PBuiltinFunction createLegacyFunction(GraalHPyContext context, PythonLanguage lang, Object owner, String propertyName, Object target, Object closure) {
+            PythonObjectFactory factory = context.getSlowPathFactory();
             RootCallTarget rootCallTarget = lang.createCachedCallTarget(l -> new HPyLegacyGetSetDescriptorGetterRoot(l, propertyName, PExternalFunctionWrapper.GETTER),
                             HPyLegacyGetSetDescriptorGetterRoot.class, propertyName);
             if (rootCallTarget == null) {
@@ -1404,7 +1404,7 @@ public abstract class HPyExternalFunctionNodes {
         public static PBuiltinFunction createFunction(GraalHPyContext hpyContext, Object enclosingType, String propertyName, Object target, Object closure) {
             PythonLanguage lang = hpyContext.getContext().getLanguage();
             RootCallTarget callTarget = lang.createCachedCallTarget(l -> new HPyGetSetDescriptorSetterRootNode(l, propertyName), HPyGetSetDescriptorSetterRootNode.class, propertyName);
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            PythonObjectFactory factory = hpyContext.getSlowPathFactory();
             return factory.createGetSetBuiltinFunction(propertyName, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(target, closure, hpyContext), callTarget);
         }
 
@@ -1440,8 +1440,8 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction createLegacyFunction(PythonLanguage lang, Object owner, String propertyName, Object target, Object closure) {
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        public static PBuiltinFunction createLegacyFunction(GraalHPyContext context, PythonLanguage lang, Object owner, String propertyName, Object target, Object closure) {
+            PythonObjectFactory factory = context.getSlowPathFactory();
             RootCallTarget rootCallTarget = lang.createCachedCallTarget(l -> new HPyLegacyGetSetDescriptorSetterRoot(l, propertyName, PExternalFunctionWrapper.SETTER),
                             HPyLegacyGetSetDescriptorSetterRoot.class, propertyName);
             if (rootCallTarget == null) {
@@ -1501,7 +1501,7 @@ public abstract class HPyExternalFunctionNodes {
         public static PBuiltinFunction createFunction(PythonContext context, Object enclosingType, String propertyName) {
             PythonLanguage lang = context.getLanguage();
             RootCallTarget callTarget = lang.createCachedCallTarget(l -> new HPyGetSetDescriptorNotWritableRootNode(l, propertyName), HPyGetSetDescriptorNotWritableRootNode.class, propertyName);
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            PythonObjectFactory factory = context.getCore().factory();
             return factory.createGetSetBuiltinFunction(propertyName, enclosingType, 0, callTarget);
         }
     }

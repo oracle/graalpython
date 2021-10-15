@@ -1583,16 +1583,6 @@ public abstract class ExternalFunctionNodes {
         public Signature getSignature() {
             return SIGNATURE;
         }
-
-        @TruffleBoundary
-        public static PBuiltinFunction createFunction(PythonLanguage lang, Object owner, String propertyName, Object target, Object closure) {
-            RootCallTarget rootCallTarget = PExternalFunctionWrapper.getOrCreateCallTarget(PExternalFunctionWrapper.GETTER, lang, propertyName, true);
-            if (rootCallTarget == null) {
-                throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support");
-            }
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            return factory.createGetSetBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), rootCallTarget);
-        }
     }
 
     /**
