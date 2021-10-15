@@ -184,6 +184,7 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -3182,12 +3183,17 @@ public abstract class CExtNodes {
         public abstract long execute(Object object);
 
         @Specialization
-        long doInteger(@SuppressWarnings("unused") int object) {
+        static long doBoolean(boolean object) {
+            return object ? 1 : 0;
+        }
+
+        @Specialization
+        long doInteger(int object) {
             return doLong(object);
         }
 
         @Specialization
-        long doLong(@SuppressWarnings("unused") long object) {
+        long doLong(long object) {
             long t = PInt.abs(object);
             int sign = object < 0 ? -1 : 1;
             int size = 0;
@@ -3208,7 +3214,7 @@ public abstract class CExtNodes {
             return ((Long.SIZE - 1) / getContext().getCApiContext().getPyLongBitsInDigit() + 1);
         }
 
-        @Specialization(guards = "isFallback(object)")
+        @Fallback
         static long doOther(Object object,
                         @Cached PyObjectSizeNode sizeNode) {
             try {
@@ -3216,10 +3222,6 @@ public abstract class CExtNodes {
             } catch (PException e) {
                 return -1;
             }
-        }
-
-        static boolean isFallback(Object object) {
-            return !(object instanceof PInt || object instanceof Integer || object instanceof Long || object instanceof PythonNativeVoidPtr);
         }
     }
 
