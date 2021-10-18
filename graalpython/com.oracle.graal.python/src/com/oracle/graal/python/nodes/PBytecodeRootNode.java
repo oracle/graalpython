@@ -335,6 +335,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final int MAXBLOCKS = 15; // 25% less than on CPython, shouldn't matter much
 
     private static final Node MARKER_NODE = new Node() {
+        @Override
+        public boolean isAdoptable() {
+            return false;
+        }
     };
 
     private static final Object UNREIFIED_EXC_TYPE = new Object();
