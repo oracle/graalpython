@@ -81,7 +81,7 @@ public final class PPartial extends PythonBuiltinObject {
         return argsTuple;
     }
 
-    public void setArgs(PTuple args, SequenceNodes.GetSequenceStorageNode storageNode, SequenceStorageNodes.GetInternalObjectArrayNode arrayNode) {
+    public void setArgs(PTuple args, SequenceNodes.GetSequenceStorageNode storageNode, SequenceStorageNodes.ToArrayNode arrayNode) {
         this.argsTuple = args;
         this.args = arrayNode.execute(storageNode.execute(args));
     }

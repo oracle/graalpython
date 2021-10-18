@@ -185,10 +185,10 @@ public class PartialBuiltins extends PythonBuiltins {
             } else {
                 dict = getDictIfExistsNode.execute(self);
             }
-            return factory().createTuple(new Object[]{
-                            getClassNode.execute(self),
-                            factory().createTuple(new Object[]{self.getFn()}),
-                            factory().createTuple(new Object[]{self.getFn(), self.getArgsTuple(factory()), self.getKw(), (dict != null) ? dict : PNone.NONE})});
+            final Object type = getClassNode.execute(self);
+            final PTuple fnTuple = factory().createTuple(new Object[]{self.getFn()});
+            final PTuple argsTuple = factory().createTuple(new Object[]{self.getFn(), self.getArgsTuple(factory()), self.getKw(), (dict != null) ? dict : PNone.NONE});
+            return factory().createTuple(new Object[]{type, fnTuple, argsTuple});
         }
     }
 
@@ -201,7 +201,7 @@ public class PartialBuiltins extends PythonBuiltins {
                         @Cached SetDictNode setDictNode,
                         @Cached DeleteDictNode deleteDictNode,
                         @Cached SequenceNodes.GetSequenceStorageNode storageNode,
-                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode arrayNode,
+                        @Cached SequenceStorageNodes.ToArrayNode arrayNode,
                         @Cached PyCallableCheckNode callableCheckNode,
                         @Cached PyTupleCheckExactNode tupleCheckExactNode,
                         @Cached PyDictCheckExactNode dictCheckExactNode,
