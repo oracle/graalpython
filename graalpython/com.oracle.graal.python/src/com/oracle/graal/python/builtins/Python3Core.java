@@ -250,11 +250,9 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
-import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -318,10 +316,6 @@ public final class Python3Core implements ParserErrorCallback {
                         "zipimport",
                         "mmap",
                         "java",
-                        // TODO: see the encodings initialization before sys_post_init.py is
-                        // loaded in initializePython3Core;
-                        // once sys_post_init.py is gone, it should not be necessary
-                        "sys_post_init",
                         "_contextvars",
                         "pip_hook",
                         "_struct",
@@ -670,24 +664,9 @@ public final class Python3Core implements ParserErrorCallback {
     private void initializePython3Core(String coreHome) {
         loadFile(BuiltinNames.BUILTINS, coreHome);
         for (String s : coreFiles) {
-            // TODO: once sys_post_init.py is gone, this should not be necessary
-            if (s.equals("sys_post_init")) {
-                importEncoding();
-            }
             loadFile(s, coreHome);
         }
         initialized = true;
-    }
-
-    private void importEncoding() {
-        PythonModule sys = lookupBuiltinModule("sys");
-        Object sysPath = sys.getAttribute("path");
-        PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, "insert", 0, getContext().getStdlibHome());
-        try {
-            AbstractImportNode.importModule("encodings");
-        } finally {
-            PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, "pop");
-        }
     }
 
     /**

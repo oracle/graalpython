@@ -217,6 +217,16 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @TruffleBoundary
+    String getStdIOEncoding() {
+        return (String) builtinConstants.get("stdio_encoding");
+    }
+
+    @TruffleBoundary
+    String getStdIOError() {
+        return (String) builtinConstants.get("stdio_error");
+    }
+
     /**
      * Entry point for executing a path using the launcher, e.g. {@code python foo.py}
      */

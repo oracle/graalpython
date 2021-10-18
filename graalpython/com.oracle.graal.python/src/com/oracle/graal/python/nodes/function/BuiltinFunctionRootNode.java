@@ -268,19 +268,19 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             } else {
                 PythonBuiltinBaseNode node = factory.createNode();
                 if (node instanceof PythonUnaryBuiltinNode) {
-                    assert argumentsList.length == 1 : "mismatch in number of arguments for " + node.getClass().getName();
+                    assert argumentsList.length == 1 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 1, got " + argumentsList.length;
                     newBody = new BuiltinUnaryCallNode((PythonUnaryBuiltinNode) node, argumentsList[0]);
                 } else if (node instanceof PythonBinaryBuiltinNode) {
-                    assert argumentsList.length == 2 : "mismatch in number of arguments for " + node.getClass().getName();
+                    assert argumentsList.length == 2 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 2, got " + argumentsList.length;
                     newBody = new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[0], argumentsList[1]);
                 } else if (node instanceof PythonTernaryBuiltinNode) {
-                    assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
+                    assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 3, got " + argumentsList.length;
                     newBody = new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]);
                 } else if (node instanceof PythonQuaternaryBuiltinNode) {
-                    assert argumentsList.length == 4 : "mismatch in number of arguments for " + node.getClass().getName();
+                    assert argumentsList.length == 4 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 4, got " + argumentsList.length;
                     newBody = new BuiltinQuaternaryCallNode((PythonQuaternaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2], argumentsList[3]);
                 } else if (node instanceof PythonVarargsBuiltinNode) {
-                    assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
+                    assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName() + ", expected 3, got " + argumentsList.length;
                     assert argumentsList[0] != null && argumentsList[1] != null && argumentsList[2] != null;
                     newBody = new BuiltinVarArgsCallNode((PythonVarargsBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]);
                 } else {

@@ -82,6 +82,8 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 public abstract class PyObjectSizeNode extends PNodeWithContext {
     public abstract int execute(Frame frame, Object object);
 
+    public abstract int execute(Frame frame, PTuple object);
+
     protected abstract Object executeObject(Frame frame, Object object);
 
     @Specialization
