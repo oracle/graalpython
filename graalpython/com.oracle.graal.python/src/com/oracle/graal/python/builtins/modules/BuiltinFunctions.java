@@ -124,7 +124,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -294,44 +294,117 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
+    public abstract static class AllOrAnyNode extends PythonUnaryBuiltinNode {
+        enum NodeType { ALL, ANY };
+
+        protected NodeType nodeType;
+
+        protected boolean checkSequenceStorage(PSequence seq,
+                                               VirtualFrame frame,
+                                               PyObjectIsTrueNode isTrueNode,
+                                               NodeType nodeType) {
+            SequenceStorage sequenceStorage = seq.getSequenceStorage();
+            Object[] internalArray = sequenceStorage.getInternalArray();
+            for (int i = 0; i < sequenceStorage.length(); i++) {
+                switch (nodeType) {
+                    case ALL:
+                        if (!isTrueNode.execute(frame, internalArray[i])) {
+                            return false;
+                        }
+                    case ANY:
+                        if (isTrueNode.execute(frame, internalArray[i])) {
+                            return true;
+                        }
+                }
+            }
+
+            return nodeType == NodeType.ALL;
+        }
+
+        protected boolean checkHashKeys(PHashingCollection hashingCollection,
+                                        VirtualFrame frame,
+                                        PyObjectIsTrueNode isTrueNode,
+                                        NodeType nodeType) {
+            for (Object key: hashingCollection.keys()) {
+                switch (nodeType) {
+                    case ALL:
+                        if (!isTrueNode.execute(frame, key)) {
+                            return false;
+                        }
+                    case ANY:
+                        if (isTrueNode.execute(frame, key)) {
+                            return true;
+                        }
+                }
+            }
+
+            return nodeType == NodeType.ALL;
+        }
+
+        protected boolean checkHashEntries(PHashingCollection hashingCollection,
+                                           VirtualFrame frame,
+                                           PyObjectIsTrueNode isTrueNode,
+                                           NodeType nodeType) {
+            for (HashingStorage.DictEntry entry: hashingCollection.entries()) {
+                switch (nodeType) {
+                    case ALL:
+                        if (!isTrueNode.execute(frame, entry.key)) {
+                            return false;
+                        }
+                    case ANY:
+                        if (isTrueNode.execute(frame, entry.key)) {
+                            return true;
+                        }
+                }
+            }
+            return nodeType == NodeType.ALL;
+        }
+    }
+
     @Builtin(name = ALL, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class AllNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static boolean doList(VirtualFrame frame,
-                             PList list,
-                             @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkSequenceStorage(list, frame, isTrueNode);
-        }
+    public abstract static class AllNode extends AllOrAnyNode {
+        private final NodeType nodeType = NodeType.ALL;
 
-        @Specialization
-        static boolean doTuple(VirtualFrame frame,
-                               PTuple tuple,
-                               @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkSequenceStorage(tuple, frame, isTrueNode);
-        }
-
-        @Specialization
-        static boolean doDict(VirtualFrame frame,
-                              PDict hc,
+        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+        public boolean doList(VirtualFrame frame,
+                              PList object,
+                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                               @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashKeys(hc, frame, isTrueNode);
+            return checkSequenceStorage(object, frame, isTrueNode, nodeType);
         }
 
-        @Specialization
-        static boolean doSet(VirtualFrame frame,
-                             PSet hc,
+        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+        public boolean doTuple(VirtualFrame frame,
+                               PTuple object,
+                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                               @Cached PyObjectIsTrueNode isTrueNode) {
+            return checkSequenceStorage(object, frame, isTrueNode, nodeType);
+        }
+
+        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+        public boolean doDict(VirtualFrame frame,
+                              PDict object,
+                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                              @Cached PyObjectIsTrueNode isTrueNode) {
+            return checkHashKeys(object, frame, isTrueNode, nodeType);
+        }
+
+        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+        public boolean doSet(VirtualFrame frame,
+                             PBaseSet object,
+                             @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                              @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashEntries(hc, frame, isTrueNode);
+            return checkHashEntries(object, frame, isTrueNode, nodeType);
         }
 
         @Specialization
-        static boolean doObject(VirtualFrame frame,
-                                Object object,
-                                @Cached PyObjectGetIter getIter,
-                                @Cached GetNextNode nextNode,
-                                @Cached IsBuiltinClassProfile errorProfile,
-                                @Cached PyObjectIsTrueNode isTrueNode) {
+        boolean doObject(VirtualFrame frame,
+                         Object object,
+                         @Cached PyObjectGetIter getIter,
+                         @Cached GetNextNode nextNode,
+                         @Cached IsBuiltinClassProfile errorProfile,
+                         @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = getIter.execute(frame, object);
             while (true) {
                 try {
@@ -347,85 +420,56 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             return true;
         }
-
-        static boolean checkSequenceStorage(PSequence seq,
-                                            VirtualFrame frame,
-                                            PyObjectIsTrueNode isTrueNode) {
-            SequenceStorage sequenceStorage = seq.getSequenceStorage();
-            Object[] internalArray = sequenceStorage.getInternalArray();
-            for (int i = 0; i < sequenceStorage.length(); i++) {
-                if (!isTrueNode.execute(frame, internalArray[i])) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        static boolean checkHashKeys(PHashingCollection hashingCollection,
-                                        VirtualFrame frame,
-                                        PyObjectIsTrueNode isTrueNode) {
-            for (Object key: hashingCollection.keys()) {
-                if (!isTrueNode.execute(frame, key)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        static boolean checkHashEntries(PHashingCollection hashingCollection,
-                                        VirtualFrame frame,
-                                        PyObjectIsTrueNode isTrueNode) {
-            for (HashingStorage.DictEntry entry: hashingCollection.entries()) {
-                if (!isTrueNode.execute(frame, entry.key)) {
-                    return false;
-                }
-            }
-            return true;
-        }
     }
 
     @Builtin(name = ANY, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class AnyNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static boolean doList(VirtualFrame frame,
-                              PList list,
+    public abstract static class AnyNode extends AllOrAnyNode {
+        private final NodeType nodeType = NodeType.ANY;
+
+        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+        public boolean doList(VirtualFrame frame,
+                              PList object,
+                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                               @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkSequenceStorage(list, frame, isTrueNode);
+            return checkSequenceStorage(object, frame, isTrueNode, nodeType);
         }
 
-        @Specialization
-        static boolean doTuple(VirtualFrame frame,
-                               PTuple tuple,
+        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+        public boolean doTuple(VirtualFrame frame,
+                               PTuple object,
+                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                                @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkSequenceStorage(tuple, frame, isTrueNode);
+            return checkSequenceStorage(object, frame, isTrueNode, nodeType);
         }
 
-        @Specialization
-        static boolean doDict(VirtualFrame frame,
-                              PDict hc,
+        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+        public boolean doDict(VirtualFrame frame,
+                              PDict object,
+                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                               @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashKeys(hc, frame, isTrueNode);
+            return checkHashKeys(object, frame, isTrueNode, nodeType);
         }
 
-        @Specialization
-        static boolean doSet(VirtualFrame frame,
-                             PSet hc,
+        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+        public boolean doSet(VirtualFrame frame,
+                             PBaseSet object,
+                             @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                              @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashEntries(hc, frame, isTrueNode);
+            return checkHashEntries(object, frame, isTrueNode, nodeType);
         }
 
         @Specialization
-        static boolean doObject(VirtualFrame frame,
-                                Object object,
-                                @Cached PyObjectGetIter getIter,
-                                @Cached("create(__NEXT__)") LookupAndCallUnaryNode callNode,
-                                @Cached IsBuiltinClassProfile errorProfile,
-                                @Cached PyObjectIsTrueNode isTrueNode) {
+        boolean doObject(VirtualFrame frame,
+                         Object object,
+                         @Cached PyObjectGetIter getIter,
+                         @Cached GetNextNode nextNode,
+                         @Cached IsBuiltinClassProfile errorProfile,
+                         @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = getIter.execute(frame, object);
             while (true) {
                 try {
-                    Object next = callNode.executeObject(frame, iterator);
+                    Object next = nextNode.execute(frame, iterator);
                     if (isTrueNode.execute(frame, next)) {
                         return true;
                     }
@@ -435,41 +479,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
             }
 
-            return false;
-        }
-
-        static boolean checkSequenceStorage(PSequence seq,
-                                            VirtualFrame frame,
-                                            PyObjectIsTrueNode isTrueNode) {
-            SequenceStorage sequenceStorage = seq.getSequenceStorage();
-            Object[] internalArray = sequenceStorage.getInternalArray();
-            for (int i = 0; i < sequenceStorage.length(); i++) {
-                if (isTrueNode.execute(frame, internalArray[i])) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        static boolean checkHashKeys(PHashingCollection hashingCollection,
-                                     VirtualFrame frame,
-                                     PyObjectIsTrueNode isTrueNode) {
-            for (Object key: hashingCollection.keys()) {
-                if (!isTrueNode.execute(frame, key)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        static boolean checkHashEntries(PHashingCollection hashingCollection,
-                                        VirtualFrame frame,
-                                        PyObjectIsTrueNode isTrueNode) {
-            for (HashingStorage.DictEntry entry: hashingCollection.entries()) {
-                if (isTrueNode.execute(frame, entry.key)) {
-                    return true;
-                }
-            }
             return false;
         }
     }
