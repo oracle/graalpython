@@ -522,16 +522,23 @@ def _graalvm_home(*, envfile, extra_dy=""):
     return home
 
 
+def _join_bin(home, name):
+    if sys.platform == "darwin":
+        return os.path.join("Contents", "Home", "bin", name)
+    else:
+        return os.path.join("bin", name)
+
+
 def python_gvm(_=None):
     home = _graalvm_home(envfile="graalpython-bash-launcher")
-    launcher = os.path.join(home, "bin", "graalpython")
+    launcher = _join_bin(home, "graalpython")
     mx.log(launcher)
     return launcher
 
 
 def python_managed_gvm(_=None):
     home = _graalvm_home(envfile="graalpython-managed-bash-launcher")
-    launcher = os.path.join(home, "bin", "graalpython-managed")
+    launcher = _join_bin(home, "graalpython-managed")
     mx.log(launcher)
     return launcher
 
@@ -550,14 +557,14 @@ def python_managed_gvm_with_assertions():
 
 def python_svm(_=None):
     home = _graalvm_home(envfile="graalpython-launcher")
-    launcher = os.path.join(home, "bin", "graalpython")
+    launcher = _join_bin(home, "graalpython")
     mx.log(launcher)
     return launcher
 
 
 def python_managed_svm():
     home = _graalvm_home(envfile="graalpython-managed-launcher")
-    launcher = os.path.join(home, "bin", "graalpython-managed")
+    launcher = _join_bin(home, "graalpython-managed")
     mx.log(launcher)
     return launcher
 
