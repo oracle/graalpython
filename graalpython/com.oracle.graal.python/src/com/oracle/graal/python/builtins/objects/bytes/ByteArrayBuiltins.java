@@ -231,7 +231,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                 PBytes bytes = factory().createBytes(bufferLib.getCopiedByteArray(value));
                 return doSliceSequence(frame, self, slice, bytes, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, lenNode, unpack, adjustIndices);
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -369,7 +369,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                 updateSequenceStorage(self, res);
                 return self;
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -559,7 +559,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                     // TODO avoid copying
                     b = bufferLib.getCopiedByteArray(buffer);
                 } finally {
-                    bufferLib.release(buffer);
+                    bufferLib.release(buffer, frame, this);
                 }
             } else {
                 try {

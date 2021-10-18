@@ -69,6 +69,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.Builtin;
@@ -406,7 +407,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 SequenceStorage res = concatNode.execute(self.getSequenceStorage(), new ByteSequenceStorage(bytes));
                 return create.execute(factory(), self, res);
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
     }
@@ -1027,7 +1028,7 @@ public class BytesBuiltins extends PythonBuiltins {
                     }
                     return countMulti(self.getSequenceStorage(), begin, last, sub, elemsLen, findNode);
                 } finally {
-                    bufferLib.release(buffer);
+                    bufferLib.release(buffer, frame, this);
                 }
             }
             throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_INT_BYTESLIKE_OBJ);
@@ -1154,7 +1155,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 }
                 return check(bufferLib.readByte(buffer, 0));
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, getContext(), getLanguage(), this);
             }
         }
 
@@ -1773,12 +1774,14 @@ public class BytesBuiltins extends PythonBuiltins {
         byte[] doBuffer(VirtualFrame frame, Object object,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, getContext(), getLanguage(), this);
+            PythonContext context = getContext();
+            PythonLanguage language = getLanguage();
+            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, context, language, this);
             try {
                 // TODO avoid copying
                 return bufferLib.getCopiedByteArray(buffer);
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, context, language, this);
             }
         }
 
@@ -2169,7 +2172,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 byte[] bs = selfToBytesNode.execute(self);
                 return create.execute(factory(), self, getResultBytes(bs, findIndex(bs, stripBs, stripBsLen)));
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 

@@ -157,12 +157,12 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class A2bBase64Node extends PythonUnaryClinicBuiltinNode {
         @Specialization(limit = "3")
-        PBytes doConvert(Object buffer,
+        PBytes doConvert(VirtualFrame frame, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 return b64decode(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -189,12 +189,12 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class A2bHexNode extends PythonUnaryClinicBuiltinNode {
         @Specialization(limit = "3")
-        PBytes a2b(Object buffer,
+        PBytes a2b(VirtualFrame frame, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 return a2b(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -250,12 +250,12 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "3")
-        PBytes b2aBuffer(Object buffer, int newline,
+        PBytes b2aBuffer(VirtualFrame frame, Object buffer, int newline,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 return b2a(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer), newline);
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -274,7 +274,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         @CompilationFinal(dimensions = 1) private static final byte[] HEX_DIGITS = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
         @Specialization(limit = "3")
-        PBytes b2a(Object buffer, Object sep, int bytesPerSep,
+        PBytes b2a(VirtualFrame frame, Object buffer, Object sep, int bytesPerSep,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             if (sep != PNone.NO_VALUE || bytesPerSep != 1) {
                 // TODO implement sep and bytes_per_sep
@@ -283,7 +283,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             try {
                 return b2a(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -311,12 +311,12 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
     abstract static class Crc32Node extends PythonBinaryClinicBuiltinNode {
         // TODO crc != NO_VALUE
         @Specialization(guards = "isNoValue(crc)", limit = "3")
-        static long b2a(Object buffer, @SuppressWarnings("unused") PNone crc,
+        long b2a(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") PNone crc,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 return getCrcValue(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 

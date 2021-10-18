@@ -854,7 +854,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         warnNode.warnFormat(frame, null, DeprecationWarning, 1, ErrorMessages.PATH_SHOULD_BE_STR_BYTES_PATHLIKE_NOT_P, wFilename);
                     }
                 } finally {
-                    bufferLib.release(filenameBuffer);
+                    bufferLib.release(filenameBuffer, frame, this);
                 }
             } else {
                 filename = asPath.execute(frame, wFilename);
@@ -942,8 +942,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 } catch (PythonFileDetector.InvalidEncodingException e) {
                     throw raiseInvalidSyntax(filename, "encoding problem: %s", e.getEncodingName());
                 } finally {
-                    bufferLib.release(buffer);
-
+                    bufferLib.release(buffer, frame, this);
                 }
             }
         }

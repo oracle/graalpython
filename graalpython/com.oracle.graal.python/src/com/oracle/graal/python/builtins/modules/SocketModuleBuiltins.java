@@ -736,7 +736,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 Object result = posixLib.inet_ntoa(getPosixSupport(), ByteArraySupport.bigEndian().getInt(bytes, 0));
                 return posixLib.getPathAsString(getPosixSupport(), result);
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
     }
@@ -796,7 +796,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                     throw raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 

@@ -572,7 +572,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                 return written;
             } finally {
                 BufferedIONodes.EnterBufferedNode.leave(self);
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 

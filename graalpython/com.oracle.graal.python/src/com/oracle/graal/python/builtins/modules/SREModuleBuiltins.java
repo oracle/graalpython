@@ -146,7 +146,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 String patternStr = decodeLatin1(bytes, bytesLen);
                 return constructRegexSource(options, patternStr, flags);
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
     }

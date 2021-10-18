@@ -135,7 +135,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
                 }
                 return readBytes;
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -160,7 +160,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
                 sslOperationNode.write(frame, self, input);
                 return length;
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 

@@ -54,11 +54,11 @@ import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.utilities.NeverValidAssumption;
 
 /**
- * Helper node for using {@link PythonBufferAcquireLibrary} in a node annotated with
- * {@link com.oracle.truffle.api.dsl.GenerateUncached}.<br/>
- * In order to correctly use {@link PythonBufferAcquireLibrary}, one needs to se tup an indirect
- * call. Following methods of the library already do that but the caller needs to provide
- * appropriate nodes.
+ * Helper node for using {@link PythonBufferAcquireLibrary} and {@link PythonBufferAccessLibrary} in
+ * a node annotated with {@link com.oracle.truffle.api.dsl.GenerateUncached}.<br/>
+ * In order to correctly use {@link PythonBufferAcquireLibrary} and
+ * {@link PythonBufferAccessLibrary}, one needs to se tup an indirect call. Following methods of the
+ * library already do that but the caller needs to provide appropriate nodes.
  * <ul>
  * <li>
  * {@link PythonBufferAcquireLibrary#acquireReadonly(Object, VirtualFrame, PNodeWithRaiseAndIndirectCall)}
@@ -71,6 +71,12 @@ import com.oracle.truffle.api.utilities.NeverValidAssumption;
  * </li>
  * <li>
  * {@link PythonBufferAcquireLibrary#acquireWritable(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallNode)}
+ * </li>
+ * <li>
+ * {@link PythonBufferAccessLibrary#release(Object, VirtualFrame, PNodeWithRaiseAndIndirectCall)}
+ * </li>
+ * <li>
+ * {@link PythonBufferAccessLibrary#release(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallNode)}
  * </li>
  * </ul>
  * However, if the caller is a node with annotation
@@ -88,12 +94,12 @@ public abstract class BufferAcquireGenerateUncachedNode extends PNodeWithContext
 
     public abstract Object acquireWritable(VirtualFrame frame, Object receiver);
 
-    public static BufferAcquireGenerateUncachedNode create(int limit) {
-        return new IndirectCallHelperCachedNode(PythonBufferAcquireLibrary.getFactory().createDispatched(limit));
-    }
+    public abstract PythonBufferAccessLibrary getAccessLib();
 
-    public static BufferAcquireGenerateUncachedNode create(Object receiver) {
-        return new IndirectCallHelperCachedNode(PythonBufferAcquireLibrary.getFactory().create(receiver));
+    public abstract void release(VirtualFrame frame, Object receiver);
+
+    public static BufferAcquireGenerateUncachedNode create(int limit) {
+        return new IndirectCallHelperCachedNode(limit);
     }
 
     public static BufferAcquireGenerateUncachedNode getUncached(@SuppressWarnings("unused") int limit) {
@@ -103,12 +109,15 @@ public abstract class BufferAcquireGenerateUncachedNode extends PNodeWithContext
     static final class IndirectCallHelperCachedNode extends BufferAcquireGenerateUncachedNode {
 
         @Child private PythonBufferAcquireLibrary lib;
+        @Child private PythonBufferAccessLibrary accessLib;
+
+        private final int limit;
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState;
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame;
 
-        IndirectCallHelperCachedNode(PythonBufferAcquireLibrary lib) {
-            this.lib = lib;
+        IndirectCallHelperCachedNode(int limit) {
+            this.limit = limit;
         }
 
         @Override
@@ -118,12 +127,17 @@ public abstract class BufferAcquireGenerateUncachedNode extends PNodeWithContext
 
         @Override
         public Object acquireReadonly(VirtualFrame frame, Object receiver) {
-            return lib.acquireReadonly(receiver, frame, getContext(), getLanguage(), this);
+            return ensureAcquireLib().acquireReadonly(receiver, frame, getContext(), getLanguage(), this);
         }
 
         @Override
         public Object acquireWritable(VirtualFrame frame, Object receiver) {
-            return lib.acquireWritable(receiver, frame, getContext(), getLanguage(), this);
+            return ensureAcquireLib().acquireWritable(receiver, frame, getContext(), getLanguage(), this);
+        }
+
+        @Override
+        public void release(VirtualFrame frame, Object receiver) {
+            getAccessLib().release(receiver, frame, getContext(), getLanguage(), this);
         }
 
         @Override
@@ -143,6 +157,23 @@ public abstract class BufferAcquireGenerateUncachedNode extends PNodeWithContext
             }
             return nativeCodeDoesntNeedExceptionState;
         }
+
+        private PythonBufferAcquireLibrary ensureAcquireLib() {
+            if (lib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lib = insert(PythonBufferAcquireLibrary.getFactory().createDispatched(limit));
+            }
+            return lib;
+        }
+
+        @Override
+        public PythonBufferAccessLibrary getAccessLib() {
+            if (accessLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                accessLib = insert(PythonBufferAccessLibrary.getFactory().createDispatched(limit));
+            }
+            return accessLib;
+        }
     }
 
     static final class IndirectCallHelperUncachedNode extends BufferAcquireGenerateUncachedNode {
@@ -161,6 +192,16 @@ public abstract class BufferAcquireGenerateUncachedNode extends PNodeWithContext
         @Override
         public Object acquireWritable(VirtualFrame frame, Object receiver) {
             return PythonBufferAcquireLibrary.getUncached().acquireWritable(receiver);
+        }
+
+        @Override
+        public void release(VirtualFrame frame, Object receiver) {
+            PythonBufferAccessLibrary.getUncached().release(receiver);
+        }
+
+        @Override
+        public PythonBufferAccessLibrary getAccessLib() {
+            return PythonBufferAccessLibrary.getUncached();
         }
 
         @Override

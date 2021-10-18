@@ -618,7 +618,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 errorProfile.enter();
                 throw raiseOSErrorFromPosixException(frame, e);
             } finally {
-                bufferLib.release(dataBuffer);
+                bufferLib.release(dataBuffer, frame, this);
             }
         }
 
@@ -2537,7 +2537,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                                 ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName, getAllowedTypes(), value);
                 return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), bufferLib.getCopiedByteArray(value))), true);
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, getContext(), getLanguage(), this);
             }
         }
 

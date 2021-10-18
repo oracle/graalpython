@@ -59,7 +59,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 /**
  * Equivalent of CPython's {@code PyFloat_FromString}. Converts a string to a python float (Java
@@ -81,7 +80,6 @@ public abstract class PyFloatFromString extends PNodeWithContext {
     @Specialization
     double doGeneric(VirtualFrame frame, Object object,
                     @Cached(parameters = "3") BufferAcquireGenerateUncachedNode acquireNode,
-                    @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                     @Cached CastToJavaStringNode cast,
                     @Shared("repr") @Cached PyObjectReprAsJavaStringNode reprNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
@@ -97,11 +95,12 @@ public abstract class PyFloatFromString extends PNodeWithContext {
             }
             if (buffer != null) {
                 try {
-                    byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
-                    int len = bufferLib.getBufferLength(buffer);
+                    PythonBufferAccessLibrary accessLib = acquireNode.getAccessLib();
+                    byte[] bytes = accessLib.getInternalOrCopiedByteArray(buffer);
+                    int len = accessLib.getBufferLength(buffer);
                     string = PythonUtils.newString(bytes, 0, len);
                 } finally {
-                    bufferLib.release(buffer);
+                    acquireNode.release(frame, buffer);
                 }
             }
         }

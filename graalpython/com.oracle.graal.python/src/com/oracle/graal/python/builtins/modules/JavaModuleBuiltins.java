@@ -300,7 +300,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
             try {
                 return new InteropByteArray(bufferLib.getCopiedByteArray(object));
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
     }

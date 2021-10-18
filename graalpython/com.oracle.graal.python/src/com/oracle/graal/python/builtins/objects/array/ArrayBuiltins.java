@@ -927,7 +927,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         public abstract Object executeWithoutClinic(VirtualFrame frame, Object arg, Object arg2);
 
         @Specialization(limit = "3")
-        Object frombytes(PArray self, Object buffer,
+        Object frombytes(VirtualFrame frame, PArray self, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 int itemsize = self.getFormat().bytesize;
@@ -947,7 +947,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 }
                 return PNone.NONE;
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 

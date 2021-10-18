@@ -88,7 +88,7 @@ public class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class WriteNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
 
         @Specialization(guards = "self.isOK()")
-        static Object write(@SuppressWarnings("unused") VirtualFrame frame, PBuffered self, Object buffer,
+        Object write(@SuppressWarnings("unused") VirtualFrame frame, PBuffered self, Object buffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BufferedIONodes.EnterBufferedNode lock,
                         @Cached("create(WRITE)") BufferedIONodes.CheckIsClosedNode checkIsClosedNode,
@@ -98,7 +98,7 @@ public class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltins {
                 checkIsClosedNode.execute(frame, self);
                 return writeNode.execute(frame, self, buffer);
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
                 BufferedIONodes.EnterBufferedNode.leave(self);
             }
         }

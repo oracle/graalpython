@@ -909,7 +909,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetAlpnProtocols extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
-        Object setFromBuffer(PSSLContext self, Object buffer,
+        Object setFromBuffer(VirtualFrame frame, PSSLContext self, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 if (!ALPNHelper.hasAlpn()) {
@@ -920,7 +920,7 @@ public class SSLContextBuiltins extends PythonBuiltins {
                 self.setAlpnProtocols(parseProtocols(bytes, len));
                 return PNone.NONE;
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 

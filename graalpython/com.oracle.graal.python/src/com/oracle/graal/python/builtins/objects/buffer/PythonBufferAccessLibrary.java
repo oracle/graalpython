@@ -42,9 +42,15 @@ package com.oracle.graal.python.builtins.objects.buffer;
 
 import java.nio.ByteOrder;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.nodes.IndirectCallNode;
+import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
 import com.oracle.truffle.api.library.Library;
@@ -97,6 +103,32 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * multiple times on the same buffer.
      */
     public void release(@SuppressWarnings("unused") Object receiver) {
+    }
+
+    /**
+     * Release the buffer. Equivalent of CPython's {@code PyBuffer_Release}, but must not be called
+     * multiple times on the same buffer.
+     */
+    public final void release(Object receiver, VirtualFrame frame, PNodeWithRaiseAndIndirectCall callNode) {
+        Object savedState = IndirectCallContext.enter(frame, callNode);
+        try {
+            release(receiver);
+        } finally {
+            IndirectCallContext.exit(frame, callNode, savedState);
+        }
+    }
+
+    /**
+     * Release the buffer. Equivalent of CPython's {@code PyBuffer_Release}, but must not be called
+     * multiple times on the same buffer.
+     */
+    public final void release(Object receiver, VirtualFrame frame, PythonContext context, PythonLanguage language, IndirectCallNode node) {
+        Object savedState = IndirectCallContext.enter(frame, language, context, node);
+        try {
+            release(receiver);
+        } finally {
+            IndirectCallContext.exit(frame, language, context, savedState);
+        }
     }
 
     /**

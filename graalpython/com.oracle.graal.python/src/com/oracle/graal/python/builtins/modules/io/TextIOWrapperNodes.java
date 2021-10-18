@@ -533,7 +533,7 @@ public class TextIOWrapperNodes {
 
                 return !eof;
             } finally {
-                bufferLib.release(inputChunkBuf);
+                bufferLib.release(inputChunkBuf, frame, this);
             }
         }
 

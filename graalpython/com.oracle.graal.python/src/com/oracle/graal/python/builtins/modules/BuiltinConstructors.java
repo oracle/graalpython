@@ -1375,15 +1375,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object createIntGeneric(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone base,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-            // This method (together with callInt and callIndex) reflects the logic of PyNumber_Long
-            // in CPython. We don't use PythonObjectLibrary here since the original CPython function
-            // does not use any of the conversion functions (such as _PyLong_AsInt or
-            // PyNumber_Index) either, but it reimplements the logic in a slightly different way
-            // (e.g. trying __int__ before __index__ whereas _PyLong_AsInt does it the other way)
-            // and also with specific exception messages which are expected by Python unittests.
-            // This unfortunately means that this method relies on the internal logic of NO_VALUE
-            // return values representing missing magic methods which should be ideally hidden
-            // by PythonObjectLibrary.
+            /*
+             * This method (together with callInt and callIndex) reflects the logic of PyNumber_Long
+             * in CPython. We don't use PythonObjectLibrary here since the original CPython function
+             * does not use any of the conversion functions (such as _PyLong_AsInt or
+             * PyNumber_Index) either, but it reimplements the logic in a slightly different way
+             * (e.g. trying __int__ before __index__ whereas _PyLong_AsInt does it the other way)
+             * and also with specific exception messages which are expected by Python unittests.
+             * This unfortunately means that this method relies on the internal logic of NO_VALUE
+             * return values representing missing magic methods which should be ideally hidden by
+             * PythonObjectLibrary.
+             */
             Object result = callInt(frame, obj);
             if (result == PNone.NO_VALUE) {
                 result = callIndex(frame, obj);
@@ -1400,7 +1402,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             String number = PythonUtils.newString(bufferLib.getInternalOrCopiedByteArray(buffer), 0, bufferLib.getBufferLength(buffer));
                             return stringToInt(frame, cls, number, 10, obj);
                         } finally {
-                            bufferLib.release(buffer);
+                            bufferLib.release(buffer, frame, this);
                         }
                     }
                     if (isIntegerType(truncResult)) {
@@ -1903,7 +1905,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 Object en = encoding == PNone.NO_VALUE ? "utf-8" : encoding;
                 return decodeBytes(frame, strClass, bytesObj, en, errors);
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 

@@ -357,7 +357,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
     abstract static class ReadIntoNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
 
         @Specialization(guards = "self.hasBuf()")
-        Object readinto(PBytesIO self, Object buffer,
+        Object readinto(VirtualFrame frame, PBytesIO self, Object buffer,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
             try {
                 /* adjust invalid sizes */
@@ -377,7 +377,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
 
                 return len;
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -516,7 +516,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
                 }
                 return len;
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 

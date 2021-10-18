@@ -229,7 +229,7 @@ public abstract class BytesNodes {
             try {
                 return bufferLib.getCopiedByteArray(buffer);
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -603,7 +603,7 @@ public abstract class BytesNodes {
                 try {
                     return bufferLib.getCopiedByteArray(buffer);
                 } finally {
-                    bufferLib.release(buffer);
+                    bufferLib.release(buffer, frame, this);
                 }
             }
             if (!PGuards.isString(object)) {
@@ -843,7 +843,7 @@ public abstract class BytesNodes {
                 try {
                     return encodeFSDefault(bufferLib.getCopiedByteArray(path));
                 } finally {
-                    bufferLib.release(buffer);
+                    bufferLib.release(buffer, frame, this);
                 }
             }
             return toString.execute(path);
