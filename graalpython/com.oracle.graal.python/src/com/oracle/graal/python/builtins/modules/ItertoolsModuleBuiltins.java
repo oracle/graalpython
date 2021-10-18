@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PPermutations;
 import com.oracle.graal.python.builtins.objects.itertools.PProduct;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
 import com.oracle.graal.python.builtins.objects.itertools.PStarmap;
+import com.oracle.graal.python.builtins.objects.itertools.PTakewhile;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
@@ -104,6 +105,26 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         protected PDropwhile construct(Object cls, Object[] arguments, PKeyword[] keywords,
                         @Cached TypeNodes.IsTypeNode isTypeNode) {
             return factory().createDropwhile();
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        protected Object notype(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+        }
+    }
+
+    @Builtin(name = "takewhile", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PTakewhile, doc = "Make an iterator that returns elements from the iterable as\n" +
+                    "long as the predicate is true.\n\nEquivalent to :\n]ndef takewhile(predicate, iterable):\n\tfor x in iterable:\n\t\tif predicate(x):\n\t\t\tyield x\n" +
+                    "\t\telse:\n\t\t\tbreak")
+    @GenerateNodeFactory
+    public abstract static class TakewhileNode extends PythonVarargsBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PTakewhile construct(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @Cached TypeNodes.IsTypeNode isTypeNode) {
+            return factory().createTakewhile();
         }
 
         @Fallback

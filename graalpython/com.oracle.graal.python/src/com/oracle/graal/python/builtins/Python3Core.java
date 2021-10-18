@@ -204,6 +204,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PermutationsBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ProductBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.RepeatBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.StarmapBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.TakewhileBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.keywrapper.KeyWrapperBuiltins;
@@ -515,6 +516,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new ProductBuiltins(),
                         new RepeatBuiltins(),
                         new StarmapBuiltins(),
+                        new TakewhileBuiltins(),
                         new TeeBuiltins(),
                         new TeeDataObjectBuiltins(),
 

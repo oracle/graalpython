@@ -121,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PPermutations;
 import com.oracle.graal.python.builtins.objects.itertools.PProduct;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
 import com.oracle.graal.python.builtins.objects.itertools.PStarmap;
+import com.oracle.graal.python.builtins.objects.itertools.PTakewhile;
 import com.oracle.graal.python.builtins.objects.itertools.PTee;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
 import com.oracle.graal.python.builtins.objects.keywrapper.PKeyWrapper;
@@ -1199,6 +1200,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PStarmap createStarmap() {
         return trace(new PStarmap(PythonBuiltinClassType.PStarmap, PythonBuiltinClassType.PStarmap.getInstanceShape(getLanguage())));
+    }
+
+    public final PTakewhile createTakewhile() {
+        return trace(new PTakewhile(PythonBuiltinClassType.PTakewhile, PythonBuiltinClassType.PTakewhile.getInstanceShape(getLanguage())));
     }
 
     public final PTeeDataObject createTeeDataObject() {

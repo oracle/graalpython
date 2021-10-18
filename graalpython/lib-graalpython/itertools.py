@@ -54,38 +54,6 @@ class filterfalse(object):
     def __reduce__(self):
         return type(self), (self.func, self.iterator)
 
-
-class takewhile(object):
-    """Make an iterator that returns elements from the iterable as
-    long as the predicate is true.
-
-    Equivalent to :
-
-    def takewhile(predicate, iterable):
-        for x in iterable:
-            if predicate(x):
-                yield x
-            else:
-                break
-    """
-    @__graalpython__.builtin_method
-    def __init__(self, predicate, iterable):
-        self._predicate = predicate
-        self._iter = iter(iterable)
-
-    @__graalpython__.builtin_method
-    def __iter__(self):
-        return self
-
-    @__graalpython__.builtin_method
-    def __next__(self):
-        value = next(self._iter)
-        if not self._predicate(value):
-            self._iter = iter([])
-            raise StopIteration()
-        return value
-
-
 class groupby(object):
     """Make an iterator that returns consecutive keys and groups from the
     iterable. The key is a function computing a key value for each
