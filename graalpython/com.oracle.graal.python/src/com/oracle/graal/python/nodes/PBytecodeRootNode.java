@@ -1472,7 +1472,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         PyObjectIsTrueNode isTrue = insertChildNode(localNodes[bci], UNCACHED_OBJECT_IS_TRUE, NODE_OBJECT_IS_TRUE, bci);
                         Object cond = stack[stackTop];
                         stack[stackTop--] = null;
-                        if (!isTrue.execute(frame, cond)) {
+                        // TODO: this hack artificially increases profiled loop counts
+                        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, !isTrue.execute(frame, cond))) {
                             bci = oparg;
                             oparg = Byte.toUnsignedInt(localBC[bci + 1]);
                             continue;
