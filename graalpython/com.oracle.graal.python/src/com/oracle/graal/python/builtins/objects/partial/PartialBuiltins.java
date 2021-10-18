@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -66,16 +67,20 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyDictCheckExactNode;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.DeleteDictNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
@@ -190,15 +195,21 @@ public class PartialBuiltins extends PythonBuiltins {
     @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class PartialSetStateNode extends PythonBinaryBuiltinNode {
+
         @Specialization
         public Object setState(VirtualFrame frame, PPartial self, PTuple state,
                         @Cached SetDictNode setDictNode,
+                        @Cached DeleteDictNode deleteDictNode,
                         @Cached SequenceNodes.GetSequenceStorageNode storageNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode arrayNode,
                         @Cached PyCallableCheckNode callableCheckNode,
+                        @Cached PyTupleCheckExactNode tupleCheckExactNode,
+                        @Cached PyDictCheckExactNode dictCheckExactNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
+                        @Cached TupleNodes.ConstructTupleNode constructTupleNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             if (lenNode.execute(state.getSequenceStorage()) != 4) {
                 throw raise(PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
             }
@@ -216,13 +227,27 @@ public class PartialBuiltins extends PythonBuiltins {
 
             self.setFn(function);
 
-            assert fnArgs instanceof PTuple;
-            self.setArgs((PTuple) fnArgs, storageNode, arrayNode);
+            final PTuple fnArgsTuple;
+            if (!tupleCheckExactNode.execute(fnArgs)) {
+                fnArgsTuple = constructTupleNode.execute(frame, fnArgs);
+            } else {
+                fnArgsTuple = (PTuple) fnArgs;
+            }
+            self.setArgs(fnArgsTuple, storageNode, arrayNode);
 
-            assert fnKwargs instanceof PDict;
-            self.setKwCopy((PDict) fnKwargs, factory(), lib);
+            final PDict fnKwargsDict;
+            if (fnKwargs == PNone.NONE) {
+                fnKwargsDict = factory().createDict();
+            } else if (!dictCheckExactNode.execute(fnKwargs)) {
+                fnKwargsDict = factory().createDict(lib.copy(getHashingStorageNode.execute(frame, fnKwargs)));
+            } else {
+                fnKwargsDict = (PDict) fnKwargs;
+            }
+            self.setKw(fnKwargsDict);
 
-            if (dict != PNone.NONE) {
+            if (dict == PNone.NONE) {
+                deleteDictNode.execute(self);
+            } else {
                 assert dict instanceof PDict;
                 setDictNode.execute(self, (PDict) dict);
             }
@@ -240,7 +265,7 @@ public class PartialBuiltins extends PythonBuiltins {
     @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class PartialCallNode extends PythonVarargsBuiltinNode {
-        private int indexOf(PKeyword[] keywords, PKeyword kw) {
+        private static int indexOf(PKeyword[] keywords, PKeyword kw) {
             for (int i = 0; i < keywords.length; i++) {
                 if (keywords[i].getName().equals(kw.getName())) {
                     return i;
@@ -257,17 +282,17 @@ public class PartialBuiltins extends PythonBuiltins {
         Object callWoDict(VirtualFrame frame, PPartial self, Object[] args, PKeyword[] keywords,
                         @Cached ConditionProfile hasArgsProfile,
                         @Cached CallVarargsMethodNode callNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             Object[] callArgs = getNewPartialArgs(self, args, hasArgsProfile);
             return callNode.execute(frame, self.getFn(), callArgs, keywords);
         }
 
         @Specialization(guards = {"self.hasKw(lib)", "!withKeywords(keywords)"})
-        Object callWDictWoKw(VirtualFrame frame, PPartial self, Object[] args, PKeyword[] keywords,
+        Object callWDictWoKw(VirtualFrame frame, PPartial self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Cached ExpandKeywordStarargsNode starargsNode,
                         @Cached ConditionProfile hasArgsProfile,
                         @Cached CallVarargsMethodNode callNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             Object[] callArgs = getNewPartialArgs(self, args, hasArgsProfile);
             return callNode.execute(frame, self.getFn(), callArgs, starargsNode.execute(self.getKw()));
         }
@@ -277,7 +302,7 @@ public class PartialBuiltins extends PythonBuiltins {
                         @Cached ExpandKeywordStarargsNode starargsNode,
                         @Cached ConditionProfile hasArgsProfile,
                         @Cached CallVarargsMethodNode callNode,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             Object[] callArgs = getNewPartialArgs(self, args, hasArgsProfile);
 
             final PKeyword[] pKeywords = starargsNode.execute(self.getKw());

@@ -89,7 +89,7 @@ public final class PPartial extends PythonBuiltinObject {
     public PDict getKw() {
         return kw;
     }
-    
+
     public PDict getOrCreateKw(PythonObjectFactory factory) {
         if (kw == null) {
             kw = factory.createDict();
@@ -106,7 +106,7 @@ public final class PPartial extends PythonBuiltinObject {
         return lib.length(kw.getDictStorage()) > 0;
     }
 
-    public void setKwCopy(PDict kwArgs, PythonObjectFactory factory, HashingStorageLibrary lib) {
-        this.kw = factory.createDict(lib.copy(kwArgs.getDictStorage()));
+    public void setKw(PDict kwArgs) {
+        this.kw = kwArgs;
     }
 }
