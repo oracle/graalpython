@@ -714,6 +714,7 @@ def run_hpy_unittests(python_binary, args=None):
         env = os.environ.copy()
         prefix = str(d)
         env.update(PYTHONUSERBASE=prefix)
+        mx.run_mx(["build", "--dependencies", "LLVM_TOOLCHAIN"])
         env.update(LLVM_TOOLCHAIN_VANILLA=mx_subst.path_substitutions.substitute('<path:LLVM_TOOLCHAIN>/bin'))
         mx.log("LLVM Toolchain (vanilla): {!s}".format(env["LLVM_TOOLCHAIN_VANILLA"]))
         mx.log("Ensure 'setuptools' is installed")
