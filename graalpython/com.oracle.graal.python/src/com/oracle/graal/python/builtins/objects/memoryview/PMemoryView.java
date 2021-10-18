@@ -240,9 +240,23 @@ public final class PMemoryView extends PythonBuiltinObject {
         this.shouldReleaseImmediately = shouldReleaseImmediately;
     }
 
-    public void checkReleased(PRaiseNode raiseNode) {
+    void checkReleased(PRaiseNode raiseNode) {
         if (isReleased()) {
             throw raiseNode.raise(ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
+        }
+    }
+
+    boolean checkShouldReleaseBuffer() {
+        if (getReference() != null) {
+            return getReference().getLifecycleManager().decrementExports() == 0;
+        }
+        return false;
+    }
+
+    void checkExports(PRaiseNode node) {
+        long exports = getExports().get();
+        if (exports > 0) {
+            throw node.raise(BufferError, ErrorMessages.MEMORYVIEW_HAS_D_EXPORTED_BUFFERS, exports);
         }
     }
 

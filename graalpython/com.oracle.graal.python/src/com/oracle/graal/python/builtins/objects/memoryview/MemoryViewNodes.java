@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
@@ -727,7 +726,7 @@ public class MemoryViewNodes {
         @Specialization(guards = "self.getReference() == null")
         static void releaseSimple(PMemoryView self,
                         @Shared("raise") @Cached PRaiseNode raiseNode) {
-            checkExports(raiseNode, self);
+            self.checkExports(raiseNode);
             self.setReleased();
         }
 
@@ -735,25 +734,11 @@ public class MemoryViewNodes {
         static void releaseNative(PMemoryView self,
                         @Cached ReleaseBufferNode releaseNode,
                         @Shared("raise") @Cached PRaiseNode raiseNode) {
-            checkExports(raiseNode, self);
-            if (checkShouldReleaseBuffer(self)) {
+            self.checkExports(raiseNode);
+            if (self.checkShouldReleaseBuffer()) {
                 releaseNode.execute(self.getLifecycleManager());
             }
             self.setReleased();
-        }
-
-        private static boolean checkShouldReleaseBuffer(PMemoryView self) {
-            if (self.getReference() != null) {
-                return self.getReference().getLifecycleManager().decrementExports() == 0;
-            }
-            return false;
-        }
-
-        private static void checkExports(PRaiseNode node, PMemoryView self) {
-            long exports = self.getExports().get();
-            if (exports > 0) {
-                throw node.raise(BufferError, ErrorMessages.MEMORYVIEW_HAS_D_EXPORTED_BUFFERS, exports);
-            }
         }
     }
 
