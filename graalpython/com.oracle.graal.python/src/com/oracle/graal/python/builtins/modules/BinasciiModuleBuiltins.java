@@ -71,6 +71,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -160,21 +161,22 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         PBytes doConvert(VirtualFrame frame, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
-                return b64decode(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
+                ByteSequenceStorage storage = b64decode(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
+                return factory().createBytes(storage);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
         }
 
         @TruffleBoundary
-        private PBytes b64decode(byte[] data, int dataLen) {
+        private ByteSequenceStorage b64decode(byte[] data, int dataLen) {
             try {
                 // Using MIME decoder because that one skips over anything that is not the alphabet,
                 // just like CPython does
                 ByteBuffer result = Base64.getMimeDecoder().decode(ByteBuffer.wrap(data, 0, dataLen));
-                return factory().createBytes(result.array(), result.limit());
+                return new ByteSequenceStorage(result.array(), result.limit());
             } catch (IllegalArgumentException e) {
-                throw raise(BinasciiError, e);
+                throw PRaiseNode.raiseUncached(this, BinasciiError, e);
             }
         }
 
@@ -192,22 +194,23 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         PBytes a2b(VirtualFrame frame, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
-                return a2b(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
+                byte[] bytes = a2b(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
+                return factory().createBytes(bytes);
             } finally {
                 bufferLib.release(buffer, frame, this);
             }
         }
 
         @TruffleBoundary
-        private PBytes a2b(byte[] bytes, int length) {
+        private byte[] a2b(byte[] bytes, int length) {
             if (length % 2 != 0) {
-                throw raise(BinasciiError, ErrorMessages.ODD_LENGTH_STRING);
+                throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.ODD_LENGTH_STRING);
             }
             byte[] output = new byte[length / 2];
             for (int i = 0; i < length / 2; i++) {
                 output[i] = (byte) (digitValue((char) bytes[i * 2]) * 16 + digitValue((char) bytes[i * 2 + 1]));
             }
-            return factory().createBytes(output);
+            return output;
         }
 
         private int digitValue(char b) {
@@ -218,7 +221,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             } else if (b >= 'A' && b <= 'F') {
                 return b - 'A' + 10;
             } else {
-                throw raise(BinasciiError, ErrorMessages.NON_HEX_DIGIT_FOUND);
+                throw PRaiseNode.raiseUncached(this, BinasciiError, ErrorMessages.NON_HEX_DIGIT_FOUND);
             }
         }
 
