@@ -750,12 +750,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         String[] localNames = names;
         Node[] localNodes = adoptedNodes;
 
-        CompilerAsserts.partialEvaluationConstant(localBC);
-        CompilerAsserts.partialEvaluationConstant(blockstackTop);
-        CompilerAsserts.partialEvaluationConstant(target);
-        CompilerAsserts.partialEvaluationConstant(bci);
-        CompilerAsserts.partialEvaluationConstant(stackTop);
-        CompilerAsserts.partialEvaluationConstant(oparg);
+        verifyBeforeLoop(target, stackTop, blockstackTop, bci, oparg, localBC);
 
         while (true) {
             // System.out.println(java.util.Arrays.toString(stack));
@@ -763,15 +758,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
             final byte bc = localBC[bci];
 
-            CompilerAsserts.partialEvaluationConstant(bc);
-            CompilerAsserts.partialEvaluationConstant(bci);
-            CompilerAsserts.partialEvaluationConstant(stackTop);
-            CompilerAsserts.partialEvaluationConstant(blockstackTop);
-            CompilerDirectives.ensureVirtualized(stack);
-            CompilerDirectives.ensureVirtualized(fastlocals);
-            CompilerDirectives.ensureVirtualized(celllocals);
-            CompilerDirectives.ensureVirtualized(freelocals);
-            CompilerDirectives.ensureVirtualized(blockstack);
+            verifyInLoop(stack, fastlocals, celllocals, freelocals, blockstack, stackTop, blockstackTop, bci, bc);
 
             try {
                 switch (bc) {
@@ -1115,23 +1102,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case PRINT_EXPR:
                         throw insertChildNode(localNodes[bci], NODE_RAISE, bci).raise(SystemError, "bc print expr");
                     case RAISE_VARARGS: {
-                        RaiseNode raiseNode = insertChildNode(localNodes[bci], NODE_RAISENODE, bci);
-                        int arg = oparg;
-                        Object cause;
-                        Object exception;
-                        if (arg > 1) {
-                            cause = stack[stackTop];
-                            stack[stackTop--] = null;
-                        } else {
-                            cause = PNone.NO_VALUE;
-                        }
-                        if (arg > 0) {
-                            exception = stack[stackTop];
-                            stack[stackTop--] = null;
-                        } else {
-                            exception = PNone.NO_VALUE;
-                        }
-                        raiseNode.execute(frame, exception, cause);
+                        stackTop = bytecodeRaiseVarargs(frame, stack, stackTop, bci, oparg, localNodes);
                         break;
                     }
                     case RETURN_VALUE:
@@ -1483,25 +1454,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case IMPORT_NAME: {
-                        CastToJavaIntExactNode castNode = insertChildNode(localNodes[bci], UNCACHED_CAST_TO_JAVA_INT_EXACT, NODE_CAST_TO_JAVA_INT_EXACT, bci);
-                        String modname = localNames[oparg];
-                        Object fromlist = stack[stackTop];
-                        stack[stackTop--] = null;
-                        String[] fromlistArg;
-                        if (fromlist == PNone.NONE) {
-                            fromlistArg = PythonUtils.EMPTY_STRING_ARRAY;
-                        } else {
-                            // import statement won't be dynamically created, so the fromlist is
-                            // always
-                            // from a LOAD_CONST, which will either be a tuple of strings or None.
-                            assert fromlist instanceof PTuple;
-                            Object[] list = ((PTuple) fromlist).getSequenceStorage().getInternalArray();
-                            fromlistArg = (String[]) list;
-                        }
-                        int level = castNode.execute(stack[stackTop]);
-                        ImportName importNode = insertChildNode(localNodes[bci + 1], UNCACHED_IMPORT_NAME, NODE_IMPORT_NAME, bci + 1);
-                        Object result = importNode.execute(frame, context, builtins, modname, globals, fromlistArg, level);
-                        stack[stackTop] = result;
+                        stackTop = bytecodeImportName(frame, context, builtins, globals, stack, stackTop, bci, oparg, localNames, localNodes);
                         break;
                     }
                     case IMPORT_STAR:
@@ -1743,6 +1696,72 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 throw e;
             }
         }
+    }
+
+    private int bytecodeRaiseVarargs(VirtualFrame frame, Object[] stack, int stackTop, int bci, int oparg, Node[] localNodes) {
+        RaiseNode raiseNode = insertChildNode(localNodes[bci], NODE_RAISENODE, bci);
+        int arg = oparg;
+        Object cause;
+        Object exception;
+        if (arg > 1) {
+            cause = stack[stackTop];
+            stack[stackTop--] = null;
+        } else {
+            cause = PNone.NO_VALUE;
+        }
+        if (arg > 0) {
+            exception = stack[stackTop];
+            stack[stackTop--] = null;
+        } else {
+            exception = PNone.NO_VALUE;
+        }
+        raiseNode.execute(frame, exception, cause);
+        return stackTop;
+    }
+
+    private int bytecodeImportName(VirtualFrame frame, PythonContext context, PythonModule builtins, Object globals, Object[] stack, int stackTop, int bci, int oparg, String[] localNames,
+                    Node[] localNodes) {
+        CastToJavaIntExactNode castNode = insertChildNode(localNodes[bci], UNCACHED_CAST_TO_JAVA_INT_EXACT, NODE_CAST_TO_JAVA_INT_EXACT, bci);
+        String modname = localNames[oparg];
+        Object fromlist = stack[stackTop];
+        stack[stackTop--] = null;
+        String[] fromlistArg;
+        if (fromlist == PNone.NONE) {
+            fromlistArg = PythonUtils.EMPTY_STRING_ARRAY;
+        } else {
+            // import statement won't be dynamically created, so the fromlist is
+            // always
+            // from a LOAD_CONST, which will either be a tuple of strings or None.
+            assert fromlist instanceof PTuple;
+            Object[] list = ((PTuple) fromlist).getSequenceStorage().getInternalArray();
+            fromlistArg = (String[]) list;
+        }
+        int level = castNode.execute(stack[stackTop]);
+        ImportName importNode = insertChildNode(localNodes[bci + 1], UNCACHED_IMPORT_NAME, NODE_IMPORT_NAME, bci + 1);
+        Object result = importNode.execute(frame, context, builtins, modname, globals, fromlistArg, level);
+        stack[stackTop] = result;
+        return stackTop;
+    }
+
+    private void verifyInLoop(Object[] stack, Object[] fastlocals, Object[] celllocals, Object[] freelocals, int[] blockstack, int stackTop, int blockstackTop, int bci, final byte bc) {
+        CompilerAsserts.partialEvaluationConstant(bc);
+        CompilerAsserts.partialEvaluationConstant(bci);
+        CompilerAsserts.partialEvaluationConstant(stackTop);
+        CompilerAsserts.partialEvaluationConstant(blockstackTop);
+        CompilerDirectives.ensureVirtualized(stack);
+        CompilerDirectives.ensureVirtualized(fastlocals);
+        CompilerDirectives.ensureVirtualized(celllocals);
+        CompilerDirectives.ensureVirtualized(freelocals);
+        CompilerDirectives.ensureVirtualized(blockstack);
+    }
+
+    private void verifyBeforeLoop(int target, int stackTop, int blockstackTop, int bci, int oparg, byte[] localBC) {
+        CompilerAsserts.partialEvaluationConstant(localBC);
+        CompilerAsserts.partialEvaluationConstant(blockstackTop);
+        CompilerAsserts.partialEvaluationConstant(target);
+        CompilerAsserts.partialEvaluationConstant(bci);
+        CompilerAsserts.partialEvaluationConstant(stackTop);
+        CompilerAsserts.partialEvaluationConstant(oparg);
     }
 
     private int bytecodeCallFunctionKw(VirtualFrame frame, Object[] stack, int stackTop, int bci, int oparg, Node[] localNodes) {
