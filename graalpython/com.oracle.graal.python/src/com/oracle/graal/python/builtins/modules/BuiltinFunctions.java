@@ -124,7 +124,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -176,7 +175,6 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
@@ -331,15 +329,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
         static boolean doObject(VirtualFrame frame,
                                 Object object,
                                 @Cached PyObjectGetIter getIter,
-                                @Cached("create(__NEXT__)") LookupAndCallUnaryNode callNode,
+                                @Cached GetNextNode nextNode,
                                 @Cached IsBuiltinClassProfile errorProfile,
                                 @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = getIter.execute(frame, object);
             while (true) {
                 try {
-                    Object next = callNode.executeObject(frame, iterator);
-                    if (!isTrueNode.execute(frame, next))
+                    Object next = nextNode.execute(frame, iterator);
+                    if (!isTrueNode.execute(frame, next)) {
                         return false;
+                    }
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     break;
@@ -354,27 +353,33 @@ public final class BuiltinFunctions extends PythonBuiltins {
                                             PyObjectIsTrueNode isTrueNode) {
             SequenceStorage sequenceStorage = seq.getSequenceStorage();
             Object[] internalArray = sequenceStorage.getInternalArray();
-            for (int i = 0; i < sequenceStorage.length(); i++)
-                if (!isTrueNode.execute(frame, internalArray[i]))
+            for (int i = 0; i < sequenceStorage.length(); i++) {
+                if (!isTrueNode.execute(frame, internalArray[i])) {
                     return false;
+                }
+            }
             return true;
         }
 
         static boolean checkHashKeys(PHashingCollection hashingCollection,
                                         VirtualFrame frame,
                                         PyObjectIsTrueNode isTrueNode) {
-            for (Object key: hashingCollection.keys())
-                if (!isTrueNode.execute(frame, key))
+            for (Object key: hashingCollection.keys()) {
+                if (!isTrueNode.execute(frame, key)) {
                     return false;
+                }
+            }
             return true;
         }
 
         static boolean checkHashEntries(PHashingCollection hashingCollection,
                                         VirtualFrame frame,
                                         PyObjectIsTrueNode isTrueNode) {
-            for (HashingStorage.DictEntry entry: hashingCollection.entries())
-                if (!isTrueNode.execute(frame, entry.key))
+            for (HashingStorage.DictEntry entry: hashingCollection.entries()) {
+                if (!isTrueNode.execute(frame, entry.key)) {
                     return false;
+                }
+            }
             return true;
         }
     }
@@ -421,8 +426,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             while (true) {
                 try {
                     Object next = callNode.executeObject(frame, iterator);
-                    if (isTrueNode.execute(frame, next))
+                    if (isTrueNode.execute(frame, next)) {
                         return true;
+                    }
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     break;
@@ -437,27 +443,33 @@ public final class BuiltinFunctions extends PythonBuiltins {
                                             PyObjectIsTrueNode isTrueNode) {
             SequenceStorage sequenceStorage = seq.getSequenceStorage();
             Object[] internalArray = sequenceStorage.getInternalArray();
-            for (int i = 0; i < sequenceStorage.length(); i++)
-                if (isTrueNode.execute(frame, internalArray[i]))
+            for (int i = 0; i < sequenceStorage.length(); i++) {
+                if (isTrueNode.execute(frame, internalArray[i])) {
                     return true;
+                }
+            }
             return false;
         }
 
         static boolean checkHashKeys(PHashingCollection hashingCollection,
                                      VirtualFrame frame,
                                      PyObjectIsTrueNode isTrueNode) {
-            for (Object key: hashingCollection.keys())
-                if (!isTrueNode.execute(frame, key))
+            for (Object key: hashingCollection.keys()) {
+                if (!isTrueNode.execute(frame, key)) {
                     return false;
+                }
+            }
             return true;
         }
 
         static boolean checkHashEntries(PHashingCollection hashingCollection,
                                         VirtualFrame frame,
                                         PyObjectIsTrueNode isTrueNode) {
-            for (HashingStorage.DictEntry entry: hashingCollection.entries())
-                if (isTrueNode.execute(frame, entry.key))
+            for (HashingStorage.DictEntry entry: hashingCollection.entries()) {
+                if (isTrueNode.execute(frame, entry.key)) {
                     return true;
+                }
+            }
             return false;
         }
     }
