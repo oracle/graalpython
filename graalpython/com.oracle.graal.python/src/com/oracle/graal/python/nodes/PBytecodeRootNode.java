@@ -1670,45 +1670,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case CALL_FUNCTION_KW: {
-                        CallNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL, NODE_CALL, bci);
-                        Object[] kwNamesArray = ((PTuple) stack[stackTop]).getSequenceStorage().getInternalArray();
-                        String[] kwNames = new String[kwNamesArray.length];
-                        CastToJavaStringNode castStr = insertChildNode(localNodes[bci + 1], UNCACHED_CAST_TO_JAVA_STRING, NODE_CAST_TO_JAVA_STRING, bci + 1);
-                        for (int j = 0; j < kwNamesArray.length; j++) {
-                            kwNames[j] = castStr.execute(kwNamesArray[j]);
-                        }
-                        stack[stackTop--] = null;
-                        Object func = stack[stackTop - oparg];
-                        int nkwargs = kwNames.length;
-                        int nargs = oparg - nkwargs;
-                        Object[] arguments = new Object[nargs];
-                        for (int j = nargs - 1; j >= 0; j--) {
-                            arguments[j] = stack[stackTop];
-                            stack[stackTop--] = null;
-                        }
-                        PKeyword[] kwArgs = new PKeyword[nkwargs];
-                        for (int j = nkwargs - 1; j >= 0; j--) {
-                            kwArgs[j] = new PKeyword(kwNames[j], stack[stackTop]);
-                            stack[stackTop--] = null;
-                        }
-                        stack[stackTop] = callNode.execute(frame, func, arguments, kwArgs);
+                        stackTop = bytecodeCallFunctionKw(frame, stack, stackTop, bci, oparg, localNodes);
                         break;
                     }
                     case CALL_FUNCTION_EX: {
-                        CallNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL, NODE_CALL, bci);
-                        Object func;
-                        Object[] callargs;
-                        PKeyword[] kwargs;
-                        if ((oparg & 0x01) != 0) {
-                            kwargs = dictToPKeywords((PDict) stack[stackTop], bci + 1);
-                            stack[stackTop--] = null;
-                        } else {
-                            kwargs = PKeyword.EMPTY_KEYWORDS;
-                        }
-                        callargs = ((PList) stack[stackTop]).getSequenceStorage().getInternalArray();
-                        stack[stackTop--] = null;
-                        func = stack[stackTop];
-                        stack[stackTop] = callNode.execute(frame, func, callargs, kwargs);
+                        stackTop = bytecodeCallFunctionEx(frame, stack, stackTop, bci, oparg, localNodes);
                         break;
                     }
                     case MAKE_FUNCTION:
@@ -1777,6 +1743,50 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 throw e;
             }
         }
+    }
+
+    private int bytecodeCallFunctionKw(VirtualFrame frame, Object[] stack, int stackTop, int bci, int oparg, Node[] localNodes) {
+        CallNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL, NODE_CALL, bci);
+        Object[] kwNamesArray = ((PTuple) stack[stackTop]).getSequenceStorage().getInternalArray();
+        String[] kwNames = new String[kwNamesArray.length];
+        CastToJavaStringNode castStr = insertChildNode(localNodes[bci + 1], UNCACHED_CAST_TO_JAVA_STRING, NODE_CAST_TO_JAVA_STRING, bci + 1);
+        for (int j = 0; j < kwNamesArray.length; j++) {
+            kwNames[j] = castStr.execute(kwNamesArray[j]);
+        }
+        stack[stackTop--] = null;
+        Object func = stack[stackTop - oparg];
+        int nkwargs = kwNames.length;
+        int nargs = oparg - nkwargs;
+        Object[] arguments = new Object[nargs];
+        for (int j = nargs - 1; j >= 0; j--) {
+            arguments[j] = stack[stackTop];
+            stack[stackTop--] = null;
+        }
+        PKeyword[] kwArgs = new PKeyword[nkwargs];
+        for (int j = nkwargs - 1; j >= 0; j--) {
+            kwArgs[j] = new PKeyword(kwNames[j], stack[stackTop]);
+            stack[stackTop--] = null;
+        }
+        stack[stackTop] = callNode.execute(frame, func, arguments, kwArgs);
+        return stackTop;
+    }
+
+    private int bytecodeCallFunctionEx(VirtualFrame frame, Object[] stack, int stackTop, int bci, int oparg, Node[] localNodes) {
+        CallNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL, NODE_CALL, bci);
+        Object func;
+        Object[] callargs;
+        PKeyword[] kwargs;
+        if ((oparg & 0x01) != 0) {
+            kwargs = dictToPKeywords((PDict) stack[stackTop], bci + 1);
+            stack[stackTop--] = null;
+        } else {
+            kwargs = PKeyword.EMPTY_KEYWORDS;
+        }
+        callargs = ((PList) stack[stackTop]).getSequenceStorage().getInternalArray();
+        stack[stackTop--] = null;
+        func = stack[stackTop];
+        stack[stackTop] = callNode.execute(frame, func, callargs, kwargs);
+        return stackTop;
     }
 
     private int bytecodeBinaryMultiply(VirtualFrame frame, Object[] stack, int lastStackTop, int bci) {
