@@ -226,10 +226,10 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                     }
                     return PNone.NONE;
                 } finally {
-                    releaseNode.execute(destView);
+                    releaseNode.execute(frame, destView);
                 }
             } finally {
-                releaseNode.execute(srcView);
+                releaseNode.execute(frame, srcView);
             }
         }
 
@@ -312,7 +312,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             try {
                 return eq(frame, self, memoryView, eqNode, readSelf, readOther);
             } finally {
-                releaseNode.execute(memoryView);
+                releaseNode.execute(frame, memoryView);
             }
         }
 
@@ -699,9 +699,9 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     public abstract static class ExitNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        static Object exit(PMemoryView self, Object type, Object val, Object tb,
+        static Object exit(VirtualFrame frame, PMemoryView self, Object type, Object val, Object tb,
                         @Cached MemoryViewNodes.ReleaseNode releaseNode) {
-            releaseNode.execute(self);
+            releaseNode.execute(frame, self);
             return PNone.NONE;
         }
     }
@@ -710,9 +710,9 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReleaseNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object release(PMemoryView self,
+        Object release(VirtualFrame frame, PMemoryView self,
                         @Cached MemoryViewNodes.ReleaseNode releaseNode) {
-            releaseNode.execute(self);
+            releaseNode.execute(frame, self);
             return PNone.NONE;
         }
     }
