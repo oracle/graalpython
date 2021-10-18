@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.REDUCE_EMPTY_SEQ;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_N_MUST_SUPPORT_ITERATION;
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT;
+import static com.oracle.truffle.api.nodes.LoopNode.reportLoopCount;
 
 import java.util.List;
 
@@ -124,6 +125,7 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
 
             Object[] args = new Object[2];
 
+            int count = 0;
             while (true) {
                 Object op2;
                 try {
@@ -136,11 +138,13 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
                         args[1] = op2;
                         result = callNode.execute(frame, function, args);
                     }
+                    count++;
                 } catch (PException e) {
                     e.expectStopIteration(stopIterProfile);
                     break;
                 }
             }
+            reportLoopCount(this, count);
 
             if (result == null) {
                 throw raise(PythonBuiltinClassType.TypeError, REDUCE_EMPTY_SEQ);
