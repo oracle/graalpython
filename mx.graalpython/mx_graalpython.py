@@ -320,7 +320,7 @@ def retag_unittests(args):
         'graalpython/com.oracle.graal.python.test/src/tests/test_tagged_unittests.py',
         '--retag'
     ]
-    mx.run([python_gvm_with_assertions()] + args + remaining_args, env=env)
+    mx.run([python_svm()] + args + remaining_args, env=env)
     if parsed_args.upload_results_to:
         with tempfile.TemporaryDirectory(prefix='graalpython-retagger-') as d:
             filename = os.path.join(d, 'unittest-tags-{}.tar.bz2'.format(sys.platform))
@@ -782,7 +782,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
-            run_tagged_unittests(python_gvm_with_assertions())
+            run_tagged_unittests(python_svm())
 
     # Unittests on SVM
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
