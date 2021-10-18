@@ -524,9 +524,9 @@ def _graalvm_home(*, envfile, extra_dy=""):
 
 def _join_bin(home, name):
     if sys.platform == "darwin":
-        return os.path.join("Contents", "Home", "bin", name)
+        return os.path.join(home, "Contents", "Home", "bin", name)
     else:
-        return os.path.join("bin", name)
+        return os.path.join(home, "bin", name)
 
 
 def python_gvm(_=None):
