@@ -988,7 +988,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             try {
                 lineno = castLong.execute(ln);
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_EXPECTED_GOT_P, "integer", "float");
             }
             PDict globalsDict;
             if (globals instanceof PNone) {

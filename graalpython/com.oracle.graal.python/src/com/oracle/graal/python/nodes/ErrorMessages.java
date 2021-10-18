@@ -55,6 +55,7 @@ public abstract class ErrorMessages {
     public static final String ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD = "argument must be an int, or have a fileno() method.";
     public static final String ARG_MUST_BE_NUMBER = "%s argument must be a number, not '%p'";
     public static final String ARG_MUST_BE_S_NOT_P = "%s argument must be a %s, not %p";
+    public static final String ARGUMENTS_MUST_BE_ITERATORS = "Arguments must be iterators";
     public static final String S_BRACKETS_ARG_MUST_BE_S_NOT_P = "%s() argument must be a %s, not %p";
     public static final String S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P = "%s() argument must be read-write bytes-like object, not %p";
     public static final String ARG_MUST_BE_CALLABLE = "argument must be callable";
@@ -155,6 +156,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_LOAD = "cannot load %s: %s";
     public static final String CANNOT_LOAD_M = "cannot load %s: %m";
     public static final String CANNOT_RELEASE_UNAQUIRED_LOCK = "cannot release un-acquired lock";
+    public static final String CANNOT_REENTER_TEE_ITERATOR = "cannot re-enter the tee iterator";
     public static final String CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE = "Cannot specify both ',' and '_'.";
     public static final String CANNOT_SPECIFY_C_WITH_C = "Cannot specify '%c' with '%c'.";
     public static final String CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = "%s: cannot use fd and follow_symlinks together";
@@ -316,7 +318,7 @@ public abstract class ErrorMessages {
     public static final String INT_TOO_LARGE_TO_CONVERT_TO_FLOAT = "int too large to convert to float";
     public static final String INTEGER_DIVISION_BY_ZERO = "ZeroDivisionError: integer division or modulo by zero";
     public static final String INTEGER_DIVISION_RESULT_TOO_LARGE = "integer division result too large for a float";
-    public static final String INTEGER_EXPECTED_GOT_FLOAT = "integer argument expected, got float";
+    public static final String S_EXPECTED_GOT_P = "%s argument expected, got %p";
     public static final String INTEGER_GREATER_THAN_MAX = "integer is greater than maximum";
     public static final String INTEGER_REQUIRED = "an integer is required";
     public static final String INTEGER_REQUIRED_GOT = "an integer is required (got type %p)";
@@ -352,6 +354,7 @@ public abstract class ErrorMessages {
     public static final String INVALID_USE_OF_W_FORMAT_CHAR = "invalid use of 'w' format character";
     public static final String INVALID_BUFFER_ACCESS = "invalid buffer access";
     public static final String IS_EMPTY = "%s is empty";
+    public static final String IS_NOT_A = "%s is not a %s";
     public static final String IS_NOT_A_DICTIONARY = "%s is not a dictionary";
     public static final String IS_NOT_IN_RANGE = "%s is not in range";
     public static final String IS_NOT_A_UNICODE_OBJECT = "%s is not a unicode object";
@@ -378,6 +381,7 @@ public abstract class ErrorMessages {
     public static final String KLASS_ARG_IS_NOT_HOST_OBJ = "klass argument '%p' is not a host object";
     public static final String LAZY_INITIALIZATION_FAILED = "lazy initialization of type %s failed";
     public static final String LEFT_BRACKET_WO_RIGHT_BRACKET_IN_ARG = "')' without '(' in argument parsing";
+    public static final String LEN_OF_UNSIZED_OBJECT = "len() of unsized object";
     public static final String LEN_SHOULD_RETURN_GT_ZERO = "__len__() should return >= 0";
     public static final String LENGTH_HINT_SHOULD_RETURN_MT_ZERO = "__length_hint__() should return >= 0";
     public static final String LIST_ASSIGMENT_INDEX_OUT_OF_RANGE = "list assignment index out of range";
@@ -604,6 +608,8 @@ public abstract class ErrorMessages {
     public static final String TAKES_EXACTLY_S_ARGUMENTS_D_GIVEN = "%s() takes exactly %s arguments (%d given)";
     public static final String TAKES_NO_KEYWORD_ARGS = "%s takes no keyword arguments";
     public static final String THROW_THIRD_ARG_MUST_BE_TRACEBACK = "throw() third argument must be a traceback object";
+    public static final String TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS = "_tee_dataobject should not have more than %s links";
+    public static final String TDATAOBJECT_SHOULDNT_HAVE_NEXT = "_tee_dataobject shouldn't have a next if not full";
     public static final String TIMED_OUT = "timed out";
     public static final String TIMEOUT_VALUE_MUST_BE_POSITIVE = "timeout value must be positive";
     public static final String TIMEOUT_VALUE_OUT_OF_RANGE = "Timeout value out of range";

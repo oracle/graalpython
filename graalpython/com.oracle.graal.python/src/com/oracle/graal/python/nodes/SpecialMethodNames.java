@@ -48,6 +48,7 @@ public abstract class SpecialMethodNames {
     public static final String __ALLOC__ = "__alloc__";
     public static final String __INIT__ = "__init__";
     public static final String __CEIL__ = "__ceil__";
+    public static final String __COPY__ = "__copy__";
     public static final String __DEL__ = "__del__";
     public static final String __FLOOR__ = "__floor__";
     public static final String __REPR__ = "__repr__";

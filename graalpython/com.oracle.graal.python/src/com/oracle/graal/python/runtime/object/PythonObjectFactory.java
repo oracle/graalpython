@@ -111,6 +111,10 @@ import com.oracle.graal.python.builtins.objects.iterator.PSentinelIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
+import com.oracle.graal.python.builtins.objects.itertools.PChain;
+import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
+import com.oracle.graal.python.builtins.objects.itertools.PTee;
+import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
@@ -1103,6 +1107,26 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PFileIO createFileIO(Object clazz) {
         return trace(new PFileIO(clazz, getShape(clazz)));
+    }
+
+    public final PChain createChain() {
+        return trace(new PChain(PythonBuiltinClassType.PChain, PythonBuiltinClassType.PChain.getInstanceShape(getLanguage())));
+    }
+
+    public final PRepeat createRepeat() {
+        return trace(new PRepeat(PythonBuiltinClassType.PRepeat, PythonBuiltinClassType.PRepeat.getInstanceShape(getLanguage())));
+    }
+
+    public final PTee createTee(PTeeDataObject dataObj, int index) {
+        return trace(new PTee(dataObj, index, PythonBuiltinClassType.PTee, PythonBuiltinClassType.PTee.getInstanceShape(getLanguage())));
+    }
+
+    public final PTeeDataObject createTeeDataObject() {
+        return trace(new PTeeDataObject(PythonBuiltinClassType.PTeeDataObject, PythonBuiltinClassType.PTeeDataObject.getInstanceShape(getLanguage())));
+    }
+
+    public final PTeeDataObject createTeeDataObject(Object it) {
+        return trace(new PTeeDataObject(it, PythonBuiltinClassType.PTeeDataObject, PythonBuiltinClassType.PTeeDataObject.getInstanceShape(getLanguage())));
     }
 
     public final PTextIO createTextIO(Object clazz) {

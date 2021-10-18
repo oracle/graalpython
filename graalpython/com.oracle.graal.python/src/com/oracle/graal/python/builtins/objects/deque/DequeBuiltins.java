@@ -50,6 +50,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__COPY__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
@@ -267,7 +268,7 @@ public class DequeBuiltins extends PythonBuiltins {
     }
 
     // deque.copy()
-    @Builtin(name = "__copy__", minNumOfPositionalArgs = 1)
+    @Builtin(name = __COPY__, minNumOfPositionalArgs = 1)
     @Builtin(name = "copy", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DequeCopyNode extends PythonUnaryBuiltinNode {
