@@ -1011,6 +1011,10 @@ public final class PythonContext extends Python3Core {
         return mainModule;
     }
 
+    public Python3Core getCore() {
+        return this;
+    }
+
     public InputStream getStandardIn() {
         return in;
     }

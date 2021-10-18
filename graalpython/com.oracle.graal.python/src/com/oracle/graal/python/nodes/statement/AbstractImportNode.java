@@ -44,7 +44,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__IMPORT__;
 import static com.oracle.graal.python.nodes.ErrorMessages.IMPORT_NOT_FOUND;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
