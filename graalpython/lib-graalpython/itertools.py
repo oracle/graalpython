@@ -23,37 +23,6 @@
 # DEALINGS IN THE SOFTWARE.
 import sys
 
-class filterfalse(object):
-    """
-    filterfalse(function or None, sequence) --> filterfalse object
-
-    Return those items of sequence for which function(item) is false.
-    If function is None, return the items that are false.
-    """
-
-    @__graalpython__.builtin_method
-    def __init__(self, func, sequence):
-        self.func = func
-        self.iterator = iter(sequence)
-
-    @__graalpython__.builtin_method
-    def __iter__(self):
-        return self
-
-    @__graalpython__.builtin_method
-    def __next__(self):
-        while True:
-            n = next(self.iterator)
-            if self.func is None:
-                if not n:
-                    return n
-            elif not self.func(n):
-                return n
-
-    @__graalpython__.builtin_method
-    def __reduce__(self):
-        return type(self), (self.func, self.iterator)
-
 class groupby(object):
     """Make an iterator that returns consecutive keys and groups from the
     iterable. The key is a function computing a key value for each

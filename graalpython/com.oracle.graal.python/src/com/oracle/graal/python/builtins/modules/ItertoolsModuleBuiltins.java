@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PAccumulate;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
 import com.oracle.graal.python.builtins.objects.itertools.PCount;
 import com.oracle.graal.python.builtins.objects.itertools.PDropwhile;
+import com.oracle.graal.python.builtins.objects.itertools.PFilterfalse;
 import com.oracle.graal.python.builtins.objects.itertools.PIslice;
 import com.oracle.graal.python.builtins.objects.itertools.PPermutations;
 import com.oracle.graal.python.builtins.objects.itertools.PProduct;
@@ -105,6 +106,26 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         protected PDropwhile construct(Object cls, Object[] arguments, PKeyword[] keywords,
                         @Cached TypeNodes.IsTypeNode isTypeNode) {
             return factory().createDropwhile();
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        protected Object notype(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+        }
+    }
+
+    @Builtin(name = "filterfalse", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PFilterfalse, doc = "filterfalse(function or None, sequence) --> filterfalse object\n\n" +
+                    "Return those items of sequence for which function(item) is false.\n" +
+                    "If function is None, return the items that are false.")
+    @GenerateNodeFactory
+    public abstract static class FilterFalseNode extends PythonVarargsBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PFilterfalse construct(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @Cached TypeNodes.IsTypeNode isTypeNode) {
+            return factory().createFilterfalse();
         }
 
         @Fallback
