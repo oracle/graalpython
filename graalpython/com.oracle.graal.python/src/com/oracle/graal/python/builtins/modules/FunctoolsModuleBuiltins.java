@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.objects.partial.PartialBuiltins.getNewPartialArgs;
 import static com.oracle.graal.python.nodes.BuiltinNames.PARTIAL;
 import static com.oracle.graal.python.nodes.ErrorMessages.REDUCE_EMPTY_SEQ;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_CALLABLE;
@@ -53,6 +54,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.partial.PPartial;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
@@ -72,6 +76,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "_functools")
@@ -160,48 +165,73 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
                     "of the given arguments and keywords.\n")
     @GenerateNodeFactory
     public abstract static class PartialNode extends PythonBuiltinNode {
+        protected boolean isPartialWithoutDict(GetDictIfExistsNode getDict, Object[] args, HashingStorageLibrary lib, boolean withKwDict) {
+            return isPartialWithoutDict(getDict, args) && withKwDict == ((PPartial) args[0]).hasKw(lib);
+        }
+
         protected boolean isPartialWithoutDict(GetDictIfExistsNode getDict, Object[] args) {
             return getDict.execute(args[0]) == null && args[0] instanceof PPartial;
+        }
+
+        protected boolean withKeywords(PKeyword[] keywords) {
+            return keywords.length > 0;
         }
 
         protected boolean atLeastOneArg(Object[] args) {
             return args.length >= 1;
         }
 
-        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args)"})
-        Object createFromPartialWoDict(Object cls, Object[] args, PKeyword[] keywords,
+        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lib, false)"})
+        Object createFromPartialWoDictWoKw(Object cls, Object[] args, PKeyword[] keywords,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached ConditionProfile hasArgsProfile,
-                        @Cached ConditionProfile hasKeywordsProfile) {
+                        @Cached ConditionProfile hasKeywordsProfile,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             assert args[0] instanceof PPartial;
             final PPartial function = (PPartial) args[0];
-            final Object[] pArgs = function.getArgs();
-            final PKeyword[] pKeywords = function.getKw();
+            Object[] funcArgs = getNewPartialArgs(function, args, hasArgsProfile, 1);
 
-            Object[] newArgs;
-            if (hasArgsProfile.profile(args.length > 1)) {
-                newArgs = new Object[pArgs.length + args.length - 1];
-                PythonUtils.arraycopy(pArgs, 0, newArgs, 0, pArgs.length);
-                PythonUtils.arraycopy(args, 1, newArgs, pArgs.length, args.length - 1);
-            } else {
-                newArgs = pArgs;
-            }
-
-            PKeyword[] newKeywords;
+            PDict funcKwDict;
             if (hasKeywordsProfile.profile(keywords.length > 0)) {
-                newKeywords = new PKeyword[pKeywords.length + keywords.length];
-                PythonUtils.arraycopy(pKeywords, 0, newKeywords, 0, pKeywords.length);
-                PythonUtils.arraycopy(keywords, 0, newKeywords, pKeywords.length, keywords.length);
+                funcKwDict = factory().createDict(keywords);
             } else {
-                newKeywords = pKeywords;
+                funcKwDict = factory().createDict();
             }
 
-            return factory().createPartial(cls, function.getFn(), newArgs, newKeywords);
+            return factory().createPartial(cls, function.getFn(), funcArgs, funcKwDict);
+        }
+
+        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lib, true)", "!withKeywords(keywords)"})
+        Object createFromPartialWoDictWKw(Object cls, Object[] args, PKeyword[] keywords,
+                        @Cached GetDictIfExistsNode getDict,
+                        @Cached ConditionProfile hasArgsProfile,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            assert args[0] instanceof PPartial;
+            final PPartial function = (PPartial) args[0];
+            Object[] funcArgs = getNewPartialArgs(function, args, hasArgsProfile, 1);
+            return factory().createPartial(cls, function.getFn(), funcArgs, function.getKwCopy(factory(), lib));
+        }
+
+        @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(getDict, args, lib, true)", "withKeywords(keywords)"})
+        Object createFromPartialWoDictWKwKw(VirtualFrame frame, Object cls, Object[] args, PKeyword[] keywords,
+                        @Cached GetDictIfExistsNode getDict,
+                        @Cached ConditionProfile hasArgsProfile,
+                        @Cached HashingStorage.InitNode initNode,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            assert args[0] instanceof PPartial;
+            final PPartial function = (PPartial) args[0];
+            Object[] funcArgs = getNewPartialArgs(function, args, hasArgsProfile, 1);
+
+            HashingStorage storage = function.getKw().getDictStorage();
+            storage = lib.addAllToOther(initNode.execute(frame, PNone.NO_VALUE, keywords), storage);
+
+            return factory().createPartial(cls, function.getFn(), funcArgs, factory().createDict(storage));
         }
 
         @Specialization(guards = {"atLeastOneArg(args)", "!isPartialWithoutDict(getDict, args)"})
         Object createGeneric(Object cls, Object[] args, PKeyword[] keywords,
                         @Cached GetDictIfExistsNode getDict,
+                        @Cached ConditionProfile hasKeywordsProfile,
                         @Cached PyCallableCheckNode callableCheckNode) {
             Object function = args[0];
             if (!callableCheckNode.execute(function)) {
@@ -209,7 +239,13 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
             }
 
             final Object[] funcArgs = PythonUtils.arrayCopyOfRange(args, 1, args.length);
-            return factory().createPartial(cls, function, funcArgs, keywords);
+            PDict funcKwDict;
+            if (hasKeywordsProfile.profile(keywords.length > 0)) {
+                funcKwDict = factory().createDict(keywords);
+            } else {
+                funcKwDict = factory().createDict();
+            }
+            return factory().createPartial(cls, function, funcArgs, funcKwDict);
         }
 
         @Specialization(guards = "!atLeastOneArg(args)")

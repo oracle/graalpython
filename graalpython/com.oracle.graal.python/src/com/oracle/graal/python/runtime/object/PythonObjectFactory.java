@@ -738,8 +738,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PKeyWrapper(PythonBuiltinClassType.PKeyWrapper, getShape(PythonBuiltinClassType.PKeyWrapper), cmp));
     }
 
-    public final PPartial createPartial(Object cls, Object function, Object[] args, PKeyword[] keywords) {
-        return trace(new PPartial(cls, getShape(cls), function, args, keywords));
+    public final PPartial createPartial(Object cls, Object function, Object[] args, PDict kwDict) {
+        return trace(new PPartial(cls, getShape(cls), function, args, kwDict));
     }
 
     public final PDefaultDict createDefaultDict(Object cls) {
