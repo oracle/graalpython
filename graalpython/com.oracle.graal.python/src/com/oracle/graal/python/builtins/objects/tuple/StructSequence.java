@@ -231,7 +231,7 @@ public class StructSequence {
 
     @TruffleBoundary
     public static void initType(PythonLanguage language, Object klass, Descriptor desc) {
-        initType(PythonContext.get(null).getCore().factory(), language, klass, desc);
+        initType(PythonContext.get(null).factory(), language, klass, desc);
     }
 
     @TruffleBoundary

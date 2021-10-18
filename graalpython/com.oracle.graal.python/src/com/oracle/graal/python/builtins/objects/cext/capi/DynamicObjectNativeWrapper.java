@@ -417,7 +417,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         private static Object ensureClassObject(PythonContext context, Object klass) {
             if (klass instanceof PythonBuiltinClassType) {
-                return context.getCore().lookupType((PythonBuiltinClassType) klass);
+                return context.lookupType((PythonBuiltinClassType) klass);
             }
             return klass;
         }
@@ -471,7 +471,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached LookupNativeMemberInMRONode lookupTpAsBufferNode,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
                         @Shared("nullToSulongNode") @Cached ToSulongNode toSulongNode) {
-            Python3Core core = PythonContext.get(getNativeNullNode).getCore();
+            Python3Core core = PythonContext.get(getNativeNullNode);
             PythonBuiltinClass pBytes = core.lookupType(PythonBuiltinClassType.PBytes);
             if (isSubtype.execute(object, pBytes)) {
                 return new PyBufferProcsWrapper(pBytes);
@@ -719,7 +719,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 // We do not actually return _the_ traverse or clear function since we will never
                 // need
                 // it. It is just important to return a function.
-                PythonModule pythonCextModule = PythonContext.get(getNativeNullNode).getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
+                PythonModule pythonCextModule = PythonContext.get(getNativeNullNode).lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
                 Object sequenceClearMethod = readAttrNode.execute(pythonCextModule, "sequence_clear");
                 return toSulongNode.execute(sequenceClearMethod);
             }

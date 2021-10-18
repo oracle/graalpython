@@ -235,7 +235,7 @@ public class SocketBuiltins extends PythonBuiltins {
             // TODO remove SOCK_CLOEXEC and SOCK_NONBLOCK
             self.setType(type);
             self.setProto(proto);
-            long defaultTimeout = (long) readNode.execute(getContext().getCore().lookupBuiltinModule("_socket"), SocketModuleBuiltins.DEFAULT_TIMEOUT_KEY);
+            long defaultTimeout = (long) readNode.execute(getContext().lookupBuiltinModule("_socket"), SocketModuleBuiltins.DEFAULT_TIMEOUT_KEY);
             self.setTimeoutNs(defaultTimeout);
             if (defaultTimeout >= 0) {
                 posixLib.setBlocking(getPosixSupport(), fd, false);

@@ -170,7 +170,7 @@ public class CDataBuiltins extends PythonBuiltins {
             }
             Object clazz = getClassNode.execute(self);
             Object[] t2 = new Object[]{clazz, factory().createTuple(t1)};
-            PythonModule ctypes = getContext().getCore().lookupBuiltinModule("_ctypes");
+            PythonModule ctypes = getContext().lookupBuiltinModule("_ctypes");
             Object unpickle = dylib.getOrDefault(ctypes.getStorage(), UNPICKLE, null);
             if (unpickle == null) {
                 throw raise(NotImplementedError, "unpickle isn't supported yet.");

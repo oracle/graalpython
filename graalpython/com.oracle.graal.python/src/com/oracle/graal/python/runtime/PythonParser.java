@@ -98,26 +98,26 @@ public interface PythonParser {
         Exec
     }
 
-    public interface ParserErrorCallback {
-        default RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments) {
+    public abstract class ParserErrorCallback {
+        public final RuntimeException raiseInvalidSyntax(Source source, SourceSection section, String message, Object... arguments) {
             return raiseInvalidSyntax(ErrorType.Generic, source, section, message, arguments);
         }
 
-        RuntimeException raiseInvalidSyntax(ErrorType type, Source source, SourceSection section, String message, Object... arguments);
+        public abstract RuntimeException raiseInvalidSyntax(ErrorType type, Source source, SourceSection section, String message, Object... arguments);
 
-        default RuntimeException raiseInvalidSyntax(Node location, String message, Object... arguments) {
+        public final RuntimeException raiseInvalidSyntax(Node location, String message, Object... arguments) {
             return raiseInvalidSyntax(ErrorType.Generic, location, message, arguments);
         }
 
-        RuntimeException raiseInvalidSyntax(ErrorType type, Node location, String message, Object... arguments);
+        public abstract RuntimeException raiseInvalidSyntax(ErrorType type, Node location, String message, Object... arguments);
 
-        default RuntimeException raiseInvalidSyntax(Source source, SourceSection section) {
+        public final RuntimeException raiseInvalidSyntax(Source source, SourceSection section) {
             return raiseInvalidSyntax(source, section, ErrorMessages.INVALID_SYNTAX, PythonUtils.EMPTY_OBJECT_ARRAY);
         }
 
-        void warn(PythonBuiltinClassType type, String format, Object... args);
+        public abstract void warn(PythonBuiltinClassType type, String format, Object... args);
 
-        PythonContext getContext();
+        public abstract PythonContext getContext();
     }
 
     /**

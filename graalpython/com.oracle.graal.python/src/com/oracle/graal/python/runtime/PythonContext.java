@@ -1011,10 +1011,6 @@ public final class PythonContext extends Python3Core {
         return mainModule;
     }
 
-    public Python3Core getCore() {
-        return this;
-    }
-
     public InputStream getStandardIn() {
         return in;
     }
@@ -2050,7 +2046,7 @@ public final class PythonContext extends Python3Core {
     @TruffleBoundary
     public String getSoAbi() {
         if (soABI == null) {
-            PythonModule sysModule = getCore().lookupBuiltinModule("sys");
+            PythonModule sysModule = this.lookupBuiltinModule("sys");
             Object implementationObj = ReadAttributeFromObjectNode.getUncached().execute(sysModule, "implementation");
             // sys.implementation.cache_tag
             String cacheTag = (String) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, "cache_tag");

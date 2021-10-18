@@ -200,7 +200,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
                         @Cached ExpandKeywordStarargsNode getKwArgsNode) {
             PythonContext context = getContext();
             TruffleLanguage.Env env = context.getEnv();
-            PythonModule threadModule = context.getCore().lookupBuiltinModule("_thread");
+            PythonModule threadModule = context.lookupBuiltinModule("_thread");
 
             // TODO: python thread stack size != java thread stack size
             // ignore setting the stack size for the moment

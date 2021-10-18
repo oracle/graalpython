@@ -145,7 +145,7 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
             int n = openHandles.size();
             openHandles.sort(Comparator.comparingLong(debugContext::getDebugHandleInfo));
             Object[] result = new Object[n];
-            PythonObjectFactory factory = debugContext.getContext().getCore().factory();
+            PythonObjectFactory factory = debugContext.getContext().factory();
             for (int i = 0; i < n; i++) {
                 result[i] = factory.createDebugHandle(openHandles.get(i));
             }
@@ -168,7 +168,7 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
             Queue<GraalHPyHandle> openHandles = debugContext.getClosedHandles();
             int n = openHandles.size();
             Object[] result = new Object[n];
-            PythonObjectFactory factory = debugContext.getContext().getCore().factory();
+            PythonObjectFactory factory = debugContext.getContext().factory();
             int i = 0;
             for (GraalHPyHandle handle : openHandles) {
                 result[i++] = factory.createDebugHandle(handle);

@@ -283,7 +283,7 @@ public abstract class ObjectNodes {
         static Object id(boolean self,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
             PythonContext context = PythonContext.get(getObjectIdNode);
-            Object bool = self ? context.getCore().getTrue() : context.getCore().getFalse();
+            Object bool = self ? context.getTrue() : context.getFalse();
             return getObjectIdNode.execute(bool);
         }
 

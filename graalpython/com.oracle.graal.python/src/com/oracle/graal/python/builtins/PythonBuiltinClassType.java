@@ -718,7 +718,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @ExportMessage
     public Object send(Message message, Object[] args,
                     @CachedLibrary(limit = "1") ReflectionLibrary lib) throws Exception {
-        return lib.send(PythonContext.get(lib).getCore().lookupType(this), message, args);
+        return lib.send(PythonContext.get(lib).lookupType(this), message, args);
     }
 
     public static boolean isExceptionType(PythonBuiltinClassType type) {

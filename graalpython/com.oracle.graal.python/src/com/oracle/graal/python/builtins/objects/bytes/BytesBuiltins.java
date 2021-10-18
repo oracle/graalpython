@@ -596,7 +596,7 @@ public class BytesBuiltins extends PythonBuiltins {
                         @Cached TupleBuiltins.GetItemNode getTupleItemNode) {
             byte[] bytes = bufferLib.getInternalOrCopiedByteArray(self);
             int bytesLen = bufferLib.getBufferLength(self);
-            BytesFormatProcessor formatter = new BytesFormatProcessor(PythonContext.get(this).getCore(), getRaiseNode(), getItemNode, getTupleItemNode, bytes, bytesLen);
+            BytesFormatProcessor formatter = new BytesFormatProcessor(PythonContext.get(this), getRaiseNode(), getItemNode, getTupleItemNode, bytes, bytesLen);
             Object savedState = IndirectCallContext.enter(frame, this);
             try {
                 byte[] data = formatter.format(right);

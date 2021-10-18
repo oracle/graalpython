@@ -817,7 +817,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class RegisterImportFunc extends PythonUnaryBuiltinNode {
         @Specialization
         Object doit(PMethod func) {
-            getContext().getCore().registerImportFunc(func);
+            getContext().registerImportFunc(func);
             return PNone.NONE;
         }
     }
@@ -827,7 +827,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class RegisterImportlib extends PythonUnaryBuiltinNode {
         @Specialization
         Object doit(PythonModule lib) {
-            getContext().getCore().registerImportlib(lib);
+            getContext().registerImportlib(lib);
             return PNone.NONE;
         }
     }

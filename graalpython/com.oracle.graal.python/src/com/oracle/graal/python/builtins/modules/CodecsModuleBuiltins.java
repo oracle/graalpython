@@ -886,8 +886,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 return result;
             }
             if (hasTruffleEncodingProfile.profile(hasTruffleEncoding(encoding))) {
-                PythonModule codecs = context.getCore().lookupBuiltinModule("_codecs_truffle");
-                result = CodecsTruffleModuleBuiltins.codecsInfo(codecs, encoding, context, getContext().getCore().factory());
+                PythonModule codecs = context.lookupBuiltinModule("_codecs_truffle");
+                result = CodecsTruffleModuleBuiltins.codecsInfo(codecs, encoding, context, context.factory());
             } else {
                 for (Object func : getSearchPaths(context)) {
                     Object obj = callNode.executeObject(func, normalized_encoding);

@@ -374,7 +374,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected CallTarget parse(ParsingRequest request) {
         PythonContext context = PythonContext.get(null);
-        Python3Core core = context.getCore();
         Source source = request.getSource();
         if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
             if (!request.getArgumentNames().isEmpty()) {
@@ -390,7 +389,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                     gil.release(context, wasAcquired);
                 }
             }
-            if (core.isCoreInitialized()) {
+            if (context.isCoreInitialized()) {
                 return PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, root, source));
             } else {
                 return PythonUtils.getOrCreateCallTarget(root);
@@ -405,18 +404,18 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (bytes.length == 0) {
                 return createCachedCallTarget(l -> new BadOPCodeNode(l), BadOPCodeNode.class);
             }
-            return PythonUtils.getOrCreateCallTarget(core.getSerializer().deserialize(core, bytes));
+            return PythonUtils.getOrCreateCallTarget(context.getSerializer().deserialize(context, bytes));
         }
         for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
             if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
                 assert !source.isInteractive();
-                return PythonUtils.getOrCreateCallTarget((RootNode) core.getParser().parse(ParserMode.Eval, optimize, core, source, null, null));
+                return PythonUtils.getOrCreateCallTarget((RootNode) context.getParser().parse(ParserMode.Eval, optimize, context, source, null, null));
             }
         }
         for (int optimize = 0; optimize < MIME_TYPE_COMPILE.length; optimize++) {
             if (MIME_TYPE_COMPILE[optimize].equals(source.getMimeType())) {
                 assert !source.isInteractive();
-                return PythonUtils.getOrCreateCallTarget((RootNode) core.getParser().parse(ParserMode.File, optimize, core, source, null, null));
+                return PythonUtils.getOrCreateCallTarget((RootNode) context.getParser().parse(ParserMode.File, optimize, context, source, null, null));
             }
         }
         throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
@@ -438,9 +437,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             // by default we assume a module
             mode = ParserMode.File;
         }
-        Python3Core pythonCore = context.getCore();
         try {
-            return (RootNode) pythonCore.getParser().parse(mode, optimize, pythonCore, source, null, null);
+            return (RootNode) context.getParser().parse(mode, optimize, context, source, null, null);
         } catch (PException e) {
             // handle PException during parsing (PIncompleteSourceException will propagate through)
             PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
@@ -493,7 +491,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
             private RootCallTarget parse(PythonContext context, VirtualFrame frame) {
                 CompilerAsserts.neverPartOfCompilation();
-                RootNode rootNode = (RootNode) context.getCore().getParser().parse(ParserMode.WithArguments, 0, context.getCore(), source, frame, argumentNames);
+                RootNode rootNode = (RootNode) context.getParser().parse(ParserMode.WithArguments, 0, context, source, frame, argumentNames);
                 return rootNode.getCallTarget();
             }
         };
@@ -555,8 +553,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @TruffleBoundary
     protected static ExpressionNode parseInline(Source code, PythonContext context, MaterializedFrame lexicalContextFrame) {
-        Python3Core pythonCore = context.getCore();
-        return (ExpressionNode) pythonCore.getParser().parse(ParserMode.InlineEvaluation, 0, pythonCore, code, lexicalContextFrame, null);
+        return (ExpressionNode) context.getParser().parse(ParserMode.InlineEvaluation, 0, context, code, lexicalContextFrame, null);
     }
 
     @Override
@@ -567,9 +564,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         try {
             if (interopLib.isBoolean(value)) {
                 if (interopLib.asBoolean(value)) {
-                    return context.getCore().getTrue();
+                    return context.getTrue();
                 } else {
-                    return context.getCore().getFalse();
+                    return context.getFalse();
                 }
             } else if (interopLib.isString(value)) {
                 return factory.createString(interopLib.asString(value));
@@ -717,7 +714,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder) throws IOException {
-        boolean coreIsInitialized = ctxt.getCore().isCoreInitialized();
+        boolean coreIsInitialized = ctxt.isCoreInitialized();
         boolean internal = !coreIsInitialized && !ctxt.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources);
         if (internal) {
             srcBuilder.internal(true);

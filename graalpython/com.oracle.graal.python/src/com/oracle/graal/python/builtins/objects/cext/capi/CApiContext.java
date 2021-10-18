@@ -925,7 +925,7 @@ public final class CApiContext extends CExtContext {
 
                 // call into Python to initialize python_cext module globals
                 ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
-                PythonModule builtinModule = context.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
+                PythonModule builtinModule = context.lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
 
                 CallUnaryMethodNode callNode = CallUnaryMethodNode.getUncached();
                 callNode.executeObject(null, readNode.execute(builtinModule, INITIALIZE_CAPI), capiLibrary);

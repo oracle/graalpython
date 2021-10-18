@@ -285,7 +285,7 @@ import com.oracle.truffle.api.source.SourceSection;
  * types. The core is embedded, using inheritance, into {@link PythonContext} to avoid indirection
  * through an extra field in the context.
  */
-public abstract class Python3Core implements ParserErrorCallback {
+public abstract class Python3Core extends ParserErrorCallback {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(Python3Core.class);
     private final String[] coreFiles;
 
@@ -625,7 +625,8 @@ public abstract class Python3Core implements ParserErrorCallback {
 
     @Override
     public final PythonContext getContext() {
-        // Small hack: we know that this is the only implementation of Python3Core
+        // Small hack: we know that this is the only implementation of Python3Core, this should be
+        // removed once and if Python3Core is fully merged into PythonContext
         return (PythonContext) this;
     }
 

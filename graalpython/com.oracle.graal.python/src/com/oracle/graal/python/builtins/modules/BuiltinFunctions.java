@@ -1621,7 +1621,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (singleContextAssumption.isValid()) {
                 if (cachedSys == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    cachedSys = getContext().getCore().lookupBuiltinModule("sys");
+                    cachedSys = getContext().lookupBuiltinModule("sys");
                 }
                 sys = cachedSys;
             } else {
@@ -1629,7 +1629,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     cachedSys = null;
                 }
-                sys = getContext().getCore().lookupBuiltinModule("sys");
+                sys = getContext().lookupBuiltinModule("sys");
             }
             if (readStdout == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2095,7 +2095,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         private static Object buildJavaClass(Object namespace, String name, Object base) {
             // uncached PythonContext get, since this code path is slow in any case
-            Object module = PythonContext.get(null).getCore().lookupBuiltinModule(BuiltinNames.__GRAALPYTHON__);
+            Object module = PythonContext.get(null).lookupBuiltinModule(BuiltinNames.__GRAALPYTHON__);
             Object buildFunction = PyObjectLookupAttr.getUncached().execute(null, module, "build_java_class");
             return CallNode.getUncached().execute(buildFunction, namespace, name, base);
         }
@@ -2171,7 +2171,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     if (meta == null) {
                         // if there are no bases, use type:
                         if (bases.getSequenceStorage().length() == 0) {
-                            meta = PythonContext.get(update).getCore().lookupType(PythonBuiltinClassType.PythonClass);
+                            meta = PythonContext.get(update).lookupType(PythonBuiltinClassType.PythonClass);
                         } else {
                             // else get the type of the first base
                             meta = getClass.execute(bases.getSequenceStorage().getItemNormalized(0));
