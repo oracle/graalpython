@@ -46,3 +46,9 @@ def test_special_descriptor():
             return inner
 
     assert A() == A()
+
+
+def test_new_not_descriptor():
+    class C:
+        __new__ = str
+    assert C() == str(C)
