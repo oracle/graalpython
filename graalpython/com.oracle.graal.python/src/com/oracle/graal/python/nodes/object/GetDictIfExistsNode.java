@@ -71,11 +71,13 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
     @Specialization(guards = {"object.getShape() == cachedShape", "hasNoDict(cachedShape)"}, limit = "1")
     static PDict getNoDictCachedShape(@SuppressWarnings("unused") PythonObject object,
                     @SuppressWarnings("unused") @Cached("object.getShape()") Shape cachedShape) {
+        assert doPythonObject(object, DynamicObjectLibrary.getUncached()) == null;
         return null;
     }
 
     @Specialization(guards = "hasNoDict(object.getShape())", replaces = "getNoDictCachedShape")
     static PDict getNoDict(@SuppressWarnings("unused") PythonObject object) {
+        assert doPythonObject(object, DynamicObjectLibrary.getUncached()) == null;
         return null;
     }
 
