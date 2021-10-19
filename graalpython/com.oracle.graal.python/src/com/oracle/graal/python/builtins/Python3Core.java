@@ -44,6 +44,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -264,7 +265,6 @@ import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.interop.PythonMapScope;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
@@ -613,7 +613,7 @@ public final class Python3Core implements ParserErrorCallback {
      */
     private volatile boolean initialized;
 
-    private final PythonObjectFactory objectFactory = PythonObjectFactory.getUncached();
+    private PythonObjectSlowPathFactory objectFactory;
 
     public Python3Core(PythonParser parser, boolean isNativeSupportAllowed) {
         this.parser = parser;
@@ -650,6 +650,7 @@ public final class Python3Core implements ParserErrorCallback {
      */
     public void initialize(PythonContext context) {
         singletonContext = context;
+        objectFactory = new PythonObjectSlowPathFactory(context.getAllocationReporter());
         initializeJavaCore();
         initializePython3Core(context.getCoreHomeOrFail());
         assert SpecialMethodSlot.checkSlotOverrides(this);
@@ -817,9 +818,9 @@ public final class Python3Core implements ParserErrorCallback {
             }
         }
         // now initialize well-known objects
-        pyTrue = PythonObjectFactory.getUncached().createInt(PythonBuiltinClassType.Boolean, BigInteger.ONE);
-        pyFalse = PythonObjectFactory.getUncached().createInt(PythonBuiltinClassType.Boolean, BigInteger.ZERO);
-        pyNaN = PythonObjectFactory.getUncached().createFloat(Double.NaN);
+        pyTrue = factory().createInt(PythonBuiltinClassType.Boolean, BigInteger.ONE);
+        pyFalse = factory().createInt(PythonBuiltinClassType.Boolean, BigInteger.ZERO);
+        pyNaN = factory().createFloat(Double.NaN);
     }
 
     private void populateBuiltins() {
@@ -932,7 +933,7 @@ public final class Python3Core implements ParserErrorCallback {
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(mod));
     }
 
-    public PythonObjectFactory factory() {
+    public PythonObjectSlowPathFactory factory() {
         return objectFactory;
     }
 

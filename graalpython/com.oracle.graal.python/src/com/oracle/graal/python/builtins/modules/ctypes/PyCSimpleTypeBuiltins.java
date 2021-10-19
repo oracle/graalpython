@@ -61,6 +61,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TypeNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
@@ -89,6 +90,7 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -185,18 +187,20 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
              * Install from_param class methods in ctypes base classes. Overrides the
              * PyCSimpleType_from_param generic method.
              */
-            if (getBaseClassNode.execute(result) == getCore().lookupType(SimpleCData)) {
+            Python3Core core = getCore();
+            PythonObjectSlowPathFactory factory = core.factory();
+            if (getBaseClassNode.execute(result) == core.lookupType(SimpleCData)) {
                 switch (proto_str) {
                     case "z": /* c_char_p */
-                        LazyPyCSimpleTypeBuiltins.addCCharPFromParam(getLanguage(), result);
+                        LazyPyCSimpleTypeBuiltins.addCCharPFromParam(factory, getLanguage(), result);
                         stgdict.flags |= TYPEFLAG_ISPOINTER;
                         break;
                     case "Z": /* c_wchar_p */
-                        LazyPyCSimpleTypeBuiltins.addCWCharPFromParam(getLanguage(), result);
+                        LazyPyCSimpleTypeBuiltins.addCWCharPFromParam(factory, getLanguage(), result);
                         stgdict.flags |= TYPEFLAG_ISPOINTER;
                         break;
                     case "P": /* c_void_p */
-                        LazyPyCSimpleTypeBuiltins.addCVoidPFromParam(getLanguage(), result);
+                        LazyPyCSimpleTypeBuiltins.addCVoidPFromParam(factory, getLanguage(), result);
                         stgdict.flags |= TYPEFLAG_ISPOINTER;
                         break;
                     case "s":

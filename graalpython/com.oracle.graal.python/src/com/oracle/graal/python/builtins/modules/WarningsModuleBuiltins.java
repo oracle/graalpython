@@ -98,6 +98,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -143,28 +144,28 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         Object defaultaction = "default";
         builtinConstants.put("_defaultaction", defaultaction);
         builtinConstants.put(DEFAULTACTION, defaultaction);
-        Object onceregistry = PythonObjectFactory.getUncached().createDict();
+        Object onceregistry = core.factory().createDict();
         builtinConstants.put("_onceregistry", onceregistry);
         builtinConstants.put(ONCEREGISTRY, onceregistry);
-        Object filters = initFilters();
+        Object filters = initFilters(core.factory());
         builtinConstants.put("filters", filters);
         builtinConstants.put(FILTERS, filters);
         builtinConstants.put(FILTERS_VERSION, 0L);
         super.initialize(core);
     }
 
-    private static PTuple createFilter(PythonBuiltinClassType cat, String id, Object mod) {
-        return PythonObjectFactory.getUncached().createTuple(new Object[]{id, PNone.NONE, cat, mod, 0});
+    private static PTuple createFilter(PythonObjectSlowPathFactory factory, PythonBuiltinClassType cat, String id, Object mod) {
+        return factory.createTuple(new Object[]{id, PNone.NONE, cat, mod, 0});
     }
 
     // init_filters
-    private static PList initFilters() {
-        return PythonObjectFactory.getUncached().createList(new Object[]{
-                        createFilter(PythonBuiltinClassType.DeprecationWarning, "default", "__main__"),
-                        createFilter(PythonBuiltinClassType.DeprecationWarning, "ignore", PNone.NONE),
-                        createFilter(PythonBuiltinClassType.PendingDeprecationWarning, "ignore", PNone.NONE),
-                        createFilter(PythonBuiltinClassType.ImportWarning, "ignore", PNone.NONE),
-                        createFilter(PythonBuiltinClassType.ResourceWarning, "ignore", PNone.NONE)});
+    private static PList initFilters(PythonObjectSlowPathFactory factory) {
+        return factory.createList(new Object[]{
+                        createFilter(factory, PythonBuiltinClassType.DeprecationWarning, "default", "__main__"),
+                        createFilter(factory, PythonBuiltinClassType.DeprecationWarning, "ignore", PNone.NONE),
+                        createFilter(factory, PythonBuiltinClassType.PendingDeprecationWarning, "ignore", PNone.NONE),
+                        createFilter(factory, PythonBuiltinClassType.ImportWarning, "ignore", PNone.NONE),
+                        createFilter(factory, PythonBuiltinClassType.ResourceWarning, "ignore", PNone.NONE)});
     }
 
     static final class WarningsModuleNode extends Node implements IndirectCallNode {
@@ -630,8 +631,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static boolean updateRegistry(PythonModule _warnings, PDict registry, Object text, Object category, boolean addZero) {
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        private static boolean updateRegistry(PythonObjectSlowPathFactory factory, PythonModule _warnings, PDict registry, Object text, Object category, boolean addZero) {
             PTuple altKey;
             if (addZero) {
                 altKey = factory.createTuple(new Object[]{text, category, 0});
@@ -797,13 +797,13 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 if (PString.equals("once", action)) {
                     if (registry == null) {
                         PDict currentRegistry = getOnceRegistry(node, context, warnings);
-                        alreadyWarned = updateRegistry(warnings, currentRegistry, text, category, false);
+                        alreadyWarned = updateRegistry(context.getCore().factory(), warnings, currentRegistry, text, category, false);
                     } else {
-                        alreadyWarned = updateRegistry(warnings, registry, text, category, false);
+                        alreadyWarned = updateRegistry(context.getCore().factory(), warnings, registry, text, category, false);
                     }
                 } else if (PString.equals("module", action)) {
                     if (registry != null) {
-                        alreadyWarned = updateRegistry(warnings, registry, text, category, false);
+                        alreadyWarned = updateRegistry(context.getCore().factory(), warnings, registry, text, category, false);
                     }
                 } else if (!PString.equals("default", action)) {
                     PRaiseNode.raiseUncached(node, PythonBuiltinClassType.RuntimeError, "Unrecognized action (%s) in warnings.filters:\n %s", action,

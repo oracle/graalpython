@@ -127,7 +127,7 @@ public abstract class CodeNodes {
                     context.setCodeFilename(ct, filename);
                 }
             }
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            PythonObjectFactory factory = context.getCore().factory();
             return factory.createCode(ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name,
                             firstlineno, lnotab);
         }
@@ -143,7 +143,7 @@ public abstract class CodeNodes {
                 return context.getEnv().parsePublic(source);
             };
 
-            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            PythonObjectFactory factory = context.getCore().factory();
             if (context.getCore().isInitialized() || isNotAModule) {
                 return factory.createCode(createCode, flags, firstlineno, lnotab, filename);
             } else {

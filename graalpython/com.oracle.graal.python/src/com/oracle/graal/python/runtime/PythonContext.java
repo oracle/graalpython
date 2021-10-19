@@ -475,7 +475,7 @@ public final class PythonContext {
     private final ThreadLocal<ArrayDeque<String>> currentImport = new ThreadLocal<>();
 
     @CompilationFinal(dimensions = 1) private Object[] optionValues;
-    private AllocationReporter allocationReporter;
+    private final AllocationReporter allocationReporter;
 
     /*
      * These maps are used to ensure that each "deserialization" of code in the parser gets a
@@ -798,6 +798,7 @@ public final class PythonContext {
         this.language = language;
         this.core = core;
         this.env = env;
+        this.allocationReporter = env.lookup(AllocationReporter.class);
         this.childContextData = (ChildContextData) env.getConfig().get(CHILD_CONTEXT_DATA);
         this.sharedMultiprocessingData = this.childContextData == null ? new SharedMultiprocessingData(language.namedSemaphores) : childContextData.parentCtx.sharedMultiprocessingData;
         this.handler = new AsyncHandler(this);
@@ -815,9 +816,6 @@ public final class PythonContext {
     }
 
     public AllocationReporter getAllocationReporter() {
-        if (allocationReporter == null) {
-            return allocationReporter = env.lookup(AllocationReporter.class);
-        }
         return allocationReporter;
     }
 

@@ -77,7 +77,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -124,7 +125,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                         l -> new BuiltinFunctionRootNode(l, builtin, factory, true),
                         factory.getNodeClass(),
                         builtin.name());
-        PythonObjectFactory f = PythonObjectFactory.getUncached();
+        PythonObjectSlowPathFactory f = PythonContext.get(null).getCore().factory();
         int flags = PBuiltinFunction.getFlags(builtin, rawCallTarget);
         PBuiltinFunction getter = f.createBuiltinFunction(name, type, 1, flags, rawCallTarget);
         GetSetDescriptor callable = f.createGetSetDescriptor(getter, getter, name, type, false);

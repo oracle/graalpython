@@ -56,7 +56,6 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
@@ -97,7 +96,7 @@ public class ConversionNodeTests {
         }.getCallTarget();
         try {
             Object[] arguments = PArguments.create(1);
-            PArguments.setGlobals(arguments, PythonObjectFactory.getUncached().createDict());
+            PArguments.setGlobals(arguments, pythonContext.getCore().factory().createDict());
             PArguments.setException(arguments, PException.NO_EXCEPTION);
             PArguments.setArgument(arguments, 0, arg);
             PythonThreadState threadState = pythonContext.getThreadState(language);

@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 
 @CoreFunctions(defineModule = "_ast")
@@ -80,7 +80,7 @@ public class AstModuleBuiltins extends PythonBuiltins {
          * writable class fields.
          */
         PythonLanguage language = core.getLanguage();
-        PythonObjectSlowPathFactory factory = new PythonObjectSlowPathFactory(core.getContext().getAllocationReporter());
+        PythonObjectFactory factory = core.factory();
         PythonClass mod_type = makeType(language, factory, astModule, "mod", astType);
         PythonClass Module_type = makeType(language, factory, astModule, "Module", mod_type);
         PythonClass Interactive_type = makeType(language, factory, astModule, "Interactive", mod_type);
@@ -196,7 +196,7 @@ public class AstModuleBuiltins extends PythonBuiltins {
         PythonClass TypeIgnore_type = makeType(language, factory, astModule, "TypeIgnore", type_ignore_type);
     }
 
-    private static PythonClass makeType(PythonLanguage language, PythonObjectSlowPathFactory factory, PythonModule astModule, String name, PythonAbstractClass base) {
+    private static PythonClass makeType(PythonLanguage language, PythonObjectFactory factory, PythonModule astModule, String name, PythonAbstractClass base) {
         PythonClass newType = factory.createPythonClassAndFixupSlots(language, PythonBuiltinClassType.PythonClass, name, new PythonAbstractClass[]{base});
         astModule.setAttribute(name, newType);
         return newType;

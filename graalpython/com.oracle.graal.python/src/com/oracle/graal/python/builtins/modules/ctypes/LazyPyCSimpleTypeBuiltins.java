@@ -76,7 +76,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -96,28 +96,28 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    protected static void addCVoidPFromParam(PythonLanguage language, Object type) {
+    protected static void addCVoidPFromParam(PythonObjectSlowPathFactory factory, PythonLanguage language, Object type) {
         NodeFactory<CVoidPFromParamNode> rawFactory = CVoidPFromParamNodeFactory.getInstance();
         Builtin rawNodeBuiltin = CVoidPFromParamNode.class.getAnnotation(Builtin.class);
-        addClassMethod(language, type, rawFactory, rawNodeBuiltin);
+        addClassMethod(factory, language, type, rawFactory, rawNodeBuiltin);
     }
 
     @TruffleBoundary
-    protected static void addCCharPFromParam(PythonLanguage language, Object type) {
+    protected static void addCCharPFromParam(PythonObjectSlowPathFactory factory, PythonLanguage language, Object type) {
         NodeFactory<CCharPFromParamNode> rawFactory = CCharPFromParamNodeFactory.getInstance();
         Builtin rawNodeBuiltin = CCharPFromParamNode.class.getAnnotation(Builtin.class);
-        addClassMethod(language, type, rawFactory, rawNodeBuiltin);
+        addClassMethod(factory, language, type, rawFactory, rawNodeBuiltin);
     }
 
     @TruffleBoundary
-    protected static void addCWCharPFromParam(PythonLanguage language, Object type) {
+    protected static void addCWCharPFromParam(PythonObjectSlowPathFactory factory, PythonLanguage language, Object type) {
         NodeFactory<CWCharPFromParamNode> rawFactory = CWCharPFromParamNodeFactory.getInstance();
         Builtin rawNodeBuiltin = CWCharPFromParamNode.class.getAnnotation(Builtin.class);
-        addClassMethod(language, type, rawFactory, rawNodeBuiltin);
+        addClassMethod(factory, language, type, rawFactory, rawNodeBuiltin);
     }
 
     @TruffleBoundary
-    private static void addClassMethod(PythonLanguage language, Object type, NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin) {
+    private static void addClassMethod(PythonObjectSlowPathFactory pythonObjectFactory, PythonLanguage language, Object type, NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin) {
         String name = builtin.name();
         Object builtinDoc = PNone.NONE;
         RootCallTarget callTarget = language.createCachedCallTarget(
@@ -125,8 +125,7 @@ public class LazyPyCSimpleTypeBuiltins extends PythonBuiltins {
                         factory.getNodeClass(),
                         builtin.name());
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-        PythonObjectFactory f = PythonObjectFactory.getUncached();
-        PBuiltinFunction function = f.createBuiltinFunction(builtin.name(), type, 1, flags, callTarget);
+        PBuiltinFunction function = pythonObjectFactory.createBuiltinFunction(builtin.name(), type, 1, flags, callTarget);
         function.setAttribute(__DOC__, builtinDoc);
         WriteAttributeToObjectNode.getUncached(true).execute(type, name, function);
     }
