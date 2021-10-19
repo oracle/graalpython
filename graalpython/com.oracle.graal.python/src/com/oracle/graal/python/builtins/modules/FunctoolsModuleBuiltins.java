@@ -144,7 +144,7 @@ public class FunctoolsModuleBuiltins extends PythonBuiltins {
                     break;
                 }
             }
-            reportLoopCount(this, count);
+            reportLoopCount(this, count >= 0 ? count : Integer.MAX_VALUE);
 
             if (result == null) {
                 throw raise(PythonBuiltinClassType.TypeError, REDUCE_EMPTY_SEQ);

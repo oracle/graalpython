@@ -143,7 +143,7 @@ public class PartialBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class PartialDictNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        @Specialization(guards = "isNoValue(mapping)")
         protected Object getDict(PPartial self, @SuppressWarnings("unused") PNone mapping,
                         @Cached GetOrCreateDictNode getDict) {
             return getDict.execute(self);
