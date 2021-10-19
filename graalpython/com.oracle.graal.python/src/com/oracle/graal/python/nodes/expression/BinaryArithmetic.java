@@ -168,10 +168,6 @@ public enum BinaryArithmetic {
             return LookupAndCallBinaryNode.createReversible(slot, slot.getReverse(), handler);
         }
 
-        static LookupAndCallBinaryNode createCallNode(String name, Supplier<NotImplementedHandler> handler) {
-            return LookupAndCallBinaryNode.createReversible(name, "__r" + name.substring(2), handler);
-        }
-
     }
     /*
      *

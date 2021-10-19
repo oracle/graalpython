@@ -35,6 +35,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -46,6 +47,7 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory.LtNo
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNodeFactory.NeNodeGen;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -155,7 +157,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         }
 
         protected static LookupAndCallBinaryNode createCallNode() {
-            return LookupAndCallBinaryNode.create(__LE__, __GE__, true, true);
+            return LookupAndCallBinaryNode.create(SpecialMethodSlot.Le, SpecialMethodSlot.Ge, true, true);
         }
 
         @Override
@@ -227,7 +229,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         }
 
         protected static LookupAndCallBinaryNode createCallNode() {
-            return LookupAndCallBinaryNode.create(__LT__, __GT__, true, true);
+            return LookupAndCallBinaryNode.create(SpecialMethodSlot.Lt, SpecialMethodSlot.Gt, true, true);
         }
 
         @Override
@@ -299,7 +301,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         }
 
         protected static LookupAndCallBinaryNode createCallNode() {
-            return LookupAndCallBinaryNode.create(__GE__, __LE__, true, true);
+            return LookupAndCallBinaryNode.create(SpecialMethodSlot.Ge, SpecialMethodSlot.Le, true, true);
         }
 
         @Override
@@ -371,7 +373,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         }
 
         protected static LookupAndCallBinaryNode createCallNode() {
-            return LookupAndCallBinaryNode.create(__GT__, __LT__, true, true);
+            return LookupAndCallBinaryNode.create(SpecialMethodSlot.Gt, SpecialMethodSlot.Lt, true, true);
         }
 
         @Override
@@ -445,7 +447,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         }
 
         protected static LookupAndCallBinaryNode createCallNode() {
-            return LookupAndCallBinaryNode.create(__EQ__, __EQ__, true, true);
+            return LookupAndCallBinaryNode.create(SpecialMethodSlot.Eq, SpecialMethodSlot.Eq, true, true);
         }
 
         public static EqNode create() {
@@ -514,7 +516,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         }
 
         protected static LookupAndCallBinaryNode createCallNode() {
-            return LookupAndCallBinaryNode.create(__NE__, __NE__, true, true);
+            return LookupAndCallBinaryNode.create(SpecialMethodSlot.Ne, SpecialMethodSlot.Ne, true, true);
         }
 
         public static NeNode create() {

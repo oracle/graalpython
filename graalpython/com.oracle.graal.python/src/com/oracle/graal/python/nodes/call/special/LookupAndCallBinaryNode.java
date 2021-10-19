@@ -140,15 +140,6 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return LookupAndCallBinaryNodeGen.create(name, null, null, false, false);
     }
 
-    public static LookupAndCallBinaryNode createReversible(String name, String reverseName, Supplier<NotImplementedHandler> handlerFactory) {
-        assert name.startsWith("__") && reverseName.startsWith("__r");
-        return LookupAndCallBinaryNodeGen.create(name, reverseName, handlerFactory, false, false);
-    }
-
-    public static LookupAndCallBinaryNode create(String name, String rname, boolean alwaysCheckReverse, boolean ignoreDescriptorException) {
-        return LookupAndCallBinaryNodeGen.create(name, rname, null, alwaysCheckReverse, ignoreDescriptorException);
-    }
-
     public static LookupAndCallBinaryNode create(String name, Supplier<NotImplementedHandler> handlerFactory) {
         return LookupAndCallBinaryNodeGen.create(name, null, handlerFactory, false, false);
     }
