@@ -199,7 +199,7 @@ public final class TeeBuiltins extends PythonBuiltins {
             } catch (CannotCastException e) {
                 throw raise(TypeError, INTEGER_REQUIRED_GOT, secondElement);
             }
-            if (index <= 0 || index > LINKCELLS) {
+            if (index < 0 || index > LINKCELLS) {
                 wrongIndexProfile.enter();
                 throw raise(ValueError, INDEX_OUT_OF_RANGE);
             }
