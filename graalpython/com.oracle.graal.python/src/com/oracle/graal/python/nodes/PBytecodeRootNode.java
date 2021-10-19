@@ -1229,35 +1229,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case STORE_NAME: {
-                        String varname = localNames[oparg];
-                        Object value = stack[stackTop];
-                        stack[stackTop--] = null;
-                        if (locals != null) {
-                            Node helper = localNodes[bci];
-                            if (helper instanceof HashingCollectionNodes.SetItemNode) {
-                                if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
-                                    HashingCollectionNodes.SetItemNode setItemNode = (HashingCollectionNodes.SetItemNode) helper;
-                                    setItemNode.execute(frame, (PDict) locals, varname, value);
-                                    break;
-                                }
-                            }
-                            if (helper instanceof PyObjectSetItem) {
-                                ((PyObjectSetItem) helper).execute(frame, locals, varname, value);
-                                break;
-                            }
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            assert helper == null;
-                            if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
-                                HashingCollectionNodes.SetItemNode newNode = insertChildNode(localNodes[bci], UNCACHED_SET_ITEM, NODE_SET_ITEM, bci);
-                                newNode.execute(frame, (PDict) locals, varname, value);
-                            } else {
-                                PyObjectSetItem newNode = insertChildNode(localNodes[bci], UNCACHED_OBJECT_SET_ITEM, NODE_OBJECT_SET_ITEM, bci);
-                                newNode.execute(frame, locals, varname, value);
-                            }
-                        } else {
-                            WriteGlobalNode writeGlobalNode = insertChildNode(localNodes[bci + 1], UNCACHED_WRITE_GLOBAL, NODE_WRITE_GLOBAL, bci + 1, varname);
-                            writeGlobalNode.write(frame, globals, varname, value);
-                        }
+                        stackTop = bytecodeStoreName(frame, lang, globals, locals, stack, stackTop, bci, oparg, localNames, localNodes);
                         break;
                     }
                     case DELETE_NAME: {
@@ -1584,47 +1556,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         // increment oparg by 1, to account for the receiver.
                         oparg += 1;
                     case CALL_FUNCTION: {
-                        Object func = stack[stackTop - oparg];
-                        switch (oparg) {
-                            case 1: {
-                                CallUnaryMethodNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL_UNARY_METHOD, NODE_CALL_UNARY_METHOD, bci);
-                                Object result = callNode.executeObject(frame, func, stack[stackTop]);
-                                stack[stackTop--] = null;
-                                stack[stackTop] = result;
-                            }
-                                break;
-                            case 2: {
-                                CallBinaryMethodNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL_BINARY_METHOD, NODE_CALL_BINARY_METHOD, bci);
-                                Object arg1 = stack[stackTop];
-                                stack[stackTop--] = null;
-                                Object arg0 = stack[stackTop];
-                                stack[stackTop--] = null;
-                                stack[stackTop] = callNode.executeObject(frame, func, arg0, arg1);
-                            }
-                                break;
-                            case 3: {
-                                CallTernaryMethodNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL_TERNARY_METHOD, NODE_CALL_TERNARY_METHOD, bci);
-                                Object arg2 = stack[stackTop];
-                                stack[stackTop--] = null;
-                                Object arg1 = stack[stackTop];
-                                stack[stackTop--] = null;
-                                Object arg0 = stack[stackTop];
-                                stack[stackTop--] = null;
-                                stack[stackTop] = callNode.execute(frame, func, arg0, arg1, arg2);
-                            }
-                                break;
-                            default: {
-                                Object[] arguments = new Object[oparg];
-                                for (int j = oparg - 1; j >= 0; j--) {
-                                    arguments[j] = stack[stackTop];
-                                    stack[stackTop--] = null;
-                                }
-                                CallNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL, NODE_CALL, bci);
-                                Object result = callNode.execute(frame, func, arguments, PKeyword.EMPTY_KEYWORDS);
-                                stack[stackTop] = result;
-                            }
-                                break;
-                        }
+                        stackTop = bytecodeCallFunction(frame, stack, stackTop, bci, oparg, localNodes);
                         break;
                     }
                     case CALL_FUNCTION_KW: {
@@ -1701,6 +1633,84 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 throw e;
             }
         }
+    }
+
+    private int bytecodeCallFunction(VirtualFrame frame, Object[] stack, int stackTop, int bci, int oparg, Node[] localNodes) {
+        Object func = stack[stackTop - oparg];
+        switch (oparg) {
+            case 1: {
+                CallUnaryMethodNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL_UNARY_METHOD, NODE_CALL_UNARY_METHOD, bci);
+                Object result = callNode.executeObject(frame, func, stack[stackTop]);
+                stack[stackTop--] = null;
+                stack[stackTop] = result;
+                break;
+            }
+            case 2: {
+                CallBinaryMethodNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL_BINARY_METHOD, NODE_CALL_BINARY_METHOD, bci);
+                Object arg1 = stack[stackTop];
+                stack[stackTop--] = null;
+                Object arg0 = stack[stackTop];
+                stack[stackTop--] = null;
+                stack[stackTop] = callNode.executeObject(frame, func, arg0, arg1);
+                break;
+            }
+            case 3: {
+                CallTernaryMethodNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL_TERNARY_METHOD, NODE_CALL_TERNARY_METHOD, bci);
+                Object arg2 = stack[stackTop];
+                stack[stackTop--] = null;
+                Object arg1 = stack[stackTop];
+                stack[stackTop--] = null;
+                Object arg0 = stack[stackTop];
+                stack[stackTop--] = null;
+                stack[stackTop] = callNode.execute(frame, func, arg0, arg1, arg2);
+                break;
+            }
+            default: {
+                Object[] arguments = new Object[oparg];
+                for (int j = oparg - 1; j >= 0; j--) {
+                    arguments[j] = stack[stackTop];
+                    stack[stackTop--] = null;
+                }
+                CallNode callNode = insertChildNode(localNodes[bci], UNCACHED_CALL, NODE_CALL, bci);
+                Object result = callNode.execute(frame, func, arguments, PKeyword.EMPTY_KEYWORDS);
+                stack[stackTop] = result;
+                break;
+            }
+        }
+        return stackTop;
+    }
+
+    private int bytecodeStoreName(VirtualFrame frame, PythonLanguage lang, Object globals, Object locals, Object[] stack, int stackTop, int bci, int oparg, String[] localNames, Node[] localNodes) {
+        String varname = localNames[oparg];
+        Object value = stack[stackTop];
+        stack[stackTop--] = null;
+        if (locals != null) {
+            Node helper = localNodes[bci];
+            if (helper instanceof HashingCollectionNodes.SetItemNode) {
+                if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
+                    HashingCollectionNodes.SetItemNode setItemNode = (HashingCollectionNodes.SetItemNode) helper;
+                    setItemNode.execute(frame, (PDict) locals, varname, value);
+                    return stackTop;
+                }
+            }
+            if (helper instanceof PyObjectSetItem) {
+                ((PyObjectSetItem) helper).execute(frame, locals, varname, value);
+                return stackTop;
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            assert helper == null;
+            if (locals instanceof PDict && ((PDict) locals).getShape() == PythonBuiltinClassType.PDict.getInstanceShape(lang)) {
+                HashingCollectionNodes.SetItemNode newNode = insertChildNode(localNodes[bci], UNCACHED_SET_ITEM, NODE_SET_ITEM, bci);
+                newNode.execute(frame, (PDict) locals, varname, value);
+            } else {
+                PyObjectSetItem newNode = insertChildNode(localNodes[bci], UNCACHED_OBJECT_SET_ITEM, NODE_OBJECT_SET_ITEM, bci);
+                newNode.execute(frame, locals, varname, value);
+            }
+        } else {
+            WriteGlobalNode writeGlobalNode = insertChildNode(localNodes[bci + 1], UNCACHED_WRITE_GLOBAL, NODE_WRITE_GLOBAL, bci + 1, varname);
+            writeGlobalNode.write(frame, globals, varname, value);
+        }
+        return stackTop;
     }
 
     private int bytecodeRaiseVarargs(VirtualFrame frame, Object[] stack, int stackTop, int bci, int oparg, Node[] localNodes) {
