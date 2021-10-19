@@ -73,6 +73,9 @@ abstract class LookupAndCallNonReversibleBinaryNode extends LookupAndCallBinaryN
 
     LookupAndCallNonReversibleBinaryNode(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handlerFactory, boolean ignoreDescriptorException) {
         super(handlerFactory, ignoreDescriptorException);
+        // If the slot is reversible, use LookupAndCallReversibleBinaryNode via factory in
+        // LookupAndCallBinaryNode
+        assert slot.getReverse() == null;
         this.name = slot.getName();
         this.slot = slot;
     }

@@ -875,7 +875,7 @@ public enum SpecialMethodSlot {
                         continue;
                     }
                     if (typeValue instanceof BuiltinMethodDescriptor && klassValue instanceof PBuiltinFunction &&
-                                    ((BuiltinMethodDescriptor) typeValue).getFactory() == ((PBuiltinFunction) klassValue).getBuiltinNodeFactory()) {
+                                    ((BuiltinMethodDescriptor) typeValue).isDescriptorOf((PBuiltinFunction) klassValue)) {
                         // BuiltinMethodDescriptor and matching PBuiltinFunction: OK
                         continue;
                     }
@@ -943,7 +943,7 @@ public enum SpecialMethodSlot {
                 Object expected = slot.getValue(type);
                 if (expected instanceof BuiltinMethodDescriptor) {
                     assert actual instanceof PBuiltinFunction;
-                    assert ((PBuiltinFunction) actual).getBuiltinNodeFactory() == ((BuiltinMethodDescriptor) expected).getFactory();
+                    assert ((BuiltinMethodDescriptor) expected).isDescriptorOf((PBuiltinFunction) actual);
                 } else if (expected != null) {
                     assert PythonLanguage.canCache(expected);
                     assert actual == expected;

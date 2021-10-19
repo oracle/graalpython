@@ -862,7 +862,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @TruffleBoundary
     public RootCallTarget getDescriptorCallTarget(BuiltinMethodDescriptor descriptor) {
         RootCallTarget callTarget = descriptorCallTargets.get(descriptor);
-        assert callTarget != null : "Missing call target for builtin slot descriptor " + descriptor.getFactory();
+        assert callTarget != null : "Missing call target for builtin slot descriptor " + descriptor;
         return callTarget;
     }
 

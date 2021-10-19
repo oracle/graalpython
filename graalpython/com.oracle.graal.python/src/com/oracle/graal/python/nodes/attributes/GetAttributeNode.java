@@ -47,14 +47,12 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptors;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNodeFactory.GetFixedAttributeNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -219,15 +217,15 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
         }
 
         protected static boolean isObjectGetAttribute(Object lazyClass) {
-            return getAttributeIs(lazyClass, BuiltinMethodDescriptor.OBJ_GET_ATTRIBUTE);
+            return getAttributeIs(lazyClass, BuiltinMethodDescriptors.OBJ_GET_ATTRIBUTE);
         }
 
         protected static boolean isModuleGetAttribute(Object lazyClass) {
-            return getAttributeIs(lazyClass, BuiltinMethodDescriptor.MODULE_GET_ATTRIBUTE);
+            return getAttributeIs(lazyClass, BuiltinMethodDescriptors.MODULE_GET_ATTRIBUTE);
         }
 
         protected static boolean isTypeGetAttribute(Object lazyClass) {
-            return getAttributeIs(lazyClass, BuiltinMethodDescriptor.TYPE_GET_ATTRIBUTE);
+            return getAttributeIs(lazyClass, BuiltinMethodDescriptors.TYPE_GET_ATTRIBUTE);
         }
 
         /*

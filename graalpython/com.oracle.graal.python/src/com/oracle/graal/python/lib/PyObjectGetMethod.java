@@ -45,7 +45,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Attribut
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptors;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -88,7 +88,7 @@ public abstract class PyObjectGetMethod extends Node {
         } else if (lazyClass instanceof PythonManagedClass) {
             slotValue = SpecialMethodSlot.GetAttribute.getValue((PythonManagedClass) lazyClass);
         }
-        return slotValue == BuiltinMethodDescriptor.OBJ_GET_ATTRIBUTE;
+        return slotValue == BuiltinMethodDescriptors.OBJ_GET_ATTRIBUTE;
     }
 
     @Specialization(guards = "!isObjectGetAttribute(lazyClass)", limit = "1")
@@ -100,22 +100,22 @@ public abstract class PyObjectGetMethod extends Node {
     }
 
     @Specialization(guards = {"isObjectGetAttribute(lazyClass)", "name == cachedName"}, limit = "1")
-    Object getFixedAttr(VirtualFrame frame, Object receiver, @SuppressWarnings("unused") String name,
-                    @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClass,
-                    @Bind("getClass.execute(receiver)") Object lazyClass,
-                    @SuppressWarnings("unused") @Cached("name") String cachedName,
-                    @Cached("create(name)") LookupAttributeInMRONode lookupNode,
-                    @Shared("getDescrClass") @Cached GetClassNode getDescrClass,
-                    @Shared("lookupGet") @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet,
-                    @Shared("lookupSet") @Cached(parameters = "Set") LookupCallableSlotInMRONode lookupSet,
-                    @Shared("callGet") @Cached CallTernaryMethodNode callGet,
-                    @Shared("readAttr") @Cached ReadAttributeFromObjectNode readAttr,
-                    @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                    @Cached BranchProfile hasDescr,
-                    @Cached BranchProfile returnDataDescr,
-                    @Cached BranchProfile returnAttr,
-                    @Cached BranchProfile returnUnboundMethod,
-                    @Cached BranchProfile returnBoundDescr) {
+    static Object getFixedAttr(VirtualFrame frame, Object receiver, @SuppressWarnings("unused") String name,
+                               @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClass,
+                               @Bind("getClass.execute(receiver)") Object lazyClass,
+                               @SuppressWarnings("unused") @Cached("name") String cachedName,
+                               @Cached("create(name)") LookupAttributeInMRONode lookupNode,
+                               @Shared("getDescrClass") @Cached GetClassNode getDescrClass,
+                               @Shared("lookupGet") @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet,
+                               @Shared("lookupSet") @Cached(parameters = "Set") LookupCallableSlotInMRONode lookupSet,
+                               @Shared("callGet") @Cached CallTernaryMethodNode callGet,
+                               @Shared("readAttr") @Cached ReadAttributeFromObjectNode readAttr,
+                               @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                               @Cached BranchProfile hasDescr,
+                               @Cached BranchProfile returnDataDescr,
+                               @Cached BranchProfile returnAttr,
+                               @Cached BranchProfile returnUnboundMethod,
+                               @Cached BranchProfile returnBoundDescr) {
         boolean methodFound = false;
         Object descr = lookupNode.execute(lazyClass);
         Object getMethod = PNone.NO_VALUE;

@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallReversibleBinaryNodeGen.AreSameCallablesNodeGen;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -138,7 +139,7 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
                     @Cached BranchProfile noLeftBuiltinClassType,
                     @Cached BranchProfile noRightBuiltinClassType,
                     @Cached BranchProfile gotResultBranch,
-                    @Cached AreSameCallables areSameCallables,
+                    @Cached("createAreSameCallables()") AreSameCallables areSameCallables,
                     @Cached GetEnclosingType getEnclosingType) {
         return doCallObjectR(frame, left, right, getattr, getattrR, getLeftClassNode, getRightClassNode, isSameTypeNode, isSubtype, hasLeftCallable, hasRightCallable, notImplementedProfile,
                         noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch, areSameCallables, getEnclosingType);
@@ -159,7 +160,7 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
                     @Cached BranchProfile noLeftBuiltinClassType,
                     @Cached BranchProfile noRightBuiltinClassType,
                     @Cached BranchProfile gotResultBranch,
-                    @Cached AreSameCallables areSameCallables,
+                    @Cached("createAreSameCallables()") AreSameCallables areSameCallables,
                     @Cached GetEnclosingType getEnclosingType) {
         return doCallObjectR(frame, left, right, getattr, getattrR, getLeftClassNode, getRightClassNode, isSameTypeNode, isSubtype, hasLeftCallable, hasRightCallable, notImplementedProfile,
                         noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch, areSameCallables, getEnclosingType);
@@ -233,8 +234,12 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
         return result;
     }
 
+    protected AreSameCallables createAreSameCallables() {
+        return !alwaysCheckReverse ? AreSameCallablesNodeGen.create() : null;
+    }
+
     @ImportStatic(PGuards.class)
-    protected static abstract class AreSameCallables extends Node {
+    protected abstract static class AreSameCallables extends Node {
         public abstract boolean execute(Object left, Object right);
 
         @Specialization(guards = "a == b")
@@ -242,21 +247,24 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
             return true;
         }
 
+        @Specialization(guards = "isNone(a) || isNone(b)")
+        static boolean noneFastPath(@SuppressWarnings("unused") Object a, @SuppressWarnings("unused") Object b) {
+            return a == b;
+        }
+
         @Specialization(replaces = "areIdenticalFastPath")
         static boolean doDescrs(BuiltinMethodDescriptor a, BuiltinMethodDescriptor b) {
             return a == b;
         }
 
-        @SuppressWarnings("StringEquality")
         @Specialization(replaces = "areIdenticalFastPath")
         static boolean doDescrFun1(BuiltinMethodDescriptor a, PBuiltinFunction b) {
-            return a.getFactory() == b.getBuiltinNodeFactory() && a.getName() == b.getName();
+            return a.isDescriptorOf(b);
         }
 
-        @SuppressWarnings("StringEquality")
         @Specialization(replaces = "areIdenticalFastPath")
         static boolean doDescrFun2(PBuiltinFunction a, BuiltinMethodDescriptor b) {
-            return b.getFactory() == a.getBuiltinNodeFactory() && a.getName() == b.getName();
+            return b.isDescriptorOf(a);
         }
 
         @Specialization(replaces = "areIdenticalFastPath")
@@ -271,13 +279,12 @@ abstract class LookupAndCallReversibleBinaryNode extends LookupAndCallBinaryNode
 
         @Fallback
         static boolean doGenericRuntimeObjects(Object a, Object b) {
-            // Note: this handles also situations such as BuiltinMethodDescriptor vs PNone.None
             return a == b;
         }
     }
 
     @ImportStatic(PGuards.class)
-    protected static abstract class GetEnclosingType extends Node {
+    protected abstract static class GetEnclosingType extends Node {
         public abstract Object execute(Object callable);
 
         @Specialization
