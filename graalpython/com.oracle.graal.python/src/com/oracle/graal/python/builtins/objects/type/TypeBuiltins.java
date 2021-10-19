@@ -101,6 +101,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
@@ -113,7 +114,6 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectGetBasesNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectIsSubclassNode;
@@ -364,10 +364,41 @@ public class TypeBuiltins extends PythonBuiltins {
     }
 
     @ReportPolymorphism
+    protected abstract static class BindNew extends PNodeWithContext {
+        public abstract Object execute(VirtualFrame frame, Object descriptor, Object type);
+
+        @Specialization
+        static Object doBuiltin(PBuiltinFunction descriptor, @SuppressWarnings("unused") Object type) {
+            return descriptor;
+        }
+
+        @Specialization
+        static Object doFunction(PFunction descriptor, @SuppressWarnings("unused") Object type) {
+            return descriptor;
+        }
+
+        @Fallback
+        static Object doBind(VirtualFrame frame, Object descriptor, Object type,
+                        @Cached GetClassNode getClassNode,
+                        @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet,
+                        @Cached CallTernaryMethodNode callGet) {
+            Object getMethod = lookupGet.execute(getClassNode.execute(descriptor));
+            if (getMethod != PNone.NO_VALUE) {
+                return callGet.execute(frame, getMethod, descriptor, PNone.NONE, type);
+            }
+            return descriptor;
+        }
+
+        public static BindNew create() {
+            return TypeBuiltinsFactory.BindNewNodeGen.create();
+        }
+    }
+
+    @ReportPolymorphism
     protected abstract static class CallNodeHelper extends PNodeWithRaise {
         @Child private CallVarargsMethodNode dispatchNew = CallVarargsMethodNode.create();
-        @Child private LookupAndCallTernaryNode callNewGet = LookupAndCallTernaryNode.create(__GET__);
         @Child private LookupAttributeInMRONode lookupNew = LookupAttributeInMRONode.create(__NEW__);
+        @Child private BindNew bindNew = BindNew.create();
         @Child private CallVarargsMethodNode dispatchInit;
         @Child private LookupSpecialMethodNode lookupInit;
         @Child private IsSubtypeNode isSubTypeNode;
@@ -377,8 +408,6 @@ public class TypeBuiltins extends PythonBuiltins {
         @CompilationFinal private ConditionProfile hasNew = ConditionProfile.createBinaryProfile();
         @CompilationFinal private ConditionProfile hasInit = ConditionProfile.createBinaryProfile();
         @CompilationFinal private ConditionProfile gotInitResult = ConditionProfile.createBinaryProfile();
-
-        @CompilationFinal private boolean newWasDescriptor = false;
 
         abstract Object execute(VirtualFrame frame, Object self, Object[] args, PKeyword[] keywords, boolean doCreateArgs);
 
@@ -450,17 +479,7 @@ public class TypeBuiltins extends PythonBuiltins {
             if (hasNew.profile(newMethod != PNone.NO_VALUE)) {
                 CompilerAsserts.partialEvaluationConstant(doCreateArgs);
                 Object[] newArgs = doCreateArgs ? PositionalArgumentsNode.prependArgument(self, arguments) : arguments;
-                Object newInstance;
-                if (!newWasDescriptor && (newMethod instanceof PFunction || newMethod instanceof PBuiltinFunction)) {
-                    newInstance = dispatchNew.execute(frame, newMethod, newArgs, keywords);
-                } else {
-                    if (!newWasDescriptor) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        reportPolymorphicSpecialize();
-                        newWasDescriptor = true;
-                    }
-                    newInstance = dispatchNew.execute(frame, callNewGet.execute(frame, newMethod, PNone.NONE, self), newArgs, keywords);
-                }
+                Object newInstance = dispatchNew.execute(frame, bindNew.execute(frame, newMethod, self), newArgs, keywords);
 
                 // see typeobject.c#type_call()
                 // Ugly exception: when the call was type(something),

@@ -40,33 +40,49 @@
  */
 package com.oracle.graal.python.nodes.object;
 
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 @GenerateUncached
 public abstract class DeleteDictNode extends PNodeWithContext {
     public abstract void execute(PythonObject object);
 
     @Specialization
-    static void doPythonClass(PythonClass object,
-                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
-                    @Cached BranchProfile hasMroShapeProfile) {
-        object.setDictHiddenProp(dylib, hasMroShapeProfile, null);
-    }
-
-    @Fallback
-    static void doPythonObjectNotClass(PythonObject object,
-                    @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        dylib.put(object, PythonObject.DICT, null);
+    static void doPythonObject(PythonObject object,
+                    @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
+                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                    @Cached PythonObjectFactory factory) {
+        /* There is no special handling for class MROs because type.__dict__ cannot be deleted. */
+        assert !PGuards.isPythonClass(object);
+        PDict oldDict = (PDict) dylib.getOrDefault(object, PythonObject.DICT, null);
+        if (oldDict != null) {
+            HashingStorage storage = oldDict.getDictStorage();
+            if (storage instanceof DynamicObjectStorage && ((DynamicObjectStorage) storage).getStore() == object) {
+                /*
+                 * We have to dissociate the dict from this DynamicObject so that changes to it no
+                 * longer affect this object.
+                 */
+                oldDict.setDictStorage(hlib.copy(storage));
+            }
+        }
+        /*
+         * Ideally we would use resetShape, but that would lose all the hidden keys. Creating a new
+         * empty dict dissociated from this object seems like the cleanest option. The disadvantage
+         * is that the current values won't get garbage collected.
+         */
+        PDict newDict = factory.createDict();
+        object.setDict(dylib, newDict);
     }
 
     public static DeleteDictNode create() {

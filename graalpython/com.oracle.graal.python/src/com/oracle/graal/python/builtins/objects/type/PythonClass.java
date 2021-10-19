@@ -230,6 +230,7 @@ public final class PythonClass extends PythonManagedClass {
     }
 
     public void setDictHiddenProp(DynamicObjectLibrary dylib, BranchProfile hasMroShapeProfile, Object value) {
+        dylib.setShapeFlags(this, dylib.getShapeFlags(this) | HAS_MATERIALIZED_DICT);
         dylib.put(this, DICT, value);
         if (mroShapeSubTypes != null) {
             hasMroShapeProfile.enter();
