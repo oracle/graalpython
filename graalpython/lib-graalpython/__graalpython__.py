@@ -41,7 +41,7 @@ import sys
 
 class SysState:
     def __init__(self):
-        self.recursionlimit = 1000
+        self.recursionlimit = 8000 if __graalpython__.is_native else 1000
         self.checkinterval = 100
         self.switchinterval = 0.005
 
