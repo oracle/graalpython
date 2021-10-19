@@ -111,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PSentinelIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
+import com.oracle.graal.python.builtins.objects.keywrapper.PKeyWrapper;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
 import com.oracle.graal.python.builtins.objects.itertools.PTee;
@@ -128,6 +129,7 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.partial.PPartial;
 import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.property.PProperty;
@@ -730,6 +732,14 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PSimpleNamespace createSimpleNamespace(Object cls, Shape instanceShape) {
         return trace(new PSimpleNamespace(cls, instanceShape));
+    }
+
+    public final PKeyWrapper createKeyWrapper(Object cmp) {
+        return trace(new PKeyWrapper(PythonBuiltinClassType.PKeyWrapper, getShape(PythonBuiltinClassType.PKeyWrapper), cmp));
+    }
+
+    public final PPartial createPartial(Object cls, Object function, Object[] args, PDict kwDict) {
+        return trace(new PPartial(cls, getShape(cls), function, args, kwDict));
     }
 
     public final PDefaultDict createDefaultDict(Object cls) {

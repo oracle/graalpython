@@ -59,6 +59,7 @@ public abstract class ErrorMessages {
     public static final String S_BRACKETS_ARG_MUST_BE_S_NOT_P = "%s() argument must be a %s, not %p";
     public static final String S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P = "%s() argument must be read-write bytes-like object, not %p";
     public static final String ARG_MUST_BE_CALLABLE = "argument must be callable";
+    public static final String S_ARG_MUST_BE_CALLABLE = "%s argument must be callable";
     public static final String ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER = "%s argument must be a string, a bytes-like object or a number, not %p";
     public static final String ARG_MUST_BE_STRING_OR_NUMBER = "%s argument must be a string or a number, not '%p'";
     public static final String ARG_MUST_NOT_BE_ZERO = "%s arg %d must not be zero";
@@ -708,6 +709,7 @@ public abstract class ErrorMessages {
     public static final String METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P = "Method requires a 'bytes' object, got '%p'";
     public static final String FIRST_ARG_MUST_BE_BYTES_OR_A_TUPLE_OF_BYTES_NOT_P = "first arg must be bytes or a tuple of bytes, not %p";
     public static final String A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P = "a bytes-like object is required, not '%p'";
+    public static final String TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT = "type '%s' takes at least one argument";
     public static final String S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN = "%s() takes at least %d arguments (%d given)";
     public static final String S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN = "%s() takes at most %d arguments (%d given)";
     public static final String RES_O_O_RANGE = "%s result out of range";
@@ -971,6 +973,10 @@ public abstract class ErrorMessages {
     public static final String BYTES_EXPECTED_INSTEAD_OF_S_INSTANCE = "bytes expected instead of %s instance";
     public static final String BYTE_STRING_TOO_LONG = "byte string too long";
     public static final String UNKNOWN_CLOCK = "unknown clock";
+    public static final String S_ARG_N_MUST_SUPPORT_ITERATION = "%s arg %d must support iteration";
+    public static final String REDUCE_EMPTY_SEQ = "reduce() of empty sequence with no initial value";
+    public static final String OTHER_ARG_MUST_BE_KEY = "other argument must be K instance";
+    public static final String INVALID_PARTIAL_STATE = "invalid partial state";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";

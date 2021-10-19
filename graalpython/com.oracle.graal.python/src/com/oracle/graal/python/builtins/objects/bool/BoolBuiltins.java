@@ -91,12 +91,12 @@ public final class BoolBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AndNode extends BaseBoolBinaryNode {
         @Specialization
-        Object doBool(boolean self, boolean other) {
+        static Object doBool(boolean self, boolean other) {
             return self && other;
         }
 
         @Specialization(guards = "atLeastOneIsNotBoolean(self, other)")
-        Object doOther(VirtualFrame frame, Object self, Object other,
+        static Object doOther(VirtualFrame frame, Object self, Object other,
                         @Cached IntBuiltins.AndNode andNode) {
             return andNode.execute(frame, self, other);
         }
@@ -107,12 +107,12 @@ public final class BoolBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class OrNode extends BaseBoolBinaryNode {
         @Specialization
-        Object doBool(boolean self, boolean other) {
+        static Object doBool(boolean self, boolean other) {
             return self || other;
         }
 
         @Specialization(guards = "atLeastOneIsNotBoolean(self, other)")
-        Object doOther(VirtualFrame frame, Object self, Object other,
+        static Object doOther(VirtualFrame frame, Object self, Object other,
                         @Cached IntBuiltins.OrNode orNode) {
             return orNode.execute(frame, self, other);
         }
@@ -123,12 +123,12 @@ public final class BoolBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class XorNode extends BaseBoolBinaryNode {
         @Specialization
-        Object doBool(boolean self, boolean other) {
+        static Object doBool(boolean self, boolean other) {
             return self ^ other;
         }
 
         @Specialization(guards = "atLeastOneIsNotBoolean(self, other)")
-        Object doOther(VirtualFrame frame, Object self, Object other,
+        static Object doOther(VirtualFrame frame, Object self, Object other,
                         @Cached IntBuiltins.XorNode xorNode) {
             return xorNode.execute(frame, self, other);
         }
