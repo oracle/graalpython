@@ -3067,6 +3067,27 @@ public abstract class SequenceStorageNodes {
     }
 
     @GenerateUncached
+    public abstract static class GetCapacityNode extends Node {
+
+        public abstract int execute(SequenceStorage s);
+
+        @Specialization
+        static int doBasicSequenceStorage(BasicSequenceStorage s) {
+            return s.capacity();
+        }
+
+        @Specialization
+        static int doNativeSequenceStorage(NativeSequenceStorage s) {
+            return s.getCapacity();
+        }
+
+        @Specialization
+        static int doBasicSequenceStorage(@SuppressWarnings("unused") EmptySequenceStorage s) {
+            return 0;
+        }
+    }
+
+    @GenerateUncached
     @ImportStatic(SequenceStorageBaseNode.class)
     public abstract static class GetInternalArrayNode extends Node {
 
