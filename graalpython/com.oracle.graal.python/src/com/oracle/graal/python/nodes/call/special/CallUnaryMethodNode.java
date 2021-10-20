@@ -92,9 +92,8 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
         return node.execute(frame, receiver);
     }
 
-    @TruffleBoundary(allowInlining = true)
     protected static boolean hasAllowedArgsNum(BuiltinMethodDescriptor descr) {
-        return descr.getBuiltinAnnotation().minNumOfPositionalArgs() <= 1;
+        return descr.minNumOfPositionalArgs() <= 1;
     }
 
     @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")

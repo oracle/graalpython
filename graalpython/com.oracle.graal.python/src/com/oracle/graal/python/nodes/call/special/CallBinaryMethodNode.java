@@ -100,7 +100,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
     }
 
     protected static boolean hasAllowedArgsNum(BuiltinMethodDescriptor descr) {
-        return descr.getBuiltinAnnotation().minNumOfPositionalArgs() <= 2;
+        return descr.minNumOfPositionalArgs() <= 2;
     }
 
     @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")

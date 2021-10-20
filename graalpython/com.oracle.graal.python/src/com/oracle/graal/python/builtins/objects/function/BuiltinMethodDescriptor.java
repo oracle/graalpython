@@ -151,6 +151,7 @@ public abstract class BuiltinMethodDescriptor {
     // Name and isReverseOperation are shortcuts for builtinAnnotation.name()/reverseOperation()
     private final String name;
     private final boolean isReverseOperation;
+    private final int minNumOfPositionalArgs;
 
     private BuiltinMethodDescriptor(String name, NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type, Builtin builtinAnnotation) {
         assert name.equals(builtinAnnotation.name());
@@ -159,6 +160,7 @@ public abstract class BuiltinMethodDescriptor {
         this.type = type;
         this.builtinAnnotation = builtinAnnotation;
         this.isReverseOperation = builtinAnnotation.reverseOperation();
+        this.minNumOfPositionalArgs = builtinAnnotation.minNumOfPositionalArgs();
     }
 
     protected final NodeFactory<? extends PythonBuiltinBaseNode> getFactory() {
@@ -189,6 +191,10 @@ public abstract class BuiltinMethodDescriptor {
 
     public final boolean isReverseOperation() {
         return isReverseOperation;
+    }
+
+    public final int minNumOfPositionalArgs() {
+        return minNumOfPositionalArgs;
     }
 
     public final Builtin getBuiltinAnnotation() {
