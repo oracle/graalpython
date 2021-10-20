@@ -55,9 +55,35 @@ public abstract class SequenceStorage {
         }
     }
 
-    public abstract int length();
+    // nominated storage length
+    protected int length;
 
-    public abstract void setNewLength(int length);
+    // physical storage length
+    protected int capacity;
+
+    protected SequenceStorage() {
+    }
+
+    protected SequenceStorage(int length, int capacity) {
+        this.length = length;
+        this.capacity = capacity;
+    }
+
+    public final int length() {
+        return length;
+    }
+
+    public void setNewLength(int length) {
+        this.length = length;
+    }
+
+    protected final void incLength() {
+        this.length++;
+    }
+
+    public final int getCapacity() {
+        return capacity;
+    }
 
     public abstract SequenceStorage copy();
 

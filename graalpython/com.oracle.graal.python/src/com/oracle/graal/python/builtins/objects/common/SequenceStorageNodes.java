@@ -2839,7 +2839,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("genNode") @Cached DoGeneralizationNode doGenNode) {
             int len = lenNode.execute(s);
             int newLen = len + 1;
-            int capacity = s.capacity();
+            int capacity = s.getCapacity();
             if (newLen > capacity) {
                 increaseCapacity.enter();
                 ensureCapacity.execute(s, len + 1);
@@ -3063,27 +3063,6 @@ public abstract class SequenceStorageNodes {
                 s.setCapacity(newCapacity);
             }
             return s;
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class GetCapacityNode extends Node {
-
-        public abstract int execute(SequenceStorage s);
-
-        @Specialization
-        static int doBasicSequenceStorage(BasicSequenceStorage s) {
-            return s.capacity();
-        }
-
-        @Specialization
-        static int doNativeSequenceStorage(NativeSequenceStorage s) {
-            return s.getCapacity();
-        }
-
-        @Specialization
-        static int doBasicSequenceStorage(@SuppressWarnings("unused") EmptySequenceStorage s) {
-            return 0;
         }
     }
 

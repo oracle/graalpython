@@ -29,30 +29,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 
 public abstract class BasicSequenceStorage extends SequenceStorage {
 
-    // nominated storage length
-    protected int length;
-
-    // physical storage length
-    protected int capacity;
-
-    @Override
-    public final int length() {
-        return length;
-    }
-
-    @Override
-    public void setNewLength(int length) {
-        this.length = length;
-    }
-
-    protected final void incLength() {
-        this.length++;
-    }
-
-    public final int capacity() {
-        return capacity;
-    }
-
     public abstract Object getCopyOfInternalArrayObject();
 
     public abstract void setInternalArrayObject(Object arrayObject);

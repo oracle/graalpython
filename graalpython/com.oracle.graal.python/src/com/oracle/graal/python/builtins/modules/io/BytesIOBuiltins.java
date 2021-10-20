@@ -97,7 +97,6 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.EnsureCapacityNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetCapacityNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
@@ -685,8 +684,8 @@ public class BytesIOBuiltins extends PythonBuiltins {
             return self.getStringSize() <= 1 || self.getExports() > 0;
         }
 
-        protected static boolean shouldUnshare(GetCapacityNode getCapacityNode, PBytesIO self) {
-            int capacity = getCapacityNode.execute(self.getBuf().getSequenceStorage());
+        protected static boolean shouldUnshare(PBytesIO self) {
+            int capacity = self.getBuf().getSequenceStorage().getCapacity();
             return self.getStringSize() != capacity;
         }
 
@@ -697,15 +696,13 @@ public class BytesIOBuiltins extends PythonBuiltins {
             return factory().createBytes(PythonUtils.arrayCopyOf(buf, self.getStringSize()));
         }
 
-        @Specialization(guards = {"self.hasBuf()", "!shouldCopy(self)", "!shouldUnshare(getCapacityNode, self)"}, limit = "1")
-        static Object doShare(PBytesIO self,
-                        @SuppressWarnings("unused") @Shared("getCapacityNode") @Cached GetCapacityNode getCapacityNode) {
+        @Specialization(guards = {"self.hasBuf()", "!shouldCopy(self)", "!shouldUnshare(self)"})
+        static Object doShare(PBytesIO self) {
             return self.getBuf();
         }
 
-        @Specialization(guards = {"self.hasBuf()", "!shouldCopy(self)", "shouldUnshare(getCapacityNode, self)"}, limit = "1")
+        @Specialization(guards = {"self.hasBuf()", "!shouldCopy(self)", "shouldUnshare(self)"})
         Object doUnshare(PBytesIO self,
-                        @SuppressWarnings("unused") @Shared("getCapacityNode") @Cached GetCapacityNode getCapacityNode,
                         @Cached GetInternalArrayNode internalArray) {
             // if (SHARED_BUF(self))
             unshareBuffer(self, self.getStringSize(), internalArray, factory());
