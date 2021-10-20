@@ -177,8 +177,7 @@ public abstract class BuiltinMethodDescriptor {
     }
 
     public final boolean isDescriptorOf(PBuiltinFunction fun) {
-        assert fun.getEnclosingType() instanceof PythonBuiltinClassType;
-        return fun.getName().equals(name) && fun.getBuiltinNodeFactory() == getFactory() && fun.getEnclosingType() == type;
+        return fun.getDescriptor() == this;
     }
 
     public final PythonBuiltinClassType getEnclosingType() {

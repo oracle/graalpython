@@ -62,6 +62,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     private final RootCallTarget callTarget;
     private final Signature signature;
     private final int flags;
+    private BuiltinMethodDescriptor descriptor;
     @CompilationFinal(dimensions = 1) private final Object[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
@@ -227,5 +228,13 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @ExportMessage
     String getExecutableName() {
         return getName();
+    }
+
+    public void setDescriptor(BuiltinMethodDescriptor descriptor) {
+        this.descriptor = descriptor;
+    }
+
+    public BuiltinMethodDescriptor getDescriptor() {
+        return descriptor;
     }
 }
