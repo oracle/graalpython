@@ -101,21 +101,21 @@ public abstract class PyObjectGetMethod extends Node {
 
     @Specialization(guards = {"isObjectGetAttribute(lazyClass)", "name == cachedName"}, limit = "1")
     static Object getFixedAttr(VirtualFrame frame, Object receiver, @SuppressWarnings("unused") String name,
-                               @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClass,
-                               @Bind("getClass.execute(receiver)") Object lazyClass,
-                               @SuppressWarnings("unused") @Cached("name") String cachedName,
-                               @Cached("create(name)") LookupAttributeInMRONode lookupNode,
-                               @Shared("getDescrClass") @Cached GetClassNode getDescrClass,
-                               @Shared("lookupGet") @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet,
-                               @Shared("lookupSet") @Cached(parameters = "Set") LookupCallableSlotInMRONode lookupSet,
-                               @Shared("callGet") @Cached CallTernaryMethodNode callGet,
-                               @Shared("readAttr") @Cached ReadAttributeFromObjectNode readAttr,
-                               @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                               @Cached BranchProfile hasDescr,
-                               @Cached BranchProfile returnDataDescr,
-                               @Cached BranchProfile returnAttr,
-                               @Cached BranchProfile returnUnboundMethod,
-                               @Cached BranchProfile returnBoundDescr) {
+                    @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClass,
+                    @Bind("getClass.execute(receiver)") Object lazyClass,
+                    @SuppressWarnings("unused") @Cached("name") String cachedName,
+                    @Cached("create(name)") LookupAttributeInMRONode lookupNode,
+                    @Shared("getDescrClass") @Cached GetClassNode getDescrClass,
+                    @Shared("lookupGet") @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet,
+                    @Shared("lookupSet") @Cached(parameters = "Set") LookupCallableSlotInMRONode lookupSet,
+                    @Shared("callGet") @Cached CallTernaryMethodNode callGet,
+                    @Shared("readAttr") @Cached ReadAttributeFromObjectNode readAttr,
+                    @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                    @Cached BranchProfile hasDescr,
+                    @Cached BranchProfile returnDataDescr,
+                    @Cached BranchProfile returnAttr,
+                    @Cached BranchProfile returnUnboundMethod,
+                    @Cached BranchProfile returnBoundDescr) {
         boolean methodFound = false;
         Object descr = lookupNode.execute(lazyClass);
         Object getMethod = PNone.NO_VALUE;
