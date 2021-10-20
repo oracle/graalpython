@@ -1503,7 +1503,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           IfNode SourceSection: [7764,7870]`if opname not in roo...`
                             NotNodeGen SourceSection: [7767,7786]`opname not in roots`
                               ContainsNodeGen SourceSection: None
-                                LookupAndCallBinaryNodeGen SourceSection: None
+                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                   Op: __contains__
                                 YesNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [7767,7773]`opname`
@@ -1714,14 +1714,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         GetAttributeNode SourceSection: [8327,8335]`self.obj`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: obj
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                           ReadLocalVariableNodeGen SourceSection: [8327,8331]`self`
                                                             Frame: [0,self,Illegal]
                                                         GetAttributeNode SourceSection: [8337,8346]`other.obj`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: obj
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                           ReadLocalVariableNodeGen SourceSection: [8337,8342]`other`
                                                             Frame: [1,other,Illegal]
@@ -1778,14 +1778,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         GetAttributeNode SourceSection: [8410,8418]`self.obj`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: obj
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                           ReadLocalVariableNodeGen SourceSection: [8410,8414]`self`
                                                             Frame: [0,self,Illegal]
                                                         GetAttributeNode SourceSection: [8420,8429]`other.obj`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: obj
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                           ReadLocalVariableNodeGen SourceSection: [8420,8425]`other`
                                                             Frame: [1,other,Illegal]
@@ -1842,14 +1842,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         GetAttributeNode SourceSection: [8493,8501]`self.obj`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: obj
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                           ReadLocalVariableNodeGen SourceSection: [8493,8497]`self`
                                                             Frame: [0,self,Illegal]
                                                         GetAttributeNode SourceSection: [8503,8512]`other.obj`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: obj
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                           ReadLocalVariableNodeGen SourceSection: [8503,8508]`other`
                                                             Frame: [1,other,Illegal]
@@ -1906,14 +1906,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         GetAttributeNode SourceSection: [8577,8585]`self.obj`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: obj
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                           ReadLocalVariableNodeGen SourceSection: [8577,8581]`self`
                                                             Frame: [0,self,Illegal]
                                                         GetAttributeNode SourceSection: [8587,8596]`other.obj`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: obj
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                           ReadLocalVariableNodeGen SourceSection: [8587,8592]`other`
                                                             Frame: [1,other,Illegal]
@@ -1970,14 +1970,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         GetAttributeNode SourceSection: [8661,8669]`self.obj`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: obj
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                           ReadLocalVariableNodeGen SourceSection: [8661,8665]`self`
                                                             Frame: [0,self,Illegal]
                                                         GetAttributeNode SourceSection: [8671,8680]`other.obj`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: obj
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                           ReadLocalVariableNodeGen SourceSection: [8671,8676]`other`
                                                             Frame: [1,other,Illegal]
@@ -2204,7 +2204,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             GetAttributeNode SourceSection: [9672,9681]`func.args`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: args
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [9672,9676]`func`
                                                 Frame: [3,func,Illegal]
@@ -2219,7 +2219,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               GetAttributeNode SourceSection: [9709,9722]`func.keywords`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: keywords
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [9709,9713]`func`
                                                   Frame: [3,func,Illegal]
@@ -2250,7 +2250,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           GetAttributeNode SourceSection: [9835,9844]`func.func`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: func
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [9835,9839]`func`
                                               Frame: [3,func,Illegal]
@@ -2372,7 +2372,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           GetAttributeNode SourceSection: [10188,10201]`self.keywords`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: keywords
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [10188,10192]`self`
                                               Frame: [2,self,Illegal]
@@ -2395,7 +2395,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               GetAttributeNode SourceSection: [10272,10281]`self.args`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: args
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [10272,10276]`self`
                                                   Frame: [2,self,Illegal]
@@ -2454,7 +2454,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         GetAttributeNode SourceSection: [10371,10394]`type(self).__qualnam...`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __qualname__
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           PythonCallUnary SourceSection: [10371,10381]`type(self)`
                                             CallUnaryMethodNodeGen SourceSection: None
@@ -2473,7 +2473,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             GetAttributeNode SourceSection: [10416,10425]`self.func`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: func
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [10416,10420]`self`
                                                 Frame: [0,self,Illegal]
@@ -2538,7 +2538,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               GetAttributeNode SourceSection: [10465,10474]`self.args`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: args
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [10465,10469]`self`
                                                   Frame: [0,self,Illegal]
@@ -2616,7 +2616,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   GetAttributeNode SourceSection: [10523,10536]`self.keywords`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: keywords
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                     ReadLocalVariableNodeGen SourceSection: [10523,10527]`self`
                                                       Frame: [0,self,Illegal]
@@ -2627,7 +2627,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             GetAttributeNode SourceSection: [10557,10578]`type(self).__module_...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __module__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               PythonCallUnary SourceSection: [10557,10567]`type(self)`
                                                 CallUnaryMethodNodeGen SourceSection: None
@@ -2688,7 +2688,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           GetAttributeNode SourceSection: [10760,10769]`self.func`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: func
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [10760,10764]`self`
                                               Frame: [0,self,Illegal]
@@ -2697,14 +2697,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           GetAttributeNode SourceSection: [10774,10783]`self.func`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: func
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [10774,10778]`self`
                                               Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [10785,10794]`self.args`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: args
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [10785,10789]`self`
                                               Frame: [0,self,Illegal]
@@ -2712,7 +2712,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             GetAttributeNode SourceSection: [10811,10824]`self.keywords`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: keywords
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [10811,10815]`self`
                                                 Frame: [0,self,Illegal]
@@ -2722,7 +2722,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             GetAttributeNode SourceSection: [10834,10847]`self.__dict__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __dict__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [10834,10838]`self`
                                                 Frame: [0,self,Illegal]
@@ -3153,7 +3153,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           GetAttributeNode SourceSection: [12752,12761]`func.func`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: func
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [12752,12756]`func`
                                               Frame: [1,func,Illegal]
@@ -3165,7 +3165,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             GetAttributeNode SourceSection: [12786,12795]`func.args`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: args
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [12786,12790]`func`
                                                 Frame: [1,func,Illegal]
@@ -3181,7 +3181,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               GetAttributeNode SourceSection: [12831,12844]`func.keywords`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: keywords
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [12831,12835]`func`
                                                   Frame: [1,func,Illegal]
@@ -3192,7 +3192,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               GetAttributeNode SourceSection: [12864,12877]`self.keywords`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: keywords
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [12864,12868]`self`
                                                   Frame: [0,self,Illegal]
@@ -3266,7 +3266,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           GetAttributeNode SourceSection: [13064,13073]`self.args`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: args
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [13064,13068]`self`
                                               Frame: [0,self,Illegal]
@@ -3350,7 +3350,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 GetAttributeNode SourceSection: [13173,13186]`self.keywords`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: keywords
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                   ReadLocalVariableNodeGen SourceSection: [13173,13177]`self`
                                                     Frame: [0,self,Illegal]
@@ -3368,12 +3368,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               GetAttributeNode SourceSection: [13308,13333]`self.__class__.__mod...`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __module__
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 GetAttributeNode SourceSection: [13308,13322]`self.__class__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __class__
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                   ReadLocalVariableNodeGen SourceSection: [13308,13312]`self`
                                                     Frame: [0,self,Illegal]
@@ -3381,12 +3381,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               GetAttributeNode SourceSection: [13375,13402]`self.__class__.__qua...`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __qualname__
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 GetAttributeNode SourceSection: [13375,13389]`self.__class__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __class__
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                   ReadLocalVariableNodeGen SourceSection: [13375,13379]`self`
                                                     Frame: [0,self,Illegal]
@@ -3394,7 +3394,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               GetAttributeNode SourceSection: [13445,13454]`self.func`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: func
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [13445,13449]`self`
                                                   Frame: [0,self,Illegal]
@@ -3490,7 +3490,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         GetAttributeNode SourceSection: [13663,13676]`self.keywords`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: keywords
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                           ReadLocalCellNodeGen SourceSection: [13663,13667]`self`
                                                             ReadLocalVariableNodeGen SourceSection: None
@@ -3535,7 +3535,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         GetAttributeNode SourceSection: [13806,13815]`self.args`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: args
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                           ReadLocalCellNodeGen SourceSection: [13806,13810]`self`
                                                             ReadLocalVariableNodeGen SourceSection: None
@@ -3572,7 +3572,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       GetAttributeNode SourceSection: [13927,13952]`self.__isabstractmet...`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __isabstractmethod__
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadLocalCellNodeGen SourceSection: [13927,13931]`self`
                                           ReadLocalVariableNodeGen SourceSection: None
@@ -3645,7 +3645,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         GetAttributeNode SourceSection: [14070,14079]`self.func`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: func
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [14070,14074]`self`
                                             Frame: [0,self,Illegal]
@@ -3681,7 +3681,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               GetAttributeNode SourceSection: [14216,14225]`self.func`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: func
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [14216,14220]`self`
                                                   Frame: [0,self,Illegal]
@@ -3697,7 +3697,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   GetAttributeNode SourceSection: [14396,14405]`self.args`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: args
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                     ReadLocalVariableNodeGen SourceSection: [14396,14400]`self`
                                                       Frame: [0,self,Illegal]
@@ -3707,7 +3707,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   GetAttributeNode SourceSection: [14409,14422]`self.keywords`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: keywords
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                     ReadLocalVariableNodeGen SourceSection: [14409,14413]`self`
                                                       Frame: [0,self,Illegal]
@@ -3722,7 +3722,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   GetAttributeNode SourceSection: [14483,14500]`new_func.__self__`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __self__
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                     ReadLocalVariableNodeGen SourceSection: [14483,14491]`new_func`
                                                       Frame: [5,new_func,Illegal]
@@ -3804,7 +3804,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           GetAttributeNode SourceSection: [14867,14876]`self.func`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: func
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [14867,14871]`self`
                                               Frame: [0,self,Illegal]
@@ -3978,7 +3978,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       GetAttributeNode SourceSection: [15585,15599]`self.hashvalue`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: hashvalue
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadLocalVariableNodeGen SourceSection: [15585,15589]`self`
                                           Frame: [0,self,Illegal]
@@ -4309,7 +4309,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               IntegerLiteralNode SourceSection: [16752,16753]`1`
                                 Value: 1
                             ContainsNodeGen SourceSection: [16758,16783]`type(key[0]) in fast...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
+                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                 Op: __contains__
                               YesNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [16758,16770]`type(key[0])`
@@ -4633,7 +4633,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                       GetAttributeNode SourceSection: [18766,18775]`cache.get`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: get
-                          LookupAndCallBinaryNodeGen SourceSection: None
+                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                         ReadLocalCellNodeGen SourceSection: [18766,18771]`cache`
                           ReadLocalVariableNodeGen SourceSection: None
@@ -4646,7 +4646,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                       GetAttributeNode SourceSection: [18841,18854]`cache.__len__`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: __len__
-                          LookupAndCallBinaryNodeGen SourceSection: None
+                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                         ReadLocalCellNodeGen SourceSection: [18841,18846]`cache`
                           ReadLocalVariableNodeGen SourceSection: None
@@ -5159,7 +5159,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           IfNode SourceSection: [20711,22667]`if key in cache:↵   ...`
                                             YesNodeGen SourceSection: None
                                               ContainsNodeGen SourceSection: [20714,20726]`key in cache`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [20714,20717]`key`
@@ -5721,7 +5721,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           IfNode SourceSection: [24000,24148]`if candidate in s2[1...`
                                             YesNodeGen SourceSection: None
                                               ContainsNodeGen SourceSection: [24003,24022]`candidate in s2[1:]`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [24003,24012]`candidate`
@@ -5887,7 +5887,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     GetAttributeNode SourceSection: [25498,25511]`cls.__bases__`
                                       GetFixedAttributeNodeGen SourceSection: None
                                         Key: __bases__
-                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                       ReadLocalVariableNodeGen SourceSection: [25498,25501]`cls`
                                         Frame: [0,cls,Illegal]
@@ -5907,7 +5907,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               GetAttributeNode SourceSection: [25405,25418]`cls.__bases__`
                                 GetFixedAttributeNodeGen SourceSection: None
                                   Key: __bases__
-                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                 ReadLocalVariableNodeGen SourceSection: [25405,25408]`cls`
                                   Frame: [0,cls,Illegal]
@@ -5947,7 +5947,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           GetAttributeNode SourceSection: None
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: __bases__
-                              LookupAndCallBinaryNodeGen SourceSection: None
+                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                             ReadLocalVariableNodeGen SourceSection: [25690,25693]`cls`
                               Frame: [0,cls,Illegal]
@@ -5973,7 +5973,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           GetAttributeNode SourceSection: None
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: __bases__
-                              LookupAndCallBinaryNodeGen SourceSection: None
+                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                             ReadLocalVariableNodeGen SourceSection: [25763,25766]`cls`
                               Frame: [0,cls,Illegal]
@@ -6067,7 +6067,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         GetAttributeNode SourceSection: [25902,25915]`cls.__bases__`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __bases__
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           ReadLocalVariableNodeGen SourceSection: [25902,25905]`cls`
                                             Frame: [0,cls,Illegal]
@@ -6409,7 +6409,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         GetAttributeNode SourceSection: [26831,26842]`cls.__mro__`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: __mro__
-                            LookupAndCallBinaryNodeGen SourceSection: None
+                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadLocalCellNodeGen SourceSection: [26831,26834]`cls`
                             ReadLocalVariableNodeGen SourceSection: None
@@ -6453,7 +6453,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       AndNode SourceSection: None
                                         NotNodeGen SourceSection: [26961,26977]`typ not in bases`
                                           ContainsNodeGen SourceSection: None
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __contains__
                                             YesNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [26961,26964]`typ`
@@ -6604,7 +6604,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadLocalVariableNodeGen SourceSection: [27296,27301]`other`
                                                   Frame: [1,other,Illegal]
                                               ContainsNodeGen SourceSection: [27306,27326]`typ in other.__mro__...`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [27306,27309]`typ`
@@ -6612,7 +6612,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 GetAttributeNode SourceSection: [27313,27326]`other.__mro__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __mro__
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                   ReadLocalVariableNodeGen SourceSection: [27313,27318]`other`
                                                     Frame: [1,other,Illegal]
@@ -6746,7 +6746,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         AndNode SourceSection: [27690,27731]`sub not in bases and...`
                                           NotNodeGen SourceSection: [27690,27706]`sub not in bases`
                                             ContainsNodeGen SourceSection: None
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __contains__
                                               YesNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [27690,27693]`sub`
@@ -6803,7 +6803,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         GeneratorAccessNode SourceSection: None
                                                         YesNodeGen SourceSection: None
                                                           ContainsNodeGen SourceSection: [27789,27802]`s in type_set`
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                               Op: __contains__
                                                             YesNodeGen SourceSection: None
                                                             ReadGeneratorFrameVariableNodeGen SourceSection: [27789,27790]`s`
@@ -6840,7 +6840,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 GetAttributeNode SourceSection: [27774,27785]`sub.__mro__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __mro__
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                   ReadLocalVariableNodeGen SourceSection: [27774,27777]`sub`
                                                     Frame: [8,sub,Illegal]
@@ -6899,7 +6899,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           IfNode SourceSection: [28058,28123]`if subcls not in mro...`
                                             NotNodeGen SourceSection: [28061,28078]`subcls not in mro`
                                               ContainsNodeGen SourceSection: None
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __contains__
                                                 YesNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [28061,28067]`subcls`
@@ -7023,7 +7023,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       AndNode SourceSection: None
                                         AndNode SourceSection: None
                                           ContainsNodeGen SourceSection: [28825,28838]`t in registry`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __contains__
                                             YesNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [28825,28826]`t`
@@ -7032,7 +7032,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Frame: [1,registry,Illegal]
                                           NotNodeGen SourceSection: [28843,28863]`t not in cls.__mro__...`
                                             ContainsNodeGen SourceSection: None
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __contains__
                                               YesNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [28843,28844]`t`
@@ -7040,14 +7040,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               GetAttributeNode SourceSection: [28852,28863]`cls.__mro__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __mro__
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [28852,28855]`cls`
                                                   Frame: [0,cls,Illegal]
                                           YesNodeGen SourceSection: None
                                         NotNodeGen SourceSection: [28898,28922]`match not in cls.__m...`
                                           ContainsNodeGen SourceSection: None
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __contains__
                                             YesNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [28898,28903]`match`
@@ -7055,7 +7055,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             GetAttributeNode SourceSection: [28911,28922]`cls.__mro__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __mro__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [28911,28914]`cls`
                                                 Frame: [0,cls,Illegal]
@@ -7090,7 +7090,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             IfNode SourceSection: [29115,29159]`if t in registry:↵  ...`
                               YesNodeGen SourceSection: None
                                 ContainsNodeGen SourceSection: [29118,29131]`t in registry`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                     Op: __contains__
                                   YesNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [29118,29119]`t`
@@ -7637,7 +7637,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             GetAttributeNode SourceSection: [31916,31933]`args[0].__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               GetItemNodeGen SourceSection: [31916,31923]`args[0]`
                                                 ReadLocalVariableNodeGen SourceSection: None
@@ -7691,7 +7691,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           GetAttributeNode SourceSection: [32124,32144]`dispatch_cache.clear...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: clear
-                              LookupAndCallBinaryNodeGen SourceSection: None
+                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                             ReadLocalCellNodeGen SourceSection: [32124,32138]`dispatch_cache`
                               ReadLocalVariableNodeGen SourceSection: None

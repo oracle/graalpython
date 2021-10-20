@@ -9,7 +9,7 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
       GetAttributeNode SourceSection: None
         GetFixedAttributeNodeGen SourceSection: None
           Key: displayhook
-          LookupAndCallBinaryNodeGen SourceSection: None
+          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
             Op: __getattribute__
       CallNodeGen SourceSection: None
       ExpressionWithSideEffect SourceSection: [0,35]`class A:↵    class B...`

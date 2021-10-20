@@ -70,7 +70,7 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
               GetAttributeNode SourceSection: [45,48]`p.x`
                 GetFixedAttributeNodeGen SourceSection: None
                   Key: x
-                  LookupAndCallBinaryNodeGen SourceSection: None
+                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                 ReadNameNodeGen SourceSection: [45,46]`p`
                   Identifier: p
@@ -79,7 +79,7 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
               GetAttributeNode SourceSection: [51,54]`p.y`
                 GetFixedAttributeNodeGen SourceSection: None
                   Key: y
-                  LookupAndCallBinaryNodeGen SourceSection: None
+                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                 ReadNameNodeGen SourceSection: [51,52]`p`
                   Identifier: p
