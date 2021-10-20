@@ -41,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.itertools.PAccumulate;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
+import com.oracle.graal.python.builtins.objects.itertools.PCompress;
 import com.oracle.graal.python.builtins.objects.itertools.PCount;
 import com.oracle.graal.python.builtins.objects.itertools.PDropwhile;
 import com.oracle.graal.python.builtins.objects.itertools.PFilterfalse;
@@ -86,6 +87,31 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         protected PAccumulate construct(Object cls, Object[] arguments, PKeyword[] keywords,
                         @Cached TypeNodes.IsTypeNode isTypeNode) {
             return factory().createAccumulate();
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        protected Object notype(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+        }
+    }
+
+    @Builtin(name = "compress", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PCompress, doc = "Make an iterator that filters elements from *data* returning\n" +
+                    "only those that have a corresponding element in *selectors* that evaluates to\n" +
+                    "``True``.  Stops when either the *data* or *selectors* iterables has been\n" +
+                    "exhausted.\n" +
+                    "Equivalent to::\n\n" +
+                    "\tdef compress(data, selectors):\n" +
+                    "\t\t# compress('ABCDEF', [1,0,1,0,1,1]) --> A C E F\n" +
+                    "\t\treturn (d for d, s in zip(data, selectors) if s)")
+    @GenerateNodeFactory
+    public abstract static class CompressNode extends PythonVarargsBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PCompress construct(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @Cached TypeNodes.IsTypeNode isTypeNode) {
+            return factory().createCompress();
         }
 
         @Fallback

@@ -343,38 +343,3 @@ class cycle():
         self.index = 0
 
 
-class compress():
-    """Make an iterator that filters elements from *data* returning
-   only those that have a corresponding element in *selectors* that evaluates to
-   ``True``.  Stops when either the *data* or *selectors* iterables has been
-   exhausted.
-   Equivalent to::
-
-       def compress(data, selectors):
-           # compress('ABCDEF', [1,0,1,0,1,1]) --> A C E F
-           return (d for d, s in zip(data, selectors) if s)
-    """
-    @__graalpython__.builtin_method
-    def __init__(self, data, selectors):
-        self.data = iter(data)
-        self.selectors = iter(selectors)
-
-    @__graalpython__.builtin_method
-    def __iter__(self):
-        return self
-
-    @__graalpython__.builtin_method
-    def __next__(self):
-        # No need to check for StopIteration since either data or selectors will
-        # raise this. The shortest one stops first.
-        while True:
-            next_item = next(self.data)
-            next_selector = next(self.selectors)
-            if next_selector:
-                return next_item
-
-    @__graalpython__.builtin_method
-    def __reduce__(self):
-        return (type(self), (self.data, self.selectors))
-
-
