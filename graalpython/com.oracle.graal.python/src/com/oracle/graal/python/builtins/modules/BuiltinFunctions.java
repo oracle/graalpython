@@ -311,10 +311,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         if (!isTrueNode.execute(frame, internalArray[i])) {
                             return false;
                         }
+                        break;
                     case ANY:
                         if (isTrueNode.execute(frame, internalArray[i])) {
                             return true;
                         }
+                        break;
                 }
             }
 
@@ -331,32 +333,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         if (!isTrueNode.execute(frame, key)) {
                             return false;
                         }
+                        break;
                     case ANY:
                         if (isTrueNode.execute(frame, key)) {
                             return true;
                         }
+                        break;
                 }
             }
 
-            return nodeType == NodeType.ALL;
-        }
-
-        protected boolean checkHashEntries(PHashingCollection hashingCollection,
-                                           VirtualFrame frame,
-                                           PyObjectIsTrueNode isTrueNode,
-                                           NodeType nodeType) {
-            for (HashingStorage.DictEntry entry: hashingCollection.entries()) {
-                switch (nodeType) {
-                    case ALL:
-                        if (!isTrueNode.execute(frame, entry.key)) {
-                            return false;
-                        }
-                    case ANY:
-                        if (isTrueNode.execute(frame, entry.key)) {
-                            return true;
-                        }
-                }
-            }
             return nodeType == NodeType.ALL;
         }
     }
@@ -395,7 +380,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                              PBaseSet object,
                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                              @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashEntries(object, frame, isTrueNode, nodeType);
+            return checkHashKeys(object, frame, isTrueNode, nodeType);
         }
 
         @Specialization
@@ -456,7 +441,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                              PBaseSet object,
                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                              @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashEntries(object, frame, isTrueNode, nodeType);
+            return checkHashKeys(object, frame, isTrueNode, nodeType);
         }
 
         @Specialization
