@@ -46,6 +46,7 @@ import site
 import subprocess
 import tempfile
 import importlib
+import time
 
 import sys
 
@@ -474,12 +475,14 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
         user_arg = ["--user"]
     else:
         user_arg = []
+    start = time.time()
     status = run_cmd([sys.executable, "setup.py"] + build_cmd + ["install"] + user_arg + extra_opts, env=setup_env,
                      cwd=os.path.join(tempdir, bare_name), quiet=quiet)
+    end = time.time()
     if status != 0 and not ignore_errors:
         xit("An error occurred trying to run `setup.py install %s %s'" % (user_arg, " ".join(extra_opts)))
     elif quiet:
-        info("{} successfully installed", package)
+        info("{} successfully installed (took {:.2f} s)", package, (end - start))
 
 # NOTE: Following 3 functions are duplicated in pip_hook.py:
 # creates a search list of a versioned file:
