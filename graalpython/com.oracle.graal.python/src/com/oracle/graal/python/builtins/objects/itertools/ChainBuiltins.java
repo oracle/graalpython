@@ -205,21 +205,21 @@ public final class ChainBuiltins extends PythonBuiltins {
                 throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
             Object source = getItemNode.execute(frame, state, 0);
-            checkIterator(getAttrNode, frame, source, sourceIteratorProfile);
+            checkIterator(frame, getAttrNode, source, sourceIteratorProfile);
             self.setSource(source);
             if (len == 2) {
                 len2Profile.enter();
                 Object active = getItemNode.execute(frame, state, 1);
-                checkIterator(getAttrNode, frame, active, activeIteratorProfile);
+                checkIterator(frame, getAttrNode, active, activeIteratorProfile);
                 self.setActive(active);
             }
             return PNone.NONE;
         }
 
-        private void checkIterator(PyObjectLookupAttr getAttrNode, VirtualFrame frame, Object active, BranchProfile profile) throws PException {
-            if (getAttrNode.execute(frame, active, __NEXT__) == PNone.NO_VALUE) {
+        private void checkIterator(VirtualFrame frame, PyObjectLookupAttr getAttrNode, Object obj, BranchProfile profile) throws PException {
+            if (getAttrNode.execute(frame, obj, __NEXT__) == PNone.NO_VALUE) {
                 profile.enter();
-                throw raise(TypeError, ARGUMENTS_MUST_BE_ITERATORS);
+                throw raise(TypeError, ARGUMENTS_MUST_BE_ITERATORS + " " + obj);
             }
         }
     }
