@@ -857,6 +857,7 @@ public abstract class ErrorMessages {
     public static final String CAN_T_HAVE_UNBUFFERED_TEXT_IO = "can't have unbuffered text I/O";
     public static final String ILLEGAL_STATE_ARGUMENT = "illegal state argument";
     public static final String STATE_ARGUMENT_MUST_BE_A_TUPLE = "state argument must be a tuple";
+    public static final String STATE_ARGUMENT_D_MUST_BE_A_S = "state argument %d must be a %s";
     public static final String REENTRANT_CALL_INSIDE_S_REPR = "reentrant call inside %s.__repr__";
     public static final String EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED = "Existing exports of data: object cannot be re-sized";
     public static final String SECOND_ITEM_OF_STATE_MUST_BE_AN_INTEGER_NOT_P = "second item of state must be an integer, not %p";

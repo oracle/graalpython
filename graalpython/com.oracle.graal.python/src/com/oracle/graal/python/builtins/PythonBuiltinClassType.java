@@ -215,6 +215,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PCompress("compress", "itertools"),
     PDropwhile("dropwhile", "itertools"),
     PFilterfalse("filterfalse", "itertools"),
+    PGroupBy("groupby", "itertools"),
+    PGrouper("grouper", "itertools", Flags.PUBLIC_DERIVED_WODICT),
     PPermutations("permutations", "itertools"),
     PProduct("product", "itertools"),
     PRepeat("repeat", "itertools"),

@@ -45,6 +45,8 @@ import com.oracle.graal.python.builtins.objects.itertools.PCompress;
 import com.oracle.graal.python.builtins.objects.itertools.PCount;
 import com.oracle.graal.python.builtins.objects.itertools.PDropwhile;
 import com.oracle.graal.python.builtins.objects.itertools.PFilterfalse;
+import com.oracle.graal.python.builtins.objects.itertools.PGroupBy;
+import com.oracle.graal.python.builtins.objects.itertools.PGrouper;
 import com.oracle.graal.python.builtins.objects.itertools.PIslice;
 import com.oracle.graal.python.builtins.objects.itertools.PPermutations;
 import com.oracle.graal.python.builtins.objects.itertools.PProduct;
@@ -152,6 +154,56 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         protected PFilterfalse construct(Object cls, Object[] arguments, PKeyword[] keywords,
                         @Cached TypeNodes.IsTypeNode isTypeNode) {
             return factory().createFilterfalse();
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        protected Object notype(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+        }
+    }
+
+    @Builtin(name = "groupby", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PGroupBy, doc = "Make an iterator that returns consecutive keys and groups from the\n" +
+                    "iterable. The key is a function computing a key value for each\n" +
+                    "element. If not specified or is None, key defaults to an identity\n" +
+                    "function and returns the element unchanged. Generally, the\n" +
+                    "iterable needs to already be sorted on the same key function.\n\n" +
+                    "The returned group is itself an iterator that shares the\n" +
+                    "underlying iterable with groupby(). Because the source is shared,\n" +
+                    "when the groupby object is advanced, the previous group is no\n" +
+                    "longer visible. So, if that data is needed later, it should be\n" +
+                    "stored as a list:\n\n" +
+                    "\tgroups = []\n" +
+                    "\tuniquekeys = []\n" +
+                    "\tfor k, g in groupby(data, keyfunc):\n" +
+                    "\t\tgroups.append(list(g))      # Store group iterator as a list\n" +
+                    "\t\tuniquekeys.append(k)")
+    @GenerateNodeFactory
+    public abstract static class GroupByNode extends PythonVarargsBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PGroupBy construct(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @Cached TypeNodes.IsTypeNode isTypeNode) {
+            return factory().createGroupBy(cls);
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        protected Object notype(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+        }
+    }
+
+    @Builtin(name = "_grouper", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PGrouper)
+    @GenerateNodeFactory
+    public abstract static class GrouperNode extends PythonVarargsBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PGrouper construct(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @Cached TypeNodes.IsTypeNode isTypeNode) {
+            return factory().createGrouper(cls);
         }
 
         @Fallback
@@ -301,7 +353,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
         protected PRepeat construct(Object cls, Object[] arguments, PKeyword[] keywords,
                         @Cached TypeNodes.IsTypeNode isTypeNode) {
-            return factory().createRepeat();
+            return factory().createRepeat(cls);
         }
 
         @Fallback
