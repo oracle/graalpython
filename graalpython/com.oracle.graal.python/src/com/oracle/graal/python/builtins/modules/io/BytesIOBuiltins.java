@@ -96,7 +96,11 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.EnsureCapacityNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetLenNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
@@ -204,7 +208,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
     }
 
     static PBytes readBytes(PBytesIO self, int size,
-                    SequenceStorageNodes.GetInternalByteArrayNode getBytes,
+                    GetInternalByteArrayNode getBytes,
                     PythonObjectFactory factory) {
         if (size == 0) {
             return factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
@@ -235,7 +239,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.hasBuf()")
         Object read(PBytesIO self, int len,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes) {
+                        @Cached GetInternalByteArrayNode getBytes) {
             int size = len;
             /* adjust invalid sizes */
             int n = self.getStringSize() - self.getPos();
@@ -261,7 +265,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
     }
 
     static int scanEOL(PBytesIO self, int l,
-                    SequenceStorageNodes.GetInternalByteArrayNode getBytes) {
+                    GetInternalByteArrayNode getBytes) {
         assert (self.hasBuf());
         assert (self.getPos() >= 0);
 
@@ -308,7 +312,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.hasBuf()")
         Object readline(PBytesIO self, int size,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes) {
+                        @Cached GetInternalByteArrayNode getBytes) {
             int n = scanEOL(self, size, getBytes);
             return readBytes(self, n, getBytes, factory());
         }
@@ -326,7 +330,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.hasBuf()")
         Object readlines(PBytesIO self, int maxsize,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes) {
+                        @Cached GetInternalByteArrayNode getBytes) {
             ArrayBuilder<Object> result = new ArrayBuilder<>();
 
             int n;
@@ -396,15 +400,15 @@ public class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.hasBuf()", "checkExports(self)"})
         Object truncate(PBytesIO self, @SuppressWarnings("unused") PNone size,
-                        @Shared("i") @Cached SequenceStorageNodes.GetInternalArrayNode internalArray,
-                        @Shared("l") @Cached SequenceStorageNodes.SetLenNode setLenNode) {
+                        @Shared("i") @Cached GetInternalArrayNode internalArray,
+                        @Shared("l") @Cached SetLenNode setLenNode) {
             return truncate(self, self.getPos(), internalArray, setLenNode);
         }
 
         @Specialization(guards = {"self.hasBuf()", "checkExports(self)", "size >= 0", "size < self.getStringSize()"})
         Object truncate(PBytesIO self, int size,
-                        @Shared("i") @Cached SequenceStorageNodes.GetInternalArrayNode internalArray,
-                        @Shared("l") @Cached SequenceStorageNodes.SetLenNode setLenNode) {
+                        @Shared("i") @Cached GetInternalArrayNode internalArray,
+                        @Shared("l") @Cached SetLenNode setLenNode) {
             self.setStringSize(size);
             resizeBuffer(self, size, internalArray, factory());
             setLenNode.execute(self.getBuf().getSequenceStorage(), size);
@@ -420,8 +424,8 @@ public class BytesIOBuiltins extends PythonBuiltins {
         Object obj(VirtualFrame frame, PBytesIO self, Object arg,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyNumberIndexNode indexNode,
-                        @Shared("i") @Cached SequenceStorageNodes.GetInternalArrayNode internalArray,
-                        @Shared("l") @Cached SequenceStorageNodes.SetLenNode setLenNode) {
+                        @Shared("i") @Cached GetInternalArrayNode internalArray,
+                        @Shared("l") @Cached SetLenNode setLenNode) {
             int size = asSizeNode.executeExact(frame, indexNode.execute(frame, arg), OverflowError);
             if (size >= 0) {
                 if (size < self.getStringSize()) {
@@ -459,14 +463,14 @@ public class BytesIOBuiltins extends PythonBuiltins {
     }
 
     protected static void unshareBuffer(PBytesIO self, int size,
-                    SequenceStorageNodes.GetInternalArrayNode internalArray,
+                    GetInternalArrayNode internalArray,
                     PythonObjectFactory factory) {
         byte[] buf = (byte[]) internalArray.execute(self.getBuf().getSequenceStorage());
         unshareBuffer(self, size, buf, factory);
     }
 
     protected static void resizeBuffer(PBytesIO self, int size,
-                    SequenceStorageNodes.GetInternalArrayNode internalArray,
+                    GetInternalArrayNode internalArray,
                     PythonObjectFactory factory) {
         int alloc = self.getStringSize();
         if (size < alloc) {
@@ -486,9 +490,9 @@ public class BytesIOBuiltins extends PythonBuiltins {
         Object doWrite(PBytesIO self, Object b,
                         @CachedLibrary("b") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
-                        @Cached SequenceStorageNodes.GetInternalArrayNode internalArray,
-                        @Cached SequenceStorageNodes.EnsureCapacityNode ensureCapacityNode,
-                        @Cached SequenceStorageNodes.SetLenNode setLenNode) {
+                        @Cached GetInternalArrayNode internalArray,
+                        @Cached EnsureCapacityNode ensureCapacityNode,
+                        @Cached SetLenNode setLenNode) {
             Object buffer = acquireLib.acquireReadonly(b);
             try {
                 int len = bufferLib.getBufferLength(buffer);
@@ -661,7 +665,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
     abstract static class GetBufferNode extends ClosedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "self.hasBuf()")
         Object doit(VirtualFrame frame, PBytesIO self,
-                        @Cached SequenceStorageNodes.GetInternalArrayNode internalArray,
+                        @Cached GetInternalArrayNode internalArray,
                         @Cached PyMemoryViewFromObject memoryViewNode) {
             // if (SHARED_BUF(b))
             unshareBuffer(self, self.getStringSize(), internalArray, factory());
@@ -681,24 +685,25 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
 
         protected static boolean shouldUnshare(PBytesIO self) {
-            return self.getStringSize() != self.getBufCapacity();
+            int capacity = self.getBuf().getSequenceStorage().getCapacity();
+            return self.getStringSize() != capacity;
         }
 
         @Specialization(guards = {"self.hasBuf()", "shouldCopy(self)"})
-        Object copy(PBytesIO self,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes) {
+        Object doCopy(PBytesIO self,
+                        @Cached GetInternalByteArrayNode getBytes) {
             byte[] buf = getBytes.execute(self.getBuf().getSequenceStorage());
             return factory().createBytes(PythonUtils.arrayCopyOf(buf, self.getStringSize()));
         }
 
         @Specialization(guards = {"self.hasBuf()", "!shouldCopy(self)", "!shouldUnshare(self)"})
-        static Object doit(PBytesIO self) {
+        static Object doShare(PBytesIO self) {
             return self.getBuf();
         }
 
         @Specialization(guards = {"self.hasBuf()", "!shouldCopy(self)", "shouldUnshare(self)"})
-        Object unshare(PBytesIO self,
-                        @Cached SequenceStorageNodes.GetInternalArrayNode internalArray) {
+        Object doUnshare(PBytesIO self,
+                        @Cached GetInternalArrayNode internalArray) {
             // if (SHARED_BUF(self))
             unshareBuffer(self, self.getStringSize(), internalArray, factory());
             // else resize self.buf
@@ -724,7 +729,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "checkExports(self)")
         Object doit(VirtualFrame frame, PBytesIO self, PTuple state,
-                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
+                        @Cached GetInternalObjectArrayNode getArray,
                         @Cached WriteNode writeNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -867,7 +872,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.hasBuf()")
         Object doit(PBytesIO self,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes) {
+                        @Cached GetInternalByteArrayNode getBytes) {
             int n = scanEOL(self, -1, getBytes);
             if (n == 0) {
                 throw raise(StopIteration);

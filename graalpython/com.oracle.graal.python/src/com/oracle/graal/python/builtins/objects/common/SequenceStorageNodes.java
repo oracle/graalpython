@@ -2839,7 +2839,7 @@ public abstract class SequenceStorageNodes {
                         @Shared("genNode") @Cached DoGeneralizationNode doGenNode) {
             int len = lenNode.execute(s);
             int newLen = len + 1;
-            int capacity = s.capacity();
+            int capacity = s.getCapacity();
             if (newLen > capacity) {
                 increaseCapacity.enter();
                 ensureCapacity.execute(s, len + 1);

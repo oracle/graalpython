@@ -76,7 +76,7 @@ public final class ListLiteralNode extends SequenceLiteralNode {
         }
     }
 
-    @CompilationFinal private SizeEstimate initialCapacity;
+    private final SizeEstimate initialCapacity;
     private final boolean hasStarredExpressions;
 
     public ListLiteralNode(ExpressionNode[] values) {
@@ -136,18 +136,14 @@ public final class ListLiteralNode extends SequenceLiteralNode {
     public void reportUpdatedCapacity(BasicSequenceStorage newStore) {
         if (CompilerDirectives.inInterpreter()) {
             if (PythonContext.get(this).getOption(PythonOptions.OverallocateLiteralLists)) {
-                if (newStore.capacity() > initialCapacity.estimate()) {
-                    initialCapacity.updateFrom(newStore.capacity());
-                    LOGGER.finest(() -> {
-                        return String.format("Updating list size estimate at %s. Observed capacity: %d, new estimate: %d", getSourceSection().toString(), newStore.capacity(),
-                                        initialCapacity.estimate());
-                    });
+                if (newStore.getCapacity() > initialCapacity.estimate()) {
+                    initialCapacity.updateFrom(newStore.getCapacity());
+                    LOGGER.finest(() -> String.format("Updating list size estimate at %s. Observed capacity: %d, new estimate: %d", getSourceSection().toString(), newStore.getCapacity(),
+                                    initialCapacity.estimate()));
                 }
                 if (newStore.getElementType().generalizesFrom(type)) {
                     type = newStore.getElementType();
-                    LOGGER.finest(() -> {
-                        return String.format("Updating list type estimate at %s. New type: %s", getSourceSection().toString(), type.name());
-                    });
+                    LOGGER.finest(() -> String.format("Updating list type estimate at %s. New type: %s", getSourceSection().toString(), type.name()));
                 }
             }
         }
