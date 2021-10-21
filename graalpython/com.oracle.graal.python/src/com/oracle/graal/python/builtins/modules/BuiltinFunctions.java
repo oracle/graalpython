@@ -80,6 +80,7 @@ import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.locks.Condition;
 
 import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.PythonLanguage;
@@ -323,11 +324,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return nodeType == NodeType.ALL;
         }
 
-        protected boolean checkHashKeys(PHashingCollection hashingCollection,
+        protected boolean checkHashKeys(HashingStorage hashingStorage,
                                         VirtualFrame frame,
                                         PyObjectIsTrueNode isTrueNode,
+                                        HashingStorageLibrary hlib,
                                         NodeType nodeType) {
-            for (Object key: hashingCollection.keys()) {
+            for (Object key: hlib.keys(hashingStorage)) {
                 switch (nodeType) {
                     case ALL:
                         if (!isTrueNode.execute(frame, key)) {
@@ -371,16 +373,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public boolean doDict(VirtualFrame frame,
                               PDict object,
                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                              @CachedLibrary("object.getDictStorage()")  HashingStorageLibrary hlib,
                               @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashKeys(object, frame, isTrueNode, nodeType);
+            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, nodeType);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         public boolean doSet(VirtualFrame frame,
                              PBaseSet object,
                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                             @CachedLibrary("object.getDictStorage()")  HashingStorageLibrary hlib,
                              @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashKeys(object, frame, isTrueNode, nodeType);
+            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, nodeType);
         }
 
         @Specialization
@@ -432,16 +436,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public boolean doDict(VirtualFrame frame,
                               PDict object,
                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                              @CachedLibrary("object.getDictStorage()") HashingStorageLibrary hlib,
                               @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashKeys(object, frame, isTrueNode, nodeType);
+            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, nodeType);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         public boolean doSet(VirtualFrame frame,
                              PBaseSet object,
                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                             @CachedLibrary("object.getDictStorage()") HashingStorageLibrary hlib,
                              @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashKeys(object, frame, isTrueNode, nodeType);
+            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, nodeType);
         }
 
         @Specialization
