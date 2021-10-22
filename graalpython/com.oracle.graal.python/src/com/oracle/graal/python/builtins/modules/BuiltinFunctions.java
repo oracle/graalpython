@@ -300,8 +300,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class AllOrAnyNode extends PythonUnaryBuiltinNode {
         enum NodeType { ALL, ANY }
 
-        protected NodeType nodeType;
-
         /**
          * Specializes on primitive storage types based on SequenceStorage.
          */
@@ -397,20 +395,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = ALL, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class AllNode extends AllOrAnyNode {
-        private final NodeType nodeType = NodeType.ALL;
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         public boolean doList(VirtualFrame frame,
                               PList object,
                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
-            return checkSequenceStorage(object.getSequenceStorage(), frame, this.nodeType);
+            return checkSequenceStorage(object.getSequenceStorage(), frame, NodeType.ALL);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         public boolean doTuple(VirtualFrame frame,
                                PTuple object,
                                @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
-            return checkSequenceStorage(object.getSequenceStorage(), frame, this.nodeType);
+            return checkSequenceStorage(object.getSequenceStorage(), frame, NodeType.ALL);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
@@ -419,7 +416,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                               @CachedLibrary("object.getDictStorage()")  HashingStorageLibrary hlib,
                               @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, this.nodeType);
+            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, NodeType.ALL);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
@@ -428,7 +425,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                              @CachedLibrary("object.getDictStorage()")  HashingStorageLibrary hlib,
                              @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, this.nodeType);
+            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, NodeType.ALL);
         }
 
         @Specialization
@@ -458,20 +455,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = ANY, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class AnyNode extends AllOrAnyNode {
-        private final NodeType nodeType = NodeType.ANY;
-
+        
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         public boolean doList(VirtualFrame frame,
                               PList object,
                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
-            return checkSequenceStorage(object.getSequenceStorage(), frame, this.nodeType);
+            return checkSequenceStorage(object.getSequenceStorage(), frame, NodeType.ANY);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         public boolean doTuple(VirtualFrame frame,
                                PTuple object,
                                @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
-            return checkSequenceStorage(object.getSequenceStorage(), frame, this.nodeType);
+            return checkSequenceStorage(object.getSequenceStorage(), frame, NodeType.ANY);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
@@ -480,7 +476,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                               @CachedLibrary("object.getDictStorage()") HashingStorageLibrary hlib,
                               @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, this.nodeType);
+            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, NodeType.ANY);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
@@ -489,7 +485,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                              @CachedLibrary("object.getDictStorage()") HashingStorageLibrary hlib,
                              @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, this.nodeType);
+            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, NodeType.ANY);
         }
 
         @Specialization
