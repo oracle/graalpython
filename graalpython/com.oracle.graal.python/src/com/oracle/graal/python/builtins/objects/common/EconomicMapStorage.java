@@ -353,7 +353,7 @@ public class EconomicMapStorage extends HashingStorage {
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (advance(cursor)) {
                 Object otherValue = other.map.get(frame, getDictKey(cursor), findProfile, eqNode);
-                if (otherValue != null && !eqNode.execute(frame, otherValue, getValue(cursor))) {
+                if (otherValue == null || !eqNode.execute(frame, otherValue, getValue(cursor))) {
                     return false;
                 }
             }
@@ -374,7 +374,7 @@ public class EconomicMapStorage extends HashingStorage {
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (advance(cursor)) {
                 Object otherValue = selflib.getItemWithState(self, getKey(cursor), state);
-                if (otherValue != null && !eqNode.execute(frame, otherValue, getValue(cursor))) {
+                if (otherValue == null || !eqNode.execute(frame, otherValue, getValue(cursor))) {
                     return false;
                 }
             }
