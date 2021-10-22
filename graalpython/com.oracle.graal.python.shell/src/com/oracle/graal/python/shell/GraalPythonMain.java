@@ -62,6 +62,10 @@ import org.graalvm.polyglot.Value;
 import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 
 public class GraalPythonMain extends AbstractLanguageLauncher {
+
+    public static final String SHORT_HELP = "usage: python [option] ... [-c cmd | -m mod | file | -] [arg] ...\n" +
+                    "Try `python -h' for more information.";
+
     public static void main(String[] args) {
         GraalPythonMain.setStartupTime();
         new GraalPythonMain().launch(args);
@@ -181,9 +185,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         break;
                     case "--check-hash-based-pycs":
                         if (!argumentIterator.hasNext()) {
-                            print("Argument expected for the --check-hash-based-pycs option");
-                            printShortHelp();
-                            System.exit(2);
+                            throw abort("Argument expected for the --check-hash-based-pycs option\n" + SHORT_HELP, 2);
                         }
                         checkHashPycsMode = argumentIterator.next();
                         break;
@@ -273,6 +275,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         case 'V':
                             versionAction = VersionAction.PrintAndExit;
                             break;
+                        default:
+                            throw abort(String.format("Unknown option -%c\n", option) + SHORT_HELP, 2);
                     }
                 }
             } else {
@@ -305,17 +309,20 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         return unrecognized;
     }
 
-    private static String getShortOptionParameter(Iterator<String> argumentIterator, String remainder, char option) {
+    private String getShortOptionParameter(Iterator<String> argumentIterator, String remainder, char option) {
         if (remainder.isEmpty()) {
             if (!argumentIterator.hasNext()) {
-                print(String.format("Argument expected for the -%c option", option));
-                printShortHelp();
-                System.exit(2);
+                throw abort(String.format("Argument expected for the -%c option\n", option) + SHORT_HELP, 2);
             }
             return argumentIterator.next();
         } else {
             return remainder;
         }
+    }
+
+    @Override
+    protected AbortException abortUnrecognizedArgument(String argument) {
+        throw abort(String.format("Unknown option %s\n", argument) + SHORT_HELP, 2);
     }
 
     @Override
@@ -344,11 +351,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             execList.addAll(relaunchArgs);
             return execList.toArray(new String[execList.size()]);
         }
-    }
-
-    private static void printShortHelp() {
-        print("usage: python [option] ... [-c cmd | -m mod | file | -] [arg] ...\n" +
-                        "Try `python -h' for more information.");
     }
 
     private static void print(String string) {
