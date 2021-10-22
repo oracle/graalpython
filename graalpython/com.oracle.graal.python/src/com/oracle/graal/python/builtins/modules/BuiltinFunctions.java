@@ -80,7 +80,6 @@ import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.locks.Condition;
 
 import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.PythonLanguage;
@@ -107,7 +106,6 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -296,98 +294,84 @@ public final class BuiltinFunctions extends PythonBuiltins {
        }
     }
 
+    /**
+     * Base class for AllNode and AnyNode, as their logic and behaviors are very similar.
+     */
     public abstract static class AllOrAnyNode extends PythonUnaryBuiltinNode {
         enum NodeType { ALL, ANY }
 
         protected NodeType nodeType;
 
+        /**
+         * Specializes on primitive storage types based on SequenceStorage.
+         */
         @GenerateNodeFactory
-        public abstract static class SequenceStorageIterationNode {
-            public static boolean checkBooleanSequenceStorage(BoolSequenceStorage sequenceStorage,
-                                                       VirtualFrame frame,
-                                                       PyObjectIsTrueNode isTrueNode,
-                                                       NodeType nodeType) {
+        public abstract static class AllOrAnySequenceStorageNode extends PythonUnaryBuiltinNode {
+            @Child private static PyObjectIsTrueNode isTrueNode = PyObjectIsTrueNode.create();
+            @Child private static SequenceStorageNodes.LenNode lenNode = SequenceStorageNodes.LenNode.create();
+
+            public static boolean checkBool(BoolSequenceStorage sequenceStorage,
+                                            VirtualFrame frame,
+                                            NodeType nodeType) {
                 boolean[] internalArray = sequenceStorage.getInternalBoolArray();
 
                 for (int i = 0; i < sequenceStorage.length(); i++) {
-                    switch (nodeType) {
-                        case ALL:
-                            if (!isTrueNode.execute(frame, internalArray[i])) {
-                                return false;
-                            }
-                            break;
-                        case ANY:
-                            if (isTrueNode.execute(frame, internalArray[i])) {
-                                return true;
-                            }
-                            break;
+                    if (shouldStopIteration(frame, internalArray[i], nodeType)) {
+                        return nodeType != NodeType.ALL;
                     }
                 }
 
                 return nodeType == NodeType.ALL;
             }
 
-            public static boolean checkIntSequenceStorage(IntSequenceStorage sequenceStorage,
-                                                   VirtualFrame frame,
-                                                   PyObjectIsTrueNode isTrueNode,
-                                                   NodeType nodeType) {
+            public static boolean checkInt(IntSequenceStorage sequenceStorage,
+                                           VirtualFrame frame,
+                                           NodeType nodeType) {
                 int[] internalArray = sequenceStorage.getInternalIntArray();
 
                 for (int i = 0; i < sequenceStorage.length(); i++) {
-                    switch (nodeType) {
-                        case ALL:
-                            if (!isTrueNode.execute(frame, internalArray[i])) {
-                                return false;
-                            }
-                            break;
-                        case ANY:
-                            if (isTrueNode.execute(frame, internalArray[i])) {
-                                return true;
-                            }
-                            break;
+                    if (shouldStopIteration(frame, internalArray[i], nodeType)) {
+                        return nodeType != NodeType.ALL;
                     }
                 }
 
                 return nodeType == NodeType.ALL;
             }
 
-            public static boolean checkGenericSequenceStorage(SequenceStorage sequenceStorage,
-                                                       VirtualFrame frame,
-                                                       PyObjectIsTrueNode isTrueNode,
-                                                       SequenceStorageNodes.LenNode lenNode,
-                                                       NodeType nodeType) {
+            public static boolean checkGeneric(SequenceStorage sequenceStorage,
+                                               VirtualFrame frame,
+                                               NodeType nodeType) {
                 Object[] internalArray = sequenceStorage.getInternalArray();
                 for (int i = 0; i < lenNode.execute(sequenceStorage); i++) {
-                    switch (nodeType) {
-                        case ALL:
-                            if (!isTrueNode.execute(frame, internalArray[i])) {
-                                return false;
-                            }
-                            break;
-                        case ANY:
-                            if (isTrueNode.execute(frame, internalArray[i])) {
-                                return true;
-                            }
-                            break;
+                    if (shouldStopIteration(frame, internalArray[i], nodeType)) {
+                        return nodeType != NodeType.ALL;
                     }
                 }
 
                 return nodeType == NodeType.ALL;
+            }
+
+            private static boolean shouldStopIteration(VirtualFrame frame,
+                                                  Object obj,
+                                                  NodeType nodeType) {
+                if (nodeType == NodeType.ALL) {
+                    return !isTrueNode.execute(frame, obj);
+                } else { // ANY case
+                    return isTrueNode.execute(frame, obj);
+                }
             }
 
         }
 
         protected boolean checkSequenceStorage(SequenceStorage seq,
                                                VirtualFrame frame,
-                                               PyObjectIsTrueNode isTrueNode,
-                                               SequenceStorageNodes.LenNode lenNode,
                                                NodeType nodeType) {
             if (seq instanceof IntSequenceStorage) {
-                return SequenceStorageIterationNode.checkIntSequenceStorage((IntSequenceStorage) seq, frame, isTrueNode, nodeType);
+                return AllOrAnySequenceStorageNode.checkInt((IntSequenceStorage) seq, frame, nodeType);
             } else if (seq instanceof BoolSequenceStorage) {
-                return SequenceStorageIterationNode.checkBooleanSequenceStorage((BoolSequenceStorage) seq, frame, isTrueNode, nodeType);
+                return AllOrAnySequenceStorageNode.checkBool((BoolSequenceStorage) seq, frame, nodeType);
             } else {
-                return SequenceStorageIterationNode.checkGenericSequenceStorage(seq, frame, isTrueNode, lenNode, nodeType);
+                return AllOrAnySequenceStorageNode.checkGeneric(seq, frame, nodeType);
             }
         }
 
@@ -397,17 +381,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
                                         HashingStorageLibrary hlib,
                                         NodeType nodeType) {
             for (Object key: hlib.keys(hashingStorage)) {
-                switch (nodeType) {
-                    case ALL:
-                        if (!isTrueNode.execute(frame, key)) {
-                            return false;
-                        }
-                        break;
-                    case ANY:
-                        if (isTrueNode.execute(frame, key)) {
-                            return true;
-                        }
-                        break;
+                if (nodeType == NodeType.ALL) {
+                    if (!isTrueNode.execute(frame, key)) {
+                        return false;
+                    }
+                } else if (isTrueNode.execute(frame, key)) { // ANY case
+                    return true;
                 }
             }
 
@@ -423,19 +402,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         public boolean doList(VirtualFrame frame,
                               PList object,
-                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                              @Cached SequenceStorageNodes.LenNode lenNode,
-                              @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkSequenceStorage(object.getSequenceStorage(), frame, isTrueNode, lenNode, nodeType);
+                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+            return checkSequenceStorage(object.getSequenceStorage(), frame, this.nodeType);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         public boolean doTuple(VirtualFrame frame,
                                PTuple object,
-                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                               @Cached SequenceStorageNodes.LenNode lenNode,
-                               @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkSequenceStorage(object.getSequenceStorage(), frame, isTrueNode, lenNode, nodeType);
+                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+            return checkSequenceStorage(object.getSequenceStorage(), frame, this.nodeType);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
@@ -444,7 +419,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                               @CachedLibrary("object.getDictStorage()")  HashingStorageLibrary hlib,
                               @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, nodeType);
+            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, this.nodeType);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
@@ -453,7 +428,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                              @CachedLibrary("object.getDictStorage()")  HashingStorageLibrary hlib,
                              @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, nodeType);
+            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, this.nodeType);
         }
 
         @Specialization
@@ -488,19 +463,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         public boolean doList(VirtualFrame frame,
                               PList object,
-                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                              @Cached SequenceStorageNodes.LenNode lenNode,
-                              @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkSequenceStorage(object.getSequenceStorage(), frame, isTrueNode, lenNode, nodeType);
+                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+            return checkSequenceStorage(object.getSequenceStorage(), frame, this.nodeType);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         public boolean doTuple(VirtualFrame frame,
                                PTuple object,
-                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                               @Cached SequenceStorageNodes.LenNode lenNode,
-                               @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkSequenceStorage(object.getSequenceStorage(), frame, isTrueNode, lenNode, nodeType);
+                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
+            return checkSequenceStorage(object.getSequenceStorage(), frame, this.nodeType);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
@@ -509,7 +480,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                               @CachedLibrary("object.getDictStorage()") HashingStorageLibrary hlib,
                               @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, nodeType);
+            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, this.nodeType);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
@@ -518,7 +489,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                              @CachedLibrary("object.getDictStorage()") HashingStorageLibrary hlib,
                              @Cached PyObjectIsTrueNode isTrueNode) {
-            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, nodeType);
+            return checkHashKeys(object.getDictStorage(), frame, isTrueNode, hlib, this.nodeType);
         }
 
         @Specialization
