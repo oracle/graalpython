@@ -46,6 +46,7 @@ import site
 import subprocess
 import tempfile
 import importlib
+import time
 
 import sys
 
@@ -99,12 +100,12 @@ def pip_package(name=None, try_import=False):
         return wrapper
     return decorator
 
-def run_cmd(args, msg="", failOnError=True, cwd=None, env=None):
-    cwd_log = "cd " + cwd if cwd else ""
+def run_cmd(args, msg="", failOnError=True, cwd=None, env=None, quiet=False, **kwargs):
+    cwd_log = "cd " + cwd + " ;" if cwd else ""
     print("+", cwd_log, ' '.join(args))
-    result = subprocess.run(args, cwd=cwd, env=env)
+    result = subprocess.run(args, cwd=cwd, env=env, capture_output=quiet, **kwargs)
     if failOnError and result.returncode != 0:
-        xit(msg, status=result.returncode)
+        xit(os.linesep.join((msg, str(result.stdout))), status=result.returncode)
     return result.returncode
 
 def known_packages():
@@ -398,13 +399,13 @@ def xit(msg, status=-1):
     exit(-1)
 
 
-def _download_with_curl_and_extract(dest_dir, url):
+def _download_with_curl_and_extract(dest_dir, url, quiet=False):
     name = url[url.rfind("/")+1:]
 
     downloaded_path = os.path.join(dest_dir, name)
 
     # first try direct connection
-    if run_cmd(["curl", "-L", "-o", downloaded_path, url], failOnError=False) != 0:
+    if run_cmd(["curl", "-L", "-o", downloaded_path, url], failOnError=False, quiet=quiet) != 0:
         # honor env var 'HTTP_PROXY', 'HTTPS_PROXY', and 'NO_PROXY'
         env = os.environ
         curl_opts = []
@@ -417,16 +418,16 @@ def _download_with_curl_and_extract(dest_dir, url):
             using_proxy = True
         if using_proxy and "NO_PROXY" in env:
             curl_opts += ["--noproxy", env["NO_PROXY"]]
-        run_cmd(["curl", "-L"] + curl_opts + ["-o", downloaded_path, url], msg="Download error")
+        run_cmd(["curl", "-L"] + curl_opts + ["-o", downloaded_path, url], msg="Download error", quiet=quiet)
 
     if name.endswith(".tar.gz"):
-        run_cmd(["tar", "xzf", downloaded_path, "-C", dest_dir], msg="Error extracting tar.gz")
+        run_cmd(["tar", "xzf", downloaded_path, "-C", dest_dir], msg="Error extracting tar.gz", quiet=quiet)
         bare_name = name[:-len(".tar.gz")]
     elif name.endswith(".tar.bz2"):
-        run_cmd(["tar", "xjf", downloaded_path, "-C", dest_dir], msg="Error extracting tar.bz2")
+        run_cmd(["tar", "xjf", downloaded_path, "-C", dest_dir], msg="Error extracting tar.bz2", quiet=quiet)
         bare_name = name[:-len(".tar.bz2")]
     elif name.endswith(".zip"):
-        run_cmd(["unzip", "-u", downloaded_path, "-d", dest_dir], msg="Error extracting zip")
+        run_cmd(["unzip", "-u", downloaded_path, "-d", dest_dir], msg="Error extracting zip", quiet=quiet)
         bare_name = name[:-len(".zip")]
     else:
         xit("Unknown file type: %s" % name)
@@ -437,6 +438,8 @@ def _download_with_curl_and_extract(dest_dir, url):
 def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=False, env={}, version=None, pre_install_hook=None, build_cmd=[]):
     tempdir = tempfile.mkdtemp()
 
+    quiet = "-q" in extra_opts
+
     os_env = os.environ
 
     # honor env var 'CFLAGS' and the explicitly passed env
@@ -445,7 +448,7 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
     cflags = os_env.get("CFLAGS", "") + ((" " + add_cflags) if add_cflags else "")
     setup_env['CFLAGS'] = cflags if cflags else ""
 
-    bare_name = _download_with_curl_and_extract(tempdir, url)
+    bare_name = _download_with_curl_and_extract(tempdir, url, quiet=quiet)
 
     file_realpath = os.path.dirname(os.path.realpath(__file__))
     patches_dir = os.path.join(Path(file_realpath).parent, 'patches', package)
@@ -455,7 +458,7 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
 
     patch_file_path = first_existing(package, versions, os.path.join(patches_dir, "sdist"), ".patch")
     if patch_file_path:
-        run_cmd(["patch", "-d", os.path.join(tempdir, bare_name, ""), "-p1", "-i", patch_file_path])
+        run_cmd(["patch", "-d", os.path.join(tempdir, bare_name, ""), "-p1", "-i", patch_file_path], quiet=quiet)
 
     whl_patches_dir = os.path.join(patches_dir, "whl")
     patch_file_path = first_existing(package, versions, whl_patches_dir, ".patch")
@@ -463,7 +466,7 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
     subdir = "" if subdir is None else subdir
     if patch_file_path:
         os.path.join(tempdir, bare_name, subdir)
-        run_cmd(["patch", "-d", os.path.join(tempdir, bare_name, subdir), "-p1", "-i", patch_file_path])
+        run_cmd(["patch", "-d", os.path.join(tempdir, bare_name, subdir), "-p1", "-i", patch_file_path], quiet=quiet)
 
     if pre_install_hook:
         pre_install_hook(os.path.join(tempdir, bare_name))
@@ -472,10 +475,14 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
         user_arg = ["--user"]
     else:
         user_arg = []
+    start = time.time()
     status = run_cmd([sys.executable, "setup.py"] + build_cmd + ["install"] + user_arg + extra_opts, env=setup_env,
-                     cwd=os.path.join(tempdir, bare_name))
+                     cwd=os.path.join(tempdir, bare_name), quiet=quiet)
+    end = time.time()
     if status != 0 and not ignore_errors:
         xit("An error occurred trying to run `setup.py install %s %s'" % (user_arg, " ".join(extra_opts)))
+    elif quiet:
+        info("{} successfully installed (took {:.2f} s)", package, (end - start))
 
 # NOTE: Following 3 functions are duplicated in pip_hook.py:
 # creates a search list of a versioned file:
@@ -522,7 +529,7 @@ def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True,
         # this is already the url to the actual package
         pass
     else:
-        r = subprocess.check_output("curl -L %s" % url, shell=True).decode("utf8")
+        r = subprocess.check_output("curl -L %s" % url, stderr=subprocess.DEVNULL, shell=True).decode("utf8")
         url = None
         try:
             urls = json.loads(r)["urls"]
@@ -568,6 +575,7 @@ def get_site_packages_path():
 
 def main(argv):
     parser = argparse.ArgumentParser(description="The simple Python package installer for GraalVM")
+    parser.add_argument("--quiet", "-q", action="store_true", help="Do not show build output")
 
     subparsers = parser.add_subparsers(title="Commands", dest="command", metavar="Use COMMAND --help for further help.")
 
@@ -614,6 +622,8 @@ def main(argv):
     )
 
     args = parser.parse_args(argv)
+    
+    quiet_flag = ["-q"] if args.quiet else []
 
     if args.command == "list":
         user_site = get_site_packages_path()
@@ -646,7 +656,7 @@ def main(argv):
             if pkg not in KNOWN_PACKAGES:
                 xit("Unknown package: '%s'" % pkg)
             else:
-                extra_opts = []
+                extra_opts = [] + quiet_flag
                 if args.prefix:
                     extra_opts += ["--prefix", args.prefix]
                 if args.user:
@@ -654,7 +664,7 @@ def main(argv):
                 KNOWN_PACKAGES[pkg](extra_opts=extra_opts)
     elif args.command == "pypi":
         for pkg in args.package.split(","):
-            install_from_pypi(pkg, ignore_errors=False)
+            install_from_pypi(pkg, extra_opts=quiet_flag, ignore_errors=False)
 
 
 if __name__ == "__main__":
