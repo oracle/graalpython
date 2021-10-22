@@ -114,10 +114,14 @@ import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.itertools.PAccumulate;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
+import com.oracle.graal.python.builtins.objects.itertools.PCombinations;
+import com.oracle.graal.python.builtins.objects.itertools.PCombinationsWithReplacement;
 import com.oracle.graal.python.builtins.objects.itertools.PCompress;
 import com.oracle.graal.python.builtins.objects.itertools.PCount;
 import com.oracle.graal.python.builtins.objects.itertools.PDropwhile;
 import com.oracle.graal.python.builtins.objects.itertools.PFilterfalse;
+import com.oracle.graal.python.builtins.objects.itertools.PGroupBy;
+import com.oracle.graal.python.builtins.objects.itertools.PGrouper;
 import com.oracle.graal.python.builtins.objects.itertools.PIslice;
 import com.oracle.graal.python.builtins.objects.itertools.PPermutations;
 import com.oracle.graal.python.builtins.objects.itertools.PProduct;
@@ -1180,8 +1184,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PProduct(PythonBuiltinClassType.PProduct, PythonBuiltinClassType.PProduct.getInstanceShape(getLanguage())));
     }
 
-    public final PRepeat createRepeat() {
-        return trace(new PRepeat(PythonBuiltinClassType.PRepeat, PythonBuiltinClassType.PRepeat.getInstanceShape(getLanguage())));
+    public final PRepeat createRepeat(Object cls) {
+        return trace(new PRepeat(cls, getShape(cls)));
     }
 
     public final PAccumulate createAccumulate() {
@@ -1192,12 +1196,32 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDropwhile(PythonBuiltinClassType.PDropwhile, PythonBuiltinClassType.PDropwhile.getInstanceShape(getLanguage())));
     }
 
+    public final PCombinations createCombinations() {
+        return trace(new PCombinations(PythonBuiltinClassType.PCombinations, PythonBuiltinClassType.PCombinations.getInstanceShape(getLanguage())));
+    }
+
+    public final PCombinationsWithReplacement createCombinationsWithReplacement() {
+        return trace(new PCombinationsWithReplacement(PythonBuiltinClassType.PCombinationsWithReplacement, PythonBuiltinClassType.PCombinationsWithReplacement.getInstanceShape(getLanguage())));
+    }
+
     public final PCompress createCompress() {
         return trace(new PCompress(PythonBuiltinClassType.PCompress, PythonBuiltinClassType.PCompress.getInstanceShape(getLanguage())));
     }
 
     public final PFilterfalse createFilterfalse() {
         return trace(new PFilterfalse(PythonBuiltinClassType.PFilterfalse, PythonBuiltinClassType.PFilterfalse.getInstanceShape(getLanguage())));
+    }
+
+    public final PGroupBy createGroupBy(Object cls) {
+        return trace(new PGroupBy(cls, getShape(cls)));
+    }
+
+    public final PGrouper createGrouper(Object cls) {
+        return trace(new PGrouper(cls, getShape(cls)));
+    }
+
+    public final PGrouper createGrouper(PGroupBy parent, Object tgtKey) {
+        return trace(new PGrouper(parent, tgtKey, PythonBuiltinClassType.PGrouper, PythonBuiltinClassType.PGrouper.getInstanceShape(getLanguage())));
     }
 
     public final PTee createTee() {

@@ -41,6 +41,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.itertools.PAccumulate;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
+import com.oracle.graal.python.builtins.objects.itertools.PCombinations;
+import com.oracle.graal.python.builtins.objects.itertools.PCombinationsWithReplacement;
 import com.oracle.graal.python.builtins.objects.itertools.PCompress;
 import com.oracle.graal.python.builtins.objects.itertools.PCount;
 import com.oracle.graal.python.builtins.objects.itertools.PDropwhile;
@@ -61,6 +63,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -94,6 +97,64 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         protected Object notype(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+        }
+    }
+
+    @Builtin(name = "combinations", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PCombinations, parameterNames = {"$self", "iterable",
+                    "r"}, doc = "combinations(iterable, r) --> combinations object\n\n" +
+                                    "Return successive r-length combinations of elements in the iterable.\n\n" +
+                                    "combinations(range(4), 3) --> (0,1,2), (0,1,3), (0,2,3), (1,2,3)")
+    @ArgumentClinic(name = "r", conversion = ArgumentClinic.ClinicConversion.Int)
+    @GenerateNodeFactory
+    public abstract static class CombinationsNode extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ItertoolsModuleBuiltinsClinicProviders.CombinationsNodeClinicProviderGen.INSTANCE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PCombinations construct(Object cls, Object iterable, int r,
+                        @Cached TypeNodes.IsTypeNode isTypeNode) {
+            return factory().createCombinations();
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
+        protected Object notype(Object cls, Object iterable, Object r,
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+        }
+    }
+
+    // XXX this vs. init?
+    @Builtin(name = "combinations_with_replacement", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PCombinationsWithReplacement, parameterNames = {"$self", "iterable",
+                    "r"}, doc = "combinations_with_replacement(iterable, r) --> combinations_with_replacement object\n\n" +
+                                    "Return successive r-length combinations of elements in the iterable\n" +
+                                    "allowing individual elements to have successive repeats.\n" +
+                                    "    combinations_with_replacement('ABC', 2) --> AA AB AC BB BC CC")
+    @ArgumentClinic(name = "r", conversion = ArgumentClinic.ClinicConversion.Int)
+    @GenerateNodeFactory
+    public abstract static class CombinationsWithReplacementNode extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ItertoolsModuleBuiltinsClinicProviders.CombinationsNodeClinicProviderGen.INSTANCE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isTypeNode.execute(cls)", limit = "1")
+        protected PCombinationsWithReplacement construct(Object cls, Object iterable, int r,
+                        @Cached TypeNodes.IsTypeNode isTypeNode) {
+            return factory().createCombinationsWithReplacement();
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!isTypeNode.execute(cls)")
+        protected Object notype(Object cls, Object iterable, Object r,
                         @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
@@ -345,6 +406,9 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    // XXX all c-tors should implement what is done in init and remove init, it is a noop in python
+    // too
+    // XXX add tests for it
     @Builtin(name = "repeat", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PRepeat, doc = "repeat(object [,times]) -> create an iterator which returns the object\n" +
                     "for the specified number of times.  If not specified, returns the object\nendlessly.")
     @GenerateNodeFactory
