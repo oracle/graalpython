@@ -215,6 +215,13 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     char option = remainder.charAt(0);
                     remainder = remainder.substring(1);
                     switch (option) {
+                        case 'b':
+                            // TODO implement
+                            /*
+                             * Issue warnings about str(bytes_instance), str(bytearray_instance) and
+                             * comparing bytes/bytearray with str. (-bb: issue errors)
+                             */
+                            break;
                         case 'B':
                             dontWriteBytecode = true;
                             break;
@@ -222,9 +229,14 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             programArgs.add("-c");
                             commandString = getShortOptionParameter(argumentIterator, remainder, 'c');
                             break shortOptionLoop;
+                        case 'd':
+                            // TODO implement
+                            /* Turn on parser debugging output */
+                            break;
                         case 'E':
                             ignoreEnv = true;
                             break;
+                        case '?':
                         case 'h':
                             unrecognized.add("--help");
                             break;
@@ -242,8 +254,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             commandString = "import runpy; runpy._run_module_as_main('" + module + "')";
                             break shortOptionLoop;
                         case 'O':
+                            // TODO implement
+                            /*
+                             * Remove assert statements and any code conditional on the value of
+                             * __debug__; augment the filename for compiled (bytecode) files by
+                             * adding .opt-1 before the .pyc extension.
+                             */
+                            break;
                         case 'R':
-                        case 'd':
+                            // TODO implement
                             break;
                         case 'q':
                             quietFlag = true;
@@ -254,6 +273,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         case 'S':
                             noSite = true;
                             break;
+                        case 't':
+                            // Ignored even in CPython, for backwards compatibility
+                            break;
                         case 'W':
                             if (warnOptions == null) {
                                 warnOptions = "";
@@ -261,10 +283,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                                 warnOptions += ",";
                             }
                             warnOptions += getShortOptionParameter(argumentIterator, remainder, 'W');
-                            break shortOptionLoop;
-                        case 'X':
-                            // CPython ignores unknown/unsupported -X options, so we can do that too
-                            getShortOptionParameter(argumentIterator, remainder, 'X');
                             break shortOptionLoop;
                         case 'u':
                             unbufferedIO = true;
@@ -275,6 +293,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         case 'V':
                             versionAction = VersionAction.PrintAndExit;
                             break;
+                        case 'X':
+                            // CPython ignores unknown/unsupported -X options, so we can do that too
+                            getShortOptionParameter(argumentIterator, remainder, 'X');
+                            break shortOptionLoop;
                         default:
                             throw abort(String.format("Unknown option -%c\n", option) + SHORT_HELP, 2);
                     }
