@@ -79,7 +79,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
@@ -161,7 +161,7 @@ public abstract class BytesNodes {
             Object iterator = getIter.execute(frame, iterable);
             while (true) {
                 try {
-                    partsTotalSize += append(parts, toBytesNode.execute(getNextNode.execute(frame, iterator)));
+                    partsTotalSize += append(parts, toBytesNode.execute(frame, getNextNode.execute(frame, iterator)));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return joinArrays(sep, parts, partsTotalSize);
@@ -200,7 +200,7 @@ public abstract class BytesNodes {
     }
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
-    public abstract static class ToBytesNode extends PNodeWithRaise {
+    public abstract static class ToBytesNode extends PNodeWithRaiseAndIndirectCall {
 
         private final PythonBuiltinClassType errorType;
         private final String errorMessageFormat;
@@ -210,22 +210,26 @@ public abstract class BytesNodes {
             this.errorMessageFormat = errorMessageFormat;
         }
 
-        public abstract byte[] execute(Object obj);
+        public final byte[] execute(PBytesLike obj) {
+            return execute(null, obj);
+        }
+
+        public abstract byte[] execute(VirtualFrame frame, Object obj);
 
         @Specialization(limit = "3")
-        byte[] doBuffer(Object object,
+        byte[] doBuffer(VirtualFrame frame, Object object,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             Object buffer;
             try {
-                buffer = bufferAcquireLib.acquireReadonly(object);
+                buffer = bufferAcquireLib.acquireReadonly(object, frame, this);
             } catch (PException e) {
                 throw raise(errorType, errorMessageFormat, object);
             }
             try {
                 return bufferLib.getCopiedByteArray(buffer);
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -581,26 +585,25 @@ public abstract class BytesNodes {
      * already bytes. We obviously cannot do that here, it must be done by the caller if the need
      * this behavior.
      */
-    public abstract static class BytesFromObject extends PNodeWithContext {
+    public abstract static class BytesFromObject extends PNodeWithRaiseAndIndirectCall {
         public abstract byte[] execute(VirtualFrame frame, Object object);
 
         // TODO make fast paths for builtin list/tuple - note that FromSequenceNode doesn't work
         // properly when the list is mutated by its __index__
 
         @Specialization
-        static byte[] doGeneric(VirtualFrame frame, Object object,
+        byte[] doGeneric(VirtualFrame frame, Object object,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.IterableToByteNode iterableToByteNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached PRaiseNode raise) {
+                        @Cached IsBuiltinClassProfile errorProfile) {
             if (bufferAcquireLib.hasBuffer(object)) {
                 // TODO PyBUF_FULL_RO
-                Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_ND);
+                Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_ND, frame, this);
                 try {
                     return bufferLib.getCopiedByteArray(buffer);
                 } finally {
-                    bufferLib.release(buffer);
+                    bufferLib.release(buffer, frame, this);
                 }
             }
             if (!PGuards.isString(object)) {
@@ -610,7 +613,7 @@ public abstract class BytesNodes {
                     e.expect(TypeError, errorProfile);
                 }
             }
-            throw raise.raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object);
+            throw raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object);
         }
     }
 
@@ -820,7 +823,7 @@ public abstract class BytesNodes {
         }
     }
 
-    public abstract static class DecodeUTF8FSPathNode extends PNodeWithRaise {
+    public abstract static class DecodeUTF8FSPathNode extends PNodeWithRaiseAndIndirectCall {
 
         public byte[] getBytes(VirtualFrame frame, Object value) {
             return utf8StringToBytes(execute(frame, value));
@@ -829,18 +832,18 @@ public abstract class BytesNodes {
         public abstract String execute(VirtualFrame frame, Object value);
 
         @Specialization
-        static String doit(VirtualFrame frame, Object value,
+        String doit(VirtualFrame frame, Object value,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached CastToJavaStringNode toString,
                         @Cached PosixModuleBuiltins.FspathNode fsPath) {
             Object path = fsPath.execute(frame, value);
             if (bufferAcquireLib.hasBuffer(path)) {
-                Object buffer = bufferAcquireLib.acquireReadonly(path);
+                Object buffer = bufferAcquireLib.acquireReadonly(path, frame, this);
                 try {
                     return encodeFSDefault(bufferLib.getCopiedByteArray(path));
                 } finally {
-                    bufferLib.release(buffer);
+                    bufferLib.release(buffer, frame, this);
                 }
             }
             return toString.execute(path);

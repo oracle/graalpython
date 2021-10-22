@@ -154,7 +154,7 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
                 bufferLib.readIntoBuffer(data, 0, buffer, 0, dataLen, bufferLib);
                 return dataLen;
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 

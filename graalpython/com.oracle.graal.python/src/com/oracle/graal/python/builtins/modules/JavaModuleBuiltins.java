@@ -293,14 +293,14 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isBytes(object)", limit = "3")
-        static Object doBuffer(Object object,
+        Object doBuffer(VirtualFrame frame, Object object,
                         @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-            Object buffer = acquireLib.acquireReadonly(object);
+            Object buffer = acquireLib.acquireReadonly(object, frame, this);
             try {
                 return new InteropByteArray(bufferLib.getCopiedByteArray(object));
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
     }

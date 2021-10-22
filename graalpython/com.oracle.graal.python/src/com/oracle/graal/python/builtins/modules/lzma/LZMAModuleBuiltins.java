@@ -315,7 +315,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaLongLossyNode toLong,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached LZMANodes.DecodeFilterProperties decodeFilterProperties) {
-            byte[] bytes = toBytes.execute(encodedProps);
+            byte[] bytes = toBytes.execute(frame, encodedProps);
             PDict dict = factory().createDict();
             decodeFilterProperties.execute(frame, toLong.execute(id), bytes, dict);
             return dict;

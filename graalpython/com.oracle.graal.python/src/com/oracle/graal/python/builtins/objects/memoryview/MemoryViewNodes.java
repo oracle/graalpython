@@ -40,14 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
@@ -63,11 +61,10 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -720,40 +717,30 @@ public class MemoryViewNodes {
         }
     }
 
-    @GenerateUncached
-    public abstract static class ReleaseNode extends PNodeWithContext {
-        public abstract void execute(PMemoryView self);
+    public abstract static class ReleaseNode extends PNodeWithRaiseAndIndirectCall {
+
+        public final void execute(PMemoryView self) {
+            execute(null, self);
+        }
+
+        public abstract void execute(VirtualFrame frame, PMemoryView self);
 
         @Specialization(guards = "self.getReference() == null")
         static void releaseSimple(PMemoryView self,
                         @Shared("raise") @Cached PRaiseNode raiseNode) {
-            checkExports(raiseNode, self);
+            self.checkExports(raiseNode);
             self.setReleased();
         }
 
         @Specialization(guards = {"self.getReference() != null"})
-        static void releaseNative(PMemoryView self,
+        void releaseNative(VirtualFrame frame, PMemoryView self,
                         @Cached ReleaseBufferNode releaseNode,
                         @Shared("raise") @Cached PRaiseNode raiseNode) {
-            checkExports(raiseNode, self);
-            if (checkShouldReleaseBuffer(self)) {
-                releaseNode.execute(self.getLifecycleManager());
+            self.checkExports(raiseNode);
+            if (self.checkShouldReleaseBuffer()) {
+                releaseNode.execute(frame, this, self.getLifecycleManager());
             }
             self.setReleased();
-        }
-
-        private static boolean checkShouldReleaseBuffer(PMemoryView self) {
-            if (self.getReference() != null) {
-                return self.getReference().getLifecycleManager().decrementExports() == 0;
-            }
-            return false;
-        }
-
-        private static void checkExports(PRaiseNode node, PMemoryView self) {
-            long exports = self.getExports().get();
-            if (exports > 0) {
-                throw node.raise(BufferError, ErrorMessages.MEMORYVIEW_HAS_D_EXPORTED_BUFFERS, exports);
-            }
         }
     }
 
@@ -762,12 +749,12 @@ public class MemoryViewNodes {
 
         public abstract void execute(BufferLifecycleManager buffer);
 
-        public final void execute(VirtualFrame frame, PythonLanguage language, PythonBuiltinBaseNode caller, BufferLifecycleManager buffer) {
-            Object state = IndirectCallContext.enter(frame, language, caller.getContext(), caller);
+        public final void execute(VirtualFrame frame, PNodeWithRaiseAndIndirectCall caller, BufferLifecycleManager buffer) {
+            Object state = IndirectCallContext.enter(frame, caller);
             try {
                 execute(buffer);
             } finally {
-                IndirectCallContext.exit(frame, language, caller.getContext(), state);
+                IndirectCallContext.exit(frame, caller, state);
             }
         }
 

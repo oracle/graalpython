@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,34 +38,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function.builtins.clinic;
+package com.oracle.graal.python.nodes;
 
-import com.oracle.graal.python.annotations.ClinicConverterFactory;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.Truffle;
 
-public abstract class ReadableBufferConversionNode extends ObjectConversionBaseNode {
-    protected ReadableBufferConversionNode(Object defaultValue, boolean useDefaultForNone) {
-        super(defaultValue, useDefaultForNone);
+public class PNodeWithIndirectCall extends PNodeWithContext implements IndirectCallNode {
+
+    @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState;
+    @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame;
+
+    @Override
+    public final Assumption needNotPassFrameAssumption() {
+        if (nativeCodeDoesntNeedMyFrame == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
+        }
+        return nativeCodeDoesntNeedMyFrame;
     }
 
-    @Specialization(guards = "!isHandledPNone(value)", limit = "getCallSiteInlineCacheMaxDepth()")
-    Object doObject(VirtualFrame frame, Object value,
-                    @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib) {
-        return acquireLib.acquireReadonly(value, frame, getContext(), getLanguage(), this);
-    }
-
-    @ClinicConverterFactory
-    public static ReadableBufferConversionNode create(@ClinicConverterFactory.DefaultValue Object defaultValue, @ClinicConverterFactory.UseDefaultForNone boolean useDefaultForNone) {
-        return ReadableBufferConversionNodeGen.create(defaultValue, useDefaultForNone);
-    }
-
-    @ClinicConverterFactory
-    public static ReadableBufferConversionNode create(@ClinicConverterFactory.UseDefaultForNone boolean useDefaultForNone) {
-        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
-        return ReadableBufferConversionNodeGen.create(PNone.NONE, false);
+    @Override
+    public final Assumption needNotPassExceptionAssumption() {
+        if (nativeCodeDoesntNeedExceptionState == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
+        }
+        return nativeCodeDoesntNeedExceptionState;
     }
 }

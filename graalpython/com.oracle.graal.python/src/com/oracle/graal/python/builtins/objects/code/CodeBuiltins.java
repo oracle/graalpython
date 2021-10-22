@@ -395,10 +395,10 @@ public class CodeBuiltins extends PythonBuiltins {
                                 PGuards.isNone(coLnotab) ? self.getLnotab() : bufferLib.getInternalOrCopiedByteArray(coLnotab));
             } finally {
                 if (!PGuards.isNone(coCode)) {
-                    bufferLib.release(coCode);
+                    bufferLib.release(coCode, frame, this);
                 }
                 if (!PGuards.isNone(coLnotab)) {
-                    bufferLib.release(coLnotab);
+                    bufferLib.release(coLnotab, frame, this);
                 }
             }
         }

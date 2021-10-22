@@ -1943,7 +1943,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("getTupleItemNode") @Cached TupleBuiltins.GetItemNode getTupleItemNode) {
             PythonContext context = getContext();
             PythonLanguage language = getLanguage();
-            Object state = IndirectCallContext.enter(frame, language, context, this);
+            Object state = IndirectCallContext.enter(frame, this);
             try {
                 return new StringFormatProcessor(context.getCore(), getRaiseNode(), getItemNode, getTupleItemNode, self).format(right);
             } finally {

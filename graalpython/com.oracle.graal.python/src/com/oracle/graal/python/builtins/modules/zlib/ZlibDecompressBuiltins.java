@@ -80,6 +80,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = ZlibDecompress)
 public class ZlibDecompressBuiltins extends PythonBuiltins {
@@ -112,22 +113,22 @@ public class ZlibDecompressBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"maxLength >= 0", "self.isInitialized()", "!isBytes(data)"})
-        PBytes doNativeObject(ZLibCompObject.NativeZlibCompObject self, Object data, int maxLength,
+        PBytes doNativeObject(VirtualFrame frame, ZLibCompObject.NativeZlibCompObject self, Object data, int maxLength,
                         @Shared("bb") @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("dobj") @Cached ZlibNodes.ZlibNativeDecompressObj decompressObj) {
             synchronized (self) {
                 assert self.isInitialized();
-                byte[] bytes = toBytes.execute(data);
+                byte[] bytes = toBytes.execute(frame, data);
                 int len = bytes.length;
                 return factory().createBytes(decompressObj.execute(self, PythonContext.get(this), bytes, len, maxLength));
             }
         }
 
         @Specialization(guards = {"maxLength >= 0", "self.isInitialized()"})
-        PBytes doit(ZLibCompObject.JavaZlibCompObject self, Object data, int maxLength,
+        PBytes doit(VirtualFrame frame, ZLibCompObject.JavaZlibCompObject self, Object data, int maxLength,
                         @Cached ZlibNodes.JavaDecompressNode decompressNode,
                         @Shared("bb") @Cached BytesNodes.ToBytesNode toBytes) {
-            byte[] bytes = toBytes.execute(data);
+            byte[] bytes = toBytes.execute(frame, data);
             byte[] res = decompressNode.execute(self, bytes, maxLength, DEF_BUF_SIZE, factory());
             return factory().createBytes(res);
         }

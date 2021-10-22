@@ -61,6 +61,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMemoryBIO)
@@ -118,7 +119,7 @@ public class MemoryBIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
-        int write(PMemoryBIO self, Object buffer,
+        int write(VirtualFrame frame, PMemoryBIO self, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 if (self.didWriteEOF()) {
@@ -133,7 +134,7 @@ public class MemoryBIOBuiltins extends PythonBuiltins {
                     throw raise(MemoryError);
                 }
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 

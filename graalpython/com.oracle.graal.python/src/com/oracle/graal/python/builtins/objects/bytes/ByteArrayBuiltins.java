@@ -225,13 +225,13 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SliceLiteralNode.SliceUnpack unpack,
                         @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
-            Object buffer = bufferAcquireLib.acquireReadonly(value);
+            Object buffer = bufferAcquireLib.acquireReadonly(value, frame, this);
             try {
                 // TODO avoid copying if possible. Note that it is possible that value is self
                 PBytes bytes = factory().createBytes(bufferLib.getCopiedByteArray(value));
                 return doSliceSequence(frame, self, slice, bytes, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, lenNode, unpack, adjustIndices);
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -351,13 +351,13 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isBytes(other)", limit = "3")
-        PByteArray add(PByteArray self, Object other,
+        PByteArray add(VirtualFrame frame, PByteArray self, Object other,
                         @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached SequenceStorageNodes.ConcatNode concatNode) {
             Object buffer;
             try {
-                buffer = bufferAcquireLib.acquireReadonly(other);
+                buffer = bufferAcquireLib.acquireReadonly(other, frame, this);
             } catch (PException e) {
                 throw raise(TypeError, ErrorMessages.CANT_CONCAT_P_TO_S, other, "bytearray");
             }
@@ -369,7 +369,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                 updateSequenceStorage(self, res);
                 return self;
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -554,12 +554,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             self.checkCanResize(this);
             byte[] b;
             if (bufferProfile.profile(bufferAcquireLib.hasBuffer(source))) {
-                Object buffer = bufferAcquireLib.acquireReadonly(source);
+                Object buffer = bufferAcquireLib.acquireReadonly(source, frame, this);
                 try {
                     // TODO avoid copying
                     b = bufferLib.getCopiedByteArray(buffer);
                 } finally {
-                    bufferLib.release(buffer);
+                    bufferLib.release(buffer, frame, this);
                 }
             } else {
                 try {
@@ -672,10 +672,10 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNone(table)")
-        PByteArray translate(PByteArray self, Object table, @SuppressWarnings("unused") PNone delete,
+        PByteArray translate(VirtualFrame frame, PByteArray self, Object table, @SuppressWarnings("unused") PNone delete,
                         @Cached.Shared("profile") @Cached ConditionProfile isLenTable256Profile,
                         @Cached.Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
-            byte[] bTable = toBytesNode.execute(table);
+            byte[] bTable = toBytesNode.execute(frame, table);
             checkLengthOfTable(bTable, isLenTable256Profile);
             byte[] bSelf = toBytesNode.execute(self);
 
@@ -684,22 +684,22 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNone(table)")
-        PByteArray delete(PByteArray self, @SuppressWarnings("unused") PNone table, Object delete,
+        PByteArray delete(VirtualFrame frame, PByteArray self, @SuppressWarnings("unused") PNone table, Object delete,
                         @Cached.Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
             byte[] bSelf = toBytesNode.execute(self);
-            byte[] bDelete = toBytesNode.execute(delete);
+            byte[] bDelete = toBytesNode.execute(frame, delete);
 
             Result result = delete(bSelf, bDelete);
             return factory().createByteArray(result.array);
         }
 
         @Specialization(guards = {"!isPNone(table)", "!isPNone(delete)"})
-        PByteArray translateAndDelete(PByteArray self, Object table, Object delete,
+        PByteArray translateAndDelete(VirtualFrame frame, PByteArray self, Object table, Object delete,
                         @Cached.Shared("profile") @Cached ConditionProfile isLenTable256Profile,
                         @Cached.Shared("toBytes") @Cached BytesNodes.ToBytesNode toBytesNode) {
-            byte[] bTable = toBytesNode.execute(table);
+            byte[] bTable = toBytesNode.execute(frame, table);
             checkLengthOfTable(bTable, isLenTable256Profile);
-            byte[] bDelete = toBytesNode.execute(delete);
+            byte[] bDelete = toBytesNode.execute(frame, delete);
             byte[] bSelf = toBytesNode.execute(self);
 
             Result result = translateAndDelete(bSelf, bTable, bDelete);

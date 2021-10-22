@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -72,7 +72,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public abstract class PyMemoryViewFromObject extends PNodeWithRaise {
+public abstract class PyMemoryViewFromObject extends PNodeWithRaiseAndIndirectCall {
     public abstract PMemoryView execute(VirtualFrame frame, Object object);
 
     @Specialization
@@ -98,7 +98,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaise {
     }
 
     @Specialization(guards = {"!isMemoryView(object)", "!isNativeObject(object)", "!isMMap(object)"}, limit = "3")
-    PMemoryView fromManaged(Object object,
+    PMemoryView fromManaged(VirtualFrame frame, Object object,
                     @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                     @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                     @Cached ConditionProfile hasSlotProfile,
@@ -143,7 +143,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaise {
                             cBuffer.getFormat(), cBuffer.getDims(), cBuffer.getBuf(), 0, shape, strides, suboffsets, flags);
         } else if (bufferAcquireLib.hasBuffer(object)) {
             // Managed object that implements PythonBufferAcquireLibrary
-            Object buffer = bufferAcquireLib.acquireReadonly(object);
+            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, this);
             return factory.createMemoryViewForManagedObject(buffer, bufferLib.getOwner(buffer), bufferLib.getItemSize(buffer), bufferLib.getBufferLength(buffer), bufferLib.isReadonly(buffer),
                             bufferLib.getFormatString(buffer));
         } else {

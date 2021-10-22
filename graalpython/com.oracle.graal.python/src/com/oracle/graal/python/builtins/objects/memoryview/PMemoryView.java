@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes.ReleaseBufferNode;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -240,9 +241,23 @@ public final class PMemoryView extends PythonBuiltinObject {
         this.shouldReleaseImmediately = shouldReleaseImmediately;
     }
 
-    public void checkReleased(PRaiseNode raiseNode) {
+    void checkReleased(PRaiseNode raiseNode) {
         if (isReleased()) {
             throw raiseNode.raise(ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
+        }
+    }
+
+    boolean checkShouldReleaseBuffer() {
+        if (getReference() != null) {
+            return getReference().getLifecycleManager().decrementExports() == 0;
+        }
+        return false;
+    }
+
+    void checkExports(PRaiseNode node) {
+        long exports = getExports().get();
+        if (exports > 0) {
+            throw node.raise(BufferError, ErrorMessages.MEMORYVIEW_HAS_D_EXPORTED_BUFFERS, exports);
         }
     }
 
@@ -301,14 +316,19 @@ public final class PMemoryView extends PythonBuiltinObject {
 
     @ExportMessage
     void release(
-                    @Cached MemoryViewNodes.ReleaseNode releaseNode) {
+                    @Cached PRaiseNode raiseNode,
+                    @Cached ReleaseBufferNode releaseNode) {
         /*
          * This is a bit hacky - the shouldReleaseImmediately marker is used when this is a helper
          * memoryview that was created to hold a buffer for native object. In the future there
          * should be no such helper memoryviews, the C buffer should have a separate implementation.
          */
         if (shouldReleaseImmediately) {
-            releaseNode.execute(this);
+            checkExports(raiseNode);
+            if (checkShouldReleaseBuffer()) {
+                releaseNode.execute(getLifecycleManager());
+            }
+            setReleased();
         } else {
             long l = exports.decrementAndGet();
             assert l >= 0;

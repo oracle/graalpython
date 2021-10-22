@@ -638,13 +638,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "3")
-        Object decode(Object buffer, String errors,
+        Object decode(VirtualFrame frame, Object buffer, String errors,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 int len = bufferLib.getBufferLength(buffer);
                 return decodeBytes(bufferLib.getInternalOrCopiedByteArray(buffer), len, errors);
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 

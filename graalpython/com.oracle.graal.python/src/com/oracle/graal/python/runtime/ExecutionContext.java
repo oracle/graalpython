@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.IndirectCallNode;
+import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -354,6 +355,20 @@ public abstract class ExecutionContext {
             return enter(frame, pythonThreadState, needsCallerFrame, needsExceptionState, callNode);
         }
 
+        public static Object enter(VirtualFrame frame, PNodeWithRaiseAndIndirectCall indirectCallNode) {
+            if (frame == null || indirectCallNode == null) {
+                return null;
+            }
+            boolean needsCallerFrame = indirectCallNode.calleeNeedsCallerFrame();
+            boolean needsExceptionState = indirectCallNode.calleeNeedsExceptionState();
+            if (!needsCallerFrame && !needsExceptionState) {
+                return null;
+            }
+
+            PythonThreadState pythonThreadState = indirectCallNode.getContext().getThreadState(indirectCallNode.getLanguage());
+            return enter(frame, pythonThreadState, needsCallerFrame, needsExceptionState, indirectCallNode);
+        }
+
         /**
          * @see #enter(VirtualFrame, PythonLanguage, PythonContext, IndirectCallNode)
          */
@@ -394,6 +409,16 @@ public abstract class ExecutionContext {
         public static void exit(VirtualFrame frame, PythonLanguage language, PythonContext context, Object savedState) {
             if (savedState != null && frame != null && context != null) {
                 exit(frame, context.getThreadState(language), savedState);
+            }
+        }
+
+        public static void exit(VirtualFrame frame, PNodeWithRaiseAndIndirectCall indirectCallNode, Object savedState) {
+            if (savedState != null && frame != null) {
+                PythonContext context = indirectCallNode.getContext();
+                if (context != null) {
+                    PythonLanguage language = indirectCallNode.getLanguage();
+                    exit(frame, context.getThreadState(language), savedState);
+                }
             }
         }
 

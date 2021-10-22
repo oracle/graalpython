@@ -87,6 +87,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -132,12 +133,15 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(VirtualFrame frame, Object value, Object file, int version,
                         @Cached("createCallWriteNode()") LookupAndCallBinaryNode callNode) {
+            Object savedState = IndirectCallContext.enter(frame, this);
             try {
                 return callNode.executeObject(frame, file, factory().createBytes(Marshal.dump(value, version, getCore())));
             } catch (IOException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
                 throw raise(me.type, me.message, me.arguments);
+            } finally {
+                IndirectCallContext.exit(frame, this, savedState);
             }
         }
     }
@@ -152,13 +156,16 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doit(Object value, int version) {
+        Object doit(VirtualFrame frame, Object value, int version) {
+            Object savedState = IndirectCallContext.enter(frame, this);
             try {
                 return factory().createBytes(Marshal.dump(value, version, getCore()));
             } catch (IOException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
                 throw raise(me.type, me.message, me.arguments);
+            } finally {
+                IndirectCallContext.exit(frame, this, savedState);
             }
         }
     }

@@ -82,6 +82,7 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -927,7 +928,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         public abstract Object executeWithoutClinic(VirtualFrame frame, Object arg, Object arg2);
 
         @Specialization(limit = "3")
-        Object frombytes(PArray self, Object buffer,
+        Object frombytes(VirtualFrame frame, PArray self, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 int itemsize = self.getFormat().bytesize;
@@ -943,11 +944,11 @@ public class ArrayBuiltins extends PythonBuiltins {
                     bufferLib.readIntoByteArray(buffer, 0, self.getBuffer(), oldSize * itemsize, bufferLength);
                 } catch (OverflowException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raise(MemoryError);
+                    throw PRaiseNode.raiseUncached(this, MemoryError);
                 }
                 return PNone.NONE;
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -1045,12 +1046,12 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isString(str)")
-        static Object fromother(VirtualFrame frame, PArray self, Object str,
+        Object fromother(VirtualFrame frame, PArray self, Object str,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached FromBytesNode fromBytesNode) {
             warnNode.warnEx(frame, DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.", 1);
-            return fromBytesNode.executeWithoutClinic(frame, self, bufferAcquireLib.acquireReadonly(str));
+            return fromBytesNode.executeWithoutClinic(frame, self, bufferAcquireLib.acquireReadonly(str, frame, this));
         }
     }
 
