@@ -476,13 +476,6 @@ public abstract class ExecutionContext {
 
             if (needsExceptionState) {
                 PException curExc = threadState.getCaughtException();
-                if (curExc == null) {
-                    CompilerDirectives.transferToInterpreter();
-                    PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
-                    curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
-                    // now, set in our args, such that we won't do this again
-                    threadState.setCaughtException(curExc);
-                }
                 PArguments.setException(pArguments, curExc);
             }
             return popTopFrameInfo;
