@@ -42,16 +42,12 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
-import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
 
-import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -70,9 +66,7 @@ import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
@@ -98,55 +92,6 @@ public class CombinationsBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CombinationsBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 3, parameterNames = {"$self", "iterable", "r"})
-    @ArgumentClinic(name = "r", conversion = ArgumentClinic.ClinicConversion.Int)
-    @GenerateNodeFactory
-    public abstract static class InitNode extends PythonTernaryClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return CombinationsBuiltinsClinicProviders.InitNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization(guards = "r >= 0")
-        Object init(VirtualFrame frame, PCombinations self, Object iterable, int r,
-                        @Cached IterableToArrayNode toArrayNode,
-                        @Cached LoopConditionProfile indicesLoopProfile) {
-
-            self.setPool(toArrayNode.execute(frame, iterable));
-
-            int[] indices = new int[r];
-            indicesLoopProfile.profileCounted(r);
-            for (int i = 0; indicesLoopProfile.inject(i < r); i++) {
-                indices[i] = i;
-            }
-            self.setIndices(indices);
-            self.setR(r);
-            self.setLastResult(null);
-            self.setStopped(r > self.getPool().length);
-
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "r >= 0")
-        Object init(VirtualFrame frame, PCombinationsWithReplacement self, Object iterable, int r,
-                        @Cached IterableToArrayNode toArrayNode) {
-            self.setPool(toArrayNode.execute(frame, iterable));
-            self.setR(r);
-
-            self.setIndices(new int[r]);
-            self.setLastResult(null);
-            self.setStopped(self.getPool().length == 0 && r > 0);
-
-            return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "r < 0")
-        Object init(Object self, Object iterable, int r) {
-            throw raise(ValueError, MUST_BE_NON_NEGATIVE, "r");
-        }
     }
 
     public abstract static class IterableToArrayNode extends PNodeWithRaise {

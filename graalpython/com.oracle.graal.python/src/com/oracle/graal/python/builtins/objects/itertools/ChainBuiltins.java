@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIterat
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENTS_MUST_BE_ITERATORS;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
@@ -65,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -87,18 +85,6 @@ public final class ChainBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ChainBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
-    @GenerateNodeFactory
-    public abstract static class InitNode extends PythonBuiltinNode {
-        @Specialization
-        Object init(VirtualFrame frame, PChain self, Object[] iterables,
-                        @Cached PyObjectGetIter getIter) {
-            self.setSource(getIter.execute(frame, factory().createList(iterables)));
-            self.setActive(PNone.NONE);
-            return PNone.NONE;
-        }
     }
 
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
@@ -149,7 +135,7 @@ public final class ChainBuiltins extends PythonBuiltins {
         @Specialization
         Object fromIter(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object arg,
                         @Cached PyObjectGetIter getIter) {
-            PChain instance = factory().createChain();
+            PChain instance = factory().createChain(PythonBuiltinClassType.PChain);
             instance.setSource(getIter.execute(frame, arg));
             instance.setActive(PNone.NONE);
             return instance;
@@ -219,7 +205,7 @@ public final class ChainBuiltins extends PythonBuiltins {
         private void checkIterator(VirtualFrame frame, PyObjectLookupAttr getAttrNode, Object obj, BranchProfile profile) throws PException {
             if (getAttrNode.execute(frame, obj, __NEXT__) == PNone.NO_VALUE) {
                 profile.enter();
-                throw raise(TypeError, ARGUMENTS_MUST_BE_ITERATORS + " " + obj);
+                throw raise(TypeError, ARGUMENTS_MUST_BE_ITERATORS);
             }
         }
     }

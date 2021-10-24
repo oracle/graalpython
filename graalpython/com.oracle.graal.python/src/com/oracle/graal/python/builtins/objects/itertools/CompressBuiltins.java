@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 
@@ -54,10 +53,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -73,18 +70,6 @@ public final class CompressBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CompressBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 3, parameterNames = {"$self", "data", "selectors"})
-    @GenerateNodeFactory
-    public abstract static class InitNode extends PythonTernaryBuiltinNode {
-        @Specialization
-        Object init(VirtualFrame frame, PCompress self, Object data, Object selectors,
-                        @Cached PyObjectGetIter getIter) {
-            self.setData(getIter.execute(frame, data));
-            self.setSelectors(getIter.execute(frame, selectors));
-            return PNone.NONE;
-        }
     }
 
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)

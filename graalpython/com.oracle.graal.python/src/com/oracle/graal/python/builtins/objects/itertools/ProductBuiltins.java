@@ -41,9 +41,6 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.ErrorMessages.ARG_CANNOT_BE_NEGATIVE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
@@ -59,13 +56,10 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -82,85 +76,6 @@ public final class ProductBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ProductBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordOnlyNames = {"repeat"})
-    @GenerateNodeFactory
-    public abstract static class InitNode extends PythonBuiltinNode {
-
-        @Specialization
-        static Object initNoneRepeat(VirtualFrame frame, PProduct self, Object[] iterables, @SuppressWarnings("unused") PNone repeat,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached FastConstructListNode listNode) {
-            initOneRepeat(frame, self, iterables, listNode, sizeNode);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "repeat == 1")
-        static Object initOneRepeat(VirtualFrame frame, PProduct self, Object[] iterables, @SuppressWarnings("unused") int repeat,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached FastConstructListNode listNode) {
-            initOneRepeat(frame, self, iterables, listNode, sizeNode);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "repeat > 1")
-        static Object init(VirtualFrame frame, PProduct self, Object[] iterables, int repeat,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached FastConstructListNode listNode,
-                        @Cached LoopConditionProfile loopProfile) {
-            PSequence[] lists = wrapIterables(frame, iterables, listNode);
-            PSequence[] gears = new PSequence[lists.length * repeat];
-            loopProfile.profileCounted(repeat);
-            for (int i = 0; loopProfile.inject(i < repeat); i++) {
-                PythonUtils.arraycopy(lists, 0, gears, i * lists.length, lists.length);
-            }
-            init(frame, self, gears, sizeNode);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "repeat == 0")
-        static Object initNoRepeat(PProduct self, @SuppressWarnings("unused") Object[] iterables, @SuppressWarnings("unused") int repeat) {
-            self.setGears(new PSequence[0]);
-            self.setIndices(new int[0]);
-            self.setLst(null);
-            self.setStopped(false);
-            return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "repeat < 0")
-        Object initNeg(PProduct self, Object[] iterables, int repeat) {
-            throw raise(TypeError, ARG_CANNOT_BE_NEGATIVE, "repeat");
-        }
-
-        private static void initOneRepeat(VirtualFrame frame, PProduct self, Object[] iterables, FastConstructListNode listNode, PyObjectSizeNode sizeNode) {
-            PSequence[] gears = wrapIterables(frame, iterables, listNode);
-            init(frame, self, gears, sizeNode);
-        }
-
-        private static void init(VirtualFrame frame, PProduct self, PSequence[] gears, PyObjectSizeNode sizeNode) {
-            self.setGears(gears);
-            for (int i = 0; i < gears.length; i++) {
-                if (sizeNode.execute(frame, gears[i]) == 0) {
-                    self.setIndices(null);
-                    self.setLst(null);
-                    self.setStopped(true);
-                    return;
-                }
-            }
-            self.setIndices(new int[gears.length]);
-            self.setLst(null);
-            self.setStopped(false);
-        }
-
-        private static PSequence[] wrapIterables(VirtualFrame frame, Object[] iterables, FastConstructListNode listNode) {
-            PSequence[] lists = new PSequence[iterables.length];
-            for (int i = 0; i < lists.length; i++) {
-                lists[i] = listNode.execute(frame, iterables[i]);
-            }
-            return lists;
-        }
     }
 
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)

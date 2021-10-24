@@ -40,19 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.ErrorMessages.NUMBER_IS_REQUIRED;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-
-import com.oracle.graal.python.annotations.ArgumentClinic;
 
 import com.oracle.graal.python.builtins.Builtin;
 import java.util.List;
@@ -60,17 +52,13 @@ import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -89,41 +77,6 @@ public final class CountBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CountBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "start", "step"})
-    @ArgumentClinic(name = "start", defaultValue = "0", useDefaultForNone = true)
-    @ArgumentClinic(name = "step", defaultValue = "1", useDefaultForNone = true)
-    @GenerateNodeFactory
-    public abstract static class InitNode extends PythonTernaryClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return CountBuiltinsClinicProviders.InitNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        Object init(VirtualFrame frame, PCount self, Object start, Object step,
-                        @Cached PyObjectTypeCheck typeCheckNode,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached BranchProfile startNumberProfile,
-                        @Cached BranchProfile stepNumberProfile) {
-            checkType(frame, start, typeCheckNode, lookupAttrNode, startNumberProfile);
-            checkType(frame, step, typeCheckNode, lookupAttrNode, stepNumberProfile);
-            self.setCnt(start);
-            self.setStep(step);
-            return PNone.NONE;
-        }
-
-        private void checkType(VirtualFrame frame, Object obj, PyObjectTypeCheck typeCheckNode, PyObjectLookupAttr lookupAttrNode, BranchProfile isNumberProfile) {
-            if (typeCheckNode.execute(obj, PythonBuiltinClassType.PComplex) ||
-                            lookupAttrNode.execute(frame, obj, __INDEX__) != PNone.NO_VALUE ||
-                            lookupAttrNode.execute(frame, obj, __FLOAT__) != PNone.NO_VALUE ||
-                            lookupAttrNode.execute(frame, obj, __INT__) != PNone.NO_VALUE) {
-                isNumberProfile.enter();
-                return;
-            }
-            throw raise(TypeError, NUMBER_IS_REQUIRED);
-        }
     }
 
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)

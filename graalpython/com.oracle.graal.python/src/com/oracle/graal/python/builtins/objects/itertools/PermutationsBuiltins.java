@@ -40,14 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import com.oracle.graal.python.annotations.ArgumentClinic;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_INT_AS_R;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
-import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
@@ -67,12 +62,8 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -88,80 +79,6 @@ public final class PermutationsBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PermutationsBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "iterable", "r"})
-    @ArgumentClinic(name = "r", defaultValue = "PNone.NONE")
-    @GenerateNodeFactory
-    public abstract static class InitNode extends PythonTernaryClinicBuiltinNode {
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return PermutationsBuiltinsClinicProviders.InitNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization(guards = {"isNone(r)"})
-        Object init(VirtualFrame frame, PPermutations self, Object iterable, @SuppressWarnings("unused") PNone r,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached ConditionProfile nrProfile,
-                        @Cached LoopConditionProfile indicesLoopProfile,
-                        @Cached LoopConditionProfile cyclesLoopProfile) {
-            int len = sizeNode.execute(frame, iterable);
-            init(self, iterable, len, len, nrProfile, indicesLoopProfile, cyclesLoopProfile);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = {"!isNone(rArg)"})
-        Object init(VirtualFrame frame, PPermutations self, Object iterable, Object rArg,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached CastToJavaIntExactNode castToInt,
-                        @Cached BranchProfile wrongRprofile,
-                        @Cached BranchProfile negRprofile,
-                        @Cached ConditionProfile nrProfile,
-                        @Cached LoopConditionProfile indicesLoopProfile,
-                        @Cached LoopConditionProfile cyclesLoopProfile) {
-            int r;
-            try {
-                r = castToInt.execute(rArg);
-            } catch (CannotCastException e) {
-                wrongRprofile.enter();
-                throw raise(TypeError, EXPECTED_INT_AS_R);
-            }
-            if (r < 0) {
-                negRprofile.enter();
-                throw raise(ValueError, MUST_BE_NON_NEGATIVE, "r");
-            }
-            int len = sizeNode.execute(frame, iterable);
-            init(self, iterable, r, len, nrProfile, indicesLoopProfile, cyclesLoopProfile);
-            return PNone.NONE;
-        }
-
-        public static void init(PPermutations self, Object iterable, int r, int n, ConditionProfile nrProfile, LoopConditionProfile indicesLoopProfile, LoopConditionProfile cyclesLoopProfile) {
-            self.setPool(iterable);
-            self.setR(r);
-            self.setN(n);
-            int nMinusR = n - r;
-            if (nrProfile.profile(nMinusR < 0)) {
-                self.setStopped(true);
-                self.setRaisedStopIteration(true);
-            } else {
-                self.setStopped(false);
-                int[] indices = new int[n];
-                indicesLoopProfile.profileCounted(indices.length);
-                for (int i = 0; indicesLoopProfile.inject(i < indices.length); i++) {
-                    indices[i] = i;
-                }
-                self.setIndices(indices);
-                int[] cycles = new int[r];
-                int idx = 0;
-                cyclesLoopProfile.profileCounted(nMinusR);
-                for (int i = n; cyclesLoopProfile.inject(i > nMinusR); i--) {
-                    cycles[idx++] = i;
-                }
-                self.setCycles(cycles);
-                self.setRaisedStopIteration(false);
-                self.setStarted(false);
-            }
-        }
     }
 
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)

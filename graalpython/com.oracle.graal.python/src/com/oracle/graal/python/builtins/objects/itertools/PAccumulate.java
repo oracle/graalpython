@@ -45,7 +45,7 @@ import com.oracle.truffle.api.object.Shape;
 
 public final class PAccumulate extends PythonBuiltinObject {
 
-    static final Object MARKER = new Object();
+    public static final Object MARKER = new Object();
 
     private Object iterable;
     private Object func;

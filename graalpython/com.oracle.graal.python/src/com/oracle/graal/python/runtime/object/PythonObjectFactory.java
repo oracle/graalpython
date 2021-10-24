@@ -1164,52 +1164,52 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PFileIO(clazz, getShape(clazz)));
     }
 
-    public final PChain createChain() {
-        return trace(new PChain(PythonBuiltinClassType.PChain, PythonBuiltinClassType.PChain.getInstanceShape(getLanguage())));
+    public final PChain createChain(Object cls) {
+        return trace(new PChain(cls, getShape(cls)));
     }
 
-    public final PCount createCount() {
-        return trace(new PCount(PythonBuiltinClassType.PCount, PythonBuiltinClassType.PCount.getInstanceShape(getLanguage())));
+    public final PCount createCount(Object cls) {
+        return trace(new PCount(cls, getShape(cls)));
     }
 
-    public final PIslice createIslice() {
-        return trace(new PIslice(PythonBuiltinClassType.PIslice, PythonBuiltinClassType.PIslice.getInstanceShape(getLanguage())));
+    public final PIslice createIslice(Object cls) {
+        return trace(new PIslice(cls, getShape(cls)));
     }
 
-    public final PPermutations createPermutations() {
-        return trace(new PPermutations(PythonBuiltinClassType.PPermutations, PythonBuiltinClassType.PPermutations.getInstanceShape(getLanguage())));
+    public final PPermutations createPermutations(Object cls) {
+        return trace(new PPermutations(cls, getShape(cls)));
     }
 
-    public final PProduct createProduct() {
-        return trace(new PProduct(PythonBuiltinClassType.PProduct, PythonBuiltinClassType.PProduct.getInstanceShape(getLanguage())));
+    public final PProduct createProduct(Object cls) {
+        return trace(new PProduct(cls, getShape(cls)));
     }
 
     public final PRepeat createRepeat(Object cls) {
         return trace(new PRepeat(cls, getShape(cls)));
     }
 
-    public final PAccumulate createAccumulate() {
-        return trace(new PAccumulate(PythonBuiltinClassType.PAccumulate, PythonBuiltinClassType.PAccumulate.getInstanceShape(getLanguage())));
+    public final PAccumulate createAccumulate(Object cls) {
+        return trace(new PAccumulate(cls, getShape(cls)));
     }
 
-    public final PDropwhile createDropwhile() {
-        return trace(new PDropwhile(PythonBuiltinClassType.PDropwhile, PythonBuiltinClassType.PDropwhile.getInstanceShape(getLanguage())));
+    public final PDropwhile createDropwhile(Object cls) {
+        return trace(new PDropwhile(cls, getShape(cls)));
     }
 
-    public final PCombinations createCombinations() {
-        return trace(new PCombinations(PythonBuiltinClassType.PCombinations, PythonBuiltinClassType.PCombinations.getInstanceShape(getLanguage())));
+    public final PCombinations createCombinations(Object cls) {
+        return trace(new PCombinations(cls, getShape(cls)));
     }
 
-    public final PCombinationsWithReplacement createCombinationsWithReplacement() {
-        return trace(new PCombinationsWithReplacement(PythonBuiltinClassType.PCombinationsWithReplacement, PythonBuiltinClassType.PCombinationsWithReplacement.getInstanceShape(getLanguage())));
+    public final PCombinationsWithReplacement createCombinationsWithReplacement(Object cls) {
+        return trace(new PCombinationsWithReplacement(cls, getShape(cls)));
     }
 
-    public final PCompress createCompress() {
-        return trace(new PCompress(PythonBuiltinClassType.PCompress, PythonBuiltinClassType.PCompress.getInstanceShape(getLanguage())));
+    public final PCompress createCompress(Object cls) {
+        return trace(new PCompress(cls, getShape(cls)));
     }
 
-    public final PFilterfalse createFilterfalse() {
-        return trace(new PFilterfalse(PythonBuiltinClassType.PFilterfalse, PythonBuiltinClassType.PFilterfalse.getInstanceShape(getLanguage())));
+    public final PFilterfalse createFilterfalse(Object cls) {
+        return trace(new PFilterfalse(cls, getShape(cls)));
     }
 
     public final PGroupBy createGroupBy(Object cls) {
@@ -1232,12 +1232,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PTee(dataObj, index, PythonBuiltinClassType.PTee, PythonBuiltinClassType.PTee.getInstanceShape(getLanguage())));
     }
 
-    public final PStarmap createStarmap() {
-        return trace(new PStarmap(PythonBuiltinClassType.PStarmap, PythonBuiltinClassType.PStarmap.getInstanceShape(getLanguage())));
+    public final PStarmap createStarmap(Object cls) {
+        return trace(new PStarmap(cls, getShape(cls)));
     }
 
-    public final PTakewhile createTakewhile() {
-        return trace(new PTakewhile(PythonBuiltinClassType.PTakewhile, PythonBuiltinClassType.PTakewhile.getInstanceShape(getLanguage())));
+    public final PTakewhile createTakewhile(Object cls) {
+        return trace(new PTakewhile(cls, getShape(cls)));
     }
 
     public final PTeeDataObject createTeeDataObject() {

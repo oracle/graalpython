@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
@@ -61,7 +60,6 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -78,20 +76,6 @@ public final class AccumulateBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return AccumulateBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "iterable", "func", "initial"})
-    @GenerateNodeFactory
-    public abstract static class InitNode extends PythonQuaternaryBuiltinNode {
-        @Specialization
-        Object init(VirtualFrame frame, PAccumulate self, Object iterable, Object func, Object initial,
-                        @Cached PyObjectGetIter getIter) {
-            self.setIterable(getIter.execute(frame, iterable));
-            self.setFunc(func instanceof PNone ? null : func);
-            self.setTotal(PAccumulate.MARKER);
-            self.setInitial(initial instanceof PNone ? null : initial);
-            return PNone.NONE;
-        }
     }
 
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
@@ -150,7 +134,7 @@ public final class AccumulateBuiltins extends PythonBuiltins {
                 hasInitialProfile.enter();
                 Object type = getClassNode.execute(self);
                 PTuple inititalTuple = factory().createTuple(new Object[]{self.getInitial()});
-                PChain chain = factory().createChain();
+                PChain chain = factory().createChain(PythonBuiltinClassType.PChain);
                 chain.setSource(inititalTuple);
                 chain.setActive(self.getIterable());
 
@@ -158,13 +142,13 @@ public final class AccumulateBuiltins extends PythonBuiltins {
                 return factory().createTuple(new Object[]{type, tuple, PNone.NONE});
             } else if (self.getTotal() == PNone.NONE) {
                 hasTotalProfile.enter();
-                PChain chain = factory().createChain();
+                PChain chain = factory().createChain(PythonBuiltinClassType.PChain);
                 PList noneList = factory().createList(new Object[]{PNone.NONE});
                 Object noneIter = getIter.execute(frame, noneList);
                 chain.setSource(getIter.execute(frame, factory().createList(new Object[]{noneIter, self.getIterable()})));
                 chain.setActive(PNone.NONE);
 
-                PAccumulate accumulate = factory().createAccumulate();
+                PAccumulate accumulate = factory().createAccumulate(PythonBuiltinClassType.PAccumulate);
                 accumulate.setIterable(chain);
                 accumulate.setFunc(self.getFunc());
 

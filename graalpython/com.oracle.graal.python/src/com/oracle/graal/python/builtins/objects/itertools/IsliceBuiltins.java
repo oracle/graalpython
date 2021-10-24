@@ -40,15 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
-import static com.oracle.graal.python.nodes.ErrorMessages.ISLICE_WRONG_ARGS;
-import static com.oracle.graal.python.nodes.ErrorMessages.STEP_FOR_ISLICE_MUST_BE;
-import static com.oracle.graal.python.nodes.ErrorMessages.S_FOR_ISLICE_MUST_BE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
@@ -61,13 +55,10 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -88,127 +79,6 @@ public final class IsliceBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return IsliceBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, takesVarArgs = true)
-    @GenerateNodeFactory
-    public abstract static class InitNode extends PythonBuiltinNode {
-
-        private static class StartStop {
-            int start = 0;
-            int stop = -1;
-        }
-
-        @Specialization(guards = "args.length == 1")
-        Object initOne(VirtualFrame frame, PIslice self, Object iterable, Object[] args,
-                        @Cached PyObjectGetIter getIter,
-                        @Cached PyNumberAsSizeNode asIntNode,
-                        @Cached BranchProfile hasStop,
-                        @Cached BranchProfile stopNotInt,
-                        @Cached BranchProfile stopWrongValue) {
-            int stop = -1;
-            if (args[0] != PNone.NONE) {
-                hasStop.enter();
-                try {
-                    stop = asIntNode.executeExact(frame, args[0], OverflowError);
-                } catch (PException e) {
-                    stopNotInt.enter();
-                    throw raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
-                }
-            }
-            if (stop < -1 || stop > SysModuleBuiltins.MAXSIZE) {
-                stopWrongValue.enter();
-                throw raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
-            }
-            populateSelf(self, getIter, frame, iterable, 0, stop, 1);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "args.length == 2")
-        Object initTwo(VirtualFrame frame, PIslice self, Object iterable, Object[] args,
-                        @Cached PyObjectGetIter getIter,
-                        @Cached PyNumberAsSizeNode asIntNode,
-                        @Cached BranchProfile hasStart,
-                        @Cached BranchProfile hasStop,
-                        @Cached BranchProfile startNotInt,
-                        @Cached BranchProfile stopNotInt,
-                        @Cached BranchProfile wrongValue) {
-            StartStop ss = getStartStop(frame, args, asIntNode, hasStart, hasStop, startNotInt, stopNotInt, wrongValue);
-            populateSelf(self, getIter, frame, iterable, ss.start, ss.stop, 1);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "args.length == 3")
-        Object initTthree(VirtualFrame frame, PIslice self, Object iterable, Object[] args,
-                        @Cached PyObjectGetIter getIter,
-                        @Cached PyNumberAsSizeNode asIntNode,
-                        @Cached BranchProfile hasStart,
-                        @Cached BranchProfile hasStop,
-                        @Cached BranchProfile hasStep,
-                        @Cached BranchProfile startNotInt,
-                        @Cached BranchProfile stopNotInt,
-                        @Cached BranchProfile wrongValue,
-                        @Cached BranchProfile stepWrongValue) {
-            StartStop ss = getStartStop(frame, args, asIntNode, hasStart, hasStop, startNotInt, stopNotInt, wrongValue);
-            int step = 1;
-
-            if (args[2] != PNone.NONE) {
-                hasStep.enter();
-                try {
-                    step = asIntNode.executeExact(frame, args[2], OverflowError);
-                } catch (PException e) {
-                    step = -1;
-                }
-            }
-            if (step < 1) {
-                stepWrongValue.enter();
-                throw raise(ValueError, STEP_FOR_ISLICE_MUST_BE);
-            }
-            populateSelf(self, getIter, frame, iterable, ss.start, ss.stop, step);
-            return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"args.length < 1 || args.length > 3"})
-        Object init(VirtualFrame frame, PIslice self, Object iterable, Object[] args) {
-            throw raise(TypeError, ISLICE_WRONG_ARGS);
-        }
-
-        private StartStop getStartStop(VirtualFrame frame, Object[] args, PyNumberAsSizeNode asIntNode, BranchProfile hasStart, BranchProfile hasStop, BranchProfile startNotInt,
-                        BranchProfile stopNotInt, BranchProfile wrongValue) {
-            StartStop ss = new StartStop();
-            if (args[0] != PNone.NONE) {
-                hasStart.enter();
-                try {
-                    ss.start = asIntNode.executeExact(frame, args[0], OverflowError);
-                } catch (PException e) {
-                    startNotInt.enter();
-                    throw raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
-                }
-            }
-            if (args[1] != PNone.NONE) {
-                hasStop.enter();
-                try {
-                    ss.stop = asIntNode.executeExact(frame, args[1], OverflowError);
-                } catch (PException e) {
-                    stopNotInt.enter();
-                    throw raise(ValueError, S_FOR_ISLICE_MUST_BE, "Stop argument");
-                }
-            }
-            if (ss.start < 0 || ss.stop < -1 || ss.start > SysModuleBuiltins.MAXSIZE || ss.stop > SysModuleBuiltins.MAXSIZE) {
-                wrongValue.enter();
-                throw raise(ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
-            }
-            return ss;
-        }
-
-        private static void populateSelf(PIslice self, PyObjectGetIter getIter, VirtualFrame frame, Object iterable, int start, int stop, int step) {
-            self.setIterable(getIter.execute(frame, iterable));
-            self.setNext(start);
-            self.setStop(stop);
-            self.setStep(step);
-            self.setCnt(0);
-        }
     }
 
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
