@@ -212,6 +212,7 @@ import com.oracle.graal.python.builtins.objects.itertools.StarmapBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TakewhileBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.ZipLongestBuiltins;
 import com.oracle.graal.python.builtins.objects.keywrapper.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
@@ -529,6 +530,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new TakewhileBuiltins(),
                         new TeeBuiltins(),
                         new TeeDataObjectBuiltins(),
+                        new ZipLongestBuiltins(),
 
                         // zlib
                         new ZLibModuleBuiltins(),

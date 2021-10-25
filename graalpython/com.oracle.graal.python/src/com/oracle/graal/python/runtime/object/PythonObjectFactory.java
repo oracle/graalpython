@@ -130,6 +130,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PStarmap;
 import com.oracle.graal.python.builtins.objects.itertools.PTakewhile;
 import com.oracle.graal.python.builtins.objects.itertools.PTee;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
+import com.oracle.graal.python.builtins.objects.itertools.PZipLongest;
 import com.oracle.graal.python.builtins.objects.keywrapper.PKeyWrapper;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
@@ -1246,6 +1247,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PTeeDataObject createTeeDataObject(Object it) {
         return trace(new PTeeDataObject(it, PythonBuiltinClassType.PTeeDataObject, PythonBuiltinClassType.PTeeDataObject.getInstanceShape(getLanguage())));
+    }
+
+    public final PZipLongest createZipLongest(Object cls) {
+        return trace(new PZipLongest(cls, getShape(cls)));
     }
 
     public final PTextIO createTextIO(Object clazz) {

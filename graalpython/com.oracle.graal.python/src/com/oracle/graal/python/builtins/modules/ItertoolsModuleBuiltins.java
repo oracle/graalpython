@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
 import com.oracle.graal.python.builtins.objects.itertools.PStarmap;
 import com.oracle.graal.python.builtins.objects.itertools.PTakewhile;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
+import com.oracle.graal.python.builtins.objects.itertools.PZipLongest;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -988,6 +989,50 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "!isTypeNode.execute(cls)")
         protected Object construct(Object cls, Object iterable, Object[] args,
+                        @Cached IsTypeNode isTypeNode) {
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+        }
+    }
+
+    @Builtin(name = "zip_longest", minNumOfPositionalArgs = 1, takesVarArgs = true, constructsClass = PythonBuiltinClassType.PZipLongest, keywordOnlyNames = {
+                    "fillvalue"}, doc = "zip_longest(iter1 [,iter2 [...]], [fillvalue=None]) --> zip_longest object\n\n" +
+                                    "Return a zip_longest object whose .next() method returns a tuple where\n" +
+                                    "the i-th element comes from the i-th iterable argument.  The .next()\n" +
+                                    "method continues until the longest iterable in the argument sequence\n" +
+                                    "is exhausted and then it raises StopIteration.  When the shorter iterables\n" +
+                                    "are exhausted, the fillvalue is substituted in their place.  The fillvalue\n" +
+                                    "defaults to None or can be specified by a keyword argument.")
+    @GenerateNodeFactory
+    public abstract static class ZipLongestNode extends PythonBuiltinNode {
+        @Specialization(guards = "isTypeNode.execute(cls)")
+        Object constructNoFillValue(VirtualFrame frame, Object cls, Object[] args, PNone fillValue,
+                        @Cached PyObjectGetIter getIterNode,
+                        @Cached LoopConditionProfile loopProfile,
+                        @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
+            return construct(frame, cls, args, null, getIterNode, loopProfile, isTypeNode);
+        }
+
+        @Specialization(guards = {"isTypeNode.execute(cls)", "!isNoValue(fillValue)"})
+        Object construct(VirtualFrame frame, Object cls, Object[] args, Object fillValue,
+                        @Cached PyObjectGetIter getIterNode,
+                        @Cached LoopConditionProfile loopProfile,
+                        @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
+            PZipLongest self = factory().createZipLongest(cls);
+            self.setFillValue(fillValue);
+            self.setNumActive(args.length);
+
+            Object[] itTuple = new Object[args.length];
+            loopProfile.profileCounted(itTuple.length);
+            for (int i = 0; loopProfile.inject(i < itTuple.length); i++) {
+                itTuple[i] = getIterNode.execute(frame, args[i]);
+            }
+            self.setItTuple(itTuple);
+            return self;
+        }
+
+        @Specialization(guards = "!isTypeNode.execute(cls)")
+        @SuppressWarnings("unused")
+        protected Object construct(Object cls, Object iterables, Object repeat,
                         @Cached IsTypeNode isTypeNode) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }

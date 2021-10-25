@@ -227,6 +227,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PIslice("islice", "itertools"),
     PStarmap("starmap", "itertools"),
     PTakewhile("takewhile", "itertools"),
+    PZipLongest("zip_longest", "itertools"),
 
     // json
     JSONScanner("Scanner", "_json", Flags.PUBLIC_BASE_WODICT),

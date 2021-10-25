@@ -23,69 +23,6 @@
 # DEALINGS IN THE SOFTWARE.
 import sys
 
-class zip_longest():
-    """
-    zip_longest(iter1 [,iter2 [...]], [fillvalue=None]) --> zip_longest object
-
-    Return a zip_longest object whose .next() method returns a tuple where
-    the i-th element comes from the i-th iterable argument.  The .next()
-    method continues until the longest iterable in the argument sequence
-    is exhausted and then it raises StopIteration.  When the shorter iterables
-    are exhausted, the fillvalue is substituted in their place.  The fillvalue
-    defaults to None or can be specified by a keyword argument.
-    """
-
-    @__graalpython__.builtin_method
-    def __new__(subtype, *args, fillvalue=None):
-        self = object.__new__(subtype)
-        self.fillvalue = fillvalue
-        self.tuplesize = len(args)
-        self.numactive = len(args)
-        self.ittuple = [iter(arg) for arg in args]
-        return self
-
-    @__graalpython__.builtin_method
-    def __iter__(self):
-        return self
-
-    @__graalpython__.builtin_method
-    def __next__(self):
-        if not self.tuplesize:
-            raise StopIteration
-        if not self.numactive:
-            raise StopIteration
-        result = [None] * self.tuplesize
-        for idx, it in enumerate(self.ittuple):
-            if it is None:
-                item = self.fillvalue
-            else:
-                try:
-                    item = next(it)
-                except StopIteration:
-                    self.numactive -= 1
-                    if self.numactive == 0:
-                        raise StopIteration
-                    else:
-                        item = self.fillvalue
-                        self.ittuple[idx] = None
-                except:
-                    self.numactive = 0
-                    raise
-            result[idx] = item
-        return tuple(result)
-
-    @__graalpython__.builtin_method
-    def __reduce__(self):
-        args = []
-        for elem in self.ittuple:
-            args.append(elem if elem is not None else tuple())
-        return type(self), tuple(args), self.fillvalue
-
-    @__graalpython__.builtin_method
-    def __setstate__(self, state):
-        self.fillvalue = state
-
-
 class cycle():
     """
     Make an iterator returning elements from the iterable and
