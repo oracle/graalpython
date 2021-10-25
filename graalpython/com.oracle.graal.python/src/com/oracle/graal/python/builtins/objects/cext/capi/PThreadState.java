@@ -247,7 +247,7 @@ public class PThreadState extends PythonNativeWrapper {
         @Specialization(guards = "eq(key, PREV)")
         @SuppressWarnings("unused")
         static Object doPrev(PThreadState receiver, String key,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("getNull") @Cached GetNativeNullNode getNativeNullNode) {
             return getNativeNullNode.execute();
         }
 
@@ -291,8 +291,9 @@ public class PThreadState extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(key, INTERP)")
         @SuppressWarnings("unused")
-        static Object doInterpreterState(PThreadState receiver, String key) {
-            return 0xDEADBEEF;
+        static Object doInterpreterState(PThreadState receiver, String key,
+                        @Shared("getNull") @Cached GetNativeNullNode getNativeNullNode) {
+            return getNativeNullNode.execute();
         }
 
         @Specialization(guards = "eq(key, USE_TRACING)")
