@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PCombinations;
 import com.oracle.graal.python.builtins.objects.itertools.PCombinationsWithReplacement;
 import com.oracle.graal.python.builtins.objects.itertools.PCompress;
 import com.oracle.graal.python.builtins.objects.itertools.PCount;
+import com.oracle.graal.python.builtins.objects.itertools.PCycle;
 import com.oracle.graal.python.builtins.objects.itertools.PDropwhile;
 import com.oracle.graal.python.builtins.objects.itertools.PFilterfalse;
 import com.oracle.graal.python.builtins.objects.itertools.PGroupBy;
@@ -83,6 +84,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
@@ -102,6 +104,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import java.util.ArrayList;
 
 @CoreFunctions(defineModule = "itertools")
 public final class ItertoolsModuleBuiltins extends PythonBuiltins {
@@ -279,6 +282,42 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isTypeNode.execute(cls)")
         @SuppressWarnings("unused")
         protected Object notype(Object cls, Object[] arguments, PKeyword[] keywords,
+                        @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
+            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
+        }
+    }
+
+    @Builtin(name = "cycle", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PCycle, doc = "Make an iterator returning elements from the iterable and\n" +
+                    "    saving a copy of each. When the iterable is exhausted, return\n" +
+                    "    elements from the saved copy. Repeats indefinitely.\n\n" +
+                    "    Equivalent to :\n\n" +
+                    "    def cycle(iterable):\n" +
+                    "    \tsaved = []\n" +
+                    "    \tfor element in iterable:\n" +
+                    "    \t\tyield element\n" +
+                    "    \t\tsaved.append(element)\n" +
+                    "    \twhile saved:\n" +
+                    "    \t\tfor element in saved:\n" +
+                    "    \t\t\tyield element")
+    @GenerateNodeFactory
+    public abstract static class CycleNode extends PythonBinaryBuiltinNode {
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isTypeNode.execute(cls)")
+        protected PCycle construct(VirtualFrame frame, Object cls, Object iterable,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached IsTypeNode isTypeNode) {
+            PCycle self = factory().createCycle(cls);
+            self.setSaved(new ArrayList<>());
+            self.setIterable(getIter.execute(frame, iterable));
+            self.setIndex(0);
+            self.setFirstpass(false);
+            return self;
+        }
+
+        @Specialization(guards = "!isTypeNode.execute(cls)")
+        @SuppressWarnings("unused")
+        protected Object notype(Object cls, Object iterable,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
@@ -565,6 +604,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                 negRprofile.enter();
                 throw raise(ValueError, MUST_BE_NON_NEGATIVE, "r");
             }
+            // XXX could be generator
             int len = sizeNode.execute(frame, iterable);
             return construct(cls, iterable, r, len, nrProfile, indicesLoopProfile, cyclesLoopProfile);
         }
@@ -684,6 +724,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         private static void construct(VirtualFrame frame, PProduct self, PSequence[] gears, PyObjectSizeNode sizeNode) {
             self.setGears(gears);
             for (int i = 0; i < gears.length; i++) {
+                // XXX could be generator
                 if (sizeNode.execute(frame, gears[i]) == 0) {
                     self.setIndices(null);
                     self.setLst(null);
@@ -1005,7 +1046,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ZipLongestNode extends PythonBuiltinNode {
         @Specialization(guards = "isTypeNode.execute(cls)")
-        Object constructNoFillValue(VirtualFrame frame, Object cls, Object[] args, PNone fillValue,
+        Object constructNoFillValue(VirtualFrame frame, Object cls, Object[] args, @SuppressWarnings("unused") PNone fillValue,
                         @Cached PyObjectGetIter getIterNode,
                         @Cached LoopConditionProfile loopProfile,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {

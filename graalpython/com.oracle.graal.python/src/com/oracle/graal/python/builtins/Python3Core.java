@@ -200,6 +200,7 @@ import com.oracle.graal.python.builtins.objects.itertools.ChainBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CombinationsBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CompressBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.CountBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CycleBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.DropwhileBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.FilterfalseBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.GroupByBuiltins;
@@ -519,6 +520,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new DropwhileBuiltins(),
                         new ChainBuiltins(),
                         new CountBuiltins(),
+                        new CycleBuiltins(),
                         new FilterfalseBuiltins(),
                         new GroupByBuiltins(),
                         new GrouperBuiltins(),

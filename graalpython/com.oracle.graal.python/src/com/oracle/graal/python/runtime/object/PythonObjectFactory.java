@@ -118,6 +118,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PCombinations;
 import com.oracle.graal.python.builtins.objects.itertools.PCombinationsWithReplacement;
 import com.oracle.graal.python.builtins.objects.itertools.PCompress;
 import com.oracle.graal.python.builtins.objects.itertools.PCount;
+import com.oracle.graal.python.builtins.objects.itertools.PCycle;
 import com.oracle.graal.python.builtins.objects.itertools.PDropwhile;
 import com.oracle.graal.python.builtins.objects.itertools.PFilterfalse;
 import com.oracle.graal.python.builtins.objects.itertools.PGroupBy;
@@ -1207,6 +1208,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PCompress createCompress(Object cls) {
         return trace(new PCompress(cls, getShape(cls)));
+    }
+
+    public final PCycle createCycle(Object cls) {
+        return trace(new PCycle(cls, getShape(cls)));
     }
 
     public final PFilterfalse createFilterfalse(Object cls) {
