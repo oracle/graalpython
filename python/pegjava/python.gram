@@ -18,21 +18,20 @@ com.oracle.graal.python.parser
 @imports '''
 import com.oracle.graal.python.parser.sst.SSTNode;
 import com.oracle.graal.python.parser.tokenizer.Token;
-
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 '''
 
 @parser_fields '''
     // caching results for pos -> rule
     // the null results are cached as well
-    private final RuleResultCache<SSTNode> cache; 
-    private final RuleResultCache<SSTNode[]> cacheOfArrays;
 '''
 
 @parser_constructor '''
-    public %s(ParserTokenizer tokenizer) {
-        super(tokenizer);
+    public %s(ParserTokenizer tokenizer, NodeFactory factory) {
+        super(tokenizer, factory);
         cache = new RuleResultCache(this);
-        cacheOfArrays = new RuleResultCache(this);
     }
 '''
 
@@ -127,7 +126,7 @@ compound_stmt[stmt_ty]:
     | match_stmt
 
 # NOTE: annotated_rhs may start with 'yield'; yield_expr must start with 'yield'
-assignment[stmt_ty]:
+assignment[SSTNode]:
     | a=NAME ':' b=expression c=['=' d=annotated_rhs { d }] {
         CHECK_VERSION(
             stmt_ty,
@@ -654,12 +653,12 @@ slice[SSTNode]: # originally return type expr_ty
     | a=[expression] ':' b=[expression] c=[':' d=[expression] { d }] { _PyAST_Slice(a, b, c, EXTRA) }
     | a=named_expression { a }
 atom[SSTNode]: # originally return type expr_ty
-    | NAME
+    | n=NAME {factory.createVariable(getText(n), startOffset, endOffset) }
     | 'True' { fac}
     | 'False' { _PyAST_Constant(Py_False, NULL, EXTRA) }
     | 'None' { _PyAST_Constant(Py_None, NULL, EXTRA) }
     | &STRING strings
-    | NUMBER
+    | nu=NUMBER { factory.createNumber(getText(nu), startOffset, endOffset) }
     | &'(' (tuple | group | genexp)
     | &'[' (list | listcomp)
     | &'{' (dict | set | dictcomp | setcomp)

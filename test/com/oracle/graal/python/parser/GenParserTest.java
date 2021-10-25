@@ -38,7 +38,7 @@ public class GenParserTest {
     public void testSimple01() {
         String text = "a:int=1";
         ParserTokenizer tokenizer = new ParserTokenizer(text);
-        GenParser parser = new GenParser(tokenizer);
+        GenParser parser = new GenParser(tokenizer, new NodeFactoryImp());
         Object result = parser.file_rule();
         System.out.println("#Result of the parsing: " + result);
     }

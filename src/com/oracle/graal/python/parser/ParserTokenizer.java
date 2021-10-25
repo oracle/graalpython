@@ -9,10 +9,6 @@ import java.util.ArrayList;
 import com.oracle.graal.python.parser.tokenizer.Token;
 import com.oracle.graal.python.parser.tokenizer.Tokenizer;
 
-/**
- *
- * @author petr
- */
 public class ParserTokenizer {
     
     private final String code;
@@ -53,7 +49,10 @@ public class ParserTokenizer {
     
     public String getText(Token token) {
         // TODO handle this in better way
-        return code.substring(token.startOffset, token.endOffset);
+        if (token.endOffset <= code.length()) {
+            return code.substring(token.startOffset, token.endOffset);  
+        }
+        return "";
     }
     
 }

@@ -13,9 +13,11 @@ import com.oracle.graal.python.parser.tokenizer.Token;
 public class Parser {
 
     private final ParserTokenizer tokenizer;
+    protected final NodeFactory factory;
     
-    public Parser(ParserTokenizer tokenizer) {
+    public Parser(ParserTokenizer tokenizer, NodeFactory factory) {
         this.tokenizer = tokenizer;
+        this.factory = factory;
     }
 
     /**
@@ -62,6 +64,15 @@ public class Parser {
             return tokenizer.getToken();
         }
         return null;
+    }
+    
+    /**
+     * Shortcut to Tokenizer.getText(Token)
+     * @param token
+     * @return 
+     */
+    public String getText(Token token) {
+        return tokenizer.getText(token);
     }
 
 }

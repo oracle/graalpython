@@ -5,6 +5,7 @@
  */
 package toyparser;
 
+import com.oracle.graal.python.parser.NodeFactory;
 import java.util.Arrays;
 import com.oracle.graal.python.parser.Parser;
 import com.oracle.graal.python.parser.ParserTokenizer;
@@ -19,7 +20,7 @@ public class ToyParser extends Parser {
     
     
     public ToyParser(ParserTokenizer tokenizer) {
-        super(tokenizer);
+        super(tokenizer, null);
     }
     
     public Node statement() {

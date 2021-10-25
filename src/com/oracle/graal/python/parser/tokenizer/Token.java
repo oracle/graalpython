@@ -5,10 +5,7 @@
  */
 package com.oracle.graal.python.parser.tokenizer;
 
-/**
- *
- * @author petr
- */
+
 public class Token {
 
     public static enum Kind {
