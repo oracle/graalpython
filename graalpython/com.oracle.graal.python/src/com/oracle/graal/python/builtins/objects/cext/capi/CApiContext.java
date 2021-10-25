@@ -52,6 +52,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 
 import org.graalvm.collections.EconomicMap;
@@ -178,6 +180,15 @@ public final class CApiContext extends CExtContext {
     private final HashMap<Pair<String, String>, Object> extensions = new HashMap<>(4);
 
     private final ArrayList<Object> modulesByIndex = new ArrayList<>(0);
+
+    /**
+     * Thread local storage for PyThread_tss_* APIs
+     */
+    private final ConcurrentHashMap<Long, ThreadLocal<Object>> tssStorage = new ConcurrentHashMap<>();
+    /**
+     * Next key that will be allocated byt PyThread_tss_create
+     */
+    private AtomicLong nextTssKey = new AtomicLong();
 
     /**
      * Private dummy constructor just for {@link #LAZY_CONTEXT}.
@@ -309,6 +320,29 @@ public final class CApiContext extends CExtContext {
         }
         traceMallocDomains[oldLength] = new TraceMallocDomain(id);
         return oldLength;
+    }
+
+    public long nextTssKey() {
+        return nextTssKey.incrementAndGet();
+    }
+
+    @TruffleBoundary
+    public Object tssGet(long key) {
+        ThreadLocal<Object> local = tssStorage.get(key);
+        if (local != null) {
+            return local.get();
+        }
+        return null;
+    }
+
+    @TruffleBoundary
+    public void tssSet(long key, Object object) {
+        tssStorage.computeIfAbsent(key, (k) -> new ThreadLocal<>()).set(object);
+    }
+
+    @TruffleBoundary
+    public void tssDelete(long key) {
+        tssStorage.remove(key);
     }
 
     public PrimitiveNativeWrapper getCachedPrimitiveNativeWrapper(int i) {

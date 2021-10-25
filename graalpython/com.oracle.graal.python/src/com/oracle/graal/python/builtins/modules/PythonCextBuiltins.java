@@ -4536,4 +4536,46 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
         }
     }
+
+    @Builtin(name = "PyTruffle_tss_create")
+    @GenerateNodeFactory
+    abstract static class PyTruffleTssCreate extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        long tssCreate() {
+            return getContext().getCApiContext().nextTssKey();
+        }
+    }
+
+    @Builtin(name = "PyTruffle_tss_get")
+    @GenerateNodeFactory
+    abstract static class PyTruffleTssGet extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object tssGet(Object key,
+                        @Cached CastToJavaLongLossyNode cast) {
+            return getContext().getCApiContext().tssGet(cast.execute(key));
+        }
+    }
+
+    @Builtin(name = "PyTruffle_tss_set")
+    @GenerateNodeFactory
+    abstract static class PyTruffleTssSet extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object tssSet(Object key, Object value,
+                        @Cached CastToJavaLongLossyNode cast) {
+            getContext().getCApiContext().tssSet(cast.execute(key), value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "PyTruffle_tss_delete")
+    @GenerateNodeFactory
+    abstract static class PyTruffleTssDelete extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object tssDelete(Object key,
+                        @Cached CastToJavaLongLossyNode cast) {
+            getContext().getCApiContext().tssDelete(cast.execute(key));
+            return PNone.NONE;
+        }
+    }
 }
