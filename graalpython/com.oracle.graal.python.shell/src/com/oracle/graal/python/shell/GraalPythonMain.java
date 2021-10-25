@@ -124,86 +124,90 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         boolean posixBackendSpecified = false;
         for (Iterator<String> argumentIterator = arguments.iterator(); argumentIterator.hasNext();) {
             String arg = argumentIterator.next();
-            /*
-             * Our internal options with single-dash `-long-option` format should be tried first to
-             * resolve ambiguity with short options taking arguments
-             */
-            if (wantsExperimental) {
-                switch (arg) {
-                    case "-debug-java":
-                        if (!isAOT()) {
-                            subprocessArgs.add("agentlib:jdwp=transport=dt_socket,server=y,address=8000,suspend=y");
-                            inputArgs.remove("-debug-java");
-                        }
-                        break;
-                    case "-debug-perf":
-                        unrecognized.add("--engine.TraceCompilation");
-                        unrecognized.add("--engine.TraceCompilationDetails");
-                        unrecognized.add("--engine.TraceInlining");
-                        unrecognized.add("--engine.TraceSplitting");
-                        unrecognized.add("--engine.TraceCompilationPolymorphism");
-                        unrecognized.add("--engine.TraceAssumptions");
-                        unrecognized.add("--engine.TraceTransferToInterpreter");
-                        unrecognized.add("--engine.TracePerformanceWarnings=all");
-                        unrecognized.add("--engine.CompilationFailureAction=Print");
-                        inputArgs.remove("-debug-perf");
-                        break;
-                    case "-multi-context":
-                        multiContext = true;
-                        break;
-                    case "-dump":
-                        subprocessArgs.add("Dgraal.Dump=");
-                        inputArgs.add("--engine.BackgroundCompilation=false");
-                        inputArgs.remove("-dump");
-                        break;
-                    case "-snapshot-startup":
-                        snaptshotStartup = true;
-                        break;
+            if (arg.startsWith("-")) {
+                if (arg.length() == 1) {
+                    // Lone dash should just be skipped
+                    continue;
                 }
-            }
-            if (arg.equals("-")) {
-                // Lone dash should just be skipped
-            } else if (arg.startsWith("--")) {
-                // Long options
-                switch (arg) {
-                    // --help gets passed through as unrecognized
-                    case "--version":
-                        versionAction = VersionAction.PrintAndExit;
-                        break;
-                    case "--show-version":
-                        versionAction = VersionAction.PrintAndContinue;
-                        break;
-                    case "--experimental-options":
-                    case "--experimental-options=true":
-                        /*
-                         * This is the default Truffle experimental option flag. We also use it for
-                         * our custom launcher options
-                         */
-                        wantsExperimental = true;
-                        addRelaunchArg(arg);
-                        unrecognized.add(arg);
-                        break;
-                    case "--check-hash-based-pycs":
-                        if (!argumentIterator.hasNext()) {
-                            throw abort("Argument expected for the --check-hash-based-pycs option\n" + SHORT_HELP, 2);
-                        }
-                        checkHashPycsMode = argumentIterator.next();
-                        break;
-                    default:
-                        if (arg.startsWith("--llvm.") ||
-                                        matchesPythonOption(arg, "CoreHome") ||
-                                        matchesPythonOption(arg, "StdLibHome") ||
-                                        matchesPythonOption(arg, "CAPI") ||
-                                        matchesPythonOption(arg, "PosixModuleBackend")) {
+                /*
+                 * Our internal options with single-dash `-long-option` format should be tried first
+                 * to resolve ambiguity with short options taking arguments
+                 */
+                if (wantsExperimental) {
+                    switch (arg) {
+                        case "-debug-java":
+                            if (!isAOT()) {
+                                subprocessArgs.add("agentlib:jdwp=transport=dt_socket,server=y,address=8000,suspend=y");
+                                inputArgs.remove("-debug-java");
+                            }
+                            continue;
+                        case "-debug-perf":
+                            unrecognized.add("--engine.TraceCompilation");
+                            unrecognized.add("--engine.TraceCompilationDetails");
+                            unrecognized.add("--engine.TraceInlining");
+                            unrecognized.add("--engine.TraceSplitting");
+                            unrecognized.add("--engine.TraceCompilationPolymorphism");
+                            unrecognized.add("--engine.TraceAssumptions");
+                            unrecognized.add("--engine.TraceTransferToInterpreter");
+                            unrecognized.add("--engine.TracePerformanceWarnings=all");
+                            unrecognized.add("--engine.CompilationFailureAction=Print");
+                            inputArgs.remove("-debug-perf");
+                            continue;
+                        case "-multi-context":
+                            multiContext = true;
+                            continue;
+                        case "-dump":
+                            subprocessArgs.add("Dgraal.Dump=");
+                            inputArgs.add("--engine.BackgroundCompilation=false");
+                            inputArgs.remove("-dump");
+                            continue;
+                        case "-snapshot-startup":
+                            snaptshotStartup = true;
+                            continue;
+                    }
+                }
+                if (arg.startsWith("--")) {
+                    // Long options
+                    switch (arg) {
+                        // --help gets passed through as unrecognized
+                        case "--version":
+                            versionAction = VersionAction.PrintAndExit;
+                            continue;
+                        case "--show-version":
+                            versionAction = VersionAction.PrintAndContinue;
+                            continue;
+                        case "--experimental-options":
+                        case "--experimental-options=true":
+                            /*
+                             * This is the default Truffle experimental option flag. We also use it
+                             * for our custom launcher options
+                             */
+                            wantsExperimental = true;
                             addRelaunchArg(arg);
-                        }
-                        if (matchesPythonOption(arg, "PosixModuleBackend")) {
-                            posixBackendSpecified = true;
-                        }
-                        // possibly a polyglot argument
-                        unrecognized.add(arg);
+                            unrecognized.add(arg);
+                            continue;
+                        case "--check-hash-based-pycs":
+                            if (!argumentIterator.hasNext()) {
+                                throw abort("Argument expected for the --check-hash-based-pycs option\n" + SHORT_HELP, 2);
+                            }
+                            checkHashPycsMode = argumentIterator.next();
+                            continue;
+                        default:
+                            if (arg.startsWith("--llvm.") ||
+                                            matchesPythonOption(arg, "CoreHome") ||
+                                            matchesPythonOption(arg, "StdLibHome") ||
+                                            matchesPythonOption(arg, "CAPI") ||
+                                            matchesPythonOption(arg, "PosixModuleBackend")) {
+                                addRelaunchArg(arg);
+                            }
+                            if (matchesPythonOption(arg, "PosixModuleBackend")) {
+                                posixBackendSpecified = true;
+                            }
+                            // possibly a polyglot argument
+                            unrecognized.add(arg);
+                            continue;
+                    }
                 }
-            } else if (arg.startsWith("-")) {
                 // Short options
                 /*
                  * Multiple options can be clustered together (`-vE`). They can also be repeated
