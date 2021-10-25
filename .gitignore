@@ -1,2 +1,4 @@
 /build/
 /dist/
+/pegen/__pycache__/
+/pegjava/__pycache__/
