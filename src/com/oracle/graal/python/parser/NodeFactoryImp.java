@@ -7,6 +7,8 @@ package com.oracle.graal.python.parser;
 
 // TODO this class has to be moved to impl package and from this package we need to do api. 
 
+import com.oracle.graal.python.parser.sst.AnnAssignmentSSTNode;
+import com.oracle.graal.python.parser.sst.AnnotationSSTNode;
 import com.oracle.graal.python.parser.sst.AssignmentSSTNode;
 import com.oracle.graal.python.parser.sst.BlockSSTNode;
 import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode;
@@ -16,6 +18,16 @@ import com.oracle.graal.python.parser.sst.VarLookupSSTNode;
 
 public class NodeFactoryImp implements NodeFactory{
 
+    @Override
+    public AnnAssignmentSSTNode createAnnAssignment(AnnotationSSTNode annotation, SSTNode rhs, int startOffset, int endOffset) {
+        return new AnnAssignmentSSTNode(annotation, rhs, startOffset, endOffset);
+    }
+
+    @Override
+    public AnnotationSSTNode createAnnotation(SSTNode lhs, SSTNode type, int startOffset, int endOffset) {
+        return new AnnotationSSTNode(lhs, type, startOffset, endOffset);
+    }
+    
     @Override
     public AssignmentSSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, int startOffset, int endOffset) {
         return new AssignmentSSTNode(lhs, rhs, startOffset, endOffset);

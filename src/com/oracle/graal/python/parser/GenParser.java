@@ -5404,7 +5404,7 @@ public class GenParser extends Parser {
             return (SSTNode)cache.getResult(pos, ASSIGNMENT_ID);
         }
         Token startToken = getToken(pos);
-        // the result should be constructed through action: factory . createAssignment ( new SSTNode [ ] {factory . createVariable ( getText ( a ) , a . startOffset , a . endOffset )} , b , startToken . startOffset , endToken . endOffset ) ; // CHECK_VERSION ( // stmt_ty , // 6 , // "Variable annotation syntax is" , // _PyAST_AnnAssign ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , c , 1 , EXTRA ) // )
+        // the result should be constructed through action: factory . createAnnAssignment ( factory . createAnnotation ( factory . createVariable ( getText ( a ) , a . startOffset , a . endOffset ) , b , a . startOffset , b . getEndOffset ( ) ) , ( SSTNode ) c , startToken . startOffset , endToken . endOffset ) ; // CHECK_VERSION ( // stmt_ty , // 6 , // "Variable annotation syntax is" , // _PyAST_AnnAssign ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , c , 1 , EXTRA ) // )
         {
             // visiting Alt: NAME ':' expression ['=' annotated_rhs]
             // REMOVE visiting JavaCallMakerVisitor.visit_NameLeaf(NAME) - should work
@@ -5461,10 +5461,10 @@ public class GenParser extends Parser {
                     this.level--;
                     debugMessageln("assignment[" + pos + ", " + mark() +" ](level: " + level + ") NAME ':' expression ['=' annotated_rhs] succeeded!");
                 }
-                // alt action: factory . createAssignment ( new SSTNode [ ] {factory . createVariable ( getText ( a ) , a . startOffset , a . endOffset )} , b , startToken . startOffset , endToken . endOffset ) ; // CHECK_VERSION ( // stmt_ty , // 6 , // "Variable annotation syntax is" , // _PyAST_AnnAssign ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , c , 1 , EXTRA ) // )
+                // alt action: factory . createAnnAssignment ( factory . createAnnotation ( factory . createVariable ( getText ( a ) , a . startOffset , a . endOffset ) , b , a . startOffset , b . getEndOffset ( ) ) , ( SSTNode ) c , startToken . startOffset , endToken . endOffset ) ; // CHECK_VERSION ( // stmt_ty , // 6 , // "Variable annotation syntax is" , // _PyAST_AnnAssign ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , c , 1 , EXTRA ) // )
                 Token endToken = getToken(mark());
-                // node.action: factory . createAssignment ( new SSTNode [ ] {factory . createVariable ( getText ( a ) , a . startOffset , a . endOffset )} , b , startToken . startOffset , endToken . endOffset ) ; // CHECK_VERSION ( // stmt_ty , // 6 , // "Variable annotation syntax is" , // _PyAST_AnnAssign ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , c , 1 , EXTRA ) // )
-                result = factory.createAssignment(new SSTNode[]{factory.createVariable(getText(a),a.startOffset,a.endOffset)},b,startToken.startOffset,endToken.endOffset);//CHECK_VERSION(//stmt_ty,//6,//"Variableannotationsyntaxis",//_PyAST_AnnAssign(CHECK(expr_ty,_PyPegen_set_expr_context(p,a,Store)),b,c,1,EXTRA)//);
+                // node.action: factory . createAnnAssignment ( factory . createAnnotation ( factory . createVariable ( getText ( a ) , a . startOffset , a . endOffset ) , b , a . startOffset , b . getEndOffset ( ) ) , ( SSTNode ) c , startToken . startOffset , endToken . endOffset ) ; // CHECK_VERSION ( // stmt_ty , // 6 , // "Variable annotation syntax is" , // _PyAST_AnnAssign ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , c , 1 , EXTRA ) // )
+                result = factory.createAnnAssignment(factory.createAnnotation(factory.createVariable(getText(a),a.startOffset,a.endOffset),b,a.startOffset,b.getEndOffset()),(SSTNode)c,startToken.startOffset,endToken.endOffset);//CHECK_VERSION(//stmt_ty,//6,//"Variableannotationsyntaxis",//_PyAST_AnnAssign(CHECK(expr_ty,_PyPegen_set_expr_context(p,a,Store)),b,c,1,EXTRA)//);
                 return (SSTNode)cache.putResult(pos, ASSIGNMENT_ID, result);
             }
             reset(pos);

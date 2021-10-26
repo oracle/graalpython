@@ -133,9 +133,12 @@ compound_stmt[stmt_ty]:
 # NOTE: annotated_rhs may start with 'yield'; yield_expr must start with 'yield'
 assignment[SSTNode]:
     | a=NAME ':' b=expression c=['=' d=annotated_rhs { d }] {
-        factory.createAssignment(
-                    new  SSTNode[]{factory.createVariable(getText(a), a.startOffset, a.endOffset)},
-                    b, startToken.startOffset, endToken.endOffset);
+        factory.createAnnAssignment(
+                    factory.createAnnotation(
+                        factory.createVariable(getText(a), a.startOffset, a.endOffset),
+                        b,
+                        a.startOffset, b.getEndOffset()),
+                    (SSTNode)c, startToken.startOffset, endToken.endOffset);
             
         //CHECK_VERSION(
         //    stmt_ty,

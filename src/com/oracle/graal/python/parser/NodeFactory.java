@@ -9,7 +9,9 @@ import com.oracle.graal.python.parser.sst.*;
 
 public interface NodeFactory {
     
-    public AssignmentSSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, int start, int end);
+    public AnnAssignmentSSTNode createAnnAssignment(AnnotationSSTNode annotation, SSTNode rhs, int startOffset, int endOffset);
+    public AnnotationSSTNode createAnnotation(SSTNode lhs, SSTNode type, int startOffset, int endOffset);
+    public AssignmentSSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, int startOffset, int endOffset);
     public BlockSSTNode createBlock(SSTNode[] statements, int startOffset, int endOffset);
     public SSTNode createNumber(String number, int startOffset, int endOffset);
     public VarLookupSSTNode createVariable(String name, int startOffset, int endOffset);
