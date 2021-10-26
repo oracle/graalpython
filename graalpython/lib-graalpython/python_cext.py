@@ -743,76 +743,6 @@ def PyMemoryView_GetContiguous(obj, buffertype, order_int):
             mv.release()
 
 
-##################### CAPSULE
-
-
-class PyCapsule:
-    name = None
-    pointer = None
-    context = None
-    __flags__ = 0
-
-    def __init__(self, name, pointer, destructor):
-        self.name = name
-        self.pointer = pointer
-
-    def __repr__(self):
-        name = "NULL" if self.name is None else self.name
-        quote = "" if self.name is None else '"'
-        return "<capsule object %s%s%s at 0x%x>" % (quote, name, quote, id(self))
-
-
-@may_raise
-def PyCapsule_GetContext(obj):
-    if not isinstance(obj, PyCapsule) or obj.pointer is None:
-        raise ValueError("PyCapsule_GetContext called with invalid PyCapsule object")
-    return obj.context
-
-
-@may_raise(-1)
-def PyCapsule_SetContext(obj, ptr):
-    if not isinstance(obj, PyCapsule):
-        raise ValueError("PyCapsule_SetContext called with invalid PyCapsule object")
-    obj.context = ptr
-    return 0
-
-
-@may_raise
-def PyCapsule_GetPointer(obj, name):
-    if not isinstance(obj, PyCapsule) or obj.pointer is None:
-        raise ValueError("PyCapsule_GetPointer called with invalid PyCapsule object")
-    if name != None and name != obj.name:
-        raise ValueError("PyCapsule_GetPointer called with incorrect name")
-    return obj.pointer
-
-
-@may_raise
-def PyCapsule_Import(name, no_block):
-    obj = None
-    mod = name.split(".")[0]
-    try:
-        obj = __import__(mod)
-    except:
-        raise ImportError('PyCapsule_Import could not import module "%s"' % name)
-    for attr in name.split(".")[1:]:
-        obj = getattr(obj, attr)
-    if PyCapsule_IsValid(obj, name):
-        return obj.pointer
-    else:
-        raise AttributeError('PyCapsule_Import "%s" is not valid' % name)
-
-
-def PyCapsule_IsValid(obj, name):
-    return (isinstance(obj, PyCapsule) and
-            obj.pointer != None and
-            obj.name == name)
-
-
-@may_raise
-def PyCapsule_GetName(obj):
-    return obj.name
-
-
 @may_raise(-1)
 def PyModule_AddObject(m, k, v):
     m.__dict__[k] = v
@@ -1205,11 +1135,11 @@ def initialize_capi(capi_library):
     """This method is called from a C API constructor function"""
     global capi
     capi = capi_library
-    initialize_datetime_capi(capi_library)
 
 
 # run C API initialize hooks
 def run_capi_loaded_hooks(capi_library):
+    initialize_datetime_capi(capi_library)
     local_hooks = _capi_hooks.copy()
     _capi_hooks.clear()
     for hook in local_hooks:
@@ -1259,7 +1189,8 @@ def initialize_datetime_capi(capi_library):
             return typ(hour=h, minute=m, second=s, microsecond=us, tzinfo=tz, fold=fold)
 
     import_c_func("set_PyDateTime_typeids", capi_library)(PyDateTime_CAPI, PyDateTime_CAPI.DateType, PyDateTime_CAPI.DateTimeType, PyDateTime_CAPI.TimeType, PyDateTime_CAPI.DeltaType, PyDateTime_CAPI.TZInfoType)
-    datetime.datetime_CAPI = PyCapsule("datetime.datetime_CAPI", wrap_PyDateTime_CAPI(PyDateTime_CAPI()), None)
+    datetime.datetime_CAPI = import_c_func("truffle_create_datetime_capsule", capi_library)(wrap_PyDateTime_CAPI(PyDateTime_CAPI()))
+    assert datetime.datetime_CAPI is not native_null
     datetime.date.__basicsize__ = import_c_func("get_PyDateTime_Date_basicsize", capi_library)()
     datetime.time.__basicsize__ = import_c_func("get_PyDateTime_Time_basicsize", capi_library)()
     datetime.datetime.__basicsize__ = import_c_func("get_PyDateTime_DateTime_basicsize", capi_library)()
