@@ -318,7 +318,6 @@ public abstract class Python3Core extends ParserErrorCallback {
                         "_frozen_importlib",
                         "__graalpython__",
                         "_weakref",
-                        "itertools",
                         "faulthandler",
                         "base_exception",
                         PythonCextBuiltins.PYTHON_CEXT,
