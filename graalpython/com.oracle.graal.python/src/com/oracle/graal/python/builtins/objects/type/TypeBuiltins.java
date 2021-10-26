@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__PREPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSES__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
@@ -84,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes.AbstractSetattrNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
@@ -703,6 +705,21 @@ public class TypeBuiltins extends PythonBuiltins {
                 getDescClassNode = insert(GetClassNode.create());
             }
             return getDescClassNode.execute(desc);
+        }
+    }
+
+    @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class SetattrNode extends AbstractSetattrNode {
+        @Child WriteAttributeToObjectNode writeNode;
+
+        @Override
+        protected boolean writeAttribute(Object object, String key, Object value) {
+            if (writeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                writeNode = insert(WriteAttributeToObjectNode.createForceType());
+            }
+            return writeNode.execute(object, key, value);
         }
     }
 

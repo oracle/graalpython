@@ -125,7 +125,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -511,86 +510,22 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @ImportStatic(PGuards.class)
     @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
-
-        @Child GetClassNode getDescClassNode;
-        @Child LookupCallableSlotInMRONode lookupSetNode;
-        @Child CallTernaryMethodNode callSetNode;
+    public abstract static class SetattrNode extends ObjectNodes.AbstractSetattrNode {
         @Child WriteAttributeToObjectNode writeNode;
 
-        public abstract PNone execute(VirtualFrame frame, Object object, String key, Object value);
-
-        @Specialization
-        protected PNone doStringKey(VirtualFrame frame, Object object, String key, Object value,
-                        @Shared("getClass") @Cached GetClassNode getClassNode,
-                        @Shared("getExisting") @Cached LookupAttributeInMRONode.Dynamic getExisting) {
-            Object type = getClassNode.execute(object);
-            Object descr = getExisting.execute(type, key);
-            if (descr != PNone.NO_VALUE) {
-                Object dataDescClass = getDescClass(descr);
-                Object set = ensureLookupSetNode().execute(dataDescClass);
-                if (PGuards.isCallableOrDescriptor(set)) {
-                    ensureCallSetNode().execute(frame, set, descr, object, value);
-                    return PNone.NONE;
-                }
-            }
-            if (ensureWriteNode().execute(object, key, value)) {
-                return PNone.NONE;
-            }
-            if (descr != PNone.NO_VALUE) {
-                throw raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
-            } else {
-                throw raise(AttributeError, ErrorMessages.HAS_NO_ATTR, object, key);
-            }
-        }
-
-        @Specialization(replaces = "doStringKey")
-        protected PNone doIt(VirtualFrame frame, Object object, Object keyObject, Object value,
-                        @Shared("getClass") @Cached GetClassNode getClassNode,
-                        @Shared("getExisting") @Cached LookupAttributeInMRONode.Dynamic getExisting,
-                        @Cached CastToJavaStringNode castKeyToStringNode) {
-            String key;
-            try {
-                key = castKeyToStringNode.execute(keyObject);
-            } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObject);
-            }
-            return doStringKey(frame, object, key, value, getClassNode, getExisting);
-        }
-
-        private Object getDescClass(Object desc) {
-            if (getDescClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDescClassNode = insert(GetClassNode.create());
-            }
-            return getDescClassNode.execute(desc);
-        }
-
-        private LookupCallableSlotInMRONode ensureLookupSetNode() {
-            if (lookupSetNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupSetNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Set));
-            }
-            return lookupSetNode;
-        }
-
-        private CallTernaryMethodNode ensureCallSetNode() {
-            if (callSetNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callSetNode = insert(CallTernaryMethodNode.create());
-            }
-            return callSetNode;
-        }
-
-        private WriteAttributeToObjectNode ensureWriteNode() {
+        @Override
+        protected boolean writeAttribute(Object object, String key, Object value) {
             if (writeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 writeNode = insert(WriteAttributeToObjectNode.create());
             }
-            return writeNode;
+            return writeNode.execute(object, key, value);
+        }
+
+        public static SetattrNode create() {
+            return ObjectBuiltinsFactory.SetattrNodeFactory.create();
         }
     }
 
