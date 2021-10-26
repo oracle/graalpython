@@ -55,10 +55,10 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
-import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -100,8 +100,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isStopped()")
-        Object next(VirtualFrame frame, PPermutations self,
-                        @Cached PyObjectGetItem getItemNode,
+        Object next(PPermutations self,
                         @Cached ConditionProfile isStartedProfile,
                         @Cached BranchProfile jProfile,
                         @Cached LoopConditionProfile resultLoopProfile,
@@ -111,10 +110,10 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
             int[] indices = self.getIndices();
             Object[] result = new Object[r];
-            Object pool = self.getPool();
+            Object[] pool = self.getPool();
             resultLoopProfile.profileCounted(r);
             for (int i = 0; resultLoopProfile.inject(i < r); i++) {
-                result[i] = getItemNode.execute(frame, pool, indices[i]);
+                result[i] = pool[indices[i]];
             }
 
             int[] cycles = self.getCycles();
@@ -158,7 +157,8 @@ public final class PermutationsBuiltins extends PythonBuiltins {
         Object reduce(PPermutations self,
                         @Cached GetClassNode getClassNode) {
             Object type = getClassNode.execute(self);
-            PTuple tuple = factory().createTuple(new Object[]{self.getPool(), self.getR()});
+            PList poolList = factory().createList(self.getPool());
+            PTuple tuple = factory().createTuple(new Object[]{poolList, self.getR()});
 
             // we must pickle the indices and use them for setstate
             PTuple indicesTuple = factory().createTuple(self.getIndices());
@@ -198,7 +198,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
             }
             Object indices = getItemNode.execute(frame, state, 0);
             Object cycles = getItemNode.execute(frame, state, 1);
-            int poolLen = sizeNode.execute(frame, self.getPool());
+            int poolLen = self.getPool().length;
             if (sizeNode.execute(frame, indices) != poolLen || sizeNode.execute(frame, cycles) != self.getR()) {
                 wrongValuesSizeProfile.enter();
                 throw raise(ValueError, INVALID_ARGS, __SETSTATE__);

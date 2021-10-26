@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IterNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.itertools.PAccumulate;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
 import com.oracle.graal.python.builtins.objects.itertools.PCombinations;
@@ -77,9 +76,10 @@ import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes.ToArrayNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -574,18 +574,18 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isTypeNode.execute(cls)", "isNone(r)"})
         Object constructNoR(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone r,
-                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached ToArrayNode toArrayNode,
                         @Cached ConditionProfile nrProfile,
                         @Cached LoopConditionProfile indicesLoopProfile,
                         @Cached LoopConditionProfile cyclesLoopProfile,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
-            int len = sizeNode.execute(frame, iterable);
-            return construct(cls, iterable, len, len, nrProfile, indicesLoopProfile, cyclesLoopProfile);
+            Object[] pool = toArrayNode.execute(frame, iterable);
+            return construct(cls, pool, pool.length, nrProfile, indicesLoopProfile, cyclesLoopProfile);
         }
 
         @Specialization(guards = {"isTypeNode.execute(cls)", "!isNone(rArg)"})
         Object construct(VirtualFrame frame, Object cls, Object iterable, Object rArg,
-                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached ToArrayNode toArrayNode,
                         @Cached CastToJavaIntExactNode castToInt,
                         @Cached BranchProfile wrongRprofile,
                         @Cached BranchProfile negRprofile,
@@ -604,15 +604,15 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                 negRprofile.enter();
                 throw raise(ValueError, MUST_BE_NON_NEGATIVE, "r");
             }
-            // XXX could be generator
-            int len = sizeNode.execute(frame, iterable);
-            return construct(cls, iterable, r, len, nrProfile, indicesLoopProfile, cyclesLoopProfile);
+            Object[] pool = toArrayNode.execute(frame, iterable);
+            return construct(cls, pool, r, nrProfile, indicesLoopProfile, cyclesLoopProfile);
         }
 
-        public PPermutations construct(Object cls, Object iterable, int r, int n, ConditionProfile nrProfile, LoopConditionProfile indicesLoopProfile, LoopConditionProfile cyclesLoopProfile) {
+        public PPermutations construct(Object cls, Object[] pool, int r, ConditionProfile nrProfile, LoopConditionProfile indicesLoopProfile, LoopConditionProfile cyclesLoopProfile) {
             PPermutations self = factory().createPermutations(cls);
-            self.setPool(iterable);
+            self.setPool(pool);
             self.setR(r);
+            int n = pool.length;
             self.setN(n);
             int nMinusR = n - r;
             if (nrProfile.profile(nMinusR < 0)) {

@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PPermutations extends PythonBuiltinObject {
-    private Object pool;
+    private Object[] pool;
     private int r;
     private int n;
     private boolean stopped;
@@ -57,11 +57,11 @@ public final class PPermutations extends PythonBuiltinObject {
         super(cls, instanceShape);
     }
 
-    public Object getPool() {
+    public Object[] getPool() {
         return pool;
     }
 
-    public void setPool(Object pool) {
+    public void setPool(Object[] pool) {
         this.pool = pool;
     }
 
