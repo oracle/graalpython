@@ -214,7 +214,7 @@ public enum SpecialMethodSlot {
      * Values of some slots are always or mostly passed to call node variants that can handle
      * {@link BuiltinMethodDescriptor}. This does not hold most notably for slots that are passed to
      * {@link com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode}, like
-     * {@code __new__}. For those we do no allow storing the {@link BuiltinMethodDescriptor} in the
+     * {@code __new__}. For those we do not allow storing the {@link BuiltinMethodDescriptor} in the
      * slot, so that lookup using that slot always resolves to context dependent runtime object,
      * such as {@link PBuiltinFunction}.
      *
