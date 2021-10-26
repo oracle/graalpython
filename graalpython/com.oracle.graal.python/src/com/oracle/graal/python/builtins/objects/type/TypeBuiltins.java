@@ -265,9 +265,8 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(value)", "isBuiltin.profileIsAnyBuiltinClass(self)"})
         Object doc(Object self, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin,
-                        @Cached GetNameNode getName) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_S_S, getName.execute(self), __DOC__);
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_N_S, self, __DOC__);
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
@@ -1087,16 +1086,29 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         static Object getModule(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttr,
                         @Cached GetTypeMemberNode getTpNameNode,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
-            // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
-            String tpName = castToJavaStringNode.execute(getTpNameNode.execute(cls, NativeMember.TP_NAME));
-            return getModuleName(tpName);
+            Object module = readAttr.execute(cls, __MODULE__);
+            if (module != PNone.NO_VALUE) {
+                return module;
+            } else {
+                // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
+                String tpName = castToJavaStringNode.execute(getTpNameNode.execute(cls, NativeMember.TP_NAME));
+                return getModuleName(tpName);
+            }
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setNative(@SuppressWarnings("unused") PythonNativeClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
+        Object setNative(PythonNativeClass cls, Object value,
+                        @Cached GetTypeFlagsNode getFlags,
+                        @Cached("createForceType()") WriteAttributeToObjectNode writeAttr) {
+            long flags = getFlags.execute(cls);
+            if ((flags & TypeFlags.HEAPTYPE) == 0) {
+                throw raise(TypeError, ErrorMessages.CANT_SET_N_S, cls, __MODULE__);
+            }
+            writeAttr.execute(cls, __MODULE__, value);
+            return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(value)")
