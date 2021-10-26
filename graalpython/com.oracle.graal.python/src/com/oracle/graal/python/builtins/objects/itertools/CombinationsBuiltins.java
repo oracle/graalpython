@@ -53,27 +53,18 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
-import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
@@ -92,55 +83,6 @@ public class CombinationsBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CombinationsBuiltinsFactory.getFactories();
-    }
-
-    public abstract static class IterableToArrayNode extends PNodeWithRaise {
-        public abstract Object[] execute(VirtualFrame frame, Object iterable);
-
-        @Specialization
-        public static Object[] doIt(String iterable,
-                        @Cached LoopConditionProfile loopProfile) {
-            Object[] result = new Object[iterable.length()];
-            loopProfile.profileCounted(result.length);
-            for (int i = 0; loopProfile.inject(i < result.length); i++) {
-                result[i] = Character.toString(iterable.charAt(i));
-            }
-            return result;
-        }
-
-        @Specialization
-        public static Object[] doIt(PString iterable,
-                        @Cached LoopConditionProfile loopProfile) {
-            return doIt(iterable.getValue(), loopProfile);
-        }
-
-        @Specialization
-        public static Object[] doIt(PSequence iterable,
-                        @Cached GetSequenceStorageNode getStorageNode,
-                        @Cached ToArrayNode toArrayNode) {
-            SequenceStorage storage = getStorageNode.execute(iterable);
-            return toArrayNode.execute(storage);
-        }
-
-        @Specialization(guards = {"!isPSequence(iterable)", "!isString(iterable)"})
-        public static Object[] doIt(VirtualFrame frame, Object iterable,
-                        @Cached PyObjectSizeNode lenNode,
-                        @Cached GetNextNode getNextNode,
-                        @Cached IsBuiltinClassProfile stopIterationProfile,
-                        @Cached PyObjectGetIter getIter) {
-            Object it = getIter.execute(frame, iterable);
-            int len = lenNode.execute(frame, iterable);
-            Object[] result = new Object[len];
-            int i = 0;
-            while (true) {
-                try {
-                    result[i++] = getNextNode.execute(frame, it);
-                } catch (PException e) {
-                    e.expectStopIteration(stopIterationProfile);
-                    return result;
-                }
-            }
-        }
     }
 
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)

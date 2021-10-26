@@ -25,9 +25,22 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_EXPECTED_GOT_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COPY__;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARG_CANNOT_BE_NEGATIVE;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_INT_AS_R;
+import static com.oracle.graal.python.nodes.ErrorMessages.ISLICE_WRONG_ARGS;
+import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
+import static com.oracle.graal.python.nodes.ErrorMessages.NUMBER_IS_REQUIRED;
+import static com.oracle.graal.python.nodes.ErrorMessages.STEP_FOR_ISLICE_MUST_BE;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_FOR_ISLICE_MUST_BE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -35,14 +48,11 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IterNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.itertools.CombinationsBuiltins;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.itertools.PAccumulate;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
 import com.oracle.graal.python.builtins.objects.itertools.PCombinations;
@@ -70,16 +80,6 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import static com.oracle.graal.python.nodes.ErrorMessages.ARG_CANNOT_BE_NEGATIVE;
-import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_INT_AS_R;
-import static com.oracle.graal.python.nodes.ErrorMessages.ISLICE_WRONG_ARGS;
-import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
-import static com.oracle.graal.python.nodes.ErrorMessages.NUMBER_IS_REQUIRED;
-import static com.oracle.graal.python.nodes.ErrorMessages.STEP_FOR_ISLICE_MUST_BE;
-import static com.oracle.graal.python.nodes.ErrorMessages.S_FOR_ISLICE_MUST_BE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -180,7 +180,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isTypeNode.execute(cls)", "r >= 0"})
         Object construct(VirtualFrame frame, Object cls, Object iterable, int r,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
-                        @Cached CombinationsBuiltins.IterableToArrayNode toArrayNode,
+                        @Cached ToArrayNode toArrayNode,
                         @Cached LoopConditionProfile indicesLoopProfile) {
             PCombinations self = factory().createCombinations(cls);
             self.setPool(toArrayNode.execute(frame, iterable));
@@ -230,7 +230,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isTypeNode.execute(cls)", "r >= 0"})
         Object construct(VirtualFrame frame, Object cls, Object iterable, int r,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode,
-                        @Cached CombinationsBuiltins.IterableToArrayNode toArrayNode) {
+                        @Cached ToArrayNode toArrayNode) {
             PCombinationsWithReplacement self = factory().createCombinationsWithReplacement(cls);
             self.setPool(toArrayNode.execute(frame, iterable));
             self.setR(r);
