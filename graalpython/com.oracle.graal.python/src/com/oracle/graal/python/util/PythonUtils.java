@@ -413,13 +413,41 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static String substring(String s, int start, int end) {
+        return s.substring(start, end);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String substring(String s, int start) {
+        return s.substring(start);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static int lastIndexOf(String s, char chr) {
+        return s.lastIndexOf(chr);
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static StringBuilder append(StringBuilder sb, char c) {
         return sb.append(c);
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static StringBuilder append(StringBuilder sb, Object ... args) {
+        for (Object arg: args) {
+            sb.append(arg);
+        }
+        return sb;
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static StringBuilder append(StringBuilder sb, String s) {
         return sb.append(s);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder append(StringBuilder sb, int i) {
+        return sb.append(i);
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -435,6 +463,21 @@ public final class PythonUtils {
     @TruffleBoundary(allowInlining = true)
     public static StringBuilder appendCodePoint(StringBuilder sb, int codePoint) {
         return sb.appendCodePoint(codePoint);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String toString(CharSequence sequence) {
+        return sequence.toString();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String trim(String s) {
+        return s.trim();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String trim(CharSequence sequence) {
+        return sequence.toString().trim();
     }
 
     @TruffleBoundary(allowInlining = true)

@@ -121,9 +121,9 @@ def make_excepthook():
     return __print_traceback__
 
 
-__excepthook__ = make_excepthook()
-excepthook = __excepthook__
-del make_excepthook
+# __excepthook__ = make_excepthook()
+# excepthook = __excepthook__
+# del make_excepthook
 
 
 def make_unraisablehook():
