@@ -98,7 +98,6 @@ public final class AccumulateBuiltins extends PythonBuiltins {
                         @Cached BranchProfile hasInitialProfile,
                         @Cached BranchProfile markerProfile,
                         @Cached ConditionProfile hasFuncProfile) {
-
             if (self.getInitial() != null) {
                 hasInitialProfile.enter();
                 self.setTotal(self.getInitial());
@@ -123,47 +122,72 @@ public final class AccumulateBuiltins extends PythonBuiltins {
     @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization
+        @Specialization(guards = "hasFunc(self)")
         Object reduce(VirtualFrame frame, PAccumulate self,
                         @Cached GetClassNode getClassNode,
                         @Cached BranchProfile hasInitialProfile,
-                        @Cached BranchProfile hasTotalProfile,
+                        @Cached BranchProfile totalNoneProfile,
+                        @Cached BranchProfile totalMarkerProfile,
                         @Cached BranchProfile elseProfile,
                         @Cached PyObjectGetIter getIter) {
+            return reduce(self, self.getFunc(), hasInitialProfile, getClassNode, totalNoneProfile, getIter, frame, totalMarkerProfile, elseProfile);
+        }
+
+        @Specialization(guards = "!hasFunc(self)")
+        Object reduceNoFunc(VirtualFrame frame, PAccumulate self,
+                        @Cached GetClassNode getClassNode,
+                        @Cached BranchProfile hasInitialProfile,
+                        @Cached BranchProfile totalNoneProfile,
+                        @Cached BranchProfile totalMarkerProfile,
+                        @Cached BranchProfile elseProfile,
+                        @Cached PyObjectGetIter getIter) {
+            return reduce(self, PNone.NONE, hasInitialProfile, getClassNode, totalNoneProfile, getIter, frame, totalMarkerProfile, elseProfile);
+        }
+
+        private Object reduce(PAccumulate self, Object func, BranchProfile hasInitialProfile, GetClassNode getClassNode, BranchProfile totalNoneProfile, PyObjectGetIter getIter, VirtualFrame frame,
+                        BranchProfile totalMarkerProfile, BranchProfile elseProfile) {
             if (self.getInitial() != null) {
                 hasInitialProfile.enter();
-                Object type = getClassNode.execute(self);
-                PTuple inititalTuple = factory().createTuple(new Object[]{self.getInitial()});
-                PChain chain = factory().createChain(PythonBuiltinClassType.PChain);
-                chain.setSource(inititalTuple);
-                chain.setActive(self.getIterable());
 
-                PTuple tuple = factory().createTuple(new Object[]{chain, self.getFunc()});
+                Object type = getClassNode.execute(self);
+                PChain chain = factory().createChain(PythonBuiltinClassType.PChain);
+                chain.setSource(getIter.execute(frame, factory().createList(new Object[]{self.getIterable()})));
+                PTuple initialTuple = factory().createTuple(new Object[]{self.getInitial()});
+                chain.setActive(getIter.execute(frame, initialTuple));
+
+                PTuple tuple = factory().createTuple(new Object[]{chain, func});
                 return factory().createTuple(new Object[]{type, tuple, PNone.NONE});
             } else if (self.getTotal() == PNone.NONE) {
-                hasTotalProfile.enter();
+                totalNoneProfile.enter();
+
                 PChain chain = factory().createChain(PythonBuiltinClassType.PChain);
                 PList noneList = factory().createList(new Object[]{PNone.NONE});
                 Object noneIter = getIter.execute(frame, noneList);
                 chain.setSource(getIter.execute(frame, factory().createList(new Object[]{noneIter, self.getIterable()})));
                 chain.setActive(PNone.NONE);
-
                 PAccumulate accumulate = factory().createAccumulate(PythonBuiltinClassType.PAccumulate);
                 accumulate.setIterable(chain);
-                accumulate.setFunc(self.getFunc());
+                accumulate.setFunc(func);
 
                 PTuple tuple = factory().createTuple(new Object[]{accumulate, 1, PNone.NONE});
                 return factory().createTuple(new Object[]{PythonBuiltinClassType.PIslice, tuple});
+            } else if (self.getTotal() != null) {
+                totalMarkerProfile.enter();
+
+                Object type = getClassNode.execute(self);
+                PTuple tuple = factory().createTuple(new Object[]{self.getIterable(), func});
+                return factory().createTuple(new Object[]{type, tuple, self.getTotal()});
             } else {
                 elseProfile.enter();
+
                 Object type = getClassNode.execute(self);
-
-                Object func = self.getFunc() != null ? self.getFunc() : PNone.NONE;
                 PTuple tuple = factory().createTuple(new Object[]{self.getIterable(), func});
-
-                Object total = self.getTotal() != null ? self.getTotal() : PNone.NONE;
-                return factory().createTuple(new Object[]{type, tuple, total});
+                return factory().createTuple(new Object[]{type, tuple});
             }
+        }
+
+        protected static boolean hasFunc(PAccumulate self) {
+            return self.getFunc() != null;
         }
     }
 
