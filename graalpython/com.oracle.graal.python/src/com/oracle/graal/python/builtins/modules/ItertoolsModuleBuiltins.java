@@ -79,8 +79,6 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes.ToArrayNode;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -93,7 +91,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -663,38 +660,35 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isTypeNode.execute(cls)")
         Object constructNoneRepeat(VirtualFrame frame, Object cls, Object[] iterables, @SuppressWarnings("unused") PNone repeat,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached FastConstructListNode listNode,
+                        @Cached ToArrayNode toArrayNode,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
             PProduct self = factory().createProduct(cls);
-            constructOneRepeat(frame, self, iterables, listNode, sizeNode);
+            constructOneRepeat(frame, self, iterables, toArrayNode);
             return self;
         }
 
         @Specialization(guards = {"isTypeNode.execute(cls)", "repeat == 1"})
         Object constructOneRepeat(VirtualFrame frame, Object cls, Object[] iterables, @SuppressWarnings("unused") int repeat,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached FastConstructListNode listNode,
+                        @Cached ToArrayNode toArrayNode,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
             PProduct self = factory().createProduct(cls);
-            constructOneRepeat(frame, self, iterables, listNode, sizeNode);
+            constructOneRepeat(frame, self, iterables, toArrayNode);
             return self;
         }
 
         @Specialization(guards = {"isTypeNode.execute(cls)", "repeat > 1"})
         Object construct(VirtualFrame frame, Object cls, Object[] iterables, int repeat,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached FastConstructListNode listNode,
+                        @Cached ToArrayNode toArrayNode,
                         @Cached LoopConditionProfile loopProfile,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
-            PSequence[] lists = wrapIterables(frame, iterables, listNode);
-            PSequence[] gears = new PSequence[lists.length * repeat];
+            Object[][] lists = unpackIterables(frame, iterables, toArrayNode);
+            Object[][] gears = new Object[lists.length * repeat][];
             loopProfile.profileCounted(repeat);
             for (int i = 0; loopProfile.inject(i < repeat); i++) {
                 PythonUtils.arraycopy(lists, 0, gears, i * lists.length, lists.length);
             }
             PProduct self = factory().createProduct(cls);
-            construct(frame, self, gears, sizeNode);
+            construct(self, gears);
             return self;
         }
 
@@ -702,7 +696,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         Object constructNoRepeat(Object cls, @SuppressWarnings("unused") Object[] iterables, @SuppressWarnings("unused") int repeat,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
             PProduct self = factory().createProduct(cls);
-            self.setGears(new PSequence[0]);
+            self.setGears(new Object[0][]);
             self.setIndices(new int[0]);
             self.setLst(null);
             self.setStopped(false);
@@ -716,16 +710,15 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             throw raise(TypeError, ARG_CANNOT_BE_NEGATIVE, "repeat");
         }
 
-        private static void constructOneRepeat(VirtualFrame frame, PProduct self, Object[] iterables, FastConstructListNode listNode, PyObjectSizeNode sizeNode) {
-            PSequence[] gears = wrapIterables(frame, iterables, listNode);
-            construct(frame, self, gears, sizeNode);
+        private static void constructOneRepeat(VirtualFrame frame, PProduct self, Object[] iterables, ToArrayNode toArrayNode) {
+            Object[][] gears = unpackIterables(frame, iterables, toArrayNode);
+            construct(self, gears);
         }
 
-        private static void construct(VirtualFrame frame, PProduct self, PSequence[] gears, PyObjectSizeNode sizeNode) {
+        private static void construct(PProduct self, Object[][] gears) {
             self.setGears(gears);
             for (int i = 0; i < gears.length; i++) {
-                // XXX could be generator
-                if (sizeNode.execute(frame, gears[i]) == 0) {
+                if (gears[i].length == 0) {
                     self.setIndices(null);
                     self.setLst(null);
                     self.setStopped(true);
@@ -737,10 +730,10 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             self.setStopped(false);
         }
 
-        private static PSequence[] wrapIterables(VirtualFrame frame, Object[] iterables, FastConstructListNode listNode) {
-            PSequence[] lists = new PSequence[iterables.length];
+        private static Object[][] unpackIterables(VirtualFrame frame, Object[] iterables, ToArrayNode toArrayNode) {
+            Object[][] lists = new Object[iterables.length][];
             for (int i = 0; i < lists.length; i++) {
-                lists[i] = listNode.execute(frame, iterables[i]);
+                lists[i] = toArrayNode.execute(frame, iterables[i]);
             }
             return lists;
         }

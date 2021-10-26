@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PProduct extends PythonBuiltinObject {
-    private Object[] gears;
+    private Object[][] gears;
     private Object[] lst;
     private int[] indices;
     private boolean stopped;
@@ -53,11 +53,11 @@ public final class PProduct extends PythonBuiltinObject {
         super(cls, instanceShape);
     }
 
-    public Object[] getGears() {
+    public Object[][] getGears() {
         return gears;
     }
 
-    public void setGears(Object[] gears) {
+    public void setGears(Object[][] gears) {
         this.gears = gears;
     }
 

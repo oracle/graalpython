@@ -53,9 +53,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetItem;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -92,40 +92,37 @@ public final class ProductBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = {"!self.isStopped()", "!hasLst(self)"})
-        Object next(VirtualFrame frame, PProduct self,
-                        @Cached PyObjectGetItem getItemNode,
+        Object next(PProduct self,
                         @Cached LoopConditionProfile loopProfile) {
             Object[] lst = new Object[self.getGears().length];
             loopProfile.profileCounted(lst.length);
             for (int i = 0; loopProfile.inject(i < lst.length); i++) {
-                lst[i] = getItemNode.execute(frame, self.getGears()[i], 0);
+                lst[i] = self.getGears()[i][0];
             }
             self.setLst(lst);
             return factory().createTuple(lst);
         }
 
         @Specialization(guards = {"!self.isStopped()", "hasLst(self)"})
-        Object next(VirtualFrame frame, PProduct self,
-                        @Cached PyObjectGetItem getItemNode,
-                        @Cached PyObjectSizeNode sizeNode,
+        Object next(PProduct self,
                         @Cached ConditionProfile gearsProfile,
                         @Cached ConditionProfile indexProfile,
                         @Cached BranchProfile wasStoppedProfile,
                         @Cached LoopConditionProfile loopProfile,
                         @Cached BranchProfile doneProfile) {
 
-            Object[] gears = self.getGears();
+            Object[][] gears = self.getGears();
             int x = gears.length - 1;
             if (gearsProfile.profile(x >= 0)) {
-                Object gear = gears[x];
+                Object[] gear = gears[x];
                 int[] indices = self.getIndices();
                 int index = indices[x] + 1;
-                if (indexProfile.profile(index < sizeNode.execute(frame, gear))) {
+                if (indexProfile.profile(index < gear.length)) {
                     // no carry: done
-                    self.getLst()[x] = getItemNode.execute(frame, gear, index);
+                    self.getLst()[x] = gear[index];
                     indices[x] = index;
                 } else {
-                    rotatePreviousGear(frame, self, getItemNode, sizeNode, loopProfile, doneProfile);
+                    rotatePreviousGear(self, loopProfile, doneProfile);
                 }
             } else {
                 self.setStopped(true);
@@ -148,26 +145,26 @@ public final class ProductBuiltins extends PythonBuiltins {
             throw raise(StopIteration);
         }
 
-        private static void rotatePreviousGear(VirtualFrame frame, PProduct self, PyObjectGetItem getItemNode, PyObjectSizeNode sizeNode, LoopConditionProfile loopProfile, BranchProfile doneProfile) {
+        private static void rotatePreviousGear(PProduct self, LoopConditionProfile loopProfile, BranchProfile doneProfile) {
             Object[] lst = self.getLst();
-            Object[] gears = self.getGears();
+            Object[][] gears = self.getGears();
             int x = gears.length - 1;
-            lst[x] = getItemNode.execute(frame, gears[x], 0);
+            lst[x] = gears[x][0];
             int[] indices = self.getIndices();
             indices[x] = 0;
             x = x - 1;
             // the outer loop runs as long as a we have a carry
             while (loopProfile.profile(x >= 0)) {
-                Object gear = gears[x];
+                Object[] gear = gears[x];
                 int index = indices[x] + 1;
-                if (index < sizeNode.execute(frame, gear)) {
+                if (index < gear.length) {
                     // no carry: done
                     doneProfile.enter();
-                    lst[x] = getItemNode.execute(frame, gear, index);
+                    lst[x] = gear[index];
                     indices[x] = index;
                     return;
                 }
-                lst[x] = getItemNode.execute(frame, gear, 0);
+                lst[x] = gear[0];
                 indices[x] = 0;
                 x = x - 1;
             }
@@ -187,7 +184,7 @@ public final class ProductBuiltins extends PythonBuiltins {
         Object reduce(PProduct self,
                         @Cached GetClassNode getClassNode) {
             Object type = getClassNode.execute(self);
-            PTuple gearTuples = factory().createTuple(self.getGears());
+            PTuple gearTuples = createGearTuple(self);
             return factory().createTuple(new Object[]{type, gearTuples});
         }
 
@@ -195,9 +192,17 @@ public final class ProductBuiltins extends PythonBuiltins {
         Object reduceLst(PProduct self,
                         @Cached GetClassNode getClassNode) {
             Object type = getClassNode.execute(self);
-            PTuple gearTuples = factory().createTuple(self.getGears());
+            PTuple gearTuples = createGearTuple(self);
             PTuple indicesTuple = factory().createTuple(PythonUtils.arrayCopyOf(self.getIndices(), self.getIndices().length));
             return factory().createTuple(new Object[]{type, gearTuples, indicesTuple});
+        }
+
+        private PTuple createGearTuple(PProduct self) {
+            PList[] lists = new PList[self.getGears().length];
+            for (int i = 0; i < lists.length; i++) {
+                lists[i] = factory().createList(self.getGears()[i]);
+            }
+            return factory().createTuple(lists);
         }
 
         @Specialization(guards = "self.isStopped()")
@@ -218,18 +223,17 @@ public final class ProductBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object setState(VirtualFrame frame, PProduct self, Object state,
-                        @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectGetItem getItemNode,
                         @Cached LoopConditionProfile loopProfile,
                         @Cached BranchProfile stoppedProfile,
                         @Cached ConditionProfile indexProfile) {
-            Object[] gears = self.getGears();
+            Object[][] gears = self.getGears();
             Object[] lst = new Object[gears.length];
             int[] indices = self.getIndices();
             loopProfile.profileCounted(gears.length);
             for (int i = 0; loopProfile.inject(i < gears.length); i++) {
                 int index = (int) getItemNode.execute(frame, state, i);
-                int gearSize = sizeNode.execute(frame, gears[i]);
+                int gearSize = gears[i].length;
                 if (indices == null || gearSize == 0) {
                     stoppedProfile.enter();
                     self.setStopped(true);
@@ -241,7 +245,7 @@ public final class ProductBuiltins extends PythonBuiltins {
                     index = gearSize - 1;
                 }
                 indices[i] = index;
-                lst[i] = getItemNode.execute(frame, gears[i], index);
+                lst[i] = gears[i][index];
             }
             self.setLst(lst);
             return PNone.NONE;
