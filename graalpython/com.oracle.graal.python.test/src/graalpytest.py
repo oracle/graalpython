@@ -59,6 +59,10 @@ SERIAL_TESTS = [
     'test_import',
     'test_subprocess',
     'test_posix',
+    'test_io',
+    'test_fileio',
+    'test_imaplib',
+    'test_multiprocessing_spawn',
     # trying to avoid transient issues there, not sure about the reason
     'test_unittest',
 ]
