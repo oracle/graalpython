@@ -1,4 +1,5 @@
 /build/
 /dist/
-/pegen/__pycache__/
-/pegjava/__pycache__/
+/python/pegen/__pycache__/
+/python/pegjava/__pycache__/
+/nbproject/private/

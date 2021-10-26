@@ -74,5 +74,16 @@ public class Parser {
     public String getText(Token token) {
         return tokenizer.getText(token);
     }
+    
+    
+    public Token getToken(int pos) {
+        if (pos > tokenizer.mark()) {
+            throw new RuntimeException("getToken(pos) can be used only for position that is already scanned!");
+        }
+        int helpPos = mark();
+        Token token =  tokenizer.peekToken();
+        tokenizer.reset(pos);
+        return token;
+    }
 
 }

@@ -82,7 +82,8 @@ class FunctionCall:
         if self.comment:
             parts.append(f"  // {self.comment}")
         return "".join(parts)
-    
+   
+# TODO this is temporary solution until all types in the grammar will not be java types
 def _check_type(self, ttype: str) -> str:
     if ttype and type(ttype) == str and "Token" != ttype and not "SSTNode" in ttype:
         if "[]" in ttype or "*" in ttype:
@@ -560,7 +561,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         #    self.print("p->error_indicator = 1;")
         #    self.add_return("NULL")
         #self.print("}")
-        self.print("int startOffset = pos;")
+        self.print("Token startToken = getToken(pos);")
         #self.print("UNUSED(_start_lineno); // Only used by EXTRA macro")
         #self.print("int _start_col_offset = p->tokens[_mark]->col_offset;")
         #self.print("UNUSED(_start_col_offset); // Only used by EXTRA macro")
@@ -571,15 +572,21 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         #with self.indent():
         #    self.add_return("NULL")
         #self.print("}")
-        self.print("int endOffset = mark();")
+        self.print("Token endToken = getToken(mark());")
         #self.print("UNUSED(_end_lineno); // Only used by EXTRA macro")
         #self.print("int _end_col_offset = _token->end_col_offset;")
         #self.print("UNUSED(_end_col_offset); // Only used by EXTRA macro")
         
-    def emit_action(self, node: Alt, cleanup_code: Optional[str] = None) -> None:
-        node_action = (str(node.action).replace(' ', ''))
-        if node_action.startswith('factory'):
-            self.print(f"result = {node_action};")
+    def emit_action(self, is_loop:bool, node: Alt) -> None:
+        # TODO this is ugly hack. We need to find out why the node.action contains so space that are not written in grammar file
+        self.print(f"// node.action: {node.action}")
+        node_action = (str(node.action).replace(' ', '').replace ('newSST', 'new SST'))
+        # TODO this condition filter c action now. Should be removed after the grammar contains only java actions
+        if node_action.startswith('factory') or node_action.startswith('new') or len(node_action) == 1:
+            if is_loop:
+                self.print(f"result.add({node_action});")
+            else:
+                self.print(f"result = {node_action};")
 
         #self.print("if (_res == NULL && PyErr_Occurred()) {")
         #with self.indent():
@@ -594,9 +601,10 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         #        f'D(fprintf(stderr, "Hit with action [%d-%d]: %s\\n", _mark, p->mark, "{node}"));'
         #    )
     
-    def emit_default_action(self, is_gather: bool, node: Alt) -> None:
+    def emit_default_action(self, is_loop: bool, is_gather: bool, node: Alt) -> None:
+        self.print(f"// self.local_variable_names: {self.local_variable_names}")
         if len(self.local_variable_names) > 1:
-            self.print("// TODO handle default action if thre is more variables")
+            self.print("// TODO handle default action if there is more variables")
         #    if is_gather:
         #        assert len(self.local_variable_names) == 2
         #        self.print(
@@ -616,7 +624,22 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         #        self.print(
         #            f'D(fprintf(stderr, "Hit with default action [%d:%d]: %s\\n", _mark, p->mark, "{node}"));'
         #        )
-            self.print(f"result = {self.local_variable_names[0]};")
+            if is_loop:
+                self.print(f"if ({self.local_variable_names[0]} instanceof Token) {{")
+                with self.indent():
+                    self.print("// TODO")
+                self.print(f"}} else if ({self.local_variable_names[0]} instanceof SSTNode) {{")
+                with self.indent():
+                    self.print(f"children.add((SSTNode){self.local_variable_names[0]});")
+                self.print(f"}} else if ({self.local_variable_names[0]} instanceof SSTNode[]) {{")
+                with self.indent():    
+                    self.print(f"for (SSTNode node: (SSTNode[]){self.local_variable_names[0]}) {{")
+                    with self.indent():
+                        self.print("children.add(node);")
+                    self.print("}")
+                self.print("}")
+            else:
+                self.print(f"result = {self.local_variable_names[0]};")
         pass
     
     def _insert_debug_message(self, message: str , indent: bool = True):
@@ -700,7 +723,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         with self.indent():
             self.print("// loop rule body")
             self.print("int pos = mark();")
-            
+            self.print("List<SSTNode> children = new ArrayList();")
             self._insert_debug_rule_enter(f'"Rule: {node.name}, pos: " + pos + ", level: " + level')
             
             self.visit(rhs, is_loop=True, is_gather=node.is_gather(), rulename=node.name)
@@ -730,7 +753,6 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.print(f"// isLoop: {is_loop}, isGather: {is_gather}, type: {node.type})")
 #        with self.local_variable_context():
 
-        self.rule_vars = {}
         self.rule_return_type = result_type
         
         if is_loop:
@@ -770,36 +792,52 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         
     def handle_alt_normal(self, node: Alt, is_gather: bool, rulename: Optional[str]) -> None:
         self.join_conditions(keyword="if", node=node)
-        
+
         with self.indent():
             # Prepare to emmit the rule action and do so
-            self.print(f"// alt action: {node.action}")
             node_str = str(node).replace('"', '\\"')
             self._insert_debug_rule_leave(f'"{rulename}[" + pos + ", " + mark() +" ](level: " + level + ") {node_str} succeeded!"');
             #if node.action and "EXTRA" in node.action:
+            self.print(f"// alt action: {node.action}")
             if node.action:
                 self._set_up_token_end_metadata_extraction()
             #if self.skip_actions:
             #    self.emit_dummy_action()
             #elif node.action:
             if node.action:
-                self.emit_action(node)
+                self.emit_action(False, node)
             else:
-                self.emit_default_action(is_gather, node)
-                
+                self.emit_default_action(False, is_gather, node)
+
             self.print(f'return ({self.rule_return_type})cache.putResult(pos, {rulename.upper()}_ID, result);')
         self.print("}")
-    
+        self.print("reset(pos);")
+        
     def handle_alt_loop(self, node: Alt, is_gather: bool, rulename: Optional[str]) -> None:
         # Condition of the main body of the alternative
         self.join_conditions(keyword="while", node=node)
-        
         with self.indent():
             self.print('if (DEBUG) {')
             with self.indent():
                     self.print('debugMessageln("Succeeded - adding one result to collection!");');
             self.print("}")
+            
+            self.print(f"// alt action: {node.action}")
+            if node.action:
+                self._set_up_token_end_metadata_extraction()
+            if node.action:
+                self.emit_action(True, node)
+            else:
+                self.emit_default_action(True, is_gather, node)
+                
+            self.print ("pos = mark();")
         self.print("}")
+        self.print("reset(pos);")
+        self.print("if (children.size() > 0) {")
+        with self.indent():
+            self.print(f'return ({self.rule_return_type})cache.putResult(pos, {rulename.upper()}_ID, children.toArray(new SSTNode[children.size()]));')
+        self.print("}")
+            
         # We have parsed successfully one item!
 #        with self.indent():
 #            # Prepare to emit the rule action and do so
@@ -828,34 +866,37 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
 #        self.print("}")
         
     def visit_Alt( self, node: Alt, is_loop: bool, is_gather: bool, rulename: Optional[str]) -> None:
-        self.print(f"// visiting Alt: {node}")
-        # TODO check if we can call invalid rules
-        
-        # collection variables for the alt
-        vars = self.collect_vars(node)
-        self.print(f"//    vars: {vars}")
-        self.print(f"//    rule_vars: {self.rule_vars}")
-        for v, var_type in sorted(item for item in vars.items() if item[0] is not None):
+        self.print("{")
+        with self.indent():
+            self.print(f"// visiting Alt: {node}")
+            # TODO check if we can call invalid rules
+
+            # collection variables for the alt
+            vars = self.collect_vars(node)
+            self.print(f"//    vars: {vars}")
+            for v, var_type in sorted(item for item in vars.items() if item[0] is not None):
+
+
+                if not var_type:
+                    var_type = "Object"
+                else:
+                    var_type = _check_type(self, var_type);
+                if v == "_cut_var":
+                    v += " = 0"  # cut_var must be initialized
+                if not is_loop:
+                    self.print(f"{var_type} {v};")
+                else:
+                    # TODO tmp solution, we need to know how to handle tokens here
+                    self.print(f"Object {v};")
+
+            with self.local_variable_context():
+                if is_loop:
+                    self.handle_alt_loop(node, is_gather, rulename)
+                else:
+                    self.handle_alt_normal(node, is_gather, rulename)
             
-            
-            if not var_type:
-                var_type = "Object"
-            else:
-                var_type = _check_type(self, var_type);
-            if v == "_cut_var":
-                v += " = 0"  # cut_var must be initialized
-            
-            if not v in self.rule_vars:
-                self.print(f"{var_type} {v} = null;")
-                self.rule_vars[v] = var_type
-                
-        with self.local_variable_context():
-            if is_loop:
-                self.handle_alt_loop(node, is_gather, rulename)
-            else:
-                self.handle_alt_normal(node, is_gather, rulename)
-        self.print("reset(pos);")
-                
+
+        self.print("}")        
     
     def collect_vars(self, node: Alt) -> Dict[Optional[str], Optional[str]]:
         types = {}
@@ -877,9 +918,6 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             name = self.dedupe(name)
         return_type = call.return_type if node.type is None else node.type
         
-        if name is not None:
-            while name in self.rule_vars and return_type != self.rule_vars[name]:
-                name = self.dedupe(name)
         node.name = name
         return name, return_type
     
