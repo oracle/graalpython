@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot.Flags.NO_BUILTIN_DESCRIPTORS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
@@ -76,7 +77,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__PREPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
@@ -159,13 +159,12 @@ public enum SpecialMethodSlot {
     Iter(__ITER__),
     Next(__NEXT__),
 
-    New(__NEW__),
-    Init(__INIT__),
-    Prepare(__PREPARE__),
-    SetName(__SET_NAME__),
+    New(__NEW__, NO_BUILTIN_DESCRIPTORS),
+    Init(__INIT__, NO_BUILTIN_DESCRIPTORS),
+    SetName(__SET_NAME__, NO_BUILTIN_DESCRIPTORS),
     InstanceCheck(__INSTANCECHECK__),
     Subclasscheck(__SUBCLASSCHECK__),
-    Call(__CALL__),
+    Call(__CALL__, NO_BUILTIN_DESCRIPTORS),
 
     GetItem(__GETITEM__),
     SetItem(__SETITEM__),
@@ -202,11 +201,38 @@ public enum SpecialMethodSlot {
     Reversed(__REVERSED__),
     Bytes(__BYTES__);
 
+    static class Flags {
+        static final boolean NO_BUILTIN_DESCRIPTORS = false;
+    }
+
     public static final SpecialMethodSlot[] VALUES = values();
     private final String name;
+    /**
+     * Indicates if given slot may or must not store context independent (AST cacheable)
+     * {@link BuiltinMethodDescriptor} objects.
+     *
+     * Values of some slots are always or mostly passed to call node variants that can handle
+     * {@link BuiltinMethodDescriptor}. This does not hold most notably for slots that are passed to
+     * {@link com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode}, like
+     * {@code __new__}. For those we do not allow storing the {@link BuiltinMethodDescriptor} in the
+     * slot, so that lookup using that slot always resolves to context dependent runtime object,
+     * such as {@link PBuiltinFunction}.
+     *
+     * An alternative would be to update the whole calling machinery ({@code InvokeNode},
+     * {@code GetSignature}, ...) to handle {@link BuiltinMethodDescriptor} and extend
+     * {@link BuiltinMethodDescriptor} to contain all the information that is necessary for this
+     * (GR-32148).
+     */
+    private final boolean allowsBuiltinDescriptors;
 
     SpecialMethodSlot(String name) {
         this.name = name;
+        this.allowsBuiltinDescriptors = true;
+    }
+
+    SpecialMethodSlot(String name, boolean allowsBuiltinDescriptors) {
+        this.name = name;
+        this.allowsBuiltinDescriptors = allowsBuiltinDescriptors;
     }
 
     public String getName() {
@@ -227,7 +253,7 @@ public enum SpecialMethodSlot {
         // For builtin classes, we should see these updates only during initialization
         assert !context.isInitialized() || !(klass instanceof PythonBuiltinClass) ||
                         ((PythonBuiltinClass) klass).getType().getSpecialMethodSlots() == null : String.format("%s.%s = %s", klass, getName(), value);
-        klass.specialMethodSlots[ordinal()] = asSlotValue(value, context.getLanguage());
+        klass.specialMethodSlots[ordinal()] = asSlotValue(this, value, context.getLanguage());
         if (klass instanceof PythonClass) {
             ((PythonClass) klass).invalidateSlotsFinalAssumption();
         }
@@ -305,12 +331,12 @@ public enum SpecialMethodSlot {
                     continue;
                 }
                 Object value = slot.getValue(klass);
-                if (value instanceof PBuiltinFunction) {
+                if (value instanceof PBuiltinFunction && slot.allowsBuiltinDescriptors) {
                     BuiltinMethodDescriptor info = BuiltinMethodDescriptor.get((PBuiltinFunction) value);
                     if (info != null) {
                         typeSlots[slot.ordinal()] = info;
                     }
-                } else if (value instanceof BuiltinMethodDescriptor || PythonLanguage.canCache(value)) {
+                } else if ((value instanceof BuiltinMethodDescriptor && slot.allowsBuiltinDescriptors) || PythonLanguage.canCache(value)) {
                     typeSlots[slot.ordinal()] = value;
                 }
             }
@@ -447,7 +473,7 @@ public enum SpecialMethodSlot {
             for (SpecialMethodSlot slot : VALUES) {
                 final Object value = domLib.getOrDefault(source, slot.getName(), PNone.NO_VALUE);
                 if (value != PNone.NO_VALUE) {
-                    slots[slot.ordinal()] = asSlotValue(value, language);
+                    slots[slot.ordinal()] = asSlotValue(slot, value, language);
                 }
             }
         } else {
@@ -456,7 +482,7 @@ public enum SpecialMethodSlot {
             for (SpecialMethodSlot slot : VALUES) {
                 final Object value = hlib.getItem(storage, slot.getName());
                 if (value != null) {
-                    slots[slot.ordinal()] = asSlotValue(value, language);
+                    slots[slot.ordinal()] = asSlotValue(slot, value, language);
                 }
             }
         }
@@ -467,7 +493,7 @@ public enum SpecialMethodSlot {
         for (SpecialMethodSlot slot : VALUES) {
             Object value = readAttNode.execute(base, slot.getName());
             if (value != PNone.NO_VALUE) {
-                slots[slot.ordinal()] = asSlotValue(value, language);
+                slots[slot.ordinal()] = asSlotValue(slot, value, language);
             }
         }
     }
@@ -520,7 +546,7 @@ public enum SpecialMethodSlot {
             // If the newly written value is not NO_VALUE, then should either override the slot with
             // the new value or leave it unchanged if it inherited the value from some other class
             assert currentNewValue != PNone.NO_VALUE;
-            assert asSlotValue(currentNewValue, context.getLanguage()) == currentOldValue || currentNewValue == newValue;
+            assert asSlotValue(slot, currentNewValue, context.getLanguage()) == currentOldValue || currentNewValue == newValue;
         }
         // Else if the newly written value was NO_VALUE, then we either remove the slot or we pull
         // its value from some other class in the MRO
@@ -547,8 +573,8 @@ public enum SpecialMethodSlot {
         }
     }
 
-    private static Object asSlotValue(Object value, PythonLanguage language) {
-        if (value instanceof PBuiltinFunction) {
+    private static Object asSlotValue(SpecialMethodSlot slot, Object value, PythonLanguage language) {
+        if (value instanceof PBuiltinFunction && slot.allowsBuiltinDescriptors) {
             BuiltinMethodDescriptor info = BuiltinMethodDescriptor.get((PBuiltinFunction) value);
             if (info != null) {
                 language.registerBuiltinDescriptorCallTarget(info, ((PBuiltinFunction) value).getCallTarget());
@@ -639,8 +665,6 @@ public enum SpecialMethodSlot {
                 return Delete;
             case __DICT__:
                 return Dict;
-            case __PREPARE__:
-                return Prepare;
             case __GT__:
                 return Gt;
             case __GE__:
