@@ -5,7 +5,10 @@
         <group>
             <file>file:/home/petr/labs/pythonjavapegparser/src/com/oracle/graal/python/parser/Parser.java</file>
             <file>file:/home/petr/labs/pythonjavapegparser/python/pegen/parser_generator.py</file>
+            <file>file:/home/petr/labs/pythonjavapegparser/.gitignore</file>
             <file>file:/home/petr/labs/pythonjavapegparser/python/pegen/grammar.py</file>
+            <file>file:/home/petr/labs/pythonjavapegparser/python/pegjava/Tokens</file>
+            <file>file:/home/petr/labs/pythonjavapegparser/src/com/oracle/graal/python/parser/sst/NumberLiteralSSTNode.java</file>
             <file>file:/home/petr/labs/pythonjavapegparser/src/com/oracle/graal/python/parser/tokenizer/Token.java</file>
             <file>file:/home/petr/labs/pythonjavapegparser/python/pegen/grammar_parser.py</file>
             <file>file:/home/petr/labs/pythonjavapegparser/python/pegjava/python.gram</file>
@@ -18,6 +21,7 @@
             <file>file:/home/petr/labs/pythonjavapegparser/src/com/oracle/graal/python/parser/RuleResultCache.java</file>
             <file>file:/home/petr/labs/pythonjavapegparser/src/toyparser/ToyParser.java</file>
             <file>file:/home/petr/labs/pythonjavapegparser/src/com/oracle/graal/python/parser/NodeFactory.java</file>
+            <file>file:/home/petr/labs/pythonjavapegparser/src/com/oracle/graal/python/parser/NodeFactoryImp.java</file>
         </group>
     </open-files>
 </project-private>
