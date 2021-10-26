@@ -93,6 +93,10 @@ static PyObject * _PyUnicode_FromUCS1(const Py_UCS1 *s, Py_ssize_t size);
 static PyObject * _PyUnicode_FromUCS2(const Py_UCS2 *s, Py_ssize_t size);
 static PyObject * _PyUnicode_FromUCS4(const Py_UCS4 *s, Py_ssize_t size);
 
+static inline void* convert_errors(const char *errors) {
+    return errors != NULL ? polyglot_from_string(errors, SRC_CS) : polyglot_from_string("strict", SRC_CS);
+}
+
 // partially taken from CPython "Objects/unicodeobject.c"
 static Py_ssize_t unicode_aswidechar(PyObject *unicode, wchar_t *w, Py_ssize_t size) {
     Py_ssize_t res;
@@ -302,7 +306,7 @@ void PyUnicode_AppendAndDel(PyObject **pleft, PyObject *right) {
 UPCALL_ID(PyUnicode_FromEncodedObject);
 PyObject * PyUnicode_FromEncodedObject(PyObject *obj, const char *encoding, const char *errors) {
     // TODO buffer treatment
-    return UPCALL_CEXT_O(_jls_PyUnicode_FromEncodedObject, native_to_java(obj), polyglot_from_string(encoding, SRC_CS), polyglot_from_string(errors, SRC_CS));
+    return UPCALL_CEXT_O(_jls_PyUnicode_FromEncodedObject, native_to_java(obj), polyglot_from_string(encoding, SRC_CS), convert_errors(errors));
 }
 
 UPCALL_ID(PyUnicode_InternInPlace);
@@ -340,8 +344,7 @@ const char* PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *psize) {
 
 UPCALL_ID(_PyUnicode_AsUTF8String);
 PyObject* _PyUnicode_AsUTF8String(PyObject *unicode, const char *errors) {
-    void *jerrors = errors != NULL ? polyglot_from_string(errors, SRC_CS) : NULL;
-    return UPCALL_CEXT_O(_jls__PyUnicode_AsUTF8String, native_to_java(unicode), native_to_java(jerrors), NULL);
+    return UPCALL_CEXT_O(_jls__PyUnicode_AsUTF8String, native_to_java(unicode), convert_errors(errors), NULL);
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
@@ -351,9 +354,8 @@ PyObject * PyUnicode_AsUTF8String(PyObject *unicode) {
 
 PyObject * PyUnicode_DecodeUTF32(const char *s, Py_ssize_t size, const char *errors, int *byteorder) {
     PyObject *result;
-    void *jerrors = errors != NULL ? polyglot_from_string(errors, SRC_CS) : NULL;
     int bo = byteorder != NULL ? *byteorder : 0;
-    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Unicode_DecodeUTF32", polyglot_from_i8_array(s, size), size, native_to_java(jerrors), bo, NULL);
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Unicode_DecodeUTF32", polyglot_from_i8_array(s, size), size, convert_errors(errors), bo, NULL);
 }
 
 Py_ssize_t PyUnicode_AsWideChar(PyObject *unicode, wchar_t *w, Py_ssize_t size) {
@@ -372,8 +374,7 @@ Py_ssize_t PyUnicode_AsWideChar(PyObject *unicode, wchar_t *w, Py_ssize_t size) 
 
 UPCALL_ID(_PyTruffle_Unicode_AsLatin1String);
 PyObject* _PyUnicode_AsLatin1String(PyObject *unicode, const char *errors) {
-    void *jerrors = errors != NULL ? polyglot_from_string(errors, SRC_CS) : NULL;
-    return UPCALL_CEXT_O(_jls__PyTruffle_Unicode_AsLatin1String, native_to_java(unicode), native_to_java(jerrors), ERROR_MARKER);
+    return UPCALL_CEXT_O(_jls__PyTruffle_Unicode_AsLatin1String, native_to_java(unicode), convert_errors(errors), ERROR_MARKER);
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
@@ -383,8 +384,7 @@ PyObject* PyUnicode_AsLatin1String(PyObject *unicode) {
 
 UPCALL_ID(_PyTruffle_Unicode_AsASCIIString);
 PyObject* _PyUnicode_AsASCIIString(PyObject *unicode, const char *errors) {
-    void *jerrors = errors != NULL ? polyglot_from_string(errors, SRC_CS) : NULL;
-    return UPCALL_CEXT_O(_jls__PyTruffle_Unicode_AsASCIIString, native_to_java(unicode), native_to_java(jerrors), ERROR_MARKER);
+    return UPCALL_CEXT_O(_jls__PyTruffle_Unicode_AsASCIIString, native_to_java(unicode), convert_errors(errors), ERROR_MARKER);
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
@@ -534,7 +534,7 @@ PyObject * PyUnicode_DecodeUTF8Stateful(const char *s, Py_ssize_t size, const ch
 	// 'PyUnicode_DecodeUTF8Stateful' really expects the bare pointer.
 	PyObject* result = _jls_PyUnicode_DecodeUTF8Stateful( 
                                                 polyglot_from_i8_array(s, size), 
-                                                polyglot_from_string(errors, SRC_CS), 
+                                                convert_errors(errors),
                                                 consumed != NULL ? 1 : 0);
 	if (result != NULL) {
 		if (consumed != NULL) {
@@ -570,13 +570,10 @@ PyObject * PyUnicode_AsUnicodeEscapeString(PyObject *unicode) {
 
 UPCALL_ID(PyUnicode_Decode);
 PyObject * PyUnicode_Decode(const char *s, Py_ssize_t size, const char *encoding, const char *errors) {
-	if (errors == NULL) {
-		errors = "strict";
-	}
     if (encoding == NULL) {
         return PyUnicode_DecodeUTF8Stateful(s, size, errors, NULL);
     }
-	return UPCALL_CEXT_O(_jls_PyUnicode_Decode, s, size, polyglot_from_string(encoding, SRC_CS), polyglot_from_string(errors, SRC_CS));
+	return UPCALL_CEXT_O(_jls_PyUnicode_Decode, s, size, polyglot_from_string(encoding, SRC_CS), convert_errors(errors));
 }
 
 PyObject * PyUnicode_DecodeASCII(const char *s, Py_ssize_t size, const char *errors) {
@@ -590,7 +587,7 @@ Py_ssize_t PyUnicode_Tailmatch(PyObject *str, PyObject *substr, Py_ssize_t start
 
 UPCALL_ID(PyUnicode_AsEncodedString);
 PyObject * PyUnicode_AsEncodedString(PyObject *unicode, const char *encoding, const char *errors) {
-	return UPCALL_CEXT_O(_jls_PyUnicode_AsEncodedString, native_to_java(unicode), polyglot_from_string(encoding, SRC_CS), polyglot_from_string(errors, SRC_CS));
+	return UPCALL_CEXT_O(_jls_PyUnicode_AsEncodedString, native_to_java(unicode), polyglot_from_string(encoding, SRC_CS), convert_errors(errors));
 }
 
 UPCALL_ID(PyUnicode_Replace);
