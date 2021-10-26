@@ -4552,8 +4552,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffleTssGet extends PythonUnaryBuiltinNode {
         @Specialization
         Object tssGet(Object key,
-                        @Cached CastToJavaLongLossyNode cast) {
-            return getContext().getCApiContext().tssGet(cast.execute(key));
+                        @Cached CastToJavaLongLossyNode cast,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            Object value = getContext().getCApiContext().tssGet(cast.execute(key));
+            if (value == null) {
+                return getNativeNullNode.execute();
+            }
+            return value;
         }
     }
 
