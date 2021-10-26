@@ -45,8 +45,6 @@ import com.oracle.truffle.api.object.Shape;
 
 public final class PAccumulate extends PythonBuiltinObject {
 
-    public static final Object MARKER = new Object();
-
     private Object iterable;
     private Object func;
     private Object total;
@@ -77,11 +75,6 @@ public final class PAccumulate extends PythonBuiltinObject {
     }
 
     public void setTotal(Object total) {
-// if(total == null) {
-// System.out.println("+++++++++++++++++++++++++++++++++++++++++++++");
-// new Exception().printStackTrace();
-// }
-// System.out.println("+++ SET TOTAL " + total);
         this.total = total;
     }
 

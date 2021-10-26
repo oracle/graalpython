@@ -151,7 +151,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
             PAccumulate self = factory().createAccumulate(cls);
             self.setIterable(getIter.execute(frame, iterable));
             self.setFunc(func instanceof PNone ? null : func);
-            self.setTotal(PAccumulate.MARKER);
+            self.setTotal(null);
             self.setInitial(initial instanceof PNone ? null : initial);
             return self;
         }

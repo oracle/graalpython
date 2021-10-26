@@ -106,7 +106,7 @@ public final class AccumulateBuiltins extends PythonBuiltins {
                 return self.getTotal();
             }
             Object value = nextNode.execute(frame, self.getIterable(), PNone.NO_VALUE);
-            if (self.getTotal() == PAccumulate.MARKER) {
+            if (self.getTotal() == null) {
                 markerProfile.enter();
                 self.setTotal(value);
                 return value;
@@ -161,7 +161,7 @@ public final class AccumulateBuiltins extends PythonBuiltins {
                 Object func = self.getFunc() != null ? self.getFunc() : PNone.NONE;
                 PTuple tuple = factory().createTuple(new Object[]{self.getIterable(), func});
 
-                Object total = self.getTotal() != PAccumulate.MARKER || self.getTotal() != null ? self.getTotal() : PNone.NONE;
+                Object total = self.getTotal() != null ? self.getTotal() : PNone.NONE;
                 return factory().createTuple(new Object[]{type, tuple, total});
             }
         }
