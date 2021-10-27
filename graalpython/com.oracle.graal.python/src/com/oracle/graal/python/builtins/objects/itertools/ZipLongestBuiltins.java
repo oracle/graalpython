@@ -200,7 +200,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object setState(PZipLongest self, Object state) {
+        static Object setState(PZipLongest self, Object state) {
             self.setFillValue(state);
             return PNone.NONE;
         }

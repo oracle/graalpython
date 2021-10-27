@@ -91,7 +91,7 @@ public final class AccumulateBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object next(VirtualFrame frame, PAccumulate self,
+        static Object next(VirtualFrame frame, PAccumulate self,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached BinaryArithmetic.AddNode addNode,
                         @Cached CallNode callNode,

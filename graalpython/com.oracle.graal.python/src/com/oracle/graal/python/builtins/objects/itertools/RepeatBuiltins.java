@@ -148,7 +148,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getCnt() >= 0")
-        Object reprPos(VirtualFrame frame, PRepeat self,
+        static Object reprPos(VirtualFrame frame, PRepeat self,
                         @Cached GetClassNode getClass,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached PyObjectReprAsObjectNode reprNode,
@@ -165,7 +165,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.getCnt() < 0")
-        Object reprNeg(VirtualFrame frame, PRepeat self,
+        static Object reprNeg(VirtualFrame frame, PRepeat self,
                         @Cached GetClassNode getClass,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached PyObjectReprAsObjectNode reprNode,

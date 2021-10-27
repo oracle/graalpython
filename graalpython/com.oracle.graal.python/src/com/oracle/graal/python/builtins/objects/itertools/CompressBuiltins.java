@@ -85,7 +85,7 @@ public final class CompressBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object next(VirtualFrame frame, PCompress self,
+        static Object next(VirtualFrame frame, PCompress self,
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached PyObjectIsTrueNode isTrue,
                         @Cached LoopConditionProfile loopConditionProfile) {
