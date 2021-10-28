@@ -1239,7 +1239,7 @@ def update_import_cmd(args):
                 cmd = [
                     "ol-cli", "bitbucket", "--user='%s'" % username, "--password='${SSO_PASSWORD}'",
                     "create-pr", "--project=G", "--repo=%s" % reponame,
-                    "--title='[GR-21590] Update Python imports'",
+                    "--title=[GR-21590] Update Python imports",
                     "--from-branch=%s" % current_branch, "--to-branch=master"
                 ]
                 cmds.append(cmd)
