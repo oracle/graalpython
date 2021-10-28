@@ -5,24 +5,24 @@
  */
 package toyparser;
 
-import com.oracle.graal.python.parser.NodeFactory;
+import com.oracle.graal.python.pegparser.NodeFactory;
 import java.util.Arrays;
-import com.oracle.graal.python.parser.Parser;
-import com.oracle.graal.python.parser.ParserTokenizer;
-import com.oracle.graal.python.parser.tokenizer.Token;
+import com.oracle.graal.python.pegparser.Parser;
+import com.oracle.graal.python.pegparser.ParserTokenizer;
+import com.oracle.graal.python.pegparser.tokenizer.Token;
 
 /**
  *
  * @author petr
  */
 public class ToyParser extends Parser {
-    
-    
-    
+
+
+
     public ToyParser(ParserTokenizer tokenizer) {
         super(tokenizer, null);
     }
-    
+
     public Node statement() {
         Node result = null;
         if ((result = assignment()) != null) {
@@ -36,7 +36,7 @@ public class ToyParser extends Parser {
         }
         return null;
     }
-    
+
     public Node assignment() {
         int pos = mark();
         Node target = target();
@@ -52,7 +52,7 @@ public class ToyParser extends Parser {
         reset(pos);
         return null;
     }
-    
+
     public Node expr() {
         Node term;
         int pos = 0;
@@ -78,7 +78,7 @@ public class ToyParser extends Parser {
         }
         return null;
     }
-    
+
     public Node ifStatement() {
         int pos = mark();
         Token token = expect("if");
@@ -97,7 +97,7 @@ public class ToyParser extends Parser {
         reset(pos);
         return null;
     }
-    
+
     public Node term() {
         Node atom;
         if ((atom = atom()) != null) {
@@ -122,7 +122,7 @@ public class ToyParser extends Parser {
         }
         return null;
     }
-    
+
     public Node atom() {
         Token token = expect(Token.Kind.NAME);
         if(token != null && Token.Kind.NAME == token.type) {
@@ -146,7 +146,7 @@ public class ToyParser extends Parser {
         reset(pos);
         return null;
     }
-    
+
     public Node target() {
         Token token = expect (Token.Kind.NAME);
         if (token != null) {
@@ -154,5 +154,5 @@ public class ToyParser extends Parser {
         }
         return null;
     }
-    
+
 }

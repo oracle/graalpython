@@ -7,15 +7,15 @@ package toyparser;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
-import com.oracle.graal.python.parser.ParserTokenizer;
-import com.oracle.graal.python.parser.tokenizer.Token;
+import com.oracle.graal.python.pegparser.ParserTokenizer;
+import com.oracle.graal.python.pegparser.tokenizer.Token;
 
 
 public class ToyParserTest {
-    
+
     public ToyParserTest() {
     }
-    
+
     @Test
     public void testBasic() {
         String code = "f(42)";
@@ -35,7 +35,7 @@ public class ToyParserTest {
         assertNotNull(token);
         assertEquals(")", tokenizer.getText(token));
         int pos2 = tParser.mark();
-        
+
         tParser.reset(pos);
         token = tParser.expect(Token.Kind.LPAR);
         assertNotNull(token);
@@ -46,17 +46,17 @@ public class ToyParserTest {
         token = tParser.expect(Token.Kind.RPAR);
         assertNotNull(token);
         assertEquals(")", tokenizer.getText(token));
-        
+
         tParser.reset(pos);
         token = tParser.expect(Token.Kind.LPAR);
         assertNotNull(token);
         assertEquals("(", tokenizer.getText(token));
-        
+
         tParser.reset(pos2);
 //        assertNotNull(tParser.expect(Token.Kind.ENDMARKER));
     }
-    
-    
+
+
     @Test
     public void testToy() {
         String code = "x - (y +z)";
@@ -68,5 +68,5 @@ public class ToyParserTest {
         assertEquals("name", result.children.get(0).type);
         assertEquals("add", result.children.get(1).type);
     }
-    
+
 }

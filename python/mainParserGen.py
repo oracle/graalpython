@@ -35,7 +35,7 @@ def main():
 
 #    print("non_exact_tokens")
 #    print(non_exact_tok)
-    output_file = path.join(__dir__, "..", "src", "com", "oracle", "graal", "python", "parser", "GenParser.java")
+    output_file = path.join(__dir__, "..", "src", "com", "oracle", "graal", "python", "pegparser", "GenParser.java")
     with open(output_file, "w") as file:
         gen: ParserGenerator = JavaParserGenerator(grammar, all_tokens, exact_tokens, non_exact_tokens, file)
         gen.generate(grammar_file)

@@ -5,8 +5,8 @@
  */
 package com.oracle.graal.python.tokenizer;
 
-import com.oracle.graal.python.parser.tokenizer.Tokenizer;
-import com.oracle.graal.python.parser.tokenizer.Token;
+import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
+import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
