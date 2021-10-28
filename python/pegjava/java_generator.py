@@ -40,14 +40,14 @@ class NodeTypes(Enum):
     KEYWORD = 4
     SOFT_KEYWORD = 5
     CUT_OPERATOR = 6
-    
+
 BASE_NODETYPES = {
     "NAME": NodeTypes.NAME_TOKEN,
     "NUMBER": NodeTypes.NUMBER_TOKEN,
     "STRING": NodeTypes.STRING_TOKEN,
     "SOFT_KEYWORD": NodeTypes.SOFT_KEYWORD,
 }
-    
+
 @dataclass
 class FunctionCall:
     function: str
@@ -66,13 +66,13 @@ class FunctionCall:
             parts.append(f"({', '.join(map(str, self.arguments))})")
         else:
             parts.append("()")
-            
+
         ft_part_start = ""
         ft_part_end = ""
         if self.force_true:
             ft_part_start= "("
             ft_part_end = f" || {self.assigned_variable} == null)"
-            
+
         if self.assigned_variable:
             if self.assigned_variable_type:
                 var_type = _check_type(self, self.assigned_variable_type);
@@ -82,7 +82,7 @@ class FunctionCall:
         if self.comment:
             parts.append(f"  // {self.comment}")
         return "".join(parts)
-   
+
 # TODO this is temporary solution until all types in the grammar will not be java types
 def _check_type(self, ttype: str) -> str:
     if ttype and type(ttype) == str and "Token" != ttype and not "SSTNode" in ttype:
@@ -111,7 +111,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
         self.keyword_cache: Dict[str, int] = {}
         self.soft_keywords: Set[str] = set()
         self.print = printFnc
-    
+
     def keyword_helper(self, keyword: str) -> FunctionCall:
         if keyword not in self.keyword_cache:
             self.keyword_cache[keyword] = self.gen.keyword_type()
@@ -134,7 +134,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
             nodetype=NodeTypes.SOFT_KEYWORD,
             comment=f"soft_keyword='{value}'",
         )
-        
+
     def visit_NameLeaf(self, node: NameLeaf) -> FunctionCall:
         self.print(f"// REMOVE visiting JavaCallMakerVisitor.visit_NameLeaf({node}) - should work")
         name = node.value
@@ -172,11 +172,11 @@ class JavaCallMakerVisitor(GrammarVisitor):
         rule = self.gen.all_rules.get(name.lower())
         if rule  is not None:
             type = "SSTNode[]" if rule.is_loop() or rule.is_gather() else rule.type  # TODO check the type
-        
+
         if type and type.endswith('*'):
             type = type.replace("*", "[]")
-        
-        
+
+
         return FunctionCall(
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
@@ -184,7 +184,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
             return_type=_check_type(self, type),
             comment=f"{node}",
         )
-            
+
     def visit_StringLeaf(self, node: StringLeaf) -> FunctionCall:
         self.print(f"// REMOVE visiting JavaCallMakerVisitor.visit_StringLeaf({node})")
         val = ast.literal_eval(node.value)
@@ -204,10 +204,10 @@ class JavaCallMakerVisitor(GrammarVisitor):
                 return_type="Token",
                 comment=f"token='{val}'",
             )
-    
+
     def visit_Rhs(self, node: Rhs) -> FunctionCall:
         self.print(f"// REMOVE visiting JavaCallMakerVisitor.visit_Rhs({node})")
-        
+
         if node in self.cache:
             return self.cache[node]
         # TODO can we inline generated calls?
@@ -219,7 +219,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
             comment=f"{node}",
         )
         return self.cache[node]
-    
+
     def visit_NamedItem(self, node: NamedItem) -> FunctionCall:
         self.print(f"// REMOVE visiting JavaCallMakerVisitor.visit_NamedItem({node})")
         call = self.generate_call(node.item)
@@ -233,7 +233,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
         if node.type:
             call.assigned_variable_type = node.type
         return call
-    
+
     def lookahead_call_helper(self, node: Lookahead, positive: bool) -> FunctionCall:
         call = self.generate_call(node.node)
         self.print(f"// lookahead_call_helper call: {call}")
@@ -270,17 +270,17 @@ class JavaCallMakerVisitor(GrammarVisitor):
                 arguments=[str(positive).lower(), *call.arguments],
                 return_type="boolean",
             )
-            
+
     def visit_PositiveLookahead(self, node: PositiveLookahead) -> FunctionCall:
         self.print(f"// TODO visiting JavaCallMakerVisitor.visit_PositiveLookahead({node})")
-        
+
     def visit_NegativeLookahead(self, node: NegativeLookahead) -> FunctionCall:
         self.print(f"// TODO visiting JavaCallMakerVisitor.visit_NegativeLookahead({node})")
         return self.lookahead_call_helper(node, False)
-            
+
     def visit_Forced(self, node: Forced) -> FunctionCall:
         self.print(f"// TODO visiting JavaCallMakerVisitor.visit_Forced({node})")
-    
+
     def visit_Opt(self, node: Opt) -> FunctionCall:
         self.print(f"// REMOVE visiting JavaCallMakerVisitor.visit_Opt({node})")
         call = self.generate_call(node.node)
@@ -294,7 +294,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
             force_true=True,
             comment=f"{node}",
         )
-        
+
     def visit_Repeat0(self, node: Repeat0) -> FunctionCall:
         self.print(f"// TODO visiting JavaCallMakerVisitor.visit_Repeat0({node})")
         if node in self.cache:
@@ -308,7 +308,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
             comment=f"{node}",
         )
         return self.cache[node]
-        
+
     def visit_Repeat1(self, node: Repeat1) -> FunctionCall:
         self.print(f"// TODO visiting JavaCallMakerVisitor.visit_Repeat1({node})")
         if node in self.cache:
@@ -322,7 +322,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
             comment=f"{node}",
         )
         return self.cache[node]
-        
+
     def visit_Gather(self, node: Gather) -> FunctionCall:
         self.print(f"// REMOVE visiting JavaCallMakerVisitor.visit_Gather({node})")
         if node in self.cache:
@@ -336,17 +336,17 @@ class JavaCallMakerVisitor(GrammarVisitor):
             comment=f"{node}",
         )
         return self.cache[node]
-        
+
     def visit_Group(self, node: Group) -> FunctionCall:
         self.print(f"// TODO visiting JavaCallMakerVisitor.visit_Group({node})")
         return self.generate_call(node.rhs)
-        
+
     def visit_Cut(self, node: Cut) -> FunctionCall:
         self.print(f"// TODO visiting JavaCallMakerVisitor.visit_Cut({node})")
-        
+
     def generate_call(self, node: Any) -> FunctionCall:
         return super().visit(node)
-        
+
 class JavaParserGenerator(ParserGenerator, GrammarVisitor):
     def __init__(
         self,
@@ -359,8 +359,8 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         super().__init__(grammar, tokens, file)
         self.callmakervisitor = JavaCallMakerVisitor(self, exact_tokens, non_exact_tokens, self.print)
         self.lookahead_functions: Dict[str, FunctionCall] = {}
-        
-    
+
+
     def _generate_rule_ids(self):
         with self.indent():
             self.print("// rule ids ")
@@ -370,13 +370,13 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 else:
                     self.print(f'private static final int {rule.name.upper()}_ID = {id};')
         self.print()
-        
+
     def _generate_keywords(self):
         with self.indent():
             self.print("// keywords constants")
             for key in self.callmakervisitor.keyword_cache.keys():
                 self.print(f'private static final String KEYWORD_{key.upper()} = "{key}";')
-             
+
     # generating helper methods
     def _generate_methods(self):
         with self.indent():
@@ -388,21 +388,21 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         reset(pos);
         return (token != null) == match;
     }
-    
+
     private boolean lookahead(boolean match, String text) {
         int pos = mark();
         Token token = expect(text);
         reset(pos);
         return (token != null) == match;
     }
-    
+
     private boolean lookaheadSoftKeyword(boolean match) {
         int pos = mark();
         Token token = softKeywordToken();
         reset(pos);
         return (token != null) == match;
     }
-    
+
     private Token softKeywordToken() {
         Token t = expect(Token.Kind.NAME);
         if (t != null) {
@@ -414,7 +414,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         return null;
     }
     ''')
-    
+
     #debug message
     def _generate_debug_methods(self):
         with self.indent():
@@ -424,11 +424,11 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             sb.append("  ");
         }
     }
-    
+
     void debugMessage(String text) {
         debugMessage(text, true);
     }
-    
+
     void debugMessage(String text, boolean indent) {
         StringBuffer sb = new StringBuffer();
         if(indent) {
@@ -441,7 +441,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
     void debugMessageln(String text) {
         debugMessageln(text, true);
     }
-    
+
     void debugMessageln(String text, boolean indent) {
         StringBuffer sb = new StringBuffer();
         if (indent) {
@@ -450,7 +450,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         sb.append(text);
         System.out.println(sb.toString());
     }''')
-    
+
     def _generate_lookahead_methods(self):
         with self.indent():
             self.print()
@@ -477,11 +477,11 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                     self.print(f"return (result != null) == match;")
                 self.print("}")
                 self.print()
-    
+
 #    def put(self, *args, **kwargs):
 #        print(end = self.indentation, file = self.file)
 #        print(*args, **kwargs,  file = self.file)
-            
+
     def generate(self, filename: str) -> None:
         self.print(f"// @generated by java_generator.py from {filename}")
         license = self.grammar.metas.get("license")
@@ -495,13 +495,13 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print(imports)
         className = os.path.splitext(os.path.basename(self.file.name))[0]
         self.print("public class %s extends Parser {" % className)
-        
+
         # parser method generation
         self.collect_todo();
-        
+
         self._generate_rule_ids()
         self._generate_keywords()
-        
+
         with self.indent():
             self.print()
             self.print("// parser fields")
@@ -509,12 +509,12 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print("private int level = 0;")
             self.print("private final RuleResultCache<Object> cache;")
             self.print("private final Set<String> softKeywords;")
-            
-        
+
+
         fields = self.grammar.metas.get("parser_fields")
         if fields:
             self.print(fields)
-        
+
         # TODO do we need the constructor set in grammar?
         #constructor = self.grammar.metas.get("parser_constructor")
         #if constructor:
@@ -527,34 +527,34 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.print("cache = new RuleResultCache(this);")
                 self.print('softKeywords = new HashSet<>(Arrays.asList("_", "case", "match"));')
             self.print("}" )
-                
-        
+
+
         with self.indent():
             while self.todo:
                 for rulename, rule in list(self.todo.items()):
                     del self.todo[rulename]
                     self.print()
                     self.visit(rule)
-        
+
         self._generate_lookahead_methods()
         self._generate_methods()
         self._generate_debug_methods()
         self.print("}")
-    
+
     def _insert_debug_rule_enter (self, message):
         self.print("if (DEBUG) {")
         with self.indent():
             self.print(f'debugMessageln({message});')
             self.print("this.level++;")
         self.print("}")
-    
+
     def _insert_debug_rule_leave (self, message):
         self.print("if (DEBUG) {")
         with self.indent():
             self.print("this.level--;")
             self.print(f'debugMessageln({message});')
         self.print("}")
-        
+
     def _set_up_token_start_metadata_extraction(self) -> None:
         #self.print("if (p->mark == p->fill && _PyPegen_fill_token(p) < 0) {")
         #with self.indent():
@@ -576,7 +576,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         #self.print("UNUSED(_end_lineno); // Only used by EXTRA macro")
         #self.print("int _end_col_offset = _token->end_col_offset;")
         #self.print("UNUSED(_end_col_offset); // Only used by EXTRA macro")
-        
+
     def emit_action(self, is_loop:bool, node: Alt) -> None:
         # TODO this is ugly hack. We need to find out why the node.action contains so space that are not written in grammar file
         self.print(f"// node.action: {node.action}")
@@ -600,7 +600,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         #    self.print(
         #        f'D(fprintf(stderr, "Hit with action [%d-%d]: %s\\n", _mark, p->mark, "{node}"));'
         #    )
-    
+
     def emit_default_action(self, is_loop: bool, is_gather: bool, node: Alt) -> None:
         self.print(f"// self.local_variable_names: {self.local_variable_names}")
         if len(self.local_variable_names) > 1:
@@ -632,7 +632,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 with self.indent():
                     self.print(f"children.add((SSTNode){self.local_variable_names[0]});")
                 self.print(f"}} else if ({self.local_variable_names[0]} instanceof SSTNode[]) {{")
-                with self.indent():    
+                with self.indent():
                     self.print(f"for (SSTNode node: (SSTNode[]){self.local_variable_names[0]}) {{")
                     with self.indent():
                         self.print("children.add(node);")
@@ -641,27 +641,27 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             else:
                 self.print(f"result = {self.local_variable_names[0]};")
         pass
-    
+
     def _insert_debug_message(self, message: str , indent: bool = True):
         self.print("if (DEBUG) {")
         with self.indent():
             self.print(f'debugMessageln("{message}", {str(indent).lower()});')
         self.print("}")
-        
+
     def _handle_cache_result(self, rule):
-        self.print(f'if (cache.hasResult(pos, {rule.name.upper()}_ID)) {{')    
+        self.print(f'if (cache.hasResult(pos, {rule.name.upper()}_ID)) {{')
         with self.indent():
             self._insert_debug_rule_leave('"Taken from cache, level: " + level')
             self.print(f'return ({self.rule_return_type})cache.getResult(pos, {rule.name.upper()}_ID);')
         self.print("}")
-        
+
     def _handle_left_recursion(self, rule, result_type):
         with self.indent():
             self.print("// left recursion--")
             self.print("int pos = mark();")
-            
+
             self._insert_debug_rule_enter(f'"Left Recursion Rule: {rule.name}, pos: " + pos + ", level: " + level')
-            
+
             self._handle_cache_result(rule)
             self.print("int lastPos = pos;")
             self.print("int endPos;")
@@ -681,21 +681,21 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.print(f"cache.putResult(pos, {rule.name.upper()}_ID, result);")
             self.print("}")
             self.print("reset(lastPos);");
-            
+
             self._insert_debug_rule_leave('"Result: " + lastResult + ", level: " + level')
-            
+
             self.print("return lastResult;");
         self.print("}")
-            
+
         self.print()
         self.print("// left-rersive rule body")
         self.print(f"public SSTNode {rule.name}_rule_body() {{")
-        
+
     def _handle_default_rule_body(self, node: Rule, rhs: Rhs, result_type: str) -> None:
         isRecursive = node.left_recursive and node.leader
         if isRecursive:
             self._handle_left_recursion(node, result_type)
-        
+
         with self.indent():
             self.print("// default rule body")
             self.print("int pos = mark();")
@@ -703,71 +703,71 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             #self.print(f"{result_type} result = null;")
             self.print("Object result = null;")
             self._insert_debug_rule_enter(f'"Rule: {node.name}, pos: " + pos+ ", level: " + level')
-            
+
             if not isRecursive:
                 self._handle_cache_result(node)
-            
+
             #if any(alt.action and "EXTRA" in alt.action for alt in rhs.alts):
             if any(alt.action for alt in rhs.alts):
                 self._set_up_token_start_metadata_extraction()
-                
+
             self.visit(rhs, is_loop=False, is_gather=node.is_gather(), rulename = node.name)
         #    for alts in node.rhs:
                 #self.print(f"// here should be generated code for {alt}")
         #        self._generate_alts(alts, node, rule_vars)
-            
+
             self._insert_debug_rule_leave('"Result: null, level: " + level')
             self.print(f'return ({self.rule_return_type})cache.putResult(pos, {node.name.upper()}_ID, null);')
-            
+
     def _handle_loop_rule_body(self, node: Rule, rhs: Rhs) -> None:
         with self.indent():
             self.print("// loop rule body")
             self.print("int pos = mark();")
             self.print("List<SSTNode> children = new ArrayList();")
             self._insert_debug_rule_enter(f'"Rule: {node.name}, pos: " + pos + ", level: " + level')
-            
+
             self.visit(rhs, is_loop=True, is_gather=node.is_gather(), rulename=node.name)
-            
+
             self._insert_debug_rule_leave('"Result: null, level: " + level')
             self.print(f'return ({self.rule_return_type})cache.putResult(pos, {node.name.upper()}_ID, null);')
-        
+
     def visit_Rule(self, node: Rule) -> None:
         is_loop = node.is_loop()
         is_gather = node.is_gather()
         rhs = node.flatten()
-        
+
         if node.left_recursive:
             self.print("// Left-recursive")
-            
+
         for line in str(node).splitlines():
             self.print(f"// {line}")
-        
+
         if is_loop or is_gather:
             result_type = "SSTNode[]"
         elif node.type:
             result_type = _check_type(self, node.type)
         else:
             result_type = "Object"
-        
+
         self.print(f"public {result_type} {node.name}_rule() {{")
         self.print(f"// isLoop: {is_loop}, isGather: {is_gather}, type: {node.type})")
 #        with self.local_variable_context():
 
         self.rule_return_type = result_type
-        
+
         if is_loop:
             self._handle_loop_rule_body(node, rhs)
         else:
             self._handle_default_rule_body(node, rhs, result_type)
         self.print("}")
-        
+
     def visit_Rhs(self, node: Rhs, is_loop: bool, is_gather: bool, rulename: Optional[str]) -> None:
         if is_loop:
             assert len(node.alts) == 1
         for alt in node.alts:
             self.print(f"// the result should be constructed through action: {alt.action}")
             self.visit(alt, is_loop=is_loop, is_gather=is_gather, rulename=rulename)
-            
+
     def visit_NamedItem(self, node: NamedItem) -> None:
         self.print(f"// TODO visiting JavaParserGeneratorNamedItem: {node}")
         call = self.callmakervisitor.generate_call(node)
@@ -777,7 +777,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         if hasattr(call, "assigned_variable") and call.assigned_variable:    # TODO remove check for the attr. Should not be needed.
             call.assigned_variable = self.dedupe(call.assigned_variable)
         self.print(call)
-    
+
     def join_conditions(self, keyword: str, node: Any) -> None:
         self.print(f"{keyword} (")
         with self.indent():
@@ -789,7 +789,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                     self.print("&&")
                 self.visit(item)
         self.print(") {")
-        
+
     def handle_alt_normal(self, node: Alt, is_gather: bool, rulename: Optional[str]) -> None:
         self.join_conditions(keyword="if", node=node)
 
@@ -812,7 +812,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print(f'return ({self.rule_return_type})cache.putResult(pos, {rulename.upper()}_ID, result);')
         self.print("}")
         self.print("reset(pos);")
-        
+
     def handle_alt_loop(self, node: Alt, is_gather: bool, rulename: Optional[str]) -> None:
         # Condition of the main body of the alternative
         self.join_conditions(keyword="while", node=node)
@@ -821,7 +821,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             with self.indent():
                     self.print('debugMessageln("Succeeded - adding one result to collection!");');
             self.print("}")
-            
+
             self.print(f"// alt action: {node.action}")
             if node.action:
                 self._set_up_token_end_metadata_extraction()
@@ -829,7 +829,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.emit_action(True, node)
             else:
                 self.emit_default_action(True, is_gather, node)
-                
+
             self.print ("pos = mark();")
         self.print("}")
         self.print("reset(pos);")
@@ -837,7 +837,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         with self.indent():
             self.print(f'return ({self.rule_return_type})cache.putResult(pos, {rulename.upper()}_ID, children.toArray(new SSTNode[children.size()]));')
         self.print("}")
-            
+
         # We have parsed successfully one item!
 #        with self.indent():
 #            # Prepare to emit the rule action and do so
@@ -864,7 +864,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
 #            self.print("_children[_n++] = _res;")
 #            self.print("_mark = p->mark;")
 #        self.print("}")
-        
+
     def visit_Alt( self, node: Alt, is_loop: bool, is_gather: bool, rulename: Optional[str]) -> None:
         self.print("{")
         with self.indent():
@@ -894,10 +894,10 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                     self.handle_alt_loop(node, is_gather, rulename)
                 else:
                     self.handle_alt_normal(node, is_gather, rulename)
-            
 
-        self.print("}")        
-    
+
+        self.print("}")
+
     def collect_vars(self, node: Alt) -> Dict[Optional[str], Optional[str]]:
         types = {}
         with self.local_variable_context():
@@ -906,18 +906,17 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.print(f"// collecting vars: {type} {name}")
                 types[name] = type
         return types
-    
+
     def add_var(self, node: NamedItem) -> Tuple[Optional[str], Optional[str]]:
         call = self.callmakervisitor.generate_call(node.item)
         self.print(f"    // generated call: {call}")
         if not call:
             return None, None
-        
+
         name = node.name if node.name else call.assigned_variable
         if name is not None:
             name = self.dedupe(name)
         return_type = call.return_type if node.type is None else node.type
-        
+
         node.name = name
         return name, return_type
-    
