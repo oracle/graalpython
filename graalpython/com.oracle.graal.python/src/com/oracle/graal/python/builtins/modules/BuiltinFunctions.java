@@ -150,6 +150,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -303,8 +304,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         /**
          * Specializes on primitive storage types based on SequenceStorage.
          */
-        @GenerateNodeFactory
-        public abstract static class AllOrAnySequenceStorageNode extends PythonUnaryBuiltinNode {
+        public abstract static class AllOrAnySequenceStorageNode extends PNodeWithContext {
             @Child private static PyObjectIsTrueNode isTrueNode = PyObjectIsTrueNode.create();
             @Child private static SequenceStorageNodes.LenNode lenNode = SequenceStorageNodes.LenNode.create();
 
