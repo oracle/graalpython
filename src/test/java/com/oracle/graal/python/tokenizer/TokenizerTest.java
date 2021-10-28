@@ -7,14 +7,14 @@ package com.oracle.graal.python.tokenizer;
 
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.CharBuffer;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -362,8 +362,7 @@ public class TokenizerTest {
     }
 
     private void checkTokensFromtestDataFile() throws Exception {
-        File testFile = getTestFile();
-        String testText = readFile(testFile);
+        String testText = getTestFile();
         String[] testTextLines = testText.split("\n");
 
         ArrayList<String> testLines = new ArrayList<>();
@@ -373,8 +372,7 @@ public class TokenizerTest {
             }
         }
 
-        File goldenFile = getGoldenFile();
-        String goldenText = readFile(goldenFile);
+        String goldenText = getGoldenFile();
         String[] goldenTextLines = goldenText.split("\n");
         HashMap<String, List<String>> goldenTokens = new HashMap();
 
@@ -419,40 +417,14 @@ public class TokenizerTest {
         }
     }
 
-    public static String readFile(File f) throws IOException {
-        FileReader r = new FileReader(f);
-        int fileLen = (int) f.length();
-        CharBuffer cb = CharBuffer.allocate(fileLen);
-        r.read(cb);
-        cb.rewind();
-        return cb.toString();
+    private String getGoldenFile() {
+        InputStream fis = getClass().getClassLoader().getResourceAsStream("tokenizer/goldenFiles/" + name.getMethodName() + ".token");
+        return new BufferedReader(new InputStreamReader(fis)).lines().collect(Collectors.joining("\n"));
     }
 
-    public File getGoldenDataDir() {
-        String dataDirPath = "/home/petr/NetBeansProjects/Tokenizer/testData/tokenizer/goldenFiles";
-        File dataDir = new File(dataDirPath);
-        assertTrue("The folder with golden files, was not found.", dataDir.exists());
-        return dataDir;
-    }
-
-    public File getGoldenFile() {
-        File goldenDir = getGoldenDataDir();
-        File goldenFile = new File(goldenDir, name.getMethodName() + ".token");
-        return goldenFile;
-    }
-
-    public File getTestFileDir() {
-        String dataDirPath = "/home/petr/NetBeansProjects/Tokenizer/testData/tokenizer/testFiles";
-        File dataDir = new File(dataDirPath);
-        assertTrue("The folder with test files, was not found.", dataDir.exists());
-        return dataDir;
-    }
-
-    public File getTestFile() {
-        File testFileDir = getTestFileDir();
-        File testFile = new File(testFileDir, name.getMethodName() + ".data");
-        assertTrue("The test file, was not found.", testFile.exists());
-        return testFile;
+    private String getTestFile() {
+        InputStream fis = getClass().getClassLoader().getResourceAsStream("tokenizer/testFiles/" + name.getMethodName() + ".data");
+        return new BufferedReader(new InputStreamReader(fis)).lines().collect(Collectors.joining("\n"));
     }
 
 }
