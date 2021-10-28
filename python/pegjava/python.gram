@@ -1,7 +1,7 @@
 # PEG grammar for Java
 
 #changes from c gramammar:
-#   added java specific meta data @package, @parser_fields, 
+#   added java specific meta data @package, @parser_fields,
 #   default rule is renamed to default_param
 
 @license '''
@@ -99,10 +99,10 @@ statement_newline[SSTNode*]:  # originally return type asdl_stmt_seq*
     | NEWLINE { (asdl_stmt_seq*)_PyPegen_singleton_seq(p, CHECK(stmt_ty, _PyAST_Pass(EXTRA))) }
     | ENDMARKER { _PyPegen_interactive_exit(p) }
 simple_stmts[SSTNode*]: # originally return type asdl_stmt_seq*
-    | a=simple_stmt !';' NEWLINE { 
+    | a=simple_stmt !';' NEWLINE {
             new SSTNode[]{a};
             // (asdl_stmt_seq*)_PyPegen_singleton_seq(p, a)  # Not needed, there for speedup
-        } 
+        }
     | a[SSTNode*]=';'.simple_stmt+ [';'] NEWLINE { a }
 # NOTE: assignment MUST precede expression, else parsing a simple assignment
 # will throw a SyntaxError.
@@ -139,13 +139,13 @@ assignment[SSTNode]:
                         b,
                         a.startOffset, b.getEndOffset()),
                     (SSTNode)c, startToken.startOffset, endToken.endOffset);
-            
+
         //CHECK_VERSION(
         //    stmt_ty,
         //    6,
         //    "Variable annotation syntax is",
         //    _PyAST_AnnAssign(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), b, c, 1, EXTRA)
-        // ) 
+        // )
         }
     | a=('(' b=single_target ')' { b }
          | single_subscript_attribute_target) ':' b=expression c=['=' d=annotated_rhs { d }] {
@@ -953,7 +953,3 @@ invalid_kvpair:
         RAISE_ERROR_KNOWN_LOCATION(p, PyExc_SyntaxError, a->lineno, a->end_col_offset - 1, "':' expected after dictionary key") }
     | expression ':' a='*' bitwise_or { RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "cannot use a starred expression in a dictionary value") }
     | expression a=':' {RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "expression expected after dictionary key and ':'") }
-
-
-
-
