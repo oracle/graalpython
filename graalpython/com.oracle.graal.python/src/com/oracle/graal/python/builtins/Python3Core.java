@@ -304,7 +304,6 @@ public final class Python3Core implements ParserErrorCallback {
                         "_weakref",
                         "itertools",
                         "faulthandler",
-                        "base_exception",
                         PythonCextBuiltins.PYTHON_CEXT,
                         "bytes",
                         "bytearray",

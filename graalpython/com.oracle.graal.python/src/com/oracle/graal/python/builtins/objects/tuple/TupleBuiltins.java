@@ -194,7 +194,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         public static String toString(VirtualFrame frame, Object item, PyObjectReprAsJavaStringNode reprNode) {
             if (item != null) {

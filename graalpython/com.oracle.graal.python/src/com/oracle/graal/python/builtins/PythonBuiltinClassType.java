@@ -511,8 +511,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
         SpecialMethodSlot[] reprAndNew = new SpecialMethodSlot[]{SpecialMethodSlot.Repr, SpecialMethodSlot.New};
 
         Boolean.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.And};
-        PBaseException.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str, SpecialMethodSlot.Repr};
         PythonModule.redefinedSlots = Super.redefinedSlots = repr;
+        SyntaxError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
+        UnicodeEncodeError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
+        UnicodeDecodeError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
+        UnicodeTranslateError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
+        OSError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
 
         // These slots actually contain context independent values, but they are initialized in
         // StructSequence to artificial PBuiltinFunctions with artificial builtin node factories,
