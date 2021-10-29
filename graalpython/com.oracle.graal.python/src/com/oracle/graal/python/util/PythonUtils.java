@@ -612,13 +612,13 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary
-    public static void createMethod(PythonLanguage language, Object klass, Class<?> nodeClass, Object type, int numDefaults, Supplier<PythonBuiltinBaseNode> nodeSupplier,
+    public static PBuiltinFunction createMethod(PythonLanguage language, Object klass, Class<?> nodeClass, Object type, int numDefaults, Supplier<PythonBuiltinBaseNode> nodeSupplier,
                     Object... callTargetCacheKeys) {
-        createMethod(PythonObjectFactory.getUncached(), language, klass, nodeClass, type, numDefaults, nodeSupplier, callTargetCacheKeys);
+        return createMethod(PythonObjectFactory.getUncached(), language, klass, nodeClass, type, numDefaults, nodeSupplier, callTargetCacheKeys);
     }
 
     @TruffleBoundary
-    public static void createMethod(PythonObjectFactory factory, PythonLanguage language, Object klass, Class<?> nodeClass, Object type, int numDefaults,
+    public static PBuiltinFunction createMethod(PythonObjectFactory factory, PythonLanguage language, Object klass, Class<?> nodeClass, Object type, int numDefaults,
                     Supplier<PythonBuiltinBaseNode> nodeSupplier,
                     Object... callTargetCacheKeys) {
         Builtin builtin = nodeClass.getAnnotation(Builtin.class);
@@ -628,7 +628,10 @@ public final class PythonUtils {
         }, nodeClass, createCalltargetKeys(callTargetCacheKeys, nodeClass));
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
         PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), type, numDefaults, flags, callTarget);
-        WriteAttributeToObjectNode.getUncached(true).execute(klass, builtin.name(), function);
+        if (klass != null) {
+            WriteAttributeToObjectNode.getUncached(true).execute(klass, builtin.name(), function);
+        }
+        return function;
     }
 
     @TruffleBoundary

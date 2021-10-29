@@ -41,18 +41,7 @@ import _imp
 import sys
 import _thread
 
-capi = None
-_capi_hooks = []
-
 __builtins_module_dict = None
-
-def register_capi_hook(hook):
-    assert callable(hook)
-    if capi:
-        hook()
-    else:
-        _capi_hooks.append(hook)
-
 
 def may_raise(error_result=native_null):
     if isinstance(error_result, type(may_raise)):
@@ -1140,21 +1129,6 @@ def PyTruffle_GetBuiltin(name):
 def check_argtype(idx, obj, typ):
     if not isinstance(obj, typ):
         raise TypeError("argument %d must be '%s', not '%s'" % (idx, str(typ), str(type(obj)).__name__))
-
-
-def initialize_capi(capi_library):
-    """This method is called from a C API constructor function"""
-    global capi
-    capi = capi_library
-
-
-# run C API initialize hooks
-def run_capi_loaded_hooks(capi_library):
-    initialize_datetime_capi(capi_library)
-    local_hooks = _capi_hooks.copy()
-    _capi_hooks.clear()
-    for hook in local_hooks:
-        hook()
 
 
 def initialize_datetime_capi(capi_library):

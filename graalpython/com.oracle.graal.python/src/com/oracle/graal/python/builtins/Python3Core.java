@@ -315,7 +315,6 @@ public abstract class Python3Core extends ParserErrorCallback {
                         "_sysconfig",
                         "termios",
                         "zipimport",
-                        "mmap",
                         "java",
                         "_contextvars",
                         "pip_hook",

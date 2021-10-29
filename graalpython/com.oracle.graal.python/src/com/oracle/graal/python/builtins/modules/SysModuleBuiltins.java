@@ -544,7 +544,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @TruffleBoundary
     public void initStd(Python3Core core) {
         TextIOWrapperInitNode textIOWrapperInitNode = TextIOWrapperInitNodeGen.getUncached();
-        PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        PythonObjectFactory factory = core.factory();
 
         // wrap std in/out/err
         GraalPythonModuleBuiltins gp = (GraalPythonModuleBuiltins) core.lookupBuiltinModule("__graalpython__").getBuiltins();

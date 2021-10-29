@@ -61,7 +61,6 @@ import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
@@ -88,9 +87,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
@@ -126,7 +123,6 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 
 public final class CApiContext extends CExtContext {
-    protected static final String INITIALIZE_CAPI = "initialize_capi";
     protected static final String RUN_CAPI_LOADED_HOOKS = "run_capi_loaded_hooks";
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CApiContext.class);
 
@@ -957,15 +953,8 @@ public final class CApiContext extends CExtContext {
                 context.getLanguage().capiLibraryCallTarget = capiLibraryCallTarget;
                 capiLibrary = capiLibraryCallTarget.call();
 
-                // call into Python to initialize python_cext module globals
-                ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
-                PythonModule builtinModule = context.lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
-
-                CallUnaryMethodNode callNode = CallUnaryMethodNode.getUncached();
-                callNode.executeObject(null, readNode.execute(builtinModule, INITIALIZE_CAPI), capiLibrary);
                 CApiContext cApiContext = new CApiContext(context, capiLibrary);
                 context.setCapiWasLoaded(cApiContext);
-                callNode.executeObject(null, readNode.execute(builtinModule, RUN_CAPI_LOADED_HOOKS), capiLibrary);
                 return cApiContext;
             } catch (PException e) {
                 /*
