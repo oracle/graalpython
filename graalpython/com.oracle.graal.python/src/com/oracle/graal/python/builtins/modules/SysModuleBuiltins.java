@@ -60,10 +60,11 @@ import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import org.graalvm.collections.EconomicSet;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -833,6 +834,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         static final String ATTR_TEXT = "text";
         static final String VALUE_STRING = "<string>";
         static final String VALUE_UNKNOWN = "<unknown>";
+        static final String NL = "\n";
 
         @Child private ReadAttributeFromObjectNode readAttributeFromObjectNode;
         @Child private PyLongAsLongAndOverflowNode pyLongAsLongAndOverflowNode;
@@ -999,9 +1001,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return readAttributeFromObjectNode.execute(object, attribute);
         }
 
-        void printTraceBack(VirtualFrame frame, Object out, PTraceback tb) {
+        void printTraceBack(VirtualFrame frame, PythonModule sys, Object out, PTraceback tb) {
             long limit = TRACEBACK_LIMIT;
-            final PythonModule sys = getContext().getCore().lookupBuiltinModule("sys");
             final Object limitv = readAttr(sys, ATTR_TB_LIMIT);
             if (checkLong(limitv)) {
                 limit = asLongAndOverflow(frame, limitv, MAXSIZE);
@@ -1027,7 +1028,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             }
 
             final StringBuilder sb = PythonUtils.newStringBuilder("  File \"");
-            PythonUtils.append(sb, fileName, "\", line ", lineNo, ", in ", name, "\n");
+            PythonUtils.append(sb, fileName, "\", line ", lineNo, ", in ", name, NL);
             print(frame, out, PythonUtils.sbToString(sb));
             // ignore errors since we can't report them, can we?
             displaySourceLine(frame, out, fileName, lineNo, 4);
@@ -1059,7 +1060,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             if (line != null) {
                 print(frame, out, getIndent(indent));
                 print(frame, out, PythonUtils.trimLeft(line));
-                print(frame, out, "\n");
+                print(frame, out, NL);
             }
         }
 
@@ -1192,7 +1193,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             print(frame, out, "    ");
             print(frame, out, text);
             if (text.charAt(0) == '\0' || text.charAt(text.length() - 1) != '\n') {
-                print(frame, out, "\n");
+                print(frame, out, NL);
             }
             if (offset == -1) {
                 return;
@@ -1209,7 +1210,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return (i > 0) ? PythonUtils.substring(name, i + 1) : name;
         }
 
-        void printException(VirtualFrame frame, Object out, Object excValue) {
+        void printException(VirtualFrame frame, PythonModule sys, Object out, Object excValue) {
             Object value = excValue;
             final Object type = getClass(value);
             if (!PGuards.isPBaseException(value)) {
@@ -1222,7 +1223,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             final PBaseException exc = (PBaseException) value;
             final PTraceback tb = getExceptionTraceback(exc);
             if (tb != null) {
-                printTraceBack(frame, out, tb);
+                printTraceBack(frame, sys, out, tb);
             }
 
             if (hasAttr(frame, value, ATTR_PRINT_FILE_AND_LINE)) {
@@ -1277,38 +1278,53 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            print(frame, out, "\n");
+            print(frame, out, NL);
         }
 
-        void printExceptionRecursive(VirtualFrame frame, Object out, Object value, EconomicSet<Object> seen) {
+        void printExceptionRecursive(VirtualFrame frame, PythonModule sys, Object out, Object value, Set<Object> seen) {
             if (seen != null) {
                 // Exception chaining
-                seen.add(value);
+                add(seen, value);
                 if (PGuards.isPBaseException(value)) {
                     final PBaseException exc = (PBaseException) value;
                     final PBaseException cause = exc.getCause();
                     final PBaseException context = exc.getContext();
 
                     if (cause != null) {
-                        if (!seen.contains(cause)) {
-                            printExceptionRecursive(frame, out, cause, seen);
+                        if (!contains(seen, cause)) {
+                            printExceptionRecursive(frame, sys, out, cause, seen);
                             print(frame, out, CAUSE_MESSAGE);
                         }
                     } else if (context != null && !exc.getSuppressContext()) {
-                        if (!seen.contains(context)) {
-                            printExceptionRecursive(frame, out, context, seen);
+                        if (!contains(seen, context)) {
+                            printExceptionRecursive(frame, sys, out, context, seen);
                             print(frame, out, CONTEXT_MESSAGE);
                         }
                     }
                 }
             }
-            printException(frame, out, value);
+            printException(frame, sys, out, value);
+        }
+
+        @TruffleBoundary
+        static void add(Set<Object> set, Object value) {
+            set.add(value);
+        }
+
+        @TruffleBoundary
+        static boolean contains(Set<Object> set, Object value) {
+            return set.contains(value);
+        }
+
+        @TruffleBoundary
+        static Set<Object> createSet() {
+            return new HashSet<>();
         }
 
         @Specialization
         Object doWithoutTb(VirtualFrame frame, PythonModule sys, @SuppressWarnings("unused") Object excType, Object value, @SuppressWarnings("unused") PNone traceBack) {
             Object stdErr = lookupAttr(frame, sys, STDERR);
-            printExceptionRecursive(frame, stdErr, value, EconomicSet.create());
+            printExceptionRecursive(frame, sys, stdErr, value, createSet());
             flush(frame, stdErr);
 
             return PNone.NONE;
@@ -1325,7 +1341,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             }
 
             Object stdErr = lookupAttr(frame, sys, STDERR);
-            printExceptionRecursive(frame, stdErr, value, EconomicSet.create());
+            printExceptionRecursive(frame, sys, stdErr, value, createSet());
             flush(frame, stdErr);
 
             return PNone.NONE;
