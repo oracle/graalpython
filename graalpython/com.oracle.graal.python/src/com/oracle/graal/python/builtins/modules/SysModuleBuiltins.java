@@ -1037,18 +1037,24 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return PythonUtils.sbToString(sb);
         }
 
-        void displaySourceLine(VirtualFrame frame, Object out, String fileName, int lineNo, int indent) {
+        @TruffleBoundary
+        CharSequence getSourceLine(String fileName, int lineNo) {
             final PythonContext context = getContext();
             TruffleFile file = context.getEnv().getInternalTruffleFile(fileName);
             final Source source;
             try {
                 source = PythonLanguage.newSource(context, file, fileName);
-                final CharSequence line = source.getCharacters(lineNo);
-                print(frame, out, getIndent(indent));
-                print(frame, out, PythonUtils.trimLeft(line));
-                print(frame, out, "\n");
-            } catch (IOException ignored) {
+                return source.getCharacters(lineNo);
+            } catch (IOException ioe) {
+                return null;
             }
+        }
+
+        void displaySourceLine(VirtualFrame frame, Object out, String fileName, int lineNo, int indent) {
+            final CharSequence line = getSourceLine(fileName, lineNo);
+            print(frame, out, getIndent(indent));
+            print(frame, out, PythonUtils.trimLeft(line));
+            print(frame, out, "\n");
         }
 
         void printInternal(VirtualFrame frame, Object out, PTraceback traceback, long limit) {
