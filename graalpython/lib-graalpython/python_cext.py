@@ -772,6 +772,12 @@ class instancemethod:
             raise TypeError("first argument must be callable")
         self.__func__ = func
 
+    def __getattribute__(self, name):
+        try:
+            return object.__getattribute__(self, name)
+        except AttributeError:
+            return getattr(self.__func__, name)
+
     @property
     def __doc__(self):
         return self.__func__.__doc__
