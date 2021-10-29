@@ -50,9 +50,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class PGroupBy extends PythonBuiltinObject {
 
-    static final Object MARKER = new Object();
-
-    private Object marker;
     private Object tgtKey;
     private PGrouper currGrouper;
     private Object currValue;
@@ -70,14 +67,6 @@ public final class PGroupBy extends PythonBuiltinObject {
 
     public void setCurrGrouper(PGrouper currGrouper) {
         this.currGrouper = currGrouper;
-    }
-
-    public Object getMarker() {
-        return marker;
-    }
-
-    public void setMarker(Object marker) {
-        this.marker = marker;
     }
 
     public Object getTgtKey() {

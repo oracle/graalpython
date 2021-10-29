@@ -412,11 +412,6 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetIter getIter,
                         @SuppressWarnings("unused") @Cached IsTypeNode isTypeNode) {
             PGroupBy self = factory().createGroupBy(cls);
-            Object marker = factory().createPythonObject(PythonBuiltinClassType.PythonObject);
-            self.setMarker(marker);
-            self.setTgtKey(marker);
-            self.setCurrKey(marker);
-            self.setCurrValue(marker);
             self.setKeyFunc(key);
             self.setIt(getIter.execute(frame, iterable));
             return self;
@@ -437,21 +432,14 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isTypeNode.execute(cls)")
         protected PGrouper construct(Object cls, PGroupBy parent, Object tgtKey,
                         @Cached IsTypeNode isTypeNode) {
-            PGrouper self = factory().createGrouper(cls);
-            parent.setCurrGrouper(self);
-            self.setParent(parent);
-            self.setTgtKey(tgtKey);
-            self.setMarker(parent.getMarker());
-            return self;
+            return factory().createGrouper(parent, tgtKey);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"isTypeNode.execute(cls)", "!isGroupBy(parent)"})
         Object construct(Object cls, Object parent, Object tgtky,
                         @Cached IsTypeNode isTypeNode) {
-            // TODO
-// throw raise(TypeError, "incorrect usage of internal _grouper " + parent + " " + tgtky);
-            return factory().createGrouper(cls);
+            throw raise(TypeError, "incorrect usage of internal _grouper ");
         }
 
         protected boolean isGroupBy(Object obj) {

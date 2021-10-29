@@ -41,10 +41,7 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
-import static com.oracle.graal.python.nodes.ErrorMessages.STATE_ARGUMENT_D_MUST_BE_A_S;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETSTATE__;
+import static com.oracle.graal.python.nodes.BuiltinNames.ITER;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
@@ -54,13 +51,13 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -106,7 +103,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
                 currGrouperProfile.enter();
                 throw raise(StopIteration);
             }
-            if (gbo.getCurrValue() == self.getMarker()) {
+            if (gbo.getCurrValue() == null) {
                 currValueMarkerProfile.enter();
                 gbo.groupByStep(frame, nextNode, callNode, hasFuncProfile);
             }
@@ -115,7 +112,7 @@ public final class GrouperBuiltins extends PythonBuiltins {
                 throw raise(StopIteration);
             }
             Object r = gbo.getCurrValue();
-            gbo.setCurrValue(self.getMarker());
+            gbo.setCurrValue(null);
             return r;
         }
     }
@@ -123,45 +120,25 @@ public final class GrouperBuiltins extends PythonBuiltins {
     @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization
+        @Specialization(guards = "currValueIsSelf(self)")
         Object reduce(PGrouper self,
                         @Cached GetClassNode getClassNode) {
             Object type = getClassNode.execute(self);
-            PTuple tuple = factory().createTuple(new Object[]{self.getParent(), self.getTgtKey(), self.getMarker()});
-            PTuple emptyTuple = factory().createTuple(new Object[]{factory().createEmptyTuple()});
-            // TODO
-            return factory().createTuple(new Object[]{type, emptyTuple, tuple});
+            PTuple tuple = factory().createTuple(new Object[]{self.getParent(), self.getTgtKey()});
+            return factory().createTuple(new Object[]{type, tuple});
         }
-    }
 
-    @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object setState(VirtualFrame frame, PGrouper self, Object state,
-                        @Cached TupleBuiltins.LenNode lenNode,
-                        @Cached TupleBuiltins.GetItemNode getItemNode,
-                        @Cached BranchProfile isNotTupleProfile,
-                        @Cached BranchProfile isNotGrouperProfile) {
+        @Specialization(guards = "!currValueIsSelf(self)")
+        Object reduceCurrNotSelf(VirtualFrame frame, @SuppressWarnings("unused") PGrouper self,
+                        @Cached PyObjectGetAttr getAttrNode) {
+            PythonModule builtins = getContext().getCore().lookupBuiltinModule(BuiltinNames.BUILTINS);
+            Object iterCallable = getAttrNode.execute(frame, builtins, ITER);
+            // return Py_BuildValue("N(())", _PyEval_GetBuiltinId(&PyId_iter));
+            return factory().createTuple(new Object[]{iterCallable, factory().createTuple(new Object[]{factory().createEmptyTuple()})});
+        }
 
-            if (!(state instanceof PTuple) || (int) lenNode.execute(frame, state) != 3) {
-                isNotTupleProfile.enter();
-                throw raise(TypeError, IS_NOT_A, "state", "3-tuple");
-            }
-            Object parent = getItemNode.execute(frame, state, 0);
-            if (!(parent instanceof PGroupBy)) {
-                isNotGrouperProfile.enter();
-                throw raise(TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 1, "PGroupBy");
-            }
-            self.setParent((PGroupBy) parent);
-
-            Object tgtKey = getItemNode.execute(frame, state, 1);
-            self.setTgtKey(tgtKey);
-
-            Object marker = getItemNode.execute(frame, state, 2);
-            self.setMarker(marker);
-
-            return PNone.NONE;
+        protected boolean currValueIsSelf(PGrouper self) {
+            return self.getParent().getCurrGrouper() == self;
         }
     }
 }

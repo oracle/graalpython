@@ -47,7 +47,6 @@ public final class PGrouper extends PythonBuiltinObject {
 
     private PGroupBy parent;
     private Object tgtKey;
-    private Object marker;
 
     public PGrouper(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
@@ -58,7 +57,6 @@ public final class PGrouper extends PythonBuiltinObject {
         this.parent = parent;
         this.parent.setCurrGrouper(this);
         this.tgtKey = tgtKey;
-        this.marker = parent.getMarker();
     }
 
     public PGroupBy getParent() {
@@ -76,13 +74,4 @@ public final class PGrouper extends PythonBuiltinObject {
     public void setTgtKey(Object tgtKey) {
         this.tgtKey = tgtKey;
     }
-
-    public Object getMarker() {
-        return marker;
-    }
-
-    public void setMarker(Object marker) {
-        this.marker = marker;
-    }
-
 }

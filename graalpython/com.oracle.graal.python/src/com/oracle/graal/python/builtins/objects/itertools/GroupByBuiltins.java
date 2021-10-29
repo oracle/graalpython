@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
-import static com.oracle.graal.python.nodes.ErrorMessages.STATE_ARGUMENT_D_MUST_BE_A_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
@@ -97,53 +96,79 @@ public final class GroupByBuiltins extends PythonBuiltins {
                         @Cached BuiltinFunctions.NextNode nextNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectRichCompareBool.EqNode eqNode,
+                        @Cached BranchProfile eqProfile,
                         @Cached ConditionProfile hasFuncProfile,
                         @Cached LoopConditionProfile loopConditionProfile) {
             self.setCurrGrouper(null);
-            Object marker = self.getMarker();
-            while (loopConditionProfile.profile(!(self.getCurrKey() != marker && (self.getTgtKey() == marker || !eqNode.execute(frame, self.getTgtKey(), self.getCurrKey()))))) {
+            while (loopConditionProfile.profile(doGroupByStep(frame, self, eqProfile, eqNode))) {
                 self.groupByStep(frame, nextNode, callNode, hasFuncProfile);
             }
             self.setTgtKey(self.getCurrKey());
             PGrouper grouper = factory().createGrouper(self, self.getTgtKey());
             return factory().createTuple(new Object[]{self.getCurrKey(), grouper});
         }
+
+        protected boolean doGroupByStep(VirtualFrame frame, PGroupBy self, BranchProfile eqProfile, PyObjectRichCompareBool.EqNode eqNode) {
+            if (self.getCurrKey() == null) {
+                return true;
+            } else if (self.getTgtKey() == null) {
+                return false;
+            } else {
+                eqProfile.enter();
+                if (!eqNode.execute(frame, self.getTgtKey(), self.getCurrKey())) {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 
     @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "isMarkerStillSet(self)")
+        @Specialization(guards = {"!valuesSet(self)", "isNull(self.getKeyFunc())"})
         Object reduce(PGroupBy self,
                         @Cached GetClassNode getClassNode) {
+            return reduce(self, PNone.NONE, getClassNode);
+        }
 
+        @Specialization(guards = {"!valuesSet(self)", "!isNull(self.getKeyFunc())"})
+        Object reduceNoFunc(PGroupBy self,
+                        @Cached GetClassNode getClassNode) {
+            return reduce(self, self.getKeyFunc(), getClassNode);
+        }
+
+        private Object reduce(PGroupBy self, Object keyFunc, GetClassNode getClassNode) {
             Object type = getClassNode.execute(self);
-            Object keyFunc = self.getKeyFunc() == null ? PNone.NONE : self.getKeyFunc();
-
             PTuple tuple = factory().createTuple(new Object[]{self.getIt(), keyFunc});
             return factory().createTuple(new Object[]{type, tuple});
         }
 
-        @Specialization(guards = "!isMarkerStillSet(self)")
+        @Specialization(guards = {"valuesSet(self)", "isNull(self.getKeyFunc())"})
         Object reduceMarkerNotSet(PGroupBy self,
                         @Cached GetClassNode getClassNode) {
-
-            Object type = getClassNode.execute(self);
-            Object keyFunc = self.getKeyFunc() == null ? PNone.NONE : self.getKeyFunc();
-
-            Object currValue = self.getCurrValue();
-            Object tgtKey = self.getTgtKey();
-            Object currKey = self.getCurrKey();
-            Object currGrouper = self.getCurrGrouper() == null ? PNone.NONE : self.getCurrGrouper();
-            Object marker = self.getMarker();
-
-            PTuple tuple = factory().createTuple(new Object[]{self.getIt(), keyFunc, currValue, tgtKey, currKey, currGrouper, marker});
-            PTuple emptyTuple = factory().createTuple(new Object[]{factory().createEmptyTuple()});
-            return factory().createTuple(new Object[]{type, emptyTuple, tuple});
+            return reduceOther(self, PNone.NONE, getClassNode);
         }
 
-        protected boolean isMarkerStillSet(PGroupBy self) {
-            return self.getCurrValue() == self.getMarker() || self.getTgtKey() == self.getMarker() || self.getCurrKey() == self.getMarker();
+        @Specialization(guards = {"valuesSet(self)", "!isNull(self.getKeyFunc())"})
+        Object reduceMarkerNotSetNoFunc(PGroupBy self,
+                        @Cached GetClassNode getClassNode) {
+            return reduceOther(self, self.getKeyFunc(), getClassNode);
+        }
+
+        private Object reduceOther(PGroupBy self, Object keyFunc, GetClassNode getClassNode) {
+            Object type = getClassNode.execute(self);
+            PTuple tuple1 = factory().createTuple(new Object[]{self.getIt(), keyFunc});
+            PTuple tuple2 = factory().createTuple(new Object[]{self.getCurrValue(), self.getTgtKey(), self.getCurrKey()});
+            return factory().createTuple(new Object[]{type, tuple1, tuple2});
+        }
+
+        protected boolean valuesSet(PGroupBy self) {
+            return self.getTgtKey() != null && self.getCurrKey() != null && self.getCurrValue() != null;
+        }
+
+        protected boolean isNull(Object obj) {
+            return obj == null;
         }
 
     }
@@ -155,40 +180,20 @@ public final class GroupByBuiltins extends PythonBuiltins {
         Object setState(VirtualFrame frame, PGroupBy self, Object state,
                         @Cached TupleBuiltins.LenNode lenNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
-                        @Cached BranchProfile isNotTupleProfile,
-                        @Cached BranchProfile isNotGroupByProfile) {
-            if (!(state instanceof PTuple) || (int) lenNode.execute(frame, state) != 7) {
+                        @Cached BranchProfile isNotTupleProfile) {
+            if (!(state instanceof PTuple) || (int) lenNode.execute(frame, state) != 3) {
                 isNotTupleProfile.enter();
-                throw raise(TypeError, IS_NOT_A, "state", "7-tuple");
+                throw raise(TypeError, IS_NOT_A, "state", "3-tuple");
             }
-            Object iterable = getItemNode.execute(frame, state, 0);
-            self.setIt(iterable);
 
-            Object keyFunc = getItemNode.execute(frame, state, 1);
-            self.setKeyFunc(keyFunc instanceof PNone ? null : keyFunc);
-
-            Object currValue = getItemNode.execute(frame, state, 2);
+            Object currValue = getItemNode.execute(frame, state, 0);
             self.setCurrValue(currValue);
 
-            Object tgtKey = getItemNode.execute(frame, state, 3);
+            Object tgtKey = getItemNode.execute(frame, state, 1);
             self.setTgtKey(tgtKey);
 
-            Object currKey = getItemNode.execute(frame, state, 4);
+            Object currKey = getItemNode.execute(frame, state, 2);
             self.setCurrKey(currKey);
-
-            Object currGrouper = getItemNode.execute(frame, state, 5);
-            if (currGrouper instanceof PNone) {
-                self.setCurrGrouper(null);
-            } else {
-                if (!(currGrouper instanceof PGrouper)) {
-                    isNotGroupByProfile.enter();
-                    throw raise(TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 6, "PGrouper");
-                }
-                self.setCurrGrouper((PGrouper) currGrouper);
-            }
-
-            Object marker = getItemNode.execute(frame, state, 6);
-            self.setMarker(marker);
 
             return PNone.NONE;
         }
