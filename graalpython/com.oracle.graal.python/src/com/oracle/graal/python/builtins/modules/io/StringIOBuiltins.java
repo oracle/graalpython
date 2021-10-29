@@ -440,7 +440,7 @@ public class StringIOBuiltins extends PythonBuiltins {
     @Builtin(name = WRITE, minNumOfPositionalArgs = 2, parameterNames = {"self", "s"})
     @ArgumentClinic(name = "s", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    public abstract static class WriteNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
+    abstract static class WriteNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -455,10 +455,6 @@ public class StringIOBuiltins extends PythonBuiltins {
                 writeString(frame, self, s, getRaiseNode(), decodeNode);
             }
             return size;
-        }
-
-        public static WriteNode create() {
-            return StringIOBuiltinsFactory.WriteNodeFactory.create();
         }
     }
 

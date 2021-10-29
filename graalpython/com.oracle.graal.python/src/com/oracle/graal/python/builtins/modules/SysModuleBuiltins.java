@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.FLUSH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.STDERR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.STDIN;
@@ -79,7 +81,6 @@ import com.oracle.graal.python.builtins.modules.io.FileIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.PBuffered;
 import com.oracle.graal.python.builtins.modules.io.PFileIO;
 import com.oracle.graal.python.builtins.modules.io.PTextIO;
-import com.oracle.graal.python.builtins.modules.io.StringIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.TextIOWrapperInitNode;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.TextIOWrapperInitNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -844,7 +845,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Child private CastToJavaStringNode castToJavaStringNode;
         @Child private PyObjectStrAsObjectNode strAsObjNode;
         @Child private TracebackBuiltins.GetTracebackFrameNode getTracebackFrameNode;
-        @Child private StringIOBuiltins.WriteNode writeNode;
+        @Child private PyObjectCallMethodObjArgs callMethod;
 
         @CompilerDirectives.ValueType
         static final class SyntaxErrData {
@@ -863,17 +864,20 @@ public class SysModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private void print(VirtualFrame frame, Object file, String data) {
-            if (writeNode == null) {
+        private PyObjectCallMethodObjArgs ensureCallMethodNode() {
+            if (callMethod == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeNode = insert(StringIOBuiltins.WriteNode.create());
+                callMethod = insert(PyObjectCallMethodObjArgs.create());
             }
-            writeNode.execute(frame, file, data);
+            return callMethod;
         }
 
-        private boolean isEmptyString(Object value) {
-            final String s = tryCastToString(value);
-            return s != null && s.isEmpty();
+        private void print(VirtualFrame frame, Object file, String data) {
+            ensureCallMethodNode().execute(frame, file, WRITE, data);
+        }
+
+        private void flush(VirtualFrame frame, Object file) {
+            ensureCallMethodNode().execute(frame, file, FLUSH);
         }
 
         private PFrame getFrame(VirtualFrame frame, PTraceback tb) {
@@ -1052,9 +1056,11 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         void displaySourceLine(VirtualFrame frame, Object out, String fileName, int lineNo, int indent) {
             final CharSequence line = getSourceLine(fileName, lineNo);
-            print(frame, out, getIndent(indent));
-            print(frame, out, PythonUtils.trimLeft(line));
-            print(frame, out, "\n");
+            if (line != null) {
+                print(frame, out, getIndent(indent));
+                print(frame, out, PythonUtils.trimLeft(line));
+                print(frame, out, "\n");
+            }
         }
 
         void printInternal(VirtualFrame frame, Object out, PTraceback traceback, long limit) {
@@ -1233,36 +1239,33 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            {
-                // TODO: assert(PyExceptionClass_Check(type));
-                String className;
-                try {
-                    className = getName(type);
-                    className = classNameNoDot(className);
-                } catch (PException pe) {
-                    className = null;
+            String className;
+            try {
+                className = getName(type);
+                className = classNameNoDot(className);
+            } catch (PException pe) {
+                className = null;
+            }
+            String moduleName;
+            Object v = lookupAttr(frame, type, __MODULE__);
+            if (v == PNone.NO_VALUE || !PGuards.isString(v)) {
+                print(frame, out, VALUE_UNKNOWN);
+            } else {
+                moduleName = castToString(v);
+                if (!moduleName.equals(BUILTINS)) {
+                    print(frame, out, moduleName);
+                    print(frame, out, ".");
                 }
-                String moduleName;
-                Object v = lookupAttr(frame, type, __MODULE__);
-                if (v == PNone.NO_VALUE || !PGuards.isString(v)) {
-                    print(frame, out, VALUE_UNKNOWN);
-                } else {
-                    moduleName = castToString(v);
-                    if (!moduleName.equals(BUILTINS)) {
-                        print(frame, out, moduleName);
-                        print(frame, out, ".");
-                    }
-                }
-                if (className == null) {
-                    print(frame, out, VALUE_UNKNOWN);
-                } else {
-                    print(frame, out, className);
-                }
+            }
+            if (className == null) {
+                print(frame, out, VALUE_UNKNOWN);
+            } else {
+                print(frame, out, className);
             }
 
             if (value != PNone.NONE) {
                 // only print colon if the str() of the object is not the empty string
-                Object v = str(frame, value);
+                v = str(frame, value);
                 String s = tryCastToString(v);
                 if (v == null) {
                     print(frame, out, ": <exception str() failed>");
@@ -1303,8 +1306,17 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doIt(VirtualFrame frame, PythonModule sys, @SuppressWarnings("unused") Object excType, Object value, PTraceback traceBack) {
-            if (PGuards.isPBaseException(value) && traceBack != null) {
+        Object doWithoutTb(VirtualFrame frame, PythonModule sys, @SuppressWarnings("unused") Object excType, Object value, @SuppressWarnings("unused") PNone traceBack) {
+            Object stdErr = lookupAttr(frame, sys, STDERR);
+            printExceptionRecursive(frame, stdErr, value, EconomicSet.create());
+            flush(frame, stdErr);
+
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object doWithTb(VirtualFrame frame, PythonModule sys, @SuppressWarnings("unused") Object excType, Object value, PTraceback traceBack) {
+            if (PGuards.isPBaseException(value)) {
                 final PBaseException exc = (PBaseException) value;
                 final PTraceback currTb = getExceptionTraceback(exc);
                 if (currTb == null) {
@@ -1314,6 +1326,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
             Object stdErr = lookupAttr(frame, sys, STDERR);
             printExceptionRecursive(frame, stdErr, value, EconomicSet.create());
+            flush(frame, stdErr);
 
             return PNone.NONE;
         }
