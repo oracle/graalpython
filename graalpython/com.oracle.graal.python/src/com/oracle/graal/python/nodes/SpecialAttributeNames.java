@@ -84,5 +84,13 @@ public abstract class SpecialAttributeNames {
     public static final String __FLAGS__ = "__flags__";
     public static final String __ABSTRACTMETHODS__ = "__abstractmethods__";
     public static final String __ORIG_BASES__ = "__orig_bases__";
+    // these are special attrs used in the sys module
     public static final String __EXCEPTHOOK__ = "__excepthook__";
+    public static final String EXCEPTHOOK = "excepthook";
+    public static final String __STDERR__ = "__stderr__";
+    public static final String STDERR = "stderr";
+    public static final String __STDIN__ = "__stdin__";
+    public static final String STDIN = "stdin";
+    public static final String __STDOUT__ = "__stdout__";
+    public static final String STDOUT = "stdout";
 }

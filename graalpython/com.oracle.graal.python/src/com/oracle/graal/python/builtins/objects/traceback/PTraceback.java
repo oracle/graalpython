@@ -51,7 +51,7 @@ public final class PTraceback extends PythonBuiltinObject {
 
     private PFrame frame;
     private PFrame.Reference frameInfo;
-    private int lineno = UNKNOWN_LINE_NUMBER ;
+    private int lineno = UNKNOWN_LINE_NUMBER;
     private int lasti;
     private PTraceback next;
     private LazyTraceback lazyTraceback;

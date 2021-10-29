@@ -43,12 +43,17 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.STDERR;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.STDIN;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.STDOUT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__EXCEPTHOOK__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__STDERR__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__STDIN__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__STDOUT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -74,6 +79,7 @@ import com.oracle.graal.python.builtins.modules.io.FileIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.PBuffered;
 import com.oracle.graal.python.builtins.modules.io.PFileIO;
 import com.oracle.graal.python.builtins.modules.io.PTextIO;
+import com.oracle.graal.python.builtins.modules.io.StringIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.TextIOWrapperInitNode;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.TextIOWrapperInitNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -403,19 +409,19 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         PFileIO stdin = factory.createFileIO(PythonBuiltinClassType.PFileIO);
         FileIOBuiltins.FileIOInit.internalInit(stdin, "<stdin>", 0, "r");
-        builtinConstants.put("stdin", stdin);
-        builtinConstants.put("__stdin__", stdin);
+        builtinConstants.put(STDIN, stdin);
+        builtinConstants.put(__STDIN__, stdin);
 
         PFileIO stdout = factory.createFileIO(PythonBuiltinClassType.PFileIO);
         FileIOBuiltins.FileIOInit.internalInit(stdout, "<stdout>", 1, "w");
-        builtinConstants.put("stdout", stdout);
-        builtinConstants.put("__stdout__", stdout);
+        builtinConstants.put(STDOUT, stdout);
+        builtinConstants.put(__STDOUT__, stdout);
 
         PFileIO stderr = factory.createFileIO(PythonBuiltinClassType.PFileIO);
         stderr.setUTF8Write(true);
         FileIOBuiltins.FileIOInit.internalInit(stderr, "<stderr>", 2, "w");
-        builtinConstants.put("stderr", stderr);
-        builtinConstants.put("__stderr__", stderr);
+        builtinConstants.put(STDERR, stderr);
+        builtinConstants.put(__STDERR__, stderr);
         builtinConstants.put("implementation", makeImplementation(factory, versionInfo, gmultiarch));
         builtinConstants.put("hexversion", PythonLanguage.VERSION_HEX);
 
@@ -807,10 +813,10 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "excepthook", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 3, doc = "excepthook($module, exctype, value, traceback, /)\n" +
-            "--\n" +
-            "\n" +
-            "Handle an exception by displaying it with a traceback on sys.stderr.")
+    @Builtin(name = "excepthook", minNumOfPositionalArgs = 4, maxNumOfPositionalArgs = 4, declaresExplicitSelf = true, doc = "excepthook($module, exctype, value, traceback, /)\n" +
+                    "--\n" +
+                    "\n" +
+                    "Handle an exception by displaying it with a traceback on sys.stderr.")
     @GenerateNodeFactory
     abstract static class ExceptHookNode extends PythonBuiltinNode {
         static final String CAUSE_MESSAGE = "\nThe above exception was the direct cause of the following exception:\n\n";
@@ -838,6 +844,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Child private CastToJavaStringNode castToJavaStringNode;
         @Child private PyObjectStrAsObjectNode strAsObjNode;
         @Child private TracebackBuiltins.GetTracebackFrameNode getTracebackFrameNode;
+        @Child private StringIOBuiltins.WriteNode writeNode;
 
         @CompilerDirectives.ValueType
         static final class SyntaxErrData {
@@ -854,6 +861,14 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 this.offset = offset;
                 this.text = text;
             }
+        }
+
+        private void print(VirtualFrame frame, Object file, String data) {
+            if (writeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                writeNode = insert(StringIOBuiltins.WriteNode.create());
+            }
+            writeNode.execute(frame, file, data);
         }
 
         private boolean isEmptyString(Object value) {
@@ -980,7 +995,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return readAttributeFromObjectNode.execute(object, attribute);
         }
 
-        void printTraceBack(VirtualFrame frame, PrintWriter out, PTraceback tb) {
+        void printTraceBack(VirtualFrame frame, Object out, PTraceback tb) {
             long limit = TRACEBACK_LIMIT;
             final PythonModule sys = getContext().getCore().lookupBuiltinModule("sys");
             final Object limitv = readAttr(sys, ATTR_TB_LIMIT);
@@ -990,28 +1005,28 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     return;
                 }
             }
-            print(out, "Traceback (most recent call last):\n");
+            print(frame, out, "Traceback (most recent call last):\n");
             printInternal(frame, out, tb, limit);
         }
 
-        void printLineRepeated(PrintWriter out, int count) {
+        void printLineRepeated(VirtualFrame frame, Object out, int count) {
             int cnt = count;
             cnt -= TB_RECURSIVE_CUTOFF;
             final StringBuilder sb = PythonUtils.newStringBuilder("  [Previous line repeated ");
             PythonUtils.append(sb, cnt, (cnt > 1) ? " more times]\n" : " more time]\n");
-            print(out, PythonUtils.sbToString(sb));
+            print(frame, out, PythonUtils.sbToString(sb));
         }
 
-        void displayLine(PrintWriter out, String fileName, int lineNo, String name) {
+        void displayLine(VirtualFrame frame, Object out, String fileName, int lineNo, String name) {
             if (fileName == null || name == null) {
                 return;
             }
 
             final StringBuilder sb = PythonUtils.newStringBuilder("  File \"");
             PythonUtils.append(sb, fileName, "\", line ", lineNo, ", in ", name, "\n");
-            print(out, PythonUtils.sbToString(sb));
+            print(frame, out, PythonUtils.sbToString(sb));
             // ignore errors since we can't report them, can we?
-            displaySourceLine(out, fileName, lineNo, 4);
+            displaySourceLine(frame, out, fileName, lineNo, 4);
         }
 
         private static String getIndent(int indent) {
@@ -1022,21 +1037,21 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return PythonUtils.sbToString(sb);
         }
 
-        void displaySourceLine(PrintWriter out, String fileName, int lineNo, int indent) {
+        void displaySourceLine(VirtualFrame frame, Object out, String fileName, int lineNo, int indent) {
             final PythonContext context = getContext();
             TruffleFile file = context.getEnv().getInternalTruffleFile(fileName);
             final Source source;
             try {
                 source = PythonLanguage.newSource(context, file, fileName);
                 final CharSequence line = source.getCharacters(lineNo);
-                print(out, getIndent(indent));
-                print(out, PythonUtils.trim(line));
-                print(out, "\n");
+                print(frame, out, getIndent(indent));
+                print(frame, out, PythonUtils.trimLeft(line));
+                print(frame, out, "\n");
             } catch (IOException ignored) {
             }
         }
 
-        void printInternal(VirtualFrame frame, PrintWriter out, PTraceback traceback, long limit) {
+        void printInternal(VirtualFrame frame, Object out, PTraceback traceback, long limit) {
             int depth = 0;
             String lastFile = null;
             int lastLine = -1;
@@ -1048,18 +1063,18 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 depth++;
                 tb1 = tb1.getNext();
             }
-            while(tb != null && depth > limit) {
+            while (tb != null && depth > limit) {
                 depth--;
                 tb = tb.getNext();
             }
             while (tb != null) {
                 final PCode code = getCode(frame, tb);
                 if (lastFile == null ||
-                        !code.getFilename().equals(lastName) ||
-                        lastLine == -1 || tb.getLineno() != lastLine ||
-                        lastName == null || !code.getName().equals(lastName)) {
+                                !code.getFilename().equals(lastName) ||
+                                lastLine == -1 || tb.getLineno() != lastLine ||
+                                lastName == null || !code.getName().equals(lastName)) {
                     if (cnt > TB_RECURSIVE_CUTOFF) {
-                        printLineRepeated(out, cnt);
+                        printLineRepeated(frame, out, cnt);
                     }
                     lastFile = code.getFilename();
                     lastLine = tb.getLineno();
@@ -1068,12 +1083,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 }
                 cnt++;
                 if (cnt <= TB_RECURSIVE_CUTOFF) {
-                    displayLine(out, code.getFilename(), tb.getLineno(), code.getName());
+                    displayLine(frame, out, code.getFilename(), tb.getLineno(), code.getName());
                 }
                 tb = tb.getNext();
             }
             if (cnt > TB_RECURSIVE_CUTOFF) {
-                printLineRepeated(out, cnt);
+                printLineRepeated(frame, out, cnt);
             }
         }
 
@@ -1081,7 +1096,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             String msg, fileName = null, text = null;
             int lineNo = 0, offset = 0, hold = 0;
 
-            // new style errors.  `err' is an instance
+            // new style errors. `err' is an instance
             msg = lookupStrAttr(frame, err, ATTR_MSG);
             if (msg == null) {
                 return new SyntaxErrData(msg, fileName, lineNo, offset, text);
@@ -1137,7 +1152,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return new SyntaxErrData(msg, fileName, lineNo, offset, text);
         }
 
-        void printErrorText(VirtualFrame frame, PrintWriter out, SyntaxErrData syntaxErrData) {
+        void printErrorText(VirtualFrame frame, Object out, SyntaxErrData syntaxErrData) {
             String text = castToString(str(frame, syntaxErrData.text));
             int offset = syntaxErrData.offset;
 
@@ -1146,12 +1161,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     offset--;
                 }
                 int nl;
-                while(true) {
-                    nl = PythonUtils.lastIndexOf(text,'\n');
+                while (true) {
+                    nl = PythonUtils.lastIndexOf(text, '\n');
                     if (nl == -1 || nl >= offset) {
                         break;
                     }
-                    offset -= nl+1;
+                    offset -= nl + 1;
                     text = PythonUtils.substring(text, nl + 1);
                 }
                 int idx = 0;
@@ -1162,33 +1177,33 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 text = PythonUtils.substring(text, idx);
             }
 
-            print(out, "    ");
-            print(out, text);
-            if (text.charAt(0) == '\0' || text.charAt(text.length()-1) != '\n') {
-                print(out, "\n");
+            print(frame, out, "    ");
+            print(frame, out, text);
+            if (text.charAt(0) == '\0' || text.charAt(text.length() - 1) != '\n') {
+                print(frame, out, "\n");
             }
             if (offset == -1) {
                 return;
             }
-            print(out, "    ");
+            print(frame, out, "    ");
             while (--offset > 0) {
-                print(out, " ");
+                print(frame, out, " ");
             }
-            print(out, "^\n");
+            print(frame, out, "^\n");
         }
 
         private String classNameNoDot(String name) {
-            final int i = PythonUtils.lastIndexOf(name,'.');
-            return (i > 0) ? PythonUtils.substring(name, i+1) : name;
+            final int i = PythonUtils.lastIndexOf(name, '.');
+            return (i > 0) ? PythonUtils.substring(name, i + 1) : name;
         }
 
-        void printException(VirtualFrame frame, PrintWriter out, Object excValue) {
+        void printException(VirtualFrame frame, Object out, Object excValue) {
             Object value = excValue;
             final Object type = getClass(value);
             if (!PGuards.isPBaseException(value)) {
-                print(out, "TypeError: print_exception(): Exception expected for value, ");
-                print(out, getName(type));
-                print(out, " found\n");
+                print(frame, out, "TypeError: print_exception(): Exception expected for value, ");
+                print(frame, out, getName(type));
+                print(frame, out, " found\n");
                 return;
             }
 
@@ -1204,7 +1219,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 value = syntaxErrData.message;
                 StringBuilder sb = PythonUtils.newStringBuilder("  File \"");
                 PythonUtils.append(sb, castToString(str(frame, syntaxErrData.fileName)), "\", line ", syntaxErrData.lineNo, "\n");
-                print(out, PythonUtils.sbToString(sb));
+                print(frame, out, PythonUtils.sbToString(sb));
 
                 // Can't be bothered to check all those PyFile_WriteString() calls
                 if (syntaxErrData.text != null) {
@@ -1224,18 +1239,18 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 String moduleName;
                 Object v = lookupAttr(frame, type, __MODULE__);
                 if (v == PNone.NO_VALUE || !PGuards.isString(v)) {
-                    print(out, VALUE_UNKNOWN);
+                    print(frame, out, VALUE_UNKNOWN);
                 } else {
                     moduleName = castToString(v);
                     if (!moduleName.equals(BUILTINS)) {
-                        print(out, moduleName);
-                        print(out, ".");
+                        print(frame, out, moduleName);
+                        print(frame, out, ".");
                     }
                 }
                 if (className == null) {
-                    print(out, VALUE_UNKNOWN);
+                    print(frame, out, VALUE_UNKNOWN);
                 } else {
-                    print(out, className);
+                    print(frame, out, className);
                 }
             }
 
@@ -1244,19 +1259,19 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 Object v = str(frame, value);
                 String s = tryCastToString(v);
                 if (v == null) {
-                    print(out, ": <exception str() failed>");
-                } else if (!PGuards.isString(v) || (s!= null && !s.isEmpty())){
-                    print(out, ": ");
+                    print(frame, out, ": <exception str() failed>");
+                } else if (!PGuards.isString(v) || (s != null && !s.isEmpty())) {
+                    print(frame, out, ": ");
                 }
                 if (s != null) {
-                    print(out, s);
+                    print(frame, out, s);
                 }
             }
 
-            print(out, "\n");
+            print(frame, out, "\n");
         }
 
-        void printExceptionRecursive(VirtualFrame frame, PrintWriter out, Object value, EconomicSet<Object> seen) {
+        void printExceptionRecursive(VirtualFrame frame, Object out, Object value, EconomicSet<Object> seen) {
             if (seen != null) {
                 // Exception chaining
                 seen.add(value);
@@ -1268,12 +1283,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     if (cause != null) {
                         if (!seen.contains(cause)) {
                             printExceptionRecursive(frame, out, cause, seen);
-                            print(out, CAUSE_MESSAGE);
+                            print(frame, out, CAUSE_MESSAGE);
                         }
                     } else if (context != null && !exc.getSuppressContext()) {
                         if (!seen.contains(context)) {
                             printExceptionRecursive(frame, out, context, seen);
-                            print(out, CONTEXT_MESSAGE);
+                            print(frame, out, CONTEXT_MESSAGE);
                         }
                     }
                 }
@@ -1281,28 +1296,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
             printException(frame, out, value);
         }
 
-        @TruffleBoundary
-        private void flush(PrintWriter out) {
-            out.flush();
-        }
-
-        @TruffleBoundary
-        private void print(PrintWriter out, String str) {
-            out.print(str);
-        }
-
-        @TruffleBoundary
-        private PrintWriter getStdErr() {
-            return new PrintWriter(getContext().getStandardErr());
-        }
-
-        @TruffleBoundary
-        private PrintWriter getStdOut() {
-            return new PrintWriter(getContext().getStandardOut());
-        }
-
         @Specialization
-        Object doIt(VirtualFrame frame, Object excType, Object value, PTraceback traceBack) {
+        Object doIt(VirtualFrame frame, PythonModule sys, @SuppressWarnings("unused") Object excType, Object value, PTraceback traceBack) {
             if (PGuards.isPBaseException(value) && traceBack != null) {
                 final PBaseException exc = (PBaseException) value;
                 final PTraceback currTb = getExceptionTraceback(exc);
@@ -1311,9 +1306,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            PrintWriter stdErr = getStdErr();
+            Object stdErr = lookupAttr(frame, sys, STDERR);
             printExceptionRecursive(frame, stdErr, value, EconomicSet.create());
-            flush(stdErr);
 
             return PNone.NONE;
         }

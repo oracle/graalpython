@@ -433,8 +433,8 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary(allowInlining = true)
-    public static StringBuilder append(StringBuilder sb, Object ... args) {
-        for (Object arg: args) {
+    public static StringBuilder append(StringBuilder sb, Object... args) {
+        for (Object arg : args) {
             sb.append(arg);
         }
         return sb;
@@ -478,6 +478,19 @@ public final class PythonUtils {
     @TruffleBoundary(allowInlining = true)
     public static String trim(CharSequence sequence) {
         return sequence.toString().trim();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String trimLeft(CharSequence sequence) {
+        int len = sequence.length();
+        int st = 0;
+
+        while ((st < len) && (sequence.charAt(st) <= ' ')) {
+            st++;
+        }
+
+        final String s = sequence.toString();
+        return (st > 0) ? substring(s, st, len) : s;
     }
 
     @TruffleBoundary(allowInlining = true)
