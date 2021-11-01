@@ -89,7 +89,7 @@ public class PythonModuleTests {
 
     @Test
     public void pythonModuleTest() {
-        PythonModule module = context.getCore().factory().createPythonModule("testModule");
+        PythonModule module = context.factory().createPythonModule("testModule");
         assertEquals("testModule", module.getAttribute(__NAME__).toString());
         assertEquals("None", module.getAttribute(__DOC__).toString());
         assertEquals("None", module.getAttribute(__PACKAGE__).toString());

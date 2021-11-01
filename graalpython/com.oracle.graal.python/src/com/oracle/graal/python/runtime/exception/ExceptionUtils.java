@@ -162,7 +162,7 @@ public final class ExceptionUtils {
         PTraceback tracebackOrNull = GetExceptionTracebackNode.getUncached().execute(pythonException);
         Object tb = tracebackOrNull != null ? tracebackOrNull : PNone.NONE;
 
-        Object hook = context.getCore().lookupBuiltinModule("sys").getAttribute(BuiltinNames.EXCEPTHOOK);
+        Object hook = context.lookupBuiltinModule("sys").getAttribute(BuiltinNames.EXCEPTHOOK);
         if (hook != PNone.NO_VALUE) {
             try {
                 // Note: it is important to pass frame 'null' because that will cause the

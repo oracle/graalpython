@@ -469,7 +469,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         private PTuple reduceInternal(VirtualFrame frame, Object arg, Object state, PythonContext context) {
-            PythonModule builtins = context.getCore().getBuiltins();
+            PythonModule builtins = context.getBuiltins();
             Object iter = getGetAttrNode().execute(frame, builtins, ITER);
             PTuple args = factory().createTuple(new Object[]{arg});
             // callable, args, state (optional)

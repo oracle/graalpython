@@ -137,7 +137,7 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.llvm.api.Toolchain;
 
-public final class PythonContext {
+public final class PythonContext extends Python3Core {
     private static final Source IMPORT_WARNINGS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import warnings\n", "<internal>").internal(true).build();
     private static final Source FORCE_IMPORTS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import site\n", "<internal>").internal(true).build();
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
@@ -407,9 +407,7 @@ public final class PythonContext {
     static final String NO_CAPI = "could not determine Graal.Python's C API library path. You need to pass --python.CAPI if you want to use the C extension modules.";
     static final String NO_JNI = "could not determine Graal.Python's JNI library. You need to pass --python.JNILibrary if you want to run, for example, binary HPy extension modules.";
 
-    private final PythonLanguage language;
     private PythonModule mainModule;
-    private final Python3Core core;
     private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
     private final List<AtExitHook> atExitHooks = new ArrayList<>();
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
@@ -794,9 +792,8 @@ public final class PythonContext {
         }
     }
 
-    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core) {
-        this.language = language;
-        this.core = core;
+    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonParser parser) {
+        super(language, parser, env.isNativeAccessAllowed());
         this.env = env;
         this.allocationReporter = env.lookup(AllocationReporter.class);
         this.childContextData = (ChildContextData) env.getConfig().get(CHILD_CONTEXT_DATA);
@@ -950,32 +947,12 @@ public final class PythonContext {
         }
     }
 
-    public PythonLanguage getLanguage() {
-        return language;
-    }
-
     public ReentrantLock getImportLock() {
         return importLock;
     }
 
     public PMethod importFunc() {
-        return core.getImportFunc();
-    }
-
-    public PythonModule getImportlib() {
-        return core.getImportlib();
-    }
-
-    public PythonModule getSysModule() {
-        return core.getSysModule();
-    }
-
-    public PDict getSysModules() {
-        return core.getSysModules();
-    }
-
-    public PythonModule getBuiltins() {
-        return core.getBuiltins();
+        return getImportFunc();
     }
 
     public Object getPosixSupport() {
@@ -1035,7 +1012,7 @@ public final class PythonContext {
     }
 
     public Python3Core getCore() {
-        return core;
+        return this;
     }
 
     public InputStream getStandardIn() {
@@ -1080,12 +1057,12 @@ public final class PythonContext {
 
     @TruffleBoundary
     public boolean reprEnter(Object item) {
-        return getThreadState(language).reprEnter(item);
+        return getThreadState(getLanguage()).reprEnter(item);
     }
 
     @TruffleBoundary
     public void reprLeave(Object item) {
-        getThreadState(language).reprLeave(item);
+        getThreadState(getLanguage()).reprLeave(item);
     }
 
     public long getPerfCounterStart() {
@@ -1110,9 +1087,9 @@ public final class PythonContext {
         try {
             mainThread = new WeakReference<>(Thread.currentThread());
             initializePosixSupport();
-            core.initialize(this);
+            initialize(this);
             setupRuntimeInformation(false);
-            core.postInitialize();
+            postInitialize();
             if (!ImageInfo.inImageBuildtimeCode()) {
                 importSiteIfForced();
             } else if (posixSupport instanceof ImageBuildtimePosixSupport) {
@@ -1136,7 +1113,7 @@ public final class PythonContext {
             mainThread = new WeakReference<>(Thread.currentThread());
             setEnv(newEnv);
             setupRuntimeInformation(true);
-            core.postInitialize();
+            postInitialize();
             importSiteIfForced();
         } finally {
             releaseGil();
@@ -1163,7 +1140,7 @@ public final class PythonContext {
         if (!getOption(PythonOptions.IsolateFlag)) {
             String path0 = computeSysPath0();
             if (path0 != null) {
-                PythonModule sys = core.lookupBuiltinModule("sys");
+                PythonModule sys = lookupBuiltinModule("sys");
                 Object path = sys.getAttribute("path");
                 PyObjectCallMethodObjArgs.getUncached().execute(null, path, "insert", 0, path0);
             }
@@ -1228,7 +1205,7 @@ public final class PythonContext {
                             paths[i] = strPath.replace(from, to);
                         }
                     }
-                    ((PythonModule) v).setAttribute(SpecialAttributeNames.__PATH__, core.factory().createList(paths));
+                    ((PythonModule) v).setAttribute(SpecialAttributeNames.__PATH__, factory().createList(paths));
                 }
 
                 // Update module.__file__
@@ -1251,10 +1228,10 @@ public final class PythonContext {
         nativeBz2lib = NFIBz2Support.createNative(this, "");
         nativeLZMA = NFILZMASupport.createNative(this, "");
 
-        mainModule = core.factory().createPythonModule(__MAIN__);
+        mainModule = factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, getBuiltins());
-        mainModule.setAttribute(__ANNOTATIONS__, core.factory().createDict());
-        SetDictNode.getUncached().execute(mainModule, core.factory().createDictFixedStorage(mainModule));
+        mainModule.setAttribute(__ANNOTATIONS__, factory().createDict());
+        SetDictNode.getUncached().execute(mainModule, factory().createDictFixedStorage(mainModule));
         getSysModules().setItem(__MAIN__, mainModule);
 
         final String stdLibPlaceholder = "!stdLibHome!";
@@ -1434,7 +1411,7 @@ public final class PythonContext {
     @TruffleBoundary
     public String getSysBasePrefix() {
         if (basePrefix.isEmpty()) {
-            String homePrefix = language.getHome();
+            String homePrefix = getLanguage().getHome();
             if (homePrefix == null || homePrefix.isEmpty()) {
                 homePrefix = PREFIX;
             }
@@ -1485,10 +1462,6 @@ public final class PythonContext {
             return jniHome;
         }
         return jniHome;
-    }
-
-    public Object getTopScopeObject() {
-        return core.getTopScopeObject();
     }
 
     private static void writeWarning(String warning) {
@@ -1877,7 +1850,7 @@ public final class PythonContext {
     @TruffleBoundary
     public boolean isPyFileInLanguageHome(TruffleFile path) {
         assert !ImageInfo.inImageBuildtimeCode() : "language home won't be available during image build time";
-        String languageHome = language.getHome();
+        String languageHome = getLanguage().getHome();
 
         // The language home may be 'null' if an embedder uses Python. In this case, IO must just be
         // allowed.
@@ -1942,7 +1915,7 @@ public final class PythonContext {
     }
 
     private void applyToAllThreadStates(Consumer<PythonThreadState> action) {
-        if (language.singleThreadedAssumption.isValid()) {
+        if (getLanguage().singleThreadedAssumption.isValid()) {
             action.accept(getLanguage().getThreadStateLocal().get());
         } else {
             synchronized (this) {
@@ -2077,7 +2050,7 @@ public final class PythonContext {
     @TruffleBoundary
     public String getSoAbi() {
         if (soABI == null) {
-            PythonModule sysModule = getCore().lookupBuiltinModule("sys");
+            PythonModule sysModule = this.lookupBuiltinModule("sys");
             Object implementationObj = ReadAttributeFromObjectNode.getUncached().execute(sysModule, "implementation");
             // sys.implementation.cache_tag
             String cacheTag = (String) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, "cache_tag");

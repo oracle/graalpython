@@ -44,7 +44,6 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -265,6 +264,7 @@ import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.interop.PythonMapScope;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
@@ -282,9 +282,10 @@ import com.oracle.truffle.api.source.SourceSection;
 
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most
- * types.
+ * types. The core is embedded, using inheritance, into {@link PythonContext} to avoid indirection
+ * through an extra field in the context.
  */
-public final class Python3Core implements ParserErrorCallback {
+public abstract class Python3Core extends ParserErrorCallback {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(Python3Core.class);
     private final String[] coreFiles;
 
@@ -604,7 +605,6 @@ public final class Python3Core implements ParserErrorCallback {
 
     private final PythonParser parser;
 
-    @CompilationFinal private PythonContext singletonContext;
     @CompilationFinal private Object globalScopeObject;
 
     /*
@@ -613,43 +613,46 @@ public final class Python3Core implements ParserErrorCallback {
      */
     private volatile boolean initialized;
 
-    private PythonObjectSlowPathFactory objectFactory;
+    private final PythonLanguage language;
+    @CompilationFinal private PythonObjectSlowPathFactory objectFactory;
 
-    public Python3Core(PythonParser parser, boolean isNativeSupportAllowed) {
+    public Python3Core(PythonLanguage language, PythonParser parser, boolean isNativeSupportAllowed) {
+        this.language = language;
         this.parser = parser;
         this.builtins = initializeBuiltins(isNativeSupportAllowed);
         this.coreFiles = initializeCoreFiles();
     }
 
-    public PythonLanguage getLanguage() {
-        return singletonContext.getLanguage();
-    }
-
     @Override
-    public PythonContext getContext() {
-        return singletonContext;
+    public final PythonContext getContext() {
+        // Small hack: we know that this is the only implementation of Python3Core, this should be
+        // removed once and if Python3Core is fully merged into PythonContext
+        return (PythonContext) this;
     }
 
-    public PythonParser getParser() {
+    public final PythonLanguage getLanguage() {
+        return language;
+    }
+
+    public final PythonParser getParser() {
         return parser;
     }
 
-    public PythonCodeSerializer getSerializer() {
+    public final PythonCodeSerializer getSerializer() {
         return (PythonCodeSerializer) parser;
     }
 
     /**
      * Checks whether the core is initialized.
      */
-    public boolean isInitialized() {
+    public final boolean isCoreInitialized() {
         return initialized;
     }
 
     /**
      * Load the core library and prepare all builtin classes and modules.
      */
-    public void initialize(PythonContext context) {
-        singletonContext = context;
+    public final void initialize(PythonContext context) {
         objectFactory = new PythonObjectSlowPathFactory(context.getAllocationReporter());
         initializeJavaCore();
         initializePython3Core(context.getCoreHomeOrFail());
@@ -678,7 +681,7 @@ public final class Python3Core implements ParserErrorCallback {
      * eagerly when the context is initialized on the JVM or a new context is created on SVM, but is
      * omitted when the native image is generated.
      */
-    public void postInitialize() {
+    public final void postInitialize() {
         if (!ImageInfo.inImageBuildtimeCode() || ImageInfo.inImageRuntimeCode()) {
             initialized = false;
 
@@ -696,48 +699,48 @@ public final class Python3Core implements ParserErrorCallback {
     }
 
     @TruffleBoundary
-    public PythonModule lookupBuiltinModule(String name) {
+    public final PythonModule lookupBuiltinModule(String name) {
         return builtinModules.get(name);
     }
 
-    public PythonBuiltinClass lookupType(PythonBuiltinClassType type) {
+    public final PythonBuiltinClass lookupType(PythonBuiltinClassType type) {
         assert builtinTypes[type.ordinal()] != null;
         return builtinTypes[type.ordinal()];
     }
 
     @TruffleBoundary
-    public String[] builtinModuleNames() {
+    public final String[] builtinModuleNames() {
         return builtinModules.keySet().toArray(PythonUtils.EMPTY_STRING_ARRAY);
     }
 
-    public PythonModule getBuiltins() {
+    public final PythonModule getBuiltins() {
         return builtinsModule;
     }
 
-    public PythonModule getSysModule() {
+    public final PythonModule getSysModule() {
         return sysModule;
     }
 
-    public PDict getSysModules() {
+    public final PDict getSysModules() {
         return sysModules;
     }
 
-    public PythonModule getImportlib() {
+    public final PythonModule getImportlib() {
         return importlib;
     }
 
-    public void registerImportlib(PythonModule mod) {
+    public final void registerImportlib(PythonModule mod) {
         if (importlib != null) {
             throw new IllegalStateException("importlib cannot be registered more than once");
         }
         importlib = mod;
     }
 
-    public PMethod getImportFunc() {
+    public final PMethod getImportFunc() {
         return importFunc;
     }
 
-    public void registerImportFunc(PMethod func) {
+    public final void registerImportFunc(PMethod func) {
         if (importFunc != null) {
             throw new IllegalStateException("__import__ func cannot be registered more than once");
         }
@@ -746,14 +749,14 @@ public final class Python3Core implements ParserErrorCallback {
 
     @Override
     @TruffleBoundary
-    public void warn(PythonBuiltinClassType type, String format, Object... args) {
+    public final void warn(PythonBuiltinClassType type, String format, Object... args) {
         WarningsModuleBuiltins.WarnNode.getUncached().warnFormat(null, null, type, 1, format, args);
     }
 
     /**
      * Returns the stderr object or signals error when stderr is "lost".
      */
-    public Object getStderr() {
+    public final Object getStderr() {
         try {
             return PyObjectLookupAttr.getUncached().execute(null, sysModule, "stderr");
         } catch (PException e) {
@@ -933,29 +936,24 @@ public final class Python3Core implements ParserErrorCallback {
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(mod));
     }
 
-    public PythonObjectSlowPathFactory factory() {
+    public final PythonObjectSlowPathFactory factory() {
         return objectFactory;
     }
 
-    public void setContext(PythonContext context) {
-        assert singletonContext == null;
-        singletonContext = context;
-    }
-
-    public PInt getTrue() {
+    public final PInt getTrue() {
         return pyTrue;
     }
 
-    public PInt getFalse() {
+    public final PInt getFalse() {
         return pyFalse;
     }
 
-    public PFloat getNaN() {
+    public final PFloat getNaN() {
         return pyNaN;
     }
 
     @Override
-    public RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Source source, SourceSection section, String message, Object... arguments) {
+    public final RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Source source, SourceSection section, String message, Object... arguments) {
         CompilerDirectives.transferToInterpreter();
         Node location = new Node() {
             @Override
@@ -968,7 +966,7 @@ public final class Python3Core implements ParserErrorCallback {
 
     @Override
     @TruffleBoundary
-    public RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Node location, String message, Object... arguments) {
+    public final RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Node location, String message, Object... arguments) {
         PBaseException instance;
         Object cls;
         switch (type) {
@@ -1017,15 +1015,15 @@ public final class Python3Core implements ParserErrorCallback {
         throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
     }
 
-    public Object getTopScopeObject() {
+    public final Object getTopScopeObject() {
         return globalScopeObject;
     }
 
-    public static final void writeInfo(String message) {
+    public static void writeInfo(String message) {
         PythonLanguage.getLogger(Python3Core.class).fine(message);
     }
 
-    public static final void writeInfo(Supplier<String> messageSupplier) {
+    public static void writeInfo(Supplier<String> messageSupplier) {
         PythonLanguage.getLogger(Python3Core.class).fine(messageSupplier);
     }
 }

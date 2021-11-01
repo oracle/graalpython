@@ -140,7 +140,7 @@ public abstract class PRootNode extends RootNode {
 
     @TruffleBoundary
     private void triggerDeprecationWarningsBoundary() {
-        Python3Core errors = PythonContext.get(this).getCore();
+        Python3Core errors = PythonContext.get(this);
         try {
             for (String warning : deprecationWarnings) {
                 errors.warn(PythonBuiltinClassType.DeprecationWarning, "%s", warning);
@@ -214,7 +214,7 @@ public abstract class PRootNode extends RootNode {
     @TruffleBoundary
     private byte[] extractCode() {
         if (this instanceof PClosureRootNode) {
-            Python3Core core = PythonContext.get(this).getCore();
+            Python3Core core = PythonContext.get(this);
             return core.getSerializer().serialize(core, this);
         }
         // no code for non-user functions

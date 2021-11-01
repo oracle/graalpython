@@ -113,8 +113,8 @@ public class ParserTestBase {
 
     public Node parse(String src, String moduleName, PythonParser.ParserMode mode, Frame fd) {
         Source source = Source.newBuilder(PythonLanguage.ID, src, moduleName).build();
-        PythonParser parser = context.getCore().getParser();
-        Node result = ((PythonParserImpl) parser).parseN(mode, 0, context.getCore(), source, fd, null);
+        PythonParser parser = context.getParser();
+        Node result = ((PythonParserImpl) parser).parseN(mode, 0, context, source, fd, null);
         lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();
         lastSST = ((PythonParserImpl) parser).getLastSST();
         return result;
@@ -125,8 +125,8 @@ public class ParserTestBase {
     }
 
     public Node parse(Source source, PythonParser.ParserMode mode) {
-        PythonParser parser = context.getCore().getParser();
-        Node result = ((PythonParserImpl) parser).parseN(mode, 0, context.getCore(), source, null, null);
+        PythonParser parser = context.getParser();
+        Node result = ((PythonParserImpl) parser).parseN(mode, 0, context, source, null, null);
         lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();
         lastSST = ((PythonParserImpl) parser).getLastSST();
         return result;

@@ -258,7 +258,7 @@ abstract class ReadBuiltinNode extends Node {
         if (ensureContextInitializedProfile().profile(context.isInitialized())) {
             return context.getBuiltins();
         } else {
-            return context.getCore().lookupBuiltinModule(BuiltinNames.BUILTINS);
+            return context.lookupBuiltinModule(BuiltinNames.BUILTINS);
         }
     }
 

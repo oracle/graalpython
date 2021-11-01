@@ -120,7 +120,7 @@ public abstract class PConstructAndRaiseNode extends Node {
                     @SuppressWarnings("unused") Object[] formatArgs,
                     Object[] arguments, PKeyword[] keywords,
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode) {
-        Python3Core core = PythonContext.get(this).getCore();
+        Python3Core core = PythonContext.get(this);
         return raiseInternal(frame, type, cause, arguments, keywords, callNode, core);
     }
 
@@ -128,7 +128,7 @@ public abstract class PConstructAndRaiseNode extends Node {
     PException constructAndRaiseNoArgs(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs,
                     @SuppressWarnings("unused") Object[] arguments, PKeyword[] keywords,
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode) {
-        Python3Core core = PythonContext.get(this).getCore();
+        Python3Core core = PythonContext.get(this);
         Object[] args = new Object[]{formatArgs != null ? getFormattedMessage(format, formatArgs) : format};
         return raiseInternal(frame, type, cause, args, keywords, callNode, core);
     }
@@ -137,7 +137,7 @@ public abstract class PConstructAndRaiseNode extends Node {
     PException constructAndRaise(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs,
                     Object[] arguments, PKeyword[] keywords,
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode) {
-        Python3Core core = PythonContext.get(this).getCore();
+        Python3Core core = PythonContext.get(this);
         Object[] args = new Object[arguments.length + 1];
         args[0] = formatArgs != null ? getFormattedMessage(format, formatArgs) : format;
         System.arraycopy(arguments, 0, args, 1, arguments.length);

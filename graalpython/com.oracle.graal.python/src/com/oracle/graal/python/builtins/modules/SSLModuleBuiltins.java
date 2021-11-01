@@ -379,7 +379,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
                 if (!(cert instanceof X509Certificate)) {
                     throw raise(SSLError, "Error decoding PEM-encoded file: unexpected type " + cert.getClass().getName());
                 }
-                return CertUtils.decodeCertificate(this, getContext().getCore().factory(), (X509Certificate) l.get(0));
+                return CertUtils.decodeCertificate(this, getContext().factory(), (X509Certificate) l.get(0));
             } catch (IOException ex) {
                 throw raise(SSLError, "Can't open file: " + ex.toString());
             } catch (CertificateException | CRLException ex) {

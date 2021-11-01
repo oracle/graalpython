@@ -1945,7 +1945,7 @@ public final class StringBuiltins extends PythonBuiltins {
             PythonLanguage language = getLanguage();
             Object state = IndirectCallContext.enter(frame, this);
             try {
-                return new StringFormatProcessor(context.getCore(), getRaiseNode(), getItemNode, getTupleItemNode, self).format(right);
+                return new StringFormatProcessor(context, getRaiseNode(), getItemNode, getTupleItemNode, self).format(right);
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }
