@@ -149,6 +149,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -296,7 +297,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     /**
      * Common class for all() and any() operations, as their logic and behaviors are very similar.
      */
-    public abstract static class AllOrAnyNode extends PythonBuiltinBaseNode {
+    public abstract static class AllOrAnyNode extends PNodeWithContext {
         enum NodeType { ALL, ANY }
 
         @Child private PyObjectIsTrueNode isTrueNode = PyObjectIsTrueNode.create();
@@ -378,7 +379,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class AllNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        public boolean doList(VirtualFrame frame,
+        boolean doList(VirtualFrame frame,
                               PList object,
                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                               @Cached AllOrAnyNode allOrAnyNode) {
@@ -386,7 +387,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        public boolean doTuple(VirtualFrame frame,
+        boolean doTuple(VirtualFrame frame,
                                PTuple object,
                                @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                                @Cached AllOrAnyNode allOrAnyNode) {
@@ -394,7 +395,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        public boolean doDict(VirtualFrame frame,
+        boolean doDict(VirtualFrame frame,
                               PDict object,
                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                               @Cached AllOrAnyNode allOrAnyNode) {
@@ -402,7 +403,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        public boolean doSet(VirtualFrame frame,
+        boolean doSet(VirtualFrame frame,
                              PBaseSet object,
                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                              @Cached AllOrAnyNode allOrAnyNode) {
@@ -438,7 +439,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class AnyNode extends PythonUnaryBuiltinNode {
         
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        public boolean doList(VirtualFrame frame,
+        boolean doList(VirtualFrame frame,
                               PList object,
                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                               @Cached AllOrAnyNode allOrAnyNode) {
@@ -446,7 +447,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        public boolean doTuple(VirtualFrame frame,
+        boolean doTuple(VirtualFrame frame,
                                PTuple object,
                                @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                                @Cached AllOrAnyNode allOrAnyNode) {
@@ -454,7 +455,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        public boolean doDict(VirtualFrame frame,
+        boolean doDict(VirtualFrame frame,
                               PDict object,
                               @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                               @Cached AllOrAnyNode allOrAnyNode) {
@@ -462,7 +463,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        public boolean doSet(VirtualFrame frame,
+        boolean doSet(VirtualFrame frame,
                              PBaseSet object,
                              @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                              @Cached AllOrAnyNode allOrAnyNode) {
