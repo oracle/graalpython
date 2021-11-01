@@ -381,32 +381,32 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         boolean doList(VirtualFrame frame,
                        PList object,
-                       @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                       @Cached AllOrAnyNode allOrAnyNode) {
+                       @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                       @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getSequenceStorage(), AllOrAnyNode.NodeType.ALL);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         boolean doTuple(VirtualFrame frame,
                         PTuple object,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @Cached AllOrAnyNode allOrAnyNode) {
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getSequenceStorage(), AllOrAnyNode.NodeType.ALL);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         boolean doDict(VirtualFrame frame,
                        PDict object,
-                       @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                       @Cached AllOrAnyNode allOrAnyNode) {
+                       @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                       @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ALL);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         boolean doSet(VirtualFrame frame,
                       PBaseSet object,
-                      @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                      @Cached AllOrAnyNode allOrAnyNode) {
+                      @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                      @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ALL);
         }
 
@@ -441,32 +441,32 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         boolean doList(VirtualFrame frame,
                        PList object,
-                       @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                       @Cached AllOrAnyNode allOrAnyNode) {
+                       @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                       @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getSequenceStorage(), AllOrAnyNode.NodeType.ANY);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         boolean doTuple(VirtualFrame frame,
                         PTuple object,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @Cached AllOrAnyNode allOrAnyNode) {
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getSequenceStorage(), AllOrAnyNode.NodeType.ANY);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         boolean doDict(VirtualFrame frame,
                        PDict object,
-                       @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                       @Cached AllOrAnyNode allOrAnyNode) {
+                       @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                       @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ANY);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         boolean doSet(VirtualFrame frame,
                       PBaseSet object,
-                      @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                      @Cached AllOrAnyNode allOrAnyNode) {
+                      @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                      @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ANY);
         }
 
