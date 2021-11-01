@@ -45,14 +45,15 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.builtins.modules.io.IONodes.FLUSH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.STDERR;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.STDIN;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.STDOUT;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__EXCEPTHOOK__;
+import static com.oracle.graal.python.nodes.BuiltinNames.EXCEPTHOOK;
+import static com.oracle.graal.python.nodes.BuiltinNames.STDERR;
+import static com.oracle.graal.python.nodes.BuiltinNames.STDIN;
+import static com.oracle.graal.python.nodes.BuiltinNames.STDOUT;
+import static com.oracle.graal.python.nodes.BuiltinNames.__EXCEPTHOOK__;
+import static com.oracle.graal.python.nodes.BuiltinNames.__STDERR__;
+import static com.oracle.graal.python.nodes.BuiltinNames.__STDIN__;
+import static com.oracle.graal.python.nodes.BuiltinNames.__STDOUT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__STDERR__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__STDIN__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__STDOUT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 
 import java.io.BufferedReader;
@@ -153,6 +154,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -530,7 +532,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         false, // dev_mode
                         0 // utf8_mode
         ));
-        sys.setAttribute(__EXCEPTHOOK__, sys.getAttribute("excepthook"));
+        sys.setAttribute(__EXCEPTHOOK__, sys.getAttribute(EXCEPTHOOK));
     }
 
     @Override
@@ -817,7 +819,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "excepthook", minNumOfPositionalArgs = 4, maxNumOfPositionalArgs = 4, declaresExplicitSelf = true, doc = "excepthook($module, exctype, value, traceback, /)\n" +
+    @Builtin(name = EXCEPTHOOK, minNumOfPositionalArgs = 4, maxNumOfPositionalArgs = 4, declaresExplicitSelf = true, doc = "excepthook($module, exctype, value, traceback, /)\n" +
                     "--\n" +
                     "\n" +
                     "Handle an exception by displaying it with a traceback on sys.stderr.")
@@ -1298,7 +1300,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
             print(frame, out, NL);
         }
 
-        void printExceptionRecursive(VirtualFrame frame, PythonModule sys, Object out, Object value, Set<Object> seen) {
+        @TruffleBoundary
+        void printExceptionRecursive(MaterializedFrame frame, PythonModule sys, Object out, Object value, Set<Object> seen) {
             if (seen != null) {
                 // Exception chaining
                 add(seen, value);
@@ -1339,15 +1342,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doWithoutTb(VirtualFrame frame, PythonModule sys, @SuppressWarnings("unused") Object excType, Object value, @SuppressWarnings("unused") PNone traceBack) {
-            Object stdErr = lookupAttr(frame, sys, STDERR);
-            printExceptionRecursive(frame, sys, stdErr, value, createSet());
-            flush(frame, stdErr);
-
-            return PNone.NONE;
-        }
-
-        @Specialization
         Object doWithTb(VirtualFrame frame, PythonModule sys, @SuppressWarnings("unused") Object excType, Object value, PTraceback traceBack) {
             if (PGuards.isPBaseException(value)) {
                 final PBaseException exc = (PBaseException) value;
@@ -1358,7 +1352,16 @@ public class SysModuleBuiltins extends PythonBuiltins {
             }
 
             Object stdErr = lookupAttr(frame, sys, STDERR);
-            printExceptionRecursive(frame, sys, stdErr, value, createSet());
+            printExceptionRecursive(frame.materialize(), sys, stdErr, value, createSet());
+            flush(frame, stdErr);
+
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isPTraceback(traceBack)")
+        Object doWithoutTb(VirtualFrame frame, PythonModule sys, @SuppressWarnings("unused") Object excType, Object value, @SuppressWarnings("unused") Object traceBack) {
+            Object stdErr = lookupAttr(frame, sys, STDERR);
+            printExceptionRecursive(frame.materialize(), sys, stdErr, value, createSet());
             flush(frame, stdErr);
 
             return PNone.NONE;
