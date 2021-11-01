@@ -76,9 +76,10 @@ void* PyThread_tss_get(Py_tss_t *key) {
     return UPCALL_CEXT_PTR(_jls_PyTruffle_tss_get, key->_key);
 }
 
-UPCALL_ID(PyTruffle_tss_set);
+typedef void (*tss_set_fun)(int64_t, void *);
+UPCALL_TYPED_ID(PyTruffle_tss_set, tss_set_fun);
 int PyThread_tss_set(Py_tss_t *key, void *value) {
-    UPCALL_CEXT_VOID(_jls_PyTruffle_tss_set, key->_key, value);
+    _jls_PyTruffle_tss_set(key->_key, value);
     return 0;
 }
 
