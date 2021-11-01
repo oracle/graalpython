@@ -55,9 +55,11 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__STDIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__STDOUT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
@@ -67,6 +69,7 @@ import java.util.Set;
 
 import org.graalvm.nativeimage.ImageInfo;
 
+import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
@@ -153,7 +156,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.source.Source;
 
 @CoreFunctions(defineModule = "sys", isEager = true)
 public class SysModuleBuiltins extends PythonBuiltins {
@@ -1046,13 +1048,28 @@ public class SysModuleBuiltins extends PythonBuiltins {
         CharSequence getSourceLine(String fileName, int lineNo) {
             final PythonContext context = getContext();
             TruffleFile file = context.getEnv().getInternalTruffleFile(fileName);
-            final Source source;
+            String line = null;
             try {
-                source = PythonLanguage.newSource(context, file, fileName);
-                return source.getCharacters(lineNo);
+                Charset encoding;
+                try {
+                    encoding = PythonFileDetector.findEncodingStrict(file);
+                } catch (PythonFileDetector.InvalidEncodingException e) {
+                    encoding = StandardCharsets.UTF_8;
+                }
+                BufferedReader reader = file.newBufferedReader(encoding);
+                int i = 1;
+                while (i <= lineNo) {
+                    if (i == lineNo) {
+                        line = reader.readLine();
+                    } else {
+                        reader.readLine();
+                    }
+                    i++;
+                }
             } catch (IOException ioe) {
-                return null;
+                line = null;
             }
+            return line;
         }
 
         void displaySourceLine(VirtualFrame frame, Object out, String fileName, int lineNo, int indent) {
