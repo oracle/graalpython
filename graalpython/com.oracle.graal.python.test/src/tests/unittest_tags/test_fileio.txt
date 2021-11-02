@@ -42,7 +42,6 @@
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testTruncateOnWindows
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testUnclosedFDOnException
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testUnicodeOpen
-*graalpython.lib-python.3.test.test_fileio.COtherFileTests.testUtf8BytesOpen
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.testWarnings
 *graalpython.lib-python.3.test.test_fileio.COtherFileTests.test_open_code
 *graalpython.lib-python.3.test.test_fileio.PyAutoFileTests.testAttributes
@@ -88,7 +87,6 @@
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testTruncateOnWindows
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testUnclosedFDOnException
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testUnicodeOpen
-*graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testUtf8BytesOpen
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testWarnings
 *graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.test_open_code
 *graalpython.lib-python.3.test.test_fileio.TestMain.test_main
