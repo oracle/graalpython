@@ -111,11 +111,9 @@ import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltinsFacto
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsIntNodeGen;
-import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNodeGen;
-import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyLongCheckNodeGen;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -841,18 +839,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         static final String VALUE_UNKNOWN = "<unknown>";
         static final String NL = "\n";
 
-        @Child private ReadAttributeFromObjectNode readAttributeFromObjectNode;
-        @Child private PyLongAsLongAndOverflowNode pyLongAsLongAndOverflowNode;
-        @Child private PyLongAsIntNode pyLongAsIntNode;
-        @Child private PyLongCheckNode pyLongCheckNode;
-        @Child private GetExceptionTracebackNode getExceptionTracebackNode;
-        @Child private GetClassNode getClassNode;
-        @Child private TypeNodes.GetNameNode getNameNode;
-        @Child private PyObjectLookupAttr objectLookupAttr;
-        @Child private CastToJavaStringNode castToJavaStringNode;
-        @Child private PyObjectStrAsObjectNode strAsObjNode;
-        @Child private TracebackBuiltins.GetTracebackFrameNode getTracebackFrameNode;
-        @Child private PyObjectCallMethodObjArgs callMethod;
         @Child private TracebackBuiltins.MaterializeTruffleStacktraceNode truffleStacktraceNode;
 
         @CompilerDirectives.ValueType
@@ -881,56 +867,35 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return traceback.getNext();
         }
 
-        private PyObjectCallMethodObjArgs ensureCallMethodNode() {
-            if (callMethod == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callMethod = insert(PyObjectCallMethodObjArgs.create());
-            }
-            return callMethod;
+        private static void write(VirtualFrame frame, Object file, String data) {
+            PyObjectCallMethodObjArgs.getUncached().execute(frame, file, WRITE, data);
         }
 
-        private void print(VirtualFrame frame, Object file, String data) {
-            ensureCallMethodNode().execute(frame, file, WRITE, data);
+        private static void flush(VirtualFrame frame, Object file) {
+            PyObjectCallMethodObjArgs.getUncached().execute(frame, file, FLUSH);
         }
 
-        private void flush(VirtualFrame frame, Object file) {
-            ensureCallMethodNode().execute(frame, file, FLUSH);
-        }
-
-        private PFrame getFrame(VirtualFrame frame, PTraceback tb) {
-            if (getTracebackFrameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getTracebackFrameNode = insert(TracebackBuiltins.GetTracebackFrameNode.create());
-            }
-            return getTracebackFrameNode.execute(frame, tb);
+        private static PFrame getFrame(VirtualFrame frame, PTraceback tb) {
+            return TracebackBuiltins.GetTracebackFrameNode.getUncached().execute(frame, tb);
         }
 
         private PCode getCode(VirtualFrame frame, PTraceback tb) {
             return factory().createCode(getFrame(frame, tb).getTarget());
         }
 
-        private Object str(VirtualFrame frame, Object value) {
-            if (strAsObjNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                strAsObjNode = insert(PyObjectStrAsObjectNode.create());
-            }
-
+        private static Object str(VirtualFrame frame, Object value) {
             try {
-                return strAsObjNode.execute(frame, value);
+                return PyObjectStrAsObjectNode.getUncached().execute(frame, value);
             } catch (PException pe) {
                 return null;
             }
         }
 
-        private String castToString(Object value) {
-            if (castToJavaStringNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToJavaStringNode = insert(CastToJavaStringNode.create());
-            }
-            return castToJavaStringNode.execute(value);
+        private static String castToString(Object value) {
+            return CastToJavaStringNode.getUncached().execute(value);
         }
 
-        private String tryCastToString(Object value) {
+        private static String tryCastToString(Object value) {
             try {
                 return castToString(value);
             } catch (CannotCastException e) {
@@ -938,70 +903,42 @@ public class SysModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private Object lookupAttr(VirtualFrame frame, Object object, String attr) {
-            if (objectLookupAttr == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                objectLookupAttr = insert(PyObjectLookupAttr.create());
-            }
-            return objectLookupAttr.execute(frame, object, attr);
+        private static Object lookupAttr(VirtualFrame frame, Object object, String attr) {
+            return PyObjectLookupAttr.getUncached().execute(frame, object, attr);
         }
 
-        private String lookupStrAttr(VirtualFrame frame, Object object, String attr) {
+        private static String lookupStrAttr(VirtualFrame frame, Object object, String attr) {
             final Object value = lookupAttr(frame, object, attr);
             return value != PNone.NO_VALUE ? castToString(value) : null;
         }
 
-        private boolean hasAttr(VirtualFrame frame, Object object, String attr) {
+        private static boolean hasAttr(VirtualFrame frame, Object object, String attr) {
             return lookupAttr(frame, object, attr) != PNone.NO_VALUE;
         }
 
-        private String getName(Object type) {
-            if (getNameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getNameNode = insert(TypeNodes.GetNameNode.create());
-            }
-            return getNameNode.execute(type);
+        private static String getName(Object type) {
+            return TypeNodes.GetNameNode.getUncached().execute(type);
         }
 
-        private Object getClass(Object object) {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
-            }
-            return getClassNode.execute(object);
+        private static Object getClass(Object object) {
+            return GetClassNode.getUncached().execute(object);
         }
 
-        private PTraceback getExceptionTraceback(PBaseException e) {
-            if (getExceptionTracebackNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getExceptionTracebackNode = insert(GetExceptionTracebackNode.create());
-            }
-            return getExceptionTracebackNode.execute(e);
+        private static PTraceback getExceptionTraceback(PBaseException e) {
+            return GetExceptionTracebackNode.getUncached().execute(e);
         }
 
         private boolean checkLong(Object object) {
-            if (pyLongCheckNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                pyLongCheckNode = insert(PyLongCheckNode.create());
-            }
-            return pyLongCheckNode.execute(object);
+            return PyLongCheckNodeGen.getUncached().execute(object);
         }
 
-        private int asInt(VirtualFrame frame, Object object) {
-            if (pyLongAsIntNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                pyLongAsIntNode = insert(PyLongAsIntNodeGen.create());
-            }
-            return pyLongAsIntNode.execute(frame, object);
+        private static int asInt(VirtualFrame frame, Object object) {
+            return PyLongAsIntNodeGen.getUncached().execute(frame, object);
         }
 
-        private long asLongAndOverflow(VirtualFrame frame, Object object, long overflowValue) {
-            if (pyLongAsLongAndOverflowNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                pyLongAsLongAndOverflowNode = insert(PyLongAsLongAndOverflowNodeGen.create());
-            }
+        private static long asLongAndOverflow(VirtualFrame frame, Object object, long overflowValue) {
             try {
-                return pyLongAsLongAndOverflowNode.execute(frame, object);
+                return PyLongAsLongAndOverflowNodeGen.getUncached().execute(frame, object);
             } catch (OverflowException e) {
                 if (object instanceof PInt) {
                     return ((PInt) object).isZeroOrNegative() ? 0 : overflowValue;
@@ -1010,12 +947,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private Object readAttr(Object object, String attribute) {
-            if (readAttributeFromObjectNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readAttributeFromObjectNode = insert(ReadAttributeFromObjectNode.create());
-            }
-            return readAttributeFromObjectNode.execute(object, attribute);
+        private static Object readAttr(Object object, String attribute) {
+            return ReadAttributeFromObjectNode.getUncached().execute(object, attribute);
         }
 
         void printTraceBack(VirtualFrame frame, PythonModule sys, Object out, PTraceback tb) {
@@ -1027,7 +960,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     return;
                 }
             }
-            print(frame, out, "Traceback (most recent call last):\n");
+            write(frame, out, "Traceback (most recent call last):\n");
             printInternal(frame, out, tb, limit);
         }
 
@@ -1036,7 +969,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             cnt -= TB_RECURSIVE_CUTOFF;
             final StringBuilder sb = PythonUtils.newStringBuilder("  [Previous line repeated ");
             PythonUtils.append(sb, cnt, (cnt > 1) ? " more times]\n" : " more time]\n");
-            print(frame, out, PythonUtils.sbToString(sb));
+            write(frame, out, PythonUtils.sbToString(sb));
         }
 
         void displayLine(VirtualFrame frame, Object out, String fileName, int lineNo, String name) {
@@ -1046,7 +979,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
             final StringBuilder sb = PythonUtils.newStringBuilder("  File \"");
             PythonUtils.append(sb, fileName, "\", line ", lineNo, ", in ", name, NL);
-            print(frame, out, PythonUtils.sbToString(sb));
+            write(frame, out, PythonUtils.sbToString(sb));
             // ignore errors since we can't report them, can we?
             displaySourceLine(frame, out, fileName, lineNo, 4);
         }
@@ -1090,9 +1023,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
         void displaySourceLine(VirtualFrame frame, Object out, String fileName, int lineNo, int indent) {
             final CharSequence line = getSourceLine(fileName, lineNo);
             if (line != null) {
-                print(frame, out, getIndent(indent));
-                print(frame, out, PythonUtils.trimLeft(line));
-                print(frame, out, NL);
+                write(frame, out, getIndent(indent));
+                write(frame, out, PythonUtils.trimLeft(line));
+                write(frame, out, NL);
             }
         }
 
@@ -1222,19 +1155,19 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 text = PythonUtils.substring(text, idx);
             }
 
-            print(frame, out, "    ");
-            print(frame, out, text);
+            write(frame, out, "    ");
+            write(frame, out, text);
             if (text.charAt(0) == '\0' || text.charAt(text.length() - 1) != '\n') {
-                print(frame, out, NL);
+                write(frame, out, NL);
             }
             if (offset == -1) {
                 return;
             }
-            print(frame, out, "    ");
+            write(frame, out, "    ");
             while (--offset > 0) {
-                print(frame, out, " ");
+                write(frame, out, " ");
             }
-            print(frame, out, "^\n");
+            write(frame, out, "^\n");
         }
 
         private String classNameNoDot(String name) {
@@ -1246,9 +1179,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
             Object value = excValue;
             final Object type = getClass(value);
             if (!PGuards.isPBaseException(value)) {
-                print(frame, out, "TypeError: print_exception(): Exception expected for value, ");
-                print(frame, out, getName(type));
-                print(frame, out, " found\n");
+                write(frame, out, "TypeError: print_exception(): Exception expected for value, ");
+                write(frame, out, getName(type));
+                write(frame, out, " found\n");
                 return;
             }
 
@@ -1264,7 +1197,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 value = syntaxErrData.message;
                 StringBuilder sb = PythonUtils.newStringBuilder("  File \"");
                 PythonUtils.append(sb, castToString(str(frame, syntaxErrData.fileName)), "\", line ", syntaxErrData.lineNo, "\n");
-                print(frame, out, PythonUtils.sbToString(sb));
+                write(frame, out, PythonUtils.sbToString(sb));
 
                 // Can't be bothered to check all those PyFile_WriteString() calls
                 if (syntaxErrData.text != null) {
@@ -1282,18 +1215,18 @@ public class SysModuleBuiltins extends PythonBuiltins {
             String moduleName;
             Object v = lookupAttr(frame, type, __MODULE__);
             if (v == PNone.NO_VALUE || !PGuards.isString(v)) {
-                print(frame, out, VALUE_UNKNOWN);
+                write(frame, out, VALUE_UNKNOWN);
             } else {
                 moduleName = castToString(v);
                 if (!moduleName.equals(BUILTINS)) {
-                    print(frame, out, moduleName);
-                    print(frame, out, ".");
+                    write(frame, out, moduleName);
+                    write(frame, out, ".");
                 }
             }
             if (className == null) {
-                print(frame, out, VALUE_UNKNOWN);
+                write(frame, out, VALUE_UNKNOWN);
             } else {
-                print(frame, out, className);
+                write(frame, out, className);
             }
 
             if (value != PNone.NONE) {
@@ -1301,16 +1234,16 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 v = str(frame, value);
                 String s = tryCastToString(v);
                 if (v == null) {
-                    print(frame, out, ": <exception str() failed>");
+                    write(frame, out, ": <exception str() failed>");
                 } else if (!PGuards.isString(v) || (s != null && !s.isEmpty())) {
-                    print(frame, out, ": ");
+                    write(frame, out, ": ");
                 }
                 if (s != null) {
-                    print(frame, out, s);
+                    write(frame, out, s);
                 }
             }
 
-            print(frame, out, NL);
+            write(frame, out, NL);
         }
 
         @TruffleBoundary
@@ -1326,12 +1259,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     if (cause != null) {
                         if (!contains(seen, cause)) {
                             printExceptionRecursive(frame, sys, out, cause, seen);
-                            print(frame, out, CAUSE_MESSAGE);
+                            write(frame, out, CAUSE_MESSAGE);
                         }
                     } else if (context != null && !exc.getSuppressContext()) {
                         if (!contains(seen, context)) {
                             printExceptionRecursive(frame, sys, out, context, seen);
-                            print(frame, out, CONTEXT_MESSAGE);
+                            write(frame, out, CONTEXT_MESSAGE);
                         }
                     }
                 }
