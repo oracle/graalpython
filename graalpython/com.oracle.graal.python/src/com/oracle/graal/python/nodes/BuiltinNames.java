@@ -56,6 +56,7 @@ public abstract class BuiltinNames {
     public static final String __DEBUG__ = "__debug__";
 
     // sys
+    public static final String TRACEBACKLIMIT = "tracebacklimit";
     public static final String DISPLAYHOOK = "displayhook";
     public static final String BREAKPOINTHOOK = "breakpointhook";
     public static final String EXCEPTHOOK = "excepthook";

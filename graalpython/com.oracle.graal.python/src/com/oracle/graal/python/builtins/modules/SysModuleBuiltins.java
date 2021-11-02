@@ -49,6 +49,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.EXCEPTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDOUT;
+import static com.oracle.graal.python.nodes.BuiltinNames.TRACEBACKLIMIT;
 import static com.oracle.graal.python.nodes.BuiltinNames.__EXCEPTHOOK__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__STDERR__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__STDIN__;
@@ -106,6 +107,7 @@ import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
+import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -829,7 +831,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         static final String CONTEXT_MESSAGE = "\nDuring handling of the above exception, another exception occurred:\n\n";
         static final int TRACEBACK_LIMIT = 1000;
         static final int TB_RECURSIVE_CUTOFF = 3;
-        static final String ATTR_TB_LIMIT = "tracebacklimit";
         static final String ATTR_PRINT_FILE_AND_LINE = "print_file_and_line";
         static final String ATTR_MSG = "msg";
         static final String ATTR_FILENAME = "filename";
@@ -852,6 +853,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Child private PyObjectStrAsObjectNode strAsObjNode;
         @Child private TracebackBuiltins.GetTracebackFrameNode getTracebackFrameNode;
         @Child private PyObjectCallMethodObjArgs callMethod;
+        @Child private TracebackBuiltins.MaterializeTruffleStacktraceNode truffleStacktraceNode;
 
         @CompilerDirectives.ValueType
         static final class SyntaxErrData {
@@ -868,6 +870,15 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 this.offset = offset;
                 this.text = text;
             }
+        }
+
+        private PTraceback getNextTb(PTraceback traceback) {
+            if (truffleStacktraceNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                truffleStacktraceNode = insert(TracebackBuiltinsFactory.MaterializeTruffleStacktraceNodeGen.create());
+            }
+            truffleStacktraceNode.execute(traceback);
+            return traceback.getNext();
         }
 
         private PyObjectCallMethodObjArgs ensureCallMethodNode() {
@@ -990,9 +1001,11 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 pyLongAsLongAndOverflowNode = insert(PyLongAsLongAndOverflowNodeGen.create());
             }
             try {
-                final long val = pyLongAsLongAndOverflowNode.execute(frame, object);
-                return Math.min(val, overflowValue);
+                return pyLongAsLongAndOverflowNode.execute(frame, object);
             } catch (OverflowException e) {
+                if (object instanceof PInt) {
+                    return ((PInt) object).isZeroOrNegative() ? 0 : overflowValue;
+                }
                 return overflowValue;
             }
         }
@@ -1007,7 +1020,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         void printTraceBack(VirtualFrame frame, PythonModule sys, Object out, PTraceback tb) {
             long limit = TRACEBACK_LIMIT;
-            final Object limitv = readAttr(sys, ATTR_TB_LIMIT);
+            final Object limitv = readAttr(sys, TRACEBACKLIMIT);
             if (checkLong(limitv)) {
                 limit = asLongAndOverflow(frame, limitv, MAXSIZE);
                 if (limit <= 0) {
@@ -1093,11 +1106,11 @@ public class SysModuleBuiltins extends PythonBuiltins {
             PTraceback tb = traceback;
             while (tb1 != null) {
                 depth++;
-                tb1 = tb1.getNext();
+                tb1 = getNextTb(tb1);
             }
             while (tb != null && depth > limit) {
                 depth--;
-                tb = tb.getNext();
+                tb = getNextTb(tb);
             }
             while (tb != null) {
                 final PCode code = getCode(frame, tb);
@@ -1117,7 +1130,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 if (cnt <= TB_RECURSIVE_CUTOFF) {
                     displayLine(frame, out, code.getFilename(), tb.getLineno(), code.getName());
                 }
-                tb = tb.getNext();
+                tb = getNextTb(tb);
             }
             if (cnt > TB_RECURSIVE_CUTOFF) {
                 printLineRepeated(frame, out, cnt);

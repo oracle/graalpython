@@ -84,7 +84,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
      *
      * @see GetTracebackNode
      */
-    abstract static class MaterializeTruffleStacktraceNode extends Node {
+    public abstract static class MaterializeTruffleStacktraceNode extends Node {
         public abstract void execute(PTraceback tb);
 
         @Specialization(guards = "tb.isMaterialized()")
