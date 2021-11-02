@@ -839,7 +839,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
         static final String VALUE_UNKNOWN = "<unknown>";
         static final String NL = "\n";
 
-        @Child private TracebackBuiltins.MaterializeTruffleStacktraceNode truffleStacktraceNode;
+        @Child private TracebackBuiltins.GetTracebackFrameNode getTbNode;
+        @Child private TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStacktraceNode;
 
         @CompilerDirectives.ValueType
         static final class SyntaxErrData {
@@ -859,12 +860,20 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
 
         private PTraceback getNextTb(PTraceback traceback) {
-            if (truffleStacktraceNode == null) {
+            if (materializeStacktraceNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                truffleStacktraceNode = insert(TracebackBuiltinsFactory.MaterializeTruffleStacktraceNodeGen.create());
+                materializeStacktraceNode = insert(TracebackBuiltinsFactory.MaterializeTruffleStacktraceNodeGen.create());
             }
-            truffleStacktraceNode.execute(traceback);
+            materializeStacktraceNode.execute(traceback);
             return traceback.getNext();
+        }
+
+        private PFrame getFrameTb(VirtualFrame frame, PTraceback tb) {
+            if (getTbNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getTbNode = insert(TracebackBuiltins.GetTracebackFrameNode.create());
+            }
+            return getTbNode.execute(frame, tb);
         }
 
         private static void write(VirtualFrame frame, Object file, String data) {
@@ -875,12 +884,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
             PyObjectCallMethodObjArgs.getUncached().execute(frame, file, FLUSH);
         }
 
-        private static PFrame getFrame(VirtualFrame frame, PTraceback tb) {
-            return TracebackBuiltins.GetTracebackFrameNode.getUncached().execute(frame, tb);
-        }
-
         private PCode getCode(VirtualFrame frame, PTraceback tb) {
-            return factory().createCode(getFrame(frame, tb).getTarget());
+            return factory().createCode(getFrameTb(frame, tb).getTarget());
         }
 
         private static Object str(VirtualFrame frame, Object value) {

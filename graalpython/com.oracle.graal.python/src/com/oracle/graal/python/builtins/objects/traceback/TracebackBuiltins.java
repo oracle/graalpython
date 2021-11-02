@@ -192,10 +192,6 @@ public final class TracebackBuiltins extends PythonBuiltins {
             return TracebackBuiltinsFactory.GetTracebackFrameNodeFactory.create(null);
         }
 
-        public static GetTracebackFrameNode getUncached() {
-            return TracebackBuiltinsFactory.GetTracebackFrameNodeFactory.getInstance().getUncachedInstance();
-        }
-
         @Specialization(guards = "hasPFrame(tb)")
         PFrame getExisting(PTraceback tb) {
             return tb.getFrame();
