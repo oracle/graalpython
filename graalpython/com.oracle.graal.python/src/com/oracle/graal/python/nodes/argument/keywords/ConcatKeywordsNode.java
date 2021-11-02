@@ -40,23 +40,25 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
+import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ConcatKeywordsNode extends ExpressionNode {
 
-    @Node.Children final ExpressionNode[] mappables;
+    @Children final ExpressionNode[] mappables;
 
     protected ConcatKeywordsNode(ExpressionNode... mappablesNodes) {
         this.mappables = mappablesNodes;
@@ -65,44 +67,47 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
     @ExplodeLoop
     @Specialization
     protected Object concat(VirtualFrame frame,
-                    @Cached ConditionProfile hasFrame,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary firstlib,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary otherlib,
-                    @Cached BranchProfile sameKeyProfile) {
-        PDict first = null;
-        PDict other;
-        for (ExpressionNode n : mappables) {
-            if (first == null) {
-                first = expectDict(n.execute(frame));
-            } else {
-                other = expectDict(n.execute(frame));
-                addAllToDict(frame, first, other, hasFrame, firstlib, otherlib, sameKeyProfile);
+                    @Cached("createConcatNodes()") ConcatDictToStorageNode[] concatNodes,
+                    @Cached PythonObjectFactory factory) {
+        HashingStorage result = EmptyStorage.INSTANCE;
+        for (int i = 0; i < mappables.length; i++) {
+            result = concatNodes[i].execute(frame, result, mappables[i].execute(frame));
+        }
+        return factory.createDict(result);
+    }
+
+    protected ConcatDictToStorageNode[] createConcatNodes() {
+        ConcatDictToStorageNode[] nodes = new ConcatDictToStorageNode[mappables.length];
+        for (int i = 0; i < nodes.length; i++) {
+            nodes[i] = ConcatKeywordsNodeGen.ConcatDictToStorageNodeGen.create();
+        }
+        return nodes;
+    }
+
+    protected abstract static class ConcatDictToStorageNode extends PNodeWithContext {
+        public abstract HashingStorage execute(VirtualFrame frame, HashingStorage dest, Object other);
+
+        @Specialization
+        HashingStorage doBuiltinDict(VirtualFrame frame, HashingStorage dest, PDict other,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                        @Cached ConditionProfile hasFrame,
+                        @Cached BranchProfile sameKeyProfile) {
+            HashingStorage result = dest;
+            HashingStorage otherStorage = other.getDictStorage();
+            for (Object key : hlib.keys(otherStorage)) {
+                Object value = hlib.getItemWithFrame(otherStorage, key, hasFrame, frame);
+                if (hlib.hasKey(result, key)) {
+                    sameKeyProfile.enter();
+                    throw new SameDictKeyException(key);
+                }
+                result = hlib.setItemWithFrame(result, key, value, hasFrame, frame);
             }
+            return result;
         }
-        return first;
-    }
 
-    private static void addAllToDict(VirtualFrame frame, PDict dict, PDict other, ConditionProfile hasFrame,
-                    HashingStorageLibrary firstlib, HashingStorageLibrary otherlib, BranchProfile sameKeyProfile) {
-        HashingStorage dictStorage = dict.getDictStorage();
-        HashingStorage otherStorage = other.getDictStorage();
-        for (Object key : otherlib.keys(otherStorage)) {
-            Object value = otherlib.getItemWithFrame(otherStorage, key, hasFrame, frame);
-            if (firstlib.hasKey(dictStorage, key)) {
-                sameKeyProfile.enter();
-                throw new SameDictKeyException(key);
-            }
-            dictStorage = firstlib.setItemWithFrame(dictStorage, key, value, hasFrame, frame);
+        @Fallback
+        HashingStorage nonMapping(@SuppressWarnings("unused") HashingStorage dest, Object other) {
+            throw new NonMappingException(other);
         }
-        dict.setDictStorage(dictStorage);
     }
-
-    private static PDict expectDict(Object first) {
-        if (!(first instanceof PDict)) {
-            CompilerDirectives.transferToInterpreter();
-            throw new NonMappingException(first);
-        }
-        return (PDict) first;
-    }
-
 }
