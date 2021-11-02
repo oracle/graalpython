@@ -798,6 +798,11 @@ def PyInstanceMethod_New(func):
     return instancemethod(func)
 
 
+@may_raise
+def PyStaticMethod_New(func):
+    return staticmethod(func)
+
+
 getset_descriptor = type(type(PyInstanceMethod_New).__code__)
 
 
