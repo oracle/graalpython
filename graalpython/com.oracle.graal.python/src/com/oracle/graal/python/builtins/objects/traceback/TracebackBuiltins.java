@@ -84,7 +84,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
      *
      * @see GetTracebackNode
      */
-    abstract static class MaterializeTruffleStacktraceNode extends Node {
+    public abstract static class MaterializeTruffleStacktraceNode extends Node {
         public abstract void execute(PTraceback tb);
 
         @Specialization(guards = "tb.isMaterialized()")
@@ -186,6 +186,12 @@ public final class TracebackBuiltins extends PythonBuiltins {
     @Builtin(name = TB_FRAME, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackFrameNode extends PythonBuiltinNode {
+        public abstract PFrame execute(VirtualFrame frame, Object traceback);
+
+        public static GetTracebackFrameNode create() {
+            return TracebackBuiltinsFactory.GetTracebackFrameNodeFactory.create(null);
+        }
+
         @Specialization(guards = "hasPFrame(tb)")
         PFrame getExisting(PTraceback tb) {
             return tb.getFrame();
