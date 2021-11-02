@@ -494,6 +494,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         if imports:
             self.print(imports)
         className = os.path.splitext(os.path.basename(self.file.name))[0]
+        self.print('@SuppressWarnings("all")')
         self.print("public class %s extends Parser {" % className)
 
         # parser method generation
