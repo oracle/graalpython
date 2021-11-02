@@ -40,14 +40,30 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.DictBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -69,7 +85,8 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
     protected Object concat(VirtualFrame frame,
                     @Cached("createConcatNodes()") ConcatDictToStorageNode[] concatNodes,
                     @Cached PythonObjectFactory factory) {
-        HashingStorage result = EmptyStorage.INSTANCE;
+        HashingStorage result = EmptyStorage.INSTANCE; // The node has a special case for empty
+                                                       // storage
         for (int i = 0; i < mappables.length; i++) {
             result = concatNodes[i].execute(frame, result, mappables[i].execute(frame));
         }
@@ -87,11 +104,21 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
     protected abstract static class ConcatDictToStorageNode extends PNodeWithContext {
         public abstract HashingStorage execute(VirtualFrame frame, HashingStorage dest, Object other);
 
-        @Specialization
+        @Specialization(guards = "hasBuiltinIter(other, getClassNode, lookupIter)", limit = "1")
+        HashingStorage doBuiltinDictEmptyDest(@SuppressWarnings("unused") EmptyStorage dest, PDict other,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
+            return hlib.copy(other.getDictStorage());
+        }
+
+        @Specialization(guards = "hasBuiltinIter(other, getClassNode, lookupIter)", limit = "1")
         HashingStorage doBuiltinDict(VirtualFrame frame, HashingStorage dest, PDict other,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
-                        @Cached ConditionProfile hasFrame,
-                        @Cached BranchProfile sameKeyProfile) {
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Shared("lookupIter") @Cached(parameters = "Iter") LookupCallableSlotInMRONode lookupIter,
+                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                        @Shared("hasFrame") @Cached ConditionProfile hasFrame,
+                        @Shared("sameKeyProfile") @Cached BranchProfile sameKeyProfile) {
             HashingStorage result = dest;
             HashingStorage otherStorage = other.getDictStorage();
             for (Object key : hlib.keys(otherStorage)) {
@@ -106,8 +133,43 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
         }
 
         @Fallback
-        HashingStorage nonMapping(@SuppressWarnings("unused") HashingStorage dest, Object other) {
-            throw new NonMappingException(other);
+        HashingStorage doMapping(VirtualFrame frame, HashingStorage dest, Object other,
+                        @Shared("hlib") @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
+                        @Shared("hasFrame") @Cached ConditionProfile hasFrame,
+                        @Shared("sameKeyProfile") @Cached BranchProfile sameKeyProfile,
+                        @Cached PyObjectCallMethodObjArgs callKeys,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached ListNodes.FastConstructListNode asList,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorage,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode sequenceGetItem,
+                        @Cached PyObjectGetItem getItem) {
+            HashingStorage result = dest;
+            try {
+                PSequence keys = asList.execute(frame, callKeys.execute(frame, other, "keys"));
+                SequenceStorage keysStorage = getSequenceStorage.execute(keys);
+                int keysLen = lenNode.execute(keysStorage);
+                for (int i = 0; i < keysLen; i++) {
+                    Object key = sequenceGetItem.execute(keysStorage, i);
+                    if (hlib.hasKey(result, key)) {
+                        sameKeyProfile.enter();
+                        throw new SameDictKeyException(key);
+                    }
+                    Object value = getItem.execute(frame, other, key);
+                    result = hlib.setItemWithFrame(result, key, value, hasFrame, frame);
+                }
+                return result;
+            } catch (PException e) {
+                e.expectAttributeError(errorProfile);
+                throw new NonMappingException(other);
+            }
+        }
+
+        protected static final BuiltinMethodDescriptor builtinDictIter = BuiltinMethodDescriptor.get(DictBuiltinsFactory.IterNodeFactory.getInstance(), PythonBuiltinClassType.PDict);
+
+        /* CPython tests that tp_iter is dict_iter */
+        protected static boolean hasBuiltinIter(PDict dict, GetClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
+            return PGuards.isBuiltinDict(dict) || lookupIter.execute(getClassNode.execute(dict)) == builtinDictIter;
         }
     }
 }
