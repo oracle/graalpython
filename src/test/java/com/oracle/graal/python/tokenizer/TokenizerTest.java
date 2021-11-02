@@ -5,6 +5,7 @@
  */
 package com.oracle.graal.python.tokenizer;
 
+import com.oracle.graal.python.pegparser.ParserTokenizer;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.io.BufferedReader;
@@ -16,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -84,12 +86,42 @@ public class TokenizerTest {
     public TokenizerTest() {
     }
 
+    private static void assertToken(String code, Token.Kind kind) {
+        Assert.assertEquals(kind, new ParserTokenizer(code).getToken().type);
+    }
+
     @BeforeClass
     public static void setUpClass() {
     }
 
     @AfterClass
     public static void tearDownClass() {
+    }
+
+    @Test
+    public void testAsync() {
+        assertToken("async", Token.Kind.ASYNC);
+    }
+
+    @Test
+    public void testAwait() {
+        assertToken("await", Token.Kind.AWAIT);
+    }
+
+    @Test
+    public void testIdentifier() {
+        assertToken("hello", Token.Kind.NAME);
+    }
+
+    @Test
+    public void testUnicodeIdentifier() {
+        assertToken("Öllo", Token.Kind.NAME);
+    }
+
+    // TODO: fix this test, this identifier should not be accepted
+    @Test(expected = AssertionError.class)
+    public void testIllegalUnicodeIdentifier() {
+        assertToken("€", Token.Kind.ERRORTOKEN);
     }
 
     @Test

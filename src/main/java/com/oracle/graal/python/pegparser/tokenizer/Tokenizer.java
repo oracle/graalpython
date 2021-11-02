@@ -8,8 +8,8 @@ package com.oracle.graal.python.pegparser.tokenizer;
 
 public class Tokenizer {
 
-    private String text;
-    private static int EOF = -1;
+    private final String text;
+    private static final int EOF = -1;
     private boolean isEOF = false;
     private int current = 0;
 
@@ -129,8 +129,20 @@ public class Tokenizer {
 
                         oneBack();
 
-                        // TODO check async / await block
-                        return createToken(Token.Kind.NAME);
+                        Token tok = createToken(Token.Kind.NAME);
+                        String tokenString = getTokenString(tok);
+                        if (!verifyIdentifier(tok, tokenString)) {
+                            return createToken(Token.Kind.ERRORTOKEN);
+                        }
+
+                        if (tokenString.equals("async")) {
+                            return createToken(Token.Kind.ASYNC);
+                        }
+                        if (tokenString.equals("await")) {
+                            return createToken(Token.Kind.AWAIT);
+                        }
+
+                        return tok;
                     }
 
                     // TODO new line
@@ -415,5 +427,27 @@ public class Tokenizer {
         sb.append(") (").append(token.endLine).append(", ").append(token.endColumn).append(") '");
         sb.append(getTokenString(token)).append("'");
         return sb.toString();
+    }
+
+    private boolean verifyIdentifier(Token tok, String tokenString) {
+        // inlined the logic from _PyUnicode_ScanIdentifier
+        int invalid = tokenString.length();
+        if (!Character.isJavaIdentifierStart(tokenString.codePointAt(0))) {
+            invalid = 0;
+        }
+        for (int i = 1; i < invalid; i++) {
+            if (!Character.isJavaIdentifierPart(tokenString.codePointAt(i))) {
+                invalid = i;
+                break;
+            }
+        }
+        if (invalid < tokenString.length()) {
+            int codePoint = tokenString.codePointAt(invalid);
+            String printString = new String(new int[] { codePoint }, 0, 1);
+            // TODO: communicate syntax error
+            // syntaxerror(tok, "invalid character '%s' (U+%x)", printString, codePoint);
+            return false;
+        }
+        return true;
     }
 }
