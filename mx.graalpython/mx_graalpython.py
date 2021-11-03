@@ -411,6 +411,9 @@ def update_unittest_tags(args):
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_active_children'),
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithProcessesTestProcess.test_error_on_stdio_flush_1'),
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithThreadsTestProcess.test_error_on_stdio_flush_1'),
+        ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithThreadsTestProcess.test_error_on_stdio_flush_2'),
+        ('test_fileio.txt', '*graalpython.lib-python.3.test.test_fileio.COtherFileTests.testBytesOpen'),
+        ('test_fileio.txt', '*graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testBytesOpen'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
@@ -677,26 +680,43 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     else:
         args += [_graalpytest_driver(), "-v"]
 
-    agent_args = ' '.join(shlex.quote(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
-    if agent_args:
-        # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
-        # with the arguments
-        basedir = os.path.realpath(os.path.join(os.path.dirname(python_binary), '..'))
-        launcher_path = str((pathlib.Path(basedir) / 'bin' / 'graalpython').resolve())
-        launcher_path_bak = launcher_path + ".bak"
-        shutil.copy(launcher_path, launcher_path_bak)
-        try:
-            patch_batch_launcher(launcher_path, agent_args)
+    if mx_gate.get_jacoco_agent_args():
+        if is_bash_launcher(python_binary):
+            agent_args = ' '.join(shlex.quote(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
+            # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
+            # with the arguments
+            basedir = os.path.realpath(os.path.join(os.path.dirname(python_binary), '..'))
+            launcher_path = str((pathlib.Path(basedir) / 'bin' / 'graalpython').resolve())
+            launcher_path_bak = launcher_path + ".bak"
+            shutil.copy(launcher_path, launcher_path_bak)
+            try:
+                patch_batch_launcher(launcher_path, agent_args)
+                # jacoco only dumps the data on exit, and when we run all our unittests
+                # at once it generates so much data we run out of heap space
+                for testfile in testfiles:
+                    mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=False, env=env)
+            finally:
+                shutil.move(launcher_path_bak, launcher_path)
+        else:
+            # If 'python_binary' is a SVM launcher, we need to add '--jvm' and prefix each Java arg with '--vm.'
+            def graalvm_vm_arg(java_arg):
+                assert java_arg[0] == "-"
+                return "--vm." + java_arg[1:]
+            agent_args = ' '.join(graalvm_vm_arg(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
+
             # jacoco only dumps the data on exit, and when we run all our unittests
             # at once it generates so much data we run out of heap space
             for testfile in testfiles:
-                mx.run([launcher_path] + args + [testfile], nonZeroIsFatal=False, env=env)
-        finally:
-            shutil.move(launcher_path_bak, launcher_path)
+                mx.run([python_binary, "--jvm", agent_args] + args + [testfile], nonZeroIsFatal=False, env=env)
     else:
         args += testfiles
         mx.logv(" ".join([python_binary] + args))
         return mx.run([python_binary] + args, nonZeroIsFatal=True, env=env)
+
+
+def is_bash_launcher(launcher_path):
+    with open(launcher_path, 'r', encoding='ascii', errors='ignore') as launcher:
+        return re.match(r'^#!.*bash', launcher.readline())
 
 
 def patch_batch_launcher(launcher_path, jvm_args):
@@ -1222,7 +1242,7 @@ def update_import_cmd(args):
                 cmd = [
                     "ol-cli", "bitbucket", "--user='%s'" % username, "--password='${SSO_PASSWORD}'",
                     "create-pr", "--project=G", "--repo=%s" % reponame,
-                    "--title='[GR-21590] Update Python imports'",
+                    "--title=[GR-21590] Update Python imports",
                     "--from-branch=%s" % current_branch, "--to-branch=master"
                 ]
                 cmds.append(cmd)
