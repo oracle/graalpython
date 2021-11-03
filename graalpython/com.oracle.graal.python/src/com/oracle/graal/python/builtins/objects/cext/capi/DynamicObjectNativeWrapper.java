@@ -59,6 +59,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_FLAGS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_FREE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_ITEMSIZE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_NAME;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_SUBCLASSES;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_VECTORCALL_OFFSET;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
@@ -170,6 +171,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -1306,6 +1308,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 array.setExports(value);
             }
 
+            @Specialization(guards = "eq(TP_NAME, key)")
+            static void doTpName(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
+                            @Cached CExtNodes.FromCharPointerNode fromCharPointerNode,
+                            @Cached CastToJavaStringNode cast) {
+                object.setName(cast.execute(fromCharPointerNode.execute(value)));
+            }
+
             @Specialization(guards = "eq(TP_FLAGS, key)")
             static void doTpFlags(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long flags,
                             @Cached GetTypeFlagsNode getTypeFlagsNode,
@@ -1560,6 +1569,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         return OB_TYPE.getMemberName().equals(member) ||
                         OB_REFCNT.getMemberName().equals(member) ||
                         OB_EXPORTS.getMemberName().equals(member) ||
+                        TP_NAME.getMemberName().equals(member) ||
                         TP_FLAGS.getMemberName().equals(member) ||
                         TP_BASICSIZE.getMemberName().equals(member) ||
                         TP_ITEMSIZE.getMemberName().equals(member) ||
