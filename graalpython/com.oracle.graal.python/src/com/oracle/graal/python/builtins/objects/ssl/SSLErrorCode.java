@@ -53,22 +53,32 @@ public enum SSLErrorCode {
     ERROR_WANT_CONNECT(7, PythonBuiltinClassType.SSLError),
     ERROR_EOF(8, PythonBuiltinClassType.SSLEOFError),
     ERROR_SSL_PEM_LIB(9, PythonBuiltinClassType.SSLError),
-    ERROR_NO_START_LINE(108, PythonBuiltinClassType.SSLError),
-    ERROR_NO_CERTIFICATE_OR_CRL_FOUND(136, PythonBuiltinClassType.SSLError),
-    ERROR_KEY_TYPE_MISMATCH(115, PythonBuiltinClassType.SSLError),
-    ERROR_KEY_VALUES_MISMATCH(116, PythonBuiltinClassType.SSLError),
-    ERROR_BAD_BASE64_DECODE(100, PythonBuiltinClassType.SSLError),
+    ERROR_NO_START_LINE("NO_START_LINE", 108, PythonBuiltinClassType.SSLError),
+    ERROR_NO_CERTIFICATE_OR_CRL_FOUND("NO_CERTIFICATE_OR_CRL_FOUND", 136, PythonBuiltinClassType.SSLError),
+    ERROR_KEY_TYPE_MISMATCH("KEY_TYPE_MISMATCH", 115, PythonBuiltinClassType.SSLError),
+    ERROR_KEY_VALUES_MISMATCH("KEY_VALUES_MISMATCH", 116, PythonBuiltinClassType.SSLError),
+    ERROR_BAD_BASE64_DECODE("BAD_BASE64_DECODE", 100, PythonBuiltinClassType.SSLError),
 
-    ERROR_NOT_ENOUGH_DATA(142, PythonBuiltinClassType.SSLError),
+    ERROR_NOT_ENOUGH_DATA("NOT_ENOUGH_DATA", 142, PythonBuiltinClassType.SSLError),
 
-    ERROR_CERT_VERIFICATION(1, PythonBuiltinClassType.SSLCertVerificationError);
+    ERROR_CERT_VERIFICATION("CERTIFICATE_VERIFY_FAILED", 1, PythonBuiltinClassType.SSLCertVerificationError);
 
+    private final String mnemonic;
     private final int errno;
     private final PythonBuiltinClassType type;
 
     SSLErrorCode(int errno, PythonBuiltinClassType type) {
+        this(null, errno, type);
+    }
+
+    SSLErrorCode(String mnemonic, int errno, PythonBuiltinClassType type) {
+        this.mnemonic = mnemonic;
         this.errno = errno;
         this.type = type;
+    }
+
+    public String getMnemonic() {
+        return mnemonic;
     }
 
     public int getErrno() {
