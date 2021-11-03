@@ -291,14 +291,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.BAD_OPERAND_FOR, "", "abs()", object);
             }
             return result;
-       }
+        }
     }
 
     /**
      * Common class for all() and any() operations, as their logic and behaviors are very similar.
      */
     public abstract static class AllOrAnyNode extends PNodeWithContext {
-        enum NodeType {ALL, ANY}
+        enum NodeType {
+            ALL,
+            ANY
+        }
 
         @Child private PyObjectIsTrueNode isTrueNode = PyObjectIsTrueNode.create();
 
@@ -306,8 +309,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         boolean doBoolSequence(VirtualFrame frame,
-                               BoolSequenceStorage sequenceStorage,
-                               NodeType nodeType) {
+                        BoolSequenceStorage sequenceStorage,
+                        NodeType nodeType) {
             boolean[] internalArray = sequenceStorage.getInternalBoolArray();
 
             for (int i = 0; i < sequenceStorage.length(); i++) {
@@ -323,8 +326,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         boolean doIntSequence(VirtualFrame frame,
-                              IntSequenceStorage sequenceStorage,
-                              NodeType nodeType) {
+                        IntSequenceStorage sequenceStorage,
+                        NodeType nodeType) {
             int[] internalArray = sequenceStorage.getInternalIntArray();
 
             for (int i = 0; i < sequenceStorage.length(); i++) {
@@ -340,9 +343,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         boolean doGenericSequence(VirtualFrame frame,
-                                  SequenceStorage sequenceStorage,
-                                  NodeType nodeType,
-                                  @Cached SequenceStorageNodes.LenNode lenNode) {
+                        SequenceStorage sequenceStorage,
+                        NodeType nodeType,
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
             Object[] internalArray = sequenceStorage.getInternalArray();
             for (int i = 0; i < lenNode.execute(sequenceStorage); i++) {
                 if (nodeType == NodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
@@ -357,9 +360,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(limit = "3")
         protected boolean doHashStorage(VirtualFrame frame,
-                                        HashingStorage hashingStorage,
-                                        NodeType nodeType,
-                                        @CachedLibrary("hashingStorage") HashingStorageLibrary hlib) {
+                        HashingStorage hashingStorage,
+                        NodeType nodeType,
+                        @CachedLibrary("hashingStorage") HashingStorageLibrary hlib) {
             for (Object key : hlib.keys(hashingStorage)) {
                 if (nodeType == NodeType.ALL) {
                     if (!isTrueNode.execute(frame, key)) {
@@ -380,9 +383,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         boolean doList(VirtualFrame frame,
-                       PList object,
-                       @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                       @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
+                        PList object,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getSequenceStorage(), AllOrAnyNode.NodeType.ALL);
         }
 
@@ -396,27 +399,27 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         boolean doDict(VirtualFrame frame,
-                       PDict object,
-                       @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                       @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
+                        PDict object,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ALL);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         boolean doSet(VirtualFrame frame,
-                      PBaseSet object,
-                      @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                      @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
+                        PBaseSet object,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ALL);
         }
 
         @Specialization
         boolean doObject(VirtualFrame frame,
-                         Object object,
-                         @Cached PyObjectGetIter getIter,
-                         @Cached GetNextNode nextNode,
-                         @Cached IsBuiltinClassProfile errorProfile,
-                         @Cached PyObjectIsTrueNode isTrueNode) {
+                        Object object,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached GetNextNode nextNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = getIter.execute(frame, object);
             while (true) {
                 try {
@@ -440,9 +443,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         boolean doList(VirtualFrame frame,
-                       PList object,
-                       @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                       @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
+                        PList object,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getSequenceStorage(), AllOrAnyNode.NodeType.ANY);
         }
 
@@ -456,27 +459,27 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         boolean doDict(VirtualFrame frame,
-                       PDict object,
-                       @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                       @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
+                        PDict object,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ANY);
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         boolean doSet(VirtualFrame frame,
-                      PBaseSet object,
-                      @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                      @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
+                        PBaseSet object,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ANY);
         }
 
         @Specialization
         boolean doObject(VirtualFrame frame,
-                         Object object,
-                         @Cached PyObjectGetIter getIter,
-                         @Cached GetNextNode nextNode,
-                         @Cached IsBuiltinClassProfile errorProfile,
-                         @Cached PyObjectIsTrueNode isTrueNode) {
+                        Object object,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached GetNextNode nextNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = getIter.execute(frame, object);
             while (true) {
                 try {
