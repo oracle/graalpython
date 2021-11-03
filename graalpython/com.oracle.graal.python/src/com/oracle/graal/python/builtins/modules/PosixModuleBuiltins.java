@@ -2143,6 +2143,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "register_at_fork", keywordOnlyNames = {"before", "after_in_child", "after_in_parent"})
+    @GenerateNodeFactory
+    abstract static class RegisterAtForkNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object register(Object before, Object afterInChild, Object afterInParent) {
+            // TODO should we at least call multiprocessing.util.register_after_fork?
+            return PNone.NONE;
+        }
+    }
+
     // ------------------
     // Helpers
 
