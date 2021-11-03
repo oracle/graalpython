@@ -313,7 +313,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             for (int i = 0; i < sequenceStorage.length(); i++) {
                 if (nodeType == NodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
                     return false;
-                } else if (isTrueNode.execute(frame, internalArray[i])) { // ANY case
+                } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
                     return true;
                 }
             }
@@ -330,7 +330,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             for (int i = 0; i < sequenceStorage.length(); i++) {
                 if (nodeType == NodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
                     return false;
-                } else if (isTrueNode.execute(frame, internalArray[i])) { // ANY case
+                } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
                     return true;
                 }
             }
@@ -347,7 +347,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             for (int i = 0; i < lenNode.execute(sequenceStorage); i++) {
                 if (nodeType == NodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
                     return false;
-                } else if (isTrueNode.execute(frame, internalArray[i])) { // ANY case
+                } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
                     return true;
                 }
             }
@@ -365,7 +365,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     if (!isTrueNode.execute(frame, key)) {
                         return false;
                     }
-                } else if (isTrueNode.execute(frame, key)) { // ANY case
+                } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, key)) {
                     return true;
                 }
             }
