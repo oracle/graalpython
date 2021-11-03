@@ -254,6 +254,59 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
+    static class TernaryFunctionWrapper extends PyProcsWrapper {
+
+        public TernaryFunctionWrapper(Object delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage(name = "execute")
+        static class Execute {
+
+            @Specialization(guards = "arguments.length == 3")
+            static Object call(TernaryFunctionWrapper self, Object[] arguments,
+                            @CachedLibrary("self") PythonNativeWrapperLibrary lib,
+                            @Cached ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode posStarargsNode,
+                            @Cached ExpandKeywordStarargsNode expandKwargsNode,
+                            @Cached CallVarargsMethodNode callNode,
+                            @Cached ToJavaNode toJavaNode,
+                            @Cached ToNewRefNode toSulongNode,
+                            @Cached BranchProfile errorProfile,
+                            @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                            @Cached GetNativeNullNode getNativeNullNode,
+                            @Exclusive @Cached GilNode gil) {
+                boolean mustRelease = gil.acquire();
+                try {
+                    try {
+                        // convert args
+                        Object receiver = toJavaNode.execute(arguments[0]);
+                        Object starArgs = toJavaNode.execute(arguments[1]);
+                        Object kwArgs = toJavaNode.execute(arguments[2]);
+
+                        Object[] starArgsArray = posStarargsNode.executeWithGlobalState(starArgs);
+                        Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
+                        PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
+                        Object result = callNode.execute(null, lib.getDelegate(self), pArgs, kwArgsArray);
+                        return toSulongNode.execute(result);
+                    } catch (PException e) {
+                        errorProfile.enter();
+                        transformExceptionToNativeNode.execute(null, e);
+                        return getNativeNullNode.execute();
+                    }
+                } finally {
+                    gil.release(mustRelease);
+                }
+            }
+
+            @Specialization(guards = "arguments.length != 3")
+            static Object error(@SuppressWarnings("unused") TernaryFunctionWrapper self, Object[] arguments) throws ArityException {
+                throw ArityException.create(3, 3, arguments.length);
+            }
+
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
     static class SsizeargfuncWrapper extends PyProcsWrapper {
 
         private final boolean newRef;
@@ -304,6 +357,13 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
     public static InitWrapper createInitWrapper(Object setInitMethod) {
         return new InitWrapper(setInitMethod);
+    }
+
+    /**
+     * Wraps CPython's {@code ternaryfunc} slots.
+     */
+    public static TernaryFunctionWrapper createTernaryFunctionWrapper(Object setTernaryMethod) {
+        return new TernaryFunctionWrapper(setTernaryMethod);
     }
 
     public static SsizeargfuncWrapper createSsizeargfuncWrapper(Object ssizeArgMethod, boolean newRef) {

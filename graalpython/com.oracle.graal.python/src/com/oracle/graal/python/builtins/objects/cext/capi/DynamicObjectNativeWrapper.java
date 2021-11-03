@@ -66,6 +66,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKLISTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
@@ -729,12 +730,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_CALL, key)")
         @SuppressWarnings("unused")
         static Object doTpCall(PythonManagedClass object, PythonNativeWrapper nativeWrapper, String key,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
-            /*
-             * TODO(fa): For now, we just return NULL because that will usually cause a fallback to
-             * 'PyObject_Call' which is preferred from our point of view.
-             */
+            Object callMethod = lookupAttrNode.execute(object, __CALL__);
+            if (callMethod != PNone.NO_VALUE) {
+                return PyProcsWrapper.createTernaryFunctionWrapper(callMethod);
+            }
             return toSulongNode.execute(getNativeNullNode.execute());
         }
 
