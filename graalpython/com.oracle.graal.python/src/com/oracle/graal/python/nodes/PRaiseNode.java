@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -125,6 +127,10 @@ public abstract class PRaiseNode extends Node {
 
     public final PException raiseIntegerInterpretationError(Object result) {
         return raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, result);
+    }
+
+    public final PException raiseBadInternalCall() {
+        return raise(PythonBuiltinClassType.SystemError, BAD_ARG_TO_INTERNAL_FUNC);
     }
 
     public final PException raiseExceptionObject(PBaseException exc) {

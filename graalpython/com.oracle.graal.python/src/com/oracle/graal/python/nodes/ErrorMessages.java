@@ -84,6 +84,7 @@ public abstract class ErrorMessages {
     public static final String ATTR_S_READONLY = "attribute %s is read-only";
     public static final String ATTR_VALUE_MUST_BE_BOOL = "attribute value type must be bool";
     public static final String B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P = "%%b requires a bytes-like object, or an object that implements __bytes__, not '%p'";
+    public static final String ARG_TYPE_MUST_BE = "%s argument type must be %s";
     public static final String BAD_ARG_TO_INTERNAL_FUNC = "bad argument to internal function";
     public static final String BAD_ARG_TO_INTERNAL_FUNC_P = "bad argument to internal function %p";
     public static final String BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P = "bad argument to internal function, was '%s' (type '%p')";

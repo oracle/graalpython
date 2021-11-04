@@ -42,26 +42,38 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.FLUSH;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
+import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.castToString;
+import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.classNameNoDot;
+import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.fileFlush;
+import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.fileWriteString;
+import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.getExceptionTraceback;
+import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.getObjectClass;
+import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.getTypeName;
+import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.longAsInt;
+import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.objectHasAttr;
+import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.objectLookupAttr;
+import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.objectLookupAttrAsString;
+import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.objectStr;
+import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.tryCastToString;
 import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.EXCEPTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDOUT;
-import static com.oracle.graal.python.nodes.BuiltinNames.TRACEBACKLIMIT;
+import static com.oracle.graal.python.nodes.BuiltinNames.UNRAISABLEHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.__EXCEPTHOOK__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__STDERR__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__STDIN__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__STDOUT__;
+import static com.oracle.graal.python.nodes.BuiltinNames.__UNRAISABLEHOOK__;
+import static com.oracle.graal.python.nodes.ErrorMessages.ARG_TYPE_MUST_BE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
+import static com.oracle.graal.python.util.PythonUtils.NEW_LINE;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
@@ -71,7 +83,6 @@ import java.util.Set;
 
 import org.graalvm.nativeimage.ImageInfo;
 
-import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
@@ -90,8 +101,6 @@ import com.oracle.graal.python.builtins.modules.io.PTextIO;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.TextIOWrapperInitNode;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.TextIOWrapperInitNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -106,21 +115,14 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
-import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.traceback.TracebackNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PyLongAsIntNodeGen;
-import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNodeGen;
-import com.oracle.graal.python.lib.PyLongCheckNodeGen;
+import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -130,8 +132,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -140,12 +140,10 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.IntegerFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.CharsetMapping;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -161,6 +159,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "sys", isEager = true)
 public class SysModuleBuiltins extends PythonBuiltins {
+    static final String VALUE_STRING = "<string>";
+    static final String VALUE_UNKNOWN = "<unknown>";
     private static final String LICENSE = "Copyright (c) Oracle and/or its affiliates. Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.";
     private static final String COMPILE_TIME;
     public static final String PLATFORM_DARWIN = "darwin";
@@ -189,53 +189,49 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     static final StructSequence.BuiltinTypeDescriptor VERSION_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PVersionInfo,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "sys.version_info\n" +
-                    "\n" +
-                    "Version information as a named tuple.",
-                    // @formatter:on
+            // @formatter:off The formatter joins these lines making it less readable
+            "sys.version_info\n" +
+            "\n" +
+            "Version information as a named tuple.",
+            // @formatter:on
                     5,
                     new String[]{
                                     "major", "minor", "micro",
-                                    "releaselevel", "serial",
-                    },
+                                    "releaselevel", "serial"},
                     new String[]{
                                     "Major release number", "Minor release number", "Patch release number",
-                                    "'alpha', 'beta', 'candidate', or 'final'", "Serial release number"
-                    },
+                                    "'alpha', 'beta', 'candidate', or 'final'", "Serial release number"},
                     false);
 
     static final StructSequence.BuiltinTypeDescriptor FLAGS_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PFlags,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "sys.flags\n" +
-                    "\n" +
-                    "Flags provided through command line arguments or environment vars.",
-                    // @formatter:on
+            // @formatter:off The formatter joins these lines making it less readable
+            "sys.flags\n" +
+            "\n" +
+            "Flags provided through command line arguments or environment vars.",
+            // @formatter:on
                     15,
                     new String[]{
                                     "debug", "inspect", "interactive", "optimize", "dont_write_bytecode",
                                     "no_user_site", "no_site", "ignore_environment", "verbose",
                                     "bytes_warning", "quiet", "hash_randomization", "isolated",
-                                    "dev_mode", "utf8_mode"
-                    },
+                                    "dev_mode", "utf8_mode"},
                     new String[]{
                                     "-d", "-i", "-i", "-O or -OO", "-B",
                                     "-s", "-S", "-E", "-v",
                                     "-b", "-q", "-R", "-I",
-                                    "-X dev", "-X utf8"
-                    },
+                                    "-X dev", "-X utf8"},
                     false);
 
     static final StructSequence.BuiltinTypeDescriptor FLOAT_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PFloatInfo,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "sys.float_info\n" +
-                    "\n" +
-                    "A named tuple holding information about the float type. It contains low level\n" +
-                    "information about the precision and internal representation. Please study\n" +
-                    "your system's :file:`float.h` for more information.",
-                    // @formatter:on
+            // @formatter:off The formatter joins these lines making it less readable
+            "sys.float_info\n" +
+            "\n" +
+            "A named tuple holding information about the float type. It contains low level\n" +
+            "information about the precision and internal representation. Please study\n" +
+            "your system's :file:`float.h` for more information.",
+            // @formatter:on
                     11,
                     new String[]{
                                     "max",
@@ -248,8 +244,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                                     "mant_dig",
                                     "epsilon",
                                     "radix",
-                                    "rounds"
-                    },
+                                    "rounds"},
                     new String[]{
                                     "DBL_MAX -- maximum representable finite float",
                                     "DBL_MAX_EXP -- maximum int e such that radix**(e-1) is representable",
@@ -261,38 +256,34 @@ public class SysModuleBuiltins extends PythonBuiltins {
                                     "DBL_MANT_DIG -- mantissa digits",
                                     "DBL_EPSILON -- Difference between 1 and the next representable float",
                                     "FLT_RADIX -- radix of exponent",
-                                    "FLT_ROUNDS -- rounding mode"
-                    });
+                                    "FLT_ROUNDS -- rounding mode"});
 
     static final StructSequence.BuiltinTypeDescriptor INT_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PIntInfo,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "sys.int_info\n" +
-                    "\n" +
-                    "A named tuple that holds information about Python's\n" +
-                    "internal representation of integers.  The attributes are read only.",
-                    // @formatter:on
+            // @formatter:off The formatter joins these lines making it less readable
+            "sys.int_info\n" +
+            "\n" +
+            "A named tuple that holds information about Python's\n" +
+            "internal representation of integers.  The attributes are read only.",
+            // @formatter:on
                     2,
                     new String[]{
-                                    "bits_per_digit", "sizeof_digit"
-                    },
+                                    "bits_per_digit", "sizeof_digit"},
                     new String[]{
-                                    "size of a digit in bits", "size in bytes of the C type used to represent a digit"
-                    });
+                                    "size of a digit in bits", "size in bytes of the C type used to represent a digit"});
 
     static final StructSequence.BuiltinTypeDescriptor HASH_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PHashInfo,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "hash_info\n" +
-                    "\n" +
-                    "A named tuple providing parameters used for computing\n" +
-                    "hashes. The attributes are read only.",
-                    // @formatter:on
+            // @formatter:off The formatter joins these lines making it less readable
+            "hash_info\n" +
+            "\n" +
+            "A named tuple providing parameters used for computing\n" +
+            "hashes. The attributes are read only.",
+            // @formatter:on
                     9,
                     new String[]{
                                     "width", "modulus", "inf", "nan", "imag", "algorithm", "hash_bits",
-                                    "seed_bits", "cutoff"
-                    },
+                                    "seed_bits", "cutoff"},
                     new String[]{
                                     "width of the type used for hashing, in bits",
                                     "prime number giving the modulus on which the hash function is based",
@@ -302,39 +293,36 @@ public class SysModuleBuiltins extends PythonBuiltins {
                                     "name of the algorithm for hashing of str, bytes and memoryviews",
                                     "internal output size of hash algorithm",
                                     "seed size of hash algorithm",
-                                    "small string optimization cutoff"
-                    });
+                                    "small string optimization cutoff"});
 
     static final StructSequence.BuiltinTypeDescriptor THREAD_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PThreadInfo,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "sys.thread_info\n" +
-                    "\n" +
-                    "A named tuple holding information about the thread implementation.",
-                    // @formatter:on
+            // @formatter:off The formatter joins these lines making it less readable
+            "sys.thread_info\n" +
+            "\n" +
+            "A named tuple holding information about the thread implementation.",
+            // @formatter:on
                     3,
                     new String[]{
-                                    "name", "lock", "version"
-                    },
+                                    "name", "lock", "version"},
                     new String[]{
                                     "name of the thread implementation", "name of the lock implementation",
-                                    "name and version of the thread library"
-                    });
+                                    "name and version of the thread library"});
 
-    public static final StructSequence.BuiltinTypeDescriptor UNRAISABLE_HOOK_ARGS_DESC = new StructSequence.BuiltinTypeDescriptor(
+    public static final StructSequence.BuiltinTypeDescriptor UNRAISABLEHOOK_ARGS_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PUnraisableHookArgs,
-                    // @formatter:off The formatter joins these lines making it less readable
-                    "UnraisableHookArgs\n" +
-                    "\n" +
-                    "Type used to pass arguments to sys.unraisablehook.",
-                    // @formatter:on
+            // @formatter:off The formatter joins these lines making it less readable
+            "UnraisableHookArgs\n" +
+            "\n" +
+            "Type used to pass arguments to sys.unraisablehook.",
+            // @formatter:on
                     5,
                     new String[]{
-                                    "exc_type", "exc_value", "exc_traceback", "err_msg", "object"
-                    },
+                                    "exc_type", "exc_value", "exc_traceback",
+                                    "err_msg", "object"},
                     new String[]{
-                                    "Exception type", "Exception value", "Exception traceback", "Error message", "Object causing the exception"
-                    });
+                                    "Exception type", "Exception value", "Exception traceback",
+                                    "Error message", "Object causing the exception"});
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -359,7 +347,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         StructSequence.initType(core, INT_INFO_DESC);
         StructSequence.initType(core, HASH_INFO_DESC);
         StructSequence.initType(core, THREAD_INFO_DESC);
-        StructSequence.initType(core, UNRAISABLE_HOOK_ARGS_DESC);
+        StructSequence.initType(core, UNRAISABLEHOOK_ARGS_DESC);
 
         builtinConstants.put("abiflags", "");
         builtinConstants.put("byteorder", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "little" : "big");
@@ -533,6 +521,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         0 // utf8_mode
         ));
         sys.setAttribute(__EXCEPTHOOK__, sys.getAttribute(EXCEPTHOOK));
+        sys.setAttribute(__UNRAISABLEHOOK__, sys.getAttribute(UNRAISABLEHOOK));
     }
 
     @Override
@@ -557,17 +546,17 @@ public class SysModuleBuiltins extends PythonBuiltins {
         PBuffered reader = factory.createBufferedReader(PythonBuiltinClassType.PBufferedReader);
         BufferedReaderBuiltins.BufferedReaderInit.internalInit(reader, (PFileIO) get(builtinConstants, "stdin"), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
                         posixLib);
-        setWrapper("stdin", "__stdin__", "r", stdioEncoding, stdioError, reader, sysModule, textIOWrapperInitNode, factory);
+        setWrapper(STDIN, __STDIN__, "r", stdioEncoding, stdioError, reader, sysModule, textIOWrapperInitNode, factory);
 
         PBuffered writer = factory.createBufferedWriter(PythonBuiltinClassType.PBufferedWriter);
         BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, (PFileIO) get(builtinConstants, "stdout"), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
                         posixLib);
-        PTextIO stdout = setWrapper("stdout", "__stdout__", "w", stdioEncoding, stdioError, writer, sysModule, textIOWrapperInitNode, factory);
+        PTextIO stdout = setWrapper(STDOUT, __STDOUT__, "w", stdioEncoding, stdioError, writer, sysModule, textIOWrapperInitNode, factory);
 
         writer = factory.createBufferedWriter(PythonBuiltinClassType.PBufferedWriter);
         BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, (PFileIO) get(builtinConstants, "stderr"), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
                         posixLib);
-        PTextIO stderr = setWrapper("stderr", "__stderr__", "w", stdioEncoding, "backslashreplace", writer, sysModule, textIOWrapperInitNode, factory);
+        PTextIO stderr = setWrapper(STDERR, __STDERR__, "w", stdioEncoding, "backslashreplace", writer, sysModule, textIOWrapperInitNode, factory);
 
         // register atexit close std out/err
         core.getContext().registerAtexitHook((ctx) -> {
@@ -819,6 +808,113 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = UNRAISABLEHOOK, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2, declaresExplicitSelf = true, doc = "unraisablehook($module, unraisable, /)\n" +
+                    "--\n" +
+                    "\n" +
+                    "Handle an unraisable exception.\n" +
+                    "\n" +
+                    "The unraisable argument has the following attributes:\n" +
+                    "\n" +
+                    "* exc_type: Exception type.\n" +
+                    "* exc_value: Exception value, can be None.\n" +
+                    "* exc_traceback: Exception traceback, can be None.\n" +
+                    "* err_msg: Error message, can be None.\n" +
+                    "* object: Object causing the exception, can be None.")
+    @GenerateNodeFactory
+    abstract static class UnraisableHookNode extends PythonBuiltinNode {
+        @Child private TracebackNodes.PrintTracebackNode printTracebackNode;
+
+        private void printTraceBack(VirtualFrame frame, PythonModule sys, Object out, Object tb) {
+            if (printTracebackNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                printTracebackNode = insert(TracebackNodes.PrintTracebackNode.create());
+            }
+            printTracebackNode.execute(frame, sys, out, tb);
+        }
+
+        private void writeUnraisableExc(MaterializedFrame frame, PythonModule sys, Object out,
+                        Object excType, Object excValue, Object excTb, Object errMsg, Object obj) {
+            if (obj != PNone.NONE) {
+                if (errMsg != PNone.NONE) {
+                    TracebackNodes.fileWriteObject(frame, out, errMsg, true);
+                    fileWriteString(frame, out, ": ");
+                } else {
+                    fileWriteString(frame, out, "Exception ignored in: ");
+                }
+
+                if (!TracebackNodes.fileWriteObject(frame, out, obj, false)) {
+                    fileWriteString(frame, out, "<object repr() failed>");
+                }
+                fileWriteString(frame, out, NEW_LINE);
+            } else if (errMsg != PNone.NONE) {
+                TracebackNodes.fileWriteObject(frame, out, errMsg, true);
+                fileWriteString(frame, out, ":\n");
+            }
+
+            if (excTb != PNone.NONE) {
+                printTraceBack(frame, sys, out, excTb);
+            }
+
+            if (excType == PNone.NONE) {
+                return;
+            }
+
+            String className;
+            try {
+                className = getTypeName(excType);
+                className = classNameNoDot(className);
+            } catch (PException pe) {
+                className = null;
+            }
+            String moduleName;
+            Object v = objectLookupAttr(frame, excType, __MODULE__);
+            if (v == PNone.NO_VALUE || !PGuards.isString(v)) {
+                fileWriteString(frame, out, VALUE_UNKNOWN);
+            } else {
+                moduleName = castToString(v);
+                if (!moduleName.equals(BUILTINS)) {
+                    fileWriteString(frame, out, moduleName);
+                    fileWriteString(frame, out, ".");
+                }
+            }
+            if (className == null) {
+                fileWriteString(frame, out, VALUE_UNKNOWN);
+            } else {
+                fileWriteString(frame, out, className);
+            }
+
+            if (excValue != PNone.NONE) {
+                // only print colon if the str() of the object is not the empty string
+                fileWriteString(frame, out, ": ");
+                if (!TracebackNodes.fileWriteObject(frame, out, excValue, true)) {
+                    fileWriteString(frame, out, "<exception str() failed>");
+                }
+            }
+
+            fileWriteString(frame, out, NEW_LINE);
+        }
+
+        @Specialization
+        Object doit(VirtualFrame frame, PythonModule sys, Object args,
+                        @Cached TupleBuiltins.GetItemNode getItemNode) {
+            final Object cls = getObjectClass(args);
+            if (cls != PythonBuiltinClassType.PUnraisableHookArgs) {
+                throw raise(TypeError, ARG_TYPE_MUST_BE, "sys.unraisablehook", "UnraisableHookArgs");
+            }
+            final Object excType = getItemNode.execute(frame, args, 0);
+            final Object excValue = getItemNode.execute(frame, args, 1);
+            final Object excTb = getItemNode.execute(frame, args, 2);
+            final Object errMsg = getItemNode.execute(frame, args, 3);
+            final Object obj = getItemNode.execute(frame, args, 4);
+
+            Object stdErr = objectLookupAttr(frame, sys, STDERR);
+            final MaterializedFrame materializedFrame = frame.materialize();
+            writeUnraisableExc(materializedFrame, sys, stdErr, excType, excValue, excTb, errMsg, obj);
+            fileFlush(materializedFrame, stdErr);
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = EXCEPTHOOK, minNumOfPositionalArgs = 4, maxNumOfPositionalArgs = 4, declaresExplicitSelf = true, doc = "excepthook($module, exctype, value, traceback, /)\n" +
                     "--\n" +
                     "\n" +
@@ -827,20 +923,22 @@ public class SysModuleBuiltins extends PythonBuiltins {
     abstract static class ExceptHookNode extends PythonBuiltinNode {
         static final String CAUSE_MESSAGE = "\nThe above exception was the direct cause of the following exception:\n\n";
         static final String CONTEXT_MESSAGE = "\nDuring handling of the above exception, another exception occurred:\n\n";
-        static final int TRACEBACK_LIMIT = 1000;
-        static final int TB_RECURSIVE_CUTOFF = 3;
         static final String ATTR_PRINT_FILE_AND_LINE = "print_file_and_line";
         static final String ATTR_MSG = "msg";
         static final String ATTR_FILENAME = "filename";
         static final String ATTR_LINENO = "lineno";
         static final String ATTR_OFFSET = "offset";
         static final String ATTR_TEXT = "text";
-        static final String VALUE_STRING = "<string>";
-        static final String VALUE_UNKNOWN = "<unknown>";
-        static final String NL = "\n";
 
-        @Child private TracebackBuiltins.GetTracebackFrameNode getTbNode;
-        @Child private TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStacktraceNode;
+        @Child private TracebackNodes.PrintTracebackNode printTracebackNode;
+
+        private void printTraceBack(VirtualFrame frame, PythonModule sys, Object out, Object tb) {
+            if (printTracebackNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                printTracebackNode = insert(TracebackNodes.PrintTracebackNode.create());
+            }
+            printTracebackNode.execute(frame, sys, out, tb);
+        }
 
         @CompilerDirectives.ValueType
         static final class SyntaxErrData {
@@ -859,255 +957,39 @@ public class SysModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private PTraceback getNextTb(PTraceback traceback) {
-            if (materializeStacktraceNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                materializeStacktraceNode = insert(TracebackBuiltinsFactory.MaterializeTruffleStacktraceNodeGen.create());
-            }
-            materializeStacktraceNode.execute(traceback);
-            return traceback.getNext();
-        }
-
-        private PFrame getFrameTb(VirtualFrame frame, PTraceback tb) {
-            if (getTbNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getTbNode = insert(TracebackBuiltins.GetTracebackFrameNode.create());
-            }
-            return getTbNode.execute(frame, tb);
-        }
-
-        private static void write(VirtualFrame frame, Object file, String data) {
-            PyObjectCallMethodObjArgs.getUncached().execute(frame, file, WRITE, data);
-        }
-
-        private static void flush(VirtualFrame frame, Object file) {
-            PyObjectCallMethodObjArgs.getUncached().execute(frame, file, FLUSH);
-        }
-
-        private PCode getCode(VirtualFrame frame, PTraceback tb) {
-            return factory().createCode(getFrameTb(frame, tb).getTarget());
-        }
-
-        private static Object str(VirtualFrame frame, Object value) {
-            try {
-                return PyObjectStrAsObjectNode.getUncached().execute(frame, value);
-            } catch (PException pe) {
-                return null;
-            }
-        }
-
-        private static String castToString(Object value) {
-            return CastToJavaStringNode.getUncached().execute(value);
-        }
-
-        private static String tryCastToString(Object value) {
-            try {
-                return castToString(value);
-            } catch (CannotCastException e) {
-                return null;
-            }
-        }
-
-        private static Object lookupAttr(VirtualFrame frame, Object object, String attr) {
-            return PyObjectLookupAttr.getUncached().execute(frame, object, attr);
-        }
-
-        private static String lookupStrAttr(VirtualFrame frame, Object object, String attr) {
-            final Object value = lookupAttr(frame, object, attr);
-            return value != PNone.NO_VALUE ? castToString(value) : null;
-        }
-
-        private static boolean hasAttr(VirtualFrame frame, Object object, String attr) {
-            return lookupAttr(frame, object, attr) != PNone.NO_VALUE;
-        }
-
-        private static String getName(Object type) {
-            return TypeNodes.GetNameNode.getUncached().execute(type);
-        }
-
-        private static Object getClass(Object object) {
-            return GetClassNode.getUncached().execute(object);
-        }
-
-        private static PTraceback getExceptionTraceback(PBaseException e) {
-            return GetExceptionTracebackNode.getUncached().execute(e);
-        }
-
-        private boolean checkLong(Object object) {
-            return PyLongCheckNodeGen.getUncached().execute(object);
-        }
-
-        private static int asInt(VirtualFrame frame, Object object) {
-            return PyLongAsIntNodeGen.getUncached().execute(frame, object);
-        }
-
-        private static long asLongAndOverflow(VirtualFrame frame, Object object, long overflowValue) {
-            try {
-                return PyLongAsLongAndOverflowNodeGen.getUncached().execute(frame, object);
-            } catch (OverflowException e) {
-                if (object instanceof PInt) {
-                    return ((PInt) object).isZeroOrNegative() ? 0 : overflowValue;
-                }
-                return overflowValue;
-            }
-        }
-
-        private static Object readAttr(Object object, String attribute) {
-            return ReadAttributeFromObjectNode.getUncached().execute(object, attribute);
-        }
-
-        void printTraceBack(VirtualFrame frame, PythonModule sys, Object out, PTraceback tb) {
-            long limit = TRACEBACK_LIMIT;
-            final Object limitv = readAttr(sys, TRACEBACKLIMIT);
-            if (checkLong(limitv)) {
-                limit = asLongAndOverflow(frame, limitv, MAXSIZE);
-                if (limit <= 0) {
-                    return;
-                }
-            }
-            write(frame, out, "Traceback (most recent call last):\n");
-            printInternal(frame, out, tb, limit);
-        }
-
-        void printLineRepeated(VirtualFrame frame, Object out, int count) {
-            int cnt = count;
-            cnt -= TB_RECURSIVE_CUTOFF;
-            final StringBuilder sb = PythonUtils.newStringBuilder("  [Previous line repeated ");
-            PythonUtils.append(sb, cnt, (cnt > 1) ? " more times]\n" : " more time]\n");
-            write(frame, out, PythonUtils.sbToString(sb));
-        }
-
-        void displayLine(VirtualFrame frame, Object out, String fileName, int lineNo, String name) {
-            if (fileName == null || name == null) {
-                return;
-            }
-
-            final StringBuilder sb = PythonUtils.newStringBuilder("  File \"");
-            PythonUtils.append(sb, fileName, "\", line ", lineNo, ", in ", name, NL);
-            write(frame, out, PythonUtils.sbToString(sb));
-            // ignore errors since we can't report them, can we?
-            displaySourceLine(frame, out, fileName, lineNo, 4);
-        }
-
-        private static String getIndent(int indent) {
-            StringBuilder sb = PythonUtils.newStringBuilder();
-            for (int i = 0; i < indent; i++) {
-                PythonUtils.append(sb, ' ');
-            }
-            return PythonUtils.sbToString(sb);
-        }
-
-        @TruffleBoundary
-        CharSequence getSourceLine(String fileName, int lineNo) {
-            final PythonContext context = getContext();
-            TruffleFile file = context.getEnv().getInternalTruffleFile(fileName);
-            String line = null;
-            try {
-                Charset encoding;
-                try {
-                    encoding = PythonFileDetector.findEncodingStrict(file);
-                } catch (PythonFileDetector.InvalidEncodingException e) {
-                    encoding = StandardCharsets.UTF_8;
-                }
-                BufferedReader reader = file.newBufferedReader(encoding);
-                int i = 1;
-                while (i <= lineNo) {
-                    if (i == lineNo) {
-                        line = reader.readLine();
-                    } else {
-                        reader.readLine();
-                    }
-                    i++;
-                }
-            } catch (IOException ioe) {
-                line = null;
-            }
-            return line;
-        }
-
-        void displaySourceLine(VirtualFrame frame, Object out, String fileName, int lineNo, int indent) {
-            final CharSequence line = getSourceLine(fileName, lineNo);
-            if (line != null) {
-                write(frame, out, getIndent(indent));
-                write(frame, out, PythonUtils.trimLeft(line));
-                write(frame, out, NL);
-            }
-        }
-
-        void printInternal(VirtualFrame frame, Object out, PTraceback traceback, long limit) {
-            int depth = 0;
-            String lastFile = null;
-            int lastLine = -1;
-            String lastName = null;
-            int cnt = 0;
-            PTraceback tb1 = traceback;
-            PTraceback tb = traceback;
-            while (tb1 != null) {
-                depth++;
-                tb1 = getNextTb(tb1);
-            }
-            while (tb != null && depth > limit) {
-                depth--;
-                tb = getNextTb(tb);
-            }
-            while (tb != null) {
-                final PCode code = getCode(frame, tb);
-                if (lastFile == null ||
-                                !code.getFilename().equals(lastName) ||
-                                lastLine == -1 || tb.getLineno() != lastLine ||
-                                lastName == null || !code.getName().equals(lastName)) {
-                    if (cnt > TB_RECURSIVE_CUTOFF) {
-                        printLineRepeated(frame, out, cnt);
-                    }
-                    lastFile = code.getFilename();
-                    lastLine = tb.getLineno();
-                    lastName = code.getName();
-                    cnt = 0;
-                }
-                cnt++;
-                if (cnt <= TB_RECURSIVE_CUTOFF) {
-                    displayLine(frame, out, code.getFilename(), tb.getLineno(), code.getName());
-                }
-                tb = getNextTb(tb);
-            }
-            if (cnt > TB_RECURSIVE_CUTOFF) {
-                printLineRepeated(frame, out, cnt);
-            }
-        }
-
-        SyntaxErrData parseSyntaxError(VirtualFrame frame, Object err) {
+        private SyntaxErrData parseSyntaxError(VirtualFrame frame, Object err) {
             String msg, fileName = null, text = null;
             int lineNo = 0, offset = 0, hold = 0;
 
             // new style errors. `err' is an instance
-            msg = lookupStrAttr(frame, err, ATTR_MSG);
+            msg = objectLookupAttrAsString(frame, err, ATTR_MSG);
             if (msg == null) {
                 return new SyntaxErrData(msg, fileName, lineNo, offset, text);
             }
 
-            Object v = lookupAttr(frame, err, ATTR_FILENAME);
+            Object v = objectLookupAttr(frame, err, ATTR_FILENAME);
             if (v == PNone.NO_VALUE) {
                 return new SyntaxErrData(msg, fileName, lineNo, offset, text);
             }
             if (v == PNone.NONE) {
                 fileName = VALUE_STRING;
             } else {
-                fileName = castToString(str(frame, v));
+                fileName = castToString(objectStr(frame, v));
             }
 
-            v = lookupAttr(frame, err, ATTR_LINENO);
+            v = objectLookupAttr(frame, err, ATTR_LINENO);
             if (v == PNone.NO_VALUE) {
                 return new SyntaxErrData(msg, fileName, lineNo, offset, text);
             }
             try {
-                hold = asInt(frame, v);
+                hold = longAsInt(frame, v);
             } catch (PException pe) {
                 return new SyntaxErrData(msg, fileName, lineNo, offset, text);
             }
 
             lineNo = hold;
 
-            v = lookupAttr(frame, err, ATTR_OFFSET);
+            v = objectLookupAttr(frame, err, ATTR_OFFSET);
             if (v == PNone.NO_VALUE) {
                 return new SyntaxErrData(msg, fileName, lineNo, offset, text);
             }
@@ -1115,14 +997,14 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 offset = -1;
             } else {
                 try {
-                    hold = asInt(frame, v);
+                    hold = longAsInt(frame, v);
                 } catch (PException pe) {
                     return new SyntaxErrData(msg, fileName, lineNo, offset, text);
                 }
                 offset = hold;
             }
 
-            v = lookupAttr(frame, err, ATTR_TEXT);
+            v = objectLookupAttr(frame, err, ATTR_TEXT);
             if (v == PNone.NO_VALUE) {
                 return new SyntaxErrData(msg, fileName, lineNo, offset, text);
             }
@@ -1135,8 +1017,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return new SyntaxErrData(msg, fileName, lineNo, offset, text);
         }
 
-        void printErrorText(VirtualFrame frame, Object out, SyntaxErrData syntaxErrData) {
-            String text = castToString(str(frame, syntaxErrData.text));
+        private void printErrorText(VirtualFrame frame, Object out, SyntaxErrData syntaxErrData) {
+            String text = castToString(objectStr(frame, syntaxErrData.text));
             int offset = syntaxErrData.offset;
 
             if (offset >= 0) {
@@ -1160,95 +1042,19 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 text = PythonUtils.substring(text, idx);
             }
 
-            write(frame, out, "    ");
-            write(frame, out, text);
+            fileWriteString(frame, out, "    ");
+            fileWriteString(frame, out, text);
             if (text.charAt(0) == '\0' || text.charAt(text.length() - 1) != '\n') {
-                write(frame, out, NL);
+                fileWriteString(frame, out, NEW_LINE);
             }
             if (offset == -1) {
                 return;
             }
-            write(frame, out, "    ");
+            fileWriteString(frame, out, "    ");
             while (--offset > 0) {
-                write(frame, out, " ");
+                fileWriteString(frame, out, " ");
             }
-            write(frame, out, "^\n");
-        }
-
-        private String classNameNoDot(String name) {
-            final int i = PythonUtils.lastIndexOf(name, '.');
-            return (i > 0) ? PythonUtils.substring(name, i + 1) : name;
-        }
-
-        void printException(VirtualFrame frame, PythonModule sys, Object out, Object excValue) {
-            Object value = excValue;
-            final Object type = getClass(value);
-            if (!PGuards.isPBaseException(value)) {
-                write(frame, out, "TypeError: print_exception(): Exception expected for value, ");
-                write(frame, out, getName(type));
-                write(frame, out, " found\n");
-                return;
-            }
-
-            final PBaseException exc = (PBaseException) value;
-            final PTraceback tb = getExceptionTraceback(exc);
-            if (tb != null) {
-                printTraceBack(frame, sys, out, tb);
-            }
-
-            if (hasAttr(frame, value, ATTR_PRINT_FILE_AND_LINE)) {
-                // SyntaxError case
-                final SyntaxErrData syntaxErrData = parseSyntaxError(frame, value);
-                value = syntaxErrData.message;
-                StringBuilder sb = PythonUtils.newStringBuilder("  File \"");
-                PythonUtils.append(sb, castToString(str(frame, syntaxErrData.fileName)), "\", line ", syntaxErrData.lineNo, "\n");
-                write(frame, out, PythonUtils.sbToString(sb));
-
-                // Can't be bothered to check all those PyFile_WriteString() calls
-                if (syntaxErrData.text != null) {
-                    printErrorText(frame, out, syntaxErrData);
-                }
-            }
-
-            String className;
-            try {
-                className = getName(type);
-                className = classNameNoDot(className);
-            } catch (PException pe) {
-                className = null;
-            }
-            String moduleName;
-            Object v = lookupAttr(frame, type, __MODULE__);
-            if (v == PNone.NO_VALUE || !PGuards.isString(v)) {
-                write(frame, out, VALUE_UNKNOWN);
-            } else {
-                moduleName = castToString(v);
-                if (!moduleName.equals(BUILTINS)) {
-                    write(frame, out, moduleName);
-                    write(frame, out, ".");
-                }
-            }
-            if (className == null) {
-                write(frame, out, VALUE_UNKNOWN);
-            } else {
-                write(frame, out, className);
-            }
-
-            if (value != PNone.NONE) {
-                // only print colon if the str() of the object is not the empty string
-                v = str(frame, value);
-                String s = tryCastToString(v);
-                if (v == null) {
-                    write(frame, out, ": <exception str() failed>");
-                } else if (!PGuards.isString(v) || (s != null && !s.isEmpty())) {
-                    write(frame, out, ": ");
-                }
-                if (s != null) {
-                    write(frame, out, s);
-                }
-            }
-
-            write(frame, out, NL);
+            fileWriteString(frame, out, "^\n");
         }
 
         @TruffleBoundary
@@ -1264,17 +1070,88 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     if (cause != null) {
                         if (!contains(seen, cause)) {
                             printExceptionRecursive(frame, sys, out, cause, seen);
-                            write(frame, out, CAUSE_MESSAGE);
+                            fileWriteString(frame, out, CAUSE_MESSAGE);
                         }
                     } else if (context != null && !exc.getSuppressContext()) {
                         if (!contains(seen, context)) {
                             printExceptionRecursive(frame, sys, out, context, seen);
-                            write(frame, out, CONTEXT_MESSAGE);
+                            fileWriteString(frame, out, CONTEXT_MESSAGE);
                         }
                     }
                 }
             }
             printException(frame, sys, out, value);
+        }
+
+        protected void printException(VirtualFrame frame, PythonModule sys, Object out, Object excValue) {
+            Object value = excValue;
+            final Object type = getObjectClass(value);
+            if (!PGuards.isPBaseException(value)) {
+                fileWriteString(frame, out, "TypeError: print_exception(): Exception expected for value, ");
+                fileWriteString(frame, out, getTypeName(type));
+                fileWriteString(frame, out, " found\n");
+                return;
+            }
+
+            final PBaseException exc = (PBaseException) value;
+            final PTraceback tb = getExceptionTraceback(exc);
+            if (tb != null) {
+                printTraceBack(frame, sys, out, tb);
+            }
+
+            if (objectHasAttr(frame, value, ATTR_PRINT_FILE_AND_LINE)) {
+                // SyntaxError case
+                final SyntaxErrData syntaxErrData = parseSyntaxError(frame, value);
+                value = syntaxErrData.message;
+                StringBuilder sb = PythonUtils.newStringBuilder("  File \"");
+                PythonUtils.append(sb, castToString(objectStr(frame, syntaxErrData.fileName)), "\", line ", syntaxErrData.lineNo, "\n");
+                fileWriteString(frame, out, PythonUtils.sbToString(sb));
+
+                // Can't be bothered to check all those PyFile_WriteString() calls
+                if (syntaxErrData.text != null) {
+                    printErrorText(frame, out, syntaxErrData);
+                }
+            }
+
+            String className;
+            try {
+                className = getTypeName(type);
+                className = classNameNoDot(className);
+            } catch (PException pe) {
+                className = null;
+            }
+            String moduleName;
+            Object v = objectLookupAttr(frame, type, __MODULE__);
+            if (v == PNone.NO_VALUE || !PGuards.isString(v)) {
+                fileWriteString(frame, out, VALUE_UNKNOWN);
+            } else {
+                moduleName = castToString(v);
+                if (!moduleName.equals(BUILTINS)) {
+                    fileWriteString(frame, out, moduleName);
+                    fileWriteString(frame, out, ".");
+                }
+            }
+            if (className == null) {
+                fileWriteString(frame, out, VALUE_UNKNOWN);
+            } else {
+                fileWriteString(frame, out, className);
+            }
+
+            if (value != PNone.NONE) {
+                // only print colon if the str() of the object is not the empty string
+                v = objectStr(frame, value);
+                String s = tryCastToString(v);
+                if (v == null) {
+                    fileWriteString(frame, out, ": <exception str() failed>");
+                } else if (!PGuards.isString(v) || (s != null && !s.isEmpty())) {
+                    fileWriteString(frame, out, ": ");
+                }
+                if (s != null) {
+                    fileWriteString(frame, out, s);
+                }
+            }
+
+            fileWriteString(frame, out, NEW_LINE);
         }
 
         @TruffleBoundary
@@ -1302,18 +1179,20 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            Object stdErr = lookupAttr(frame, sys, STDERR);
-            printExceptionRecursive(frame.materialize(), sys, stdErr, value, createSet());
-            flush(frame, stdErr);
+            final MaterializedFrame materializedFrame = frame.materialize();
+            Object stdErr = objectLookupAttr(materializedFrame, sys, STDERR);
+            printExceptionRecursive(materializedFrame, sys, stdErr, value, createSet());
+            fileFlush(materializedFrame, stdErr);
 
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isPTraceback(traceBack)")
         Object doWithoutTb(VirtualFrame frame, PythonModule sys, @SuppressWarnings("unused") Object excType, Object value, @SuppressWarnings("unused") Object traceBack) {
-            Object stdErr = lookupAttr(frame, sys, STDERR);
-            printExceptionRecursive(frame.materialize(), sys, stdErr, value, createSet());
-            flush(frame, stdErr);
+            final MaterializedFrame materializedFrame = frame.materialize();
+            Object stdErr = objectLookupAttr(materializedFrame, sys, STDERR);
+            printExceptionRecursive(materializedFrame, sys, stdErr, value, createSet());
+            fileFlush(materializedFrame, stdErr);
 
             return PNone.NONE;
         }

@@ -73,8 +73,7 @@ import com.oracle.truffle.api.utilities.NeverValidAssumption;
  * {@link PythonBufferAcquireLibrary#acquireWritable(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallNode)}
  * </li>
  * <li>
- * {@link PythonBufferAccessLibrary#release(Object, VirtualFrame, PNodeWithRaiseAndIndirectCall)}
- * </li>
+ * {@link PythonBufferAccessLibrary#release(Object, VirtualFrame, PNodeWithRaiseAndIndirectCall)}</li>
  * <li>
  * {@link PythonBufferAccessLibrary#release(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallNode)}
  * </li>

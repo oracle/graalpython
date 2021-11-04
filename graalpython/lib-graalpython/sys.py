@@ -36,7 +36,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from builtins import BaseException
 
 
 # Stub audit hooks implementation for PEP 578
@@ -58,33 +57,6 @@ def exit(arg=None):
     if isinstance(arg, tuple) and len(arg) == 1:
         code = arg[0]
     raise SystemExit(code)
-
-
-def make_unraisablehook():
-    def __unraisablehook__(unraisable, /):
-        try:
-            if unraisable.object:
-                try:
-                    r = repr(unraisable.object)
-                except Exception:
-                    r = "<object repr() failed>"
-                if unraisable.err_msg:
-                    print(f"{unraisable.err_msg}: {r}", file=stderr)
-                else:
-                    print(f"Exception ignored in: {r}", file=stderr)
-            elif unraisable.err_msg:
-                print(f"{unraisable.err_msg}:", file=stderr)
-        except BaseException:
-            # let it fall through to the exception printer
-            pass
-        __excepthook__(unraisable.exc_type, unraisable.exc_value, unraisable.exc_traceback)
-
-    return __unraisablehook__
-
-
-__unraisablehook__ = make_unraisablehook()
-unraisablehook = __unraisablehook__
-del make_unraisablehook
 
 
 @__graalpython__.builtin
