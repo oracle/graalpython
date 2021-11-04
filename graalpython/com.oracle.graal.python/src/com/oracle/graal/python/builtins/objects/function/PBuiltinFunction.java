@@ -134,6 +134,10 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         return flags;
     }
 
+    public boolean isStatic() {
+        return (flags & CExtContext.METH_STATIC) != 0;
+    }
+
     @TruffleBoundary
     public static int getFlags(Builtin builtin, RootCallTarget callTarget) {
         return getFlags(builtin, ((PRootNode) callTarget.getRootNode()).getSignature());

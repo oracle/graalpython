@@ -130,6 +130,9 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
 
         @Specialization
         protected static Object doIt(PBuiltinMethod self) {
+            if (self.getFunction().isStatic()) {
+                return PNone.NONE;
+            }
             return self.getSelf();
         }
     }
@@ -176,7 +179,10 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
                         @Cached PyObjectLookupAttr lookup,
                         @CachedLibrary("self") DynamicObjectLibrary dylib) {
             Object module = dylib.getOrDefault(self, __MODULE__, PNone.NO_VALUE);
-            if (module == PNone.NO_VALUE) {
+            if (module != PNone.NO_VALUE) {
+                return module;
+            }
+            if (self.getSelf() instanceof PythonModule) {
                 /*
                  * 'getThreadStateNode' acts as a branch profile. This indirect call is done to
                  * easily support calls to this builtin with and without virtual frame, and because
@@ -189,9 +195,8 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
                 } finally {
                     IndirectCallContext.exit(frame, language, getContext(), state);
                 }
-            } else {
-                return module;
             }
+            return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(value)", limit = "2")

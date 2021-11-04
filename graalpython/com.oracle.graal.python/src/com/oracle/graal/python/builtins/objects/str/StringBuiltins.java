@@ -1054,7 +1054,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.maketrans()
-    @Builtin(name = "maketrans", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, isClassmethod = true)
+    @Builtin(name = "maketrans", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, isStaticmethod = true)
     @GenerateNodeFactory
     public abstract static class MakeTransNode extends PythonQuaternaryBuiltinNode {
 

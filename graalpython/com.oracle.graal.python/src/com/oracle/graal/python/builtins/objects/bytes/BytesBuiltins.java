@@ -2299,7 +2299,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     // static bytes.maketrans()
     // static bytearray.maketrans()
-    @Builtin(name = "maketrans", minNumOfPositionalArgs = 3, isClassmethod = true)
+    @Builtin(name = "maketrans", minNumOfPositionalArgs = 3, isStaticmethod = true)
     @GenerateNodeFactory
     public abstract static class MakeTransNode extends PythonBuiltinNode {
 
