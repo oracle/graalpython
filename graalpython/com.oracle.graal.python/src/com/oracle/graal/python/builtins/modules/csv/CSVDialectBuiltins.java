@@ -9,7 +9,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
-import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -21,7 +21,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -84,7 +83,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                                                @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
                                                @Cached GetClassNode getClassNode,
                                                @Cached IsSubtypeNode isSubtypeNode,
-                                               @Cached PyObjectGetAttr getAttributeNode,
+                                               @Cached PyObjectLookupAttr getAttributeNode,
                                                @Cached CastToJavaStringNode castToJavaStringNode,
                                                @Cached ReadAttributeFromObjectNode readNode,
                                                @Cached CastToJavaBooleanNode castToJavaBooleanNode,
@@ -96,10 +95,9 @@ public class CSVDialectBuiltins extends PythonBuiltins {
             // TODO: What if dialect itself is a class ?
             Object clazz = getClassNode.execute(dialectObj);
             CSVDialect dialect;
+            // TODO: Can Subtype Check be moved to guard?P
             if (isSubtypeNode.execute(clazz, PythonBuiltinClassType.CSVDialect)) { //isSubTypeNode + getClassNode
                 dialect = (CSVDialect) dialectObj;
-            } else if (isSubtypeNode.execute(clazz, PythonBuiltinClassType.PString)) { // castToJavaStringNode
-                dialect = (CSVDialect) getDialect.get(dialectObj, castToJavaStringNode, readNode, library);
             } else {
                 Object delimiterInput = getAttributeValueFromDialect(frame, dialectObj, "delimiter", getAttributeNode);
                 Object doublequoteInput = getAttributeValueFromDialect(frame, dialectObj, "doublequote", getAttributeNode);
@@ -130,7 +128,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
         CSVDialect doDialectWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, CSVDialect dialectObj, Object delimiterObj, Object
                 doublequoteObj, Object escapecharObj, Object lineterminatorObj, Object quotecharObj, Object quotingObj,
                                          Object skipinitialspaceObj, Object strictObj,
-                                         @Cached PyObjectGetAttr getAttributeNode,
+                                         @Cached PyObjectLookupAttr getAttributeNode,
                                          @Cached GetClassNode getClassNode,
                                          @Cached CastToJavaStringNode castToJavaStringNode,
                                          @Cached ReadAttributeFromObjectNode readNode,
@@ -169,7 +167,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                                     @Cached ReadAttributeFromObjectNode readNode,
                                     @Cached GetClassNode getClassNode,
                                     @CachedLibrary(limit = "1") HashingStorageLibrary library,
-                                    @Cached PyObjectGetAttr getAttributeNode,
+                                    @Cached PyObjectLookupAttr getAttributeNode,
                                     @Cached CastToJavaStringNode castToJavaStringNode,
                                     @Cached CastToJavaBooleanNode castToJavaBooleanNode,
                                     @Cached PyLongCheckExactNode pyLongCheckExactNode,
@@ -206,7 +204,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                 escapecharObj, Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj,
                          Object strictObj,
                          @Cached GetClassNode getClassNode,
-                         @Cached PyObjectGetAttr getAttributeNode,
+                         @Cached PyObjectLookupAttr getAttributeNode,
                          @Cached CastToJavaStringNode castToJavaStringNode,
                          @Cached CastToJavaBooleanNode castToJavaBooleanNode,
                          @Cached PyLongCheckExactNode pyLongCheckExactNode,
@@ -214,7 +212,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                          @Cached PyUnicodeCheckExactNode pyUnicodeCheckExactNode) {
 
             // TODO: should we check dialectObj before accessing here in any way?
-            if (dialectObj != PNone.NO_VALUE) {
+            if (!(dialectObj instanceof PNone)) {
                 delimiterObj = getAttributeValue(frame, dialectObj, delimiterObj, "delimiter", getAttributeNode);
                 doublequoteObj = getAttributeValue(frame, dialectObj, doublequoteObj, "doublequote", getAttributeNode);
                 escapecharObj = getAttributeValue(frame, dialectObj, escapecharObj, "escapechar", getAttributeNode);
@@ -243,19 +241,13 @@ public class CSVDialectBuiltins extends PythonBuiltins {
             return dialect instanceof CSVDialect;
         }
 
-        private Object getAttributeValue(VirtualFrame frame, Object dialect, Object inputValue, String attributeName, PyObjectGetAttr getAttributeNode) {
+        private Object getAttributeValue(VirtualFrame frame, Object dialect, Object inputValue, String attributeName, PyObjectLookupAttr getAttributeNode) {
             if (inputValue != PNone.NO_VALUE) return inputValue;
             return getAttributeValueFromDialect(frame, dialect, attributeName, getAttributeNode);
         }
 
-        private Object getAttributeValueFromDialect(VirtualFrame frame, Object dialect, String attributeName, PyObjectGetAttr getAttributeNode) {
-            Object value;
-            try {
-                value = getAttributeNode.execute(frame, dialect, attributeName);
-            } catch (PException e) {
-                value = PNone.NO_VALUE;
-            }
-            return value;
+        private Object getAttributeValueFromDialect(VirtualFrame frame, Object dialect, String attributeName, PyObjectLookupAttr getAttributeNode) {
+            return getAttributeNode.execute(frame, dialect, attributeName);
         }
 
         private String getChar(String name, Object valueObj, String defaultValue,

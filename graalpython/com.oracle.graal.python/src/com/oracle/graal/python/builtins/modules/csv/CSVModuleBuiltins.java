@@ -5,10 +5,6 @@
  */
 package com.oracle.graal.python.builtins.modules.csv;
 
-// import static
-
-// import Java Standard Library
-
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -109,7 +105,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             if (library.hasKey(((PDict) dialects).getDictStorage(), name)) {
                 library.delItem(((PDict) dialects).getDictStorage(), name);
             } else {
-                throw raise(PythonBuiltinClassType.KeyError, "unknown dialect");
+                throw raise(PythonBuiltinClassType.CSVError, "unknown dialect");
             }
 
             return PNone.NONE;
@@ -141,7 +137,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
 
             // Do we need to check if dialects is a PDict?
             if (!library.hasKey(((PDict) dialects).getDictStorage(), name)) {
-                throw raise(PythonBuiltinClassType.KeyError, "unknown dialect");
+                throw raise(PythonBuiltinClassType.CSVError, "unknown dialect");
             }
 
             return library.getItem(((PDict) dialects).getDictStorage(), name);

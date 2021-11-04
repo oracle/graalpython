@@ -297,6 +297,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     TimeoutError("TimeoutError", BUILTINS, Flags.EXCEPTION),
     ZipImportError("ZipImportError", "zipimport", Flags.EXCEPTION),
     ZLibError("error", "zlib", Flags.EXCEPTION),
+    CSVError("Error", "_csv", Flags.EXCEPTION),
     LZMAError("LZMAError", "_lzma", Flags.EXCEPTION),
     StructError("StructError", "_struct", Flags.EXCEPTION),
     PickleError("PickleError", "_pickle", Flags.EXCEPTION),
@@ -588,6 +589,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         TimeoutError.base = OSError;
         ZipImportError.base = ImportError;
         ZLibError.base = Exception;
+        CSVError.base = Exception;
         LZMAError.base = Exception;
         SocketGAIError.base = OSError;
         SocketHError.base = OSError;
@@ -698,7 +700,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
         HashSet<String> set = new HashSet<>();
         for (PythonBuiltinClassType type : VALUES) {
-            assert set.add(type.name) : type.name(); // check uniqueness
+            assert set.add("" + type.moduleName + "." + type.name) : type.name(); // check uniqueness
 
             /* Initialize type.base (defaults to PythonObject unless that's us) */
             if (type.base == null && type != PythonObject) {

@@ -85,8 +85,8 @@ __version__ = "1.0"
 QUOTE_MINIMAL, QUOTE_ALL, QUOTE_NONNUMERIC, QUOTE_NONE = range(4)
 _field_limit = 128 * 1024 # max parsed field size
 
-class Error(Exception):
-    pass
+# class Error(Exception):
+#     pass
 
 # class Dialect(object):
 #     """CSV dialect
