@@ -50,6 +50,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.memory.MemoryFence;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.Shape;
 
@@ -230,10 +231,21 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         return getName();
     }
 
-    public void setDescriptor(BuiltinMethodDescriptor descriptor) {
-        this.descriptor = descriptor;
+    public void setDescriptor(BuiltinMethodDescriptor value) {
+        assert value.getName().equals(getName()) && getBuiltinNodeFactory() == value.getFactory() : getName() + " vs " + value;
+        // Only make sure that info is fully initialized, otherwise it is fine if it is set multiple
+        // times from different threads, all of them should set the same value
+        MemoryFence.storeStore();
+        BuiltinMethodDescriptor local = descriptor;
+        assert local == null || local == value : value;
+        this.descriptor = value;
     }
 
+    /**
+     * The descriptor is set lazily once this builtin function is stored in any special method slot.
+     * I.e., one can assume that any builtin function looked up via special method slots has its
+     * descriptor set.
+     */
     public BuiltinMethodDescriptor getDescriptor() {
         return descriptor;
     }

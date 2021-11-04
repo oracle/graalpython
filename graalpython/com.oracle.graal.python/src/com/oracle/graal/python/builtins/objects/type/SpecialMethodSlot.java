@@ -140,7 +140,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.memory.MemoryFence;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
@@ -658,10 +657,6 @@ public enum SpecialMethodSlot {
                     // Note: number of all builtins >> number of builtins used in slots, so it is
                     // better to do this lazily
                     language.registerBuiltinDescriptorCallTarget(info, builtinFun.getCallTarget());
-                    // Only make sure that info is fully initialized, otherwise it is fine if it is
-                    // set multiple times from different threads, all of them should set the same
-                    // value
-                    MemoryFence.storeStore();
                     builtinFun.setDescriptor(info);
                 }
                 return info;

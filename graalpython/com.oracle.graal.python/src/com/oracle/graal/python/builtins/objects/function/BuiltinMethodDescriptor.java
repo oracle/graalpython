@@ -148,7 +148,7 @@ public abstract class BuiltinMethodDescriptor {
     // The builtin annotation allows us to differentiate between builtins shared for reversible
     // operations, such as int.__mul__ and int.__rmul__, which have the same node factory
     private final Builtin builtinAnnotation;
-    // Name and isReverseOperation are shortcuts for builtinAnnotation.name()/reverseOperation()
+    // Shortcuts for fields of builtinAnnotation that are accessed on a fast-path
     private final String name;
     private final boolean isReverseOperation;
     private final int minNumOfPositionalArgs;
