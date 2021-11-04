@@ -6,15 +6,21 @@
 package com.oracle.graal.python.pegparser.tokenizer;
 
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer.DecodingState;
+import com.oracle.graal.python.pegparser.tokenizer.Tokenizer.StatusCode;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PushbackInputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.IntBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CoderResult;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -60,84 +66,67 @@ public class Tokenizer {
         INTERACTIVE_STOP;
     }
 
-    public static enum DecodingState {
-        STATE_INIT,
-        STATE_SEEK_CODING,
-        STATE_NORMAL;
-    }
+    // tok_new initialization is taken care of here
+    private final boolean execInput;
 
-    private final ByteArrayInputStream originalInputStream;
-    private BufferedReader buffer;
-
+    /** {@code tok_state->buf, tok_state->inp, tok_state->str, tok_state->input} */
+    private final int[] codePointsInput;
+    /** {@code tok_state->cur} */
+    private int nextCharIndex = 0;
+    /** {@code tok_state->fp_interactive} */
     private final boolean interactive;
+    /** {@code tok_state->start} */
+    private int tokenStart = 0;
+    /** {@code tok_state->done} */
     private StatusCode done = StatusCode.OK;
+    /** {@code tok_state->tabsize} */
     private int tabSize = TABSIZE;
+    /** {@code tok_state->indent} */
     private int currentIndentIndex = 0;
+    /** {@code tok_state->indstack} */
     private int[] indentationStack = new int[100];
-    private int[] altIndentationStack = new int[100];
+    /** {@code tok_state->atbol} */
     private boolean atBeginningOfLine = false;
+    /** {@code tok_state->pendin} */
     private int pendingIndents = 0;
-    private String prompt;
-    private String nextPrompt;
-    private int currentLineNumber = 1; // we count lines from one
+    /** {@code tok_state->lineno, we count lines from one} */
+    private int currentLineNumber = 1;
+    /** {@code tok_state->first_lineno} */
+    private int firstLineNumber = 0;
+    /** {@code tok_state->level} */
     private int parensNestingLevel = 0;
-    private DecodingState state = DecodingState.STATE_INIT;
-    private boolean decodingError = false;
-    private Charset currentTokenEncoding;
-    private Charset fileEncoding;
+    /** {@code tok_state->parenstack} */
+    private byte parensStack[200] = new byte[200];
+    /** {@code tok_state->parenlinenostack} */
+    private int[] parensLineNumberStack = new int[200];
+    /** {@code tok_state->parencolstack} */
+    private int[] parensColumnsStack = new int[200];
+    /** {@code tok_state->filename} */
+    private String filename = null;
+    /** {@code tok_state->altindstack} */
+    private int[] altIndentationStack = new int[100];
+    /** {@code tok_state->enc, tok_state->encoding} */
+    private Charset fileEncoding = null;
+    /** {@code tok_state->cont_line} */
     private boolean inContinuationLine = false;
-    private String filename;
-    private boolean lookForTypeComments;
+    /** {@code tok_state->line_start} */
+    private int lineStartIndex = 0;
+    /** {@code tok_state->multi_line_start} */
+    private int multiLineStartIndex = 0;
+    /** {@code tok_state->type_comments} */
+    private boolean lookForTypeComments = false;
+    /** {@code tok_state->async_def} */
     private boolean insideAsyncDef = false;
+    /** {@code tok_state->async_def_indent} */
     private int indetationOfAsyncDef = 0;
+    /** {@code tok_state->async_def_nl} */
     private boolean asyncDefFollowedByNewline = false;
 
-    public Tokenizer(String code) {
-        this(new ByteArrayInputStream(code.getBytes(StandardCharsets.UTF_8)), false, false);
-    }
-
-    public Tokenizer(byte[] code) {
-        this(new ByteArrayInputStream(code), false, true);
-    }
+    // error_ret
 
     /**
-     * Constructor mimics CPython's tokenizer.c decode_str
+     * get_normal_name
      */
-    private Tokenizer(ByteArrayInputStream stream, boolean interactive, boolean mustCheckBOM) {
-        this.originalInputStream = stream;
-        if (mustCheckBOM) {
-            this.fileEncoding = checkBOM(stream);
-        }
-        byte[] line1 = null;
-        byte[] line2 = null;
-        ByteArrayOutputStream sb = new ByteArrayOutputStream();
-        stream.mark(0);
-        int b;
-        while ((b = stream.read()) != '\n' && b != EOF) {
-            sb.write(b);
-        }
-        line1 = sb.toByteArray();
-        sb.reset();
-        while ((b = stream.read()) != '\n' && b != EOF) {
-            sb.write(b);
-        }
-        line2 = sb.toByteArray();
-        stream.reset();
-
-        fileEncoding = null;
-        checkCodingSpec(line1);
-        if (fileEncoding == null && state != DecodingState.STATE_NORMAL) {
-            checkCodingSpec(line2);
-        }
-        if (fileEncoding == null) {
-            fileEncoding = StandardCharsets.UTF_8;
-        }
-        if (buffer == null) {
-            buffer = new BufferedReader(new InputStreamReader(originalInputStream, fileEncoding));
-        }
-        this.interactive = interactive;
-    }
-
     private static String getNormalName(String s) {
         if (s.startsWith("utf-8")) {
             return "utf-8";
@@ -153,12 +142,17 @@ public class Tokenizer {
     private static final byte[] CODINGS_BYTES = new byte[]{'c', 'o', 'd', 'i', 'n', 'g'};
 
     /**
-     * Return the coding spec in {@code s} or {@code null} if none is found
+     * get_coding_spec
+     *
+     * Return the coding spec in the current line or {@code null} if none is found
      */
-    private String getCodingSpec(byte[] s) {
-        int i = 0;
-        for (; i < s.length - 6; i++) {
-            byte cp = s[i];
+    static String getCodingSpec(byte[] byteInput, int lineStart) {
+        int i = lineStart;
+        for (; i < byteInput.length - 6; i++) {
+            byte cp = byteInput[i];
+            if (cp == '\n') {
+                return null;
+            }
             if (cp == '#') {
                 break;
             }
@@ -166,24 +160,27 @@ public class Tokenizer {
                 return null;
             }
         }
-        for (; i < s.length - 6; i++) {
-            if (Arrays.equals(s, i, s.length, CODINGS_BYTES, 0, 6)) {
+        for (; i < byteInput.length - 6; i++) {
+            if (Arrays.equals(byteInput, i, i + 6, CODINGS_BYTES, 0, 6)) {
                 int t = i + 6;
-                byte cp = s[t];
+                byte cp = byteInput[t];
+                if (cp == '\n') {
+                    return null;
+                }
                 if (cp != ':' && cp != '=') {
                     continue;
                 }
                 do {
                     t++;
-                    cp = s[t];
+                    cp = byteInput[t];
                 } while (cp == ' ' || cp == '\t');
                 int begin = t;
                 while (Character.isLetterOrDigit(cp) || cp == '-' || cp == '_' || cp == '.') {
                     t++;
-                    cp = s[t];
+                    cp = byteInput[t];
                 }
                 if (begin < t) {
-                    String r = new String(Arrays.copyOfRange(s, begin, t), StandardCharsets.UTF_8);
+                    String r = new String(Arrays.copyOfRange(byteInput, begin, t), StandardCharsets.UTF_8);
                     return getNormalName(r);
                 }
             }
@@ -192,94 +189,250 @@ public class Tokenizer {
     }
 
     /**
-     * Check and set file encoding. Return {@code true} on success; false if
-     * there was an error.
+     * check_coding_spec
+     *
+     * Check and return file encoding or {@code null} if none was found. This
+     * returns the default encoding if anything but a comment is found in the
+     * line, since that means there can be no further coding comments in this
+     * source.
      */
-    private boolean checkCodingSpec(byte[] line) {
-        if (inContinuationLine) {
-            state = DecodingState.STATE_NORMAL;
-            return true;
-        }
-        String spec = getCodingSpec(line);
+    static Charset checkCodingSpec(byte[] byteInput, int lineStart) {
+        String spec = getCodingSpec(byteInput, lineStart);
         if (spec == null) {
-            for (int i = 0; i < line.length; i++) {
-                int cp = line[i];
+            for (int i = lineStart; i < byteInput.length; i++) {
+                int cp = byteInput[i];
                 if (cp == '#' || cp == '\n' || cp == '\r') {
                     break;
                 }
                 if (cp != ' ' && cp != '\t' && cp != '\014') {
-                    /* Stop checking coding spec after a line containing
-                     * anything except a comment. */
-                    state = DecodingState.STATE_NORMAL;
-                    break;
+                    // Stop checking coding spec after a line containing
+                    // anything except a comment. We assume UTF-8 in that case.
+                    return StandardCharsets.UTF_8;
                 }
             }
-            return true;
-        }
-        state = DecodingState.STATE_NORMAL;
-        if (this.fileEncoding == null) {
-            fileEncoding = Charset.forName(spec);
-            if (fileEncoding != StandardCharsets.UTF_8) {
-                buffer = new BufferedReader(new InputStreamReader(originalInputStream, fileEncoding));
-            }
-        } else {
-            if (fileEncoding != Charset.forName(spec)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static Charset checkBOM(ByteArrayInputStream is) {
-        is.mark(0);
-        if (is.read() == 0xEF &&
-            is.read() == 0xBB &&
-            is.read() == 0xBF) {
-            return StandardCharsets.UTF_8;
-        } else {
-            is.reset();
             return null;
         }
+        return Charset.forName(spec);
     }
 
-    
+    private static final byte[] BOM_BYTES = new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF};
 
+    /**
+     * check_bom
+     */
+    private static boolean checkBOM(byte[] byteInput) {
+        return byteInput.length >= 3 && Arrays.equals(byteInput, 0, 3, BOM_BYTES, 0, 3);
+    }
+
+    // tok_concatenate_interactive_new_line
+    // tok_reserve_buf
+    // tok_readline_recode
+    // fp_setreadl
+    // fp_getc
+    // fp_ungetc
+    // valid_utf8
+    // ensure_utf8
+    // buf_getc
+    // buf_ungetc
+    // buf_setreadl
+
+    /**
+     * translate_into_utf8
+     */
+    static int[] translateIntoCodePoints(byte[] inputBytes, int offset, Charset fileEncoding) {
+        CharBuffer buf = fileEncoding.decode(ByteBuffer.wrap(inputBytes, offset, inputBytes.length - offset));
+        return buf.codePoints().toArray();
+    }
+
+    // translate_newlines
+
+    /**
+     * decode_str
+     */
+    private Tokenizer(byte[] code, boolean execInput, boolean interactive) {
+        // we do not translate newlines or add a missing final newline. we deal
+        // with those in the call to get the next character
+        this.execInput = execInput;
+
+        // check_bom
+        int sourceStart = 0;
+        boolean hasUTF8BOM = checkBOM(code);
+        if (hasUTF8BOM) {
+            sourceStart = 3;
+        }
+        // If we got a BOM, we need to treat the input as UTF8. But we'll still
+        // have to check for coding specs written in the comment line of the
+        // first two lines. Since the only valid coding specs in the first lines
+        // must be a comment all by itself ('#') followed by spaces and then
+        // 'coding' spelled out, and in UTF-8 these are definitely single-byte
+        // characters, there is no point in decoding immediately. Also, CPython
+        // seems to just accept any encoding after encoding the input already as
+        // UTF-8 bytes! So it decodes the input as utf-8 (which I guess just
+        // checks that it's valid in the end), uses the decoded bytes to search
+        // for a coding spec, and then again decodes these bytes using whatever
+        // coding spec was written. This seems seriously broken if a file starts
+        // with a UTF-8 BOM and then the coding spec says it's cp1251. So I'm
+        // going to ignore the first decode if there's also a coding spec
+        // comment.
+
+        int offset = sourceStart;
+        this.fileEncoding = checkCodingSpec(code, offset);
+        if (this.fileEncoding == null) {
+            // we didn't find the encoding in the first line, so we need to
+            // check the second line too
+            while (offset < code.length && code[offset] != '\n') {
+                offset++;
+            }
+            offset++; // skip over newline
+            if (offset < code.length) {
+                this.fileEncoding = checkCodingSpec(code, offset);
+            }
+        }
+
+        if (this.fileEncoding == null && hasUTF8BOM) {
+            this.fileEncoding = StandardCharsets.UTF_8;
+        }
+
+        this.codePointsInput = fileEncoding
+            .decode(ByteBuffer.wrap(code, sourceStart, code.length))
+            .codePoints()
+            .toArray();
+        this.interactive = interactive;
+    }
+
+    /**
+     * PyTokenizer_FromString
+     */
+    public Tokenizer(byte[] code, boolean execInput) {
+        this(code, execInput, false);
+    }
+
+    /**
+     * PyTokenizer_FromUTF8
+     */
+    public Tokenizer(String code, boolean execInput) {
+        this.codePointsInput = code.codePoints().toArray();
+        this.fileEncoding = StandardCharsets.UTF_8;
+        this.interactive = false;
+    }
+
+    // PyTokenizer_FromFile
+    // PyTokenizer_Free
+    // tok_readline_raw
+    // tok_underflow_string
+    // tok_underflow_interactive
+    // tok_underflow_file
+    // print_escape
+
+    /**
+     * tok_nextc, inlining tok_underflow_string, because that's all we need
+     *
+     * CPython always scans one line ahead, so every tok_underflow_string call
+     * will update the current line number, and then they keep returning the
+     * next char until they reach the next line. We do it differently, since we
+     * always have the entire buffer here.
+     */
     int nextChar() {
-        if (nextCharIndex < text.length()) {
-            int c = text.charAt(nextCharIndex);
-            // new line
+        if (nextCharIndex < codePointsInput.length) {
+            int c = codePointsInput[nextCharIndex];
+            nextCharIndex++;
             if (c == '\n') {
                 currentLineNumber++;
                 atBeginningOfLine = true;
-                startCurrentLineOffset = nextCharIndex;
+                lineStartIndex = nextCharIndex;
             }
-            nextCharIndex++;
             return c;
         } else {
-            if (nextCharIndex == text.length()) {
-                int index = text.length() - 1;
+            if (nextCharIndex == codePointsInput.length && execInput) {
+                // check if we need to report a missing newline before eof
+                int index = codePointsInput.length - 1;
                 int c = -1;
-                while(index >= 0) {
-                    c = text.charAt(index);
+                while (index >= 0) {
+                    c = codePointsInput[index];
                     if (!Character.isWhitespace(c) || c == '\n') {
                         break;
                     }
-                    index++;
+                    index--;
                 }
                 if (c != '\n') {
-                    // report new line before eof
                     nextCharIndex++;
                     return '\n';
                 }
             }
-            if (!isEOF) {
+            if (done != StatusCode.EOF) {
                 // the first EOF is on the new line
                 currentLineNumber++;
-                startCurrentLineOffset = nextCharIndex;
+                lineStartIndex = nextCharIndex;
             }
-            isEOF = true;
+            done = StatusCode.EOF;
             return EOF;
         }
+    }
+
+    /**
+     * tok_backup
+     */
+    void oneBack() {
+        if (nextCharIndex > 0 && done != StatusCode.EOF) {
+            nextCharIndex--;
+        }
+    }
+
+    // _syntaxerror_range
+    // syntaxerror
+    // syntaxerror_known_range
+    // TODO: indenterror
+    // TODO: parser_warn
+
+    // TODO: lookahead
+    // TODO: verify_end_of_number
+
+    /**
+     * verify_identifier
+     * Verify that the string is a valid identifier.
+     * @return {@code null} if valid, else an error message
+     */
+    private String verifyIdentifier(String tokenString) {
+        // inlined the logic from _PyUnicode_ScanIdentifier
+        int invalid = tokenString.length();
+        if (!Character.isJavaIdentifierStart(tokenString.codePointAt(0))) {
+            invalid = 0;
+        }
+        for (int i = 1; i < invalid; i++) {
+            if (!Character.isJavaIdentifierPart(tokenString.codePointAt(i))) {
+                invalid = i;
+                break;
+            }
+        }
+        if (invalid < tokenString.length()) {
+            int codePoint = tokenString.codePointAt(invalid);
+            String printString = new String(new int[] { codePoint }, 0, 1);
+            return String.format("invalid character '%s' (U+%x)", printString, codePoint);
+        }
+        return null;
+    }
+
+    /**
+     * tok_decimal_tail
+     */
+    private int readDecimalTail() {
+        int c;
+
+        while (true) {
+            do {
+                c = nextChar();
+            } while (Character.isDigit(c));
+            if (c != '_') {
+                break;
+            }
+            c = nextChar();
+            if (!Character.isDigit(c)) {
+                oneBack();
+                // TODO syntax error : invalid decimal literal
+                return 0;
+            }
+        }
+        return c;
     }
 
     private static final int STATE_NEXTLINE = 0;
@@ -288,6 +441,9 @@ public class Tokenizer {
     private static final int STATE_AFTER_FRACTION = 3;
     private static final int STATE_STRING = 4;
 
+    /**
+     * tok_get
+     */
     public Token next() {
         int c = 0;
         int state = STATE_NEXTLINE;
@@ -296,7 +452,7 @@ public class Tokenizer {
             switch (state) {
                 case STATE_NEXTLINE:
                     // Get indentation level
-                    if (nextCharIndex - 1 == startCurrentLineOffset) { // we're at the beginning of a line
+                    if (nextCharIndex - 1 == lineStartIndex) { // we're at the beginning of a line
                         int col = 0;
                         int altcol = 0;
                         OUTER: while (true) {
@@ -336,7 +492,7 @@ public class Tokenizer {
                                 blankline = true;
                             }
                         }
-                        if (!blankline && 
+                        if (!blankline &&
                     }
                 case STATE_INIT:
                     // skip spaces
@@ -344,7 +500,7 @@ public class Tokenizer {
                         c = nextChar();
                     } while (c == ' ' || c == '\t' || c == '\014');
 
-                    startOffset = nextCharIndex - 1;
+                    tokenStart = nextCharIndex - 1;
 
                     // skip comment
                     if (c == '#') {
@@ -358,11 +514,11 @@ public class Tokenizer {
                     // check EOF
                     if (c == EOF) {
                         // TODO return EOF Token
-                        return new Token(Token.Kind.ENDMARKER, startOffset, startOffset, currentLineNumber, 0, currentLineNumber, 0);
+                        return new Token(Token.Kind.ENDMARKER, tokenStart, tokenStart, currentLineNumber, 0, currentLineNumber, 0);
                     }
 
                     // identifier
-                    if (isIdentifierStart(c)) {
+                    if (isPotentialIdentifierChar(c)) {
                         // check combinations of b"", r"", u"" and f""
                         boolean sawb = false;
                         boolean sawr = false;
@@ -391,7 +547,7 @@ public class Tokenizer {
                             break;
                         }
                         boolean nonascii = false;
-                        while (isIdentifierChar(c)) {
+                        while (isPotentialIdentifierChar(c)) {
                             if (c >= 128) {
                                 nonascii = true;
                             }
@@ -421,15 +577,15 @@ public class Tokenizer {
                     if (c == '\n') {
                         return createToken(Token.Kind.NEWLINE);
                     }
-                    // period
+                    // TODO period
                     if (c == '.') {
                         c = nextChar();
                         if (Character.isDigit(c)) {
                             state = STATE_FRACTION;
                             break;
                         } else if (c == '.') {
-                            c = nextChar();
-                            if (c == '.') {
+                            int c2 = nextChar();
+                            if (c2 == '.') {
                                 return createToken(Token.Kind.ELLIPSIS);
                             }
                             oneBack();
@@ -659,72 +815,22 @@ public class Tokenizer {
         return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
     }
 
-    private void oneBack() {
-        if (nextCharIndex > 0 && !isEOF) {
-            nextCharIndex--;
-        }
-    }
-
-    private int readDecimalTail() {
-        int c;
-
-        while (true) {
-            do {
-                c = nextChar();
-            } while (Character.isDigit(c));
-            if (c != '_') {
-                break;
-            }
-            c = nextChar();
-            if (!Character.isDigit(c)) {
-                oneBack();
-                // TODO syntax error : invalid decimal literal
-                return 0;
-            }
-        }
-        return c;
-    }
-
     private Token createToken(Token.Kind kind) {
-        return new Token(kind, startOffset, nextCharIndex, currentLineNumber, startOffset - startCurrentLineOffset, currentLineNumber, nextCharIndex - startCurrentLineOffset);
+        return new Token(kind, tokenStart, nextCharIndex, currentLineNumber, tokenStart - lineStartIndex, currentLineNumber, nextCharIndex - lineStartIndex);
     }
 
     private Token createToken(Token.Kind kind, Object extraData) {
-        return new Token(kind, startOffset, nextCharIndex, currentLineNumber, startOffset - startCurrentLineOffset, currentLineNumber, nextCharIndex - startCurrentLineOffset, extraData);
+        return new Token(kind, tokenStart, nextCharIndex, currentLineNumber, tokenStart - lineStartIndex, currentLineNumber, nextCharIndex - lineStartIndex, extraData);
     }
 
     public String toString(Token token) {
         StringBuilder sb = new StringBuilder();
         sb.append("Token ");
         sb.append(token.type.name());
-        sb.append(" [").append(token.startOffset).append(", ").append(token.endOffset).append("]");
+        sb.append(" [").append(token.tokenStart).append(", ").append(token.endOffset).append("]");
         sb.append(" (").append(token.startLine).append(", ").append(token.startColumn);
         sb.append(") (").append(token.endLine).append(", ").append(token.endColumn).append(") '");
         sb.append(getTokenString(token)).append("'");
         return sb.toString();
-    }
-
-    /**
-     * Verify that the string is a valid identifier.
-     * @return {@code null} if valid, else an error message
-     */
-    private String verifyIdentifier(String tokenString) {
-        // inlined the logic from _PyUnicode_ScanIdentifier
-        int invalid = tokenString.length();
-        if (!Character.isJavaIdentifierStart(tokenString.codePointAt(0))) {
-            invalid = 0;
-        }
-        for (int i = 1; i < invalid; i++) {
-            if (!Character.isJavaIdentifierPart(tokenString.codePointAt(i))) {
-                invalid = i;
-                break;
-            }
-        }
-        if (invalid < tokenString.length()) {
-            int codePoint = tokenString.codePointAt(invalid);
-            String printString = new String(new int[] { codePoint }, 0, 1);
-            return String.format("invalid character '%s' (U+%x)", printString, codePoint);
-        }
-        return null;
     }
 }
