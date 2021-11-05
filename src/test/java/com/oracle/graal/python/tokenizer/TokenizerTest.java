@@ -93,6 +93,10 @@ public class TokenizerTest {
 
     }
 
+    private static void assertToken(String code, Token.Kind kind) {
+        assertEquals(kind, new ParserTokenizer(code).getToken().type);
+    }
+    
     @Test
     public void testAsync() {
         assertToken("async", Token.Kind.ASYNC);
@@ -114,9 +118,9 @@ public class TokenizerTest {
     }
 
     // TODO: fix this test, this identifier should not be accepted
-    @Test(expected = AssertionError.class)
+    @Test
     public void testIllegalUnicodeIdentifier() {
-        assertToken("€", Token.Kind.ERRORTOKEN);
+        assertThrows(AssertionError.class, () -> {assertToken("€", Token.Kind.ERRORTOKEN);});
     }
 
     @Test
