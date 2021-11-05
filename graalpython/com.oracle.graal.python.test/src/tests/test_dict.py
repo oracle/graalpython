@@ -48,6 +48,49 @@ def assert_raises(err, fn, *args, **kwargs):
     assert raised
 
 
+def test_equality():
+
+    class EqualTo:
+        def __init__(self, to):
+            self.to = to
+
+        def __eq__(self, other):
+            return other == self.to
+
+        def __hash__(self):
+            return hash(self.to)
+
+        def __repr__(self):
+            return f"<equal to {self.to}>"
+
+    dicts = [
+        {'a': 'a'},
+        {'a': 'b'},
+        {'a': 'a', 'b': 'b'},
+        {str(i): i for i in range(101)},
+        {str(i): str(i) for i in range(101)},
+        {1: 1},
+        {1: 2},
+        {1: 1, 2: 2},
+    ]
+
+    for d1 in dicts:
+        for d2 in dicts:
+
+            def check(a, b):
+                if d1 is d2:
+                    assert a == b, f"{a} should be equal to {b}"
+                else:
+                    assert a != b, f"{a} should not be equal to {b}"
+
+            eq1 = {EqualTo(k): EqualTo(v) for k, v in d1.items()}
+            eq2 = {EqualTo(k): EqualTo(v) for k, v in d2.items()}
+
+            check(d1, d2)
+            check(d1, eq2)
+            check(eq1, d2)
+
+
 def test_views():
     d = dict()
     d['a'] = 1
