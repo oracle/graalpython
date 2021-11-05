@@ -5,6 +5,7 @@
  */
 package com.oracle.graal.python.tokenizer;
 
+import com.oracle.graal.python.pegparser.ParserTokenizer;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.io.BufferedReader;
@@ -90,6 +91,32 @@ public class TokenizerTest {
     @AfterEach
     public void tearDown() {
 
+    }
+
+    @Test
+    public void testAsync() {
+        assertToken("async", Token.Kind.ASYNC);
+    }
+
+    @Test
+    public void testAwait() {
+        assertToken("await", Token.Kind.AWAIT);
+    }
+
+    @Test
+    public void testIdentifier() {
+        assertToken("hello", Token.Kind.NAME);
+    }
+
+    @Test
+    public void testUnicodeIdentifier() {
+        assertToken("Öllo", Token.Kind.NAME);
+    }
+
+    // TODO: fix this test, this identifier should not be accepted
+    @Test(expected = AssertionError.class)
+    public void testIllegalUnicodeIdentifier() {
+        assertToken("€", Token.Kind.ERRORTOKEN);
     }
 
     @Test

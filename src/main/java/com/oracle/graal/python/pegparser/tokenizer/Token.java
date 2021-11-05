@@ -79,8 +79,17 @@ public class Token {
     public final int endLine;
     public final int endColumn;
     public final Kind type;
+    public final Object extraData;
 
     public Token(Kind type, int startOffset, int endOffset, int startLine, int startColumn, int endLine, int endColumn) {
+        this(type, startOffset, endOffset, startLine, startColumn, endLine, endColumn, null);
+    }
+
+    public Token(Kind type,
+                 int startOffset, int endOffset,
+                 int startLine, int startColumn,
+                 int endLine, int endColumn,
+                 Object extraData) {
         this.startOffset = startOffset;
         this.endOffset = endOffset;
         this.startLine = startLine;
@@ -88,8 +97,8 @@ public class Token {
         this.endLine = endLine;
         this.endColumn = endColumn;
         this.type = type;
+        this.extraData = extraData;
     }
-
 
     static Kind oneChar(int c) {
         switch (c) {
