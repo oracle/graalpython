@@ -133,6 +133,10 @@ public abstract class PRaiseNode extends Node {
         return raise(PythonBuiltinClassType.SystemError, BAD_ARG_TO_INTERNAL_FUNC);
     }
 
+    public final PException raiseMemoryError() {
+        return raise(PythonBuiltinClassType.MemoryError);
+    }
+
     public final PException raiseExceptionObject(PBaseException exc) {
         throw raise(this, exc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
     }

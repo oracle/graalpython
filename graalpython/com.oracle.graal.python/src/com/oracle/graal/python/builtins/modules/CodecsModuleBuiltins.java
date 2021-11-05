@@ -485,18 +485,20 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class CodecsEncodeToJavaBytesNode extends PNodeWithRaise {
+    @GenerateUncached
+    public abstract static class CodecsEncodeToJavaBytesNode extends Node {
         public abstract byte[] execute(Object self, String encoding, String errors);
 
         @Specialization
         byte[] encode(Object self, String encoding, String errors,
                         @Cached CastToJavaStringNode castStr,
-                        @Cached HandleEncodingErrorNode errorHandler) {
+                        @Cached HandleEncodingErrorNode errorHandler,
+                        @Cached PRaiseNode raiseNode) {
             String input = castStr.execute(self);
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
             Charset charset = CharsetMapping.getCharset(encoding);
             if (charset == null) {
-                throw raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
+                throw raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
             }
             TruffleEncoder encoder;
             try {
@@ -506,7 +508,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 }
             } catch (OutOfMemoryError e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raise(MemoryError);
+                throw raiseNode.raiseMemoryError();
             }
             return encoder.getBytes();
         }
