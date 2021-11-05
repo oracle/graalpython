@@ -709,6 +709,7 @@ public class Tokenizer {
 
                 // check EOF
                 if (c == EOF) {
+                    tokenStart = nextCharIndex;
                     if (parensNestingLevel > 0) {
                         return createToken(Token.Kind.ERRORTOKEN);
                     }
@@ -983,13 +984,15 @@ public class Tokenizer {
                 return createToken(Token.Kind.NUMBER);
             case LABEL_EXPONENT:
                 // exponent part
-                int e = c;
-                c = nextChar();
-                if (c == '+' || c == '-') {
+                {
+                    int e = c;
                     c = nextChar();
-                    if (!Character.isDigit(c)) {
-                        oneBack();
-                        return syntaxError("invalid decimal literal");
+                    if (c == '+' || c == '-') {
+                        c = nextChar();
+                        if (!Character.isDigit(c)) {
+                            oneBack();
+                            return syntaxError("invalid decimal literal");
+                        }
                     } else if (!Character.isDigit(c)) {
                         oneBack();
                         Token syntaxError = verifyEndOfNumber(e, "decimal");
@@ -1179,7 +1182,13 @@ public class Tokenizer {
     }
 
     public String getTokenString(Token tok) {
-        return new String(codePointsInput, tok.startOffset, tok.endOffset - tok.startOffset);
+        if (tok.startOffset >= codePointsInput.length) {
+            return "";
+        } else if (tok.endOffset >= codePointsInput.length) {
+            return new String(codePointsInput, tok.startOffset, codePointsInput.length - tok.startOffset);
+        } else {
+            return new String(codePointsInput, tok.startOffset, tok.endOffset - tok.startOffset);
+        }
     }
 
     public String toString(Token token) {
