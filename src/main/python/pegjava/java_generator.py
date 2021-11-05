@@ -603,13 +603,21 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
     def emit_default_action(self, is_loop: bool, is_gather: bool, node: Alt) -> None:
         self.print(f"// self.local_variable_names: {self.local_variable_names}")
         if len(self.local_variable_names) > 1:
-            if is_gather:
-                assert len(self.local_variable_names) == 2
-                self.print(f"SSTNode[] _res = Arrays.copyOf({self.local_variable_names[1]}, {self.local_variable_names[1]}.length + 1);")
-                self.print(f"System.arraycopy(_res, 0, _res, 1, _res.length - 1);")
-                self.print(f"_res[0] = {self.local_variable_names[0]};")
-            else:
-                self.print(f"_res = factory.createDummyName({', '.join(self.local_variable_names)});")
+            self.print("// TODO handle default action if there is more variables")
+        #    if is_gather:
+        #        assert len(self.local_variable_names) == 2
+        #        self.print(
+        #            f"_res = _PyPegen_seq_insert_in_front(p, "
+        #            f"{self.local_variable_names[0]}, {self.local_variable_names[1]});"
+        #        )
+        #    else:
+        #        if self.debug:
+        #            self.print(
+        #                f'D(fprintf(stderr, "Hit without action [%d:%d]: %s\\n", _mark, p->mark, "{node}"));'
+        #            )
+        #        self.print(
+        #            f"_res = _PyPegen_dummy_name(p, {', '.join(self.local_variable_names)});"
+        #        )
         else:
             if is_loop:
                 self.print(f"if ({self.local_variable_names[0]} instanceof SSTNode) {{")
