@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 #encoding: UTF-8
 
 import os
@@ -47,6 +47,7 @@ BASE_NODETYPES = {
     "STRING": NodeTypes.STRING_TOKEN,
     "SOFT_KEYWORD": NodeTypes.SOFT_KEYWORD,
 }
+
 
 @dataclass
 class FunctionCall:
@@ -354,12 +355,13 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         tokens: Dict[int, str],
         exact_tokens: Dict[str, int],
         non_exact_tokens: Set[str],
-        file: Optional[IO[Text]]
+        file: Optional[IO[Text]],
+        debug: bool = True,
     ):
         super().__init__(grammar, tokens, file)
         self.callmakervisitor = JavaCallMakerVisitor(self, exact_tokens, non_exact_tokens, self.print)
         self.lookahead_functions: Dict[str, FunctionCall] = {}
-
+        self.debug = debug
 
     def _generate_rule_ids(self):
         with self.indent():
@@ -506,7 +508,6 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         with self.indent():
             self.print()
             self.print("// parser fields")
-            self.print("private final static boolean DEBUG = true;")
             self.print("private int level = 0;")
             self.print("private final RuleResultCache<Object> cache;")
             self.print("private final Set<String> softKeywords;")
@@ -539,22 +540,19 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
 
         self._generate_lookahead_methods()
         self._generate_methods()
-        self._generate_debug_methods()
+        if self.debug:
+            self._generate_debug_methods()
         self.print("}")
 
     def _insert_debug_rule_enter (self, message):
-        self.print("if (DEBUG) {")
-        with self.indent():
+        if self.debug:
             self.print(f'debugMessageln({message});')
             self.print("this.level++;")
-        self.print("}")
 
     def _insert_debug_rule_leave (self, message):
-        self.print("if (DEBUG) {")
-        with self.indent():
+        if self.debug:
             self.print("this.level--;")
             self.print(f'debugMessageln({message});')
-        self.print("}")
 
     def _set_up_token_start_metadata_extraction(self) -> None:
         #self.print("if (p->mark == p->fill && _PyPegen_fill_token(p) < 0) {")
@@ -605,31 +603,16 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
     def emit_default_action(self, is_loop: bool, is_gather: bool, node: Alt) -> None:
         self.print(f"// self.local_variable_names: {self.local_variable_names}")
         if len(self.local_variable_names) > 1:
-            self.print("// TODO handle default action if there is more variables")
-        #    if is_gather:
-        #        assert len(self.local_variable_names) == 2
-        #        self.print(
-        #            f"_res = _PyPegen_seq_insert_in_front(p, "
-        #            f"{self.local_variable_names[0]}, {self.local_variable_names[1]});"
-        #        )
-        #    else:
-        #        if self.debug:
-        #            self.print(
-        #                f'D(fprintf(stderr, "Hit without action [%d:%d]: %s\\n", _mark, p->mark, "{node}"));'
-        #            )
-        #        self.print(
-        #            f"_res = _PyPegen_dummy_name(p, {', '.join(self.local_variable_names)});"
-        #        )
+            if is_gather:
+                assert len(self.local_variable_names) == 2
+                self.print(f"SSTNode[] _res = Arrays.copyOf({self.local_variable_names[1]}, {self.local_variable_names[1]}.length + 1);")
+                self.print(f"System.arraycopy(_res, 0, _res, 1, _res.length - 1);")
+                self.print(f"_res[0] = {self.local_variable_names[0]};")
+            else:
+                self.print(f"_res = factory.createDummyName({', '.join(self.local_variable_names)});")
         else:
-        #    if self.debug:
-        #        self.print(
-        #            f'D(fprintf(stderr, "Hit with default action [%d:%d]: %s\\n", _mark, p->mark, "{node}"));'
-        #        )
             if is_loop:
-                self.print(f"if ({self.local_variable_names[0]} instanceof Token) {{")
-                with self.indent():
-                    self.print("// TODO")
-                self.print(f"}} else if ({self.local_variable_names[0]} instanceof SSTNode) {{")
+                self.print(f"if ({self.local_variable_names[0]} instanceof SSTNode) {{")
                 with self.indent():
                     self.print(f"children.add((SSTNode){self.local_variable_names[0]});")
                 self.print(f"}} else if ({self.local_variable_names[0]} instanceof SSTNode[]) {{")
@@ -644,10 +627,8 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         pass
 
     def _insert_debug_message(self, message: str , indent: bool = True):
-        self.print("if (DEBUG) {")
-        with self.indent():
+        if self.debug:
             self.print(f'debugMessageln("{message}", {str(indent).lower()});')
-        self.print("}")
 
     def _handle_cache_result(self, rule):
         self.print(f'if (cache.hasResult(pos, {rule.name.upper()}_ID)) {{')
@@ -818,10 +799,8 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         # Condition of the main body of the alternative
         self.join_conditions(keyword="while", node=node)
         with self.indent():
-            self.print('if (DEBUG) {')
-            with self.indent():
-                    self.print('debugMessageln("Succeeded - adding one result to collection!");');
-            self.print("}")
+            if self.debug:
+                self.print('debugMessageln("Succeeded - adding one result to collection!");');
 
             self.print(f"// alt action: {node.action}")
             if node.action:
@@ -887,7 +866,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 if not is_loop:
                     self.print(f"{var_type} {v};")
                 else:
-                    # TODO tmp solution, we need to know how to handle tokens here
+                    self.print("// TODO tmp solution, we need to know how to handle tokens here")
                     self.print(f"Object {v};")
 
             with self.local_variable_context():
