@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+@SuppressWarnings("all")
 public class GenParser extends Parser {
 // REMOVE visiting JavaCallMakerVisitor.visit_Opt(statements?)
 // REMOVE visiting JavaCallMakerVisitor.visit_Rhs(statements)
