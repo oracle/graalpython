@@ -214,10 +214,8 @@ public final class CycleBuiltins extends PythonBuiltins {
                         @Cached GetItemNode getItemNode,
                         @Cached IsBuiltinClassProfile isTypeErrorProfile,
                         @Cached ToArrayNode toArrayNode,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached BranchProfile isNotTupleProfile) {
+                        @Cached PyNumberAsSizeNode asSizeNode) {
             if (!((state instanceof PTuple) && ((int) lenNode.execute(frame, state) == 2))) {
-                isNotTupleProfile.enter();
                 throw raise(TypeError, IS_NOT_A, "state", "2-tuple");
             }
             Object obj = getItemNode.execute(frame, state, 0);

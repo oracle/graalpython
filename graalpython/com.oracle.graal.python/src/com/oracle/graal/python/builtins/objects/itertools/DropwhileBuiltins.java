@@ -129,12 +129,10 @@ public final class DropwhileBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object setState(PDropwhile self, Object state,
-                        @Cached CastToJavaBooleanNode castToBoolean,
-                        @Cached BranchProfile exceptionProfile) {
+                        @Cached CastToJavaBooleanNode castToBoolean) {
             try {
                 self.setDoneDropping(castToBoolean.execute(state));
             } catch (CannotCastException e) {
-                exceptionProfile.enter();
                 throw raise(ValueError, INVALID_ARGS, __SETSTATE__);
             }
             return PNone.NONE;

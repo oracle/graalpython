@@ -179,10 +179,8 @@ public final class GroupByBuiltins extends PythonBuiltins {
         @Specialization
         Object setState(VirtualFrame frame, PGroupBy self, Object state,
                         @Cached TupleBuiltins.LenNode lenNode,
-                        @Cached TupleBuiltins.GetItemNode getItemNode,
-                        @Cached BranchProfile isNotTupleProfile) {
+                        @Cached TupleBuiltins.GetItemNode getItemNode) {
             if (!(state instanceof PTuple) || (int) lenNode.execute(frame, state) != 3) {
-                isNotTupleProfile.enter();
                 throw raise(TypeError, IS_NOT_A, "state", "3-tuple");
             }
 

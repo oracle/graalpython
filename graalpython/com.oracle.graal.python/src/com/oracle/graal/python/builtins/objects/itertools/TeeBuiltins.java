@@ -79,7 +79,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PTee})
@@ -177,18 +176,13 @@ public final class TeeBuiltins extends PythonBuiltins {
         Object setState(VirtualFrame frame, PTee self, Object state,
                         @Cached LenNode lenNode,
                         @Cached TupleBuiltins.GetItemNode getItemNode,
-                        @Cached CastToJavaIntLossyNode castToIntNode,
-                        @Cached BranchProfile isNotTupleProfile,
-                        @Cached BranchProfile isNotTeeDOProfile,
-                        @Cached BranchProfile wrongIndexProfile) {
+                        @Cached CastToJavaIntLossyNode castToIntNode) {
 
             if (!(state instanceof PTuple) || (int) lenNode.execute(frame, state) != 2) {
-                isNotTupleProfile.enter();
                 throw raise(TypeError, IS_NOT_A, "state", "2-tuple");
             }
             Object dataObject = getItemNode.execute(frame, state, 0);
             if (!(dataObject instanceof PTeeDataObject)) {
-                isNotTeeDOProfile.enter();
                 throw raise(TypeError, IS_NOT_A, "state", "_tee_dataobject");
             }
             self.setDataObj((PTeeDataObject) dataObject);
@@ -200,7 +194,6 @@ public final class TeeBuiltins extends PythonBuiltins {
                 throw raise(TypeError, INTEGER_REQUIRED_GOT, secondElement);
             }
             if (index < 0 || index > LINKCELLS) {
-                wrongIndexProfile.enter();
                 throw raise(ValueError, INDEX_OUT_OF_RANGE);
             }
             self.setIndex(index);

@@ -189,18 +189,14 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached GetItemNode getItemNode,
                         @Cached LoopConditionProfile indicesProfile,
-                        @Cached LoopConditionProfile cyclesProfile,
-                        @Cached BranchProfile wrongStateSizeProfile,
-                        @Cached BranchProfile wrongValuesSizeProfile) {
+                        @Cached LoopConditionProfile cyclesProfile) {
             if (sizeNode.execute(frame, state) != 3) {
-                wrongStateSizeProfile.enter();
                 throw raise(ValueError, INVALID_ARGS, __SETSTATE__);
             }
             Object indices = getItemNode.execute(frame, state, 0);
             Object cycles = getItemNode.execute(frame, state, 1);
             int poolLen = self.getPool().length;
             if (sizeNode.execute(frame, indices) != poolLen || sizeNode.execute(frame, cycles) != self.getR()) {
-                wrongValuesSizeProfile.enter();
                 throw raise(ValueError, INVALID_ARGS, __SETSTATE__);
             }
 

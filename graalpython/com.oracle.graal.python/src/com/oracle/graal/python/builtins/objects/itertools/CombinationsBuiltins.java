@@ -232,12 +232,10 @@ public class CombinationsBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile noResultProfile,
                         @Cached LoopConditionProfile indicesProfile) {
             if (!(state instanceof PTuple)) {
-                isNotTupleProfile.enter();
                 throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
             int len = (int) lenNode.execute(frame, state);
             if (len != 3) {
-                wrongLenProfile.enter();
                 throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
 

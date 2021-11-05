@@ -176,35 +176,28 @@ public final class ChainBuiltins extends PythonBuiltins {
                         @Cached LenNode lenNode,
                         @Cached GetItemNode getItemNode,
                         @Cached PyObjectLookupAttr getAttrNode,
-                        @Cached BranchProfile isNotTupleProfile,
-                        @Cached BranchProfile wrongLenProfile,
-                        @Cached BranchProfile len2Profile,
-                        @Cached BranchProfile sourceIteratorProfile,
-                        @Cached BranchProfile activeIteratorProfile) {
+                        @Cached BranchProfile len2Profile) {
             if (!(state instanceof PTuple)) {
-                isNotTupleProfile.enter();
                 throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
             int len = (int) lenNode.execute(frame, state);
             if (len < 1 || len > 2) {
-                wrongLenProfile.enter();
                 throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
             Object source = getItemNode.execute(frame, state, 0);
-            checkIterator(frame, getAttrNode, source, sourceIteratorProfile);
+            checkIterator(frame, getAttrNode, source);
             self.setSource(source);
             if (len == 2) {
                 len2Profile.enter();
                 Object active = getItemNode.execute(frame, state, 1);
-                checkIterator(frame, getAttrNode, active, activeIteratorProfile);
+                checkIterator(frame, getAttrNode, active);
                 self.setActive(active);
             }
             return PNone.NONE;
         }
 
-        private void checkIterator(VirtualFrame frame, PyObjectLookupAttr getAttrNode, Object obj, BranchProfile profile) throws PException {
+        private void checkIterator(VirtualFrame frame, PyObjectLookupAttr getAttrNode, Object obj) throws PException {
             if (getAttrNode.execute(frame, obj, __NEXT__) == PNone.NO_VALUE) {
-                profile.enter();
                 throw raise(TypeError, ARGUMENTS_MUST_BE_ITERATORS);
             }
         }
