@@ -917,6 +917,7 @@ public class Tokenizer {
                             } else if (nonzero) {
                                 /* Old-style octal: now disallowed. */
                                 oneBack();
+                                nextCharIndex = zerosEnd;
                                 return syntaxError("leading zeros in decimal integer " +
                                                    "literals are not permitted; " +
                                                    "use an 0o prefix for octal integers");
