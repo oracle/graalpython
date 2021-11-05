@@ -28,3 +28,14 @@ checks, whether it has the same results as the python tokenizer.
 * Or you can build it and test from commandline in the top folder (where pom.xml is located)
     * build: `ant jar`
     * run tests: `ant test`
+
+### Updating the grammar
+
+We have modified the grammar actions and return types to match the Java
+code. The git history shows the modifications were done to a CPython grammar
+file. To update the grammar, check out the branch `grammar-import`. Get the
+latest CPython grammar (in the CPython source `Grammar/python.gram`) and put it
+over `src/main/python/pegjava/python.gram` (that's the only file in that
+branch). Then commit to the python-grammar branch and push that branch. Now go
+back to master. And do `git merge python-grammar`. Resolve any conflicts. Now
+regenerate the Java parser.
