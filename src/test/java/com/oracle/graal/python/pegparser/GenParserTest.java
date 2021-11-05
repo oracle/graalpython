@@ -5,12 +5,7 @@
  */
 package com.oracle.graal.python.pegparser;
 
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 
 public class GenParserTest {
@@ -18,25 +13,10 @@ public class GenParserTest {
     public GenParserTest() {
     }
 
-    @BeforeClass
-    public static void setUpClass() {
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
-    }
-
-    @Before
-    public void setUp() {
-    }
-
-    @After
-    public void tearDown() {
-    }
-
     @Test
     public void testSimple01() {
-        String text = "a:int=1";
+//        String text = "a:int=1";
+        String text = "1";
         ParserTokenizer tokenizer = new ParserTokenizer(text);
         GenParser parser = new GenParser(tokenizer, new NodeFactoryImp());
         Object result = parser.file_rule();

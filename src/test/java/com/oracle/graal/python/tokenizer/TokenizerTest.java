@@ -15,19 +15,17 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import static org.junit.Assert.*;
-import org.junit.Rule;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 
 
 public class TokenizerTest {
 
-    @Rule
-    public TestName name = new TestName();
-
+    public TestInfo testInfo;
+    
     private static HashSet<Token.Kind> opTypes = new HashSet();
 
     {
@@ -84,12 +82,14 @@ public class TokenizerTest {
     public TokenizerTest() {
     }
 
-    @BeforeClass
-    public static void setUpClass() {
+    @BeforeEach
+    public void setUp(TestInfo testInfo) {
+        this.testInfo = testInfo;
     }
 
-    @AfterClass
-    public static void tearDownClass() {
+    @AfterEach
+    public void tearDown() {
+
     }
 
     @Test
@@ -201,6 +201,10 @@ public class TokenizerTest {
         return tokens.toArray(new Token[tokens.size()]);
     }
 
+    private String getFileName() {
+        return testInfo.getTestMethod().get().getName();
+    }
+    
     private void checkTokens(String code, String[] tokens) {
         Tokenizer tokenizer = new Tokenizer(code);
         Token token = tokenizer.next();
@@ -365,6 +369,7 @@ public class TokenizerTest {
         String testText = getTestFile();
         String[] testTextLines = testText.split("\n");
 
+        // obtaining test lines from the test file. Some lines can be commented out
         ArrayList<String> testLines = new ArrayList<>();
         for (String line : testTextLines) {
             if (!(line.startsWith("//") || line.startsWith("#") || line.isEmpty())) {
@@ -388,10 +393,10 @@ public class TokenizerTest {
                 goldenTokens.put(line, goldenTextTokens);
             }
         }
-        assertEquals("The count of tested lines is different from count of lines  in golden file.", goldenTokens.size(), testLines.size());
+        assertEquals(goldenTokens.size(), testLines.size(), "The count of tested lines is different from count of lines  in golden file.");
 
         for (String line : testLines) {
-            assertTrue("Was not found golden result for line: '" + line + "'", goldenTokens.containsKey(line));
+            assertTrue(goldenTokens.containsKey(line), "Was not found golden result for line: '" + line + "'");
             List<String> goldenResult = goldenTokens.get(line);
             int goldenResultIndex = 0;
             Tokenizer tokenizer = new Tokenizer(line);
@@ -409,8 +414,8 @@ public class TokenizerTest {
                 sb.append("start:[").append(token.startLine).append(", ").append(token.startColumn).append("] ");
                 sb.append("end:[").append(token.endLine).append(", ").append(token.endColumn).append("] ");
                 sb.append("string:'").append(tokenizer.getTokenString(token)).append("'");
-                String goldenToken = goldenResult.get(goldenResultIndex);
-                assertEquals("Code: '" + line + "'", goldenToken, sb.toString());
+                String goldenToken = goldenResult.get(goldenResultIndex);         
+                assertEquals(goldenToken, sb.toString(), "Code: '" + line + "'");
                 goldenResultIndex++;
             } while (token.type != Token.Kind.ENDMARKER);
             assertEquals(goldenResultIndex, goldenResult.size());
@@ -418,12 +423,12 @@ public class TokenizerTest {
     }
 
     private String getGoldenFile() {
-        InputStream fis = getClass().getClassLoader().getResourceAsStream("tokenizer/goldenFiles/" + name.getMethodName() + ".token");
+        InputStream fis = getClass().getClassLoader().getResourceAsStream("tokenizer/goldenFiles/" + getFileName() + ".token");
         return new BufferedReader(new InputStreamReader(fis)).lines().collect(Collectors.joining("\n"));
     }
 
     private String getTestFile() {
-        InputStream fis = getClass().getClassLoader().getResourceAsStream("tokenizer/testFiles/" + name.getMethodName() + ".data");
+        InputStream fis = getClass().getClassLoader().getResourceAsStream("tokenizer/testFiles/" + getFileName() + ".data");
         return new BufferedReader(new InputStreamReader(fis)).lines().collect(Collectors.joining("\n"));
     }
 
