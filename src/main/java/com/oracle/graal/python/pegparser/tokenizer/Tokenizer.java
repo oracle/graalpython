@@ -1,7 +1,7 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/* Copyright (c) 2021, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2021 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 package com.oracle.graal.python.pegparser.tokenizer;
 
@@ -12,18 +12,31 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+/**
+ * This class is intentionally kept very close to CPython's tokenizer.c and
+ * tokenizer.h files. The last time it was updated to the versions on the
+ * v3.10.0 tag in the CPython source code repository. Where the names are not
+ * the exact same, there are javadoc comments that tell the names in the CPython
+ * source code.
+ */
 public class Tokenizer {
     private static final int EOF = -1;
     private static final int ALTTABSIZE = 1;
     private static final int MAXINDENT = 100;
     private static final int MAXLEVEL = 200;
 
+    /**
+     * is_potential_identifier_start
+     */
     private static boolean isPotentialIdentifierStart(int c) {
         return (c >= 'a' && c <= 'z')
                 || (c >= 'A' && c <= 'Z')
                 || c == '_' || c >= 128;
     }
 
+    /**
+     * is_potential_identifier_char
+     */
     private static boolean isPotentialIdentifierChar(int c) {
         return (c >= 'a' && c <= 'z')
                 || (c >= 'A' && c <= 'Z')
@@ -34,6 +47,12 @@ public class Tokenizer {
 
     private static final int TABSIZE = 8;
 
+    /**
+     * type_comment_prefix
+     *
+     * Spaces in this constant are treated as "zero or more spaces or tabs" when
+     * tokenizing.
+     */
     private static final byte[] TYPE_COMMENT_PREFIX = "# type: ".getBytes(StandardCharsets.US_ASCII);
     private static final int[] IGNORE_BYTES = "ignore".codePoints().toArray();
 
