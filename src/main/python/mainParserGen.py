@@ -1,3 +1,4 @@
+import os
 import sys
 import tokenize
 
@@ -14,7 +15,7 @@ verbose_parser = False
 
 def main():
     __dir__ = path.dirname(__file__)
-    grammar_file = path.join(__dir__, "pegjava", "python.gram")
+    grammar_file = path.relpath(path.join(__dir__, "pegjava", "python.gram"), os.getcwd())
     print("Reading", grammar_file)
     with open(grammar_file) as file:
         tokenizer = Tokenizer(tokenize.generate_tokens(file.readline), verbose=verbose_tokenizer)
@@ -35,7 +36,7 @@ def main():
 
 #    print("non_exact_tokens")
 #    print(non_exact_tok)
-    output_file = path.join(__dir__, "..", "src", "com", "oracle", "graal", "python", "pegparser", "GenParser.java")
+    output_file = path.join(__dir__, "..", "java", "com", "oracle", "graal", "python", "pegparser", "GenParser.java")
     with open(output_file, "w") as file:
         gen: ParserGenerator = JavaParserGenerator(grammar, all_tokens, exact_tokens, non_exact_tokens, file)
         gen.generate(grammar_file)
