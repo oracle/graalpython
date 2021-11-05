@@ -12,7 +12,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-
 public class Tokenizer {
     private static final int EOF = -1;
     private static final int ALTTABSIZE = 1;
@@ -93,9 +92,9 @@ public class Tokenizer {
     /** {@code tok_state->parencolstack} */
     private final int[] parensColumnsStack = new int[MAXLEVEL];
     /** {@code tok_state->filename} */
-    private String filename = null;
+    private final String filename = null;
     /** {@code tok_state->altindstack} */
-    private int[] altIndentationStack = new int[MAXINDENT];
+    private final int[] altIndentationStack = new int[MAXINDENT];
     /** {@code tok_state->enc, tok_state->encoding} */
     private Charset fileEncoding = null;
     /** {@code tok_state->cont_line} */
@@ -105,7 +104,7 @@ public class Tokenizer {
     /** {@code tok_state->multi_line_start} */
     private int multiLineStartIndex = 0;
     /** {@code tok_state->type_comments} */
-    private boolean lookForTypeComments = false;
+    private final boolean lookForTypeComments = false;
     /** {@code tok_state->async_def} */
     private boolean insideAsyncDef = false;
     /** {@code tok_state->async_def_indent} */
@@ -306,6 +305,10 @@ public class Tokenizer {
         this.fileEncoding = StandardCharsets.UTF_8;
         this.execInput = execInput;
         this.interactive = false;
+    }
+
+    public Tokenizer(String code) {
+        this(code, true);
     }
 
     // PyTokenizer_FromFile
@@ -1175,7 +1178,7 @@ public class Tokenizer {
         return new Token(kind, tokenStart, nextCharIndex, currentLineNumber, tokenStart - lineStartIndex, currentLineNumber, nextCharIndex - lineStartIndex, extraData);
     }
 
-    private String getTokenString(Token tok) {
+    public String getTokenString(Token tok) {
         return new String(codePointsInput, tok.startOffset, tok.endOffset - tok.startOffset);
     }
 
