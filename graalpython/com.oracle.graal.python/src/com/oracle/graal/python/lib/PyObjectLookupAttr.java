@@ -92,7 +92,7 @@ public abstract class PyObjectLookupAttr extends Node {
 
     public abstract Object execute(Frame frame, Object receiver, Object name);
 
-    protected static boolean hasNoGetattr(Object lazyClass) {
+    protected static boolean hasNoGetAttr(Object lazyClass) {
         Object slotValue = null;
         if (lazyClass instanceof PythonBuiltinClassType) {
             slotValue = SpecialMethodSlot.GetAttr.getValue((PythonBuiltinClassType) lazyClass);
@@ -126,7 +126,7 @@ public abstract class PyObjectLookupAttr extends Node {
 
     // simple version that needs no calls and only reads from the object directly
     @SuppressWarnings("unused")
-    @Specialization(guards = {"isObjectGetAttribute(type)", "hasNoGetattr(type)", "name == cachedName", "isNoValue(descr)"})
+    @Specialization(guards = {"isObjectGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(descr)"})
     static final Object doBuiltinObject(VirtualFrame frame, Object object, String name,
                     @Cached("name") String cachedName,
                     @Cached GetClassNode getClass,
@@ -141,7 +141,7 @@ public abstract class PyObjectLookupAttr extends Node {
     // difference for module.__getattribute__ over object.__getattribute__ is that it looks for a
     // module-level __getattr__ as well
     @SuppressWarnings("unused")
-    @Specialization(guards = {"isModuleGetAttribute(type)", "hasNoGetattr(type)", "name == cachedName", "isNoValue(descr)"}, limit = "1")
+    @Specialization(guards = {"isModuleGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(descr)"}, limit = "1")
     static final Object doBuiltinModule(VirtualFrame frame, Object object, String name,
                     @Cached("name") String cachedName,
                     @Cached GetClassNode getClass,
@@ -172,23 +172,62 @@ public abstract class PyObjectLookupAttr extends Node {
         }
     }
 
+    protected static final boolean isBuiltinTypeType(Object type) {
+        return type == PythonBuiltinClassType.PythonClass;
+    }
+
+    protected static final boolean isNotUnderscoreName(String name) {
+        return name.length() < 4 || name.charAt(0) != '_';
+    }
+
     // simple version that needs no calls and only reads from the object directly. the only
     // difference for type.__getattribute__ over object.__getattribute__ is that it looks for a
     // __get__ method on the value and invokes it if it is callable.
     @SuppressWarnings("unused")
-    @Specialization(guards = {"isTypeGetAttribute(type)", "hasNoGetattr(type)", "name == cachedName", "isNoValue(descr)"}, limit = "1")
-    static final Object doBuiltinType(VirtualFrame frame, Object object, String name,
-                    @Cached("name") String cachedName,
+    @Specialization(guards = {"isTypeGetAttribute(type)", "isBuiltinTypeType(type)", "isNotUnderscoreName(name)"}, limit = "1")
+    static final Object doBuiltinTypeType(VirtualFrame frame, Object object, String name,
                     @Cached GetClassNode getClass,
                     @Bind("getClass.execute(object)") Object type,
-                    @Cached("create(name)") LookupAttributeInMRONode lookupName,
-                    @Bind("lookupName.execute(type)") Object descr,
                     @Cached ReadAttributeFromObjectNode readNode,
                     @Cached ConditionProfile valueFound,
                     @Cached("create(Get)") LookupInheritedSlotNode lookupValueGet,
                     @Cached ConditionProfile noGetMethod,
                     @Cached CallTernaryMethodNode invokeValueGet,
                     @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
+        Object value = readNode.execute(object, name);
+        if (valueFound.profile(value != PNone.NO_VALUE)) {
+            Object valueGet = lookupValueGet.execute(value);
+            if (noGetMethod.profile(valueGet == PNone.NO_VALUE)) {
+                return value;
+            } else if (PGuards.isCallableOrDescriptor(valueGet)) {
+                try {
+                    return invokeValueGet.execute(frame, valueGet, value, PNone.NONE, object);
+                } catch (PException e) {
+                    e.expect(PythonBuiltinClassType.AttributeError, errorProfile);
+                    return PNone.NO_VALUE;
+                }
+            }
+        }
+        return PNone.NO_VALUE;
+    }
+
+    // simple version that needs no calls and only reads from the object directly. the only
+    // difference for type.__getattribute__ over object.__getattribute__ is that it looks for a
+    // __get__ method on the value and invokes it if it is callable.
+    @SuppressWarnings("unused")
+    @Specialization(guards = {"isTypeGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(descr)"}, limit = "1", replaces = "doBuiltinTypeType")
+    static final Object doBuiltinType(VirtualFrame frame, Object object, String name,
+                                      @Cached("name") String cachedName,
+                                      @Cached GetClassNode getClass,
+                                      @Bind("getClass.execute(object)") Object type,
+                                      @Cached("create(name)") LookupAttributeInMRONode lookupName,
+                                      @Bind("lookupName.execute(type)") Object descr,
+                                      @Cached ReadAttributeFromObjectNode readNode,
+                                      @Cached ConditionProfile valueFound,
+                                      @Cached("create(Get)") LookupInheritedSlotNode lookupValueGet,
+                                      @Cached ConditionProfile noGetMethod,
+                                      @Cached CallTernaryMethodNode invokeValueGet,
+                                      @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
         Object value = readNode.execute(object, cachedName);
         if (valueFound.profile(value != PNone.NO_VALUE)) {
             Object valueGet = lookupValueGet.execute(value);
