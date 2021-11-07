@@ -1,0 +1,6 @@
+BlockSSTNode[0, 12]
+    UnarySSTNode[0, 12]
+        Op: -
+        Value: IntegerLiteralSSTNode[1, 11] Value: "2147483649"
+
+

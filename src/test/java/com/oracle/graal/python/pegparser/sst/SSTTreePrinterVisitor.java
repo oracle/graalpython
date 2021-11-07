@@ -250,7 +250,9 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
 
     @Override
     public String visit(NumberLiteralSSTNode.BigIntegerLiteralSSTNode node) {
-        return addHeader(node);
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node)).append(" Value: \"").append(node.value).append("\"\n");
+        return sb.toString();
     }
 
     @Override
