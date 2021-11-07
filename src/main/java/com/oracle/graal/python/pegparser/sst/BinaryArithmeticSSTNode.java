@@ -50,13 +50,39 @@ import com.oracle.graal.python.pegparser.tokenizer.Token;
  */
 public class BinaryArithmeticSSTNode extends SSTNode {
 
-    protected final Token operation;
+    public static enum Type {
+        EQ,
+        NOT_EQ,
+        LT_EQ,
+        LT,
+        GT_EQ,
+        GT,
+        NOT_IN,
+        IN,
+        IS_NOT,
+        IS,
+        BIT_OR,  // |
+        BIT_COR, // ^
+        BIT_AND, // &
+        LSHIFT, // <<
+        RSHIFT, // >>
+        ADD, // +
+        SUB, // -
+        MULT, // *
+        DIV, // /
+        FLOOR_DIV, // //
+        MOD, // %
+        MAT_MULT, // @
+        POW, // **
+    }
+    
+    protected final Type operation;
     protected final SSTNode left;
     protected final SSTNode right;
 
-    public BinaryArithmeticSSTNode(Token operation, SSTNode left, SSTNode right, int startOffset, int endOffset) {
+    public BinaryArithmeticSSTNode(Type op, SSTNode left, SSTNode right, int startOffset, int endOffset) {
         super(startOffset, endOffset);
-        this.operation = operation;
+        this.operation = op;
         this.left = left;
         this.right = right;
     }
@@ -64,6 +90,18 @@ public class BinaryArithmeticSSTNode extends SSTNode {
     @Override
     public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    public Type getOperation() {
+        return operation;
+    }
+
+    public SSTNode getLeft() {
+        return left;
+    }
+
+    public SSTNode getRight() {
+        return right;
     }
 
 }

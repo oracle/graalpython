@@ -10,7 +10,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
 
     private static final String INDENTATION = "    ";
     private int level = 0;
-
+        
     private String indent() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < level; i++) {
@@ -25,7 +25,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         sb.append(", ").append(node.getEndOffset()).append("]");
         return sb.toString();
     }
-
+    
     @Override
     public String visit(AndSSTNode node) {
         return addHeader(node);
@@ -47,8 +47,8 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node)).append("\n");
         level++;
-        sb.append(indent()).append("LHS: ").append(node.lhs.accept(this));
-        sb.append(indent()).append("Type: ").append(node.type.accept(this));
+        sb.append(indent()).append("LHS: ").append(node.lhs.accept(this)).append("\n");
+        sb.append(indent()).append("Type: ").append(node.type.accept(this)).append("\n");
         level--;
         return sb.toString();
     }
@@ -88,9 +88,45 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         return addHeader(node);
     }
 
+    private String binOp(BinaryArithmeticSSTNode.Type type) {
+        switch(type) {
+            case EQ: return "==";
+            case NOT_EQ: return "!=";
+            case LT_EQ: return "<=";
+            case LT: return "<";
+            case GT_EQ: return ">=";
+            case GT: return ">";
+            case NOT_IN: return "not in";
+            case IN: return "in";
+            case IS_NOT: return "is not";
+            case IS: return "is";
+            case BIT_OR: return "|";
+            case BIT_COR: return "^";
+            case BIT_AND: return "&";
+            case LSHIFT: return "<<";
+            case RSHIFT: return ">>";
+            case ADD: return "+";
+            case SUB: return "-";
+            case MULT: return "*";
+            case DIV: return "/";
+            case FLOOR_DIV: return "//";
+            case MOD: return "%";
+            case MAT_MULT: return "@";
+            case POW: return "**";
+        }
+        return "UNKNOWN";
+    }
+    
     @Override
     public String visit(BinaryArithmeticSSTNode node) {
-        return addHeader(node);
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node)).append("\n");
+        level++;
+        sb.append(indent()).append("Op: ").append(binOp(node.operation)).append("\n");
+        sb.append(indent()).append("LHS: ").append(node.left.accept(this)).append("\n");
+        sb.append(indent()).append("RHS: ").append(node.right.accept(this)).append("\n");
+        level--;
+        return sb.toString();
     }
 
     @Override
@@ -282,15 +318,30 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         return addHeader(node);
     }
 
+    private char unaryOp(UnarySSTNode.Type type) {
+        switch(type) {
+            case ADD: return '+';
+            case SUB: return '-';
+            case INVERT: return '~';
+        }
+        return '?';
+    }
+    
     @Override
     public String visit(UnarySSTNode node) {
-        return addHeader(node);
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node)).append("\n");
+        level++;
+        sb.append(indent()).append("Op: ").append(unaryOp(node.arithmetic)).append("\n");
+        sb.append(indent()).append("Value: ").append(node.value.accept(this)).append("\n");
+        level--;
+        return sb.toString();
     }
 
     @Override
     public String visit(VarLookupSSTNode node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node)).append(" Value: \"").append(node.name).append("\"\n");
+        sb.append(addHeader(node)).append(" Value: \"").append(node.name);
         return sb.toString();
     }
 

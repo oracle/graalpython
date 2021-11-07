@@ -581,7 +581,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.print(f"// node.action: {node.action}")
         node_action = (str(node.action).replace(' ', '').replace ('newSST', 'new SST'))
         # TODO this condition filter c action now. Should be removed after the grammar contains only java actions
-        if node_action.startswith('factory') or node_action.startswith('new') or len(node_action) == 1:
+        if node_action.startswith('factory') or node_action.startswith('new') or len(node_action) == 1 or node_action.startswith('finish'):
             if is_loop:
                 self.print(f"result.add({node_action});")
             else:

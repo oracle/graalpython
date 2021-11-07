@@ -16,7 +16,7 @@ com.oracle.graal.python.pegparser
 '''
 
 @imports '''
-import com.oracle.graal.python.pegparser.sst.SSTNode;
+import com.oracle.graal.python.pegparser.sst.*;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +28,12 @@ import java.util.Set;
 @parser_fields '''
     // caching results for pos -> rule
     // the null results are cached as well
+
+    // TODO make a special section for private methods
+    private BinaryArithmeticSSTNode finishBinaryOp(SSTNode left, SSTNode[] right) {
+        BinaryArithmeticSSTNode rightOp = (BinaryArithmeticSSTNode)right[0];
+        return factory.createBinaryOp(rightOp.getOperation(), left, rightOp.getRight(), left.getStartOffset(), rightOp.getEndOffset());
+    }
 '''
 
 @parser_constructor '''
@@ -108,7 +114,7 @@ simple_stmts[SSTNode*]: # originally return type asdl_stmt_seq*
 # will throw a SyntaxError.
 simple_stmt[stmt_ty] (memo):
     | assignment
-    | e=star_expressions { _PyAST_Expr(e, EXTRA) }
+    | e=star_expressions   { e }#{ _PyAST_Expr(e, EXTRA) }
     | &'return' return_stmt
     | &('import' | 'from') import_stmt
     | &'raise' raise_stmt
@@ -581,14 +587,9 @@ inversion[SSTNode] (memo): # originally return type expr_ty
     | 'not' a=inversion { _PyAST_UnaryOp(Not, a, EXTRA) }
     | comparison
 comparison[SSTNode]: # originally return type expr_ty
-    | a=bitwise_or b=compare_op_bitwise_or_pair+ {
-        _PyAST_Compare(
-            a,
-            CHECK(asdl_int_seq*, _PyPegen_get_cmpops(p, b)),
-            CHECK(asdl_expr_seq*, _PyPegen_get_exprs(p, b)),
-            EXTRA) }
+    | a=bitwise_or b=compare_op_bitwise_or_pair+ { finishBinaryOp(a, b)}
     | bitwise_or
-compare_op_bitwise_or_pair[CmpopExprPair*]:
+compare_op_bitwise_or_pair[BinaryArithmeticSSTNode]:
     | eq_bitwise_or
     | noteq_bitwise_or
     | lte_bitwise_or
@@ -599,7 +600,7 @@ compare_op_bitwise_or_pair[CmpopExprPair*]:
     | in_bitwise_or
     | isnot_bitwise_or
     | is_bitwise_or
-eq_bitwise_or[CmpopExprPair*]: '==' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Eq, a) }
+eq_bitwise_or[BinaryArithmeticSSTNode]: '==' a=bitwise_or { factory.createBinaryOp(BinaryArithmeticSSTNode.Type.EQ, null, a, startToken.startOffset, endToken.endOffset)}#{ _PyPegen_cmpop_expr_pair(p, Eq, a) }
 noteq_bitwise_or[CmpopExprPair*]:
     | (tok='!=' { _PyPegen_check_barry_as_flufl(p, tok) ? NULL : tok}) a=bitwise_or {_PyPegen_cmpop_expr_pair(p, NotEq, a) }
 lte_bitwise_or[CmpopExprPair*]: '<=' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, LtE, a) }
@@ -637,9 +638,9 @@ term[SSTNode]: # originally return type expr_ty
     | a=term '@' b=factor { CHECK_VERSION(expr_ty, 5, "The '@' operator is", _PyAST_BinOp(a, MatMult, b, EXTRA)) }
     | factor
 factor[SSTNode] (memo): # originally return type expr_ty
-    | '+' a=factor { _PyAST_UnaryOp(UAdd, a, EXTRA) }
-    | '-' a=factor { _PyAST_UnaryOp(USub, a, EXTRA) }
-    | '~' a=factor { _PyAST_UnaryOp(Invert, a, EXTRA) }
+    | '+' a=factor {factory.createUnaryOp(UnarySSTNode.Type.ADD, a, startToken.startOffset, endToken.endOffset)} #{ _PyAST_UnaryOp(UAdd, a, EXTRA) }
+    | '-' a=factor {factory.createUnaryOp(UnarySSTNode.Type.SUB, a, startToken.startOffset, endToken.endOffset)} #{ _PyAST_UnaryOp(USub, a, EXTRA) }
+    | '~' a=factor {factory.createUnaryOp(UnarySSTNode.Type.INVERT, a, startToken.startOffset, endToken.endOffset)} #{ _PyAST_UnaryOp(Invert, a, EXTRA) }
     | power
 power[SSTNode]: # originally return type expr_ty
     | a=await_primary '**' b=factor { _PyAST_BinOp(a, Pow, b, EXTRA) }

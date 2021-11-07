@@ -41,13 +41,18 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-import com.oracle.graal.python.pegparser.tokenizer.Token;
-
 public class UnarySSTNode extends SSTNode {
-    protected final Token arithmetic;
+    
+    public static enum Type {
+        ADD,
+        SUB,
+        INVERT,
+    }
+    
+    protected final Type arithmetic;
     protected final SSTNode value;
 
-    public UnarySSTNode(Token arithmetic, SSTNode value, int startOffset, int endOffset) {
+    public UnarySSTNode(Type arithmetic, SSTNode value, int startOffset, int endOffset) {
         super(startOffset, endOffset);
         this.arithmetic = arithmetic;
         this.value = value;

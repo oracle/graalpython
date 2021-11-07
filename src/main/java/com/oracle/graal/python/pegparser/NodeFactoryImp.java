@@ -10,9 +10,11 @@ package com.oracle.graal.python.pegparser;
 import com.oracle.graal.python.pegparser.sst.AnnAssignmentSSTNode;
 import com.oracle.graal.python.pegparser.sst.AnnotationSSTNode;
 import com.oracle.graal.python.pegparser.sst.AssignmentSSTNode;
+import com.oracle.graal.python.pegparser.sst.BinaryArithmeticSSTNode;
 import com.oracle.graal.python.pegparser.sst.BlockSSTNode;
 import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
+import com.oracle.graal.python.pegparser.sst.UnarySSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
 
 
@@ -32,6 +34,10 @@ public class NodeFactoryImp implements NodeFactory{
     public AssignmentSSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, int startOffset, int endOffset) {
         return new AssignmentSSTNode(lhs, rhs, startOffset, endOffset);
     }
+    
+    public BinaryArithmeticSSTNode createBinaryOp(BinaryArithmeticSSTNode.Type op, SSTNode left, SSTNode right, int startOffset, int endOffset) {
+        return new BinaryArithmeticSSTNode(op, left, right, startOffset, endOffset);
+    }
 
     @Override
     public BlockSSTNode createBlock(SSTNode[] statements, int startOffset, int endOffset) {
@@ -44,6 +50,11 @@ public class NodeFactoryImp implements NodeFactory{
         return NumberLiteralSSTNode.create(number, 0, 10, startOffset, endOffset);
     }
 
+    @Override
+    public UnarySSTNode createUnaryOp(UnarySSTNode.Type op, SSTNode value, int startOffset, int endOffset) {
+        return new UnarySSTNode(op, value, startOffset, endOffset);
+    }
+    
     @Override
     public VarLookupSSTNode createVariable(String name, int startOffset, int endOffset) {
         return new VarLookupSSTNode(name, startOffset, endOffset);
