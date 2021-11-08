@@ -58,10 +58,6 @@ PyThreadState * PyThreadState_Get() {
 int64_t
 PyInterpreterState_GetID(PyInterpreterState *interp)
 {
-    if (interp == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "no interpreter provided");
-        return -1;
-    }
     return 0;
 }
 
