@@ -58,6 +58,7 @@ public abstract class BuiltinNames {
     // sys
     public static final String TRACEBACKLIMIT = "tracebacklimit";
     public static final String DISPLAYHOOK = "displayhook";
+    public static final String __DISPLAYHOOK__ = "__displayhook__";
     public static final String BREAKPOINTHOOK = "breakpointhook";
     public static final String __BREAKPOINTHOOK__ = "__breakpointhook__";
     public static final String EXCEPTHOOK = "excepthook";

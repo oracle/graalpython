@@ -69,6 +69,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDOUT;
 import static com.oracle.graal.python.nodes.BuiltinNames.UNRAISABLEHOOK;
+import static com.oracle.graal.python.nodes.BuiltinNames.__DISPLAYHOOK__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__EXCEPTHOOK__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__STDERR__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__STDIN__;
@@ -539,6 +540,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         ));
         sys.setAttribute(__EXCEPTHOOK__, sys.getAttribute(EXCEPTHOOK));
         sys.setAttribute(__UNRAISABLEHOOK__, sys.getAttribute(UNRAISABLEHOOK));
+        sys.setAttribute(__DISPLAYHOOK__, sys.getAttribute(DISPLAYHOOK));
     }
 
     @Override
@@ -1225,12 +1227,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
         private final static String ATTR_BUFFER = "buffer";
 
         private void sysDisplayHookUnencodable(VirtualFrame frame, Object out, Object obj,
-                                               PyObjectLookupAttr lookupAttr,
-                                               PyObjectReprAsObjectNode reprAsObjectNode,
-                                               PyObjectCallMethodObjArgs callMethodObjArgs,
-                                               CastToJavaStringNode castToJavaStringNode,
-                                               PyUnicodeAsEncodedString pyUnicodeAsEncodedString,
-                                               PyUnicodeFromEncodedObject pyUnicodeFromEncodedObject) {
+                        PyObjectLookupAttr lookupAttr,
+                        PyObjectReprAsObjectNode reprAsObjectNode,
+                        PyObjectCallMethodObjArgs callMethodObjArgs,
+                        CastToJavaStringNode castToJavaStringNode,
+                        PyUnicodeAsEncodedString pyUnicodeAsEncodedString,
+                        PyUnicodeFromEncodedObject pyUnicodeFromEncodedObject) {
             final String stdoutEncoding = objectLookupAttrAsString(frame, out, ATTR_ENCODING, lookupAttr, castToJavaStringNode);
             final Object reprStr = objectRepr(frame, obj, reprAsObjectNode);
             final Object encoded = pyUnicodeAsEncodedString.execute(frame, reprStr, stdoutEncoding, BACKSLASHREPLACE);
@@ -1289,7 +1291,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             }
             if (!reprWriteOk && unicodeEncodeError) {
                 sysDisplayHookUnencodable(frame, stdOut, obj, lookupAttr, reprAsObjectNode, callMethodObjArgs,
-                        castToJavaStringNode, pyUnicodeAsEncodedString, pyUnicodeFromEncodedObject);
+                                castToJavaStringNode, pyUnicodeAsEncodedString, pyUnicodeFromEncodedObject);
             }
 
             fileWriteString(frame, stdOut, NEW_LINE, callMethodObjArgs);
