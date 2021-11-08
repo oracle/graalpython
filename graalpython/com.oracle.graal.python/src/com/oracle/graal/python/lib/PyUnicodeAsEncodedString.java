@@ -103,17 +103,17 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithRaise {
 
     @Specialization(guards = {"isString(unicode)", "isCommon(encoding)"})
     Object doCommon(VirtualFrame frame, Object unicode, String encoding, String errors,
-                        @Cached CodecsModuleBuiltins.CodecsEncodeNode encodeNode) {
+                    @Cached CodecsModuleBuiltins.CodecsEncodeNode encodeNode) {
         return encodeNode.execute(frame, unicode, encoding, errors);
     }
 
     @Specialization(guards = {"isString(unicode)", "!isCommon(encoding)"})
     Object doRegistry(VirtualFrame frame, Object unicode, String encoding, String errors,
-                      @Cached CodecsModuleBuiltins.EncodeNode encodeNode,
-                      @Cached ConditionProfile isBytesProfile,
-                      @Cached ConditionProfile isByteArrayProfile,
-                      @Cached SequenceStorageNodes.CopyNode copyNode,
-                      @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+                    @Cached CodecsModuleBuiltins.EncodeNode encodeNode,
+                    @Cached ConditionProfile isBytesProfile,
+                    @Cached ConditionProfile isByteArrayProfile,
+                    @Cached SequenceStorageNodes.CopyNode copyNode,
+                    @Cached WarningsModuleBuiltins.WarnNode warnNode) {
         final Object v = encodeNode.execute(frame, unicode, encoding, errors);
         // the normal path
         if (isBytesProfile.profile(v instanceof PBytes)) {
@@ -130,7 +130,7 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithRaise {
 
     @Specialization(guards = {"isString(unicode)", "isNoValue(encoding)"})
     Object doNoEncoding(VirtualFrame frame, Object unicode, @SuppressWarnings("unused") PNone encoding, Object errors,
-                        @Cached CodecsModuleBuiltins.CodecsEncodeNode encodeNode) {
+                    @Cached CodecsModuleBuiltins.CodecsEncodeNode encodeNode) {
         return encodeNode.execute(frame, unicode, ENC_UTF8, errors);
     }
 

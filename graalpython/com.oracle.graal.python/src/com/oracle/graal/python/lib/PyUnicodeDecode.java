@@ -68,7 +68,7 @@ public abstract class PyUnicodeDecode extends PNodeWithRaise {
 
     @Specialization(guards = "!isCommon(encoding)")
     Object doRegistry(VirtualFrame frame, Object object, String encoding, String errors,
-                      @Cached CodecsModuleBuiltins.DecodeNode decodeNode) {
+                    @Cached CodecsModuleBuiltins.DecodeNode decodeNode) {
         final Object unicode = decodeNode.execute(frame, object, encoding, errors);
         if (!PGuards.isString(unicode)) {
             throw raise(TypeError, DECODER_S_RETURNED_P_INSTEAD_OF_STR, encoding, unicode);
@@ -78,7 +78,7 @@ public abstract class PyUnicodeDecode extends PNodeWithRaise {
 
     @Specialization(guards = "isNoValue(encoding)")
     Object doNoEncoding(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone encoding, Object errors,
-                        @Cached CodecsModuleBuiltins.CodecsDecodeNode decodeNode) {
+                    @Cached CodecsModuleBuiltins.CodecsDecodeNode decodeNode) {
         return decodeNode.execute(frame, object, ENC_UTF8, errors, false);
     }
 }

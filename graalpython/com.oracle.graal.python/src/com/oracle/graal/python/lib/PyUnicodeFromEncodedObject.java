@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
@@ -68,17 +69,29 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithRaiseAndIndire
 
     @Specialization
     Object doBytes(VirtualFrame frame, PBytes object, Object encoding, Object errors,
-                   @Cached SequenceStorageNodes.LenNode lenNode,
-                   @Cached ConditionProfile emptyStringProfile,
-                   @Cached PyUnicodeDecode decode) {
+                    @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Cached ConditionProfile emptyStringProfile,
+                    @Cached PyUnicodeDecode decode) {
         // Decoding bytes objects is the most common case and should be fast
         if (emptyStringProfile.profile(lenNode.execute(object.getSequenceStorage()) == 0)) {
             return PythonUtils.EMPTY_STRING;
         }
         return decode.execute(frame, object, encoding, errors);
     }
-    
-    @Specialization(guards = "!isPBytes(object)", limit="3")
+
+    @Specialization
+    @SuppressWarnings("unused")
+    Object doString(VirtualFrame frame, String object, Object encoding, Object errors) {
+        throw raise(PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
+    }
+
+    @Specialization
+    @SuppressWarnings("unused")
+    Object doPString(VirtualFrame frame, PString object, Object encoding, Object errors) {
+        throw raise(PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
+    }
+
+    @Specialization(guards = {"!isPBytes(object)", "!isString(object)"}, limit = "3")
     Object doBuffer(VirtualFrame frame, Object object, Object encoding, Object errors,
                     @Cached ConditionProfile emptyStringProfile,
                     @Cached PyUnicodeDecode decode,
@@ -93,11 +106,5 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithRaiseAndIndire
         } finally {
             bufferLib.release(object, frame, this);
         }
-    }
-
-    @Specialization(guards = "isString(object)")
-    @SuppressWarnings("unused")
-    Object doUnicode(VirtualFrame frame, Object object, Object encoding, Object errors) {
-        throw raise(PythonBuiltinClassType.TypeError, DECODING_STR_NOT_SUPPORTED);
     }
 }
