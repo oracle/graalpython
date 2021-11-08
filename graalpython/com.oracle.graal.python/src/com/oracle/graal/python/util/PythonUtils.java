@@ -495,6 +495,16 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static String toLowerCase(String s) {
+        return s.toLowerCase();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String toUpperCase(String s) {
+        return s.toUpperCase();
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static int sbLength(StringBuilder sb) {
         return sb.length();
     }

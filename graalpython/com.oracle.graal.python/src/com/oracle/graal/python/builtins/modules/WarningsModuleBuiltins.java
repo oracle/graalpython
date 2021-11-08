@@ -1045,6 +1045,10 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             execute(frame, source, category == null ? PythonBuiltinClassType.RuntimeWarning : category, message, stackLevel);
         }
 
+        public final void warnFormat(Frame frame, Object category, String message, Object... formatArgs) {
+            warnFormat(frame, null, category, 1, message, formatArgs);
+        }
+
         public final void warnFormat(Frame frame, Object source, Object category, int stackLevel, String message, Object... formatArgs) {
             execute(frame, source, category == null ? PythonBuiltinClassType.RuntimeWarning : category, message, stackLevel, formatArgs);
         }

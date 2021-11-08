@@ -120,30 +120,3 @@ def setswitchinterval(value):
     if value <= 0:
         raise ValueError("switch interval must be strictly positive")
     __graalpython__.sys_state.switchinterval = value
-
-@__graalpython__.builtin
-def displayhook(value):
-    if value is None:
-        return
-    builtins = modules['builtins']
-    # Set '_' to None to avoid recursion
-    builtins._ = None
-    text = repr(value)
-    try:
-        local_stdout = stdout
-    except NameError as e:
-        raise RuntimeError("lost sys.stdout") from e
-    try:
-        local_stdout.write(text)
-    except UnicodeEncodeError:
-        bytes = text.encode(local_stdout.encoding, 'backslashreplace')
-        if hasattr(local_stdout, 'buffer'):
-            local_stdout.buffer.write(bytes)
-        else:
-            text = bytes.decode(local_stdout.encoding, 'strict')
-            local_stdout.write(text)
-    local_stdout.write("\n")
-    builtins._ = value
-
-
-__displayhook__ = displayhook

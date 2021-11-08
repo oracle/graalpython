@@ -119,6 +119,9 @@ public abstract class ErrorMessages {
     public static final String CALLING_NATIVE_FUNC_FAILED = "Calling native function %s failed: %m";
     public static final String DECODER_RETURNED_P_INSTEAD_OF_BYTES = "'%s' decoder returned '%p' instead of 'str'; use codecs.decode() to decode to arbitrary types";
     public static final String ENCODER_RETURNED_P_INSTEAD_OF_BYTES = "'%s' encoder returned '%p' instead of 'bytes'; use codecs.encode() to encode to arbitrary types";
+    public static final String S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES = "'%s' encoder returned '%p' instead of 'bytes'; use codecs.encode() to encode to arbitrary types";
+    public static final String ENCODER_S_RETURNED_S_INSTEAD_OF_BYTES = "encoder %s returned %s instead of bytes; use codecs.encode() to encode to arbitrary types";
+    public static final String DECODER_S_RETURNED_P_INSTEAD_OF_STR = "'%s' decoder returned '%p' instead of 'str'; use codecs.decode() to decode to arbitrary types";
     public static final String EXPECTED_D_ARGS = "expected %d arguments";
     public static final String CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P = "can only assign %s to %s.%s, not %p";
     public static final String CAN_ONLY_ASSIGN_S_TO_P_S_NOT_P = "can only assign %s to %p.%s, not %p";
@@ -455,6 +458,7 @@ public abstract class ErrorMessages {
     public static final String NAME_NOT_DEFINED = "name '%s' is not defined";
     public static final String NAMELESS_MODULE = "nameless module";
     public static final String NEED_BYTELIKE_OBJ = "decoding to str: need a bytes-like object, %p found";
+    public static final String DECODING_STR_NOT_SUPPORTED = "decoding str is not supported";
     public static final String NEG_INF_PLUS_INF_IN = "-inf + inf in fsum";
     public static final String NEGATIVE_COUNT = "negative count";
     public static final String NEGATIVE_DATA_SIZE = "negative data size";
@@ -979,6 +983,7 @@ public abstract class ErrorMessages {
     public static final String REDUCE_EMPTY_SEQ = "reduce() of empty sequence with no initial value";
     public static final String OTHER_ARG_MUST_BE_KEY = "other argument must be K instance";
     public static final String INVALID_PARTIAL_STATE = "invalid partial state";
+    public static final String LOST_S = "lost %s";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";
