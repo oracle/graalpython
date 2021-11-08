@@ -106,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -398,16 +399,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        static boolean doDict(VirtualFrame frame,
-                        PDict object,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
-            return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ALL);
-        }
-
-        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        static boolean doSet(VirtualFrame frame,
-                        PBaseSet object,
+        static boolean doHashColl(VirtualFrame frame,
+                        PHashingCollection object,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
                         @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ALL);
@@ -458,16 +451,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        static boolean doDict(VirtualFrame frame,
-                        PDict object,
-                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
-            return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ANY);
-        }
-
-        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-        static boolean doSet(VirtualFrame frame,
-                        PBaseSet object,
+        static boolean doHashColl(VirtualFrame frame,
+                              PHashingCollection object,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
                         @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ANY);
