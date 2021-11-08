@@ -52,29 +52,7 @@ def may_raise(error_result=native_null):
             return make_may_raise_wrapper(fun, error_result)
         return decorator
 
-
-def Py_ErrorHandler():
-    return to_sulong(error_handler)
-
-
-def Py_NotImplemented():
-    return NotImplemented
-
-
-def Py_True():
-    return True
-
-
-def Py_False():
-    return False
-
-
-def Py_Ellipsis():
-    return ...
-
-
 moduletype = type(sys)
-
 
 def _PyModule_CreateInitialized_PyModule_New(name):
     # see CPython's Objects/moduleobject.c - _PyModule_CreateInitialized for
@@ -92,14 +70,6 @@ def _PyModule_CreateInitialized_PyModule_New(name):
     if "." in name:
         new_module.__package__ = name.rpartition('.')[0]
     return new_module
-
-
-def PyModule_SetDocString(module, string):
-    module.__doc__ = string
-
-
-def PyModule_NewObject(name):
-    return moduletype(name)
 
 ##################### ABSTRACT
 

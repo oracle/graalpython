@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -183,6 +184,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
@@ -268,6 +270,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -342,6 +345,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
     private static final String ERROR_HANDLER = "error_handler";
     public static final String NATIVE_NULL = "native_null";
 
+    private PythonObject errorHandler;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PythonCextBuiltinsFactory.getFactories();
@@ -353,7 +358,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         PythonClass errorHandlerClass = core.factory().createPythonClassAndFixupSlots(core.getLanguage(), PythonBuiltinClassType.PythonClass,
                         "CErrorHandler", new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
         builtinConstants.put("CErrorHandler", errorHandlerClass);
-        builtinConstants.put(ERROR_HANDLER, core.factory().createPythonObject(errorHandlerClass));
+        errorHandler = core.factory().createPythonObject(errorHandlerClass);
+        builtinConstants.put(ERROR_HANDLER, errorHandler);
         builtinConstants.put(NATIVE_NULL, new PythonNativeNull());
         builtinConstants.put("PyEval_SaveThread", new PyEvalSaveThread());
         builtinConstants.put("PyEval_RestoreThread", new PyEvalRestoreThread());
@@ -416,6 +422,89 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object run(VirtualFrame frame, Object o) {
             return raiseNative(frame, PNone.NO_VALUE, PythonErrorType.SystemError, ErrorMessages.CANNOT_CONVERT_OBJ_TO_C_STRING, o, o.getClass().getName());
         }
+    }
+
+    @Builtin(name = "Py_ErrorHandler", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    public abstract static class PyErrorHandlerNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object run(PythonModule cextPython) {
+            return ((PythonCextBuiltins) cextPython.getBuiltins()).errorHandler;
+        }
+    }
+
+    @Builtin(name = "Py_NotImplemented")
+    @GenerateNodeFactory
+    public abstract static class PyNotImplementedNode extends PythonBuiltinNode {
+        @Specialization
+        Object run() {
+            return NotImplementedError;
+        }
+    }
+
+    @Builtin(name = "Py_True")
+    @GenerateNodeFactory
+    public abstract static class PyTrueNode extends PythonBuiltinNode {
+        @Specialization
+        Object run() {
+            return true;
+        }
+    }
+
+    @Builtin(name = "Py_False")
+    @GenerateNodeFactory
+    public abstract static class PyFalseNode extends PythonBuiltinNode {
+        @Specialization
+        Object run() {
+            return false;
+        }
+    }
+
+    @Builtin(name = "Py_Ellipsis")
+    @GenerateNodeFactory
+    public abstract static class PyEllipsisNode extends PythonBuiltinNode {
+        @Specialization
+        Object run() {
+            return PEllipsis.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "PyModule_SetDocString", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class SetDocStringNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object run(VirtualFrame frame, PythonModule module, Object doc,
+                        @Cached ObjectBuiltins.SetattrNode setattrNode) {
+            setattrNode.execute(frame, module, __DOC__, doc);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "PyModule_NewObject", minNumOfPositionalArgs = 1, parameterNames = {"name"})
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
+    @GenerateNodeFactory
+    public abstract static class PyModuleNewObjectNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PythonCextBuiltinsClinicProviders.PyModuleNewObjectNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object run(String name) {
+            return newModule(name, getCore(), factory());
+        }
+    }
+
+    private static PythonModule newModule(String name, Python3Core core, PythonObjectFactory factory) {
+        PythonModule sysModule = core.lookupBuiltinModule("sys");
+        PDict sysModules = (PDict) sysModule.getAttribute("modules");
+        PythonModule newModule = (PythonModule) sysModules.getItem(name);
+        if (newModule == null) {
+            newModule = factory.createPythonModule(name);
+            sysModules.setItem(name, newModule);
+        }
+        return newModule;
     }
 
     /**
