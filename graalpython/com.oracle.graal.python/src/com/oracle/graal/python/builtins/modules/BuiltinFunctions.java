@@ -241,11 +241,13 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.TriState;
 
@@ -306,6 +308,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Child private PyObjectIsTrueNode isTrueNode = PyObjectIsTrueNode.create();
 
+        final private LoopConditionProfile loopConditionProfile = LoopConditionProfile.create();
+
         abstract boolean execute(Frame frame, Object storageObj, NodeType nodeType);
 
         @Specialization
@@ -313,13 +317,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         BoolSequenceStorage sequenceStorage,
                         NodeType nodeType) {
             boolean[] internalArray = sequenceStorage.getInternalBoolArray();
+            int i = 0;
 
-            for (int i = 0; i < sequenceStorage.length(); i++) {
+            while (loopConditionProfile.profile(i < sequenceStorage.length())) {
                 if (nodeType == NodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
                     return false;
                 } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
                     return true;
                 }
+                i++;
             }
 
             return nodeType == NodeType.ALL;
@@ -330,8 +336,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         IntSequenceStorage sequenceStorage,
                         NodeType nodeType) {
             int[] internalArray = sequenceStorage.getInternalIntArray();
+            int i = 0;
 
-            for (int i = 0; i < sequenceStorage.length(); i++) {
+            while (loopConditionProfile.profile(i < sequenceStorage.length())) {
                 if (nodeType == NodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
                     return false;
                 } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
@@ -348,7 +355,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         NodeType nodeType,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             Object[] internalArray = sequenceStorage.getInternalArray();
-            for (int i = 0; i < lenNode.execute(sequenceStorage); i++) {
+            int i = 0;
+            int seqLength = lenNode.execute(sequenceStorage);
+
+            while (loopConditionProfile.profile(i < seqLength)) {
                 if (nodeType == NodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
                     return false;
                 } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
@@ -365,6 +375,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         NodeType nodeType,
                         @CachedLibrary("hashingStorage") HashingStorageLibrary hlib) {
             for (Object key : hlib.keys(hashingStorage)) {
+                LoopNode.reportLoopCount(this, 1);
                 if (nodeType == NodeType.ALL) {
                     if (!isTrueNode.execute(frame, key)) {
                         return false;
@@ -407,7 +418,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        static boolean doObject(VirtualFrame frame,
+        boolean doObject(VirtualFrame frame,
                         Object object,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
@@ -416,6 +427,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object iterator = getIter.execute(frame, object);
             while (true) {
                 try {
+                    LoopNode.reportLoopCount(this, 1);
                     Object next = nextNode.execute(frame, iterator);
                     if (!isTrueNode.execute(frame, next)) {
                         return false;
@@ -452,14 +464,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
         static boolean doHashColl(VirtualFrame frame,
-                              PHashingCollection object,
+                        PHashingCollection object,
                         @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
                         @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
             return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ANY);
         }
 
         @Specialization
-        static boolean doObject(VirtualFrame frame,
+        boolean doObject(VirtualFrame frame,
                         Object object,
                         @Cached PyObjectGetIter getIter,
                         @Cached GetNextNode nextNode,
@@ -468,6 +480,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object iterator = getIter.execute(frame, object);
             while (true) {
                 try {
+                    LoopNode.reportLoopCount(this, 1);
                     Object next = nextNode.execute(frame, iterator);
                     if (isTrueNode.execute(frame, next)) {
                         return true;
