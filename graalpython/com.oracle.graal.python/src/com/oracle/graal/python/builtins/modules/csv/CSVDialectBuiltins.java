@@ -6,10 +6,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -26,7 +27,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 import java.util.List;
 
@@ -40,6 +40,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
     public static final int QUOTE_NONNUMERIC = 2;
     public static final int QUOTE_NONE = 3;
 
+    // TODO: Does it make sense to use shorter / other marker values to make equality checks cheaper?
     private static final String NOT_SET = "NOT_SET";
     private static final String EOL = "EOL";
 
@@ -64,19 +65,39 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                          Object strictObj,
                          @Cached GetClassNode getClassNode,
                          @Cached CastToJavaStringNode castToJavaStringNode,
-                         @Cached CastToJavaBooleanNode castToJavaBooleanNode,
+                         @Cached PyObjectIsTrueNode isTrueNode,
                          @Cached PyLongCheckExactNode pyLongCheckExactNode,
                          @Cached PyLongAsIntNode pyLongAsIntNode,
                          @Cached PyUnicodeCheckExactNode pyUnicodeCheckExactNode) {
 
             String delimiter = getChar("delimiter", delimiterObj, ",", pyUnicodeCheckExactNode, getClassNode, castToJavaStringNode);
-            boolean doublequote = getBoolean("doublequote", doublequoteObj, true, castToJavaBooleanNode);
+            boolean doublequote = getBoolean(frame, "doublequote", doublequoteObj, true, isTrueNode);
             String escapechar = getCharOrNone("escapechar", escapecharObj, NOT_SET, pyUnicodeCheckExactNode, getClassNode, castToJavaStringNode);
             String lineterminator = getString("lineterminator", lineterminatorObj, "\r\n", castToJavaStringNode);
             String quotechar = getCharOrNone("quotechar", quotecharObj, "\"", pyUnicodeCheckExactNode, getClassNode, castToJavaStringNode);
-            int quoting = getInt(frame,"quoting", quotingObj, QUOTE_MINIMAL, pyLongCheckExactNode, pyLongAsIntNode);
-            boolean skipinitialspace = getBoolean("skipinitalspace", skipinitialspaceObj, false, castToJavaBooleanNode);
-            boolean strict = getBoolean("strict", strictObj, false, castToJavaBooleanNode);
+            int quoting = getQuotingValue(frame,"quoting", quotingObj, QUOTE_MINIMAL, pyLongCheckExactNode, pyLongAsIntNode);
+            boolean skipinitialspace = getBoolean(frame,"skipinitalspace", skipinitialspaceObj, false, isTrueNode);
+            boolean strict = getBoolean(frame, "strict", strictObj, false, isTrueNode);
+
+            if (delimiter.equals(NOT_SET)) {
+                throw raise(TypeError, "\"delimiter\" must be a 1-character string");
+            }
+
+            // TODO: Does this match cpython version?
+            /*if (quotechar == Py_None && quoting == NULL)
+                self->quoting = QUOTE_NONE;
+            * */
+            if (quotecharObj == PNone.NONE && quotingObj == PNone.NO_VALUE) {
+                quoting = QUOTE_NONE;
+            }
+
+            if (quoting != QUOTE_NONE && quotechar == NOT_SET) {
+                throw raise(TypeError, "quotechar must be set if quoting enabled");
+            }
+
+            if (lineterminator == null) {
+                throw raise(TypeError, "lineterminator must be set");
+            }
 
             Object dialect = factory().createCSVDialect(cls, delimiter, doublequote, escapechar, lineterminator, quotechar, quoting, skipinitialspace, strict);
 
@@ -90,15 +111,15 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                                     @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
                                     @Cached ReadAttributeFromObjectNode readNode,
                                     @Cached GetClassNode getClassNode,
-                                    @CachedLibrary(limit = "1") HashingStorageLibrary library,
+                                    @Cached PyDictGetItem getItemNode,
                                     @Cached PyObjectLookupAttr getAttributeNode,
                                     @Cached CastToJavaStringNode castToJavaStringNode,
-                                    @Cached CastToJavaBooleanNode castToJavaBooleanNode,
+                                    @Cached PyObjectIsTrueNode isTrueNode,
                                     @Cached PyLongCheckExactNode pyLongCheckExactNode,
                                     @Cached PyUnicodeCheckExactNode pyUnicodeCheckExactNode,
                                    @Cached PyLongAsIntNode pyLongAsIntNode) {
 
-            Object dialectObj = getDialect.get(dialectName, castToJavaStringNode, readNode, library);
+            Object dialectObj = getDialect.get(frame, dialectName, getItemNode, readNode);
 
             // TODO: As we only store CSVDialects it should be possible to avoid possibly expensive getAttribute Calls.
 
@@ -112,13 +133,33 @@ public class CSVDialectBuiltins extends PythonBuiltins {
             Object strictInput = getAttributeValue(frame, dialectObj, strictObj, "strict", getAttributeNode);
 
             String delimiter = getChar("delimiter", delimiterInput, ",", pyUnicodeCheckExactNode, getClassNode, castToJavaStringNode);
-            boolean doublequote = getBoolean("doublequote", doublequoteInput, true, castToJavaBooleanNode);
+            boolean doublequote = getBoolean(frame,"doublequote", doublequoteInput, true, isTrueNode);
             String escapechar = getCharOrNone("escapechar", escapecharInput, NOT_SET, pyUnicodeCheckExactNode, getClassNode, castToJavaStringNode);
             String lineterminator = getString("lineterminator", lineterminatorInput, "\r\n", castToJavaStringNode);
             String quotechar = getCharOrNone("quotechar", quotecharInput, "\"", pyUnicodeCheckExactNode, getClassNode, castToJavaStringNode);
-            int quoting = getInt(frame, "quoting", quotingInput, QUOTE_MINIMAL, pyLongCheckExactNode, pyLongAsIntNode);
-            boolean skipinitialspace = getBoolean("skipinitalspace", skipinitialspaceInput, false, castToJavaBooleanNode);
-            boolean strict = getBoolean("strict", strictInput, false, castToJavaBooleanNode);
+            int quoting = getQuotingValue(frame, "quoting", quotingInput, QUOTE_MINIMAL, pyLongCheckExactNode, pyLongAsIntNode);
+            boolean skipinitialspace = getBoolean(frame,"skipinitalspace", skipinitialspaceInput, false, isTrueNode);
+            boolean strict = getBoolean(frame,"strict", strictInput, false, isTrueNode);
+
+            if (delimiter.equals(NOT_SET)) {
+                throw raise(TypeError, "\"delimiter\" must be a 1-character string");
+            }
+
+            // TODO: Does this match cpython version?
+            /*if (quotechar == Py_None && quoting == NULL)
+                self->quoting = QUOTE_NONE;
+            * */
+            if (quotecharObj == PNone.NONE && quotingObj == PNone.NO_VALUE) {
+                quoting = QUOTE_NONE;
+            }
+
+            if (quoting != QUOTE_NONE && quotechar == NOT_SET) {
+                throw raise(TypeError, "quotechar must be set if quoting enabled");
+            }
+
+            if (lineterminator == null) {
+                throw raise(TypeError, "lineterminator must be set");
+            }
 
             dialectObj = factory().createCSVDialect(cls, delimiter, doublequote, escapechar, lineterminator, quotechar, quoting, skipinitialspace, strict);
 
@@ -132,7 +173,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                               @Cached GetClassNode getClassNode,
                               @Cached PyObjectLookupAttr getAttributeNode,
                               @Cached CastToJavaStringNode castToJavaStringNode,
-                              @Cached CastToJavaBooleanNode castToJavaBooleanNode,
+                              @Cached PyObjectIsTrueNode isTrueNode,
                               @Cached PyLongCheckExactNode pyLongCheckExactNode,
                               @Cached PyLongAsIntNode pyLongAsIntNode,
                               @Cached PyUnicodeCheckExactNode pyUnicodeCheckExactNode) {
@@ -147,13 +188,33 @@ public class CSVDialectBuiltins extends PythonBuiltins {
             strictObj = getAttributeValue(frame, dialectObj, strictObj, "strict", getAttributeNode);
 
             String delimiter = getChar("delimiter", delimiterObj, ",", pyUnicodeCheckExactNode, getClassNode, castToJavaStringNode);
-            boolean doublequote = getBoolean("doublequote", doublequoteObj, true, castToJavaBooleanNode);
+            boolean doublequote = getBoolean(frame,"doublequote", doublequoteObj, true, isTrueNode);
             String escapechar = getCharOrNone("escapechar", escapecharObj, NOT_SET, pyUnicodeCheckExactNode, getClassNode, castToJavaStringNode);
             String lineterminator = getString("lineterminator", lineterminatorObj, "\r\n", castToJavaStringNode);
             String quotechar = getCharOrNone("quotechar", quotecharObj, "\"", pyUnicodeCheckExactNode, getClassNode, castToJavaStringNode);
-            int quoting = getInt(frame,"quoting", quotingObj, QUOTE_MINIMAL, pyLongCheckExactNode, pyLongAsIntNode);
-            boolean skipinitialspace = getBoolean("skipinitalspace", skipinitialspaceObj, false, castToJavaBooleanNode);
-            boolean strict = getBoolean("strict", strictObj, false, castToJavaBooleanNode);
+            int quoting = getQuotingValue(frame,"quoting", quotingObj, QUOTE_MINIMAL, pyLongCheckExactNode, pyLongAsIntNode);
+            boolean skipinitialspace = getBoolean(frame,"skipinitalspace", skipinitialspaceObj, false, isTrueNode);
+            boolean strict = getBoolean(frame,"strict", strictObj, false, isTrueNode);
+
+            if (delimiter.equals(NOT_SET)) {
+                throw raise(TypeError, "\"delimiter\" must be a 1-character string");
+            }
+
+            // TODO: Does this match cpython version?
+            /*if (quotechar == Py_None && quoting == NULL)
+                self->quoting = QUOTE_NONE;
+            * */
+            if (quotecharObj == PNone.NONE && quotingObj == PNone.NO_VALUE) {
+                quoting = QUOTE_NONE;
+            }
+
+            if (quoting != QUOTE_NONE && quotechar == NOT_SET) {
+                throw raise(TypeError, "quotechar must be set if quoting enabled");
+            }
+
+            if (lineterminator == null) {
+                throw raise(TypeError, "lineterminator must be set");
+            }
 
             Object dialect = factory().createCSVDialect(cls, delimiter, doublequote, escapechar, lineterminator, quotechar, quoting, skipinitialspace, strict);
 
@@ -167,7 +228,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                          @Cached GetClassNode getClassNode,
                          @Cached PyObjectLookupAttr getAttributeNode,
                          @Cached CastToJavaStringNode castToJavaStringNode,
-                         @Cached CastToJavaBooleanNode castToJavaBooleanNode,
+                         @Cached PyObjectIsTrueNode isTrueNode,
                          @Cached PyLongCheckExactNode pyLongCheckExactNode,
                          @Cached PyLongAsIntNode pyLongAsIntNode,
                          @Cached PyUnicodeCheckExactNode pyUnicodeCheckExactNode) {
@@ -184,13 +245,35 @@ public class CSVDialectBuiltins extends PythonBuiltins {
             strictObj = getAttributeValue(frame, dialectObj, strictObj, "strict", getAttributeNode);
 
             String delimiter = getChar("delimiter", delimiterObj, ",", pyUnicodeCheckExactNode, getClassNode, castToJavaStringNode);
-            boolean doublequote = getBoolean("doublequote", doublequoteObj, true, castToJavaBooleanNode);
+            boolean doublequote = getBoolean(frame,"doublequote", doublequoteObj, true, isTrueNode);
             String escapechar = getCharOrNone("escapechar", escapecharObj, NOT_SET, pyUnicodeCheckExactNode, getClassNode, castToJavaStringNode);
             String lineterminator = getString("lineterminator", lineterminatorObj, "\r\n", castToJavaStringNode);
             String quotechar = getCharOrNone("quotechar", quotecharObj, "\"", pyUnicodeCheckExactNode, getClassNode, castToJavaStringNode);
-            int quoting = getInt(frame,"quoting", quotingObj, QUOTE_MINIMAL, pyLongCheckExactNode, pyLongAsIntNode);
-            boolean skipinitialspace = getBoolean("skipinitalspace", skipinitialspaceObj, false, castToJavaBooleanNode);
-            boolean strict = getBoolean("strict", strictObj, false, castToJavaBooleanNode);
+            int quoting = getQuotingValue(frame,"quoting", quotingObj, QUOTE_MINIMAL, pyLongCheckExactNode, pyLongAsIntNode);
+            boolean skipinitialspace = getBoolean(frame,"skipinitalspace", skipinitialspaceObj, false, isTrueNode);
+            boolean strict = getBoolean(frame,"strict", strictObj, false, isTrueNode);
+
+            /* validate options */
+
+            if (delimiter.equals(NOT_SET)) {
+                throw raise(TypeError, "\"delimiter\" must be a 1-character string");
+            }
+
+            // TODO: Does this match cpython version?
+            /*if (quotechar == Py_None && quoting == NULL)
+                self->quoting = QUOTE_NONE;
+            * */
+            if (quotecharObj == PNone.NONE && quotingObj == PNone.NO_VALUE) {
+                quoting = QUOTE_NONE;
+            }
+
+            if (quoting != QUOTE_NONE && quotechar == NOT_SET) {
+                throw raise(TypeError, "quotechar must be set if quoting enabled");
+            }
+
+            if (lineterminator == null) {
+                throw raise(TypeError, "lineterminator must be set");
+            }
 
             Object dialect = factory().createCSVDialect(cls, delimiter, doublequote, escapechar, lineterminator, quotechar, quoting, skipinitialspace, strict);
 
@@ -207,7 +290,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
         }
 
         private Object getAttributeValueFromDialect(VirtualFrame frame, Object dialect, String attributeName, PyObjectLookupAttr getAttributeNode) {
-            return getAttributeNode.execute(frame, dialect, attributeName);
+            return getAttributeNode.execute(frame, dialect, attributeName) ;
         }
 
         private String getChar(String name, Object valueObj, String defaultValue,
@@ -249,19 +332,29 @@ public class CSVDialectBuiltins extends PythonBuiltins {
             return getChar(attribute, valueObj, defaultValue, pyUnicodeCheckExactNode, getType, castToJavaStringNode);
         }
 
-        private boolean getBoolean(String attribute, Object value, boolean defaultValue, CastToJavaBooleanNode castToJavaBooleanNode) {
-            if (value == PNone.NO_VALUE) return defaultValue;
+        private boolean getBoolean(VirtualFrame frame, String attributeName, Object valueObj, boolean defaultValue, PyObjectIsTrueNode isTrueNode) {
+            if (valueObj == PNone.NO_VALUE) return defaultValue;
 
-            return castToJavaBooleanNode.execute(value);
+            return isTrueNode.execute(frame, valueObj);
         }
 
-        private String getString(String attribute, Object value, String defaultValue, CastToJavaStringNode castToJavaStringNode) {
-            if (value == PNone.NO_VALUE) return defaultValue;
+        private String getString(String attribute, Object valueObj, String defaultValue, CastToJavaStringNode castToJavaStringNode) {
+            if (valueObj == PNone.NO_VALUE) return defaultValue;
+            if (valueObj == PNone.NONE) return null;
 
-            return castToJavaStringNode.execute(value);
+            String value;
+
+            // TODO: Implement PyUnicodeCheck Node instead? (Not PyUnicodeCheckExact!)
+            try {
+                value = castToJavaStringNode.execute(valueObj);
+            } catch(CannotCastException e) {
+                throw raise(TypeError, ErrorMessages.MUST_BE_STRING, attribute);
+            }
+
+            return value;
         }
 
-        private int getInt(VirtualFrame frame, String name, Object valueObj, int defaultValue,
+        private int getQuotingValue(VirtualFrame frame, String name, Object valueObj, int defaultValue,
                            PyLongCheckExactNode pyLongCheckExactNode,
                            PyLongAsIntNode pyLongAsIntNode) {
             // TODO: IS lossy cast ok here?
@@ -274,6 +367,11 @@ public class CSVDialectBuiltins extends PythonBuiltins {
             }
 
             value = pyLongAsIntNode.execute(frame, valueObj);
+
+            if (value < 0 || value > 3) {
+                throw raise(TypeError, "bad \"quoting\" value");
+            }
+            
             return value;
         }
 

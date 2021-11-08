@@ -17,6 +17,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -76,6 +77,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
 
             Object dialects = readNode.execute(module, "_dialects");
 
+            // TODO: Write PyDictSetItem Node?
             // Todo: Is it ok to fail silently if dialects is not an instance of PDict?
             if (dialects instanceof PDict) {
                 HashingStorage storage = library.setItem(((PDict) dialects).getDictStorage(), name, result);
@@ -91,19 +93,16 @@ public class CSVModuleBuiltins extends PythonBuiltins {
     public abstract static class CSVUnregisterDialectNode extends PythonBuiltinNode {
         @Specialization
         PNone unregister(Object nameObj,
-                                @Cached CastToJavaStringNode nameNode,
                                 @Cached ReadAttributeFromObjectNode readNode,
                                 @CachedLibrary(limit = "1") HashingStorageLibrary library) {
-
-            // TODO: PyPy Implementation does not check if name is a String, should we do this? Check CPython
-            String name = nameNode.execute(nameObj);
 
             PythonModule module = getCore().lookupBuiltinModule("_csv");
             Object dialects = readNode.execute(module, "_dialects");
 
-            // Do we need to check if dialects is a PDict?
-            if (library.hasKey(((PDict) dialects).getDictStorage(), name)) {
-                library.delItem(((PDict) dialects).getDictStorage(), name);
+            // TODO: Do we need to check if dialects is a PDict?
+            // TODO: Should we write a PyDict_DelItem Node?
+            if (library.hasKey(((PDict) dialects).getDictStorage(), nameObj)) {
+                library.delItem(((PDict) dialects).getDictStorage(), nameObj);
             } else {
                 throw raise(PythonBuiltinClassType.CSVError, "unknown dialect");
             }
@@ -117,30 +116,27 @@ public class CSVModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CSVGetDialectNode extends PythonBuiltinNode {
 
-        public abstract Object execute(Object name);
+        public abstract Object execute(VirtualFrame frame, Object name);
 
         protected static CSVGetDialectNode create() {
             return CSVModuleBuiltinsFactory.CSVGetDialectNodeFactory.create(null);
         }
-
         @Specialization
-        Object get(Object nameObj,
-                          @Cached CastToJavaStringNode nameNode,
-                          @Cached ReadAttributeFromObjectNode readNode,
-                          @CachedLibrary(limit = "1") HashingStorageLibrary library) {
-
-            // TODO: PyPy Implementation does not check if name is a String, should we do this? Check CPython
-            String name = nameNode.execute(nameObj);
+        Object get(VirtualFrame frame, Object nameObj,
+                          @Cached PyDictGetItem getItemNode,
+                          @Cached ReadAttributeFromObjectNode readNode) {
 
             PythonModule module = getCore().lookupBuiltinModule("_csv");
-            Object dialects = readNode.execute(module, "_dialects");
+            PDict dialects = (PDict) readNode.execute(module, "_dialects");
+
+            Object dialect = getItemNode.execute(frame, dialects, nameObj);
 
             // Do we need to check if dialects is a PDict?
-            if (!library.hasKey(((PDict) dialects).getDictStorage(), name)) {
+            if (dialect == null) {
                 throw raise(PythonBuiltinClassType.CSVError, "unknown dialect");
             }
 
-            return library.getItem(((PDict) dialects).getDictStorage(), name);
+            return dialect;
         }
     }
 
