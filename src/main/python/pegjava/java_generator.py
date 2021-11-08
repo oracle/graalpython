@@ -373,11 +373,45 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                     self.print(f'private static final int {rule.name.upper()}_ID = {id};')
         self.print()
 
+    def _group_keywords_by_length(self) -> Dict[int, List[Tuple[str, int]]]:
+        groups: Dict[int, List[Tuple[str, int]]] = {}
+        for keyword_str, keyword_type in self.callmakervisitor.keyword_cache.items():
+            length = len(keyword_str)
+            if length in groups:
+                groups[length].append((keyword_str, keyword_type))
+            else:
+                groups[length] = [(keyword_str, keyword_type)]
+        return groups
+    
+    def _setup_keywords(self) -> None:
+        keyword_cache = self.callmakervisitor.keyword_cache
+        n_keyword_lists = (
+            len(max(keyword_cache.keys(), key=len)) + 1 if len(keyword_cache) > 0 else 0
+        )
+        #self.print(f"static const int n_keyword_lists = {n_keyword_lists};")
+        groups = self._group_keywords_by_length()
+        self.print();
+        self.print("private static final Map<String, Integer>[] reserved_keywords = new Map []{")
+        with self.indent():
+            num_groups = max(groups) + 1 if groups else 1
+            for keywords_length in range(num_groups):
+                if keywords_length not in groups.keys():
+                    self.print("null,")
+                else:
+                    self.print("Stream.of(new Object[][] {")
+                    with self.indent():
+                        for keyword_str, keyword_type in groups[keywords_length]:
+                            self.print(f'{{"{keyword_str}", {keyword_type}}},')
+                    self.print("}).collect(Collectors.toMap(data -> (String) data[0], data -> (Integer) data[1])),")
+        self.print("};")
+        
     def _generate_keywords(self):
         with self.indent():
             self.print("// keywords constants")
             for key in self.callmakervisitor.keyword_cache.keys():
                 self.print(f'private static final String KEYWORD_{key.upper()} = "{key}";')
+                
+            self._setup_keywords()
 
     # generating helper methods
     def _generate_methods(self):
@@ -414,6 +448,21 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             }
         }
         return null;
+    }
+    
+    @Override
+    public Token getToken(int pos) {
+        Token token = super.getToken(pos);
+        if (token.type == Token.Kind.NAME) {
+            int len = token.endOffset - token.startColumn;
+            if (len < reserved_keywords.length) {
+                Map<String, Integer> keywords = reserved_keywords[len];
+                if (keywords != null && keywords.containsKey(getText(token))) {
+                    //TODO we should here change the kind to the keyword.
+                }
+            }
+        }
+        return token;
     }
     ''')
 

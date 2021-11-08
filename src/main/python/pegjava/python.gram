@@ -22,7 +22,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 '''
 
 @parser_fields '''
@@ -311,8 +314,8 @@ literal_pattern[SSTNode]: # originally return type expr_ty
     | real=signed_number '-' imag=NUMBER  { _PyAST_BinOp(real, Sub, imag, EXTRA) }
     | strings
     | 'None' { _PyAST_Constant(Py_None, NULL, EXTRA) }
-    | 'True' { _PyAST_Constant(Py_True, NULL, EXTRA) }
-    | 'False' { _PyAST_Constant(Py_False, NULL, EXTRA) }
+    | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, startToken.endOffset); } #{ _PyAST_Constant(Py_True, NULL, EXTRA) }
+    | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, startToken.endOffset); } #{ _PyAST_Constant(Py_False, NULL, EXTRA) }
 signed_number[SSTNode]: # originally return type expr_ty
     | NUMBER
     | '-' number=NUMBER { _PyAST_UnaryOp(USub, number, EXTRA) }
@@ -667,9 +670,9 @@ slice[SSTNode]: # originally return type expr_ty
     | a=[expression] ':' b=[expression] c=[':' d=[expression] { d }] { _PyAST_Slice(a, b, c, EXTRA) }
     | a=named_expression { a }
 atom[SSTNode]: # originally return type expr_ty
-    | n=NAME {factory.createVariable(getText(n), n.startOffset, n.endOffset) }
-    | 'True' { fac}
-    | 'False' { _PyAST_Constant(Py_False, NULL, EXTRA) }
+    | n=NAME { factory.createVariable(getText(n), n.startOffset, n.endOffset) }
+    | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, startToken.endOffset);}
+    | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, startToken.endOffset); }
     | 'None' { _PyAST_Constant(Py_None, NULL, EXTRA) }
     | &STRING strings
     | n=NUMBER { factory.createNumber(getText(n), n.startOffset, n.endOffset) }

@@ -13,7 +13,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @SuppressWarnings("all")
 public class GenParser extends Parser {
@@ -3333,6 +3336,58 @@ public class GenParser extends Parser {
     private static final String KEYWORD_YIELD = "yield";
     private static final String KEYWORD_OR = "or";
     private static final String KEYWORD_AND = "and";
+
+    private static final Map<String, Integer>[] reserved_keywords = new Map []{
+        null,
+        null,
+        Stream.of(new Object[][] {
+            {"if", 509},
+            {"in", 514},
+            {"as", 516},
+            {"is", 529},
+            {"or", 531},
+        }).collect(Collectors.toMap(data -> (String) data[0], data -> (Integer) data[1])),
+        Stream.of(new Object[][] {
+            {"del", 506},
+            {"for", 513},
+            {"try", 517},
+            {"def", 525},
+            {"not", 528},
+            {"and", 532},
+        }).collect(Collectors.toMap(data -> (String) data[0], data -> (Integer) data[1])),
+        Stream.of(new Object[][] {
+            {"pass", 500},
+            {"from", 508},
+            {"elif", 510},
+            {"else", 511},
+            {"with", 515},
+            {"None", 520},
+            {"True", 521},
+        }).collect(Collectors.toMap(data -> (String) data[0], data -> (Integer) data[1])),
+        Stream.of(new Object[][] {
+            {"break", 501},
+            {"while", 512},
+            {"False", 522},
+            {"raise", 524},
+            {"class", 526},
+            {"yield", 530},
+        }).collect(Collectors.toMap(data -> (String) data[0], data -> (Integer) data[1])),
+        Stream.of(new Object[][] {
+            {"global", 503},
+            {"assert", 505},
+            {"import", 507},
+            {"except", 518},
+            {"return", 523},
+            {"lambda", 527},
+        }).collect(Collectors.toMap(data -> (String) data[0], data -> (Integer) data[1])),
+        Stream.of(new Object[][] {
+            {"finally", 519},
+        }).collect(Collectors.toMap(data -> (String) data[0], data -> (Integer) data[1])),
+        Stream.of(new Object[][] {
+            {"continue", 502},
+            {"nonlocal", 504},
+        }).collect(Collectors.toMap(data -> (String) data[0], data -> (Integer) data[1])),
+    };
 
     // parser fields
     private int level = 0;
@@ -9897,7 +9952,7 @@ public class GenParser extends Parser {
             }
             reset(pos);
         }
-        // the result should be constructed through action: _PyAST_Constant ( Py_True , NULL , EXTRA )
+        // the result should be constructed through action: factory . createBooleanLiteral ( true , startToken . startOffset , startToken . endOffset ) ;
         {
             // visiting Alt: 'True'
             // REMOVE visiting JavaCallMakerVisitor.visit_StringLeaf('True')
@@ -9914,14 +9969,15 @@ public class GenParser extends Parser {
             ) {
                 this.level--;
                 debugMessageln("literal_pattern[" + pos + ", " + mark() +" ](level: " + level + ") 'True' succeeded!");
-                // alt action: _PyAST_Constant ( Py_True , NULL , EXTRA )
+                // alt action: factory . createBooleanLiteral ( true , startToken . startOffset , startToken . endOffset ) ;
                 Token endToken = getToken(mark());
-                // node.action: _PyAST_Constant ( Py_True , NULL , EXTRA )
+                // node.action: factory . createBooleanLiteral ( true , startToken . startOffset , startToken . endOffset ) ;
+                result = factory.createBooleanLiteral(true,startToken.startOffset,startToken.endOffset);;
                 return (SSTNode)cache.putResult(pos, LITERAL_PATTERN_ID, result);
             }
             reset(pos);
         }
-        // the result should be constructed through action: _PyAST_Constant ( Py_False , NULL , EXTRA )
+        // the result should be constructed through action: factory . createBooleanLiteral ( false , startToken . startOffset , startToken . endOffset ) ;
         {
             // visiting Alt: 'False'
             // REMOVE visiting JavaCallMakerVisitor.visit_StringLeaf('False')
@@ -9938,9 +9994,10 @@ public class GenParser extends Parser {
             ) {
                 this.level--;
                 debugMessageln("literal_pattern[" + pos + ", " + mark() +" ](level: " + level + ") 'False' succeeded!");
-                // alt action: _PyAST_Constant ( Py_False , NULL , EXTRA )
+                // alt action: factory . createBooleanLiteral ( false , startToken . startOffset , startToken . endOffset ) ;
                 Token endToken = getToken(mark());
-                // node.action: _PyAST_Constant ( Py_False , NULL , EXTRA )
+                // node.action: factory . createBooleanLiteral ( false , startToken . startOffset , startToken . endOffset ) ;
+                result = factory.createBooleanLiteral(false,startToken.startOffset,startToken.endOffset);;
                 return (SSTNode)cache.putResult(pos, LITERAL_PATTERN_ID, result);
             }
             reset(pos);
@@ -19441,7 +19498,7 @@ public class GenParser extends Parser {
             }
             reset(pos);
         }
-        // the result should be constructed through action: fac
+        // the result should be constructed through action: factory . createBooleanLiteral ( true , startToken . startOffset , startToken . endOffset ) ;
         {
             // visiting Alt: 'True'
             // REMOVE visiting JavaCallMakerVisitor.visit_StringLeaf('True')
@@ -19458,14 +19515,15 @@ public class GenParser extends Parser {
             ) {
                 this.level--;
                 debugMessageln("atom[" + pos + ", " + mark() +" ](level: " + level + ") 'True' succeeded!");
-                // alt action: fac
+                // alt action: factory . createBooleanLiteral ( true , startToken . startOffset , startToken . endOffset ) ;
                 Token endToken = getToken(mark());
-                // node.action: fac
+                // node.action: factory . createBooleanLiteral ( true , startToken . startOffset , startToken . endOffset ) ;
+                result = factory.createBooleanLiteral(true,startToken.startOffset,startToken.endOffset);;
                 return (SSTNode)cache.putResult(pos, ATOM_ID, result);
             }
             reset(pos);
         }
-        // the result should be constructed through action: _PyAST_Constant ( Py_False , NULL , EXTRA )
+        // the result should be constructed through action: factory . createBooleanLiteral ( false , startToken . startOffset , startToken . endOffset ) ;
         {
             // visiting Alt: 'False'
             // REMOVE visiting JavaCallMakerVisitor.visit_StringLeaf('False')
@@ -19482,9 +19540,10 @@ public class GenParser extends Parser {
             ) {
                 this.level--;
                 debugMessageln("atom[" + pos + ", " + mark() +" ](level: " + level + ") 'False' succeeded!");
-                // alt action: _PyAST_Constant ( Py_False , NULL , EXTRA )
+                // alt action: factory . createBooleanLiteral ( false , startToken . startOffset , startToken . endOffset ) ;
                 Token endToken = getToken(mark());
-                // node.action: _PyAST_Constant ( Py_False , NULL , EXTRA )
+                // node.action: factory . createBooleanLiteral ( false , startToken . startOffset , startToken . endOffset ) ;
+                result = factory.createBooleanLiteral(false,startToken.startOffset,startToken.endOffset);;
                 return (SSTNode)cache.putResult(pos, ATOM_ID, result);
             }
             reset(pos);
@@ -40804,6 +40863,21 @@ public class GenParser extends Parser {
             }
         }
         return null;
+    }
+    
+    @Override
+    public Token getToken(int pos) {
+        Token token = super.getToken(pos);
+        if (token.type == Token.Kind.NAME) {
+            int len = token.endOffset - token.startColumn;
+            if (len < reserved_keywords.length) {
+                Map<String, Integer> keywords = reserved_keywords[len];
+                if (keywords != null && keywords.containsKey(getText(token))) {
+                    //TODO we should here change the kind to the keyword.
+                }
+            }
+        }
+        return token;
     }
     
     

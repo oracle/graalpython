@@ -143,7 +143,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
 
     @Override
     public String visit(BooleanLiteralSSTNode node) {
-        return addHeader(node);
+        return addHeader(node) + " Value: " + (node.value ? "True" : "False");
     }
 
     @Override

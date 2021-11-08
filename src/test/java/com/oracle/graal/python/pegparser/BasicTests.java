@@ -14,4 +14,10 @@ public class BasicTests extends ParserTestBase {
     public void assignment01() throws Exception {
         checkTreeResult("a: int = 2");
     }
+    
+//    @Test
+//    public void booelan01() throws Exception {
+//        checkTreeResult("True");
+//    }
+    
 }
