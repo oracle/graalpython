@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -84,6 +85,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -104,6 +106,9 @@ import com.oracle.truffle.api.library.CachedLibrary;
 public class ImpModuleBuiltins extends PythonBuiltins {
 
     static final String HPY_SUFFIX = ".hpy.so";
+
+    // the full module name for package imports
+    public String pyPackageContext;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -192,7 +197,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__create_dynamic__", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class CreateDynamic extends PythonBuiltinNode {
+    public abstract static class CreateDynamic extends PythonBinaryBuiltinNode {
 
         @Child private CheckFunctionResultNode checkResultNode;
         @Child private HPyCheckFunctionResultNode checkHPyResultNode;
@@ -433,6 +438,30 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object run() {
             return factory().createList(new Object[]{PythonContext.get(this).getSoAbi(), HPY_SUFFIX, ".so", ".dylib", ".su"});
+        }
+    }
+
+    @Builtin(name = "create_dynamic", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"$self", "moduleSpec", "fileName"})
+    @GenerateNodeFactory
+    public abstract static class CreateDynamicNode extends PythonTernaryBuiltinNode {
+        @Specialization(guards = "isNoValue(fileName)")
+        Object runNoFileName(VirtualFrame frame, PythonModule self, PythonObject moduleSpec, @SuppressWarnings("unused") PNone fileName,
+                        @Cached CreateDynamic createDynamicNode) {
+            return run(frame, self, moduleSpec, PNone.NONE, createDynamicNode);
+        }
+
+        @Specialization(guards = "!isNoValue(fileName)")
+        Object run(VirtualFrame frame, PythonModule self, PythonObject moduleSpec, Object fileName,
+                        @Cached CreateDynamic createDynamicNode) {
+            ImpModuleBuiltins impBuiltins = (ImpModuleBuiltins) self.getBuiltins();
+            String oldPackageContext = impBuiltins.pyPackageContext;
+            impBuiltins.pyPackageContext = PyObjectStrAsJavaStringNode.getUncached().execute(frame,
+                            PyObjectLookupAttr.getUncached().execute(frame, moduleSpec, "name"));
+            try {
+                return createDynamicNode.execute(frame, moduleSpec, fileName);
+            } finally {
+                impBuiltins.pyPackageContext = oldPackageContext;
+            }
         }
     }
 

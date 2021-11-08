@@ -37,7 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import _imp
 import sys
 import _thread
 
@@ -51,25 +50,6 @@ def may_raise(error_result=native_null):
         def decorator(fun):
             return make_may_raise_wrapper(fun, error_result)
         return decorator
-
-moduletype = type(sys)
-
-def _PyModule_CreateInitialized_PyModule_New(name):
-    # see CPython's Objects/moduleobject.c - _PyModule_CreateInitialized for
-    # comparison how they handle _Py_PackageContext
-    if _imp._py_package_context:
-        if _imp._py_package_context.endswith(name):
-            name = _imp._py_package_context
-            _imp._py_package_context = None
-    new_module = moduletype(name)
-    # TODO: (tfel) I don't think this is the right place to set it, but somehow
-    # at least in the import of sklearn.neighbors.dist_metrics through
-    # sklearn.neighbors.ball_tree the __package__ attribute seems to be already
-    # set in CPython. To not produce a warning, I'm setting it here, although I
-    # could not find what CPython really does
-    if "." in name:
-        new_module.__package__ = name.rpartition('.')[0]
-    return new_module
 
 ##################### ABSTRACT
 

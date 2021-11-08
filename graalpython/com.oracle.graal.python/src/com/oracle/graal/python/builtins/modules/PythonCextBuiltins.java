@@ -235,6 +235,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode.CreateAndCheckArgumentsNode;
@@ -274,6 +275,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
@@ -493,6 +495,42 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         Object run(String name) {
             return newModule(name, getCore(), factory());
+        }
+    }
+
+    @Builtin(name = "_PyModule_CreateInitialized_PyModule_New", parameterNames = {"name"})
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
+    @GenerateNodeFactory
+    public abstract static class PyModuleCreateInitializedNewNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PythonCextBuiltinsClinicProviders.PyModuleCreateInitializedNewNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object run(VirtualFrame frame, String name,
+                        @Cached ObjectBuiltins.SetattrNode setattrNode) {
+            // see CPython's Objects/moduleobject.c - _PyModule_CreateInitialized for
+            // comparison how they handle _Py_PackageContext
+            PythonModule imp = (PythonModule) AbstractImportNode.importModule("_imp");
+            ImpModuleBuiltins impBuiltins = (ImpModuleBuiltins) imp.getBuiltins();
+            String newModuleName = name;
+            if (impBuiltins.pyPackageContext != null && impBuiltins.pyPackageContext.endsWith(newModuleName)) {
+                newModuleName = impBuiltins.pyPackageContext;
+                impBuiltins.pyPackageContext = null;
+            }
+            PythonModule newModule = newModule(newModuleName, getCore(), factory());
+            // TODO: (tfel) I don't think this is the right place to set it, but somehow
+            // at least in the import of sklearn.neighbors.dist_metrics through
+            // sklearn.neighbors.ball_tree the __package__ attribute seems to be already
+            // set in CPython. To not produce a warning, I'm setting it here, although I
+            // could not find what CPython really does
+            int idx = newModuleName.indexOf(".");
+            if (idx > -1) {
+                setattrNode.execute(frame, newModule, __PACKAGE__, newModuleName.substring(0, idx));
+            }
+            return newModule;
         }
     }
 
