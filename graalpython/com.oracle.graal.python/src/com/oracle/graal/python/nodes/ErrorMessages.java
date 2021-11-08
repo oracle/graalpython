@@ -972,6 +972,13 @@ public abstract class ErrorMessages {
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";
 
+    // csv errors
+
+    public static final String DELIMITER_MUST_BE_ONE_CHAR_STRING = "\"delimiter\" must be a 1-character string";
+    public static final String QUOTECHAR_MUST_BE_SET_IF_QUOTING_ENABLED = "quotechar must be set if quoting enabled";
+    public static final String LINETERMINATOR_MUST_BE_SET = "lineterminator must be set";
+    public static final String BAD_QUOTING_VALUE = "bad \"quoting\" value";
+
     // warnings
     public static final String WARN_P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +
                     "The ability to return an instance of a strict subclass of %s " +
