@@ -52,6 +52,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.PythonFileDetector;
+import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
@@ -90,7 +91,6 @@ public abstract class TracebackNodes {
     // utility methods
     //
     // ---------------------------------------------------------------------------------------------------
-
     public static boolean fileWriteObject(VirtualFrame frame, Object file, Object data, boolean printRaw) {
         Object value;
         if (printRaw) {
@@ -106,7 +106,11 @@ public abstract class TracebackNodes {
     }
 
     public static void fileWriteString(VirtualFrame frame, Object file, String data) {
-        PyObjectCallMethodObjArgs.getUncached().execute(frame, file, WRITE, data);
+        fileWriteString(frame, file, data, PyObjectCallMethodObjArgs.getUncached());
+    }
+
+    public static void fileWriteString(VirtualFrame frame, Object file, String data, PyObjectCallMethodObjArgs callMethodObjArgs) {
+        callMethodObjArgs.execute(frame, file, WRITE, data);
     }
 
     public static void fileFlush(VirtualFrame frame, Object file) {
@@ -114,23 +118,35 @@ public abstract class TracebackNodes {
     }
 
     public static Object objectStr(VirtualFrame frame, Object value) {
+        return objectStr(frame, value, PyObjectStrAsObjectNode.getUncached());
+    }
+
+    public static Object objectStr(VirtualFrame frame, Object value, PyObjectStrAsObjectNode strAsObjectNode) {
         try {
-            return PyObjectStrAsObjectNode.getUncached().execute(frame, value);
+            return strAsObjectNode.execute(frame, value);
         } catch (PException pe) {
             return null;
         }
     }
 
     public static Object objectRepr(VirtualFrame frame, Object value) {
+        return objectRepr(frame, value, PyObjectReprAsObjectNode.getUncached());
+    }
+
+    public static Object objectRepr(VirtualFrame frame, Object value, PyObjectReprAsObjectNode reprAsObjectNode) {
         try {
-            return PyObjectReprAsObjectNode.getUncached().execute(frame, value);
+            return reprAsObjectNode.execute(frame, value);
         } catch (PException pe) {
             return null;
         }
     }
 
     public static String castToString(Object value) {
-        return CastToJavaStringNode.getUncached().execute(value);
+        return castToString(value, CastToJavaStringNode.getUncached());
+    }
+
+    public static String castToString(Object value, CastToJavaStringNode castToJavaStringNode) {
+        return castToJavaStringNode.execute(value);
     }
 
     public static String tryCastToString(Object value) {
@@ -142,12 +158,20 @@ public abstract class TracebackNodes {
     }
 
     public static Object objectLookupAttr(VirtualFrame frame, Object object, String attr) {
-        return PyObjectLookupAttr.getUncached().execute(frame, object, attr);
+        return objectLookupAttr(frame, object, attr, PyObjectLookupAttr.getUncached());
+    }
+
+    public static Object objectLookupAttr(VirtualFrame frame, Object object, String attr, PyObjectLookupAttr lookupAttr) {
+        return lookupAttr.execute(frame, object, attr);
+    }
+
+    public static String objectLookupAttrAsString(VirtualFrame frame, Object object, String attr, PyObjectLookupAttr lookupAttr, CastToJavaStringNode castToJavaStringNode) {
+        final Object value = objectLookupAttr(frame, object, attr, lookupAttr);
+        return value != PNone.NO_VALUE ? castToString(value, castToJavaStringNode) : null;
     }
 
     public static String objectLookupAttrAsString(VirtualFrame frame, Object object, String attr) {
-        final Object value = objectLookupAttr(frame, object, attr);
-        return value != PNone.NO_VALUE ? castToString(value) : null;
+        return objectLookupAttrAsString(frame, object, attr, PyObjectLookupAttr.getUncached(), CastToJavaStringNode.getUncached());
     }
 
     public static boolean objectHasAttr(VirtualFrame frame, Object object, String attr) {

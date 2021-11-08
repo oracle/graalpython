@@ -40,11 +40,17 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeEncodeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.BACKSLASHREPLACE;
+import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.STRICT;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.castToString;
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.classNameNoDot;
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.fileFlush;
+import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.fileWriteObject;
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.fileWriteString;
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.getExceptionTraceback;
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.getObjectClass;
@@ -53,9 +59,11 @@ import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.objectHasAttr;
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.objectLookupAttr;
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.objectLookupAttrAsString;
+import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.objectRepr;
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.objectStr;
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.tryCastToString;
 import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
+import static com.oracle.graal.python.nodes.BuiltinNames.DISPLAYHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.EXCEPTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDIN;
@@ -67,6 +75,8 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__STDIN__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__STDOUT__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__UNRAISABLEHOOK__;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_TYPE_MUST_BE;
+import static com.oracle.graal.python.nodes.ErrorMessages.LOST_S;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 import static com.oracle.graal.python.util.PythonUtils.NEW_LINE;
@@ -121,6 +131,11 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
+import com.oracle.graal.python.lib.PyUnicodeAsEncodedString;
+import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -132,6 +147,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -1197,4 +1214,88 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
     }
+
+    @Builtin(name = DISPLAYHOOK, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2, declaresExplicitSelf = true, doc = "displayhook($module, object, /)\n" +
+                    "--\n" +
+                    "\n" +
+                    "Print an object to sys.stdout and also save it in builtins._")
+    @GenerateNodeFactory
+    abstract static class DisplayHook extends PythonBuiltinNode {
+        private final static String ATTR_ENCODING = "encoding";
+        private final static String ATTR_BUFFER = "buffer";
+
+        private void sysDisplayHookUnencodable(VirtualFrame frame, Object out, Object obj,
+                                               PyObjectLookupAttr lookupAttr,
+                                               PyObjectReprAsObjectNode reprAsObjectNode,
+                                               PyObjectCallMethodObjArgs callMethodObjArgs,
+                                               CastToJavaStringNode castToJavaStringNode,
+                                               PyUnicodeAsEncodedString pyUnicodeAsEncodedString,
+                                               PyUnicodeFromEncodedObject pyUnicodeFromEncodedObject) {
+            final String stdoutEncoding = objectLookupAttrAsString(frame, out, ATTR_ENCODING, lookupAttr, castToJavaStringNode);
+            final Object reprStr = objectRepr(frame, obj, reprAsObjectNode);
+            final Object encoded = pyUnicodeAsEncodedString.execute(frame, reprStr, stdoutEncoding, BACKSLASHREPLACE);
+
+            final Object buffer = objectLookupAttr(frame, out, ATTR_BUFFER, lookupAttr);
+            if (buffer != null) {
+                callMethodObjArgs.execute(frame, buffer, WRITE, encoded);
+            } else {
+                Object escapedStr = pyUnicodeFromEncodedObject.execute(frame, encoded, stdoutEncoding, STRICT);
+                fileWriteObject(frame, out, escapedStr, true);
+            }
+        }
+
+        @Specialization
+        Object doit(VirtualFrame frame, PythonModule sys, Object obj,
+                        @Cached PyObjectSetAttr setAttr,
+                        @Cached IsBuiltinClassProfile unicodeEncodeErrorProfile,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
+                        @Cached PyObjectReprAsObjectNode reprAsObjectNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached PyUnicodeAsEncodedString pyUnicodeAsEncodedString,
+                        @Cached PyUnicodeFromEncodedObject pyUnicodeFromEncodedObject) {
+            final PythonModule builtins = getContext().getBuiltins();
+            if (builtins == null) {
+                throw raise(RuntimeError, LOST_S, "builtins module");
+            }
+            // Print value except if None
+            // After printing, also assign to '_'
+            // Before, set '_' to None to avoid recursion
+            if (obj == PNone.NONE) {
+                return PNone.NONE;
+            }
+
+            setAttr.execute(frame, builtins, __, PNone.NONE);
+            Object stdOut = objectLookupAttr(frame, sys, STDOUT, lookupAttr);
+            if (PGuards.isPNone(stdOut)) {
+                throw raise(RuntimeError, LOST_S, "sys.stdout");
+            }
+
+            boolean reprWriteOk = false;
+            boolean unicodeEncodeError = false;
+            try {
+                Object reprVal = objectRepr(frame, obj, reprAsObjectNode);
+                if (reprVal == null) {
+                    reprWriteOk = false;
+                } else {
+                    reprWriteOk = true;
+                    fileWriteString(frame, stdOut, castToString(reprVal, castToJavaStringNode));
+                }
+            } catch (PException pe) {
+                pe.expect(UnicodeEncodeError, unicodeEncodeErrorProfile);
+                // repr(o) is not encodable to sys.stdout.encoding with sys.stdout.errors error
+                // handler (which is probably 'strict')
+                unicodeEncodeError = true;
+            }
+            if (!reprWriteOk && unicodeEncodeError) {
+                sysDisplayHookUnencodable(frame, stdOut, obj, lookupAttr, reprAsObjectNode, callMethodObjArgs,
+                        castToJavaStringNode, pyUnicodeAsEncodedString, pyUnicodeFromEncodedObject);
+            }
+
+            fileWriteString(frame, stdOut, NEW_LINE, callMethodObjArgs);
+            setAttr.execute(frame, builtins, __, obj);
+            return PNone.NONE;
+        }
+    }
+
 }
