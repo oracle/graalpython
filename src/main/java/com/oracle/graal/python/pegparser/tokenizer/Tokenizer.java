@@ -1234,11 +1234,16 @@ public class Tokenizer {
     }
 
     private Token createToken(int kind) {
-        return new Token(kind, tokenStart, nextCharIndex, currentLineNumber, tokenStart - lineStartIndex, currentLineNumber, nextCharIndex - lineStartIndex);
+        return createToken(kind, null);
     }
 
     private Token createToken(int kind, Object extraData) {
-        return new Token(kind, tokenStart, nextCharIndex, currentLineNumber, tokenStart - lineStartIndex, currentLineNumber, nextCharIndex - lineStartIndex, extraData);
+        int lineStart = kind == Token.Kind.STRING ? multiLineStartIndex : lineStartIndex;
+        int lineno = kind == Token.Kind.STRING ? firstLineNumber : currentLineNumber;
+        int endLineno = currentLineNumber;
+        int colOffset = (tokenStart >= lineStart) ? (int)(tokenStart - lineStart) : -1;
+        int endColOffset = (nextCharIndex >= lineStartIndex) ? (int)(nextCharIndex - lineStartIndex) : -1;
+        return new Token(kind, tokenStart, nextCharIndex, lineno, colOffset, endLineno, endColOffset, extraData);
     }
 
     public String getTokenString(Token tok) {

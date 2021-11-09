@@ -469,21 +469,16 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         n_keyword_lists = (
             len(max(keyword_cache.keys(), key=len)) + 1 if len(keyword_cache) > 0 else 0
         )
-        self.print(f"private static final int n_keyword_lists = {n_keyword_lists};")
         groups = self._group_keywords_by_length()
         self.print("static {")
         with self.indent():
-            self.print("Map<String, Integer> currentMap;");
             num_groups = max(groups) + 1 if groups else 1
             for keywords_length in range(num_groups):
                 if keywords_length not in groups.keys():
-                    self.print("reservedKeywords.add(null);");
+                    pass
                 else:
-                    self.print("currentMap = new HashMap<String, Integer>();");
-                    self.print("reservedKeywords.add(currentMap);");
-                    with self.indent():
-                        for keyword_str, keyword_type in groups[keywords_length]:
-                            self.print(f'currentMap.add("{keyword_str}", {keyword_type});')
+                    for keyword_str, keyword_type in groups[keywords_length]:
+                        self.print(f'reservedKeywords.put("{keyword_str}", {keyword_type});')
         self.print("};")
 
     def _setup_soft_keywords(self) -> None:

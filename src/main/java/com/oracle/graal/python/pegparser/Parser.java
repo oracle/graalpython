@@ -8,6 +8,7 @@ package com.oracle.graal.python.pegparser;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,14 +17,16 @@ import java.util.Set;
  * From this class is extended the generated parser. It allow access to the tokenizer.
  */
 public abstract class Parser {
+    protected static final Set<String> softKeywords = new HashSet<>();
+    protected static final Map<String, Integer> reservedKeywords = new LinkedHashMap<>();
+
     private final ParserTokenizer tokenizer;
     protected final NodeFactory factory;
 
     protected int level = 0;
     protected boolean callInvalidRules = false;
     protected final RuleResultCache<Object> cache = new RuleResultCache(this);
-    protected final Set<String> softKeywords = new HashSet<>();
-    protected final List<Map<String, Integer>> reservedKeywords = new ArrayList<>();
+    protected final Map<Integer, String> comments = new LinkedHashMap<>();
 
     public Parser(ParserTokenizer tokenizer, NodeFactory factory) {
         this.tokenizer = tokenizer;
@@ -130,19 +133,32 @@ public abstract class Parser {
         return null;
     }
 
-    @Override
-    public Token getToken(int pos) {
-        Token token = super.getToken(pos);
+    /**
+     * equivalent to PyPegen_fill_token in that it modifies the token
+     */
+    public Token getAndInitializeToken(int pos) {
+        Token token = getToken(pos);
+        while (token.type == Token.Kind.TYPE_IGNORE) {
+            String tag = getText(token);
+            comments.put(token.startLine, tag);
+            token = getToken(pos);
+        }
+
+        // TODO: handle reaching end in single_input mode
+        
+        return initializeToken(token);
+    }
+
+    /**
+     * equivalent to initialize_token
+     */
+    private Token initializeToken(Token token) {
         if (token.type == Token.Kind.NAME) {
-            int len = token.endOffset - token.startColumn;
-            if (len < reserved_keywords.length) {
-                Map<String, Integer> keywords = reserved_keywords[len];
-                if (keywords != null && keywords.containsKey(getText(token))) {
-                    //TODO we should here change the kind to the keyword.
-                }
+            String txt = getText(token);
+            if (reservedKeywords.containsKey(txt)) {
+                token.type = (int)reservedKeywords.get(txt);
             }
         }
         return token;
     }
-
 }
