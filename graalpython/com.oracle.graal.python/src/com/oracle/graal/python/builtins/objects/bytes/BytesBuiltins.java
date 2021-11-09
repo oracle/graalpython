@@ -40,6 +40,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
@@ -436,6 +437,34 @@ public class BytesBuiltins extends PythonBuiltins {
         @Fallback
         public Object mul(@SuppressWarnings("unused") Object self, Object other) {
             throw raise(TypeError, ErrorMessages.CANT_MULTIPLY_SEQ_BY_NON_INT, other);
+        }
+    }
+
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class HashNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = "isByteStorage(self)")
+        @TruffleBoundary
+        static long hash(PBytes self) {
+            ByteSequenceStorage storage = (ByteSequenceStorage) self.getSequenceStorage();
+            byte[] array = storage.getInternalByteArray();
+            int len = storage.length();
+            int result = 1;
+            for (int i = 0; i < len; i++) {
+                result = 31 * result + array[i];
+            }
+            return result;
+        }
+
+        @Specialization(guards = "!isByteStorage(self)", limit = "1")
+        static long hashNative(PBytes self,
+                        @CachedLibrary("self") PythonBufferAccessLibrary bufferLib) {
+            int result = 1;
+            int len = bufferLib.getBufferLength(self);
+            for (int i = 0; i < len; i++) {
+                result = 31 * result + bufferLib.readByte(self, i);
+            }
+            return result;
         }
     }
 
