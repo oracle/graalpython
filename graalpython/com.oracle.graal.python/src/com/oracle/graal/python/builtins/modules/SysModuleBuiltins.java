@@ -1223,8 +1223,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     "Print an object to sys.stdout and also save it in builtins._")
     @GenerateNodeFactory
     abstract static class DisplayHook extends PythonBuiltinNode {
-        private final static String ATTR_ENCODING = "encoding";
-        private final static String ATTR_BUFFER = "buffer";
+        private static final String ATTR_ENCODING = "encoding";
+        private static final String ATTR_BUFFER = "buffer";
 
         private void sysDisplayHookUnencodable(VirtualFrame frame, Object out, Object obj,
                         PyObjectLookupAttr lookupAttr,

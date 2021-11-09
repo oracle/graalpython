@@ -40,27 +40,23 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.ENCODER_S_RETURNED_S_INSTEAD_OF_BYTES;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeWarning;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-
-import static com.oracle.graal.python.nodes.ErrorMessages.ENCODER_S_RETURNED_S_INSTEAD_OF_BYTES;
-import static com.oracle.graal.python.nodes.ErrorMessages.S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeWarning;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 /**
  * Equivalent of CPython's {@code PyUnicode_AsEncodedString}.

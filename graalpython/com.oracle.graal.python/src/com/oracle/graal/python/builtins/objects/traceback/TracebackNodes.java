@@ -52,7 +52,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.PythonFileDetector;
-import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
