@@ -55,6 +55,23 @@ public class CSVDialectBuiltins extends PythonBuiltins {
     public abstract static class DialectNode extends PythonBuiltinNode {
 
         @Specialization
+        Object doCSVDialectWithoutKeywords(PythonBuiltinClassType cls, CSVDialect dialect, PNone delimiter, PNone doublequote, PNone escapechar,
+                                        PNone lineterminator, PNone quotechar, PNone quoting, PNone skipinitialspace,
+                                        PNone strict) {
+            return dialect;
+        }
+
+        @Specialization
+        CSVDialect doStringWithoutKeywords(VirtualFrame frame, PythonBuiltinClassType cls, String dialectName, PNone delimiter, PNone doublequote, PNone escapechar,
+                                       PNone lineterminator, PNone quotechar, PNone quoting, PNone skipinitialspace,
+                                       PNone strict,
+                                       @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
+                                       @Cached ReadAttributeFromObjectNode readNode,
+                                       @Cached PyDictGetItem getItemNode) {
+            return getDialect.get(frame, dialectName, getItemNode, readNode);
+        }
+
+        @Specialization
         Object doNoDialectObj(VirtualFrame frame, PythonBuiltinClassType cls, PNone dialectObj, Object delimiterObj, Object doublequoteObj, Object
                 escapecharObj, Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj,
                               Object strictObj,
@@ -68,7 +85,6 @@ public class CSVDialectBuiltins extends PythonBuiltins {
             return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj, quotecharObj, quotingObj, skipinitialspaceObj, strictObj,
                     getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode, pyUnicodeCheckExactNode);
         }
-
 
         @Specialization
         Object doStringWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, String dialectName, Object delimiterObj, Object
@@ -99,7 +115,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doDialectClass(VirtualFrame frame, PythonBuiltinClassType cls, PythonClass dialectObj, Object delimiterObj, Object doublequoteObj, Object
+        Object doDialectClassWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, PythonClass dialectObj, Object delimiterObj, Object doublequoteObj, Object
                 escapecharObj, Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj,
                               Object strictObj,
                               @Cached GetClassNode getClassNode,
@@ -112,6 +128,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                               @Cached PyLongAsIntNode pyLongAsIntNode,
                               @Cached PyUnicodeCheckExactNode pyUnicodeCheckExactNode) {
 
+            // We use multiple AttributeNodes to be able to cache all attributes as current CACHE_SIZE is 3.
             delimiterObj = getAttributeValue(frame, dialectObj, delimiterObj, "delimiter", getFirstAttributesNode);
             doublequoteObj = getAttributeValue(frame, dialectObj, doublequoteObj, "doublequote", getFirstAttributesNode);
             escapecharObj = getAttributeValue(frame, dialectObj, escapecharObj, "escapechar", getFirstAttributesNode);
@@ -125,7 +142,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                     getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode, pyUnicodeCheckExactNode);
         }
 
-        @Specialization(guards = {"!isPythonClass(dialectObj)", "!isString(dialectObj)", "!isPNone(dialectObj)"})
+        @Specialization(guards = {"!isCSVDialect(dialectObj)", "!isPythonClass(dialectObj)", "!isString(dialectObj)", "!isPNone(dialectObj)"})
         Object doGeneric(VirtualFrame frame, PythonBuiltinClassType cls, Object dialectObj, Object delimiterObj, Object doublequoteObj, Object
                 escapecharObj, Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj,
                          Object strictObj,
@@ -136,8 +153,6 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                          @Cached PyLongCheckExactNode pyLongCheckExactNode,
                          @Cached PyLongAsIntNode pyLongAsIntNode,
                          @Cached PyUnicodeCheckExactNode pyUnicodeCheckExactNode) {
-
-            // TODO: should we check dialectObj before accessing here in any way?
 
             delimiterObj = getAttributeValue(frame, dialectObj, delimiterObj, "delimiter", getAttributeNode);
             doublequoteObj = getAttributeValue(frame, dialectObj, doublequoteObj, "doublequote", getAttributeNode);
@@ -179,10 +194,6 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.DELIMITER_MUST_BE_ONE_CHAR_STRING);
             }
 
-            // TODO: Does this match cpython version?
-            /*if (quotechar == Py_None && quoting == NULL)
-                self->quoting = QUOTE_NONE;
-            * */
             if (quotecharObj == PNone.NONE && quotingObj == PNone.NO_VALUE) {
                 quoting = QUOTE_NONE;
             }
@@ -215,12 +226,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
 
             String charValue;
 
-            // TODO: Add implementation for PyUnicodeCheck?
-            // #define PyUnicode_Check(op) \
-            //                 PyType_FastSubclass(Py_TYPE(op), Py_TPFLAGS_UNICODE_SUBCLASS)
-//            if (pyUnicodeCheckExactNode.execute(valueObj)) {
-//                throw raise(TypeError, ErrorMessages.S_MUST_BE_STRING_NOT_S, name, getType.execute(valueObj));
-//            }
+            // TODO: Implement PyUnicodeCheck Node instead? Currently only PyUnicodeCheckExact is implemented as Node.
 
             try {
                 charValue = castToJavaStringNode.execute(valueObj);
@@ -257,11 +263,11 @@ public class CSVDialectBuiltins extends PythonBuiltins {
 
             String value;
 
-            // TODO: Implement PyUnicodeCheck Node instead? (Not PyUnicodeCheckExact!)
+            // TODO: Implement PyUnicodeCheck Node instead? Currently only PyUnicodeCheckExact is implemented as Node.
             try {
                 value = castToJavaStringNode.execute(valueObj);
             } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.MUST_BE_STRING, attribute);
+                throw raise(TypeError, ErrorMessages.MUST_BE_STRING, "\"" + attribute + "\"");
             }
 
             return value;

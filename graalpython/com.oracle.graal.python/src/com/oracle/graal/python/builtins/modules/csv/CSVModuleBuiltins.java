@@ -18,6 +18,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyDictGetItem;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -35,8 +36,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 import java.util.List;
-
-import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_S_NOT_P;
 
 @CoreFunctions(defineModule = "_csv")
 public class CSVModuleBuiltins extends PythonBuiltins {
@@ -69,22 +68,18 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             try {
                 name = nameNode.execute(nameObj);
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ARG_MUST_BE_S_NOT_P, "dialect name", "str", nameObj);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_STRING, "dialect name");
             }
 
             PythonModule module = getCore().lookupBuiltinModule("_csv");
-
-            //Object dialectClass = readNode.execute(module, "Dialect"); // getCore.Lookup
             Object result = callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, keywords);
 
             Object dialects = readNode.execute(module, "_dialects");
 
             // TODO: Write PyDictSetItem Node?
-            // Todo: Is it ok to fail silently if dialects is not an instance of PDict?
-            if (dialects instanceof PDict) {
-                HashingStorage storage = library.setItem(((PDict) dialects).getDictStorage(), name, result);
-                ((PDict) dialects).setDictStorage(storage);
-            }
+            HashingStorage storage = library.setItem(((PDict) dialects).getDictStorage(), name, result);
+            ((PDict) dialects).setDictStorage(storage);
+
             return PNone.NONE;
         }
     }
