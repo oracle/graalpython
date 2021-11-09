@@ -13,7 +13,6 @@ from pegen.grammar_parser import GeneratedParser as GrammarParser
 from pegen.parser import Parser
 from pegen.parser_generator import ParserGenerator
 from pegen.python_generator import PythonParserGenerator
-from pegen.java_generator2 import JavaParserGenerator
 from pegen.tokenizer import Tokenizer
 
 MOD_DIR = pathlib.Path(__file__).resolve().parent
@@ -251,7 +250,7 @@ def build_python_parser_and_generator(
     return grammar, parser, tokenizer, gen
 
 def build_java_generator(
-    grammar: Grammar, grammar_file: str, tokens_file: str, 
+    grammar: Grammar, grammar_file: str, tokens_file: str,
     output_file: str, skip_actions: bool = False,
 ) -> ParserGenerator:
     print("build_java_generator")
