@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -287,11 +286,11 @@ public final class TopLevelExceptionHandler extends RootNode {
             PArguments.setCustomLocals(arguments, mainDict);
             PArguments.setException(arguments, PException.NO_EXCEPTION);
         }
-        PFrame.Reference frameInfo = IndirectCalleeContext.enter(getPythonLanguage(), pythonContext, arguments, innerCallTarget);
+        Object state = IndirectCalleeContext.enterIndirect(getPythonLanguage(), pythonContext, arguments);
         try {
             return innerCallTarget.call(arguments);
         } finally {
-            IndirectCalleeContext.exit(getPythonLanguage(), pythonContext, frameInfo);
+            IndirectCalleeContext.exit(getPythonLanguage(), pythonContext, state);
         }
     }
 
