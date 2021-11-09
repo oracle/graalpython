@@ -6,8 +6,10 @@
 package com.oracle.graal.python.pegparser.tokenizer;
 
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer.StatusCode;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -1185,6 +1187,45 @@ public class Tokenizer {
                 return createToken(Token.oneChar(c));
             }
         }
+    }
+
+    /**
+     * PyTokenizer_FindEncodingFilename
+     *
+     * Public API to expose how the tokenizer decides on the encoding of a file.
+     *
+     * @param channel - the data stream to read from
+     * @throws {@link IOException} if a read error occurs in the {@code channel}
+     * @return the {@link Charset} the Tokenizer will use for this data.
+     */
+    public static Charset findEncodingForFilename(SeekableByteChannel channel) throws IOException {
+        ByteBuffer buf;
+        int bytesRead;
+        byte[] ary = new byte[0];
+        int bufferSize = 0;
+        int newlines = 0;
+        int totalBytesRead = 0;
+        do {
+            int i = bufferSize;
+            bufferSize += 4096;
+            buf = ByteBuffer.allocate(bufferSize);
+            buf.put(ary);
+            bytesRead = channel.read(buf);
+            if (bytesRead > 0) {
+                totalBytesRead += bytesRead;
+                ary = buf.array();
+                while (i < totalBytesRead) {
+                    if (ary[i] == '\n') {
+                        newlines++;
+                        if (newlines == 2) {
+                            break;
+                        }
+                    }
+                }
+            }
+        } while (bytesRead > 0 && newlines < 2);
+        Tokenizer tokenizer = new Tokenizer(ary, false, false);
+        return tokenizer.fileEncoding;
     }
 
     // isxdigit
