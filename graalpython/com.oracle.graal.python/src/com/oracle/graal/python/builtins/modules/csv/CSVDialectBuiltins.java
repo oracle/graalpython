@@ -86,7 +86,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
 
             Object dialectObj = getDialect.get(frame, dialectName, getItemNode, readNode);
 
-            // TODO: As we only store CSVDialects it should be possible to avoid possibly expensive getAttribute Calls.
+            //TODO: As we only store CSVDialects it should be possible to avoid possibly expensive getAttribute Calls.
 
             delimiterObj = getAttributeValue(frame, dialectObj, delimiterObj, "delimiter", getAttributeNode);
             doublequoteObj = getAttributeValue(frame, dialectObj, doublequoteObj, "doublequote", getAttributeNode);
@@ -274,16 +274,14 @@ public class CSVDialectBuiltins extends PythonBuiltins {
         private int getQuotingValue(VirtualFrame frame, String name, Object valueObj, int defaultValue,
                                     PyLongCheckExactNode pyLongCheckExactNode,
                                     PyLongAsIntNode pyLongAsIntNode) {
-            // TODO: IS lossy cast ok here?
-            if (valueObj == PNone.NO_VALUE) return defaultValue;
 
-            int value;
+            if (valueObj == PNone.NO_VALUE) return defaultValue;
 
             if (!pyLongCheckExactNode.execute(valueObj)) {
                 throw raise(TypeError, ErrorMessages.MUST_BE_INTEGER, name);
             }
 
-            value = pyLongAsIntNode.execute(frame, valueObj);
+            int value = pyLongAsIntNode.execute(frame, valueObj);
 
             if (value < 0 || value > 3) {
                 throw raise(TypeError, ErrorMessages.BAD_QUOTING_VALUE);

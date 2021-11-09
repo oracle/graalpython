@@ -13,7 +13,6 @@ public final class CSVDialect extends PythonBuiltinObject {
     private String quotechar;
     private boolean skipinitialspace;
     private boolean strict;
-
     public CSVDialect(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
     }
