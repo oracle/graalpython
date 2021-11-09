@@ -995,4 +995,6 @@ public abstract class ErrorMessages {
     public static final String WARN_INT_CONVERSION_DEPRECATED = "an integer is required (got type %p).  " +
                     "Implicit conversion to integers using __int__ is deprecated, " +
                     "and may be removed in a future version of Python.";
+    public static final String WARN_CANNOT_RUN_PDB_YET = "Graal Python cannot run pdb, yet, consider using `--inspect` on the commandline";
+    public static final String WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S = "Ignoring unimportable $PYTHONBREAKPOINT: \"%s\"";
 }
