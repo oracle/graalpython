@@ -16,7 +16,7 @@ import java.util.Set;
 /**
  * From this class is extended the generated parser. It allow access to the tokenizer.
  */
-public abstract class Parser {
+abstract class AbstractParser {
     protected static final Set<String> softKeywords = new HashSet<>();
     protected static final Map<String, Integer> reservedKeywords = new LinkedHashMap<>();
 

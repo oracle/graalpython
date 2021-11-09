@@ -419,7 +419,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print(imports)
         className = os.path.splitext(os.path.basename(self.file.name))[0]
         self.print('@SuppressWarnings("all")')
-        self.print("public class %s extends Parser {" % className)
+        self.print("public final class %s extends AbstractParser {" % className)
         # Java needs a few fields declarations. Also, we're now in a class
         self.level += 1
         self.print()
