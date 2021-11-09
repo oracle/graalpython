@@ -50,7 +50,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.castToString;
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.classNameNoDot;
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.fileFlush;
-import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.fileWriteObject;
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.fileWriteString;
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.getExceptionTraceback;
 import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.getObjectClass;
@@ -132,13 +131,16 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
+import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyUnicodeAsEncodedString;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -1226,33 +1228,16 @@ public class SysModuleBuiltins extends PythonBuiltins {
         private static final String ATTR_ENCODING = "encoding";
         private static final String ATTR_BUFFER = "buffer";
 
-        private void sysDisplayHookUnencodable(VirtualFrame frame, Object out, Object obj,
-                        PyObjectLookupAttr lookupAttr,
-                        PyObjectReprAsObjectNode reprAsObjectNode,
-                        PyObjectCallMethodObjArgs callMethodObjArgs,
-                        CastToJavaStringNode castToJavaStringNode,
-                        PyUnicodeAsEncodedString pyUnicodeAsEncodedString,
-                        PyUnicodeFromEncodedObject pyUnicodeFromEncodedObject) {
-            final String stdoutEncoding = objectLookupAttrAsString(frame, out, ATTR_ENCODING, lookupAttr, castToJavaStringNode);
-            final Object reprStr = objectRepr(frame, obj, reprAsObjectNode);
-            final Object encoded = pyUnicodeAsEncodedString.execute(frame, reprStr, stdoutEncoding, BACKSLASHREPLACE);
-
-            final Object buffer = objectLookupAttr(frame, out, ATTR_BUFFER, lookupAttr);
-            if (buffer != null) {
-                callMethodObjArgs.execute(frame, buffer, WRITE, encoded);
-            } else {
-                Object escapedStr = pyUnicodeFromEncodedObject.execute(frame, encoded, stdoutEncoding, STRICT);
-                fileWriteObject(frame, out, escapedStr, true);
-            }
-        }
-
         @Specialization
         Object doit(VirtualFrame frame, PythonModule sys, Object obj,
                         @Cached PyObjectSetAttr setAttr,
                         @Cached IsBuiltinClassProfile unicodeEncodeErrorProfile,
                         @Cached PyObjectLookupAttr lookupAttr,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached CallNode callNode,
                         @Cached PyObjectReprAsObjectNode reprAsObjectNode,
+                        @Cached PyObjectStrAsObjectNode strAsObjectNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PyUnicodeAsEncodedString pyUnicodeAsEncodedString,
                         @Cached PyUnicodeFromEncodedObject pyUnicodeFromEncodedObject) {
@@ -1281,7 +1266,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     reprWriteOk = false;
                 } else {
                     reprWriteOk = true;
-                    fileWriteString(frame, stdOut, castToString(reprVal, castToJavaStringNode));
+                    fileWriteString(frame, stdOut, castToString(reprVal, castToJavaStringNode), getAttr, callNode);
                 }
             } catch (PException pe) {
                 pe.expect(UnicodeEncodeError, unicodeEncodeErrorProfile);
@@ -1290,11 +1275,22 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 unicodeEncodeError = true;
             }
             if (!reprWriteOk && unicodeEncodeError) {
-                sysDisplayHookUnencodable(frame, stdOut, obj, lookupAttr, reprAsObjectNode, callMethodObjArgs,
-                                castToJavaStringNode, pyUnicodeAsEncodedString, pyUnicodeFromEncodedObject);
+                // inlined sysDisplayHookUnencodable
+                final String stdoutEncoding = objectLookupAttrAsString(frame, stdOut, ATTR_ENCODING, lookupAttr, castToJavaStringNode);
+                final Object reprStr = objectRepr(frame, obj, reprAsObjectNode);
+                final Object encoded = pyUnicodeAsEncodedString.execute(frame, reprStr, stdoutEncoding, BACKSLASHREPLACE);
+
+                final Object buffer = objectLookupAttr(frame, stdOut, ATTR_BUFFER, lookupAttr);
+                if (buffer != null) {
+                    callMethodObjArgs.execute(frame, buffer, WRITE, encoded);
+                } else {
+                    Object escapedStr = pyUnicodeFromEncodedObject.execute(frame, encoded, stdoutEncoding, STRICT);
+                    final Object str = objectStr(frame, escapedStr, strAsObjectNode);
+                    fileWriteString(frame, stdOut, castToString(str, castToJavaStringNode), getAttr, callNode);
+                }
             }
 
-            fileWriteString(frame, stdOut, NEW_LINE, callMethodObjArgs);
+            fileWriteString(frame, stdOut, NEW_LINE, getAttr, callNode);
             setAttr.execute(frame, builtins, __, obj);
             return PNone.NONE;
         }

@@ -63,13 +63,14 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyLongAsIntNodeGen;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNodeGen;
 import com.oracle.graal.python.lib.PyLongCheckNodeGen;
-import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -105,15 +106,17 @@ public abstract class TracebackNodes {
     }
 
     public static void fileWriteString(VirtualFrame frame, Object file, String data) {
-        fileWriteString(frame, file, data, PyObjectCallMethodObjArgs.getUncached());
+        fileWriteString(frame, file, data, PyObjectGetAttr.getUncached(), CallNode.getUncached());
     }
 
-    public static void fileWriteString(VirtualFrame frame, Object file, String data, PyObjectCallMethodObjArgs callMethodObjArgs) {
-        callMethodObjArgs.execute(frame, file, WRITE, data);
+    public static void fileWriteString(VirtualFrame frame, Object file, String data, PyObjectGetAttr getAttr, CallNode callNode) {
+        final Object writeMethod = getAttr.execute(frame, file, WRITE);
+        callNode.execute(frame, writeMethod, data);
     }
 
     public static void fileFlush(VirtualFrame frame, Object file) {
-        PyObjectCallMethodObjArgs.getUncached().execute(frame, file, FLUSH);
+        final Object flushMethod = PyObjectGetAttr.getUncached().execute(frame, file, FLUSH);
+        CallNode.getUncached().execute(frame, flushMethod);
     }
 
     public static Object objectStr(VirtualFrame frame, Object value) {
