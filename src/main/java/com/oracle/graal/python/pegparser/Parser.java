@@ -216,7 +216,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @SuppressWarnings("all")
-public class GenParser extends Parser {
+public final class Parser extends AbstractParser {
 
     // parser fields
     
@@ -730,7 +730,7 @@ public class GenParser extends Parser {
     private static final int _TMP_253_ID = 1458;
     private static final int _TMP_254_ID = 1459;
 
-    public GenParser(ParserTokenizer tokenizer, NodeFactory factory) {
+    public Parser(ParserTokenizer tokenizer, NodeFactory factory) {
         super(tokenizer, factory);
     }
 
