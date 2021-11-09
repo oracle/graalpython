@@ -8,84 +8,84 @@ package com.oracle.graal.python.pegparser.tokenizer;
 
 public class Token {
 
-    public static enum Kind {
-        ENDMARKER,
-        NAME,
-        NUMBER,
-        STRING,
-        NEWLINE,
-        INDENT,
-        DEDENT,
-        LPAR,
-        RPAR,
-        LSQB,
-        RSQB,
-        COLON,
-        COMMA,
-        SEMI,
-        PLUS,
-        MINUS,
-        STAR,
-        SLASH,
-        VBAR,
-        AMPER,
-        LESS,
-        GREATER,
-        EQUAL,
-        DOT,
-        PERCENT,
-        LBRACE,
-        RBRACE,
-        EQEQUAL,
-        NOTEQUAL,
-        LESSEQUAL,
-        GREATEREQUAL,
-        TILDE,
-        CIRCUMFLEX,
-        LEFTSHIFT,
-        RIGHTSHIFT,
-        DOUBLESTAR,
-        PLUSEQUAL,
-        MINEQUAL,
-        STAREQUAL,
-        SLASHEQUAL,
-        PERCENTEQUAL,
-        AMPEREQUAL,
-        VBAREQUAL,
-        CIRCUMFLEXEQUAL,
-        LEFTSHIFTEQUAL,
-        RIGHTSHIFTEQUAL,
-        DOUBLESTAREQUAL,
-        DOUBLESLASH,
-        DOUBLESLASHEQUAL,
-        AT,
-        ATEQUAL,
-        RARROW,
-        ELLIPSIS,
-        COLONEQUAL,
-        OP,
-        AWAIT,
-        ASYNC,
-        TYPE_IGNORE,
-        TYPE_COMMENT,
-        ERRORTOKEN,
-        UNKNOWN
+    public static final class Kind {
+        public static final int ENDMARKER = 0;
+        public static final int NAME = 1;
+        public static final int NUMBER = 2;
+        public static final int STRING = 3;
+        public static final int NEWLINE = 4;
+        public static final int INDENT = 5;
+        public static final int DEDENT = 6;
+        public static final int LPAR = 7;
+        public static final int RPAR = 8;
+        public static final int LSQB = 9;
+        public static final int RSQB = 10;
+        public static final int COLON = 11;
+        public static final int COMMA = 12;
+        public static final int SEMI = 13;
+        public static final int PLUS = 14;
+        public static final int MINUS = 15;
+        public static final int STAR = 16;
+        public static final int SLASH = 17;
+        public static final int VBAR = 18;
+        public static final int AMPER = 19;
+        public static final int LESS = 20;
+        public static final int GREATER = 21;
+        public static final int EQUAL = 22;
+        public static final int DOT = 23;
+        public static final int PERCENT = 24;
+        public static final int LBRACE = 25;
+        public static final int RBRACE = 26;
+        public static final int EQEQUAL = 27;
+        public static final int NOTEQUAL = 28;
+        public static final int LESSEQUAL = 29;
+        public static final int GREATEREQUAL = 30;
+        public static final int TILDE = 31;
+        public static final int CIRCUMFLEX = 32;
+        public static final int LEFTSHIFT = 33;
+        public static final int RIGHTSHIFT = 34;
+        public static final int DOUBLESTAR = 35;
+        public static final int PLUSEQUAL = 36;
+        public static final int MINEQUAL = 37;
+        public static final int STAREQUAL = 38;
+        public static final int SLASHEQUAL = 39;
+        public static final int PERCENTEQUAL = 40;
+        public static final int AMPEREQUAL = 41;
+        public static final int VBAREQUAL = 42;
+        public static final int CIRCUMFLEXEQUAL = 43;
+        public static final int LEFTSHIFTEQUAL = 44;
+        public static final int RIGHTSHIFTEQUAL = 45;
+        public static final int DOUBLESTAREQUAL = 46;
+        public static final int DOUBLESLASH = 47;
+        public static final int DOUBLESLASHEQUAL = 48;
+        public static final int AT = 49;
+        public static final int ATEQUAL = 50;
+        public static final int RARROW = 51;
+        public static final int ELLIPSIS = 52;
+        public static final int COLONEQUAL = 53;
+        public static final int OP = 54;
+        public static final int AWAIT = 55;
+        public static final int ASYNC = 56;
+        public static final int TYPE_IGNORE = 57;
+        public static final int TYPE_COMMENT = 58;
+        public static final int SOFT_KEYWORD = 59;
+        public static final int ERRORTOKEN = 60;
     };
 
+    public int type;
     public final int startOffset;
     public final int endOffset;
     public final int startLine;
     public final int startColumn;
     public final int endLine;
     public final int endColumn;
-    public final Kind type;
     public final Object extraData;
 
-    public Token(Kind type, int startOffset, int endOffset, int startLine, int startColumn, int endLine, int endColumn) {
+    public Token(int type, int startOffset, int endOffset, int startLine, int startColumn, int endLine, int endColumn) {
         this(type, startOffset, endOffset, startLine, startColumn, endLine, endColumn, null);
     }
 
-    public Token(Kind type,
+    public Token(int type,
                  int startOffset, int endOffset,
                  int startLine, int startColumn,
                  int endLine, int endColumn,
@@ -100,7 +100,7 @@ public class Token {
         this.extraData = extraData;
     }
 
-    static Kind oneChar(int c) {
+    static int oneChar(int c) {
         switch (c) {
             case '%':
                 return Kind.PERCENT;
@@ -152,7 +152,7 @@ public class Token {
         return Kind.OP;
     }
 
-    static Kind twoChars(int c1, int c2) {
+    static int twoChars(int c1, int c2) {
         switch (c1) {
             case '!':
                 switch (c2) {
@@ -254,7 +254,7 @@ public class Token {
         return Kind.OP;
     }
 
-    static Kind threeChars(int c1, int c2, int c3) {
+    static int threeChars(int c1, int c2, int c3) {
         switch (c1) {
             case '*':
                 switch (c2) {

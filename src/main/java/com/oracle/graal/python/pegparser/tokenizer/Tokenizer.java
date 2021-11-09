@@ -155,7 +155,7 @@ public class Tokenizer {
      *
      * Return the coding spec in the current line or {@code null} if none is found
      */
-    static String getCodingSpec(byte[] byteInput, int lineStart) {
+    private static String getCodingSpec(byte[] byteInput, int lineStart) {
         int i = lineStart;
         for (; i < byteInput.length - 6; i++) {
             byte cp = byteInput[i];
@@ -205,7 +205,7 @@ public class Tokenizer {
      * line, since that means there can be no further coding comments in this
      * source.
      */
-    static Charset checkCodingSpec(byte[] byteInput, int lineStart) {
+    private static Charset checkCodingSpec(byte[] byteInput, int lineStart) {
         String spec = getCodingSpec(byteInput, lineStart);
         if (spec == null) {
             for (int i = lineStart; i < byteInput.length; i++) {
@@ -533,7 +533,7 @@ public class Tokenizer {
     private static final int LABEL_IMAGINARY = 5;
 
     /**
-     * tok_get
+     * tok_get, PyTokenizer_Get
      */
     public Token next() {
         int c = 0;
@@ -1130,10 +1130,10 @@ public class Tokenizer {
                 /* Check for two-character token */
                 {
                     int c2 = nextChar();
-                    Token.Kind kind2 = Token.twoChars(c, c2);
+                    int kind2 = Token.twoChars(c, c2);
                     if (kind2 != Token.Kind.OP) {
                         int c3 = nextChar();
-                        Token.Kind kind3 = Token.threeChars(c, c2, c3);
+                        int kind3 = Token.threeChars(c, c2, c3);
                         if (kind3 != Token.Kind.OP) {
                             return createToken(kind3);
                         } else {
@@ -1192,11 +1192,11 @@ public class Tokenizer {
         return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
     }
 
-    private Token createToken(Token.Kind kind) {
+    private Token createToken(int kind) {
         return new Token(kind, tokenStart, nextCharIndex, currentLineNumber, tokenStart - lineStartIndex, currentLineNumber, nextCharIndex - lineStartIndex);
     }
 
-    private Token createToken(Token.Kind kind, Object extraData) {
+    private Token createToken(int kind, Object extraData) {
         return new Token(kind, tokenStart, nextCharIndex, currentLineNumber, tokenStart - lineStartIndex, currentLineNumber, nextCharIndex - lineStartIndex, extraData);
     }
 
@@ -1213,7 +1213,7 @@ public class Tokenizer {
     public String toString(Token token) {
         StringBuilder sb = new StringBuilder();
         sb.append("Token ");
-        sb.append(token.type.name());
+        sb.append(token.type);
         sb.append(" [").append(token.startOffset).append(", ").append(token.endOffset).append("]");
         sb.append(" (").append(token.startLine).append(", ").append(token.startColumn);
         sb.append(") (").append(token.endLine).append(", ").append(token.endColumn).append(") '");
