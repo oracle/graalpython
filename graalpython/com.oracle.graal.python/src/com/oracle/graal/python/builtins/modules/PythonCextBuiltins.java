@@ -4460,8 +4460,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object[] pArguments = createAndCheckArgumentsNode.execute(code, userArguments, keywords, signature, null, defaults, kwdefaults, false);
 
             // set custom locals
-            PArguments.setSpecialArgument(pArguments, locals);
-            PArguments.setCustomLocals(pArguments, locals);
+            if (!(locals instanceof PNone)) {
+                PArguments.setSpecialArgument(pArguments, locals);
+                PArguments.setCustomLocals(pArguments, locals);
+            }
             PArguments.setClosure(pArguments, closure);
             // TODO(fa): set builtins in globals
             // PythonModule builtins = getContext().getBuiltins();
