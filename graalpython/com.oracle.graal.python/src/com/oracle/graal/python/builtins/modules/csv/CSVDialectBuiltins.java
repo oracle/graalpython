@@ -77,25 +77,22 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                                     @Cached ReadAttributeFromObjectNode readNode,
                                     @Cached GetClassNode getClassNode,
                                     @Cached PyDictGetItem getItemNode,
-                                    @Cached PyObjectLookupAttr getAttributeNode,
                                     @Cached CastToJavaStringNode castToJavaStringNode,
                                     @Cached PyObjectIsTrueNode isTrueNode,
                                     @Cached PyLongCheckExactNode pyLongCheckExactNode,
                                     @Cached PyUnicodeCheckExactNode pyUnicodeCheckExactNode,
                                     @Cached PyLongAsIntNode pyLongAsIntNode) {
 
-            Object dialectObj = getDialect.get(frame, dialectName, getItemNode, readNode);
+            CSVDialect dialectObj = getDialect.get(frame, dialectName, getItemNode, readNode);
 
-            //TODO: As we only store CSVDialects it should be possible to avoid possibly expensive getAttribute Calls.
-
-            delimiterObj = getAttributeValue(frame, dialectObj, delimiterObj, "delimiter", getAttributeNode);
-            doublequoteObj = getAttributeValue(frame, dialectObj, doublequoteObj, "doublequote", getAttributeNode);
-            escapecharObj = getAttributeValue(frame, dialectObj, escapecharObj, "escapechar", getAttributeNode);
-            lineterminatorObj = getAttributeValue(frame, dialectObj, lineterminatorObj, "lineterminator", getAttributeNode);
-            quotingObj = getAttributeValue(frame, dialectObj, quotingObj, "quoting", getAttributeNode);
-            quotecharObj = getAttributeValue(frame, dialectObj, quotecharObj, "quotechar", getAttributeNode);
-            skipinitialspaceObj = getAttributeValue(frame, dialectObj, skipinitialspaceObj, "skipinitialspace", getAttributeNode);
-            strictObj = getAttributeValue(frame, dialectObj, strictObj, "strict", getAttributeNode);
+            if (delimiterObj == PNone.NO_VALUE) delimiterObj = dialectObj.getDelimiter();
+            if (doublequoteObj == PNone.NO_VALUE) doublequoteObj = dialectObj.isDoublequote();
+            if (escapecharObj == PNone.NO_VALUE) escapecharObj = dialectObj.getEscapechar();
+            if (lineterminatorObj == PNone.NO_VALUE) lineterminatorObj = dialectObj.getLineterminator();
+            if (quotingObj == PNone.NO_VALUE) quotingObj = dialectObj.getQuoting();
+            if (quotecharObj == PNone.NO_VALUE) quotecharObj = dialectObj.getQuotechar();
+            if (skipinitialspaceObj == PNone.NO_VALUE) skipinitialspaceObj = dialectObj.isSkipinitialspace();
+            if (strictObj == PNone.NO_VALUE) strictObj = dialectObj.isStrict();
 
             return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj, quotecharObj, quotingObj, skipinitialspaceObj, strictObj,
                     getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode, pyUnicodeCheckExactNode);
@@ -222,7 +219,6 @@ public class CSVDialectBuiltins extends PythonBuiltins {
             // #define PyUnicode_Check(op) \
             //                 PyType_FastSubclass(Py_TYPE(op), Py_TPFLAGS_UNICODE_SUBCLASS)
 //            if (pyUnicodeCheckExactNode.execute(valueObj)) {
-//                // TODO: Get actual class name?
 //                throw raise(TypeError, ErrorMessages.S_MUST_BE_STRING_NOT_S, name, getType.execute(valueObj));
 //            }
 
@@ -244,7 +240,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                                      GetClassNode getType,
                                      CastToJavaStringNode castToJavaStringNode) {
             if (valueObj == PNone.NO_VALUE) return defaultValue;
-            if (valueObj == PNone.NONE) return NOT_SET;
+            if (valueObj == PNone.NONE || valueObj == NOT_SET) return NOT_SET;
 
             return getChar(attribute, valueObj, defaultValue, pyUnicodeCheckExactNode, getType, castToJavaStringNode);
         }
@@ -291,8 +287,6 @@ public class CSVDialectBuiltins extends PythonBuiltins {
         }
 
     }
-
-    // TODO: Add doc information ?
 
     @Builtin(name = "delimiter", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory

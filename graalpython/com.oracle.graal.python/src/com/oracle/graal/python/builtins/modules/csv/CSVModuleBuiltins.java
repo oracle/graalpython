@@ -101,8 +101,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             PythonModule module = getCore().lookupBuiltinModule("_csv");
             Object dialects = readNode.execute(module, "_dialects");
 
-            // TODO: Do we need to check if dialects is a PDict?
-            // TODO: Should we write a PyDict_DelItem Node?
+            //TODO: Should we write a PyDict_DelItem Node?
             if (library.hasKey(((PDict) dialects).getDictStorage(), nameObj)) {
                 library.delItem(((PDict) dialects).getDictStorage(), nameObj);
             } else {
@@ -118,20 +117,20 @@ public class CSVModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CSVGetDialectNode extends PythonBuiltinNode {
 
-        public abstract Object execute(VirtualFrame frame, Object name);
+        public abstract CSVDialect execute(VirtualFrame frame, Object name);
 
         protected static CSVGetDialectNode create() {
             return CSVModuleBuiltinsFactory.CSVGetDialectNodeFactory.create(null);
         }
         @Specialization
-        Object get(VirtualFrame frame, Object nameObj,
-                          @Cached PyDictGetItem getItemNode,
-                          @Cached ReadAttributeFromObjectNode readNode) {
+        CSVDialect get(VirtualFrame frame, Object nameObj,
+                       @Cached PyDictGetItem getItemNode,
+                       @Cached ReadAttributeFromObjectNode readNode) {
 
             PythonModule module = getCore().lookupBuiltinModule("_csv");
             PDict dialects = (PDict) readNode.execute(module, "_dialects");
 
-            Object dialect = getItemNode.execute(frame, dialects, nameObj);
+            CSVDialect dialect = (CSVDialect) getItemNode.execute(frame, dialects, nameObj);
 
             if (dialect == null) {
                 throw raise(PythonBuiltinClassType.CSVError, "unknown dialect");
