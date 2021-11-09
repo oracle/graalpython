@@ -58,7 +58,7 @@ BASE_NODETYPES = {
 @dataclass
 class FunctionCall:
     function: str
-    arguments: List[Any] = field(default_factory=list)
+    arguments: Optional[List[Any]] = None
     assigned_variable: Optional[str] = None
     assigned_variable_type: Optional[str] = None
     return_type: Optional[str] = None
@@ -69,7 +69,7 @@ class FunctionCall:
     def __str__(self) -> str:
         parts = []
         parts.append(self.function)
-        if self.arguments:
+        if self.arguments is not None:
             parts.append(f"({', '.join(map(str, self.arguments))})")
         ft_part_start = ""
         ft_part_end = ""
@@ -449,8 +449,6 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.visit(rule)
         # we don't need the C trailer, but we have our own final things to generate and close the class
         self._generate_lookahead_methods()
-        if self.debug:
-            self._generate_debug_methods()
         self.level -= 1
         self.print("}")
 
@@ -491,12 +489,12 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
 
     def _set_up_token_start_metadata_extraction(self) -> None:
         self.print("// _PyPegen_fill_token is called here in CPython");
-        self.print("Token startToken = getAndInitializeToken(pos);");
+        self.print("Token startToken = getAndInitializeToken();");
 
     def _set_up_token_end_metadata_extraction(self) -> None:
         self.print("// _PyPegen_get_last_nonnwhitespace_token is called here in CPython");
-        self.print("Token _token = getLastNonWhitespaceToken(mark());")
-        self.print("if (_token == NULL) {")
+        self.print("Token _token = getLastNonWhitespaceToken();")
+        self.print("if (_token == null) {")
         with self.indent():
             self.add_return("null")
         self.print("}")
@@ -520,9 +518,9 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print("while (true) {")
             with self.indent():
                 self.call_with_errorcheck_return(
-                    f"cache.putResult(pos, {node.name.upper()}_ID, _res)", "_res"
+                    f"cache.putResult(_mark, {node.name.upper()}_ID, _res)", "_res"
                 )
-                self.print("reset(pos);")
+                self.print("reset(_mark);")
                 self.print(f"Object _raw = {node.name}_raw();")
                 self.print("if (_raw == null || mark() <= _resmark)")
                 with self.indent():
@@ -562,7 +560,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print("_res = null;")
         with self.indent():
             if memoize:
-                self.print(f"cache.putResult(pos, {node.name.upper()}_ID, _res);")
+                self.print(f"cache.putResult(_mark, {node.name.upper()}_ID, _res);")
             self.add_return("_res")
 
     def _handle_loop_rule_body(self, node: Rule, rhs: Rhs) -> None:
@@ -717,7 +715,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
 
             # As the current option has parsed correctly, do not continue with the rest.
             # Java change: C uses a goto here, we just always memoize and return
-            self.print(f"return cache.putResult(pos, {rulename.upper()}_ID, _res);")
+            self.print(f"return cache.putResult(_mark, {rulename.upper()}_ID, _res);")
         self.print("}")
 
     def handle_alt_loop(self, node: Alt, is_gather: bool, rulename: Optional[str]) -> None:
@@ -801,42 +799,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         return_type = call.return_type if node.type is None else _check_type(self, node.type)
         return name, return_type
 
-    # More Java generator additions
-
-    def _generate_debug_methods(self):
-        self.print('''// debug methods
-    private void indent(StringBuffer sb) {
-        for (int i = 0; i < level; i++) {
-            sb.append("  ");
-        }
-    }
-
-    void debugMessage(String text) {
-        debugMessage(text, true);
-    }
-
-    void debugMessage(String text, boolean indent) {
-        StringBuffer sb = new StringBuffer();
-        if(indent) {
-            indent(sb);
-        }
-        sb.append(text);
-        System.out.print(sb.toString());
-    }
-
-    void debugMessageln(String text) {
-        debugMessageln(text, true);
-    }
-
-    void debugMessageln(String text, boolean indent) {
-        StringBuffer sb = new StringBuffer();
-        if (indent) {
-            indent(sb);
-        }
-        sb.append(text);
-        System.out.println(sb.toString());
-    }''')
-
+    # Java generator additions
     def _generate_lookahead_methods(self):
         self.print()
         self.print("// lookahead methods generated")

@@ -46,6 +46,10 @@ public class ParserTokenizer {
         return tokens.get(pos);
     }
 
+    protected Token peekToken(int pos) {
+        assert pos < token.size();
+        return tokens.get(pos);
+    }
 
     public String getText(Token token) {
         // TODO handle this in better way

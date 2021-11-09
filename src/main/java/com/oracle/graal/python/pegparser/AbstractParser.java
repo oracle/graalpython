@@ -5,6 +5,7 @@
  */
 package com.oracle.graal.python.pegparser;
 
+import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -28,7 +29,7 @@ abstract class AbstractParser {
     protected final RuleResultCache<Object> cache = new RuleResultCache(this);
     protected final Map<Integer, String> comments = new LinkedHashMap<>();
 
-    public Parser(ParserTokenizer tokenizer, NodeFactory factory) {
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory) {
         this.tokenizer = tokenizer;
         this.factory = factory;
     }
@@ -136,7 +137,8 @@ abstract class AbstractParser {
     /**
      * equivalent to PyPegen_fill_token in that it modifies the token
      */
-    public Token getAndInitializeToken(int pos) {
+    public Token getAndInitializeToken() {
+        int pos = mark();
         Token token = getToken(pos);
         while (token.type == Token.Kind.TYPE_IGNORE) {
             String tag = getText(token);
@@ -147,6 +149,48 @@ abstract class AbstractParser {
         // TODO: handle reaching end in single_input mode
         
         return initializeToken(token);
+    }
+
+    public Token getLastNonWhitespaceToken() {
+        Token t = null;
+        for (int i = mark() - 1; i >= 0; i--) {
+            t = tokenizer.peekToken(i);
+            if (t.type != Token.Kind.ENDMARKER && (t.type < Token.Kind.NEWLINE || t.type > Token.Kind.DEDENT)) {
+                break;
+            }
+        }
+        return t;
+    }
+
+    public SSTNode name_token() {
+        Token t = expect(Token.Kind.NAME);
+        if (t != null) {            
+            return factory.createVariable(getText(t), t.startOffset, t.endOffset);
+        } else {
+            return null;
+        }
+    }
+
+    public Token string_token() {
+        return expect(Token.Kind.STRING);
+    }
+
+    public SSTNode number_token() {
+        Token t = expect(Token.Kind.NAME);
+        if (t != null) {            
+            return factory.createNumber(getText(t), t.startOffset, t.endOffset);
+        } else {
+            return null;
+        }
+    }
+
+    public Token expect_forced_token(int kind, String msg) {
+        Token t = getAndInitializeToken();
+        if (t.type != kind) {
+            // TODO: raise error
+            return null;
+        }
+        return t;
     }
 
     /**
@@ -160,5 +204,30 @@ abstract class AbstractParser {
             }
         }
         return token;
+    }
+
+    // debug methods
+    private void indent(StringBuffer sb) {
+        for (int i = 0; i < level; i++) {
+            sb.append("  ");
+        }
+    }
+
+    void debugMessage(String text) {
+        debugMessage(text, true);
+    }
+
+    void debugMessage(String text, boolean indent) {
+        StringBuffer sb = new StringBuffer();
+        indent(sb);
+        sb.append(text);
+        System.out.print(sb.toString());
+    }
+
+    void debugMessageln(String text, Object... args) {
+        StringBuffer sb = new StringBuffer();
+        indent(sb);
+        sb.append(String.format(text, args));
+        System.out.println(sb.toString());
     }
 }

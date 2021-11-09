@@ -745,7 +745,7 @@ public final class Parser extends AbstractParser {
             Object a;
             Token endmarker_var;
             if (
-                ((a = _tmp_1_rule) != null || true)  // statements?
+                ((a = _tmp_1_rule()) != null || true)  // statements?
                 &&
                 (endmarker_var = expect(Token.Kind.ENDMARKER)) != null  // token='ENDMARKER'
             )
@@ -753,7 +753,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d file[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "statements? $");
                 _res = factory.createBlock((SSTNode[])a,startToken.startOffset,endToken.endOffset);;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "statements? $");
-                return cache.putResult(pos, FILE_ID, _res);
+                return cache.putResult(_mark, FILE_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s file[%d-%d]: %s failed!", level, ' ',
@@ -775,14 +775,14 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> interactive[%d-%d]: %s", level, ' ', _mark, mark(), "statement_newline");
             SSTNode[] a;
             if (
-                (a = statement_newline_rule) != null  // statement_newline
+                (a = statement_newline_rule()) != null  // statement_newline
             )
             {
                 debugMessageln("%d interactive[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "statement_newline");
                 // TODO: node.action: _PyAST_Interactive ( a , p -> arena )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "statement_newline");
-                return cache.putResult(pos, INTERACTIVE_ID, _res);
+                return cache.putResult(_mark, INTERACTIVE_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s interactive[%d-%d]: %s failed!", level, ' ',
@@ -806,9 +806,9 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             Token endmarker_var;
             if (
-                (a = expressions_rule) != null  // expressions
+                (a = expressions_rule()) != null  // expressions
                 &&
-                (_loop0_2_var = _loop0_2_rule) != null  // NEWLINE*
+                (_loop0_2_var = _loop0_2_rule()) != null  // NEWLINE*
                 &&
                 (endmarker_var = expect(Token.Kind.ENDMARKER)) != null  // token='ENDMARKER'
             )
@@ -817,7 +817,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_Expression ( a , p -> arena )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expressions NEWLINE* $");
-                return cache.putResult(pos, EVAL_ID, _res);
+                return cache.putResult(_mark, EVAL_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s eval[%d-%d]: %s failed!", level, ' ',
@@ -847,15 +847,15 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                ((a = _tmp_3_rule) != null || true)  // type_expressions?
+                ((a = _tmp_3_rule()) != null || true)  // type_expressions?
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
                 &&
                 (_literal_2 = expect(51)) != null  // token='->'
                 &&
-                (b = expression_rule) != null  // expression
+                (b = expression_rule()) != null  // expression
                 &&
-                (_loop0_4_var = _loop0_4_rule) != null  // NEWLINE*
+                (_loop0_4_var = _loop0_4_rule()) != null  // NEWLINE*
                 &&
                 (endmarker_var = expect(Token.Kind.ENDMARKER)) != null  // token='ENDMARKER'
             )
@@ -864,7 +864,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_FunctionType ( a , b , p -> arena )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' type_expressions? ')' '->' expression NEWLINE* $");
-                return cache.putResult(pos, FUNC_TYPE_ID, _res);
+                return cache.putResult(_mark, FUNC_TYPE_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s func_type[%d-%d]: %s failed!", level, ' ',
@@ -886,13 +886,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> fstring[%d-%d]: %s", level, ' ', _mark, mark(), "star_expressions");
             SSTNode star_expressions_var;
             if (
-                (star_expressions_var = star_expressions_rule) != null  // star_expressions
+                (star_expressions_var = star_expressions_rule()) != null  // star_expressions
             )
             {
                 debugMessageln("%d fstring[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_expressions");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_expressions");
                 _res = star_expressions_var;
-                return cache.putResult(pos, FSTRING_ID, _res);
+                return cache.putResult(_mark, FSTRING_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s fstring[%d-%d]: %s failed!", level, ' ',
@@ -928,26 +928,26 @@ public final class Parser extends AbstractParser {
             SSTNode b;
             SSTNode c;
             if (
-                (a = _gather_5_rule) != null  // ','.expression+
+                (a = _gather_5_rule()) != null  // ','.expression+
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
                 (_literal_1 = expect(16)) != null  // token='*'
                 &&
-                (b = expression_rule) != null  // expression
+                (b = expression_rule()) != null  // expression
                 &&
                 (_literal_2 = expect(12)) != null  // token=','
                 &&
                 (_literal_3 = expect(35)) != null  // token='**'
                 &&
-                (c = expression_rule) != null  // expression
+                (c = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.expression+ ',' '*' expression ',' '**' expression");
                 // TODO: node.action: ( asdl_expr_seq * ) _PyPegen_seq_append_to_end ( p , CHECK ( asdl_seq * , _PyPegen_seq_append_to_end ( p , a , b ) ) , c )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.expression+ ',' '*' expression ',' '**' expression");
-                return cache.putResult(pos, TYPE_EXPRESSIONS_ID, _res);
+                return cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s type_expressions[%d-%d]: %s failed!", level, ' ',
@@ -960,20 +960,20 @@ public final class Parser extends AbstractParser {
             SSTNode[] a;
             SSTNode b;
             if (
-                (a = _gather_7_rule) != null  // ','.expression+
+                (a = _gather_7_rule()) != null  // ','.expression+
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
                 (_literal_1 = expect(16)) != null  // token='*'
                 &&
-                (b = expression_rule) != null  // expression
+                (b = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.expression+ ',' '*' expression");
                 // TODO: node.action: ( asdl_expr_seq * ) _PyPegen_seq_append_to_end ( p , a , b )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.expression+ ',' '*' expression");
-                return cache.putResult(pos, TYPE_EXPRESSIONS_ID, _res);
+                return cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s type_expressions[%d-%d]: %s failed!", level, ' ',
@@ -986,20 +986,20 @@ public final class Parser extends AbstractParser {
             SSTNode[] a;
             SSTNode b;
             if (
-                (a = _gather_9_rule) != null  // ','.expression+
+                (a = _gather_9_rule()) != null  // ','.expression+
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
                 (_literal_1 = expect(35)) != null  // token='**'
                 &&
-                (b = expression_rule) != null  // expression
+                (b = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.expression+ ',' '**' expression");
                 // TODO: node.action: ( asdl_expr_seq * ) _PyPegen_seq_append_to_end ( p , a , b )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.expression+ ',' '**' expression");
-                return cache.putResult(pos, TYPE_EXPRESSIONS_ID, _res);
+                return cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s type_expressions[%d-%d]: %s failed!", level, ' ',
@@ -1015,20 +1015,20 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(16)) != null  // token='*'
                 &&
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
                 &&
                 (_literal_1 = expect(12)) != null  // token=','
                 &&
                 (_literal_2 = expect(35)) != null  // token='**'
                 &&
-                (b = expression_rule) != null  // expression
+                (b = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' expression ',' '**' expression");
                 // TODO: node.action: ( asdl_expr_seq * ) _PyPegen_seq_append_to_end ( p , CHECK ( asdl_seq * , _PyPegen_singleton_seq ( p , a ) ) , b )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' expression ',' '**' expression");
-                return cache.putResult(pos, TYPE_EXPRESSIONS_ID, _res);
+                return cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s type_expressions[%d-%d]: %s failed!", level, ' ',
@@ -1041,14 +1041,14 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(16)) != null  // token='*'
                 &&
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' expression");
                 // TODO: node.action: ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' expression");
-                return cache.putResult(pos, TYPE_EXPRESSIONS_ID, _res);
+                return cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s type_expressions[%d-%d]: %s failed!", level, ' ',
@@ -1061,14 +1061,14 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(35)) != null  // token='**'
                 &&
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'**' expression");
                 // TODO: node.action: ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' expression");
-                return cache.putResult(pos, TYPE_EXPRESSIONS_ID, _res);
+                return cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s type_expressions[%d-%d]: %s failed!", level, ' ',
@@ -1079,13 +1079,13 @@ public final class Parser extends AbstractParser {
             // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] a;
             if (
-                (a = (SSTNode[])_gather_11_rule) != null  // ','.expression+
+                (a = (SSTNode[])_gather_11_rule()) != null  // ','.expression+
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.expression+");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.expression+");
-                return cache.putResult(pos, TYPE_EXPRESSIONS_ID, _res);
+                return cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s type_expressions[%d-%d]: %s failed!", level, ' ',
@@ -1107,13 +1107,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> statements[%d-%d]: %s", level, ' ', _mark, mark(), "statement+");
             SSTNode[] a;
             if (
-                (a = _loop1_13_rule) != null  // statement+
+                (a = _loop1_13_rule()) != null  // statement+
             )
             {
                 debugMessageln("%d statements[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "statement+");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "statement+");
-                return cache.putResult(pos, STATEMENTS_ID, _res);
+                return cache.putResult(_mark, STATEMENTS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s statements[%d-%d]: %s failed!", level, ' ',
@@ -1137,13 +1137,13 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             if (
                 // TODO replacing stmt_ty --> SSTNode
-                (a = compound_stmt_rule) != null  // compound_stmt
+                (a = compound_stmt_rule()) != null  // compound_stmt
             )
             {
                 debugMessageln("%d statement[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "compound_stmt");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "compound_stmt");
-                return cache.putResult(pos, STATEMENT_ID, _res);
+                return cache.putResult(_mark, STATEMENT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s statement[%d-%d]: %s failed!", level, ' ',
@@ -1153,13 +1153,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> statement[%d-%d]: %s", level, ' ', _mark, mark(), "simple_stmts");
             SSTNode[] a;
             if (
-                (a = (SSTNode[])simple_stmts_rule) != null  // simple_stmts
+                (a = (SSTNode[])simple_stmts_rule()) != null  // simple_stmts
             )
             {
                 debugMessageln("%d statement[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "simple_stmts");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "simple_stmts");
-                return cache.putResult(pos, STATEMENT_ID, _res);
+                return cache.putResult(_mark, STATEMENT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s statement[%d-%d]: %s failed!", level, ' ',
@@ -1178,7 +1178,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode[] _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // compound_stmt NEWLINE
             debugMessageln("%d> statement_newline[%d-%d]: %s", level, ' ', _mark, mark(), "compound_stmt NEWLINE");
             // TODO replacing stmt_ty --> SSTNode
@@ -1186,7 +1186,7 @@ public final class Parser extends AbstractParser {
             Token newline_var;
             if (
                 // TODO replacing stmt_ty --> SSTNode
-                (a = compound_stmt_rule) != null  // compound_stmt
+                (a = compound_stmt_rule()) != null  // compound_stmt
                 &&
                 (newline_var = expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
             )
@@ -1195,7 +1195,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: ( asdl_stmt_seq * ) _PyPegen_singleton_seq ( p , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "compound_stmt NEWLINE");
-                return cache.putResult(pos, STATEMENT_NEWLINE_ID, _res);
+                return cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s statement_newline[%d-%d]: %s failed!", level, ' ',
@@ -1205,13 +1205,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> statement_newline[%d-%d]: %s", level, ' ', _mark, mark(), "simple_stmts");
             SSTNode[] simple_stmts_var;
             if (
-                (simple_stmts_var = simple_stmts_rule) != null  // simple_stmts
+                (simple_stmts_var = simple_stmts_rule()) != null  // simple_stmts
             )
             {
                 debugMessageln("%d statement_newline[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "simple_stmts");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "simple_stmts");
                 _res = simple_stmts_var;
-                return cache.putResult(pos, STATEMENT_NEWLINE_ID, _res);
+                return cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s statement_newline[%d-%d]: %s failed!", level, ' ',
@@ -1226,15 +1226,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d statement_newline[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NEWLINE");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: ( asdl_stmt_seq * ) _PyPegen_singleton_seq ( p , CHECK ( stmt_ty , _PyAST_Pass ( EXTRA ) ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NEWLINE");
-                return cache.putResult(pos, STATEMENT_NEWLINE_ID, _res);
+                return cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s statement_newline[%d-%d]: %s failed!", level, ' ',
@@ -1251,7 +1251,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_interactive_exit ( p )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "$");
-                return cache.putResult(pos, STATEMENT_NEWLINE_ID, _res);
+                return cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s statement_newline[%d-%d]: %s failed!", level, ' ',
@@ -1276,7 +1276,7 @@ public final class Parser extends AbstractParser {
             Token newline_var;
             if (
                 // TODO replacing stmt_ty --> SSTNode
-                (a = simple_stmt_rule) != null  // simple_stmt
+                (a = simple_stmt_rule()) != null  // simple_stmt
                 &&
                 genLookahead_expect(false, 13)  // token=';'
                 &&
@@ -1286,7 +1286,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d simple_stmts[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "simple_stmt !';' NEWLINE");
                 _res = new SSTNode[]{a};//(asdl_stmt_seq*)_PyPegen_singleton_seq(p,a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "simple_stmt !';' NEWLINE");
-                return cache.putResult(pos, SIMPLE_STMTS_ID, _res);
+                return cache.putResult(_mark, SIMPLE_STMTS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmts[%d-%d]: %s failed!", level, ' ',
@@ -1298,9 +1298,9 @@ public final class Parser extends AbstractParser {
             SSTNode[] a;
             Token newline_var;
             if (
-                (a = (SSTNode[])_gather_14_rule) != null  // ';'.simple_stmt+
+                (a = (SSTNode[])_gather_14_rule()) != null  // ';'.simple_stmt+
                 &&
-                ((_opt_var = _tmp_16_rule) != null || true)  // ';'?
+                ((_opt_var = _tmp_16_rule()) != null || true)  // ';'?
                 &&
                 (newline_var = expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
             )
@@ -1308,7 +1308,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d simple_stmts[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "';'.simple_stmt+ ';'? NEWLINE");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "';'.simple_stmt+ ';'? NEWLINE");
-                return cache.putResult(pos, SIMPLE_STMTS_ID, _res);
+                return cache.putResult(_mark, SIMPLE_STMTS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmts[%d-%d]: %s failed!", level, ' ',
@@ -1346,18 +1346,18 @@ public final class Parser extends AbstractParser {
             return _res;
         }
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // assignment
             debugMessageln("%d> simple_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "assignment");
             SSTNode assignment_var;
             if (
-                (assignment_var = assignment_rule) != null  // assignment
+                (assignment_var = assignment_rule()) != null  // assignment
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "assignment");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "assignment");
                 _res = assignment_var;
-                return cache.putResult(pos, SIMPLE_STMT_ID, _res);
+                return cache.putResult(_mark, SIMPLE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1367,13 +1367,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> simple_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "star_expressions");
             SSTNode e;
             if (
-                (e = star_expressions_rule) != null  // star_expressions
+                (e = star_expressions_rule()) != null  // star_expressions
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_expressions");
                 _res = e;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_expressions");
-                return cache.putResult(pos, SIMPLE_STMT_ID, _res);
+                return cache.putResult(_mark, SIMPLE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1387,13 +1387,13 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(true, 500)  // token='return'
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (return_stmt_var = return_stmt_rule) != null  // return_stmt
+                (return_stmt_var = return_stmt_rule()) != null  // return_stmt
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&'return' return_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'return' return_stmt");
                 _res = return_stmt_var;
-                return cache.putResult(pos, SIMPLE_STMT_ID, _res);
+                return cache.putResult(_mark, SIMPLE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1407,13 +1407,13 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_17_rule(true)
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (import_stmt_var = import_stmt_rule) != null  // import_stmt
+                (import_stmt_var = import_stmt_rule()) != null  // import_stmt
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&('import' | 'from') import_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&('import' | 'from') import_stmt");
                 _res = import_stmt_var;
-                return cache.putResult(pos, SIMPLE_STMT_ID, _res);
+                return cache.putResult(_mark, SIMPLE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1427,13 +1427,13 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(true, 501)  // token='raise'
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (raise_stmt_var = raise_stmt_rule) != null  // raise_stmt
+                (raise_stmt_var = raise_stmt_rule()) != null  // raise_stmt
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&'raise' raise_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'raise' raise_stmt");
                 _res = raise_stmt_var;
-                return cache.putResult(pos, SIMPLE_STMT_ID, _res);
+                return cache.putResult(_mark, SIMPLE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1448,15 +1448,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'pass'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Pass ( EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'pass'");
-                return cache.putResult(pos, SIMPLE_STMT_ID, _res);
+                return cache.putResult(_mark, SIMPLE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1470,13 +1470,13 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(true, 503)  // token='del'
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (del_stmt_var = del_stmt_rule) != null  // del_stmt
+                (del_stmt_var = del_stmt_rule()) != null  // del_stmt
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&'del' del_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'del' del_stmt");
                 _res = del_stmt_var;
-                return cache.putResult(pos, SIMPLE_STMT_ID, _res);
+                return cache.putResult(_mark, SIMPLE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1490,13 +1490,13 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(true, 504)  // token='yield'
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (yield_stmt_var = yield_stmt_rule) != null  // yield_stmt
+                (yield_stmt_var = yield_stmt_rule()) != null  // yield_stmt
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&'yield' yield_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'yield' yield_stmt");
                 _res = yield_stmt_var;
-                return cache.putResult(pos, SIMPLE_STMT_ID, _res);
+                return cache.putResult(_mark, SIMPLE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1510,13 +1510,13 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(true, 505)  // token='assert'
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (assert_stmt_var = assert_stmt_rule) != null  // assert_stmt
+                (assert_stmt_var = assert_stmt_rule()) != null  // assert_stmt
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&'assert' assert_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'assert' assert_stmt");
                 _res = assert_stmt_var;
-                return cache.putResult(pos, SIMPLE_STMT_ID, _res);
+                return cache.putResult(_mark, SIMPLE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1531,15 +1531,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'break'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Break ( EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'break'");
-                return cache.putResult(pos, SIMPLE_STMT_ID, _res);
+                return cache.putResult(_mark, SIMPLE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1554,15 +1554,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'continue'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Continue ( EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'continue'");
-                return cache.putResult(pos, SIMPLE_STMT_ID, _res);
+                return cache.putResult(_mark, SIMPLE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1576,13 +1576,13 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(true, 508)  // token='global'
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (global_stmt_var = global_stmt_rule) != null  // global_stmt
+                (global_stmt_var = global_stmt_rule()) != null  // global_stmt
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&'global' global_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'global' global_stmt");
                 _res = global_stmt_var;
-                return cache.putResult(pos, SIMPLE_STMT_ID, _res);
+                return cache.putResult(_mark, SIMPLE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1596,13 +1596,13 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(true, 509)  // token='nonlocal'
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (nonlocal_stmt_var = nonlocal_stmt_rule) != null  // nonlocal_stmt
+                (nonlocal_stmt_var = nonlocal_stmt_rule()) != null  // nonlocal_stmt
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&'nonlocal' nonlocal_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'nonlocal' nonlocal_stmt");
                 _res = nonlocal_stmt_var;
-                return cache.putResult(pos, SIMPLE_STMT_ID, _res);
+                return cache.putResult(_mark, SIMPLE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s simple_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1610,7 +1610,7 @@ public final class Parser extends AbstractParser {
         }
         debugMessageln("Fail at %d: simple_stmt", _mark);
         _res = null;
-        cache.putResult(pos, SIMPLE_STMT_ID, _res);
+        cache.putResult(_mark, SIMPLE_STMT_ID, _res);
         level--;
         return _res;
     }
@@ -1638,13 +1638,13 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_18_rule(true)
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (function_def_var = function_def_rule) != null  // function_def
+                (function_def_var = function_def_rule()) != null  // function_def
             )
             {
                 debugMessageln("%d compound_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&('def' | '@' | ASYNC) function_def");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&('def' | '@' | ASYNC) function_def");
                 _res = function_def_var;
-                return cache.putResult(pos, COMPOUND_STMT_ID, _res);
+                return cache.putResult(_mark, COMPOUND_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compound_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1658,13 +1658,13 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(true, 510)  // token='if'
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (if_stmt_var = if_stmt_rule) != null  // if_stmt
+                (if_stmt_var = if_stmt_rule()) != null  // if_stmt
             )
             {
                 debugMessageln("%d compound_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&'if' if_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'if' if_stmt");
                 _res = if_stmt_var;
-                return cache.putResult(pos, COMPOUND_STMT_ID, _res);
+                return cache.putResult(_mark, COMPOUND_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compound_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1678,13 +1678,13 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_19_rule(true)
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (class_def_var = class_def_rule) != null  // class_def
+                (class_def_var = class_def_rule()) != null  // class_def
             )
             {
                 debugMessageln("%d compound_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&('class' | '@') class_def");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&('class' | '@') class_def");
                 _res = class_def_var;
-                return cache.putResult(pos, COMPOUND_STMT_ID, _res);
+                return cache.putResult(_mark, COMPOUND_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compound_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1698,13 +1698,13 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_20_rule(true)
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (with_stmt_var = with_stmt_rule) != null  // with_stmt
+                (with_stmt_var = with_stmt_rule()) != null  // with_stmt
             )
             {
                 debugMessageln("%d compound_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&('with' | ASYNC) with_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&('with' | ASYNC) with_stmt");
                 _res = with_stmt_var;
-                return cache.putResult(pos, COMPOUND_STMT_ID, _res);
+                return cache.putResult(_mark, COMPOUND_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compound_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1718,13 +1718,13 @@ public final class Parser extends AbstractParser {
                 genLookahead__tmp_21_rule(true)
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (for_stmt_var = for_stmt_rule) != null  // for_stmt
+                (for_stmt_var = for_stmt_rule()) != null  // for_stmt
             )
             {
                 debugMessageln("%d compound_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&('for' | ASYNC) for_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&('for' | ASYNC) for_stmt");
                 _res = for_stmt_var;
-                return cache.putResult(pos, COMPOUND_STMT_ID, _res);
+                return cache.putResult(_mark, COMPOUND_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compound_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1738,13 +1738,13 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(true, 511)  // token='try'
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (try_stmt_var = try_stmt_rule) != null  // try_stmt
+                (try_stmt_var = try_stmt_rule()) != null  // try_stmt
             )
             {
                 debugMessageln("%d compound_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&'try' try_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'try' try_stmt");
                 _res = try_stmt_var;
-                return cache.putResult(pos, COMPOUND_STMT_ID, _res);
+                return cache.putResult(_mark, COMPOUND_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compound_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1758,13 +1758,13 @@ public final class Parser extends AbstractParser {
                 genLookahead_expect(true, 512)  // token='while'
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (while_stmt_var = while_stmt_rule) != null  // while_stmt
+                (while_stmt_var = while_stmt_rule()) != null  // while_stmt
             )
             {
                 debugMessageln("%d compound_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&'while' while_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'while' while_stmt");
                 _res = while_stmt_var;
-                return cache.putResult(pos, COMPOUND_STMT_ID, _res);
+                return cache.putResult(_mark, COMPOUND_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compound_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1776,13 +1776,13 @@ public final class Parser extends AbstractParser {
             SSTNode match_stmt_var;
             if (
                 // TODO replacing stmt_ty --> SSTNode
-                (match_stmt_var = match_stmt_rule) != null  // match_stmt
+                (match_stmt_var = match_stmt_rule()) != null  // match_stmt
             )
             {
                 debugMessageln("%d compound_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "match_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "match_stmt");
                 _res = match_stmt_var;
-                return cache.putResult(pos, COMPOUND_STMT_ID, _res);
+                return cache.putResult(_mark, COMPOUND_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compound_stmt[%d-%d]: %s failed!", level, ' ',
@@ -1806,7 +1806,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // NAME ':' expression ['=' annotated_rhs]
             debugMessageln("%d> assignment[%d-%d]: %s", level, ' ', _mark, mark(), "NAME ':' expression ['=' annotated_rhs]");
             Token _literal;
@@ -1814,25 +1814,25 @@ public final class Parser extends AbstractParser {
             SSTNode b;
             Object c;
             if (
-                (a = name_token) != null  // NAME
+                (a = name_token()) != null  // NAME
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (b = expression_rule) != null  // expression
+                (b = expression_rule()) != null  // expression
                 &&
-                ((c = _tmp_22_rule) != null || true)  // ['=' annotated_rhs]
+                ((c = _tmp_22_rule()) != null || true)  // ['=' annotated_rhs]
             )
             {
                 debugMessageln("%d assignment[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME ':' expression ['=' annotated_rhs]");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 _res = factory.createAnnAssignment(factory.createAnnotation(factory.createVariable(getText(a),a.startOffset,a.endOffset),b,a.startOffset,b.getEndOffset()),(SSTNode)c,startToken.startOffset,endToken.endOffset);//CHECK_VERSION(//stmt_ty,//6,//"Variableannotationsyntaxis",//_PyAST_AnnAssign(CHECK(expr_ty,_PyPegen_set_expr_context(p,a,Store)),b,c,1,EXTRA)//);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME ':' expression ['=' annotated_rhs]");
-                return cache.putResult(pos, ASSIGNMENT_ID, _res);
+                return cache.putResult(_mark, ASSIGNMENT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s assignment[%d-%d]: %s failed!", level, ' ',
@@ -1845,26 +1845,26 @@ public final class Parser extends AbstractParser {
             SSTNode b;
             Object c;
             if (
-                (a = _tmp_23_rule) != null  // '(' single_target ')' | single_subscript_attribute_target
+                (a = _tmp_23_rule()) != null  // '(' single_target ')' | single_subscript_attribute_target
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (b = expression_rule) != null  // expression
+                (b = expression_rule()) != null  // expression
                 &&
-                ((c = _tmp_24_rule) != null || true)  // ['=' annotated_rhs]
+                ((c = _tmp_24_rule()) != null || true)  // ['=' annotated_rhs]
             )
             {
                 debugMessageln("%d assignment[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "('(' single_target ')' | single_subscript_attribute_target) ':' expression ['=' annotated_rhs]");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 6 , "Variable annotations syntax is" , _PyAST_AnnAssign ( a , b , c , 0 , EXTRA ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "('(' single_target ')' | single_subscript_attribute_target) ':' expression ['=' annotated_rhs]");
-                return cache.putResult(pos, ASSIGNMENT_ID, _res);
+                return cache.putResult(_mark, ASSIGNMENT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s assignment[%d-%d]: %s failed!", level, ' ',
@@ -1877,26 +1877,26 @@ public final class Parser extends AbstractParser {
             Object b;
             Object tc;
             if (
-                (a = (SSTNode[])_loop1_25_rule) != null  // ((star_targets '='))+
+                (a = (SSTNode[])_loop1_25_rule()) != null  // ((star_targets '='))+
                 &&
-                (b = _tmp_26_rule) != null  // yield_expr | star_expressions
+                (b = _tmp_26_rule()) != null  // yield_expr | star_expressions
                 &&
                 genLookahead_expect(false, 22)  // token='='
                 &&
-                ((tc = _tmp_27_rule) != null || true)  // TYPE_COMMENT?
+                ((tc = _tmp_27_rule()) != null || true)  // TYPE_COMMENT?
             )
             {
                 debugMessageln("%d assignment[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Assign ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?");
-                return cache.putResult(pos, ASSIGNMENT_ID, _res);
+                return cache.putResult(_mark, ASSIGNMENT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s assignment[%d-%d]: %s failed!", level, ' ',
@@ -1910,27 +1910,27 @@ public final class Parser extends AbstractParser {
             SSTNode[] b;
             Object c;
             if (
-                (a = single_target_rule) != null  // single_target
+                (a = single_target_rule()) != null  // single_target
                 &&
                 // TODO replacing AugOperator* --> SSTNode[]
-                (b = augassign_rule) != null  // augassign
+                (b = augassign_rule()) != null  // augassign
                 &&
                 (_cut_var = 1) != null
                 &&
-                (c = _tmp_28_rule) != null  // yield_expr | star_expressions
+                (c = _tmp_28_rule()) != null  // yield_expr | star_expressions
             )
             {
                 debugMessageln("%d assignment[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "single_target augassign ~ (yield_expr | star_expressions)");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_AugAssign ( a , b -> kind , c , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "single_target augassign ~ (yield_expr | star_expressions)");
-                return cache.putResult(pos, ASSIGNMENT_ID, _res);
+                return cache.putResult(_mark, ASSIGNMENT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s assignment[%d-%d]: %s failed!", level, ' ',
@@ -1944,13 +1944,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> assignment[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_assignment");
             Object invalid_assignment_var;
             if (
-                (invalid_assignment_var = invalid_assignment_rule) != null  // invalid_assignment
+                (invalid_assignment_var = invalid_assignment_rule()) != null  // invalid_assignment
             )
             {
                 debugMessageln("%d assignment[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_assignment");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_assignment");
                 _res = invalid_assignment_var;
-                return cache.putResult(pos, ASSIGNMENT_ID, _res);
+                return cache.putResult(_mark, ASSIGNMENT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s assignment[%d-%d]: %s failed!", level, ' ',
@@ -1993,7 +1993,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_augoperator ( p , Add )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'+='");
-                return cache.putResult(pos, AUGASSIGN_ID, _res);
+                return cache.putResult(_mark, AUGASSIGN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level, ' ',
@@ -2010,7 +2010,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_augoperator ( p , Sub )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'-='");
-                return cache.putResult(pos, AUGASSIGN_ID, _res);
+                return cache.putResult(_mark, AUGASSIGN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level, ' ',
@@ -2027,7 +2027,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_augoperator ( p , Mult )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*='");
-                return cache.putResult(pos, AUGASSIGN_ID, _res);
+                return cache.putResult(_mark, AUGASSIGN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level, ' ',
@@ -2044,7 +2044,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: CHECK_VERSION ( AugOperator * , 5 , "The '@' operator is" , _PyPegen_augoperator ( p , MatMult ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'@='");
-                return cache.putResult(pos, AUGASSIGN_ID, _res);
+                return cache.putResult(_mark, AUGASSIGN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level, ' ',
@@ -2061,7 +2061,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_augoperator ( p , Div )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'/='");
-                return cache.putResult(pos, AUGASSIGN_ID, _res);
+                return cache.putResult(_mark, AUGASSIGN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level, ' ',
@@ -2078,7 +2078,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_augoperator ( p , Mod )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'%='");
-                return cache.putResult(pos, AUGASSIGN_ID, _res);
+                return cache.putResult(_mark, AUGASSIGN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level, ' ',
@@ -2095,7 +2095,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_augoperator ( p , BitAnd )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'&='");
-                return cache.putResult(pos, AUGASSIGN_ID, _res);
+                return cache.putResult(_mark, AUGASSIGN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level, ' ',
@@ -2112,7 +2112,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_augoperator ( p , BitOr )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'|='");
-                return cache.putResult(pos, AUGASSIGN_ID, _res);
+                return cache.putResult(_mark, AUGASSIGN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level, ' ',
@@ -2129,7 +2129,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_augoperator ( p , BitXor )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'^='");
-                return cache.putResult(pos, AUGASSIGN_ID, _res);
+                return cache.putResult(_mark, AUGASSIGN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level, ' ',
@@ -2146,7 +2146,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_augoperator ( p , LShift )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'<<='");
-                return cache.putResult(pos, AUGASSIGN_ID, _res);
+                return cache.putResult(_mark, AUGASSIGN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level, ' ',
@@ -2163,7 +2163,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_augoperator ( p , RShift )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'>>='");
-                return cache.putResult(pos, AUGASSIGN_ID, _res);
+                return cache.putResult(_mark, AUGASSIGN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level, ' ',
@@ -2180,7 +2180,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_augoperator ( p , Pow )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**='");
-                return cache.putResult(pos, AUGASSIGN_ID, _res);
+                return cache.putResult(_mark, AUGASSIGN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level, ' ',
@@ -2197,7 +2197,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_augoperator ( p , FloorDiv )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'//='");
-                return cache.putResult(pos, AUGASSIGN_ID, _res);
+                return cache.putResult(_mark, AUGASSIGN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s augassign[%d-%d]: %s failed!", level, ' ',
@@ -2217,7 +2217,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'global' ','.NAME+
             debugMessageln("%d> global_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'global' ','.NAME+");
             // TODO replacing asdl_expr_seq* --> SSTNode[]
@@ -2226,20 +2226,20 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(508)) != null  // token='global'
                 &&
-                (a = (SSTNode[])_gather_29_rule) != null  // ','.NAME+
+                (a = (SSTNode[])_gather_29_rule()) != null  // ','.NAME+
             )
             {
                 debugMessageln("%d global_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'global' ','.NAME+");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Global ( CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'global' ','.NAME+");
-                return cache.putResult(pos, GLOBAL_STMT_ID, _res);
+                return cache.putResult(_mark, GLOBAL_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s global_stmt[%d-%d]: %s failed!", level, ' ',
@@ -2259,7 +2259,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'nonlocal' ','.NAME+
             debugMessageln("%d> nonlocal_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'nonlocal' ','.NAME+");
             // TODO replacing asdl_expr_seq* --> SSTNode[]
@@ -2268,20 +2268,20 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(509)) != null  // token='nonlocal'
                 &&
-                (a = (SSTNode[])_gather_31_rule) != null  // ','.NAME+
+                (a = (SSTNode[])_gather_31_rule()) != null  // ','.NAME+
             )
             {
                 debugMessageln("%d nonlocal_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'nonlocal' ','.NAME+");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Nonlocal ( CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'nonlocal' ','.NAME+");
-                return cache.putResult(pos, NONLOCAL_STMT_ID, _res);
+                return cache.putResult(_mark, NONLOCAL_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s nonlocal_stmt[%d-%d]: %s failed!", level, ' ',
@@ -2301,25 +2301,25 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // yield_expr
             debugMessageln("%d> yield_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "yield_expr");
             SSTNode y;
             if (
-                (y = yield_expr_rule) != null  // yield_expr
+                (y = yield_expr_rule()) != null  // yield_expr
             )
             {
                 debugMessageln("%d yield_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "yield_expr");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Expr ( y , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "yield_expr");
-                return cache.putResult(pos, YIELD_STMT_ID, _res);
+                return cache.putResult(_mark, YIELD_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s yield_stmt[%d-%d]: %s failed!", level, ' ',
@@ -2339,7 +2339,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'assert' expression [',' expression]
             debugMessageln("%d> assert_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'assert' expression [',' expression]");
             Token _keyword;
@@ -2348,22 +2348,22 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(505)) != null  // token='assert'
                 &&
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
                 &&
-                ((b = _tmp_33_rule) != null || true)  // [',' expression]
+                ((b = _tmp_33_rule()) != null || true)  // [',' expression]
             )
             {
                 debugMessageln("%d assert_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'assert' expression [',' expression]");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Assert ( a , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'assert' expression [',' expression]");
-                return cache.putResult(pos, ASSERT_STMT_ID, _res);
+                return cache.putResult(_mark, ASSERT_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s assert_stmt[%d-%d]: %s failed!", level, ' ',
@@ -2383,7 +2383,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'del' del_targets &(';' | NEWLINE)
             debugMessageln("%d> del_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'del' del_targets &(';' | NEWLINE)");
             // TODO replacing asdl_expr_seq* --> SSTNode[]
@@ -2393,22 +2393,22 @@ public final class Parser extends AbstractParser {
                 (_keyword = expect(503)) != null  // token='del'
                 &&
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (a = del_targets_rule) != null  // del_targets
+                (a = del_targets_rule()) != null  // del_targets
                 &&
                 genLookahead__tmp_34_rule(true)
             )
             {
                 debugMessageln("%d del_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'del' del_targets &(';' | NEWLINE)");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Delete ( a , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'del' del_targets &(';' | NEWLINE)");
-                return cache.putResult(pos, DEL_STMT_ID, _res);
+                return cache.putResult(_mark, DEL_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s del_stmt[%d-%d]: %s failed!", level, ' ',
@@ -2418,13 +2418,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> del_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_del_stmt");
             Object invalid_del_stmt_var;
             if (
-                (invalid_del_stmt_var = invalid_del_stmt_rule) != null  // invalid_del_stmt
+                (invalid_del_stmt_var = invalid_del_stmt_rule()) != null  // invalid_del_stmt
             )
             {
                 debugMessageln("%d del_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_del_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_del_stmt");
                 _res = invalid_del_stmt_var;
-                return cache.putResult(pos, DEL_STMT_ID, _res);
+                return cache.putResult(_mark, DEL_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s del_stmt[%d-%d]: %s failed!", level, ' ',
@@ -2449,13 +2449,13 @@ public final class Parser extends AbstractParser {
             SSTNode import_name_var;
             if (
                 // TODO replacing stmt_ty --> SSTNode
-                (import_name_var = import_name_rule) != null  // import_name
+                (import_name_var = import_name_rule()) != null  // import_name
             )
             {
                 debugMessageln("%d import_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "import_name");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "import_name");
                 _res = import_name_var;
-                return cache.putResult(pos, IMPORT_STMT_ID, _res);
+                return cache.putResult(_mark, IMPORT_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s import_stmt[%d-%d]: %s failed!", level, ' ',
@@ -2467,13 +2467,13 @@ public final class Parser extends AbstractParser {
             SSTNode import_from_var;
             if (
                 // TODO replacing stmt_ty --> SSTNode
-                (import_from_var = import_from_rule) != null  // import_from
+                (import_from_var = import_from_rule()) != null  // import_from
             )
             {
                 debugMessageln("%d import_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "import_from");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "import_from");
                 _res = import_from_var;
-                return cache.putResult(pos, IMPORT_STMT_ID, _res);
+                return cache.putResult(_mark, IMPORT_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s import_stmt[%d-%d]: %s failed!", level, ' ',
@@ -2493,7 +2493,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'import' dotted_as_names
             debugMessageln("%d> import_name[%d-%d]: %s", level, ' ', _mark, mark(), "'import' dotted_as_names");
             // TODO replacing asdl_alias_seq* --> SSTNode[]
@@ -2503,20 +2503,20 @@ public final class Parser extends AbstractParser {
                 (_keyword = expect(513)) != null  // token='import'
                 &&
                 // TODO replacing asdl_alias_seq* --> SSTNode[]
-                (a = dotted_as_names_rule) != null  // dotted_as_names
+                (a = dotted_as_names_rule()) != null  // dotted_as_names
             )
             {
                 debugMessageln("%d import_name[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'import' dotted_as_names");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Import ( a , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'import' dotted_as_names");
-                return cache.putResult(pos, IMPORT_NAME_ID, _res);
+                return cache.putResult(_mark, IMPORT_NAME_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s import_name[%d-%d]: %s failed!", level, ' ',
@@ -2538,7 +2538,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'from' (('.' | '...'))* dotted_name 'import' import_from_targets
             debugMessageln("%d> import_from[%d-%d]: %s", level, ' ', _mark, mark(), "'from' (('.' | '...'))* dotted_name 'import' import_from_targets");
             // TODO replacing asdl_alias_seq* --> SSTNode[]
@@ -2550,27 +2550,27 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(514)) != null  // token='from'
                 &&
-                (a = _loop0_35_rule) != null  // (('.' | '...'))*
+                (a = _loop0_35_rule()) != null  // (('.' | '...'))*
                 &&
-                (b = dotted_name_rule) != null  // dotted_name
+                (b = dotted_name_rule()) != null  // dotted_name
                 &&
                 (_keyword_1 = expect(513)) != null  // token='import'
                 &&
                 // TODO replacing asdl_alias_seq* --> SSTNode[]
-                (c = import_from_targets_rule) != null  // import_from_targets
+                (c = import_from_targets_rule()) != null  // import_from_targets
             )
             {
                 debugMessageln("%d import_from[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'from' (('.' | '...'))* dotted_name 'import' import_from_targets");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_ImportFrom ( b -> v . Name . id , c , _PyPegen_seq_count_dots ( a ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'from' (('.' | '...'))* dotted_name 'import' import_from_targets");
-                return cache.putResult(pos, IMPORT_FROM_ID, _res);
+                return cache.putResult(_mark, IMPORT_FROM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s import_from[%d-%d]: %s failed!", level, ' ',
@@ -2586,25 +2586,25 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(514)) != null  // token='from'
                 &&
-                (a = _loop1_36_rule) != null  // (('.' | '...'))+
+                (a = _loop1_36_rule()) != null  // (('.' | '...'))+
                 &&
                 (_keyword_1 = expect(513)) != null  // token='import'
                 &&
                 // TODO replacing asdl_alias_seq* --> SSTNode[]
-                (b = import_from_targets_rule) != null  // import_from_targets
+                (b = import_from_targets_rule()) != null  // import_from_targets
             )
             {
                 debugMessageln("%d import_from[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'from' (('.' | '...'))+ 'import' import_from_targets");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_ImportFrom ( NULL , b , _PyPegen_seq_count_dots ( a ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'from' (('.' | '...'))+ 'import' import_from_targets");
-                return cache.putResult(pos, IMPORT_FROM_ID, _res);
+                return cache.putResult(_mark, IMPORT_FROM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s import_from[%d-%d]: %s failed!", level, ' ',
@@ -2628,7 +2628,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode[] _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '(' import_from_as_names ','? ')'
             debugMessageln("%d> import_from_targets[%d-%d]: %s", level, ' ', _mark, mark(), "'(' import_from_as_names ','? ')'");
             // TODO replacing asdl_alias_seq* --> SSTNode[]
@@ -2640,9 +2640,9 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(7)) != null  // token='('
                 &&
                 // TODO replacing asdl_alias_seq* --> SSTNode[]
-                (a = import_from_as_names_rule) != null  // import_from_as_names
+                (a = import_from_as_names_rule()) != null  // import_from_as_names
                 &&
-                ((_opt_var = _tmp_37_rule) != null || true)  // ','?
+                ((_opt_var = _tmp_37_rule()) != null || true)  // ','?
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
@@ -2650,7 +2650,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d import_from_targets[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' import_from_as_names ','? ')'");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' import_from_as_names ','? ')'");
-                return cache.putResult(pos, IMPORT_FROM_TARGETS_ID, _res);
+                return cache.putResult(_mark, IMPORT_FROM_TARGETS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s import_from_targets[%d-%d]: %s failed!", level, ' ',
@@ -2662,7 +2662,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] import_from_as_names_var;
             if (
                 // TODO replacing asdl_alias_seq* --> SSTNode[]
-                (import_from_as_names_var = import_from_as_names_rule) != null  // import_from_as_names
+                (import_from_as_names_var = import_from_as_names_rule()) != null  // import_from_as_names
                 &&
                 genLookahead_expect(false, 12)  // token=','
             )
@@ -2670,7 +2670,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d import_from_targets[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "import_from_as_names !','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "import_from_as_names !','");
                 _res = import_from_as_names_var;
-                return cache.putResult(pos, IMPORT_FROM_TARGETS_ID, _res);
+                return cache.putResult(_mark, IMPORT_FROM_TARGETS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s import_from_targets[%d-%d]: %s failed!", level, ' ',
@@ -2685,15 +2685,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d import_from_targets[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: ( asdl_alias_seq * ) _PyPegen_singleton_seq ( p , CHECK ( alias_ty , _PyPegen_alias_for_star ( p , EXTRA ) ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*'");
-                return cache.putResult(pos, IMPORT_FROM_TARGETS_ID, _res);
+                return cache.putResult(_mark, IMPORT_FROM_TARGETS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s import_from_targets[%d-%d]: %s failed!", level, ' ',
@@ -2703,13 +2703,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> import_from_targets[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_import_from_targets");
             Object invalid_import_from_targets_var;
             if (
-                (invalid_import_from_targets_var = invalid_import_from_targets_rule) != null  // invalid_import_from_targets
+                (invalid_import_from_targets_var = invalid_import_from_targets_rule()) != null  // invalid_import_from_targets
             )
             {
                 debugMessageln("%d import_from_targets[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_import_from_targets");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_import_from_targets");
                 _res = invalid_import_from_targets_var;
-                return cache.putResult(pos, IMPORT_FROM_TARGETS_ID, _res);
+                return cache.putResult(_mark, IMPORT_FROM_TARGETS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s import_from_targets[%d-%d]: %s failed!", level, ' ',
@@ -2733,13 +2733,13 @@ public final class Parser extends AbstractParser {
             // TODO replacing asdl_alias_seq* --> SSTNode[]
             SSTNode[] a;
             if (
-                (a = (SSTNode[])_gather_38_rule) != null  // ','.import_from_as_name+
+                (a = (SSTNode[])_gather_38_rule()) != null  // ','.import_from_as_name+
             )
             {
                 debugMessageln("%d import_from_as_names[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.import_from_as_name+");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.import_from_as_name+");
-                return cache.putResult(pos, IMPORT_FROM_AS_NAMES_ID, _res);
+                return cache.putResult(_mark, IMPORT_FROM_AS_NAMES_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s import_from_as_names[%d-%d]: %s failed!", level, ' ',
@@ -2759,28 +2759,28 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // NAME ['as' NAME]
             debugMessageln("%d> import_from_as_name[%d-%d]: %s", level, ' ', _mark, mark(), "NAME ['as' NAME]");
             SSTNode a;
             Object b;
             if (
-                (a = name_token) != null  // NAME
+                (a = name_token()) != null  // NAME
                 &&
-                ((b = _tmp_40_rule) != null || true)  // ['as' NAME]
+                ((b = _tmp_40_rule()) != null || true)  // ['as' NAME]
             )
             {
                 debugMessageln("%d import_from_as_name[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME ['as' NAME]");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_alias ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Name . id : NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME ['as' NAME]");
-                return cache.putResult(pos, IMPORT_FROM_AS_NAME_ID, _res);
+                return cache.putResult(_mark, IMPORT_FROM_AS_NAME_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s import_from_as_name[%d-%d]: %s failed!", level, ' ',
@@ -2804,13 +2804,13 @@ public final class Parser extends AbstractParser {
             // TODO replacing asdl_alias_seq* --> SSTNode[]
             SSTNode[] a;
             if (
-                (a = (SSTNode[])_gather_41_rule) != null  // ','.dotted_as_name+
+                (a = (SSTNode[])_gather_41_rule()) != null  // ','.dotted_as_name+
             )
             {
                 debugMessageln("%d dotted_as_names[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.dotted_as_name+");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.dotted_as_name+");
-                return cache.putResult(pos, DOTTED_AS_NAMES_ID, _res);
+                return cache.putResult(_mark, DOTTED_AS_NAMES_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s dotted_as_names[%d-%d]: %s failed!", level, ' ',
@@ -2830,28 +2830,28 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // dotted_name ['as' NAME]
             debugMessageln("%d> dotted_as_name[%d-%d]: %s", level, ' ', _mark, mark(), "dotted_name ['as' NAME]");
             SSTNode a;
             Object b;
             if (
-                (a = dotted_name_rule) != null  // dotted_name
+                (a = dotted_name_rule()) != null  // dotted_name
                 &&
-                ((b = _tmp_43_rule) != null || true)  // ['as' NAME]
+                ((b = _tmp_43_rule()) != null || true)  // ['as' NAME]
             )
             {
                 debugMessageln("%d dotted_as_name[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "dotted_name ['as' NAME]");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_alias ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Name . id : NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "dotted_name ['as' NAME]");
-                return cache.putResult(pos, DOTTED_AS_NAME_ID, _res);
+                return cache.putResult(_mark, DOTTED_AS_NAME_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s dotted_as_name[%d-%d]: %s failed!", level, ' ',
@@ -2878,12 +2878,12 @@ public final class Parser extends AbstractParser {
         int _resmark = mark();
         while (true) {
             try {
-                cache.putResult(pos, DOTTED_NAME_ID, _res);
+                cache.putResult(_mark, DOTTED_NAME_ID, _res);
             } catch (Exception e) {
                 level--;
                 return _res;
             }
-            reset(pos);
+            reset(_mark);
             Object _raw = dotted_name_raw();
             if (_raw == null || mark() <= _resmark)
                 break;
@@ -2905,18 +2905,18 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = dotted_name_rule) != null  // dotted_name
+                (a = dotted_name_rule()) != null  // dotted_name
                 &&
                 (_literal = expect(23)) != null  // token='.'
                 &&
-                (b = name_token) != null  // NAME
+                (b = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d dotted_name[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "dotted_name '.' NAME");
                 // TODO: node.action: _PyPegen_join_names_with_dot ( p , a , b )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "dotted_name '.' NAME");
-                return cache.putResult(pos, DOTTED_NAME_ID, _res);
+                return cache.putResult(_mark, DOTTED_NAME_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s dotted_name[%d-%d]: %s failed!", level, ' ',
@@ -2926,13 +2926,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> dotted_name[%d-%d]: %s", level, ' ', _mark, mark(), "NAME");
             SSTNode name_var;
             if (
-                (name_var = name_token) != null  // NAME
+                (name_var = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d dotted_name[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NAME");
                 _res = name_var;
-                return cache.putResult(pos, DOTTED_NAME_ID, _res);
+                return cache.putResult(_mark, DOTTED_NAME_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s dotted_name[%d-%d]: %s failed!", level, ' ',
@@ -2955,7 +2955,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'if' named_expression ':' block elif_stmt
             debugMessageln("%d> if_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'if' named_expression ':' block elif_stmt");
             // TODO replacing stmt_ty --> SSTNode
@@ -2967,27 +2967,27 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(510)) != null  // token='if'
                 &&
-                (a = named_expression_rule) != null  // named_expression
+                (a = named_expression_rule()) != null  // named_expression
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (c = elif_stmt_rule) != null  // elif_stmt
+                (c = elif_stmt_rule()) != null  // elif_stmt
             )
             {
                 debugMessageln("%d if_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'if' named_expression ':' block elif_stmt");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , _PyPegen_singleton_seq ( p , c ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' named_expression ':' block elif_stmt");
-                return cache.putResult(pos, IF_STMT_ID, _res);
+                return cache.putResult(_mark, IF_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s if_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3003,26 +3003,26 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(510)) != null  // token='if'
                 &&
-                (a = named_expression_rule) != null  // named_expression
+                (a = named_expression_rule()) != null  // named_expression
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
                 &&
-                ((c = _tmp_44_rule) != null || true)  // else_block?
+                ((c = _tmp_44_rule()) != null || true)  // else_block?
             )
             {
                 debugMessageln("%d if_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'if' named_expression ':' block else_block?");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_If ( a , b , c , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' named_expression ':' block else_block?");
-                return cache.putResult(pos, IF_STMT_ID, _res);
+                return cache.putResult(_mark, IF_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s if_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3032,13 +3032,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> if_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_if_stmt");
             Object invalid_if_stmt_var;
             if (
-                (invalid_if_stmt_var = invalid_if_stmt_rule) != null  // invalid_if_stmt
+                (invalid_if_stmt_var = invalid_if_stmt_rule()) != null  // invalid_if_stmt
             )
             {
                 debugMessageln("%d if_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_if_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_if_stmt");
                 _res = invalid_if_stmt_var;
-                return cache.putResult(pos, IF_STMT_ID, _res);
+                return cache.putResult(_mark, IF_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s if_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3061,7 +3061,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'elif' named_expression ':' block elif_stmt
             debugMessageln("%d> elif_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'elif' named_expression ':' block elif_stmt");
             // TODO replacing stmt_ty --> SSTNode
@@ -3073,27 +3073,27 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(515)) != null  // token='elif'
                 &&
-                (a = named_expression_rule) != null  // named_expression
+                (a = named_expression_rule()) != null  // named_expression
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (c = elif_stmt_rule) != null  // elif_stmt
+                (c = elif_stmt_rule()) != null  // elif_stmt
             )
             {
                 debugMessageln("%d elif_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'elif' named_expression ':' block elif_stmt");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , _PyPegen_singleton_seq ( p , c ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'elif' named_expression ':' block elif_stmt");
-                return cache.putResult(pos, ELIF_STMT_ID, _res);
+                return cache.putResult(_mark, ELIF_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s elif_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3109,26 +3109,26 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(515)) != null  // token='elif'
                 &&
-                (a = named_expression_rule) != null  // named_expression
+                (a = named_expression_rule()) != null  // named_expression
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
                 &&
-                ((c = _tmp_45_rule) != null || true)  // else_block?
+                ((c = _tmp_45_rule()) != null || true)  // else_block?
             )
             {
                 debugMessageln("%d elif_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'elif' named_expression ':' block else_block?");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_If ( a , b , c , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'elif' named_expression ':' block else_block?");
-                return cache.putResult(pos, ELIF_STMT_ID, _res);
+                return cache.putResult(_mark, ELIF_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s elif_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3138,13 +3138,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> elif_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_elif_stmt");
             Object invalid_elif_stmt_var;
             if (
-                (invalid_elif_stmt_var = invalid_elif_stmt_rule) != null  // invalid_elif_stmt
+                (invalid_elif_stmt_var = invalid_elif_stmt_rule()) != null  // invalid_elif_stmt
             )
             {
                 debugMessageln("%d elif_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_elif_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_elif_stmt");
                 _res = invalid_elif_stmt_var;
-                return cache.putResult(pos, ELIF_STMT_ID, _res);
+                return cache.putResult(_mark, ELIF_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s elif_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3172,13 +3172,13 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = expect_forced_token(11, ":")) != null  // forced_token=':'
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
             )
             {
                 debugMessageln("%d else_block[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'else' &&':' block");
                 _res = b;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'else' &&':' block");
-                return cache.putResult(pos, ELSE_BLOCK_ID, _res);
+                return cache.putResult(_mark, ELSE_BLOCK_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s else_block[%d-%d]: %s failed!", level, ' ',
@@ -3198,7 +3198,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'while' named_expression ':' block else_block?
             debugMessageln("%d> while_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'while' named_expression ':' block else_block?");
             Token _keyword;
@@ -3209,26 +3209,26 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(512)) != null  // token='while'
                 &&
-                (a = named_expression_rule) != null  // named_expression
+                (a = named_expression_rule()) != null  // named_expression
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
                 &&
-                ((c = _tmp_46_rule) != null || true)  // else_block?
+                ((c = _tmp_46_rule()) != null || true)  // else_block?
             )
             {
                 debugMessageln("%d while_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'while' named_expression ':' block else_block?");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_While ( a , b , c , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'while' named_expression ':' block else_block?");
-                return cache.putResult(pos, WHILE_STMT_ID, _res);
+                return cache.putResult(_mark, WHILE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s while_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3238,13 +3238,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> while_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_while_stmt");
             Object invalid_while_stmt_var;
             if (
-                (invalid_while_stmt_var = invalid_while_stmt_rule) != null  // invalid_while_stmt
+                (invalid_while_stmt_var = invalid_while_stmt_rule()) != null  // invalid_while_stmt
             )
             {
                 debugMessageln("%d while_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_while_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_while_stmt");
                 _res = invalid_while_stmt_var;
-                return cache.putResult(pos, WHILE_STMT_ID, _res);
+                return cache.putResult(_mark, WHILE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s while_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3267,7 +3267,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?
             debugMessageln("%d> for_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
             int _cut_var = 0;
@@ -3282,34 +3282,34 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(517)) != null  // token='for'
                 &&
-                (t = star_targets_rule) != null  // star_targets
+                (t = star_targets_rule()) != null  // star_targets
                 &&
                 (_keyword_1 = expect(518)) != null  // token='in'
                 &&
                 (_cut_var = 1) != null
                 &&
-                (ex = star_expressions_rule) != null  // star_expressions
+                (ex = star_expressions_rule()) != null  // star_expressions
                 &&
                 (_literal = expect_forced_token(11, ":")) != null  // forced_token=':'
                 &&
-                ((tc = _tmp_47_rule) != null || true)  // TYPE_COMMENT?
+                ((tc = _tmp_47_rule()) != null || true)  // TYPE_COMMENT?
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
                 &&
-                ((el = _tmp_48_rule) != null || true)  // else_block?
+                ((el = _tmp_48_rule()) != null || true)  // else_block?
             )
             {
                 debugMessageln("%d for_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_For ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
-                return cache.putResult(pos, FOR_STMT_ID, _res);
+                return cache.putResult(_mark, FOR_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s for_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3336,34 +3336,34 @@ public final class Parser extends AbstractParser {
                 &&
                 (_keyword = expect(517)) != null  // token='for'
                 &&
-                (t = star_targets_rule) != null  // star_targets
+                (t = star_targets_rule()) != null  // star_targets
                 &&
                 (_keyword_1 = expect(518)) != null  // token='in'
                 &&
                 (_cut_var = 1) != null
                 &&
-                (ex = star_expressions_rule) != null  // star_expressions
+                (ex = star_expressions_rule()) != null  // star_expressions
                 &&
                 (_literal = expect_forced_token(11, ":")) != null  // forced_token=':'
                 &&
-                ((tc = _tmp_49_rule) != null || true)  // TYPE_COMMENT?
+                ((tc = _tmp_49_rule()) != null || true)  // TYPE_COMMENT?
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
                 &&
-                ((el = _tmp_50_rule) != null || true)  // else_block?
+                ((el = _tmp_50_rule()) != null || true)  // else_block?
             )
             {
                 debugMessageln("%d for_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC 'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async for loops are" , _PyAST_AsyncFor ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC 'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
-                return cache.putResult(pos, FOR_STMT_ID, _res);
+                return cache.putResult(_mark, FOR_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s for_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3377,13 +3377,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> for_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_for_target");
             Object invalid_for_target_var;
             if (
-                (invalid_for_target_var = invalid_for_target_rule) != null  // invalid_for_target
+                (invalid_for_target_var = invalid_for_target_rule()) != null  // invalid_for_target
             )
             {
                 debugMessageln("%d for_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_for_target");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_for_target");
                 _res = invalid_for_target_var;
-                return cache.putResult(pos, FOR_STMT_ID, _res);
+                return cache.putResult(_mark, FOR_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s for_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3408,7 +3408,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'with' '(' ','.with_item+ ','? ')' ':' block
             debugMessageln("%d> with_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'with' '(' ','.with_item+ ','? ')' ':' block");
             // TODO replacing asdl_withitem_seq* --> SSTNode[]
@@ -3424,7 +3424,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
-                (a = (SSTNode[])_gather_51_rule) != null  // ','.with_item+
+                (a = (SSTNode[])_gather_51_rule()) != null  // ','.with_item+
                 &&
                 ((_opt_var = expect(12)) != null || true)  // ','?
                 &&
@@ -3432,20 +3432,20 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal_2 = expect(11)) != null  // token=':'
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
             )
             {
                 debugMessageln("%d with_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'with' '(' ','.with_item+ ','? ')' ':' block");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_With ( a , b , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'with' '(' ','.with_item+ ','? ')' ':' block");
-                return cache.putResult(pos, WITH_STMT_ID, _res);
+                return cache.putResult(_mark, WITH_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s with_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3462,26 +3462,26 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(519)) != null  // token='with'
                 &&
-                (a = (SSTNode[])_gather_53_rule) != null  // ','.with_item+
+                (a = (SSTNode[])_gather_53_rule()) != null  // ','.with_item+
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                ((tc = _tmp_55_rule) != null || true)  // TYPE_COMMENT?
+                ((tc = _tmp_55_rule()) != null || true)  // TYPE_COMMENT?
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
             )
             {
                 debugMessageln("%d with_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'with' ','.with_item+ ':' TYPE_COMMENT? block");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_With ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'with' ','.with_item+ ':' TYPE_COMMENT? block");
-                return cache.putResult(pos, WITH_STMT_ID, _res);
+                return cache.putResult(_mark, WITH_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s with_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3505,7 +3505,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
-                (a = (SSTNode[])_gather_56_rule) != null  // ','.with_item+
+                (a = (SSTNode[])_gather_56_rule()) != null  // ','.with_item+
                 &&
                 ((_opt_var = expect(12)) != null || true)  // ','?
                 &&
@@ -3513,20 +3513,20 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal_2 = expect(11)) != null  // token=':'
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
             )
             {
                 debugMessageln("%d with_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC 'with' '(' ','.with_item+ ','? ')' ':' block");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NULL , EXTRA ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC 'with' '(' ','.with_item+ ','? ')' ':' block");
-                return cache.putResult(pos, WITH_STMT_ID, _res);
+                return cache.putResult(_mark, WITH_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s with_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3546,26 +3546,26 @@ public final class Parser extends AbstractParser {
                 &&
                 (_keyword = expect(519)) != null  // token='with'
                 &&
-                (a = (SSTNode[])_gather_58_rule) != null  // ','.with_item+
+                (a = (SSTNode[])_gather_58_rule()) != null  // ','.with_item+
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                ((tc = _tmp_60_rule) != null || true)  // TYPE_COMMENT?
+                ((tc = _tmp_60_rule()) != null || true)  // TYPE_COMMENT?
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
             )
             {
                 debugMessageln("%d with_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC 'with' ','.with_item+ ':' TYPE_COMMENT? block");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC 'with' ','.with_item+ ':' TYPE_COMMENT? block");
-                return cache.putResult(pos, WITH_STMT_ID, _res);
+                return cache.putResult(_mark, WITH_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s with_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3575,13 +3575,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> with_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_with_stmt");
             Object invalid_with_stmt_var;
             if (
-                (invalid_with_stmt_var = invalid_with_stmt_rule) != null  // invalid_with_stmt
+                (invalid_with_stmt_var = invalid_with_stmt_rule()) != null  // invalid_with_stmt
             )
             {
                 debugMessageln("%d with_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_with_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_with_stmt");
                 _res = invalid_with_stmt_var;
-                return cache.putResult(pos, WITH_STMT_ID, _res);
+                return cache.putResult(_mark, WITH_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s with_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3609,11 +3609,11 @@ public final class Parser extends AbstractParser {
             SSTNode e;
             SSTNode t;
             if (
-                (e = expression_rule) != null  // expression
+                (e = expression_rule()) != null  // expression
                 &&
                 (_keyword = expect(520)) != null  // token='as'
                 &&
-                (t = star_target_rule) != null  // star_target
+                (t = star_target_rule()) != null  // star_target
                 &&
                 genLookahead__tmp_61_rule(true)
             )
@@ -3622,7 +3622,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyAST_withitem ( e , t , p -> arena )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression 'as' star_target &(',' | ')' | ':')");
-                return cache.putResult(pos, WITH_ITEM_ID, _res);
+                return cache.putResult(_mark, WITH_ITEM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s with_item[%d-%d]: %s failed!", level, ' ',
@@ -3632,13 +3632,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> with_item[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_with_item");
             Object invalid_with_item_var;
             if (
-                (invalid_with_item_var = invalid_with_item_rule) != null  // invalid_with_item
+                (invalid_with_item_var = invalid_with_item_rule()) != null  // invalid_with_item
             )
             {
                 debugMessageln("%d with_item[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_with_item");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_with_item");
                 _res = invalid_with_item_var;
-                return cache.putResult(pos, WITH_ITEM_ID, _res);
+                return cache.putResult(_mark, WITH_ITEM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s with_item[%d-%d]: %s failed!", level, ' ',
@@ -3648,14 +3648,14 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> with_item[%d-%d]: %s", level, ' ', _mark, mark(), "expression");
             SSTNode e;
             if (
-                (e = expression_rule) != null  // expression
+                (e = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d with_item[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression");
                 // TODO: node.action: _PyAST_withitem ( e , NULL , p -> arena )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression");
-                return cache.putResult(pos, WITH_ITEM_ID, _res);
+                return cache.putResult(_mark, WITH_ITEM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s with_item[%d-%d]: %s failed!", level, ' ',
@@ -3677,7 +3677,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'try' &&':' block finally_block
             debugMessageln("%d> try_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'try' &&':' block finally_block");
             Token _keyword;
@@ -3689,22 +3689,22 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = expect_forced_token(11, ":")) != null  // forced_token=':'
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
                 &&
-                (f = finally_block_rule) != null  // finally_block
+                (f = finally_block_rule()) != null  // finally_block
             )
             {
                 debugMessageln("%d try_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'try' &&':' block finally_block");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Try ( b , NULL , NULL , f , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'try' &&':' block finally_block");
-                return cache.putResult(pos, TRY_STMT_ID, _res);
+                return cache.putResult(_mark, TRY_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s try_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3724,26 +3724,26 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = expect_forced_token(11, ":")) != null  // forced_token=':'
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
                 &&
-                (ex = (SSTNode[])_loop1_62_rule) != null  // except_block+
+                (ex = (SSTNode[])_loop1_62_rule()) != null  // except_block+
                 &&
-                ((el = _tmp_63_rule) != null || true)  // else_block?
+                ((el = _tmp_63_rule()) != null || true)  // else_block?
                 &&
-                ((f = _tmp_64_rule) != null || true)  // finally_block?
+                ((f = _tmp_64_rule()) != null || true)  // finally_block?
             )
             {
                 debugMessageln("%d try_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'try' &&':' block except_block+ else_block? finally_block?");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Try ( b , ex , el , f , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'try' &&':' block except_block+ else_block? finally_block?");
-                return cache.putResult(pos, TRY_STMT_ID, _res);
+                return cache.putResult(_mark, TRY_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s try_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3766,7 +3766,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'except' expression ['as' NAME] ':' block
             debugMessageln("%d> except_block[%d-%d]: %s", level, ' ', _mark, mark(), "'except' expression ['as' NAME] ':' block");
             Token _keyword;
@@ -3777,26 +3777,26 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(521)) != null  // token='except'
                 &&
-                (e = expression_rule) != null  // expression
+                (e = expression_rule()) != null  // expression
                 &&
-                ((t = _tmp_65_rule) != null || true)  // ['as' NAME]
+                ((t = _tmp_65_rule()) != null || true)  // ['as' NAME]
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
             )
             {
                 debugMessageln("%d except_block[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'except' expression ['as' NAME] ':' block");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_ExceptHandler ( e , ( t ) ? ( ( expr_ty ) t ) -> v . Name . id : NULL , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'except' expression ['as' NAME] ':' block");
-                return cache.putResult(pos, EXCEPT_BLOCK_ID, _res);
+                return cache.putResult(_mark, EXCEPT_BLOCK_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s except_block[%d-%d]: %s failed!", level, ' ',
@@ -3812,20 +3812,20 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
             )
             {
                 debugMessageln("%d except_block[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'except' ':' block");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_ExceptHandler ( NULL , NULL , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'except' ':' block");
-                return cache.putResult(pos, EXCEPT_BLOCK_ID, _res);
+                return cache.putResult(_mark, EXCEPT_BLOCK_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s except_block[%d-%d]: %s failed!", level, ' ',
@@ -3835,13 +3835,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> except_block[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_except_block");
             Object invalid_except_block_var;
             if (
-                (invalid_except_block_var = invalid_except_block_rule) != null  // invalid_except_block
+                (invalid_except_block_var = invalid_except_block_rule()) != null  // invalid_except_block
             )
             {
                 debugMessageln("%d except_block[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_except_block");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_except_block");
                 _res = invalid_except_block_var;
-                return cache.putResult(pos, EXCEPT_BLOCK_ID, _res);
+                return cache.putResult(_mark, EXCEPT_BLOCK_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s except_block[%d-%d]: %s failed!", level, ' ',
@@ -3869,13 +3869,13 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (a = block_rule) != null  // block
+                (a = block_rule()) != null  // block
             )
             {
                 debugMessageln("%d finally_block[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'finally' ':' block");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'finally' ':' block");
-                return cache.putResult(pos, FINALLY_BLOCK_ID, _res);
+                return cache.putResult(_mark, FINALLY_BLOCK_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s finally_block[%d-%d]: %s failed!", level, ' ',
@@ -3897,7 +3897,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // "match" subject_expr ':' NEWLINE INDENT case_block+ DEDENT
             debugMessageln("%d> match_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "\"match\" subject_expr ':' NEWLINE INDENT case_block+ DEDENT");
             // TODO replacing asdl_match_case_seq* --> SSTNode[]
@@ -3911,7 +3911,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect_SOFT_KEYWORD("match")) != null  // soft_keyword='"match"'
                 &&
-                (subject = subject_expr_rule) != null  // subject_expr
+                (subject = subject_expr_rule()) != null  // subject_expr
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
@@ -3919,22 +3919,22 @@ public final class Parser extends AbstractParser {
                 &&
                 (indent_var = expect(Token.Kind.INDENT)) != null  // token='INDENT'
                 &&
-                (cases = (SSTNode[])_loop1_66_rule) != null  // case_block+
+                (cases = (SSTNode[])_loop1_66_rule()) != null  // case_block+
                 &&
                 (dedent_var = expect(Token.Kind.DEDENT)) != null  // token='DEDENT'
             )
             {
                 debugMessageln("%d match_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "\"match\" subject_expr ':' NEWLINE INDENT case_block+ DEDENT");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 10 , "Pattern matching is" , _PyAST_Match ( subject , cases , EXTRA ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'match' subject_expr ':' NEWLINE INDENT case_block+ DEDENT");
-                return cache.putResult(pos, MATCH_STMT_ID, _res);
+                return cache.putResult(_mark, MATCH_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s match_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3944,13 +3944,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> match_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_match_stmt");
             Object invalid_match_stmt_var;
             if (
-                (invalid_match_stmt_var = invalid_match_stmt_rule) != null  // invalid_match_stmt
+                (invalid_match_stmt_var = invalid_match_stmt_rule()) != null  // invalid_match_stmt
             )
             {
                 debugMessageln("%d match_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_match_stmt");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_match_stmt");
                 _res = invalid_match_stmt_var;
-                return cache.putResult(pos, MATCH_STMT_ID, _res);
+                return cache.putResult(_mark, MATCH_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s match_stmt[%d-%d]: %s failed!", level, ' ',
@@ -3969,7 +3969,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // star_named_expression ',' star_named_expressions?
             debugMessageln("%d> subject_expr[%d-%d]: %s", level, ' ', _mark, mark(), "star_named_expression ',' star_named_expressions?");
             // TODO replacing asdl_expr_seq* --> SSTNode[]
@@ -3977,25 +3977,25 @@ public final class Parser extends AbstractParser {
             SSTNode value;
             Object values;
             if (
-                (value = star_named_expression_rule) != null  // star_named_expression
+                (value = star_named_expression_rule()) != null  // star_named_expression
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                ((values = star_named_expressions_rule) != null || true)  // star_named_expressions?
+                ((values = star_named_expressions_rule()) != null || true)  // star_named_expressions?
             )
             {
                 debugMessageln("%d subject_expr[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_named_expression ',' star_named_expressions?");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , value , values ) ) , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_named_expression ',' star_named_expressions?");
-                return cache.putResult(pos, SUBJECT_EXPR_ID, _res);
+                return cache.putResult(_mark, SUBJECT_EXPR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s subject_expr[%d-%d]: %s failed!", level, ' ',
@@ -4005,13 +4005,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> subject_expr[%d-%d]: %s", level, ' ', _mark, mark(), "named_expression");
             SSTNode named_expression_var;
             if (
-                (named_expression_var = named_expression_rule) != null  // named_expression
+                (named_expression_var = named_expression_rule()) != null  // named_expression
             )
             {
                 debugMessageln("%d subject_expr[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "named_expression");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "named_expression");
                 _res = named_expression_var;
-                return cache.putResult(pos, SUBJECT_EXPR_ID, _res);
+                return cache.putResult(_mark, SUBJECT_EXPR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s subject_expr[%d-%d]: %s failed!", level, ' ',
@@ -4040,20 +4040,20 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect_SOFT_KEYWORD("case")) != null  // soft_keyword='"case"'
                 &&
-                (pattern = patterns_rule) != null  // patterns
+                (pattern = patterns_rule()) != null  // patterns
                 &&
-                ((guard = guard_rule) != null || true)  // guard?
+                ((guard = guard_rule()) != null || true)  // guard?
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (body = block_rule) != null  // block
+                (body = block_rule()) != null  // block
             )
             {
                 debugMessageln("%d case_block[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "\"case\" patterns guard? ':' block");
                 // TODO: node.action: _PyAST_match_case ( pattern , guard , body , p -> arena )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'case' patterns guard? ':' block");
-                return cache.putResult(pos, CASE_BLOCK_ID, _res);
+                return cache.putResult(_mark, CASE_BLOCK_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s case_block[%d-%d]: %s failed!", level, ' ',
@@ -4063,13 +4063,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> case_block[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_case_block");
             Object invalid_case_block_var;
             if (
-                (invalid_case_block_var = invalid_case_block_rule) != null  // invalid_case_block
+                (invalid_case_block_var = invalid_case_block_rule()) != null  // invalid_case_block
             )
             {
                 debugMessageln("%d case_block[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_case_block");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_case_block");
                 _res = invalid_case_block_var;
-                return cache.putResult(pos, CASE_BLOCK_ID, _res);
+                return cache.putResult(_mark, CASE_BLOCK_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s case_block[%d-%d]: %s failed!", level, ' ',
@@ -4094,14 +4094,14 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(510)) != null  // token='if'
                 &&
-                (guard = named_expression_rule) != null  // named_expression
+                (guard = named_expression_rule()) != null  // named_expression
             )
             {
                 debugMessageln("%d guard[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'if' named_expression");
                 // TODO: node.action: guard
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' named_expression");
-                return cache.putResult(pos, GUARD_ID, _res);
+                return cache.putResult(_mark, GUARD_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s guard[%d-%d]: %s failed!", level, ' ',
@@ -4120,7 +4120,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // open_sequence_pattern
             debugMessageln("%d> patterns[%d-%d]: %s", level, ' ', _mark, mark(), "open_sequence_pattern");
             // TODO replacing asdl_seq* --> SSTNode[]
@@ -4128,20 +4128,20 @@ public final class Parser extends AbstractParser {
             SSTNode[] values;
             if (
                 // TODO replacing asdl_seq* --> SSTNode[]
-                (values = (SSTNode[])open_sequence_pattern_rule) != null  // open_sequence_pattern
+                (values = (SSTNode[])open_sequence_pattern_rule()) != null  // open_sequence_pattern
             )
             {
                 debugMessageln("%d patterns[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "open_sequence_pattern");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Tuple ( values , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "open_sequence_pattern");
-                return cache.putResult(pos, PATTERNS_ID, _res);
+                return cache.putResult(_mark, PATTERNS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s patterns[%d-%d]: %s failed!", level, ' ',
@@ -4151,13 +4151,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> patterns[%d-%d]: %s", level, ' ', _mark, mark(), "pattern");
             SSTNode pattern_var;
             if (
-                (pattern_var = pattern_rule) != null  // pattern
+                (pattern_var = pattern_rule()) != null  // pattern
             )
             {
                 debugMessageln("%d patterns[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "pattern");
                 _res = pattern_var;
-                return cache.putResult(pos, PATTERNS_ID, _res);
+                return cache.putResult(_mark, PATTERNS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s patterns[%d-%d]: %s failed!", level, ' ',
@@ -4179,13 +4179,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> pattern[%d-%d]: %s", level, ' ', _mark, mark(), "as_pattern");
             SSTNode as_pattern_var;
             if (
-                (as_pattern_var = as_pattern_rule) != null  // as_pattern
+                (as_pattern_var = as_pattern_rule()) != null  // as_pattern
             )
             {
                 debugMessageln("%d pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "as_pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "as_pattern");
                 _res = as_pattern_var;
-                return cache.putResult(pos, PATTERN_ID, _res);
+                return cache.putResult(_mark, PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s pattern[%d-%d]: %s failed!", level, ' ',
@@ -4195,13 +4195,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> pattern[%d-%d]: %s", level, ' ', _mark, mark(), "or_pattern");
             SSTNode or_pattern_var;
             if (
-                (or_pattern_var = or_pattern_rule) != null  // or_pattern
+                (or_pattern_var = or_pattern_rule()) != null  // or_pattern
             )
             {
                 debugMessageln("%d pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "or_pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "or_pattern");
                 _res = or_pattern_var;
-                return cache.putResult(pos, PATTERN_ID, _res);
+                return cache.putResult(_mark, PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s pattern[%d-%d]: %s failed!", level, ' ',
@@ -4220,31 +4220,31 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // or_pattern 'as' capture_pattern
             debugMessageln("%d> as_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "or_pattern 'as' capture_pattern");
             Token _keyword;
             SSTNode pattern;
             SSTNode target;
             if (
-                (pattern = or_pattern_rule) != null  // or_pattern
+                (pattern = or_pattern_rule()) != null  // or_pattern
                 &&
                 (_keyword = expect(520)) != null  // token='as'
                 &&
-                (target = capture_pattern_rule) != null  // capture_pattern
+                (target = capture_pattern_rule()) != null  // capture_pattern
             )
             {
                 debugMessageln("%d as_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "or_pattern 'as' capture_pattern");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_MatchAs ( pattern , target -> v . Name . id , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "or_pattern 'as' capture_pattern");
-                return cache.putResult(pos, AS_PATTERN_ID, _res);
+                return cache.putResult(_mark, AS_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s as_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4263,26 +4263,26 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '|'.closed_pattern+
             debugMessageln("%d> or_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "'|'.closed_pattern+");
             // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] patterns;
             if (
-                (patterns = (SSTNode[])_gather_67_rule) != null  // '|'.closed_pattern+
+                (patterns = (SSTNode[])_gather_67_rule()) != null  // '|'.closed_pattern+
             )
             {
                 debugMessageln("%d or_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'|'.closed_pattern+");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: asdl_seq_LEN ( patterns ) == 1 ? asdl_seq_GET ( patterns , 0 ) : _PyAST_MatchOr ( patterns , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'|'.closed_pattern+");
-                return cache.putResult(pos, OR_PATTERN_ID, _res);
+                return cache.putResult(_mark, OR_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s or_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4312,13 +4312,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> closed_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "literal_pattern");
             SSTNode literal_pattern_var;
             if (
-                (literal_pattern_var = literal_pattern_rule) != null  // literal_pattern
+                (literal_pattern_var = literal_pattern_rule()) != null  // literal_pattern
             )
             {
                 debugMessageln("%d closed_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "literal_pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "literal_pattern");
                 _res = literal_pattern_var;
-                return cache.putResult(pos, CLOSED_PATTERN_ID, _res);
+                return cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s closed_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4328,13 +4328,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> closed_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "capture_pattern");
             SSTNode capture_pattern_var;
             if (
-                (capture_pattern_var = capture_pattern_rule) != null  // capture_pattern
+                (capture_pattern_var = capture_pattern_rule()) != null  // capture_pattern
             )
             {
                 debugMessageln("%d closed_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "capture_pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "capture_pattern");
                 _res = capture_pattern_var;
-                return cache.putResult(pos, CLOSED_PATTERN_ID, _res);
+                return cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s closed_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4344,13 +4344,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> closed_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "wildcard_pattern");
             SSTNode wildcard_pattern_var;
             if (
-                (wildcard_pattern_var = wildcard_pattern_rule) != null  // wildcard_pattern
+                (wildcard_pattern_var = wildcard_pattern_rule()) != null  // wildcard_pattern
             )
             {
                 debugMessageln("%d closed_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "wildcard_pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "wildcard_pattern");
                 _res = wildcard_pattern_var;
-                return cache.putResult(pos, CLOSED_PATTERN_ID, _res);
+                return cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s closed_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4360,13 +4360,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> closed_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "value_pattern");
             SSTNode value_pattern_var;
             if (
-                (value_pattern_var = value_pattern_rule) != null  // value_pattern
+                (value_pattern_var = value_pattern_rule()) != null  // value_pattern
             )
             {
                 debugMessageln("%d closed_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "value_pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "value_pattern");
                 _res = value_pattern_var;
-                return cache.putResult(pos, CLOSED_PATTERN_ID, _res);
+                return cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s closed_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4376,13 +4376,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> closed_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "group_pattern");
             SSTNode group_pattern_var;
             if (
-                (group_pattern_var = group_pattern_rule) != null  // group_pattern
+                (group_pattern_var = group_pattern_rule()) != null  // group_pattern
             )
             {
                 debugMessageln("%d closed_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "group_pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "group_pattern");
                 _res = group_pattern_var;
-                return cache.putResult(pos, CLOSED_PATTERN_ID, _res);
+                return cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s closed_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4392,13 +4392,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> closed_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "sequence_pattern");
             SSTNode sequence_pattern_var;
             if (
-                (sequence_pattern_var = sequence_pattern_rule) != null  // sequence_pattern
+                (sequence_pattern_var = sequence_pattern_rule()) != null  // sequence_pattern
             )
             {
                 debugMessageln("%d closed_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "sequence_pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "sequence_pattern");
                 _res = sequence_pattern_var;
-                return cache.putResult(pos, CLOSED_PATTERN_ID, _res);
+                return cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s closed_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4408,13 +4408,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> closed_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "mapping_pattern");
             SSTNode mapping_pattern_var;
             if (
-                (mapping_pattern_var = mapping_pattern_rule) != null  // mapping_pattern
+                (mapping_pattern_var = mapping_pattern_rule()) != null  // mapping_pattern
             )
             {
                 debugMessageln("%d closed_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "mapping_pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "mapping_pattern");
                 _res = mapping_pattern_var;
-                return cache.putResult(pos, CLOSED_PATTERN_ID, _res);
+                return cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s closed_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4424,13 +4424,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> closed_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "class_pattern");
             SSTNode class_pattern_var;
             if (
-                (class_pattern_var = class_pattern_rule) != null  // class_pattern
+                (class_pattern_var = class_pattern_rule()) != null  // class_pattern
             )
             {
                 debugMessageln("%d closed_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "class_pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "class_pattern");
                 _res = class_pattern_var;
-                return cache.putResult(pos, CLOSED_PATTERN_ID, _res);
+                return cache.putResult(_mark, CLOSED_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s closed_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4456,12 +4456,12 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // signed_number !('+' | '-')
             debugMessageln("%d> literal_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "signed_number !('+' | '-')");
             SSTNode signed_number_var;
             if (
-                (signed_number_var = signed_number_rule) != null  // signed_number
+                (signed_number_var = signed_number_rule()) != null  // signed_number
                 &&
                 genLookahead__tmp_69_rule(false)
             )
@@ -4469,7 +4469,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "signed_number !('+' | '-')");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "signed_number !('+' | '-')");
                 _res = signed_number_var;
-                return cache.putResult(pos, LITERAL_PATTERN_ID, _res);
+                return cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s literal_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4481,24 +4481,24 @@ public final class Parser extends AbstractParser {
             SSTNode imag;
             SSTNode real;
             if (
-                (real = signed_number_rule) != null  // signed_number
+                (real = signed_number_rule()) != null  // signed_number
                 &&
                 (_literal = expect(14)) != null  // token='+'
                 &&
-                (imag = number_token) != null  // NUMBER
+                (imag = number_token()) != null  // NUMBER
             )
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "signed_number '+' NUMBER");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_BinOp ( real , Add , imag , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "signed_number '+' NUMBER");
-                return cache.putResult(pos, LITERAL_PATTERN_ID, _res);
+                return cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s literal_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4510,24 +4510,24 @@ public final class Parser extends AbstractParser {
             SSTNode imag;
             SSTNode real;
             if (
-                (real = signed_number_rule) != null  // signed_number
+                (real = signed_number_rule()) != null  // signed_number
                 &&
                 (_literal = expect(15)) != null  // token='-'
                 &&
-                (imag = number_token) != null  // NUMBER
+                (imag = number_token()) != null  // NUMBER
             )
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "signed_number '-' NUMBER");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_BinOp ( real , Sub , imag , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "signed_number '-' NUMBER");
-                return cache.putResult(pos, LITERAL_PATTERN_ID, _res);
+                return cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s literal_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4537,13 +4537,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> literal_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "strings");
             SSTNode strings_var;
             if (
-                (strings_var = strings_rule) != null  // strings
+                (strings_var = strings_rule()) != null  // strings
             )
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "strings");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "strings");
                 _res = strings_var;
-                return cache.putResult(pos, LITERAL_PATTERN_ID, _res);
+                return cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s literal_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4558,15 +4558,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'None'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Constant ( Py_None , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'None'");
-                return cache.putResult(pos, LITERAL_PATTERN_ID, _res);
+                return cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s literal_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4582,7 +4582,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'True'");
                 _res = factory.createBooleanLiteral(true,startToken.startOffset,startToken.endOffset);;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'True'");
-                return cache.putResult(pos, LITERAL_PATTERN_ID, _res);
+                return cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s literal_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4598,7 +4598,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'False'");
                 _res = factory.createBooleanLiteral(false,startToken.startOffset,startToken.endOffset);;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'False'");
-                return cache.putResult(pos, LITERAL_PATTERN_ID, _res);
+                return cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s literal_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4617,18 +4617,18 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // NUMBER
             debugMessageln("%d> signed_number[%d-%d]: %s", level, ' ', _mark, mark(), "NUMBER");
             SSTNode number_var;
             if (
-                (number_var = number_token) != null  // NUMBER
+                (number_var = number_token()) != null  // NUMBER
             )
             {
                 debugMessageln("%d signed_number[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NUMBER");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NUMBER");
                 _res = number_var;
-                return cache.putResult(pos, SIGNED_NUMBER_ID, _res);
+                return cache.putResult(_mark, SIGNED_NUMBER_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s signed_number[%d-%d]: %s failed!", level, ' ',
@@ -4641,20 +4641,20 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(15)) != null  // token='-'
                 &&
-                (number = number_token) != null  // NUMBER
+                (number = number_token()) != null  // NUMBER
             )
             {
                 debugMessageln("%d signed_number[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'-' NUMBER");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_UnaryOp ( USub , number , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'-' NUMBER");
-                return cache.putResult(pos, SIGNED_NUMBER_ID, _res);
+                return cache.putResult(_mark, SIGNED_NUMBER_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s signed_number[%d-%d]: %s failed!", level, ' ',
@@ -4678,7 +4678,7 @@ public final class Parser extends AbstractParser {
             if (
                 genLookahead_expect_SOFT_KEYWORD(false, "_")
                 &&
-                (name = name_token) != null  // NAME
+                (name = name_token()) != null  // NAME
                 &&
                 genLookahead__tmp_70_rule(false)
             )
@@ -4687,7 +4687,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_set_expr_context ( p , name , Store )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "!'_' NAME !('.' | '(' | '=')");
-                return cache.putResult(pos, CAPTURE_PATTERN_ID, _res);
+                return cache.putResult(_mark, CAPTURE_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s capture_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4706,7 +4706,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // "_"
             debugMessageln("%d> wildcard_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "\"_\"");
             Token _keyword;
@@ -4716,15 +4716,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d wildcard_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "\"_\"");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Name ( CHECK ( PyObject * , _PyPegen_new_identifier ( p , "_" ) ) , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'_'");
-                return cache.putResult(pos, WILDCARD_PATTERN_ID, _res);
+                return cache.putResult(_mark, WILDCARD_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s wildcard_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4746,7 +4746,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> value_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "attr !('.' | '(' | '=')");
             SSTNode attr;
             if (
-                (attr = attr_rule) != null  // attr
+                (attr = attr_rule()) != null  // attr
                 &&
                 genLookahead__tmp_71_rule(false)
             )
@@ -4755,7 +4755,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: attr
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "attr !('.' | '(' | '=')");
-                return cache.putResult(pos, VALUE_PATTERN_ID, _res);
+                return cache.putResult(_mark, VALUE_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s value_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4782,12 +4782,12 @@ public final class Parser extends AbstractParser {
         int _resmark = mark();
         while (true) {
             try {
-                cache.putResult(pos, ATTR_ID, _res);
+                cache.putResult(_mark, ATTR_ID, _res);
             } catch (Exception e) {
                 level--;
                 return _res;
             }
-            reset(pos);
+            reset(_mark);
             Object _raw = attr_raw();
             if (_raw == null || mark() <= _resmark)
                 break;
@@ -4804,31 +4804,31 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // name_or_attr '.' NAME
             debugMessageln("%d> attr[%d-%d]: %s", level, ' ', _mark, mark(), "name_or_attr '.' NAME");
             Token _literal;
             SSTNode attr;
             SSTNode value;
             if (
-                (value = name_or_attr_rule) != null  // name_or_attr
+                (value = name_or_attr_rule()) != null  // name_or_attr
                 &&
                 (_literal = expect(23)) != null  // token='.'
                 &&
-                (attr = name_token) != null  // NAME
+                (attr = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d attr[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "name_or_attr '.' NAME");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Attribute ( value , attr -> v . Name . id , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "name_or_attr '.' NAME");
-                return cache.putResult(pos, ATTR_ID, _res);
+                return cache.putResult(_mark, ATTR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s attr[%d-%d]: %s failed!", level, ' ',
@@ -4851,13 +4851,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> name_or_attr[%d-%d]: %s", level, ' ', _mark, mark(), "attr");
             SSTNode attr_var;
             if (
-                (attr_var = attr_rule) != null  // attr
+                (attr_var = attr_rule()) != null  // attr
             )
             {
                 debugMessageln("%d name_or_attr[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "attr");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "attr");
                 _res = attr_var;
-                return cache.putResult(pos, NAME_OR_ATTR_ID, _res);
+                return cache.putResult(_mark, NAME_OR_ATTR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s name_or_attr[%d-%d]: %s failed!", level, ' ',
@@ -4867,13 +4867,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> name_or_attr[%d-%d]: %s", level, ' ', _mark, mark(), "NAME");
             SSTNode name_var;
             if (
-                (name_var = name_token) != null  // NAME
+                (name_var = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d name_or_attr[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NAME");
                 _res = name_var;
-                return cache.putResult(pos, NAME_OR_ATTR_ID, _res);
+                return cache.putResult(_mark, NAME_OR_ATTR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s name_or_attr[%d-%d]: %s failed!", level, ' ',
@@ -4899,7 +4899,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                (pattern = pattern_rule) != null  // pattern
+                (pattern = pattern_rule()) != null  // pattern
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
@@ -4908,7 +4908,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: pattern
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' pattern ')'");
-                return cache.putResult(pos, GROUP_PATTERN_ID, _res);
+                return cache.putResult(_mark, GROUP_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s group_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4927,7 +4927,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '[' maybe_sequence_pattern? ']'
             debugMessageln("%d> sequence_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "'[' maybe_sequence_pattern? ']'");
             // TODO replacing asdl_seq* --> SSTNode[]
@@ -4938,22 +4938,22 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(9)) != null  // token='['
                 &&
                 // TODO replacing asdl_seq* --> SSTNode[]
-                ((values = maybe_sequence_pattern_rule) != null || true)  // maybe_sequence_pattern?
+                ((values = maybe_sequence_pattern_rule()) != null || true)  // maybe_sequence_pattern?
                 &&
                 (_literal_1 = expect(10)) != null  // token=']'
             )
             {
                 debugMessageln("%d sequence_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'[' maybe_sequence_pattern? ']'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_List ( values , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' maybe_sequence_pattern? ']'");
-                return cache.putResult(pos, SEQUENCE_PATTERN_ID, _res);
+                return cache.putResult(_mark, SEQUENCE_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s sequence_pattern[%d-%d]: %s failed!", level, ' ',
@@ -4969,22 +4969,22 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(7)) != null  // token='('
                 &&
                 // TODO replacing asdl_seq* --> SSTNode[]
-                ((values = open_sequence_pattern_rule) != null || true)  // open_sequence_pattern?
+                ((values = open_sequence_pattern_rule()) != null || true)  // open_sequence_pattern?
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
                 debugMessageln("%d sequence_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' open_sequence_pattern? ')'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Tuple ( values , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' open_sequence_pattern? ')'");
-                return cache.putResult(pos, SEQUENCE_PATTERN_ID, _res);
+                return cache.putResult(_mark, SEQUENCE_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s sequence_pattern[%d-%d]: %s failed!", level, ' ',
@@ -5010,19 +5010,19 @@ public final class Parser extends AbstractParser {
             SSTNode value;
             Object values;
             if (
-                (value = maybe_star_pattern_rule) != null  // maybe_star_pattern
+                (value = maybe_star_pattern_rule()) != null  // maybe_star_pattern
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing asdl_seq* --> SSTNode[]
-                ((values = maybe_sequence_pattern_rule) != null || true)  // maybe_sequence_pattern?
+                ((values = maybe_sequence_pattern_rule()) != null || true)  // maybe_sequence_pattern?
             )
             {
                 debugMessageln("%d open_sequence_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "maybe_star_pattern ',' maybe_sequence_pattern?");
                 // TODO: node.action: _PyPegen_seq_insert_in_front ( p , value , values )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "maybe_star_pattern ',' maybe_sequence_pattern?");
-                return cache.putResult(pos, OPEN_SEQUENCE_PATTERN_ID, _res);
+                return cache.putResult(_mark, OPEN_SEQUENCE_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s open_sequence_pattern[%d-%d]: %s failed!", level, ' ',
@@ -5046,7 +5046,7 @@ public final class Parser extends AbstractParser {
             Object _opt_var;
             SSTNode[] values;
             if (
-                (values = _gather_72_rule) != null  // ','.maybe_star_pattern+
+                (values = _gather_72_rule()) != null  // ','.maybe_star_pattern+
                 &&
                 ((_opt_var = expect(12)) != null || true)  // ','?
             )
@@ -5055,7 +5055,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: values
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.maybe_star_pattern+ ','?");
-                return cache.putResult(pos, MAYBE_SEQUENCE_PATTERN_ID, _res);
+                return cache.putResult(_mark, MAYBE_SEQUENCE_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s maybe_sequence_pattern[%d-%d]: %s failed!", level, ' ',
@@ -5077,13 +5077,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> maybe_star_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "star_pattern");
             SSTNode star_pattern_var;
             if (
-                (star_pattern_var = star_pattern_rule) != null  // star_pattern
+                (star_pattern_var = star_pattern_rule()) != null  // star_pattern
             )
             {
                 debugMessageln("%d maybe_star_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_pattern");
                 _res = star_pattern_var;
-                return cache.putResult(pos, MAYBE_STAR_PATTERN_ID, _res);
+                return cache.putResult(_mark, MAYBE_STAR_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s maybe_star_pattern[%d-%d]: %s failed!", level, ' ',
@@ -5093,13 +5093,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> maybe_star_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "pattern");
             SSTNode pattern_var;
             if (
-                (pattern_var = pattern_rule) != null  // pattern
+                (pattern_var = pattern_rule()) != null  // pattern
             )
             {
                 debugMessageln("%d maybe_star_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "pattern");
                 _res = pattern_var;
-                return cache.putResult(pos, MAYBE_STAR_PATTERN_ID, _res);
+                return cache.putResult(_mark, MAYBE_STAR_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s maybe_star_pattern[%d-%d]: %s failed!", level, ' ',
@@ -5118,7 +5118,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '*' (capture_pattern | wildcard_pattern)
             debugMessageln("%d> star_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "'*' (capture_pattern | wildcard_pattern)");
             Token _literal;
@@ -5126,20 +5126,20 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(16)) != null  // token='*'
                 &&
-                (value = _tmp_74_rule) != null  // capture_pattern | wildcard_pattern
+                (value = _tmp_74_rule()) != null  // capture_pattern | wildcard_pattern
             )
             {
                 debugMessageln("%d star_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' (capture_pattern | wildcard_pattern)");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Starred ( value , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' (capture_pattern | wildcard_pattern)");
-                return cache.putResult(pos, STAR_PATTERN_ID, _res);
+                return cache.putResult(_mark, STAR_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_pattern[%d-%d]: %s failed!", level, ' ',
@@ -5158,7 +5158,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '{' items_pattern? '}'
             debugMessageln("%d> mapping_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "'{' items_pattern? '}'");
             // TODO replacing asdl_seq* --> SSTNode[]
@@ -5169,22 +5169,22 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(25)) != null  // token='{'
                 &&
                 // TODO replacing asdl_seq* --> SSTNode[]
-                ((items = items_pattern_rule) != null || true)  // items_pattern?
+                ((items = items_pattern_rule()) != null || true)  // items_pattern?
                 &&
                 (_literal_1 = expect(26)) != null  // token='}'
             )
             {
                 debugMessageln("%d mapping_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'{' items_pattern? '}'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Dict ( CHECK ( asdl_expr_seq * , _PyPegen_get_keys ( p , items ) ) , CHECK ( asdl_expr_seq * , _PyPegen_get_values ( p , items ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' items_pattern? '}'");
-                return cache.putResult(pos, MAPPING_PATTERN_ID, _res);
+                return cache.putResult(_mark, MAPPING_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s mapping_pattern[%d-%d]: %s failed!", level, ' ',
@@ -5208,7 +5208,7 @@ public final class Parser extends AbstractParser {
             Object _opt_var;
             SSTNode[] items;
             if (
-                (items = _gather_75_rule) != null  // ','.key_value_pattern+
+                (items = _gather_75_rule()) != null  // ','.key_value_pattern+
                 &&
                 ((_opt_var = expect(12)) != null || true)  // ','?
             )
@@ -5217,7 +5217,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: items
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.key_value_pattern+ ','?");
-                return cache.putResult(pos, ITEMS_PATTERN_ID, _res);
+                return cache.putResult(_mark, ITEMS_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s items_pattern[%d-%d]: %s failed!", level, ' ',
@@ -5242,18 +5242,18 @@ public final class Parser extends AbstractParser {
             Object key;
             SSTNode value;
             if (
-                (key = _tmp_77_rule) != null  // literal_pattern | value_pattern
+                (key = _tmp_77_rule()) != null  // literal_pattern | value_pattern
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (value = pattern_rule) != null  // pattern
+                (value = pattern_rule()) != null  // pattern
             )
             {
                 debugMessageln("%d key_value_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "(literal_pattern | value_pattern) ':' pattern");
                 // TODO: node.action: _PyPegen_key_value_pair ( p , key , value )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "(literal_pattern | value_pattern) ':' pattern");
-                return cache.putResult(pos, KEY_VALUE_PATTERN_ID, _res);
+                return cache.putResult(_mark, KEY_VALUE_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s key_value_pattern[%d-%d]: %s failed!", level, ' ',
@@ -5265,13 +5265,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] double_star_pattern_var;
             if (
                 // TODO replacing KeyValuePair* --> SSTNode[]
-                (double_star_pattern_var = double_star_pattern_rule) != null  // double_star_pattern
+                (double_star_pattern_var = double_star_pattern_rule()) != null  // double_star_pattern
             )
             {
                 debugMessageln("%d key_value_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "double_star_pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "double_star_pattern");
                 _res = double_star_pattern_var;
-                return cache.putResult(pos, KEY_VALUE_PATTERN_ID, _res);
+                return cache.putResult(_mark, KEY_VALUE_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s key_value_pattern[%d-%d]: %s failed!", level, ' ',
@@ -5297,14 +5297,14 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(35)) != null  // token='**'
                 &&
-                (value = capture_pattern_rule) != null  // capture_pattern
+                (value = capture_pattern_rule()) != null  // capture_pattern
             )
             {
                 debugMessageln("%d double_star_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'**' capture_pattern");
                 // TODO: node.action: _PyPegen_key_value_pair ( p , NULL , value )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' capture_pattern");
-                return cache.putResult(pos, DOUBLE_STAR_PATTERN_ID, _res);
+                return cache.putResult(_mark, DOUBLE_STAR_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s double_star_pattern[%d-%d]: %s failed!", level, ' ',
@@ -5327,14 +5327,14 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // name_or_attr '(' ')'
             debugMessageln("%d> class_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "name_or_attr '(' ')'");
             Token _literal;
             Token _literal_1;
             SSTNode func;
             if (
-                (func = name_or_attr_rule) != null  // name_or_attr
+                (func = name_or_attr_rule()) != null  // name_or_attr
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
@@ -5343,15 +5343,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d class_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "name_or_attr '(' ')'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Call ( func , NULL , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "name_or_attr '(' ')'");
-                return cache.putResult(pos, CLASS_PATTERN_ID, _res);
+                return cache.putResult(_mark, CLASS_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s class_pattern[%d-%d]: %s failed!", level, ' ',
@@ -5366,12 +5366,12 @@ public final class Parser extends AbstractParser {
             SSTNode[] args;
             SSTNode func;
             if (
-                (func = name_or_attr_rule) != null  // name_or_attr
+                (func = name_or_attr_rule()) != null  // name_or_attr
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (args = positional_patterns_rule) != null  // positional_patterns
+                (args = positional_patterns_rule()) != null  // positional_patterns
                 &&
                 ((_opt_var = expect(12)) != null || true)  // ','?
                 &&
@@ -5380,15 +5380,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d class_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "name_or_attr '(' positional_patterns ','? ')'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Call ( func , args , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "name_or_attr '(' positional_patterns ','? ')'");
-                return cache.putResult(pos, CLASS_PATTERN_ID, _res);
+                return cache.putResult(_mark, CLASS_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s class_pattern[%d-%d]: %s failed!", level, ' ',
@@ -5403,12 +5403,12 @@ public final class Parser extends AbstractParser {
             SSTNode func;
             SSTNode[] keywords;
             if (
-                (func = name_or_attr_rule) != null  // name_or_attr
+                (func = name_or_attr_rule()) != null  // name_or_attr
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
                 // TODO replacing asdl_keyword_seq* --> SSTNode[]
-                (keywords = keyword_patterns_rule) != null  // keyword_patterns
+                (keywords = keyword_patterns_rule()) != null  // keyword_patterns
                 &&
                 ((_opt_var = expect(12)) != null || true)  // ','?
                 &&
@@ -5417,15 +5417,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d class_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "name_or_attr '(' keyword_patterns ','? ')'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Call ( func , NULL , keywords , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "name_or_attr '(' keyword_patterns ','? ')'");
-                return cache.putResult(pos, CLASS_PATTERN_ID, _res);
+                return cache.putResult(_mark, CLASS_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s class_pattern[%d-%d]: %s failed!", level, ' ',
@@ -5443,17 +5443,17 @@ public final class Parser extends AbstractParser {
             SSTNode func;
             SSTNode[] keywords;
             if (
-                (func = name_or_attr_rule) != null  // name_or_attr
+                (func = name_or_attr_rule()) != null  // name_or_attr
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (args = positional_patterns_rule) != null  // positional_patterns
+                (args = positional_patterns_rule()) != null  // positional_patterns
                 &&
                 (_literal_1 = expect(12)) != null  // token=','
                 &&
                 // TODO replacing asdl_keyword_seq* --> SSTNode[]
-                (keywords = keyword_patterns_rule) != null  // keyword_patterns
+                (keywords = keyword_patterns_rule()) != null  // keyword_patterns
                 &&
                 ((_opt_var = expect(12)) != null || true)  // ','?
                 &&
@@ -5462,15 +5462,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d class_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Call ( func , args , keywords , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')'");
-                return cache.putResult(pos, CLASS_PATTERN_ID, _res);
+                return cache.putResult(_mark, CLASS_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s class_pattern[%d-%d]: %s failed!", level, ' ',
@@ -5494,14 +5494,14 @@ public final class Parser extends AbstractParser {
             // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] args;
             if (
-                (args = (SSTNode[])_gather_78_rule) != null  // ','.pattern+
+                (args = (SSTNode[])_gather_78_rule()) != null  // ','.pattern+
             )
             {
                 debugMessageln("%d positional_patterns[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.pattern+");
                 // TODO: node.action: args
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.pattern+");
-                return cache.putResult(pos, POSITIONAL_PATTERNS_ID, _res);
+                return cache.putResult(_mark, POSITIONAL_PATTERNS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s positional_patterns[%d-%d]: %s failed!", level, ' ',
@@ -5525,14 +5525,14 @@ public final class Parser extends AbstractParser {
             // TODO replacing asdl_keyword_seq* --> SSTNode[]
             SSTNode[] keywords;
             if (
-                (keywords = (SSTNode[])_gather_80_rule) != null  // ','.keyword_pattern+
+                (keywords = (SSTNode[])_gather_80_rule()) != null  // ','.keyword_pattern+
             )
             {
                 debugMessageln("%d keyword_patterns[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.keyword_pattern+");
                 // TODO: node.action: keywords
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.keyword_pattern+");
-                return cache.putResult(pos, KEYWORD_PATTERNS_ID, _res);
+                return cache.putResult(_mark, KEYWORD_PATTERNS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s keyword_patterns[%d-%d]: %s failed!", level, ' ',
@@ -5552,31 +5552,31 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // NAME '=' pattern
             debugMessageln("%d> keyword_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "NAME '=' pattern");
             Token _literal;
             SSTNode arg;
             SSTNode value;
             if (
-                (arg = name_token) != null  // NAME
+                (arg = name_token()) != null  // NAME
                 &&
                 (_literal = expect(22)) != null  // token='='
                 &&
-                (value = pattern_rule) != null  // pattern
+                (value = pattern_rule()) != null  // pattern
             )
             {
                 debugMessageln("%d keyword_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME '=' pattern");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_keyword ( arg -> v . Name . id , value , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME '=' pattern");
-                return cache.putResult(pos, KEYWORD_PATTERN_ID, _res);
+                return cache.putResult(_mark, KEYWORD_PATTERN_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s keyword_pattern[%d-%d]: %s failed!", level, ' ',
@@ -5596,7 +5596,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'return' star_expressions?
             debugMessageln("%d> return_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'return' star_expressions?");
             Token _keyword;
@@ -5604,20 +5604,20 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(500)) != null  // token='return'
                 &&
-                ((a = _tmp_82_rule) != null || true)  // star_expressions?
+                ((a = _tmp_82_rule()) != null || true)  // star_expressions?
             )
             {
                 debugMessageln("%d return_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'return' star_expressions?");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Return ( a , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'return' star_expressions?");
-                return cache.putResult(pos, RETURN_STMT_ID, _res);
+                return cache.putResult(_mark, RETURN_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s return_stmt[%d-%d]: %s failed!", level, ' ',
@@ -5637,7 +5637,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'raise' expression ['from' expression]
             debugMessageln("%d> raise_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'raise' expression ['from' expression]");
             Token _keyword;
@@ -5646,22 +5646,22 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(501)) != null  // token='raise'
                 &&
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
                 &&
-                ((b = _tmp_83_rule) != null || true)  // ['from' expression]
+                ((b = _tmp_83_rule()) != null || true)  // ['from' expression]
             )
             {
                 debugMessageln("%d raise_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'raise' expression ['from' expression]");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Raise ( a , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'raise' expression ['from' expression]");
-                return cache.putResult(pos, RAISE_STMT_ID, _res);
+                return cache.putResult(_mark, RAISE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s raise_stmt[%d-%d]: %s failed!", level, ' ',
@@ -5676,15 +5676,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d raise_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'raise'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Raise ( NULL , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'raise'");
-                return cache.putResult(pos, RAISE_STMT_ID, _res);
+                return cache.putResult(_mark, RAISE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s raise_stmt[%d-%d]: %s failed!", level, ' ',
@@ -5711,17 +5711,17 @@ public final class Parser extends AbstractParser {
             SSTNode f;
             if (
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (d = decorators_rule) != null  // decorators
+                (d = decorators_rule()) != null  // decorators
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (f = function_def_raw_rule) != null  // function_def_raw
+                (f = function_def_raw_rule()) != null  // function_def_raw
             )
             {
                 debugMessageln("%d function_def[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "decorators function_def_raw");
                 // TODO: node.action: _PyPegen_function_def_decorators ( p , d , f )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "decorators function_def_raw");
-                return cache.putResult(pos, FUNCTION_DEF_ID, _res);
+                return cache.putResult(_mark, FUNCTION_DEF_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s function_def[%d-%d]: %s failed!", level, ' ',
@@ -5733,13 +5733,13 @@ public final class Parser extends AbstractParser {
             SSTNode function_def_raw_var;
             if (
                 // TODO replacing stmt_ty --> SSTNode
-                (function_def_raw_var = function_def_raw_rule) != null  // function_def_raw
+                (function_def_raw_var = function_def_raw_rule()) != null  // function_def_raw
             )
             {
                 debugMessageln("%d function_def[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "function_def_raw");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "function_def_raw");
                 _res = function_def_raw_var;
-                return cache.putResult(pos, FUNCTION_DEF_ID, _res);
+                return cache.putResult(_mark, FUNCTION_DEF_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s function_def[%d-%d]: %s failed!", level, ' ',
@@ -5761,7 +5761,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block
             debugMessageln("%d> function_def_raw[%d-%d]: %s", level, ' ', _mark, mark(), "'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
             Token _keyword;
@@ -5776,34 +5776,34 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(526)) != null  // token='def'
                 &&
-                (n = name_token) != null  // NAME
+                (n = name_token()) != null  // NAME
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
-                ((params = _tmp_84_rule) != null || true)  // params?
+                ((params = _tmp_84_rule()) != null || true)  // params?
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
                 &&
-                ((a = _tmp_85_rule) != null || true)  // ['->' expression]
+                ((a = _tmp_85_rule()) != null || true)  // ['->' expression]
                 &&
                 (_literal_2 = expect_forced_token(11, ":")) != null  // forced_token=':'
                 &&
-                ((tc = _tmp_86_rule) != null || true)  // func_type_comment?
+                ((tc = _tmp_86_rule()) != null || true)  // func_type_comment?
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
             )
             {
                 debugMessageln("%d function_def_raw[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
-                return cache.putResult(pos, FUNCTION_DEF_RAW_ID, _res);
+                return cache.putResult(_mark, FUNCTION_DEF_RAW_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s function_def_raw[%d-%d]: %s failed!", level, ' ',
@@ -5826,34 +5826,34 @@ public final class Parser extends AbstractParser {
                 &&
                 (_keyword = expect(526)) != null  // token='def'
                 &&
-                (n = name_token) != null  // NAME
+                (n = name_token()) != null  // NAME
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
-                ((params = _tmp_87_rule) != null || true)  // params?
+                ((params = _tmp_87_rule()) != null || true)  // params?
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
                 &&
-                ((a = _tmp_88_rule) != null || true)  // ['->' expression]
+                ((a = _tmp_88_rule()) != null || true)  // ['->' expression]
                 &&
                 (_literal_2 = expect_forced_token(11, ":")) != null  // forced_token=':'
                 &&
-                ((tc = _tmp_89_rule) != null || true)  // func_type_comment?
+                ((tc = _tmp_89_rule()) != null || true)  // func_type_comment?
                 &&
-                (b = block_rule) != null  // block
+                (b = block_rule()) != null  // block
             )
             {
                 debugMessageln("%d function_def_raw[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC 'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async functions are" , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC 'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
-                return cache.putResult(pos, FUNCTION_DEF_RAW_ID, _res);
+                return cache.putResult(_mark, FUNCTION_DEF_RAW_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s function_def_raw[%d-%d]: %s failed!", level, ' ',
@@ -5890,7 +5890,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d func_type_comment[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NEWLINE TYPE_COMMENT &(NEWLINE INDENT)");
                 _res = t;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NEWLINE TYPE_COMMENT &(NEWLINE INDENT)");
-                return cache.putResult(pos, FUNC_TYPE_COMMENT_ID, _res);
+                return cache.putResult(_mark, FUNC_TYPE_COMMENT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s func_type_comment[%d-%d]: %s failed!", level, ' ',
@@ -5900,13 +5900,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> func_type_comment[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_double_type_comments");
             Object invalid_double_type_comments_var;
             if (
-                (invalid_double_type_comments_var = invalid_double_type_comments_rule) != null  // invalid_double_type_comments
+                (invalid_double_type_comments_var = invalid_double_type_comments_rule()) != null  // invalid_double_type_comments
             )
             {
                 debugMessageln("%d func_type_comment[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_double_type_comments");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_double_type_comments");
                 _res = invalid_double_type_comments_var;
-                return cache.putResult(pos, FUNC_TYPE_COMMENT_ID, _res);
+                return cache.putResult(_mark, FUNC_TYPE_COMMENT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s func_type_comment[%d-%d]: %s failed!", level, ' ',
@@ -5922,7 +5922,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d func_type_comment[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "TYPE_COMMENT");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "TYPE_COMMENT");
                 _res = type_comment_var;
-                return cache.putResult(pos, FUNC_TYPE_COMMENT_ID, _res);
+                return cache.putResult(_mark, FUNC_TYPE_COMMENT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s func_type_comment[%d-%d]: %s failed!", level, ' ',
@@ -5945,13 +5945,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> params[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_parameters");
             Object invalid_parameters_var;
             if (
-                (invalid_parameters_var = invalid_parameters_rule) != null  // invalid_parameters
+                (invalid_parameters_var = invalid_parameters_rule()) != null  // invalid_parameters
             )
             {
                 debugMessageln("%d params[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_parameters");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_parameters");
                 _res = invalid_parameters_var;
-                return cache.putResult(pos, PARAMS_ID, _res);
+                return cache.putResult(_mark, PARAMS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s params[%d-%d]: %s failed!", level, ' ',
@@ -5963,13 +5963,13 @@ public final class Parser extends AbstractParser {
             SSTNode parameters_var;
             if (
                 // TODO replacing arguments_ty --> SSTNode
-                (parameters_var = parameters_rule) != null  // parameters
+                (parameters_var = parameters_rule()) != null  // parameters
             )
             {
                 debugMessageln("%d params[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "parameters");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "parameters");
                 _res = parameters_var;
-                return cache.putResult(pos, PARAMS_ID, _res);
+                return cache.putResult(_mark, PARAMS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s params[%d-%d]: %s failed!", level, ' ',
@@ -6003,20 +6003,20 @@ public final class Parser extends AbstractParser {
             Object d;
             if (
                 // TODO replacing asdl_arg_seq* --> SSTNode[]
-                (a = slash_no_default_rule) != null  // slash_no_default
+                (a = slash_no_default_rule()) != null  // slash_no_default
                 &&
-                (b = (SSTNode[])_loop0_91_rule) != null  // param_no_default*
+                (b = (SSTNode[])_loop0_91_rule()) != null  // param_no_default*
                 &&
-                (c = _loop0_92_rule) != null  // param_with_default*
+                (c = _loop0_92_rule()) != null  // param_with_default*
                 &&
-                ((d = _tmp_93_rule) != null || true)  // star_etc?
+                ((d = _tmp_93_rule()) != null || true)  // star_etc?
             )
             {
                 debugMessageln("%d parameters[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "slash_no_default param_no_default* param_with_default* star_etc?");
                 // TODO: node.action: _PyPegen_make_arguments ( p , a , NULL , b , c , d )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "slash_no_default param_no_default* param_with_default* star_etc?");
-                return cache.putResult(pos, PARAMETERS_ID, _res);
+                return cache.putResult(_mark, PARAMETERS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s parameters[%d-%d]: %s failed!", level, ' ',
@@ -6030,18 +6030,18 @@ public final class Parser extends AbstractParser {
             Object c;
             if (
                 // TODO replacing SlashWithDefault* --> SSTNode[]
-                (a = slash_with_default_rule) != null  // slash_with_default
+                (a = slash_with_default_rule()) != null  // slash_with_default
                 &&
-                (b = _loop0_94_rule) != null  // param_with_default*
+                (b = _loop0_94_rule()) != null  // param_with_default*
                 &&
-                ((c = _tmp_95_rule) != null || true)  // star_etc?
+                ((c = _tmp_95_rule()) != null || true)  // star_etc?
             )
             {
                 debugMessageln("%d parameters[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "slash_with_default param_with_default* star_etc?");
                 // TODO: node.action: _PyPegen_make_arguments ( p , NULL , a , NULL , b , c )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "slash_with_default param_with_default* star_etc?");
-                return cache.putResult(pos, PARAMETERS_ID, _res);
+                return cache.putResult(_mark, PARAMETERS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s parameters[%d-%d]: %s failed!", level, ' ',
@@ -6054,18 +6054,18 @@ public final class Parser extends AbstractParser {
             SSTNode[] b;
             Object c;
             if (
-                (a = (SSTNode[])_loop1_96_rule) != null  // param_no_default+
+                (a = (SSTNode[])_loop1_96_rule()) != null  // param_no_default+
                 &&
-                (b = _loop0_97_rule) != null  // param_with_default*
+                (b = _loop0_97_rule()) != null  // param_with_default*
                 &&
-                ((c = _tmp_98_rule) != null || true)  // star_etc?
+                ((c = _tmp_98_rule()) != null || true)  // star_etc?
             )
             {
                 debugMessageln("%d parameters[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "param_no_default+ param_with_default* star_etc?");
                 // TODO: node.action: _PyPegen_make_arguments ( p , NULL , NULL , a , b , c )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default+ param_with_default* star_etc?");
-                return cache.putResult(pos, PARAMETERS_ID, _res);
+                return cache.putResult(_mark, PARAMETERS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s parameters[%d-%d]: %s failed!", level, ' ',
@@ -6076,16 +6076,16 @@ public final class Parser extends AbstractParser {
             SSTNode[] a;
             Object b;
             if (
-                (a = _loop1_99_rule) != null  // param_with_default+
+                (a = _loop1_99_rule()) != null  // param_with_default+
                 &&
-                ((b = _tmp_100_rule) != null || true)  // star_etc?
+                ((b = _tmp_100_rule()) != null || true)  // star_etc?
             )
             {
                 debugMessageln("%d parameters[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "param_with_default+ star_etc?");
                 // TODO: node.action: _PyPegen_make_arguments ( p , NULL , NULL , NULL , a , b )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_with_default+ star_etc?");
-                return cache.putResult(pos, PARAMETERS_ID, _res);
+                return cache.putResult(_mark, PARAMETERS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s parameters[%d-%d]: %s failed!", level, ' ',
@@ -6097,14 +6097,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] a;
             if (
                 // TODO replacing StarEtc* --> SSTNode[]
-                (a = star_etc_rule) != null  // star_etc
+                (a = star_etc_rule()) != null  // star_etc
             )
             {
                 debugMessageln("%d parameters[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_etc");
                 // TODO: node.action: _PyPegen_make_arguments ( p , NULL , NULL , NULL , NULL , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_etc");
-                return cache.putResult(pos, PARAMETERS_ID, _res);
+                return cache.putResult(_mark, PARAMETERS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s parameters[%d-%d]: %s failed!", level, ' ',
@@ -6130,7 +6130,7 @@ public final class Parser extends AbstractParser {
             Token _literal_1;
             SSTNode[] a;
             if (
-                (a = (SSTNode[])_loop1_101_rule) != null  // param_no_default+
+                (a = (SSTNode[])_loop1_101_rule()) != null  // param_no_default+
                 &&
                 (_literal = expect(17)) != null  // token='/'
                 &&
@@ -6140,7 +6140,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d slash_no_default[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "param_no_default+ '/' ','");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default+ '/' ','");
-                return cache.putResult(pos, SLASH_NO_DEFAULT_ID, _res);
+                return cache.putResult(_mark, SLASH_NO_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s slash_no_default[%d-%d]: %s failed!", level, ' ',
@@ -6152,7 +6152,7 @@ public final class Parser extends AbstractParser {
             Token _literal;
             SSTNode[] a;
             if (
-                (a = (SSTNode[])_loop1_102_rule) != null  // param_no_default+
+                (a = (SSTNode[])_loop1_102_rule()) != null  // param_no_default+
                 &&
                 (_literal = expect(17)) != null  // token='/'
                 &&
@@ -6162,7 +6162,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d slash_no_default[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "param_no_default+ '/' &')'");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default+ '/' &')'");
-                return cache.putResult(pos, SLASH_NO_DEFAULT_ID, _res);
+                return cache.putResult(_mark, SLASH_NO_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s slash_no_default[%d-%d]: %s failed!", level, ' ',
@@ -6190,9 +6190,9 @@ public final class Parser extends AbstractParser {
             SSTNode[] a;
             SSTNode[] b;
             if (
-                (a = _loop0_103_rule) != null  // param_no_default*
+                (a = _loop0_103_rule()) != null  // param_no_default*
                 &&
-                (b = _loop1_104_rule) != null  // param_with_default+
+                (b = _loop1_104_rule()) != null  // param_with_default+
                 &&
                 (_literal = expect(17)) != null  // token='/'
                 &&
@@ -6203,7 +6203,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default* param_with_default+ '/' ','");
-                return cache.putResult(pos, SLASH_WITH_DEFAULT_ID, _res);
+                return cache.putResult(_mark, SLASH_WITH_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s slash_with_default[%d-%d]: %s failed!", level, ' ',
@@ -6215,9 +6215,9 @@ public final class Parser extends AbstractParser {
             SSTNode[] a;
             SSTNode[] b;
             if (
-                (a = _loop0_105_rule) != null  // param_no_default*
+                (a = _loop0_105_rule()) != null  // param_no_default*
                 &&
-                (b = _loop1_106_rule) != null  // param_with_default+
+                (b = _loop1_106_rule()) != null  // param_with_default+
                 &&
                 (_literal = expect(17)) != null  // token='/'
                 &&
@@ -6228,7 +6228,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default* param_with_default+ '/' &')'");
-                return cache.putResult(pos, SLASH_WITH_DEFAULT_ID, _res);
+                return cache.putResult(_mark, SLASH_WITH_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s slash_with_default[%d-%d]: %s failed!", level, ' ',
@@ -6262,18 +6262,18 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(16)) != null  // token='*'
                 &&
                 // TODO replacing arg_ty --> SSTNode
-                (a = param_no_default_rule) != null  // param_no_default
+                (a = param_no_default_rule()) != null  // param_no_default
                 &&
-                (b = _loop0_107_rule) != null  // param_maybe_default*
+                (b = _loop0_107_rule()) != null  // param_maybe_default*
                 &&
-                ((c = _tmp_108_rule) != null || true)  // kwds?
+                ((c = _tmp_108_rule()) != null || true)  // kwds?
             )
             {
                 debugMessageln("%d star_etc[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' param_no_default param_maybe_default* kwds?");
                 // TODO: node.action: _PyPegen_star_etc ( p , a , b , c )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' param_no_default param_maybe_default* kwds?");
-                return cache.putResult(pos, STAR_ETC_ID, _res);
+                return cache.putResult(_mark, STAR_ETC_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_etc[%d-%d]: %s failed!", level, ' ',
@@ -6290,16 +6290,16 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal_1 = expect(12)) != null  // token=','
                 &&
-                (b = _loop1_109_rule) != null  // param_maybe_default+
+                (b = _loop1_109_rule()) != null  // param_maybe_default+
                 &&
-                ((c = _tmp_110_rule) != null || true)  // kwds?
+                ((c = _tmp_110_rule()) != null || true)  // kwds?
             )
             {
                 debugMessageln("%d star_etc[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' ',' param_maybe_default+ kwds?");
                 // TODO: node.action: _PyPegen_star_etc ( p , NULL , b , c )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' ',' param_maybe_default+ kwds?");
-                return cache.putResult(pos, STAR_ETC_ID, _res);
+                return cache.putResult(_mark, STAR_ETC_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_etc[%d-%d]: %s failed!", level, ' ',
@@ -6311,14 +6311,14 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (a = kwds_rule) != null  // kwds
+                (a = kwds_rule()) != null  // kwds
             )
             {
                 debugMessageln("%d star_etc[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "kwds");
                 // TODO: node.action: _PyPegen_star_etc ( p , NULL , NULL , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "kwds");
-                return cache.putResult(pos, STAR_ETC_ID, _res);
+                return cache.putResult(_mark, STAR_ETC_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_etc[%d-%d]: %s failed!", level, ' ',
@@ -6328,13 +6328,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> star_etc[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_star_etc");
             Object invalid_star_etc_var;
             if (
-                (invalid_star_etc_var = invalid_star_etc_rule) != null  // invalid_star_etc
+                (invalid_star_etc_var = invalid_star_etc_rule()) != null  // invalid_star_etc
             )
             {
                 debugMessageln("%d star_etc[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_star_etc");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_star_etc");
                 _res = invalid_star_etc_var;
-                return cache.putResult(pos, STAR_ETC_ID, _res);
+                return cache.putResult(_mark, STAR_ETC_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_etc[%d-%d]: %s failed!", level, ' ',
@@ -6362,13 +6362,13 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(35)) != null  // token='**'
                 &&
                 // TODO replacing arg_ty --> SSTNode
-                (a = param_no_default_rule) != null  // param_no_default
+                (a = param_no_default_rule()) != null  // param_no_default
             )
             {
                 debugMessageln("%d kwds[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'**' param_no_default");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' param_no_default");
-                return cache.putResult(pos, KWDS_ID, _res);
+                return cache.putResult(_mark, KWDS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s kwds[%d-%d]: %s failed!", level, ' ',
@@ -6395,7 +6395,7 @@ public final class Parser extends AbstractParser {
             Object tc;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (a = param_rule) != null  // param
+                (a = param_rule()) != null  // param
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
@@ -6406,7 +6406,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_add_type_comment_to_arg ( p , a , tc )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param ',' TYPE_COMMENT?");
-                return cache.putResult(pos, PARAM_NO_DEFAULT_ID, _res);
+                return cache.putResult(_mark, PARAM_NO_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s param_no_default[%d-%d]: %s failed!", level, ' ',
@@ -6419,7 +6419,7 @@ public final class Parser extends AbstractParser {
             Object tc;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (a = param_rule) != null  // param
+                (a = param_rule()) != null  // param
                 &&
                 ((tc = expect(Token.Kind.TYPE_COMMENT)) != null || true)  // TYPE_COMMENT?
                 &&
@@ -6430,7 +6430,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_add_type_comment_to_arg ( p , a , tc )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param TYPE_COMMENT? &')'");
-                return cache.putResult(pos, PARAM_NO_DEFAULT_ID, _res);
+                return cache.putResult(_mark, PARAM_NO_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s param_no_default[%d-%d]: %s failed!", level, ' ',
@@ -6460,9 +6460,9 @@ public final class Parser extends AbstractParser {
             Object tc;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (a = param_rule) != null  // param
+                (a = param_rule()) != null  // param
                 &&
-                (c = default_param_rule) != null  // default_param
+                (c = default_param_rule()) != null  // default_param
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
@@ -6473,7 +6473,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , tc )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param default_param ',' TYPE_COMMENT?");
-                return cache.putResult(pos, PARAM_WITH_DEFAULT_ID, _res);
+                return cache.putResult(_mark, PARAM_WITH_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s param_with_default[%d-%d]: %s failed!", level, ' ',
@@ -6487,9 +6487,9 @@ public final class Parser extends AbstractParser {
             Object tc;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (a = param_rule) != null  // param
+                (a = param_rule()) != null  // param
                 &&
-                (c = default_param_rule) != null  // default_param
+                (c = default_param_rule()) != null  // default_param
                 &&
                 ((tc = expect(Token.Kind.TYPE_COMMENT)) != null || true)  // TYPE_COMMENT?
                 &&
@@ -6500,7 +6500,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , tc )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param default_param TYPE_COMMENT? &')'");
-                return cache.putResult(pos, PARAM_WITH_DEFAULT_ID, _res);
+                return cache.putResult(_mark, PARAM_WITH_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s param_with_default[%d-%d]: %s failed!", level, ' ',
@@ -6530,9 +6530,9 @@ public final class Parser extends AbstractParser {
             Object tc;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (a = param_rule) != null  // param
+                (a = param_rule()) != null  // param
                 &&
-                ((c = default_param_rule) != null || true)  // default_param?
+                ((c = default_param_rule()) != null || true)  // default_param?
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
@@ -6543,7 +6543,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , tc )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param default_param? ',' TYPE_COMMENT?");
-                return cache.putResult(pos, PARAM_MAYBE_DEFAULT_ID, _res);
+                return cache.putResult(_mark, PARAM_MAYBE_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s param_maybe_default[%d-%d]: %s failed!", level, ' ',
@@ -6557,9 +6557,9 @@ public final class Parser extends AbstractParser {
             Object tc;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (a = param_rule) != null  // param
+                (a = param_rule()) != null  // param
                 &&
-                ((c = default_param_rule) != null || true)  // default_param?
+                ((c = default_param_rule()) != null || true)  // default_param?
                 &&
                 ((tc = expect(Token.Kind.TYPE_COMMENT)) != null || true)  // TYPE_COMMENT?
                 &&
@@ -6570,7 +6570,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , tc )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param default_param? TYPE_COMMENT? &')'");
-                return cache.putResult(pos, PARAM_MAYBE_DEFAULT_ID, _res);
+                return cache.putResult(_mark, PARAM_MAYBE_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s param_maybe_default[%d-%d]: %s failed!", level, ' ',
@@ -6590,28 +6590,28 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // NAME annotation?
             debugMessageln("%d> param[%d-%d]: %s", level, ' ', _mark, mark(), "NAME annotation?");
             SSTNode a;
             Object b;
             if (
-                (a = name_token) != null  // NAME
+                (a = name_token()) != null  // NAME
                 &&
-                ((b = annotation_rule) != null || true)  // annotation?
+                ((b = annotation_rule()) != null || true)  // annotation?
             )
             {
                 debugMessageln("%d param[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME annotation?");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_arg ( a -> v . Name . id , b , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME annotation?");
-                return cache.putResult(pos, PARAM_ID, _res);
+                return cache.putResult(_mark, PARAM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s param[%d-%d]: %s failed!", level, ' ',
@@ -6636,13 +6636,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d annotation[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "':' expression");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "':' expression");
-                return cache.putResult(pos, ANNOTATION_ID, _res);
+                return cache.putResult(_mark, ANNOTATION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s annotation[%d-%d]: %s failed!", level, ' ',
@@ -6667,13 +6667,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(22)) != null  // token='='
                 &&
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d default_param[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'=' expression");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'=' expression");
-                return cache.putResult(pos, DEFAULT_PARAM_ID, _res);
+                return cache.putResult(_mark, DEFAULT_PARAM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s default_param[%d-%d]: %s failed!", level, ' ',
@@ -6697,13 +6697,13 @@ public final class Parser extends AbstractParser {
             // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] a;
             if (
-                (a = (SSTNode[])_loop1_111_rule) != null  // (('@' named_expression NEWLINE))+
+                (a = (SSTNode[])_loop1_111_rule()) != null  // (('@' named_expression NEWLINE))+
             )
             {
                 debugMessageln("%d decorators[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "(('@' named_expression NEWLINE))+");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "(('@' named_expression NEWLINE))+");
-                return cache.putResult(pos, DECORATORS_ID, _res);
+                return cache.putResult(_mark, DECORATORS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s decorators[%d-%d]: %s failed!", level, ' ',
@@ -6730,17 +6730,17 @@ public final class Parser extends AbstractParser {
             SSTNode b;
             if (
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (a = decorators_rule) != null  // decorators
+                (a = decorators_rule()) != null  // decorators
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (b = class_def_raw_rule) != null  // class_def_raw
+                (b = class_def_raw_rule()) != null  // class_def_raw
             )
             {
                 debugMessageln("%d class_def[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "decorators class_def_raw");
                 // TODO: node.action: _PyPegen_class_def_decorators ( p , a , b )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "decorators class_def_raw");
-                return cache.putResult(pos, CLASS_DEF_ID, _res);
+                return cache.putResult(_mark, CLASS_DEF_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s class_def[%d-%d]: %s failed!", level, ' ',
@@ -6752,13 +6752,13 @@ public final class Parser extends AbstractParser {
             SSTNode class_def_raw_var;
             if (
                 // TODO replacing stmt_ty --> SSTNode
-                (class_def_raw_var = class_def_raw_rule) != null  // class_def_raw
+                (class_def_raw_var = class_def_raw_rule()) != null  // class_def_raw
             )
             {
                 debugMessageln("%d class_def[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "class_def_raw");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "class_def_raw");
                 _res = class_def_raw_var;
-                return cache.putResult(pos, CLASS_DEF_ID, _res);
+                return cache.putResult(_mark, CLASS_DEF_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s class_def[%d-%d]: %s failed!", level, ' ',
@@ -6778,7 +6778,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'class' NAME ['(' arguments? ')'] &&':' block
             debugMessageln("%d> class_def_raw[%d-%d]: %s", level, ' ', _mark, mark(), "'class' NAME ['(' arguments? ')'] &&':' block");
             Token _keyword;
@@ -6789,26 +6789,26 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(527)) != null  // token='class'
                 &&
-                (a = name_token) != null  // NAME
+                (a = name_token()) != null  // NAME
                 &&
-                ((b = _tmp_112_rule) != null || true)  // ['(' arguments? ')']
+                ((b = _tmp_112_rule()) != null || true)  // ['(' arguments? ')']
                 &&
                 (_literal = expect_forced_token(11, ":")) != null  // forced_token=':'
                 &&
-                (c = block_rule) != null  // block
+                (c = block_rule()) != null  // block
             )
             {
                 debugMessageln("%d class_def_raw[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'class' NAME ['(' arguments? ')'] &&':' block");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_ClassDef ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , c , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'class' NAME ['(' arguments? ')'] &&':' block");
-                return cache.putResult(pos, CLASS_DEF_RAW_ID, _res);
+                return cache.putResult(_mark, CLASS_DEF_RAW_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s class_def_raw[%d-%d]: %s failed!", level, ' ',
@@ -6842,7 +6842,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (indent_var = expect(Token.Kind.INDENT)) != null  // token='INDENT'
                 &&
-                (a = statements_rule) != null  // statements
+                (a = statements_rule()) != null  // statements
                 &&
                 (dedent_var = expect(Token.Kind.DEDENT)) != null  // token='DEDENT'
             )
@@ -6850,7 +6850,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d block[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NEWLINE INDENT statements DEDENT");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NEWLINE INDENT statements DEDENT");
-                return cache.putResult(pos, BLOCK_ID, _res);
+                return cache.putResult(_mark, BLOCK_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s block[%d-%d]: %s failed!", level, ' ',
@@ -6860,13 +6860,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> block[%d-%d]: %s", level, ' ', _mark, mark(), "simple_stmts");
             SSTNode[] simple_stmts_var;
             if (
-                (simple_stmts_var = simple_stmts_rule) != null  // simple_stmts
+                (simple_stmts_var = simple_stmts_rule()) != null  // simple_stmts
             )
             {
                 debugMessageln("%d block[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "simple_stmts");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "simple_stmts");
                 _res = simple_stmts_var;
-                return cache.putResult(pos, BLOCK_ID, _res);
+                return cache.putResult(_mark, BLOCK_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s block[%d-%d]: %s failed!", level, ' ',
@@ -6876,13 +6876,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> block[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_block");
             Object invalid_block_var;
             if (
-                (invalid_block_var = invalid_block_rule) != null  // invalid_block
+                (invalid_block_var = invalid_block_rule()) != null  // invalid_block
             )
             {
                 debugMessageln("%d block[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_block");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_block");
                 _res = invalid_block_var;
-                return cache.putResult(pos, BLOCK_ID, _res);
+                return cache.putResult(_mark, BLOCK_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s block[%d-%d]: %s failed!", level, ' ',
@@ -6890,7 +6890,7 @@ public final class Parser extends AbstractParser {
         }
         debugMessageln("Fail at %d: block", _mark);
         _res = null;
-        cache.putResult(pos, BLOCK_ID, _res);
+        cache.putResult(_mark, BLOCK_ID, _res);
         level--;
         return _res;
     }
@@ -6905,31 +6905,31 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // star_expression ((',' star_expression))+ ','?
             debugMessageln("%d> star_expressions[%d-%d]: %s", level, ' ', _mark, mark(), "star_expression ((',' star_expression))+ ','?");
             Object _opt_var;
             SSTNode a;
             SSTNode[] b;
             if (
-                (a = star_expression_rule) != null  // star_expression
+                (a = star_expression_rule()) != null  // star_expression
                 &&
-                (b = _loop1_113_rule) != null  // ((',' star_expression))+
+                (b = _loop1_113_rule()) != null  // ((',' star_expression))+
                 &&
-                ((_opt_var = _tmp_114_rule) != null || true)  // ','?
+                ((_opt_var = _tmp_114_rule()) != null || true)  // ','?
             )
             {
                 debugMessageln("%d star_expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_expression ((',' star_expression))+ ','?");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_expression ((',' star_expression))+ ','?");
-                return cache.putResult(pos, STAR_EXPRESSIONS_ID, _res);
+                return cache.putResult(_mark, STAR_EXPRESSIONS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_expressions[%d-%d]: %s failed!", level, ' ',
@@ -6940,22 +6940,22 @@ public final class Parser extends AbstractParser {
             Token _literal;
             SSTNode a;
             if (
-                (a = star_expression_rule) != null  // star_expression
+                (a = star_expression_rule()) != null  // star_expression
                 &&
                 (_literal = expect(12)) != null  // token=','
             )
             {
                 debugMessageln("%d star_expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_expression ','");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_singleton_seq ( p , a ) ) , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_expression ','");
-                return cache.putResult(pos, STAR_EXPRESSIONS_ID, _res);
+                return cache.putResult(_mark, STAR_EXPRESSIONS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_expressions[%d-%d]: %s failed!", level, ' ',
@@ -6965,13 +6965,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> star_expressions[%d-%d]: %s", level, ' ', _mark, mark(), "star_expression");
             SSTNode star_expression_var;
             if (
-                (star_expression_var = star_expression_rule) != null  // star_expression
+                (star_expression_var = star_expression_rule()) != null  // star_expression
             )
             {
                 debugMessageln("%d star_expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_expression");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_expression");
                 _res = star_expression_var;
-                return cache.putResult(pos, STAR_EXPRESSIONS_ID, _res);
+                return cache.putResult(_mark, STAR_EXPRESSIONS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_expressions[%d-%d]: %s failed!", level, ' ',
@@ -6995,7 +6995,7 @@ public final class Parser extends AbstractParser {
             return _res;
         }
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '*' bitwise_or
             debugMessageln("%d> star_expression[%d-%d]: %s", level, ' ', _mark, mark(), "'*' bitwise_or");
             Token _literal;
@@ -7003,20 +7003,20 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(16)) != null  // token='*'
                 &&
-                (a = bitwise_or_rule) != null  // bitwise_or
+                (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
                 debugMessageln("%d star_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' bitwise_or");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Starred ( a , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' bitwise_or");
-                return cache.putResult(pos, STAR_EXPRESSION_ID, _res);
+                return cache.putResult(_mark, STAR_EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_expression[%d-%d]: %s failed!", level, ' ',
@@ -7026,13 +7026,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> star_expression[%d-%d]: %s", level, ' ', _mark, mark(), "expression");
             SSTNode expression_var;
             if (
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d star_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "expression");
                 _res = expression_var;
-                return cache.putResult(pos, STAR_EXPRESSION_ID, _res);
+                return cache.putResult(_mark, STAR_EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_expression[%d-%d]: %s failed!", level, ' ',
@@ -7040,7 +7040,7 @@ public final class Parser extends AbstractParser {
         }
         debugMessageln("Fail at %d: star_expression", _mark);
         _res = null;
-        cache.putResult(pos, STAR_EXPRESSION_ID, _res);
+        cache.putResult(_mark, STAR_EXPRESSION_ID, _res);
         level--;
         return _res;
     }
@@ -7058,15 +7058,15 @@ public final class Parser extends AbstractParser {
             Object _opt_var;
             SSTNode[] a;
             if (
-                (a = (SSTNode[])_gather_115_rule) != null  // ','.star_named_expression+
+                (a = (SSTNode[])_gather_115_rule()) != null  // ','.star_named_expression+
                 &&
-                ((_opt_var = _tmp_117_rule) != null || true)  // ','?
+                ((_opt_var = _tmp_117_rule()) != null || true)  // ','?
             )
             {
                 debugMessageln("%d star_named_expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.star_named_expression+ ','?");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.star_named_expression+ ','?");
-                return cache.putResult(pos, STAR_NAMED_EXPRESSIONS_ID, _res);
+                return cache.putResult(_mark, STAR_NAMED_EXPRESSIONS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_named_expressions[%d-%d]: %s failed!", level, ' ',
@@ -7085,7 +7085,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '*' bitwise_or
             debugMessageln("%d> star_named_expression[%d-%d]: %s", level, ' ', _mark, mark(), "'*' bitwise_or");
             Token _literal;
@@ -7093,20 +7093,20 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(16)) != null  // token='*'
                 &&
-                (a = bitwise_or_rule) != null  // bitwise_or
+                (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
                 debugMessageln("%d star_named_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' bitwise_or");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Starred ( a , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' bitwise_or");
-                return cache.putResult(pos, STAR_NAMED_EXPRESSION_ID, _res);
+                return cache.putResult(_mark, STAR_NAMED_EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_named_expression[%d-%d]: %s failed!", level, ' ',
@@ -7116,13 +7116,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> star_named_expression[%d-%d]: %s", level, ' ', _mark, mark(), "named_expression");
             SSTNode named_expression_var;
             if (
-                (named_expression_var = named_expression_rule) != null  // named_expression
+                (named_expression_var = named_expression_rule()) != null  // named_expression
             )
             {
                 debugMessageln("%d star_named_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "named_expression");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "named_expression");
                 _res = named_expression_var;
-                return cache.putResult(pos, STAR_NAMED_EXPRESSION_ID, _res);
+                return cache.putResult(_mark, STAR_NAMED_EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_named_expression[%d-%d]: %s failed!", level, ' ',
@@ -7141,7 +7141,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // NAME ':=' ~ expression
             debugMessageln("%d> named_expression[%d-%d]: %s", level, ' ', _mark, mark(), "NAME ':=' ~ expression");
             int _cut_var = 0;
@@ -7149,26 +7149,26 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = name_token) != null  // NAME
+                (a = name_token()) != null  // NAME
                 &&
                 (_literal = expect(53)) != null  // token=':='
                 &&
                 (_cut_var = 1) != null
                 &&
-                (b = expression_rule) != null  // expression
+                (b = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d named_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME ':=' ~ expression");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME ':=' ~ expression");
-                return cache.putResult(pos, NAMED_EXPRESSION_ID, _res);
+                return cache.putResult(_mark, NAMED_EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s named_expression[%d-%d]: %s failed!", level, ' ',
@@ -7182,13 +7182,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> named_expression[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_named_expression");
             Object invalid_named_expression_var;
             if (
-                (invalid_named_expression_var = invalid_named_expression_rule) != null  // invalid_named_expression
+                (invalid_named_expression_var = invalid_named_expression_rule()) != null  // invalid_named_expression
             )
             {
                 debugMessageln("%d named_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_named_expression");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_named_expression");
                 _res = invalid_named_expression_var;
-                return cache.putResult(pos, NAMED_EXPRESSION_ID, _res);
+                return cache.putResult(_mark, NAMED_EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s named_expression[%d-%d]: %s failed!", level, ' ',
@@ -7198,7 +7198,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> named_expression[%d-%d]: %s", level, ' ', _mark, mark(), "expression !':='");
             SSTNode expression_var;
             if (
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
                 &&
                 genLookahead_expect(false, 53)  // token=':='
             )
@@ -7206,7 +7206,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d named_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression !':='");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "expression !':='");
                 _res = expression_var;
-                return cache.putResult(pos, NAMED_EXPRESSION_ID, _res);
+                return cache.putResult(_mark, NAMED_EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s named_expression[%d-%d]: %s failed!", level, ' ',
@@ -7225,7 +7225,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // NAME ':=' ~ expression
             debugMessageln("%d> direct_named_expression[%d-%d]: %s", level, ' ', _mark, mark(), "NAME ':=' ~ expression");
             int _cut_var = 0;
@@ -7233,26 +7233,26 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = name_token) != null  // NAME
+                (a = name_token()) != null  // NAME
                 &&
                 (_literal = expect(53)) != null  // token=':='
                 &&
                 (_cut_var = 1) != null
                 &&
-                (b = expression_rule) != null  // expression
+                (b = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d direct_named_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME ':=' ~ expression");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME ':=' ~ expression");
-                return cache.putResult(pos, DIRECT_NAMED_EXPRESSION_ID, _res);
+                return cache.putResult(_mark, DIRECT_NAMED_EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s direct_named_expression[%d-%d]: %s failed!", level, ' ',
@@ -7266,7 +7266,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> direct_named_expression[%d-%d]: %s", level, ' ', _mark, mark(), "expression !':='");
             SSTNode expression_var;
             if (
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
                 &&
                 genLookahead_expect(false, 53)  // token=':='
             )
@@ -7274,7 +7274,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d direct_named_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression !':='");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "expression !':='");
                 _res = expression_var;
-                return cache.putResult(pos, DIRECT_NAMED_EXPRESSION_ID, _res);
+                return cache.putResult(_mark, DIRECT_NAMED_EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s direct_named_expression[%d-%d]: %s failed!", level, ' ',
@@ -7296,13 +7296,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> annotated_rhs[%d-%d]: %s", level, ' ', _mark, mark(), "yield_expr");
             SSTNode yield_expr_var;
             if (
-                (yield_expr_var = yield_expr_rule) != null  // yield_expr
+                (yield_expr_var = yield_expr_rule()) != null  // yield_expr
             )
             {
                 debugMessageln("%d annotated_rhs[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "yield_expr");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "yield_expr");
                 _res = yield_expr_var;
-                return cache.putResult(pos, ANNOTATED_RHS_ID, _res);
+                return cache.putResult(_mark, ANNOTATED_RHS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s annotated_rhs[%d-%d]: %s failed!", level, ' ',
@@ -7312,13 +7312,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> annotated_rhs[%d-%d]: %s", level, ' ', _mark, mark(), "star_expressions");
             SSTNode star_expressions_var;
             if (
-                (star_expressions_var = star_expressions_rule) != null  // star_expressions
+                (star_expressions_var = star_expressions_rule()) != null  // star_expressions
             )
             {
                 debugMessageln("%d annotated_rhs[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_expressions");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_expressions");
                 _res = star_expressions_var;
-                return cache.putResult(pos, ANNOTATED_RHS_ID, _res);
+                return cache.putResult(_mark, ANNOTATED_RHS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s annotated_rhs[%d-%d]: %s failed!", level, ' ',
@@ -7337,31 +7337,31 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // expression ((',' expression))+ ','?
             debugMessageln("%d> expressions[%d-%d]: %s", level, ' ', _mark, mark(), "expression ((',' expression))+ ','?");
             Object _opt_var;
             SSTNode a;
             SSTNode[] b;
             if (
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
                 &&
-                (b = _loop1_118_rule) != null  // ((',' expression))+
+                (b = _loop1_118_rule()) != null  // ((',' expression))+
                 &&
-                ((_opt_var = _tmp_119_rule) != null || true)  // ','?
+                ((_opt_var = _tmp_119_rule()) != null || true)  // ','?
             )
             {
                 debugMessageln("%d expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression ((',' expression))+ ','?");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ((',' expression))+ ','?");
-                return cache.putResult(pos, EXPRESSIONS_ID, _res);
+                return cache.putResult(_mark, EXPRESSIONS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s expressions[%d-%d]: %s failed!", level, ' ',
@@ -7372,22 +7372,22 @@ public final class Parser extends AbstractParser {
             Token _literal;
             SSTNode a;
             if (
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
                 &&
                 (_literal = expect(12)) != null  // token=','
             )
             {
                 debugMessageln("%d expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression ','");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_singleton_seq ( p , a ) ) , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ','");
-                return cache.putResult(pos, EXPRESSIONS_ID, _res);
+                return cache.putResult(_mark, EXPRESSIONS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s expressions[%d-%d]: %s failed!", level, ' ',
@@ -7397,13 +7397,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> expressions[%d-%d]: %s", level, ' ', _mark, mark(), "expression");
             SSTNode expression_var;
             if (
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "expression");
                 _res = expression_var;
-                return cache.putResult(pos, EXPRESSIONS_ID, _res);
+                return cache.putResult(_mark, EXPRESSIONS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s expressions[%d-%d]: %s failed!", level, ' ',
@@ -7431,18 +7431,18 @@ public final class Parser extends AbstractParser {
             return _res;
         }
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_expression
             debugMessageln("%d> expression[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_expression");
             Object invalid_expression_var;
             if (
-                (invalid_expression_var = invalid_expression_rule) != null  // invalid_expression
+                (invalid_expression_var = invalid_expression_rule()) != null  // invalid_expression
             )
             {
                 debugMessageln("%d expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_expression");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_expression");
                 _res = invalid_expression_var;
-                return cache.putResult(pos, EXPRESSION_ID, _res);
+                return cache.putResult(_mark, EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s expression[%d-%d]: %s failed!", level, ' ',
@@ -7456,28 +7456,28 @@ public final class Parser extends AbstractParser {
             SSTNode b;
             SSTNode c;
             if (
-                (a = disjunction_rule) != null  // disjunction
+                (a = disjunction_rule()) != null  // disjunction
                 &&
                 (_keyword = expect(510)) != null  // token='if'
                 &&
-                (b = disjunction_rule) != null  // disjunction
+                (b = disjunction_rule()) != null  // disjunction
                 &&
                 (_keyword_1 = expect(516)) != null  // token='else'
                 &&
-                (c = expression_rule) != null  // expression
+                (c = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "disjunction 'if' disjunction 'else' expression");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_IfExp ( b , a , c , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "disjunction 'if' disjunction 'else' expression");
-                return cache.putResult(pos, EXPRESSION_ID, _res);
+                return cache.putResult(_mark, EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s expression[%d-%d]: %s failed!", level, ' ',
@@ -7487,13 +7487,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> expression[%d-%d]: %s", level, ' ', _mark, mark(), "disjunction");
             SSTNode disjunction_var;
             if (
-                (disjunction_var = disjunction_rule) != null  // disjunction
+                (disjunction_var = disjunction_rule()) != null  // disjunction
             )
             {
                 debugMessageln("%d expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "disjunction");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "disjunction");
                 _res = disjunction_var;
-                return cache.putResult(pos, EXPRESSION_ID, _res);
+                return cache.putResult(_mark, EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s expression[%d-%d]: %s failed!", level, ' ',
@@ -7503,13 +7503,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> expression[%d-%d]: %s", level, ' ', _mark, mark(), "lambdef");
             SSTNode lambdef_var;
             if (
-                (lambdef_var = lambdef_rule) != null  // lambdef
+                (lambdef_var = lambdef_rule()) != null  // lambdef
             )
             {
                 debugMessageln("%d expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambdef");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambdef");
                 _res = lambdef_var;
-                return cache.putResult(pos, EXPRESSION_ID, _res);
+                return cache.putResult(_mark, EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s expression[%d-%d]: %s failed!", level, ' ',
@@ -7517,7 +7517,7 @@ public final class Parser extends AbstractParser {
         }
         debugMessageln("Fail at %d: expression", _mark);
         _res = null;
-        cache.putResult(pos, EXPRESSION_ID, _res);
+        cache.putResult(_mark, EXPRESSION_ID, _res);
         level--;
         return _res;
     }
@@ -7529,7 +7529,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'lambda' lambda_params? ':' expression
             debugMessageln("%d> lambdef[%d-%d]: %s", level, ' ', _mark, mark(), "'lambda' lambda_params? ':' expression");
             Token _keyword;
@@ -7539,24 +7539,24 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(528)) != null  // token='lambda'
                 &&
-                ((a = _tmp_120_rule) != null || true)  // lambda_params?
+                ((a = _tmp_120_rule()) != null || true)  // lambda_params?
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (b = expression_rule) != null  // expression
+                (b = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d lambdef[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'lambda' lambda_params? ':' expression");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Lambda ( ( a ) ? a : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'lambda' lambda_params? ':' expression");
-                return cache.putResult(pos, LAMBDEF_ID, _res);
+                return cache.putResult(_mark, LAMBDEF_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambdef[%d-%d]: %s failed!", level, ' ',
@@ -7579,13 +7579,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> lambda_params[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_lambda_parameters");
             Object invalid_lambda_parameters_var;
             if (
-                (invalid_lambda_parameters_var = invalid_lambda_parameters_rule) != null  // invalid_lambda_parameters
+                (invalid_lambda_parameters_var = invalid_lambda_parameters_rule()) != null  // invalid_lambda_parameters
             )
             {
                 debugMessageln("%d lambda_params[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_lambda_parameters");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_lambda_parameters");
                 _res = invalid_lambda_parameters_var;
-                return cache.putResult(pos, LAMBDA_PARAMS_ID, _res);
+                return cache.putResult(_mark, LAMBDA_PARAMS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_params[%d-%d]: %s failed!", level, ' ',
@@ -7597,13 +7597,13 @@ public final class Parser extends AbstractParser {
             SSTNode lambda_parameters_var;
             if (
                 // TODO replacing arguments_ty --> SSTNode
-                (lambda_parameters_var = lambda_parameters_rule) != null  // lambda_parameters
+                (lambda_parameters_var = lambda_parameters_rule()) != null  // lambda_parameters
             )
             {
                 debugMessageln("%d lambda_params[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_parameters");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_parameters");
                 _res = lambda_parameters_var;
-                return cache.putResult(pos, LAMBDA_PARAMS_ID, _res);
+                return cache.putResult(_mark, LAMBDA_PARAMS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_params[%d-%d]: %s failed!", level, ' ',
@@ -7637,20 +7637,20 @@ public final class Parser extends AbstractParser {
             Object d;
             if (
                 // TODO replacing asdl_arg_seq* --> SSTNode[]
-                (a = lambda_slash_no_default_rule) != null  // lambda_slash_no_default
+                (a = lambda_slash_no_default_rule()) != null  // lambda_slash_no_default
                 &&
-                (b = (SSTNode[])_loop0_121_rule) != null  // lambda_param_no_default*
+                (b = (SSTNode[])_loop0_121_rule()) != null  // lambda_param_no_default*
                 &&
-                (c = _loop0_122_rule) != null  // lambda_param_with_default*
+                (c = _loop0_122_rule()) != null  // lambda_param_with_default*
                 &&
-                ((d = _tmp_123_rule) != null || true)  // lambda_star_etc?
+                ((d = _tmp_123_rule()) != null || true)  // lambda_star_etc?
             )
             {
                 debugMessageln("%d lambda_parameters[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_slash_no_default lambda_param_no_default* lambda_param_with_default* lambda_star_etc?");
                 // TODO: node.action: _PyPegen_make_arguments ( p , a , NULL , b , c , d )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_slash_no_default lambda_param_no_default* lambda_param_with_default* lambda_star_etc?");
-                return cache.putResult(pos, LAMBDA_PARAMETERS_ID, _res);
+                return cache.putResult(_mark, LAMBDA_PARAMETERS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_parameters[%d-%d]: %s failed!", level, ' ',
@@ -7664,18 +7664,18 @@ public final class Parser extends AbstractParser {
             Object c;
             if (
                 // TODO replacing SlashWithDefault* --> SSTNode[]
-                (a = lambda_slash_with_default_rule) != null  // lambda_slash_with_default
+                (a = lambda_slash_with_default_rule()) != null  // lambda_slash_with_default
                 &&
-                (b = _loop0_124_rule) != null  // lambda_param_with_default*
+                (b = _loop0_124_rule()) != null  // lambda_param_with_default*
                 &&
-                ((c = _tmp_125_rule) != null || true)  // lambda_star_etc?
+                ((c = _tmp_125_rule()) != null || true)  // lambda_star_etc?
             )
             {
                 debugMessageln("%d lambda_parameters[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_slash_with_default lambda_param_with_default* lambda_star_etc?");
                 // TODO: node.action: _PyPegen_make_arguments ( p , NULL , a , NULL , b , c )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_slash_with_default lambda_param_with_default* lambda_star_etc?");
-                return cache.putResult(pos, LAMBDA_PARAMETERS_ID, _res);
+                return cache.putResult(_mark, LAMBDA_PARAMETERS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_parameters[%d-%d]: %s failed!", level, ' ',
@@ -7688,18 +7688,18 @@ public final class Parser extends AbstractParser {
             SSTNode[] b;
             Object c;
             if (
-                (a = (SSTNode[])_loop1_126_rule) != null  // lambda_param_no_default+
+                (a = (SSTNode[])_loop1_126_rule()) != null  // lambda_param_no_default+
                 &&
-                (b = _loop0_127_rule) != null  // lambda_param_with_default*
+                (b = _loop0_127_rule()) != null  // lambda_param_with_default*
                 &&
-                ((c = _tmp_128_rule) != null || true)  // lambda_star_etc?
+                ((c = _tmp_128_rule()) != null || true)  // lambda_star_etc?
             )
             {
                 debugMessageln("%d lambda_parameters[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_param_no_default+ lambda_param_with_default* lambda_star_etc?");
                 // TODO: node.action: _PyPegen_make_arguments ( p , NULL , NULL , a , b , c )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_no_default+ lambda_param_with_default* lambda_star_etc?");
-                return cache.putResult(pos, LAMBDA_PARAMETERS_ID, _res);
+                return cache.putResult(_mark, LAMBDA_PARAMETERS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_parameters[%d-%d]: %s failed!", level, ' ',
@@ -7710,16 +7710,16 @@ public final class Parser extends AbstractParser {
             SSTNode[] a;
             Object b;
             if (
-                (a = _loop1_129_rule) != null  // lambda_param_with_default+
+                (a = _loop1_129_rule()) != null  // lambda_param_with_default+
                 &&
-                ((b = _tmp_130_rule) != null || true)  // lambda_star_etc?
+                ((b = _tmp_130_rule()) != null || true)  // lambda_star_etc?
             )
             {
                 debugMessageln("%d lambda_parameters[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_param_with_default+ lambda_star_etc?");
                 // TODO: node.action: _PyPegen_make_arguments ( p , NULL , NULL , NULL , a , b )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_with_default+ lambda_star_etc?");
-                return cache.putResult(pos, LAMBDA_PARAMETERS_ID, _res);
+                return cache.putResult(_mark, LAMBDA_PARAMETERS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_parameters[%d-%d]: %s failed!", level, ' ',
@@ -7731,14 +7731,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] a;
             if (
                 // TODO replacing StarEtc* --> SSTNode[]
-                (a = lambda_star_etc_rule) != null  // lambda_star_etc
+                (a = lambda_star_etc_rule()) != null  // lambda_star_etc
             )
             {
                 debugMessageln("%d lambda_parameters[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_star_etc");
                 // TODO: node.action: _PyPegen_make_arguments ( p , NULL , NULL , NULL , NULL , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_star_etc");
-                return cache.putResult(pos, LAMBDA_PARAMETERS_ID, _res);
+                return cache.putResult(_mark, LAMBDA_PARAMETERS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_parameters[%d-%d]: %s failed!", level, ' ',
@@ -7766,7 +7766,7 @@ public final class Parser extends AbstractParser {
             Token _literal_1;
             SSTNode[] a;
             if (
-                (a = (SSTNode[])_loop1_131_rule) != null  // lambda_param_no_default+
+                (a = (SSTNode[])_loop1_131_rule()) != null  // lambda_param_no_default+
                 &&
                 (_literal = expect(17)) != null  // token='/'
                 &&
@@ -7776,7 +7776,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d lambda_slash_no_default[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_param_no_default+ '/' ','");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_no_default+ '/' ','");
-                return cache.putResult(pos, LAMBDA_SLASH_NO_DEFAULT_ID, _res);
+                return cache.putResult(_mark, LAMBDA_SLASH_NO_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_slash_no_default[%d-%d]: %s failed!", level, ' ',
@@ -7788,7 +7788,7 @@ public final class Parser extends AbstractParser {
             Token _literal;
             SSTNode[] a;
             if (
-                (a = (SSTNode[])_loop1_132_rule) != null  // lambda_param_no_default+
+                (a = (SSTNode[])_loop1_132_rule()) != null  // lambda_param_no_default+
                 &&
                 (_literal = expect(17)) != null  // token='/'
                 &&
@@ -7798,7 +7798,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d lambda_slash_no_default[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_param_no_default+ '/' &':'");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_no_default+ '/' &':'");
-                return cache.putResult(pos, LAMBDA_SLASH_NO_DEFAULT_ID, _res);
+                return cache.putResult(_mark, LAMBDA_SLASH_NO_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_slash_no_default[%d-%d]: %s failed!", level, ' ',
@@ -7826,9 +7826,9 @@ public final class Parser extends AbstractParser {
             SSTNode[] a;
             SSTNode[] b;
             if (
-                (a = _loop0_133_rule) != null  // lambda_param_no_default*
+                (a = _loop0_133_rule()) != null  // lambda_param_no_default*
                 &&
-                (b = _loop1_134_rule) != null  // lambda_param_with_default+
+                (b = _loop1_134_rule()) != null  // lambda_param_with_default+
                 &&
                 (_literal = expect(17)) != null  // token='/'
                 &&
@@ -7839,7 +7839,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_no_default* lambda_param_with_default+ '/' ','");
-                return cache.putResult(pos, LAMBDA_SLASH_WITH_DEFAULT_ID, _res);
+                return cache.putResult(_mark, LAMBDA_SLASH_WITH_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_slash_with_default[%d-%d]: %s failed!", level, ' ',
@@ -7851,9 +7851,9 @@ public final class Parser extends AbstractParser {
             SSTNode[] a;
             SSTNode[] b;
             if (
-                (a = _loop0_135_rule) != null  // lambda_param_no_default*
+                (a = _loop0_135_rule()) != null  // lambda_param_no_default*
                 &&
-                (b = _loop1_136_rule) != null  // lambda_param_with_default+
+                (b = _loop1_136_rule()) != null  // lambda_param_with_default+
                 &&
                 (_literal = expect(17)) != null  // token='/'
                 &&
@@ -7864,7 +7864,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_slash_with_default ( p , ( asdl_arg_seq * ) a , b )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_no_default* lambda_param_with_default+ '/' &':'");
-                return cache.putResult(pos, LAMBDA_SLASH_WITH_DEFAULT_ID, _res);
+                return cache.putResult(_mark, LAMBDA_SLASH_WITH_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_slash_with_default[%d-%d]: %s failed!", level, ' ',
@@ -7898,18 +7898,18 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(16)) != null  // token='*'
                 &&
                 // TODO replacing arg_ty --> SSTNode
-                (a = lambda_param_no_default_rule) != null  // lambda_param_no_default
+                (a = lambda_param_no_default_rule()) != null  // lambda_param_no_default
                 &&
-                (b = _loop0_137_rule) != null  // lambda_param_maybe_default*
+                (b = _loop0_137_rule()) != null  // lambda_param_maybe_default*
                 &&
-                ((c = _tmp_138_rule) != null || true)  // lambda_kwds?
+                ((c = _tmp_138_rule()) != null || true)  // lambda_kwds?
             )
             {
                 debugMessageln("%d lambda_star_etc[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' lambda_param_no_default lambda_param_maybe_default* lambda_kwds?");
                 // TODO: node.action: _PyPegen_star_etc ( p , a , b , c )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' lambda_param_no_default lambda_param_maybe_default* lambda_kwds?");
-                return cache.putResult(pos, LAMBDA_STAR_ETC_ID, _res);
+                return cache.putResult(_mark, LAMBDA_STAR_ETC_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_star_etc[%d-%d]: %s failed!", level, ' ',
@@ -7926,16 +7926,16 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal_1 = expect(12)) != null  // token=','
                 &&
-                (b = _loop1_139_rule) != null  // lambda_param_maybe_default+
+                (b = _loop1_139_rule()) != null  // lambda_param_maybe_default+
                 &&
-                ((c = _tmp_140_rule) != null || true)  // lambda_kwds?
+                ((c = _tmp_140_rule()) != null || true)  // lambda_kwds?
             )
             {
                 debugMessageln("%d lambda_star_etc[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' ',' lambda_param_maybe_default+ lambda_kwds?");
                 // TODO: node.action: _PyPegen_star_etc ( p , NULL , b , c )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' ',' lambda_param_maybe_default+ lambda_kwds?");
-                return cache.putResult(pos, LAMBDA_STAR_ETC_ID, _res);
+                return cache.putResult(_mark, LAMBDA_STAR_ETC_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_star_etc[%d-%d]: %s failed!", level, ' ',
@@ -7947,14 +7947,14 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (a = lambda_kwds_rule) != null  // lambda_kwds
+                (a = lambda_kwds_rule()) != null  // lambda_kwds
             )
             {
                 debugMessageln("%d lambda_star_etc[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_kwds");
                 // TODO: node.action: _PyPegen_star_etc ( p , NULL , NULL , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_kwds");
-                return cache.putResult(pos, LAMBDA_STAR_ETC_ID, _res);
+                return cache.putResult(_mark, LAMBDA_STAR_ETC_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_star_etc[%d-%d]: %s failed!", level, ' ',
@@ -7964,13 +7964,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> lambda_star_etc[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_lambda_star_etc");
             Object invalid_lambda_star_etc_var;
             if (
-                (invalid_lambda_star_etc_var = invalid_lambda_star_etc_rule) != null  // invalid_lambda_star_etc
+                (invalid_lambda_star_etc_var = invalid_lambda_star_etc_rule()) != null  // invalid_lambda_star_etc
             )
             {
                 debugMessageln("%d lambda_star_etc[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_lambda_star_etc");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_lambda_star_etc");
                 _res = invalid_lambda_star_etc_var;
-                return cache.putResult(pos, LAMBDA_STAR_ETC_ID, _res);
+                return cache.putResult(_mark, LAMBDA_STAR_ETC_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_star_etc[%d-%d]: %s failed!", level, ' ',
@@ -7998,13 +7998,13 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(35)) != null  // token='**'
                 &&
                 // TODO replacing arg_ty --> SSTNode
-                (a = lambda_param_no_default_rule) != null  // lambda_param_no_default
+                (a = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
                 debugMessageln("%d lambda_kwds[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'**' lambda_param_no_default");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' lambda_param_no_default");
-                return cache.putResult(pos, LAMBDA_KWDS_ID, _res);
+                return cache.putResult(_mark, LAMBDA_KWDS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_kwds[%d-%d]: %s failed!", level, ' ',
@@ -8030,7 +8030,7 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (a = lambda_param_rule) != null  // lambda_param
+                (a = lambda_param_rule()) != null  // lambda_param
                 &&
                 (_literal = expect(12)) != null  // token=','
             )
@@ -8038,7 +8038,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d lambda_param_no_default[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_param ','");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param ','");
-                return cache.putResult(pos, LAMBDA_PARAM_NO_DEFAULT_ID, _res);
+                return cache.putResult(_mark, LAMBDA_PARAM_NO_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_param_no_default[%d-%d]: %s failed!", level, ' ',
@@ -8050,7 +8050,7 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (a = lambda_param_rule) != null  // lambda_param
+                (a = lambda_param_rule()) != null  // lambda_param
                 &&
                 genLookahead_expect(true, 11)  // token=':'
             )
@@ -8058,7 +8058,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d lambda_param_no_default[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_param &':'");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param &':'");
-                return cache.putResult(pos, LAMBDA_PARAM_NO_DEFAULT_ID, _res);
+                return cache.putResult(_mark, LAMBDA_PARAM_NO_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_param_no_default[%d-%d]: %s failed!", level, ' ',
@@ -8087,9 +8087,9 @@ public final class Parser extends AbstractParser {
             SSTNode c;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (a = lambda_param_rule) != null  // lambda_param
+                (a = lambda_param_rule()) != null  // lambda_param
                 &&
-                (c = default_param_rule) != null  // default_param
+                (c = default_param_rule()) != null  // default_param
                 &&
                 (_literal = expect(12)) != null  // token=','
             )
@@ -8098,7 +8098,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , NULL )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param default_param ','");
-                return cache.putResult(pos, LAMBDA_PARAM_WITH_DEFAULT_ID, _res);
+                return cache.putResult(_mark, LAMBDA_PARAM_WITH_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_param_with_default[%d-%d]: %s failed!", level, ' ',
@@ -8111,9 +8111,9 @@ public final class Parser extends AbstractParser {
             SSTNode c;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (a = lambda_param_rule) != null  // lambda_param
+                (a = lambda_param_rule()) != null  // lambda_param
                 &&
-                (c = default_param_rule) != null  // default_param
+                (c = default_param_rule()) != null  // default_param
                 &&
                 genLookahead_expect(true, 11)  // token=':'
             )
@@ -8122,7 +8122,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , NULL )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param default_param &':'");
-                return cache.putResult(pos, LAMBDA_PARAM_WITH_DEFAULT_ID, _res);
+                return cache.putResult(_mark, LAMBDA_PARAM_WITH_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_param_with_default[%d-%d]: %s failed!", level, ' ',
@@ -8151,9 +8151,9 @@ public final class Parser extends AbstractParser {
             Object c;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (a = lambda_param_rule) != null  // lambda_param
+                (a = lambda_param_rule()) != null  // lambda_param
                 &&
-                ((c = default_param_rule) != null || true)  // default_param?
+                ((c = default_param_rule()) != null || true)  // default_param?
                 &&
                 (_literal = expect(12)) != null  // token=','
             )
@@ -8162,7 +8162,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , NULL )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param default_param? ','");
-                return cache.putResult(pos, LAMBDA_PARAM_MAYBE_DEFAULT_ID, _res);
+                return cache.putResult(_mark, LAMBDA_PARAM_MAYBE_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_param_maybe_default[%d-%d]: %s failed!", level, ' ',
@@ -8175,9 +8175,9 @@ public final class Parser extends AbstractParser {
             Object c;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (a = lambda_param_rule) != null  // lambda_param
+                (a = lambda_param_rule()) != null  // lambda_param
                 &&
-                ((c = default_param_rule) != null || true)  // default_param?
+                ((c = default_param_rule()) != null || true)  // default_param?
                 &&
                 genLookahead_expect(true, 11)  // token=':'
             )
@@ -8186,7 +8186,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_name_default_pair ( p , a , c , NULL )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param default_param? &':'");
-                return cache.putResult(pos, LAMBDA_PARAM_MAYBE_DEFAULT_ID, _res);
+                return cache.putResult(_mark, LAMBDA_PARAM_MAYBE_DEFAULT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_param_maybe_default[%d-%d]: %s failed!", level, ' ',
@@ -8206,25 +8206,25 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // NAME
             debugMessageln("%d> lambda_param[%d-%d]: %s", level, ' ', _mark, mark(), "NAME");
             SSTNode a;
             if (
-                (a = name_token) != null  // NAME
+                (a = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d lambda_param[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_arg ( a -> v . Name . id , NULL , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
-                return cache.putResult(pos, LAMBDA_PARAM_ID, _res);
+                return cache.putResult(_mark, LAMBDA_PARAM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lambda_param[%d-%d]: %s failed!", level, ' ',
@@ -8248,28 +8248,28 @@ public final class Parser extends AbstractParser {
             return _res;
         }
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // conjunction (('or' conjunction))+
             debugMessageln("%d> disjunction[%d-%d]: %s", level, ' ', _mark, mark(), "conjunction (('or' conjunction))+");
             SSTNode a;
             SSTNode[] b;
             if (
-                (a = conjunction_rule) != null  // conjunction
+                (a = conjunction_rule()) != null  // conjunction
                 &&
-                (b = _loop1_141_rule) != null  // (('or' conjunction))+
+                (b = _loop1_141_rule()) != null  // (('or' conjunction))+
             )
             {
                 debugMessageln("%d disjunction[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "conjunction (('or' conjunction))+");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_BoolOp ( Or , CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "conjunction (('or' conjunction))+");
-                return cache.putResult(pos, DISJUNCTION_ID, _res);
+                return cache.putResult(_mark, DISJUNCTION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s disjunction[%d-%d]: %s failed!", level, ' ',
@@ -8279,13 +8279,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> disjunction[%d-%d]: %s", level, ' ', _mark, mark(), "conjunction");
             SSTNode conjunction_var;
             if (
-                (conjunction_var = conjunction_rule) != null  // conjunction
+                (conjunction_var = conjunction_rule()) != null  // conjunction
             )
             {
                 debugMessageln("%d disjunction[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "conjunction");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "conjunction");
                 _res = conjunction_var;
-                return cache.putResult(pos, DISJUNCTION_ID, _res);
+                return cache.putResult(_mark, DISJUNCTION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s disjunction[%d-%d]: %s failed!", level, ' ',
@@ -8293,7 +8293,7 @@ public final class Parser extends AbstractParser {
         }
         debugMessageln("Fail at %d: disjunction", _mark);
         _res = null;
-        cache.putResult(pos, DISJUNCTION_ID, _res);
+        cache.putResult(_mark, DISJUNCTION_ID, _res);
         level--;
         return _res;
     }
@@ -8310,28 +8310,28 @@ public final class Parser extends AbstractParser {
             return _res;
         }
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // inversion (('and' inversion))+
             debugMessageln("%d> conjunction[%d-%d]: %s", level, ' ', _mark, mark(), "inversion (('and' inversion))+");
             SSTNode a;
             SSTNode[] b;
             if (
-                (a = inversion_rule) != null  // inversion
+                (a = inversion_rule()) != null  // inversion
                 &&
-                (b = _loop1_142_rule) != null  // (('and' inversion))+
+                (b = _loop1_142_rule()) != null  // (('and' inversion))+
             )
             {
                 debugMessageln("%d conjunction[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "inversion (('and' inversion))+");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_BoolOp ( And , CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "inversion (('and' inversion))+");
-                return cache.putResult(pos, CONJUNCTION_ID, _res);
+                return cache.putResult(_mark, CONJUNCTION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s conjunction[%d-%d]: %s failed!", level, ' ',
@@ -8341,13 +8341,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> conjunction[%d-%d]: %s", level, ' ', _mark, mark(), "inversion");
             SSTNode inversion_var;
             if (
-                (inversion_var = inversion_rule) != null  // inversion
+                (inversion_var = inversion_rule()) != null  // inversion
             )
             {
                 debugMessageln("%d conjunction[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "inversion");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "inversion");
                 _res = inversion_var;
-                return cache.putResult(pos, CONJUNCTION_ID, _res);
+                return cache.putResult(_mark, CONJUNCTION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s conjunction[%d-%d]: %s failed!", level, ' ',
@@ -8355,7 +8355,7 @@ public final class Parser extends AbstractParser {
         }
         debugMessageln("Fail at %d: conjunction", _mark);
         _res = null;
-        cache.putResult(pos, CONJUNCTION_ID, _res);
+        cache.putResult(_mark, CONJUNCTION_ID, _res);
         level--;
         return _res;
     }
@@ -8372,7 +8372,7 @@ public final class Parser extends AbstractParser {
             return _res;
         }
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'not' inversion
             debugMessageln("%d> inversion[%d-%d]: %s", level, ' ', _mark, mark(), "'not' inversion");
             Token _keyword;
@@ -8380,20 +8380,20 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(529)) != null  // token='not'
                 &&
-                (a = inversion_rule) != null  // inversion
+                (a = inversion_rule()) != null  // inversion
             )
             {
                 debugMessageln("%d inversion[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'not' inversion");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_UnaryOp ( Not , a , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'not' inversion");
-                return cache.putResult(pos, INVERSION_ID, _res);
+                return cache.putResult(_mark, INVERSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s inversion[%d-%d]: %s failed!", level, ' ',
@@ -8403,13 +8403,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> inversion[%d-%d]: %s", level, ' ', _mark, mark(), "comparison");
             SSTNode comparison_var;
             if (
-                (comparison_var = comparison_rule) != null  // comparison
+                (comparison_var = comparison_rule()) != null  // comparison
             )
             {
                 debugMessageln("%d inversion[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "comparison");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "comparison");
                 _res = comparison_var;
-                return cache.putResult(pos, INVERSION_ID, _res);
+                return cache.putResult(_mark, INVERSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s inversion[%d-%d]: %s failed!", level, ' ',
@@ -8417,7 +8417,7 @@ public final class Parser extends AbstractParser {
         }
         debugMessageln("Fail at %d: inversion", _mark);
         _res = null;
-        cache.putResult(pos, INVERSION_ID, _res);
+        cache.putResult(_mark, INVERSION_ID, _res);
         level--;
         return _res;
     }
@@ -8433,15 +8433,15 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode[] b;
             if (
-                (a = bitwise_or_rule) != null  // bitwise_or
+                (a = bitwise_or_rule()) != null  // bitwise_or
                 &&
-                (b = _loop1_143_rule) != null  // compare_op_bitwise_or_pair+
+                (b = _loop1_143_rule()) != null  // compare_op_bitwise_or_pair+
             )
             {
                 debugMessageln("%d comparison[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "bitwise_or compare_op_bitwise_or_pair+");
                 _res = finishBinaryOp(a,b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "bitwise_or compare_op_bitwise_or_pair+");
-                return cache.putResult(pos, COMPARISON_ID, _res);
+                return cache.putResult(_mark, COMPARISON_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s comparison[%d-%d]: %s failed!", level, ' ',
@@ -8451,13 +8451,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> comparison[%d-%d]: %s", level, ' ', _mark, mark(), "bitwise_or");
             SSTNode bitwise_or_var;
             if (
-                (bitwise_or_var = bitwise_or_rule) != null  // bitwise_or
+                (bitwise_or_var = bitwise_or_rule()) != null  // bitwise_or
             )
             {
                 debugMessageln("%d comparison[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "bitwise_or");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "bitwise_or");
                 _res = bitwise_or_var;
-                return cache.putResult(pos, COMPARISON_ID, _res);
+                return cache.putResult(_mark, COMPARISON_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s comparison[%d-%d]: %s failed!", level, ' ',
@@ -8489,13 +8489,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> compare_op_bitwise_or_pair[%d-%d]: %s", level, ' ', _mark, mark(), "eq_bitwise_or");
             BinaryArithmeticSSTNode eq_bitwise_or_var;
             if (
-                (eq_bitwise_or_var = eq_bitwise_or_rule) != null  // eq_bitwise_or
+                (eq_bitwise_or_var = eq_bitwise_or_rule()) != null  // eq_bitwise_or
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "eq_bitwise_or");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "eq_bitwise_or");
                 _res = eq_bitwise_or_var;
-                return cache.putResult(pos, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                return cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compare_op_bitwise_or_pair[%d-%d]: %s failed!", level, ' ',
@@ -8507,13 +8507,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] noteq_bitwise_or_var;
             if (
                 // TODO replacing CmpopExprPair* --> SSTNode[]
-                (noteq_bitwise_or_var = noteq_bitwise_or_rule) != null  // noteq_bitwise_or
+                (noteq_bitwise_or_var = noteq_bitwise_or_rule()) != null  // noteq_bitwise_or
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "noteq_bitwise_or");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "noteq_bitwise_or");
                 _res = noteq_bitwise_or_var;
-                return cache.putResult(pos, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                return cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compare_op_bitwise_or_pair[%d-%d]: %s failed!", level, ' ',
@@ -8525,13 +8525,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] lte_bitwise_or_var;
             if (
                 // TODO replacing CmpopExprPair* --> SSTNode[]
-                (lte_bitwise_or_var = lte_bitwise_or_rule) != null  // lte_bitwise_or
+                (lte_bitwise_or_var = lte_bitwise_or_rule()) != null  // lte_bitwise_or
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lte_bitwise_or");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lte_bitwise_or");
                 _res = lte_bitwise_or_var;
-                return cache.putResult(pos, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                return cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compare_op_bitwise_or_pair[%d-%d]: %s failed!", level, ' ',
@@ -8543,13 +8543,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] lt_bitwise_or_var;
             if (
                 // TODO replacing CmpopExprPair* --> SSTNode[]
-                (lt_bitwise_or_var = lt_bitwise_or_rule) != null  // lt_bitwise_or
+                (lt_bitwise_or_var = lt_bitwise_or_rule()) != null  // lt_bitwise_or
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lt_bitwise_or");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lt_bitwise_or");
                 _res = lt_bitwise_or_var;
-                return cache.putResult(pos, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                return cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compare_op_bitwise_or_pair[%d-%d]: %s failed!", level, ' ',
@@ -8561,13 +8561,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] gte_bitwise_or_var;
             if (
                 // TODO replacing CmpopExprPair* --> SSTNode[]
-                (gte_bitwise_or_var = gte_bitwise_or_rule) != null  // gte_bitwise_or
+                (gte_bitwise_or_var = gte_bitwise_or_rule()) != null  // gte_bitwise_or
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "gte_bitwise_or");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "gte_bitwise_or");
                 _res = gte_bitwise_or_var;
-                return cache.putResult(pos, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                return cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compare_op_bitwise_or_pair[%d-%d]: %s failed!", level, ' ',
@@ -8579,13 +8579,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] gt_bitwise_or_var;
             if (
                 // TODO replacing CmpopExprPair* --> SSTNode[]
-                (gt_bitwise_or_var = gt_bitwise_or_rule) != null  // gt_bitwise_or
+                (gt_bitwise_or_var = gt_bitwise_or_rule()) != null  // gt_bitwise_or
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "gt_bitwise_or");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "gt_bitwise_or");
                 _res = gt_bitwise_or_var;
-                return cache.putResult(pos, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                return cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compare_op_bitwise_or_pair[%d-%d]: %s failed!", level, ' ',
@@ -8597,13 +8597,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] notin_bitwise_or_var;
             if (
                 // TODO replacing CmpopExprPair* --> SSTNode[]
-                (notin_bitwise_or_var = notin_bitwise_or_rule) != null  // notin_bitwise_or
+                (notin_bitwise_or_var = notin_bitwise_or_rule()) != null  // notin_bitwise_or
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "notin_bitwise_or");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "notin_bitwise_or");
                 _res = notin_bitwise_or_var;
-                return cache.putResult(pos, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                return cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compare_op_bitwise_or_pair[%d-%d]: %s failed!", level, ' ',
@@ -8615,13 +8615,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] in_bitwise_or_var;
             if (
                 // TODO replacing CmpopExprPair* --> SSTNode[]
-                (in_bitwise_or_var = in_bitwise_or_rule) != null  // in_bitwise_or
+                (in_bitwise_or_var = in_bitwise_or_rule()) != null  // in_bitwise_or
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "in_bitwise_or");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "in_bitwise_or");
                 _res = in_bitwise_or_var;
-                return cache.putResult(pos, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                return cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compare_op_bitwise_or_pair[%d-%d]: %s failed!", level, ' ',
@@ -8633,13 +8633,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] isnot_bitwise_or_var;
             if (
                 // TODO replacing CmpopExprPair* --> SSTNode[]
-                (isnot_bitwise_or_var = isnot_bitwise_or_rule) != null  // isnot_bitwise_or
+                (isnot_bitwise_or_var = isnot_bitwise_or_rule()) != null  // isnot_bitwise_or
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "isnot_bitwise_or");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "isnot_bitwise_or");
                 _res = isnot_bitwise_or_var;
-                return cache.putResult(pos, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                return cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compare_op_bitwise_or_pair[%d-%d]: %s failed!", level, ' ',
@@ -8651,13 +8651,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] is_bitwise_or_var;
             if (
                 // TODO replacing CmpopExprPair* --> SSTNode[]
-                (is_bitwise_or_var = is_bitwise_or_rule) != null  // is_bitwise_or
+                (is_bitwise_or_var = is_bitwise_or_rule()) != null  // is_bitwise_or
             )
             {
                 debugMessageln("%d compare_op_bitwise_or_pair[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "is_bitwise_or");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "is_bitwise_or");
                 _res = is_bitwise_or_var;
-                return cache.putResult(pos, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
+                return cache.putResult(_mark, COMPARE_OP_BITWISE_OR_PAIR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s compare_op_bitwise_or_pair[%d-%d]: %s failed!", level, ' ',
@@ -8682,13 +8682,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(27)) != null  // token='=='
                 &&
-                (a = bitwise_or_rule) != null  // bitwise_or
+                (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
                 debugMessageln("%d eq_bitwise_or[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'==' bitwise_or");
                 _res = factory.createBinaryOp(BinaryArithmeticSSTNode.Type.EQ,null,a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'==' bitwise_or");
-                return cache.putResult(pos, EQ_BITWISE_OR_ID, _res);
+                return cache.putResult(_mark, EQ_BITWISE_OR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s eq_bitwise_or[%d-%d]: %s failed!", level, ' ',
@@ -8712,16 +8712,16 @@ public final class Parser extends AbstractParser {
             Object _tmp_144_var;
             SSTNode a;
             if (
-                (_tmp_144_var = _tmp_144_rule) != null  // '!='
+                (_tmp_144_var = _tmp_144_rule()) != null  // '!='
                 &&
-                (a = bitwise_or_rule) != null  // bitwise_or
+                (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
                 debugMessageln("%d noteq_bitwise_or[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "('!=') bitwise_or");
                 // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , NotEq , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "('!=') bitwise_or");
-                return cache.putResult(pos, NOTEQ_BITWISE_OR_ID, _res);
+                return cache.putResult(_mark, NOTEQ_BITWISE_OR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s noteq_bitwise_or[%d-%d]: %s failed!", level, ' ',
@@ -8747,14 +8747,14 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(29)) != null  // token='<='
                 &&
-                (a = bitwise_or_rule) != null  // bitwise_or
+                (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
                 debugMessageln("%d lte_bitwise_or[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'<=' bitwise_or");
                 // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , LtE , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'<=' bitwise_or");
-                return cache.putResult(pos, LTE_BITWISE_OR_ID, _res);
+                return cache.putResult(_mark, LTE_BITWISE_OR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lte_bitwise_or[%d-%d]: %s failed!", level, ' ',
@@ -8780,14 +8780,14 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(20)) != null  // token='<'
                 &&
-                (a = bitwise_or_rule) != null  // bitwise_or
+                (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
                 debugMessageln("%d lt_bitwise_or[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'<' bitwise_or");
                 // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , Lt , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'<' bitwise_or");
-                return cache.putResult(pos, LT_BITWISE_OR_ID, _res);
+                return cache.putResult(_mark, LT_BITWISE_OR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s lt_bitwise_or[%d-%d]: %s failed!", level, ' ',
@@ -8813,14 +8813,14 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(30)) != null  // token='>='
                 &&
-                (a = bitwise_or_rule) != null  // bitwise_or
+                (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
                 debugMessageln("%d gte_bitwise_or[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'>=' bitwise_or");
                 // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , GtE , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'>=' bitwise_or");
-                return cache.putResult(pos, GTE_BITWISE_OR_ID, _res);
+                return cache.putResult(_mark, GTE_BITWISE_OR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s gte_bitwise_or[%d-%d]: %s failed!", level, ' ',
@@ -8846,14 +8846,14 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(21)) != null  // token='>'
                 &&
-                (a = bitwise_or_rule) != null  // bitwise_or
+                (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
                 debugMessageln("%d gt_bitwise_or[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'>' bitwise_or");
                 // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , Gt , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'>' bitwise_or");
-                return cache.putResult(pos, GT_BITWISE_OR_ID, _res);
+                return cache.putResult(_mark, GT_BITWISE_OR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s gt_bitwise_or[%d-%d]: %s failed!", level, ' ',
@@ -8882,14 +8882,14 @@ public final class Parser extends AbstractParser {
                 &&
                 (_keyword_1 = expect(518)) != null  // token='in'
                 &&
-                (a = bitwise_or_rule) != null  // bitwise_or
+                (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
                 debugMessageln("%d notin_bitwise_or[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'not' 'in' bitwise_or");
                 // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , NotIn , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'not' 'in' bitwise_or");
-                return cache.putResult(pos, NOTIN_BITWISE_OR_ID, _res);
+                return cache.putResult(_mark, NOTIN_BITWISE_OR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s notin_bitwise_or[%d-%d]: %s failed!", level, ' ',
@@ -8915,14 +8915,14 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(518)) != null  // token='in'
                 &&
-                (a = bitwise_or_rule) != null  // bitwise_or
+                (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
                 debugMessageln("%d in_bitwise_or[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'in' bitwise_or");
                 // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , In , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'in' bitwise_or");
-                return cache.putResult(pos, IN_BITWISE_OR_ID, _res);
+                return cache.putResult(_mark, IN_BITWISE_OR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s in_bitwise_or[%d-%d]: %s failed!", level, ' ',
@@ -8951,14 +8951,14 @@ public final class Parser extends AbstractParser {
                 &&
                 (_keyword_1 = expect(529)) != null  // token='not'
                 &&
-                (a = bitwise_or_rule) != null  // bitwise_or
+                (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
                 debugMessageln("%d isnot_bitwise_or[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'is' 'not' bitwise_or");
                 // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , IsNot , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'is' 'not' bitwise_or");
-                return cache.putResult(pos, ISNOT_BITWISE_OR_ID, _res);
+                return cache.putResult(_mark, ISNOT_BITWISE_OR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s isnot_bitwise_or[%d-%d]: %s failed!", level, ' ',
@@ -8984,14 +8984,14 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(530)) != null  // token='is'
                 &&
-                (a = bitwise_or_rule) != null  // bitwise_or
+                (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
                 debugMessageln("%d is_bitwise_or[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'is' bitwise_or");
                 // TODO: node.action: _PyPegen_cmpop_expr_pair ( p , Is , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'is' bitwise_or");
-                return cache.putResult(pos, IS_BITWISE_OR_ID, _res);
+                return cache.putResult(_mark, IS_BITWISE_OR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s is_bitwise_or[%d-%d]: %s failed!", level, ' ',
@@ -9018,12 +9018,12 @@ public final class Parser extends AbstractParser {
         int _resmark = mark();
         while (true) {
             try {
-                cache.putResult(pos, BITWISE_OR_ID, _res);
+                cache.putResult(_mark, BITWISE_OR_ID, _res);
             } catch (Exception e) {
                 level--;
                 return _res;
             }
-            reset(pos);
+            reset(_mark);
             Object _raw = bitwise_or_raw();
             if (_raw == null || mark() <= _resmark)
                 break;
@@ -9040,31 +9040,31 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // bitwise_or '|' bitwise_xor
             debugMessageln("%d> bitwise_or[%d-%d]: %s", level, ' ', _mark, mark(), "bitwise_or '|' bitwise_xor");
             Token _literal;
             SSTNode a;
             SSTNode b;
             if (
-                (a = bitwise_or_rule) != null  // bitwise_or
+                (a = bitwise_or_rule()) != null  // bitwise_or
                 &&
                 (_literal = expect(18)) != null  // token='|'
                 &&
-                (b = bitwise_xor_rule) != null  // bitwise_xor
+                (b = bitwise_xor_rule()) != null  // bitwise_xor
             )
             {
                 debugMessageln("%d bitwise_or[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "bitwise_or '|' bitwise_xor");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_BinOp ( a , BitOr , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "bitwise_or '|' bitwise_xor");
-                return cache.putResult(pos, BITWISE_OR_ID, _res);
+                return cache.putResult(_mark, BITWISE_OR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s bitwise_or[%d-%d]: %s failed!", level, ' ',
@@ -9074,13 +9074,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> bitwise_or[%d-%d]: %s", level, ' ', _mark, mark(), "bitwise_xor");
             SSTNode bitwise_xor_var;
             if (
-                (bitwise_xor_var = bitwise_xor_rule) != null  // bitwise_xor
+                (bitwise_xor_var = bitwise_xor_rule()) != null  // bitwise_xor
             )
             {
                 debugMessageln("%d bitwise_or[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "bitwise_xor");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "bitwise_xor");
                 _res = bitwise_xor_var;
-                return cache.putResult(pos, BITWISE_OR_ID, _res);
+                return cache.putResult(_mark, BITWISE_OR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s bitwise_or[%d-%d]: %s failed!", level, ' ',
@@ -9107,12 +9107,12 @@ public final class Parser extends AbstractParser {
         int _resmark = mark();
         while (true) {
             try {
-                cache.putResult(pos, BITWISE_XOR_ID, _res);
+                cache.putResult(_mark, BITWISE_XOR_ID, _res);
             } catch (Exception e) {
                 level--;
                 return _res;
             }
-            reset(pos);
+            reset(_mark);
             Object _raw = bitwise_xor_raw();
             if (_raw == null || mark() <= _resmark)
                 break;
@@ -9129,31 +9129,31 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // bitwise_xor '^' bitwise_and
             debugMessageln("%d> bitwise_xor[%d-%d]: %s", level, ' ', _mark, mark(), "bitwise_xor '^' bitwise_and");
             Token _literal;
             SSTNode a;
             SSTNode b;
             if (
-                (a = bitwise_xor_rule) != null  // bitwise_xor
+                (a = bitwise_xor_rule()) != null  // bitwise_xor
                 &&
                 (_literal = expect(32)) != null  // token='^'
                 &&
-                (b = bitwise_and_rule) != null  // bitwise_and
+                (b = bitwise_and_rule()) != null  // bitwise_and
             )
             {
                 debugMessageln("%d bitwise_xor[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "bitwise_xor '^' bitwise_and");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_BinOp ( a , BitXor , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "bitwise_xor '^' bitwise_and");
-                return cache.putResult(pos, BITWISE_XOR_ID, _res);
+                return cache.putResult(_mark, BITWISE_XOR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s bitwise_xor[%d-%d]: %s failed!", level, ' ',
@@ -9163,13 +9163,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> bitwise_xor[%d-%d]: %s", level, ' ', _mark, mark(), "bitwise_and");
             SSTNode bitwise_and_var;
             if (
-                (bitwise_and_var = bitwise_and_rule) != null  // bitwise_and
+                (bitwise_and_var = bitwise_and_rule()) != null  // bitwise_and
             )
             {
                 debugMessageln("%d bitwise_xor[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "bitwise_and");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "bitwise_and");
                 _res = bitwise_and_var;
-                return cache.putResult(pos, BITWISE_XOR_ID, _res);
+                return cache.putResult(_mark, BITWISE_XOR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s bitwise_xor[%d-%d]: %s failed!", level, ' ',
@@ -9196,12 +9196,12 @@ public final class Parser extends AbstractParser {
         int _resmark = mark();
         while (true) {
             try {
-                cache.putResult(pos, BITWISE_AND_ID, _res);
+                cache.putResult(_mark, BITWISE_AND_ID, _res);
             } catch (Exception e) {
                 level--;
                 return _res;
             }
-            reset(pos);
+            reset(_mark);
             Object _raw = bitwise_and_raw();
             if (_raw == null || mark() <= _resmark)
                 break;
@@ -9218,31 +9218,31 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // bitwise_and '&' shift_expr
             debugMessageln("%d> bitwise_and[%d-%d]: %s", level, ' ', _mark, mark(), "bitwise_and '&' shift_expr");
             Token _literal;
             SSTNode a;
             SSTNode b;
             if (
-                (a = bitwise_and_rule) != null  // bitwise_and
+                (a = bitwise_and_rule()) != null  // bitwise_and
                 &&
                 (_literal = expect(19)) != null  // token='&'
                 &&
-                (b = shift_expr_rule) != null  // shift_expr
+                (b = shift_expr_rule()) != null  // shift_expr
             )
             {
                 debugMessageln("%d bitwise_and[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "bitwise_and '&' shift_expr");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_BinOp ( a , BitAnd , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "bitwise_and '&' shift_expr");
-                return cache.putResult(pos, BITWISE_AND_ID, _res);
+                return cache.putResult(_mark, BITWISE_AND_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s bitwise_and[%d-%d]: %s failed!", level, ' ',
@@ -9252,13 +9252,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> bitwise_and[%d-%d]: %s", level, ' ', _mark, mark(), "shift_expr");
             SSTNode shift_expr_var;
             if (
-                (shift_expr_var = shift_expr_rule) != null  // shift_expr
+                (shift_expr_var = shift_expr_rule()) != null  // shift_expr
             )
             {
                 debugMessageln("%d bitwise_and[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "shift_expr");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "shift_expr");
                 _res = shift_expr_var;
-                return cache.putResult(pos, BITWISE_AND_ID, _res);
+                return cache.putResult(_mark, BITWISE_AND_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s bitwise_and[%d-%d]: %s failed!", level, ' ',
@@ -9285,12 +9285,12 @@ public final class Parser extends AbstractParser {
         int _resmark = mark();
         while (true) {
             try {
-                cache.putResult(pos, SHIFT_EXPR_ID, _res);
+                cache.putResult(_mark, SHIFT_EXPR_ID, _res);
             } catch (Exception e) {
                 level--;
                 return _res;
             }
-            reset(pos);
+            reset(_mark);
             Object _raw = shift_expr_raw();
             if (_raw == null || mark() <= _resmark)
                 break;
@@ -9307,31 +9307,31 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // shift_expr '<<' sum
             debugMessageln("%d> shift_expr[%d-%d]: %s", level, ' ', _mark, mark(), "shift_expr '<<' sum");
             Token _literal;
             SSTNode a;
             SSTNode b;
             if (
-                (a = shift_expr_rule) != null  // shift_expr
+                (a = shift_expr_rule()) != null  // shift_expr
                 &&
                 (_literal = expect(33)) != null  // token='<<'
                 &&
-                (b = sum_rule) != null  // sum
+                (b = sum_rule()) != null  // sum
             )
             {
                 debugMessageln("%d shift_expr[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "shift_expr '<<' sum");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_BinOp ( a , LShift , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "shift_expr '<<' sum");
-                return cache.putResult(pos, SHIFT_EXPR_ID, _res);
+                return cache.putResult(_mark, SHIFT_EXPR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s shift_expr[%d-%d]: %s failed!", level, ' ',
@@ -9343,24 +9343,24 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = shift_expr_rule) != null  // shift_expr
+                (a = shift_expr_rule()) != null  // shift_expr
                 &&
                 (_literal = expect(34)) != null  // token='>>'
                 &&
-                (b = sum_rule) != null  // sum
+                (b = sum_rule()) != null  // sum
             )
             {
                 debugMessageln("%d shift_expr[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "shift_expr '>>' sum");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_BinOp ( a , RShift , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "shift_expr '>>' sum");
-                return cache.putResult(pos, SHIFT_EXPR_ID, _res);
+                return cache.putResult(_mark, SHIFT_EXPR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s shift_expr[%d-%d]: %s failed!", level, ' ',
@@ -9370,13 +9370,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> shift_expr[%d-%d]: %s", level, ' ', _mark, mark(), "sum");
             SSTNode sum_var;
             if (
-                (sum_var = sum_rule) != null  // sum
+                (sum_var = sum_rule()) != null  // sum
             )
             {
                 debugMessageln("%d shift_expr[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "sum");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "sum");
                 _res = sum_var;
-                return cache.putResult(pos, SHIFT_EXPR_ID, _res);
+                return cache.putResult(_mark, SHIFT_EXPR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s shift_expr[%d-%d]: %s failed!", level, ' ',
@@ -9403,12 +9403,12 @@ public final class Parser extends AbstractParser {
         int _resmark = mark();
         while (true) {
             try {
-                cache.putResult(pos, SUM_ID, _res);
+                cache.putResult(_mark, SUM_ID, _res);
             } catch (Exception e) {
                 level--;
                 return _res;
             }
-            reset(pos);
+            reset(_mark);
             Object _raw = sum_raw();
             if (_raw == null || mark() <= _resmark)
                 break;
@@ -9425,31 +9425,31 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // sum '+' term
             debugMessageln("%d> sum[%d-%d]: %s", level, ' ', _mark, mark(), "sum '+' term");
             Token _literal;
             SSTNode a;
             SSTNode b;
             if (
-                (a = sum_rule) != null  // sum
+                (a = sum_rule()) != null  // sum
                 &&
                 (_literal = expect(14)) != null  // token='+'
                 &&
-                (b = term_rule) != null  // term
+                (b = term_rule()) != null  // term
             )
             {
                 debugMessageln("%d sum[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "sum '+' term");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_BinOp ( a , Add , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "sum '+' term");
-                return cache.putResult(pos, SUM_ID, _res);
+                return cache.putResult(_mark, SUM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s sum[%d-%d]: %s failed!", level, ' ',
@@ -9461,24 +9461,24 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = sum_rule) != null  // sum
+                (a = sum_rule()) != null  // sum
                 &&
                 (_literal = expect(15)) != null  // token='-'
                 &&
-                (b = term_rule) != null  // term
+                (b = term_rule()) != null  // term
             )
             {
                 debugMessageln("%d sum[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "sum '-' term");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_BinOp ( a , Sub , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "sum '-' term");
-                return cache.putResult(pos, SUM_ID, _res);
+                return cache.putResult(_mark, SUM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s sum[%d-%d]: %s failed!", level, ' ',
@@ -9488,13 +9488,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> sum[%d-%d]: %s", level, ' ', _mark, mark(), "term");
             SSTNode term_var;
             if (
-                (term_var = term_rule) != null  // term
+                (term_var = term_rule()) != null  // term
             )
             {
                 debugMessageln("%d sum[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "term");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "term");
                 _res = term_var;
-                return cache.putResult(pos, SUM_ID, _res);
+                return cache.putResult(_mark, SUM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s sum[%d-%d]: %s failed!", level, ' ',
@@ -9527,12 +9527,12 @@ public final class Parser extends AbstractParser {
         int _resmark = mark();
         while (true) {
             try {
-                cache.putResult(pos, TERM_ID, _res);
+                cache.putResult(_mark, TERM_ID, _res);
             } catch (Exception e) {
                 level--;
                 return _res;
             }
-            reset(pos);
+            reset(_mark);
             Object _raw = term_raw();
             if (_raw == null || mark() <= _resmark)
                 break;
@@ -9549,31 +9549,31 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // term '*' factor
             debugMessageln("%d> term[%d-%d]: %s", level, ' ', _mark, mark(), "term '*' factor");
             Token _literal;
             SSTNode a;
             SSTNode b;
             if (
-                (a = term_rule) != null  // term
+                (a = term_rule()) != null  // term
                 &&
                 (_literal = expect(16)) != null  // token='*'
                 &&
-                (b = factor_rule) != null  // factor
+                (b = factor_rule()) != null  // factor
             )
             {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "term '*' factor");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_BinOp ( a , Mult , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '*' factor");
-                return cache.putResult(pos, TERM_ID, _res);
+                return cache.putResult(_mark, TERM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s term[%d-%d]: %s failed!", level, ' ',
@@ -9585,24 +9585,24 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = term_rule) != null  // term
+                (a = term_rule()) != null  // term
                 &&
                 (_literal = expect(17)) != null  // token='/'
                 &&
-                (b = factor_rule) != null  // factor
+                (b = factor_rule()) != null  // factor
             )
             {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "term '/' factor");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_BinOp ( a , Div , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '/' factor");
-                return cache.putResult(pos, TERM_ID, _res);
+                return cache.putResult(_mark, TERM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s term[%d-%d]: %s failed!", level, ' ',
@@ -9614,24 +9614,24 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = term_rule) != null  // term
+                (a = term_rule()) != null  // term
                 &&
                 (_literal = expect(47)) != null  // token='//'
                 &&
-                (b = factor_rule) != null  // factor
+                (b = factor_rule()) != null  // factor
             )
             {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "term '//' factor");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_BinOp ( a , FloorDiv , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '//' factor");
-                return cache.putResult(pos, TERM_ID, _res);
+                return cache.putResult(_mark, TERM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s term[%d-%d]: %s failed!", level, ' ',
@@ -9643,24 +9643,24 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = term_rule) != null  // term
+                (a = term_rule()) != null  // term
                 &&
                 (_literal = expect(24)) != null  // token='%'
                 &&
-                (b = factor_rule) != null  // factor
+                (b = factor_rule()) != null  // factor
             )
             {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "term '%' factor");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_BinOp ( a , Mod , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '%' factor");
-                return cache.putResult(pos, TERM_ID, _res);
+                return cache.putResult(_mark, TERM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s term[%d-%d]: %s failed!", level, ' ',
@@ -9672,24 +9672,24 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = term_rule) != null  // term
+                (a = term_rule()) != null  // term
                 &&
                 (_literal = expect(49)) != null  // token='@'
                 &&
-                (b = factor_rule) != null  // factor
+                (b = factor_rule()) != null  // factor
             )
             {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "term '@' factor");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: CHECK_VERSION ( expr_ty , 5 , "The '@' operator is" , _PyAST_BinOp ( a , MatMult , b , EXTRA ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '@' factor");
-                return cache.putResult(pos, TERM_ID, _res);
+                return cache.putResult(_mark, TERM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s term[%d-%d]: %s failed!", level, ' ',
@@ -9699,13 +9699,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> term[%d-%d]: %s", level, ' ', _mark, mark(), "factor");
             SSTNode factor_var;
             if (
-                (factor_var = factor_rule) != null  // factor
+                (factor_var = factor_rule()) != null  // factor
             )
             {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "factor");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "factor");
                 _res = factor_var;
-                return cache.putResult(pos, TERM_ID, _res);
+                return cache.putResult(_mark, TERM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s term[%d-%d]: %s failed!", level, ' ',
@@ -9735,13 +9735,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(14)) != null  // token='+'
                 &&
-                (a = factor_rule) != null  // factor
+                (a = factor_rule()) != null  // factor
             )
             {
                 debugMessageln("%d factor[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'+' factor");
                 _res = factory.createUnaryOp(UnarySSTNode.Type.ADD,a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'+' factor");
-                return cache.putResult(pos, FACTOR_ID, _res);
+                return cache.putResult(_mark, FACTOR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s factor[%d-%d]: %s failed!", level, ' ',
@@ -9754,13 +9754,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(15)) != null  // token='-'
                 &&
-                (a = factor_rule) != null  // factor
+                (a = factor_rule()) != null  // factor
             )
             {
                 debugMessageln("%d factor[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'-' factor");
                 _res = factory.createUnaryOp(UnarySSTNode.Type.SUB,a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'-' factor");
-                return cache.putResult(pos, FACTOR_ID, _res);
+                return cache.putResult(_mark, FACTOR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s factor[%d-%d]: %s failed!", level, ' ',
@@ -9773,13 +9773,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(31)) != null  // token='~'
                 &&
-                (a = factor_rule) != null  // factor
+                (a = factor_rule()) != null  // factor
             )
             {
                 debugMessageln("%d factor[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'~' factor");
                 _res = factory.createUnaryOp(UnarySSTNode.Type.INVERT,a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'~' factor");
-                return cache.putResult(pos, FACTOR_ID, _res);
+                return cache.putResult(_mark, FACTOR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s factor[%d-%d]: %s failed!", level, ' ',
@@ -9789,13 +9789,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> factor[%d-%d]: %s", level, ' ', _mark, mark(), "power");
             SSTNode power_var;
             if (
-                (power_var = power_rule) != null  // power
+                (power_var = power_rule()) != null  // power
             )
             {
                 debugMessageln("%d factor[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "power");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "power");
                 _res = power_var;
-                return cache.putResult(pos, FACTOR_ID, _res);
+                return cache.putResult(_mark, FACTOR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s factor[%d-%d]: %s failed!", level, ' ',
@@ -9803,7 +9803,7 @@ public final class Parser extends AbstractParser {
         }
         debugMessageln("Fail at %d: factor", _mark);
         _res = null;
-        cache.putResult(pos, FACTOR_ID, _res);
+        cache.putResult(_mark, FACTOR_ID, _res);
         level--;
         return _res;
     }
@@ -9815,31 +9815,31 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // await_primary '**' factor
             debugMessageln("%d> power[%d-%d]: %s", level, ' ', _mark, mark(), "await_primary '**' factor");
             Token _literal;
             SSTNode a;
             SSTNode b;
             if (
-                (a = await_primary_rule) != null  // await_primary
+                (a = await_primary_rule()) != null  // await_primary
                 &&
                 (_literal = expect(35)) != null  // token='**'
                 &&
-                (b = factor_rule) != null  // factor
+                (b = factor_rule()) != null  // factor
             )
             {
                 debugMessageln("%d power[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "await_primary '**' factor");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_BinOp ( a , Pow , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "await_primary '**' factor");
-                return cache.putResult(pos, POWER_ID, _res);
+                return cache.putResult(_mark, POWER_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s power[%d-%d]: %s failed!", level, ' ',
@@ -9849,13 +9849,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> power[%d-%d]: %s", level, ' ', _mark, mark(), "await_primary");
             SSTNode await_primary_var;
             if (
-                (await_primary_var = await_primary_rule) != null  // await_primary
+                (await_primary_var = await_primary_rule()) != null  // await_primary
             )
             {
                 debugMessageln("%d power[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "await_primary");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "await_primary");
                 _res = await_primary_var;
-                return cache.putResult(pos, POWER_ID, _res);
+                return cache.putResult(_mark, POWER_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s power[%d-%d]: %s failed!", level, ' ',
@@ -9879,7 +9879,7 @@ public final class Parser extends AbstractParser {
             return _res;
         }
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // AWAIT primary
             debugMessageln("%d> await_primary[%d-%d]: %s", level, ' ', _mark, mark(), "AWAIT primary");
             SSTNode a;
@@ -9887,20 +9887,20 @@ public final class Parser extends AbstractParser {
             if (
                 (await_var = expect(Token.Kind.AWAIT)) != null  // token='AWAIT'
                 &&
-                (a = primary_rule) != null  // primary
+                (a = primary_rule()) != null  // primary
             )
             {
                 debugMessageln("%d await_primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "AWAIT primary");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: CHECK_VERSION ( expr_ty , 5 , "Await expressions are" , _PyAST_Await ( a , EXTRA ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "AWAIT primary");
-                return cache.putResult(pos, AWAIT_PRIMARY_ID, _res);
+                return cache.putResult(_mark, AWAIT_PRIMARY_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s await_primary[%d-%d]: %s failed!", level, ' ',
@@ -9910,13 +9910,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> await_primary[%d-%d]: %s", level, ' ', _mark, mark(), "primary");
             SSTNode primary_var;
             if (
-                (primary_var = primary_rule) != null  // primary
+                (primary_var = primary_rule()) != null  // primary
             )
             {
                 debugMessageln("%d await_primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "primary");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "primary");
                 _res = primary_var;
-                return cache.putResult(pos, AWAIT_PRIMARY_ID, _res);
+                return cache.putResult(_mark, AWAIT_PRIMARY_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s await_primary[%d-%d]: %s failed!", level, ' ',
@@ -9924,7 +9924,7 @@ public final class Parser extends AbstractParser {
         }
         debugMessageln("Fail at %d: await_primary", _mark);
         _res = null;
-        cache.putResult(pos, AWAIT_PRIMARY_ID, _res);
+        cache.putResult(_mark, AWAIT_PRIMARY_ID, _res);
         level--;
         return _res;
     }
@@ -9950,12 +9950,12 @@ public final class Parser extends AbstractParser {
         int _resmark = mark();
         while (true) {
             try {
-                cache.putResult(pos, PRIMARY_ID, _res);
+                cache.putResult(_mark, PRIMARY_ID, _res);
             } catch (Exception e) {
                 level--;
                 return _res;
             }
-            reset(pos);
+            reset(_mark);
             Object _raw = primary_raw();
             if (_raw == null || mark() <= _resmark)
                 break;
@@ -9972,18 +9972,18 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_primary
             debugMessageln("%d> primary[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_primary");
             Object invalid_primary_var;
             if (
-                (invalid_primary_var = invalid_primary_rule) != null  // invalid_primary
+                (invalid_primary_var = invalid_primary_rule()) != null  // invalid_primary
             )
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_primary");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_primary");
                 _res = invalid_primary_var;
-                return cache.putResult(pos, PRIMARY_ID, _res);
+                return cache.putResult(_mark, PRIMARY_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s primary[%d-%d]: %s failed!", level, ' ',
@@ -9995,24 +9995,24 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = primary_rule) != null  // primary
+                (a = primary_rule()) != null  // primary
                 &&
                 (_literal = expect(23)) != null  // token='.'
                 &&
-                (b = name_token) != null  // NAME
+                (b = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "primary '.' NAME");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary '.' NAME");
-                return cache.putResult(pos, PRIMARY_ID, _res);
+                return cache.putResult(_mark, PRIMARY_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s primary[%d-%d]: %s failed!", level, ' ',
@@ -10023,22 +10023,22 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = primary_rule) != null  // primary
+                (a = primary_rule()) != null  // primary
                 &&
-                (b = genexp_rule) != null  // genexp
+                (b = genexp_rule()) != null  // genexp
             )
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "primary genexp");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , b ) ) , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary genexp");
-                return cache.putResult(pos, PRIMARY_ID, _res);
+                return cache.putResult(_mark, PRIMARY_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s primary[%d-%d]: %s failed!", level, ' ',
@@ -10051,26 +10051,26 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             Object b;
             if (
-                (a = primary_rule) != null  // primary
+                (a = primary_rule()) != null  // primary
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
-                ((b = _tmp_145_rule) != null || true)  // arguments?
+                ((b = _tmp_145_rule()) != null || true)  // arguments?
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "primary '(' arguments? ')'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Call ( a , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary '(' arguments? ')'");
-                return cache.putResult(pos, PRIMARY_ID, _res);
+                return cache.putResult(_mark, PRIMARY_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s primary[%d-%d]: %s failed!", level, ' ',
@@ -10083,26 +10083,26 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = primary_rule) != null  // primary
+                (a = primary_rule()) != null  // primary
                 &&
                 (_literal = expect(9)) != null  // token='['
                 &&
-                (b = slices_rule) != null  // slices
+                (b = slices_rule()) != null  // slices
                 &&
                 (_literal_1 = expect(10)) != null  // token=']'
             )
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "primary '[' slices ']'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Subscript ( a , b , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary '[' slices ']'");
-                return cache.putResult(pos, PRIMARY_ID, _res);
+                return cache.putResult(_mark, PRIMARY_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s primary[%d-%d]: %s failed!", level, ' ',
@@ -10112,13 +10112,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> primary[%d-%d]: %s", level, ' ', _mark, mark(), "atom");
             SSTNode atom_var;
             if (
-                (atom_var = atom_rule) != null  // atom
+                (atom_var = atom_rule()) != null  // atom
             )
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "atom");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "atom");
                 _res = atom_var;
-                return cache.putResult(pos, PRIMARY_ID, _res);
+                return cache.putResult(_mark, PRIMARY_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s primary[%d-%d]: %s failed!", level, ' ',
@@ -10137,12 +10137,12 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // slice !','
             debugMessageln("%d> slices[%d-%d]: %s", level, ' ', _mark, mark(), "slice !','");
             SSTNode a;
             if (
-                (a = slice_rule) != null  // slice
+                (a = slice_rule()) != null  // slice
                 &&
                 genLookahead_expect(false, 12)  // token=','
             )
@@ -10150,7 +10150,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d slices[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "slice !','");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "slice !','");
-                return cache.putResult(pos, SLICES_ID, _res);
+                return cache.putResult(_mark, SLICES_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s slices[%d-%d]: %s failed!", level, ' ',
@@ -10162,22 +10162,22 @@ public final class Parser extends AbstractParser {
             Object _opt_var;
             SSTNode[] a;
             if (
-                (a = (SSTNode[])_gather_146_rule) != null  // ','.slice+
+                (a = (SSTNode[])_gather_146_rule()) != null  // ','.slice+
                 &&
-                ((_opt_var = _tmp_148_rule) != null || true)  // ','?
+                ((_opt_var = _tmp_148_rule()) != null || true)  // ','?
             )
             {
                 debugMessageln("%d slices[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.slice+ ','?");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Tuple ( a , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.slice+ ','?");
-                return cache.putResult(pos, SLICES_ID, _res);
+                return cache.putResult(_mark, SLICES_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s slices[%d-%d]: %s failed!", level, ' ',
@@ -10196,7 +10196,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // expression? ':' expression? [':' expression?]
             debugMessageln("%d> slice[%d-%d]: %s", level, ' ', _mark, mark(), "expression? ':' expression? [':' expression?]");
             Token _literal;
@@ -10204,26 +10204,26 @@ public final class Parser extends AbstractParser {
             Object b;
             Object c;
             if (
-                ((a = _tmp_149_rule) != null || true)  // expression?
+                ((a = _tmp_149_rule()) != null || true)  // expression?
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                ((b = _tmp_150_rule) != null || true)  // expression?
+                ((b = _tmp_150_rule()) != null || true)  // expression?
                 &&
-                ((c = _tmp_151_rule) != null || true)  // [':' expression?]
+                ((c = _tmp_151_rule()) != null || true)  // [':' expression?]
             )
             {
                 debugMessageln("%d slice[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression? ':' expression? [':' expression?]");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Slice ( a , b , c , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression? ':' expression? [':' expression?]");
-                return cache.putResult(pos, SLICE_ID, _res);
+                return cache.putResult(_mark, SLICE_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s slice[%d-%d]: %s failed!", level, ' ',
@@ -10233,13 +10233,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> slice[%d-%d]: %s", level, ' ', _mark, mark(), "named_expression");
             SSTNode a;
             if (
-                (a = named_expression_rule) != null  // named_expression
+                (a = named_expression_rule()) != null  // named_expression
             )
             {
                 debugMessageln("%d slice[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "named_expression");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "named_expression");
-                return cache.putResult(pos, SLICE_ID, _res);
+                return cache.putResult(_mark, SLICE_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s slice[%d-%d]: %s failed!", level, ' ',
@@ -10268,18 +10268,18 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // NAME
             debugMessageln("%d> atom[%d-%d]: %s", level, ' ', _mark, mark(), "NAME");
             SSTNode n;
             if (
-                (n = name_token) != null  // NAME
+                (n = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME");
                 _res = factory.createVariable(getText(n),n.startOffset,n.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
-                return cache.putResult(pos, ATOM_ID, _res);
+                return cache.putResult(_mark, ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s atom[%d-%d]: %s failed!", level, ' ',
@@ -10295,7 +10295,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'True'");
                 _res = factory.createBooleanLiteral(true,startToken.startOffset,startToken.endOffset);;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'True'");
-                return cache.putResult(pos, ATOM_ID, _res);
+                return cache.putResult(_mark, ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s atom[%d-%d]: %s failed!", level, ' ',
@@ -10311,7 +10311,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'False'");
                 _res = factory.createBooleanLiteral(false,startToken.startOffset,startToken.endOffset);;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'False'");
-                return cache.putResult(pos, ATOM_ID, _res);
+                return cache.putResult(_mark, ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s atom[%d-%d]: %s failed!", level, ' ',
@@ -10326,15 +10326,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'None'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Constant ( Py_None , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'None'");
-                return cache.putResult(pos, ATOM_ID, _res);
+                return cache.putResult(_mark, ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s atom[%d-%d]: %s failed!", level, ' ',
@@ -10346,13 +10346,13 @@ public final class Parser extends AbstractParser {
             if (
                 genLookahead_string_token(true)
                 &&
-                (strings_var = strings_rule) != null  // strings
+                (strings_var = strings_rule()) != null  // strings
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&STRING strings");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&STRING strings");
                 _res = strings_var;
-                return cache.putResult(pos, ATOM_ID, _res);
+                return cache.putResult(_mark, ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s atom[%d-%d]: %s failed!", level, ' ',
@@ -10362,13 +10362,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> atom[%d-%d]: %s", level, ' ', _mark, mark(), "NUMBER");
             SSTNode n;
             if (
-                (n = number_token) != null  // NUMBER
+                (n = number_token()) != null  // NUMBER
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NUMBER");
                 _res = factory.createNumber(getText(n),n.startOffset,n.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NUMBER");
-                return cache.putResult(pos, ATOM_ID, _res);
+                return cache.putResult(_mark, ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s atom[%d-%d]: %s failed!", level, ' ',
@@ -10380,13 +10380,13 @@ public final class Parser extends AbstractParser {
             if (
                 genLookahead_expect(true, 7)  // token='('
                 &&
-                (_tmp_152_var = _tmp_152_rule) != null  // tuple | group | genexp
+                (_tmp_152_var = _tmp_152_rule()) != null  // tuple | group | genexp
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&'(' (tuple | group | genexp)");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'(' (tuple | group | genexp)");
                 _res = _tmp_152_var;
-                return cache.putResult(pos, ATOM_ID, _res);
+                return cache.putResult(_mark, ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s atom[%d-%d]: %s failed!", level, ' ',
@@ -10398,13 +10398,13 @@ public final class Parser extends AbstractParser {
             if (
                 genLookahead_expect(true, 9)  // token='['
                 &&
-                (_tmp_153_var = _tmp_153_rule) != null  // list | listcomp
+                (_tmp_153_var = _tmp_153_rule()) != null  // list | listcomp
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&'[' (list | listcomp)");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'[' (list | listcomp)");
                 _res = _tmp_153_var;
-                return cache.putResult(pos, ATOM_ID, _res);
+                return cache.putResult(_mark, ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s atom[%d-%d]: %s failed!", level, ' ',
@@ -10416,13 +10416,13 @@ public final class Parser extends AbstractParser {
             if (
                 genLookahead_expect(true, 25)  // token='{'
                 &&
-                (_tmp_154_var = _tmp_154_rule) != null  // dict | set | dictcomp | setcomp
+                (_tmp_154_var = _tmp_154_rule()) != null  // dict | set | dictcomp | setcomp
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "&'{' (dict | set | dictcomp | setcomp)");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "&'{' (dict | set | dictcomp | setcomp)");
                 _res = _tmp_154_var;
-                return cache.putResult(pos, ATOM_ID, _res);
+                return cache.putResult(_mark, ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s atom[%d-%d]: %s failed!", level, ' ',
@@ -10437,15 +10437,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'...'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Constant ( Py_Ellipsis , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'...'");
-                return cache.putResult(pos, ATOM_ID, _res);
+                return cache.putResult(_mark, ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s atom[%d-%d]: %s failed!", level, ' ',
@@ -10472,14 +10472,14 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> strings[%d-%d]: %s", level, ' ', _mark, mark(), "STRING+");
             SSTNode[] a;
             if (
-                (a = _loop1_155_rule) != null  // STRING+
+                (a = _loop1_155_rule()) != null  // STRING+
             )
             {
                 debugMessageln("%d strings[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "STRING+");
                 // TODO: node.action: _PyPegen_concatenate_strings ( p , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "STRING+");
-                return cache.putResult(pos, STRINGS_ID, _res);
+                return cache.putResult(_mark, STRINGS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s strings[%d-%d]: %s failed!", level, ' ',
@@ -10487,7 +10487,7 @@ public final class Parser extends AbstractParser {
         }
         debugMessageln("Fail at %d: strings", _mark);
         _res = null;
-        cache.putResult(pos, STRINGS_ID, _res);
+        cache.putResult(_mark, STRINGS_ID, _res);
         level--;
         return _res;
     }
@@ -10499,7 +10499,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '[' star_named_expressions? ']'
             debugMessageln("%d> list[%d-%d]: %s", level, ' ', _mark, mark(), "'[' star_named_expressions? ']'");
             Token _literal;
@@ -10508,22 +10508,22 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(9)) != null  // token='['
                 &&
-                ((a = _tmp_156_rule) != null || true)  // star_named_expressions?
+                ((a = _tmp_156_rule()) != null || true)  // star_named_expressions?
                 &&
                 (_literal_1 = expect(10)) != null  // token=']'
             )
             {
                 debugMessageln("%d list[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'[' star_named_expressions? ']'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_List ( a , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' star_named_expressions? ']'");
-                return cache.putResult(pos, LIST_ID, _res);
+                return cache.putResult(_mark, LIST_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s list[%d-%d]: %s failed!", level, ' ',
@@ -10542,7 +10542,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '[' named_expression for_if_clauses ']'
             debugMessageln("%d> listcomp[%d-%d]: %s", level, ' ', _mark, mark(), "'[' named_expression for_if_clauses ']'");
             // TODO replacing asdl_comprehension_seq* --> SSTNode[]
@@ -10553,25 +10553,25 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(9)) != null  // token='['
                 &&
-                (a = named_expression_rule) != null  // named_expression
+                (a = named_expression_rule()) != null  // named_expression
                 &&
                 // TODO replacing asdl_comprehension_seq* --> SSTNode[]
-                (b = for_if_clauses_rule) != null  // for_if_clauses
+                (b = for_if_clauses_rule()) != null  // for_if_clauses
                 &&
                 (_literal_1 = expect(10)) != null  // token=']'
             )
             {
                 debugMessageln("%d listcomp[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'[' named_expression for_if_clauses ']'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_ListComp ( a , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' named_expression for_if_clauses ']'");
-                return cache.putResult(pos, LISTCOMP_ID, _res);
+                return cache.putResult(_mark, LISTCOMP_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s listcomp[%d-%d]: %s failed!", level, ' ',
@@ -10581,13 +10581,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> listcomp[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_comprehension");
             Object invalid_comprehension_var;
             if (
-                (invalid_comprehension_var = invalid_comprehension_rule) != null  // invalid_comprehension
+                (invalid_comprehension_var = invalid_comprehension_rule()) != null  // invalid_comprehension
             )
             {
                 debugMessageln("%d listcomp[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_comprehension");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_comprehension");
                 _res = invalid_comprehension_var;
-                return cache.putResult(pos, LISTCOMP_ID, _res);
+                return cache.putResult(_mark, LISTCOMP_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s listcomp[%d-%d]: %s failed!", level, ' ',
@@ -10606,7 +10606,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '(' [star_named_expression ',' star_named_expressions?] ')'
             debugMessageln("%d> tuple[%d-%d]: %s", level, ' ', _mark, mark(), "'(' [star_named_expression ',' star_named_expressions?] ')'");
             Token _literal;
@@ -10615,22 +10615,22 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                ((a = _tmp_157_rule) != null || true)  // [star_named_expression ',' star_named_expressions?]
+                ((a = _tmp_157_rule()) != null || true)  // [star_named_expression ',' star_named_expressions?]
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
                 debugMessageln("%d tuple[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' [star_named_expression ',' star_named_expressions?] ')'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Tuple ( a , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' [star_named_expression ',' star_named_expressions?] ')'");
-                return cache.putResult(pos, TUPLE_ID, _res);
+                return cache.putResult(_mark, TUPLE_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s tuple[%d-%d]: %s failed!", level, ' ',
@@ -10656,7 +10656,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                (a = _tmp_158_rule) != null  // yield_expr | named_expression
+                (a = _tmp_158_rule()) != null  // yield_expr | named_expression
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
@@ -10664,7 +10664,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d group[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' (yield_expr | named_expression) ')'");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' (yield_expr | named_expression) ')'");
-                return cache.putResult(pos, GROUP_ID, _res);
+                return cache.putResult(_mark, GROUP_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s group[%d-%d]: %s failed!", level, ' ',
@@ -10674,13 +10674,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> group[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_group");
             Object invalid_group_var;
             if (
-                (invalid_group_var = invalid_group_rule) != null  // invalid_group
+                (invalid_group_var = invalid_group_rule()) != null  // invalid_group
             )
             {
                 debugMessageln("%d group[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_group");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_group");
                 _res = invalid_group_var;
-                return cache.putResult(pos, GROUP_ID, _res);
+                return cache.putResult(_mark, GROUP_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s group[%d-%d]: %s failed!", level, ' ',
@@ -10699,7 +10699,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '(' direct_named_expression for_if_clauses ')'
             debugMessageln("%d> genexp[%d-%d]: %s", level, ' ', _mark, mark(), "'(' direct_named_expression for_if_clauses ')'");
             // TODO replacing asdl_comprehension_seq* --> SSTNode[]
@@ -10710,25 +10710,25 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                (a = direct_named_expression_rule) != null  // direct_named_expression
+                (a = direct_named_expression_rule()) != null  // direct_named_expression
                 &&
                 // TODO replacing asdl_comprehension_seq* --> SSTNode[]
-                (b = for_if_clauses_rule) != null  // for_if_clauses
+                (b = for_if_clauses_rule()) != null  // for_if_clauses
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
                 debugMessageln("%d genexp[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' direct_named_expression for_if_clauses ')'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_GeneratorExp ( a , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' direct_named_expression for_if_clauses ')'");
-                return cache.putResult(pos, GENEXP_ID, _res);
+                return cache.putResult(_mark, GENEXP_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s genexp[%d-%d]: %s failed!", level, ' ',
@@ -10738,13 +10738,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> genexp[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_comprehension");
             Object invalid_comprehension_var;
             if (
-                (invalid_comprehension_var = invalid_comprehension_rule) != null  // invalid_comprehension
+                (invalid_comprehension_var = invalid_comprehension_rule()) != null  // invalid_comprehension
             )
             {
                 debugMessageln("%d genexp[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_comprehension");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_comprehension");
                 _res = invalid_comprehension_var;
-                return cache.putResult(pos, GENEXP_ID, _res);
+                return cache.putResult(_mark, GENEXP_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s genexp[%d-%d]: %s failed!", level, ' ',
@@ -10763,7 +10763,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '{' star_named_expressions '}'
             debugMessageln("%d> set[%d-%d]: %s", level, ' ', _mark, mark(), "'{' star_named_expressions '}'");
             // TODO replacing asdl_expr_seq* --> SSTNode[]
@@ -10774,22 +10774,22 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(25)) != null  // token='{'
                 &&
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (a = star_named_expressions_rule) != null  // star_named_expressions
+                (a = star_named_expressions_rule()) != null  // star_named_expressions
                 &&
                 (_literal_1 = expect(26)) != null  // token='}'
             )
             {
                 debugMessageln("%d set[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'{' star_named_expressions '}'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Set ( a , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' star_named_expressions '}'");
-                return cache.putResult(pos, SET_ID, _res);
+                return cache.putResult(_mark, SET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s set[%d-%d]: %s failed!", level, ' ',
@@ -10808,7 +10808,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '{' named_expression for_if_clauses '}'
             debugMessageln("%d> setcomp[%d-%d]: %s", level, ' ', _mark, mark(), "'{' named_expression for_if_clauses '}'");
             // TODO replacing asdl_comprehension_seq* --> SSTNode[]
@@ -10819,25 +10819,25 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(25)) != null  // token='{'
                 &&
-                (a = named_expression_rule) != null  // named_expression
+                (a = named_expression_rule()) != null  // named_expression
                 &&
                 // TODO replacing asdl_comprehension_seq* --> SSTNode[]
-                (b = for_if_clauses_rule) != null  // for_if_clauses
+                (b = for_if_clauses_rule()) != null  // for_if_clauses
                 &&
                 (_literal_1 = expect(26)) != null  // token='}'
             )
             {
                 debugMessageln("%d setcomp[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'{' named_expression for_if_clauses '}'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_SetComp ( a , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' named_expression for_if_clauses '}'");
-                return cache.putResult(pos, SETCOMP_ID, _res);
+                return cache.putResult(_mark, SETCOMP_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s setcomp[%d-%d]: %s failed!", level, ' ',
@@ -10847,13 +10847,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> setcomp[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_comprehension");
             Object invalid_comprehension_var;
             if (
-                (invalid_comprehension_var = invalid_comprehension_rule) != null  // invalid_comprehension
+                (invalid_comprehension_var = invalid_comprehension_rule()) != null  // invalid_comprehension
             )
             {
                 debugMessageln("%d setcomp[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_comprehension");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_comprehension");
                 _res = invalid_comprehension_var;
-                return cache.putResult(pos, SETCOMP_ID, _res);
+                return cache.putResult(_mark, SETCOMP_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s setcomp[%d-%d]: %s failed!", level, ' ',
@@ -10872,7 +10872,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '{' double_starred_kvpairs? '}'
             debugMessageln("%d> dict[%d-%d]: %s", level, ' ', _mark, mark(), "'{' double_starred_kvpairs? '}'");
             Token _literal;
@@ -10881,22 +10881,22 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(25)) != null  // token='{'
                 &&
-                ((a = _tmp_159_rule) != null || true)  // double_starred_kvpairs?
+                ((a = _tmp_159_rule()) != null || true)  // double_starred_kvpairs?
                 &&
                 (_literal_1 = expect(26)) != null  // token='}'
             )
             {
                 debugMessageln("%d dict[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'{' double_starred_kvpairs? '}'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Dict ( CHECK ( asdl_expr_seq * , _PyPegen_get_keys ( p , a ) ) , CHECK ( asdl_expr_seq * , _PyPegen_get_values ( p , a ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' double_starred_kvpairs? '}'");
-                return cache.putResult(pos, DICT_ID, _res);
+                return cache.putResult(_mark, DICT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s dict[%d-%d]: %s failed!", level, ' ',
@@ -10910,7 +10910,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(25)) != null  // token='{'
                 &&
-                (invalid_double_starred_kvpairs_var = invalid_double_starred_kvpairs_rule) != null  // invalid_double_starred_kvpairs
+                (invalid_double_starred_kvpairs_var = invalid_double_starred_kvpairs_rule()) != null  // invalid_double_starred_kvpairs
                 &&
                 (_literal_1 = expect(26)) != null  // token='}'
             )
@@ -10918,7 +10918,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d dict[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'{' invalid_double_starred_kvpairs '}'");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "'{' invalid_double_starred_kvpairs '}'");
                 _res = dummyName(_literal, invalid_double_starred_kvpairs_var, _literal_1);
-                return cache.putResult(pos, DICT_ID, _res);
+                return cache.putResult(_mark, DICT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s dict[%d-%d]: %s failed!", level, ' ',
@@ -10937,7 +10937,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '{' kvpair for_if_clauses '}'
             debugMessageln("%d> dictcomp[%d-%d]: %s", level, ' ', _mark, mark(), "'{' kvpair for_if_clauses '}'");
             // TODO replacing KeyValuePair* --> SSTNode[]
@@ -10950,25 +10950,25 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(25)) != null  // token='{'
                 &&
                 // TODO replacing KeyValuePair* --> SSTNode[]
-                (a = kvpair_rule) != null  // kvpair
+                (a = kvpair_rule()) != null  // kvpair
                 &&
                 // TODO replacing asdl_comprehension_seq* --> SSTNode[]
-                (b = for_if_clauses_rule) != null  // for_if_clauses
+                (b = for_if_clauses_rule()) != null  // for_if_clauses
                 &&
                 (_literal_1 = expect(26)) != null  // token='}'
             )
             {
                 debugMessageln("%d dictcomp[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'{' kvpair for_if_clauses '}'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_DictComp ( a -> key , a -> value , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' kvpair for_if_clauses '}'");
-                return cache.putResult(pos, DICTCOMP_ID, _res);
+                return cache.putResult(_mark, DICTCOMP_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s dictcomp[%d-%d]: %s failed!", level, ' ',
@@ -10978,13 +10978,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> dictcomp[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_dict_comprehension");
             Object invalid_dict_comprehension_var;
             if (
-                (invalid_dict_comprehension_var = invalid_dict_comprehension_rule) != null  // invalid_dict_comprehension
+                (invalid_dict_comprehension_var = invalid_dict_comprehension_rule()) != null  // invalid_dict_comprehension
             )
             {
                 debugMessageln("%d dictcomp[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_dict_comprehension");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_dict_comprehension");
                 _res = invalid_dict_comprehension_var;
-                return cache.putResult(pos, DICTCOMP_ID, _res);
+                return cache.putResult(_mark, DICTCOMP_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s dictcomp[%d-%d]: %s failed!", level, ' ',
@@ -11008,15 +11008,15 @@ public final class Parser extends AbstractParser {
             Object _opt_var;
             SSTNode[] a;
             if (
-                (a = _gather_160_rule) != null  // ','.double_starred_kvpair+
+                (a = _gather_160_rule()) != null  // ','.double_starred_kvpair+
                 &&
-                ((_opt_var = _tmp_162_rule) != null || true)  // ','?
+                ((_opt_var = _tmp_162_rule()) != null || true)  // ','?
             )
             {
                 debugMessageln("%d double_starred_kvpairs[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.double_starred_kvpair+ ','?");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.double_starred_kvpair+ ','?");
-                return cache.putResult(pos, DOUBLE_STARRED_KVPAIRS_ID, _res);
+                return cache.putResult(_mark, DOUBLE_STARRED_KVPAIRS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s double_starred_kvpairs[%d-%d]: %s failed!", level, ' ',
@@ -11042,14 +11042,14 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(35)) != null  // token='**'
                 &&
-                (a = bitwise_or_rule) != null  // bitwise_or
+                (a = bitwise_or_rule()) != null  // bitwise_or
             )
             {
                 debugMessageln("%d double_starred_kvpair[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'**' bitwise_or");
                 // TODO: node.action: _PyPegen_key_value_pair ( p , NULL , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' bitwise_or");
-                return cache.putResult(pos, DOUBLE_STARRED_KVPAIR_ID, _res);
+                return cache.putResult(_mark, DOUBLE_STARRED_KVPAIR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s double_starred_kvpair[%d-%d]: %s failed!", level, ' ',
@@ -11061,13 +11061,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] kvpair_var;
             if (
                 // TODO replacing KeyValuePair* --> SSTNode[]
-                (kvpair_var = kvpair_rule) != null  // kvpair
+                (kvpair_var = kvpair_rule()) != null  // kvpair
             )
             {
                 debugMessageln("%d double_starred_kvpair[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "kvpair");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "kvpair");
                 _res = kvpair_var;
-                return cache.putResult(pos, DOUBLE_STARRED_KVPAIR_ID, _res);
+                return cache.putResult(_mark, DOUBLE_STARRED_KVPAIR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s double_starred_kvpair[%d-%d]: %s failed!", level, ' ',
@@ -11092,18 +11092,18 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (b = expression_rule) != null  // expression
+                (b = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d kvpair[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression ':' expression");
                 // TODO: node.action: _PyPegen_key_value_pair ( p , a , b )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':' expression");
-                return cache.putResult(pos, KVPAIR_ID, _res);
+                return cache.putResult(_mark, KVPAIR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s kvpair[%d-%d]: %s failed!", level, ' ',
@@ -11127,13 +11127,13 @@ public final class Parser extends AbstractParser {
             // TODO replacing asdl_comprehension_seq* --> SSTNode[]
             SSTNode[] a;
             if (
-                (a = (SSTNode[])_loop1_163_rule) != null  // for_if_clause+
+                (a = (SSTNode[])_loop1_163_rule()) != null  // for_if_clause+
             )
             {
                 debugMessageln("%d for_if_clauses[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "for_if_clause+");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "for_if_clause+");
-                return cache.putResult(pos, FOR_IF_CLAUSES_ID, _res);
+                return cache.putResult(_mark, FOR_IF_CLAUSES_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s for_if_clauses[%d-%d]: %s failed!", level, ' ',
@@ -11170,22 +11170,22 @@ public final class Parser extends AbstractParser {
                 &&
                 (_keyword = expect(517)) != null  // token='for'
                 &&
-                (a = star_targets_rule) != null  // star_targets
+                (a = star_targets_rule()) != null  // star_targets
                 &&
                 (_keyword_1 = expect(518)) != null  // token='in'
                 &&
                 (_cut_var = 1) != null
                 &&
-                (b = disjunction_rule) != null  // disjunction
+                (b = disjunction_rule()) != null  // disjunction
                 &&
-                (c = (SSTNode[])_loop0_164_rule) != null  // (('if' disjunction))*
+                (c = (SSTNode[])_loop0_164_rule()) != null  // (('if' disjunction))*
             )
             {
                 debugMessageln("%d for_if_clause[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC 'for' star_targets 'in' ~ disjunction (('if' disjunction))*");
                 // TODO: node.action: CHECK_VERSION ( comprehension_ty , 6 , "Async comprehensions are" , _PyAST_comprehension ( a , b , c , 1 , p -> arena ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC 'for' star_targets 'in' ~ disjunction (('if' disjunction))*");
-                return cache.putResult(pos, FOR_IF_CLAUSE_ID, _res);
+                return cache.putResult(_mark, FOR_IF_CLAUSE_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s for_if_clause[%d-%d]: %s failed!", level, ' ',
@@ -11207,22 +11207,22 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(517)) != null  // token='for'
                 &&
-                (a = star_targets_rule) != null  // star_targets
+                (a = star_targets_rule()) != null  // star_targets
                 &&
                 (_keyword_1 = expect(518)) != null  // token='in'
                 &&
                 (_cut_var = 1) != null
                 &&
-                (b = disjunction_rule) != null  // disjunction
+                (b = disjunction_rule()) != null  // disjunction
                 &&
-                (c = (SSTNode[])_loop0_165_rule) != null  // (('if' disjunction))*
+                (c = (SSTNode[])_loop0_165_rule()) != null  // (('if' disjunction))*
             )
             {
                 debugMessageln("%d for_if_clause[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'for' star_targets 'in' ~ disjunction (('if' disjunction))*");
                 // TODO: node.action: _PyAST_comprehension ( a , b , c , 0 , p -> arena )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'for' star_targets 'in' ~ disjunction (('if' disjunction))*");
-                return cache.putResult(pos, FOR_IF_CLAUSE_ID, _res);
+                return cache.putResult(_mark, FOR_IF_CLAUSE_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s for_if_clause[%d-%d]: %s failed!", level, ' ',
@@ -11236,13 +11236,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> for_if_clause[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_for_target");
             Object invalid_for_target_var;
             if (
-                (invalid_for_target_var = invalid_for_target_rule) != null  // invalid_for_target
+                (invalid_for_target_var = invalid_for_target_rule()) != null  // invalid_for_target
             )
             {
                 debugMessageln("%d for_if_clause[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_for_target");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_for_target");
                 _res = invalid_for_target_var;
-                return cache.putResult(pos, FOR_IF_CLAUSE_ID, _res);
+                return cache.putResult(_mark, FOR_IF_CLAUSE_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s for_if_clause[%d-%d]: %s failed!", level, ' ',
@@ -11261,7 +11261,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // 'yield' 'from' expression
             debugMessageln("%d> yield_expr[%d-%d]: %s", level, ' ', _mark, mark(), "'yield' 'from' expression");
             Token _keyword;
@@ -11272,20 +11272,20 @@ public final class Parser extends AbstractParser {
                 &&
                 (_keyword_1 = expect(514)) != null  // token='from'
                 &&
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d yield_expr[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'yield' 'from' expression");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_YieldFrom ( a , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'yield' 'from' expression");
-                return cache.putResult(pos, YIELD_EXPR_ID, _res);
+                return cache.putResult(_mark, YIELD_EXPR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s yield_expr[%d-%d]: %s failed!", level, ' ',
@@ -11298,20 +11298,20 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(504)) != null  // token='yield'
                 &&
-                ((a = _tmp_166_rule) != null || true)  // star_expressions?
+                ((a = _tmp_166_rule()) != null || true)  // star_expressions?
             )
             {
                 debugMessageln("%d yield_expr[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'yield' star_expressions?");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Yield ( a , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'yield' star_expressions?");
-                return cache.putResult(pos, YIELD_EXPR_ID, _res);
+                return cache.putResult(_mark, YIELD_EXPR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s yield_expr[%d-%d]: %s failed!", level, ' ',
@@ -11339,9 +11339,9 @@ public final class Parser extends AbstractParser {
             Object _opt_var;
             SSTNode a;
             if (
-                (a = args_rule) != null  // args
+                (a = args_rule()) != null  // args
                 &&
-                ((_opt_var = _tmp_167_rule) != null || true)  // ','?
+                ((_opt_var = _tmp_167_rule()) != null || true)  // ','?
                 &&
                 genLookahead_expect(true, 8)  // token=')'
             )
@@ -11349,7 +11349,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d arguments[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "args ','? &')'");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "args ','? &')'");
-                return cache.putResult(pos, ARGUMENTS_ID, _res);
+                return cache.putResult(_mark, ARGUMENTS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s arguments[%d-%d]: %s failed!", level, ' ',
@@ -11359,13 +11359,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> arguments[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_arguments");
             Object invalid_arguments_var;
             if (
-                (invalid_arguments_var = invalid_arguments_rule) != null  // invalid_arguments
+                (invalid_arguments_var = invalid_arguments_rule()) != null  // invalid_arguments
             )
             {
                 debugMessageln("%d arguments[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_arguments");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_arguments");
                 _res = invalid_arguments_var;
-                return cache.putResult(pos, ARGUMENTS_ID, _res);
+                return cache.putResult(_mark, ARGUMENTS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s arguments[%d-%d]: %s failed!", level, ' ',
@@ -11373,7 +11373,7 @@ public final class Parser extends AbstractParser {
         }
         debugMessageln("Fail at %d: arguments", _mark);
         _res = null;
-        cache.putResult(pos, ARGUMENTS_ID, _res);
+        cache.putResult(_mark, ARGUMENTS_ID, _res);
         level--;
         return _res;
     }
@@ -11385,29 +11385,29 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // ','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]
             debugMessageln("%d> args[%d-%d]: %s", level, ' ', _mark, mark(), "','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]");
             // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] a;
             Object b;
             if (
-                (a = (SSTNode[])_gather_168_rule) != null  // ','.(starred_expression | direct_named_expression !'=')+
+                (a = (SSTNode[])_gather_168_rule()) != null  // ','.(starred_expression | direct_named_expression !'=')+
                 &&
-                ((b = _tmp_170_rule) != null || true)  // [',' kwargs]
+                ((b = _tmp_170_rule()) != null || true)  // [',' kwargs]
             )
             {
                 debugMessageln("%d args[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyPegen_collect_call_seqs ( p , a , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]");
-                return cache.putResult(pos, ARGS_ID, _res);
+                return cache.putResult(_mark, ARGS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s args[%d-%d]: %s failed!", level, ' ',
@@ -11419,20 +11419,20 @@ public final class Parser extends AbstractParser {
             SSTNode[] a;
             if (
                 // TODO replacing asdl_seq* --> SSTNode[]
-                (a = kwargs_rule) != null  // kwargs
+                (a = kwargs_rule()) != null  // kwargs
             )
             {
                 debugMessageln("%d args[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "kwargs");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Call ( _PyPegen_dummy_name ( p ) , CHECK_NULL_ALLOWED ( asdl_expr_seq * , _PyPegen_seq_extract_starred_exprs ( p , a ) ) , CHECK_NULL_ALLOWED ( asdl_keyword_seq * , _PyPegen_seq_delete_starred_exprs ( p , a ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "kwargs");
-                return cache.putResult(pos, ARGS_ID, _res);
+                return cache.putResult(_mark, ARGS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s args[%d-%d]: %s failed!", level, ' ',
@@ -11460,18 +11460,18 @@ public final class Parser extends AbstractParser {
             SSTNode[] a;
             SSTNode[] b;
             if (
-                (a = _gather_171_rule) != null  // ','.kwarg_or_starred+
+                (a = _gather_171_rule()) != null  // ','.kwarg_or_starred+
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (b = _gather_173_rule) != null  // ','.kwarg_or_double_starred+
+                (b = _gather_173_rule()) != null  // ','.kwarg_or_double_starred+
             )
             {
                 debugMessageln("%d kwargs[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.kwarg_or_starred+ ',' ','.kwarg_or_double_starred+");
                 // TODO: node.action: _PyPegen_join_sequences ( p , a , b )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.kwarg_or_starred+ ',' ','.kwarg_or_double_starred+");
-                return cache.putResult(pos, KWARGS_ID, _res);
+                return cache.putResult(_mark, KWARGS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s kwargs[%d-%d]: %s failed!", level, ' ',
@@ -11481,13 +11481,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> kwargs[%d-%d]: %s", level, ' ', _mark, mark(), "','.kwarg_or_starred+");
             SSTNode[] _gather_175_var;
             if (
-                (_gather_175_var = _gather_175_rule) != null  // ','.kwarg_or_starred+
+                (_gather_175_var = _gather_175_rule()) != null  // ','.kwarg_or_starred+
             )
             {
                 debugMessageln("%d kwargs[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.kwarg_or_starred+");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','.kwarg_or_starred+");
                 _res = _gather_175_var;
-                return cache.putResult(pos, KWARGS_ID, _res);
+                return cache.putResult(_mark, KWARGS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s kwargs[%d-%d]: %s failed!", level, ' ',
@@ -11497,13 +11497,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> kwargs[%d-%d]: %s", level, ' ', _mark, mark(), "','.kwarg_or_double_starred+");
             SSTNode[] _gather_177_var;
             if (
-                (_gather_177_var = _gather_177_rule) != null  // ','.kwarg_or_double_starred+
+                (_gather_177_var = _gather_177_rule()) != null  // ','.kwarg_or_double_starred+
             )
             {
                 debugMessageln("%d kwargs[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.kwarg_or_double_starred+");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','.kwarg_or_double_starred+");
                 _res = _gather_177_var;
-                return cache.putResult(pos, KWARGS_ID, _res);
+                return cache.putResult(_mark, KWARGS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s kwargs[%d-%d]: %s failed!", level, ' ',
@@ -11522,7 +11522,7 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '*' expression
             debugMessageln("%d> starred_expression[%d-%d]: %s", level, ' ', _mark, mark(), "'*' expression");
             Token _literal;
@@ -11530,20 +11530,20 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(16)) != null  // token='*'
                 &&
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d starred_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' expression");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Starred ( a , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' expression");
-                return cache.putResult(pos, STARRED_EXPRESSION_ID, _res);
+                return cache.putResult(_mark, STARRED_EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s starred_expression[%d-%d]: %s failed!", level, ' ',
@@ -11563,31 +11563,31 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode[] _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // NAME '=' expression
             debugMessageln("%d> kwarg_or_starred[%d-%d]: %s", level, ' ', _mark, mark(), "NAME '=' expression");
             Token _literal;
             SSTNode a;
             SSTNode b;
             if (
-                (a = name_token) != null  // NAME
+                (a = name_token()) != null  // NAME
                 &&
                 (_literal = expect(22)) != null  // token='='
                 &&
-                (b = expression_rule) != null  // expression
+                (b = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d kwarg_or_starred[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME '=' expression");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyPegen_keyword_or_starred ( p , CHECK ( keyword_ty , _PyAST_keyword ( a -> v . Name . id , b , EXTRA ) ) , 1 )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME '=' expression");
-                return cache.putResult(pos, KWARG_OR_STARRED_ID, _res);
+                return cache.putResult(_mark, KWARG_OR_STARRED_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s kwarg_or_starred[%d-%d]: %s failed!", level, ' ',
@@ -11597,14 +11597,14 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> kwarg_or_starred[%d-%d]: %s", level, ' ', _mark, mark(), "starred_expression");
             SSTNode a;
             if (
-                (a = starred_expression_rule) != null  // starred_expression
+                (a = starred_expression_rule()) != null  // starred_expression
             )
             {
                 debugMessageln("%d kwarg_or_starred[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "starred_expression");
                 // TODO: node.action: _PyPegen_keyword_or_starred ( p , a , 0 )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "starred_expression");
-                return cache.putResult(pos, KWARG_OR_STARRED_ID, _res);
+                return cache.putResult(_mark, KWARG_OR_STARRED_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s kwarg_or_starred[%d-%d]: %s failed!", level, ' ',
@@ -11614,13 +11614,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> kwarg_or_starred[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_kwarg");
             Object invalid_kwarg_var;
             if (
-                (invalid_kwarg_var = invalid_kwarg_rule) != null  // invalid_kwarg
+                (invalid_kwarg_var = invalid_kwarg_rule()) != null  // invalid_kwarg
             )
             {
                 debugMessageln("%d kwarg_or_starred[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_kwarg");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_kwarg");
                 _res = invalid_kwarg_var;
-                return cache.putResult(pos, KWARG_OR_STARRED_ID, _res);
+                return cache.putResult(_mark, KWARG_OR_STARRED_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s kwarg_or_starred[%d-%d]: %s failed!", level, ' ',
@@ -11640,31 +11640,31 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode[] _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // NAME '=' expression
             debugMessageln("%d> kwarg_or_double_starred[%d-%d]: %s", level, ' ', _mark, mark(), "NAME '=' expression");
             Token _literal;
             SSTNode a;
             SSTNode b;
             if (
-                (a = name_token) != null  // NAME
+                (a = name_token()) != null  // NAME
                 &&
                 (_literal = expect(22)) != null  // token='='
                 &&
-                (b = expression_rule) != null  // expression
+                (b = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d kwarg_or_double_starred[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME '=' expression");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyPegen_keyword_or_starred ( p , CHECK ( keyword_ty , _PyAST_keyword ( a -> v . Name . id , b , EXTRA ) ) , 1 )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME '=' expression");
-                return cache.putResult(pos, KWARG_OR_DOUBLE_STARRED_ID, _res);
+                return cache.putResult(_mark, KWARG_OR_DOUBLE_STARRED_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s kwarg_or_double_starred[%d-%d]: %s failed!", level, ' ',
@@ -11677,20 +11677,20 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(35)) != null  // token='**'
                 &&
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d kwarg_or_double_starred[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'**' expression");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyPegen_keyword_or_starred ( p , CHECK ( keyword_ty , _PyAST_keyword ( NULL , a , EXTRA ) ) , 1 )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' expression");
-                return cache.putResult(pos, KWARG_OR_DOUBLE_STARRED_ID, _res);
+                return cache.putResult(_mark, KWARG_OR_DOUBLE_STARRED_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s kwarg_or_double_starred[%d-%d]: %s failed!", level, ' ',
@@ -11700,13 +11700,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> kwarg_or_double_starred[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_kwarg");
             Object invalid_kwarg_var;
             if (
-                (invalid_kwarg_var = invalid_kwarg_rule) != null  // invalid_kwarg
+                (invalid_kwarg_var = invalid_kwarg_rule()) != null  // invalid_kwarg
             )
             {
                 debugMessageln("%d kwarg_or_double_starred[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_kwarg");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "invalid_kwarg");
                 _res = invalid_kwarg_var;
-                return cache.putResult(pos, KWARG_OR_DOUBLE_STARRED_ID, _res);
+                return cache.putResult(_mark, KWARG_OR_DOUBLE_STARRED_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s kwarg_or_double_starred[%d-%d]: %s failed!", level, ' ',
@@ -11725,12 +11725,12 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // star_target !','
             debugMessageln("%d> star_targets[%d-%d]: %s", level, ' ', _mark, mark(), "star_target !','");
             SSTNode a;
             if (
-                (a = star_target_rule) != null  // star_target
+                (a = star_target_rule()) != null  // star_target
                 &&
                 genLookahead_expect(false, 12)  // token=','
             )
@@ -11738,7 +11738,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d star_targets[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_target !','");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_target !','");
-                return cache.putResult(pos, STAR_TARGETS_ID, _res);
+                return cache.putResult(_mark, STAR_TARGETS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_targets[%d-%d]: %s failed!", level, ' ',
@@ -11750,24 +11750,24 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode[] b;
             if (
-                (a = star_target_rule) != null  // star_target
+                (a = star_target_rule()) != null  // star_target
                 &&
-                (b = _loop0_179_rule) != null  // ((',' star_target))*
+                (b = _loop0_179_rule()) != null  // ((',' star_target))*
                 &&
-                ((_opt_var = _tmp_180_rule) != null || true)  // ','?
+                ((_opt_var = _tmp_180_rule()) != null || true)  // ','?
             )
             {
                 debugMessageln("%d star_targets[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_target ((',' star_target))* ','?");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_target ((',' star_target))* ','?");
-                return cache.putResult(pos, STAR_TARGETS_ID, _res);
+                return cache.putResult(_mark, STAR_TARGETS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_targets[%d-%d]: %s failed!", level, ' ',
@@ -11792,15 +11792,15 @@ public final class Parser extends AbstractParser {
             Object _opt_var;
             SSTNode[] a;
             if (
-                (a = (SSTNode[])_gather_181_rule) != null  // ','.star_target+
+                (a = (SSTNode[])_gather_181_rule()) != null  // ','.star_target+
                 &&
-                ((_opt_var = _tmp_183_rule) != null || true)  // ','?
+                ((_opt_var = _tmp_183_rule()) != null || true)  // ','?
             )
             {
                 debugMessageln("%d star_targets_list_seq[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.star_target+ ','?");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.star_target+ ','?");
-                return cache.putResult(pos, STAR_TARGETS_LIST_SEQ_ID, _res);
+                return cache.putResult(_mark, STAR_TARGETS_LIST_SEQ_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_targets_list_seq[%d-%d]: %s failed!", level, ' ',
@@ -11825,18 +11825,18 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode[] b;
             if (
-                (a = star_target_rule) != null  // star_target
+                (a = star_target_rule()) != null  // star_target
                 &&
-                (b = _loop1_184_rule) != null  // ((',' star_target))+
+                (b = _loop1_184_rule()) != null  // ((',' star_target))+
                 &&
-                ((_opt_var = _tmp_185_rule) != null || true)  // ','?
+                ((_opt_var = _tmp_185_rule()) != null || true)  // ','?
             )
             {
                 debugMessageln("%d star_targets_tuple_seq[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_target ((',' star_target))+ ','?");
                 // TODO: node.action: ( asdl_expr_seq * ) _PyPegen_seq_insert_in_front ( p , a , b )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_target ((',' star_target))+ ','?");
-                return cache.putResult(pos, STAR_TARGETS_TUPLE_SEQ_ID, _res);
+                return cache.putResult(_mark, STAR_TARGETS_TUPLE_SEQ_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_targets_tuple_seq[%d-%d]: %s failed!", level, ' ',
@@ -11847,7 +11847,7 @@ public final class Parser extends AbstractParser {
             Token _literal;
             SSTNode a;
             if (
-                (a = star_target_rule) != null  // star_target
+                (a = star_target_rule()) != null  // star_target
                 &&
                 (_literal = expect(12)) != null  // token=','
             )
@@ -11856,7 +11856,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_target ','");
-                return cache.putResult(pos, STAR_TARGETS_TUPLE_SEQ_ID, _res);
+                return cache.putResult(_mark, STAR_TARGETS_TUPLE_SEQ_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_targets_tuple_seq[%d-%d]: %s failed!", level, ' ',
@@ -11880,7 +11880,7 @@ public final class Parser extends AbstractParser {
             return _res;
         }
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // '*' (!'*' star_target)
             debugMessageln("%d> star_target[%d-%d]: %s", level, ' ', _mark, mark(), "'*' (!'*' star_target)");
             Token _literal;
@@ -11888,20 +11888,20 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(16)) != null  // token='*'
                 &&
-                (a = _tmp_186_rule) != null  // !'*' star_target
+                (a = _tmp_186_rule()) != null  // !'*' star_target
             )
             {
                 debugMessageln("%d star_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' (!'*' star_target)");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Starred ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' (!'*' star_target)");
-                return cache.putResult(pos, STAR_TARGET_ID, _res);
+                return cache.putResult(_mark, STAR_TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_target[%d-%d]: %s failed!", level, ' ',
@@ -11911,13 +11911,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> star_target[%d-%d]: %s", level, ' ', _mark, mark(), "target_with_star_atom");
             SSTNode target_with_star_atom_var;
             if (
-                (target_with_star_atom_var = target_with_star_atom_rule) != null  // target_with_star_atom
+                (target_with_star_atom_var = target_with_star_atom_rule()) != null  // target_with_star_atom
             )
             {
                 debugMessageln("%d star_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "target_with_star_atom");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "target_with_star_atom");
                 _res = target_with_star_atom_var;
-                return cache.putResult(pos, STAR_TARGET_ID, _res);
+                return cache.putResult(_mark, STAR_TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_target[%d-%d]: %s failed!", level, ' ',
@@ -11925,7 +11925,7 @@ public final class Parser extends AbstractParser {
         }
         debugMessageln("Fail at %d: star_target", _mark);
         _res = null;
-        cache.putResult(pos, STAR_TARGET_ID, _res);
+        cache.putResult(_mark, STAR_TARGET_ID, _res);
         level--;
         return _res;
     }
@@ -11945,33 +11945,33 @@ public final class Parser extends AbstractParser {
             return _res;
         }
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME !t_lookahead
             debugMessageln("%d> target_with_star_atom[%d-%d]: %s", level, ' ', _mark, mark(), "t_primary '.' NAME !t_lookahead");
             Token _literal;
             SSTNode a;
             SSTNode b;
             if (
-                (a = t_primary_rule) != null  // t_primary
+                (a = t_primary_rule()) != null  // t_primary
                 &&
                 (_literal = expect(23)) != null  // token='.'
                 &&
-                (b = name_token) != null  // NAME
+                (b = name_token()) != null  // NAME
                 &&
                 genLookahead_t_lookahead_rule(false)
             )
             {
                 debugMessageln("%d target_with_star_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '.' NAME !t_lookahead");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME !t_lookahead");
-                return cache.putResult(pos, TARGET_WITH_STAR_ATOM_ID, _res);
+                return cache.putResult(_mark, TARGET_WITH_STAR_ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s target_with_star_atom[%d-%d]: %s failed!", level, ' ',
@@ -11984,11 +11984,11 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = t_primary_rule) != null  // t_primary
+                (a = t_primary_rule()) != null  // t_primary
                 &&
                 (_literal = expect(9)) != null  // token='['
                 &&
-                (b = slices_rule) != null  // slices
+                (b = slices_rule()) != null  // slices
                 &&
                 (_literal_1 = expect(10)) != null  // token=']'
                 &&
@@ -11997,15 +11997,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d target_with_star_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Subscript ( a , b , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
-                return cache.putResult(pos, TARGET_WITH_STAR_ATOM_ID, _res);
+                return cache.putResult(_mark, TARGET_WITH_STAR_ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s target_with_star_atom[%d-%d]: %s failed!", level, ' ',
@@ -12015,13 +12015,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> target_with_star_atom[%d-%d]: %s", level, ' ', _mark, mark(), "star_atom");
             SSTNode star_atom_var;
             if (
-                (star_atom_var = star_atom_rule) != null  // star_atom
+                (star_atom_var = star_atom_rule()) != null  // star_atom
             )
             {
                 debugMessageln("%d target_with_star_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_atom");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_atom");
                 _res = star_atom_var;
-                return cache.putResult(pos, TARGET_WITH_STAR_ATOM_ID, _res);
+                return cache.putResult(_mark, TARGET_WITH_STAR_ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s target_with_star_atom[%d-%d]: %s failed!", level, ' ',
@@ -12029,7 +12029,7 @@ public final class Parser extends AbstractParser {
         }
         debugMessageln("Fail at %d: target_with_star_atom", _mark);
         _res = null;
-        cache.putResult(pos, TARGET_WITH_STAR_ATOM_ID, _res);
+        cache.putResult(_mark, TARGET_WITH_STAR_ATOM_ID, _res);
         level--;
         return _res;
     }
@@ -12045,19 +12045,19 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // NAME
             debugMessageln("%d> star_atom[%d-%d]: %s", level, ' ', _mark, mark(), "NAME");
             SSTNode a;
             if (
-                (a = name_token) != null  // NAME
+                (a = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME");
                 // TODO: node.action: _PyPegen_set_expr_context ( p , a , Store )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
-                return cache.putResult(pos, STAR_ATOM_ID, _res);
+                return cache.putResult(_mark, STAR_ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_atom[%d-%d]: %s failed!", level, ' ',
@@ -12071,7 +12071,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                (a = target_with_star_atom_rule) != null  // target_with_star_atom
+                (a = target_with_star_atom_rule()) != null  // target_with_star_atom
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
@@ -12080,7 +12080,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_set_expr_context ( p , a , Store )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' target_with_star_atom ')'");
-                return cache.putResult(pos, STAR_ATOM_ID, _res);
+                return cache.putResult(_mark, STAR_ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_atom[%d-%d]: %s failed!", level, ' ',
@@ -12094,22 +12094,22 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                ((a = _tmp_187_rule) != null || true)  // star_targets_tuple_seq?
+                ((a = _tmp_187_rule()) != null || true)  // star_targets_tuple_seq?
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' star_targets_tuple_seq? ')'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Tuple ( a , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' star_targets_tuple_seq? ')'");
-                return cache.putResult(pos, STAR_ATOM_ID, _res);
+                return cache.putResult(_mark, STAR_ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_atom[%d-%d]: %s failed!", level, ' ',
@@ -12123,22 +12123,22 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(9)) != null  // token='['
                 &&
-                ((a = _tmp_188_rule) != null || true)  // star_targets_list_seq?
+                ((a = _tmp_188_rule()) != null || true)  // star_targets_list_seq?
                 &&
                 (_literal_1 = expect(10)) != null  // token=']'
             )
             {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'[' star_targets_list_seq? ']'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_List ( a , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' star_targets_list_seq? ']'");
-                return cache.putResult(pos, STAR_ATOM_ID, _res);
+                return cache.putResult(_mark, STAR_ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s star_atom[%d-%d]: %s failed!", level, ' ',
@@ -12160,13 +12160,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> single_target[%d-%d]: %s", level, ' ', _mark, mark(), "single_subscript_attribute_target");
             SSTNode single_subscript_attribute_target_var;
             if (
-                (single_subscript_attribute_target_var = single_subscript_attribute_target_rule) != null  // single_subscript_attribute_target
+                (single_subscript_attribute_target_var = single_subscript_attribute_target_rule()) != null  // single_subscript_attribute_target
             )
             {
                 debugMessageln("%d single_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "single_subscript_attribute_target");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "single_subscript_attribute_target");
                 _res = single_subscript_attribute_target_var;
-                return cache.putResult(pos, SINGLE_TARGET_ID, _res);
+                return cache.putResult(_mark, SINGLE_TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s single_target[%d-%d]: %s failed!", level, ' ',
@@ -12176,14 +12176,14 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> single_target[%d-%d]: %s", level, ' ', _mark, mark(), "NAME");
             SSTNode a;
             if (
-                (a = name_token) != null  // NAME
+                (a = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d single_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME");
                 // TODO: node.action: _PyPegen_set_expr_context ( p , a , Store )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
-                return cache.putResult(pos, SINGLE_TARGET_ID, _res);
+                return cache.putResult(_mark, SINGLE_TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s single_target[%d-%d]: %s failed!", level, ' ',
@@ -12197,7 +12197,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                (a = single_target_rule) != null  // single_target
+                (a = single_target_rule()) != null  // single_target
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
@@ -12205,7 +12205,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d single_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' single_target ')'");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' single_target ')'");
-                return cache.putResult(pos, SINGLE_TARGET_ID, _res);
+                return cache.putResult(_mark, SINGLE_TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s single_target[%d-%d]: %s failed!", level, ' ',
@@ -12226,33 +12226,33 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME !t_lookahead
             debugMessageln("%d> single_subscript_attribute_target[%d-%d]: %s", level, ' ', _mark, mark(), "t_primary '.' NAME !t_lookahead");
             Token _literal;
             SSTNode a;
             SSTNode b;
             if (
-                (a = t_primary_rule) != null  // t_primary
+                (a = t_primary_rule()) != null  // t_primary
                 &&
                 (_literal = expect(23)) != null  // token='.'
                 &&
-                (b = name_token) != null  // NAME
+                (b = name_token()) != null  // NAME
                 &&
                 genLookahead_t_lookahead_rule(false)
             )
             {
                 debugMessageln("%d single_subscript_attribute_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '.' NAME !t_lookahead");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME !t_lookahead");
-                return cache.putResult(pos, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID, _res);
+                return cache.putResult(_mark, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s single_subscript_attribute_target[%d-%d]: %s failed!", level, ' ',
@@ -12265,11 +12265,11 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = t_primary_rule) != null  // t_primary
+                (a = t_primary_rule()) != null  // t_primary
                 &&
                 (_literal = expect(9)) != null  // token='['
                 &&
-                (b = slices_rule) != null  // slices
+                (b = slices_rule()) != null  // slices
                 &&
                 (_literal_1 = expect(10)) != null  // token=']'
                 &&
@@ -12278,15 +12278,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d single_subscript_attribute_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Subscript ( a , b , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
-                return cache.putResult(pos, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID, _res);
+                return cache.putResult(_mark, SINGLE_SUBSCRIPT_ATTRIBUTE_TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s single_subscript_attribute_target[%d-%d]: %s failed!", level, ' ',
@@ -12311,15 +12311,15 @@ public final class Parser extends AbstractParser {
             Object _opt_var;
             SSTNode[] a;
             if (
-                (a = (SSTNode[])_gather_189_rule) != null  // ','.del_target+
+                (a = (SSTNode[])_gather_189_rule()) != null  // ','.del_target+
                 &&
-                ((_opt_var = _tmp_191_rule) != null || true)  // ','?
+                ((_opt_var = _tmp_191_rule()) != null || true)  // ','?
             )
             {
                 debugMessageln("%d del_targets[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.del_target+ ','?");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.del_target+ ','?");
-                return cache.putResult(pos, DEL_TARGETS_ID, _res);
+                return cache.putResult(_mark, DEL_TARGETS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s del_targets[%d-%d]: %s failed!", level, ' ',
@@ -12346,33 +12346,33 @@ public final class Parser extends AbstractParser {
             return _res;
         }
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME !t_lookahead
             debugMessageln("%d> del_target[%d-%d]: %s", level, ' ', _mark, mark(), "t_primary '.' NAME !t_lookahead");
             Token _literal;
             SSTNode a;
             SSTNode b;
             if (
-                (a = t_primary_rule) != null  // t_primary
+                (a = t_primary_rule()) != null  // t_primary
                 &&
                 (_literal = expect(23)) != null  // token='.'
                 &&
-                (b = name_token) != null  // NAME
+                (b = name_token()) != null  // NAME
                 &&
                 genLookahead_t_lookahead_rule(false)
             )
             {
                 debugMessageln("%d del_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '.' NAME !t_lookahead");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Del , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME !t_lookahead");
-                return cache.putResult(pos, DEL_TARGET_ID, _res);
+                return cache.putResult(_mark, DEL_TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s del_target[%d-%d]: %s failed!", level, ' ',
@@ -12385,11 +12385,11 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = t_primary_rule) != null  // t_primary
+                (a = t_primary_rule()) != null  // t_primary
                 &&
                 (_literal = expect(9)) != null  // token='['
                 &&
-                (b = slices_rule) != null  // slices
+                (b = slices_rule()) != null  // slices
                 &&
                 (_literal_1 = expect(10)) != null  // token=']'
                 &&
@@ -12398,15 +12398,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d del_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Subscript ( a , b , Del , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
-                return cache.putResult(pos, DEL_TARGET_ID, _res);
+                return cache.putResult(_mark, DEL_TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s del_target[%d-%d]: %s failed!", level, ' ',
@@ -12416,13 +12416,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> del_target[%d-%d]: %s", level, ' ', _mark, mark(), "del_t_atom");
             SSTNode del_t_atom_var;
             if (
-                (del_t_atom_var = del_t_atom_rule) != null  // del_t_atom
+                (del_t_atom_var = del_t_atom_rule()) != null  // del_t_atom
             )
             {
                 debugMessageln("%d del_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "del_t_atom");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "del_t_atom");
                 _res = del_t_atom_var;
-                return cache.putResult(pos, DEL_TARGET_ID, _res);
+                return cache.putResult(_mark, DEL_TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s del_target[%d-%d]: %s failed!", level, ' ',
@@ -12430,7 +12430,7 @@ public final class Parser extends AbstractParser {
         }
         debugMessageln("Fail at %d: del_target", _mark);
         _res = null;
-        cache.putResult(pos, DEL_TARGET_ID, _res);
+        cache.putResult(_mark, DEL_TARGET_ID, _res);
         level--;
         return _res;
     }
@@ -12442,19 +12442,19 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // NAME
             debugMessageln("%d> del_t_atom[%d-%d]: %s", level, ' ', _mark, mark(), "NAME");
             SSTNode a;
             if (
-                (a = name_token) != null  // NAME
+                (a = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d del_t_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME");
                 // TODO: node.action: _PyPegen_set_expr_context ( p , a , Del )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
-                return cache.putResult(pos, DEL_T_ATOM_ID, _res);
+                return cache.putResult(_mark, DEL_T_ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s del_t_atom[%d-%d]: %s failed!", level, ' ',
@@ -12468,7 +12468,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                (a = del_target_rule) != null  // del_target
+                (a = del_target_rule()) != null  // del_target
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
@@ -12477,7 +12477,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_set_expr_context ( p , a , Del )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' del_target ')'");
-                return cache.putResult(pos, DEL_T_ATOM_ID, _res);
+                return cache.putResult(_mark, DEL_T_ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s del_t_atom[%d-%d]: %s failed!", level, ' ',
@@ -12491,22 +12491,22 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                ((a = _tmp_192_rule) != null || true)  // del_targets?
+                ((a = _tmp_192_rule()) != null || true)  // del_targets?
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
                 debugMessageln("%d del_t_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' del_targets? ')'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Tuple ( a , Del , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' del_targets? ')'");
-                return cache.putResult(pos, DEL_T_ATOM_ID, _res);
+                return cache.putResult(_mark, DEL_T_ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s del_t_atom[%d-%d]: %s failed!", level, ' ',
@@ -12520,22 +12520,22 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(9)) != null  // token='['
                 &&
-                ((a = _tmp_193_rule) != null || true)  // del_targets?
+                ((a = _tmp_193_rule()) != null || true)  // del_targets?
                 &&
                 (_literal_1 = expect(10)) != null  // token=']'
             )
             {
                 debugMessageln("%d del_t_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'[' del_targets? ']'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_List ( a , Del , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' del_targets? ']'");
-                return cache.putResult(pos, DEL_T_ATOM_ID, _res);
+                return cache.putResult(_mark, DEL_T_ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s del_t_atom[%d-%d]: %s failed!", level, ' ',
@@ -12560,15 +12560,15 @@ public final class Parser extends AbstractParser {
             Object _opt_var;
             SSTNode[] a;
             if (
-                (a = (SSTNode[])_gather_194_rule) != null  // ','.target+
+                (a = (SSTNode[])_gather_194_rule()) != null  // ','.target+
                 &&
-                ((_opt_var = _tmp_196_rule) != null || true)  // ','?
+                ((_opt_var = _tmp_196_rule()) != null || true)  // ','?
             )
             {
                 debugMessageln("%d targets[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.target+ ','?");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.target+ ','?");
-                return cache.putResult(pos, TARGETS_ID, _res);
+                return cache.putResult(_mark, TARGETS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s targets[%d-%d]: %s failed!", level, ' ',
@@ -12595,33 +12595,33 @@ public final class Parser extends AbstractParser {
             return _res;
         }
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME !t_lookahead
             debugMessageln("%d> target[%d-%d]: %s", level, ' ', _mark, mark(), "t_primary '.' NAME !t_lookahead");
             Token _literal;
             SSTNode a;
             SSTNode b;
             if (
-                (a = t_primary_rule) != null  // t_primary
+                (a = t_primary_rule()) != null  // t_primary
                 &&
                 (_literal = expect(23)) != null  // token='.'
                 &&
-                (b = name_token) != null  // NAME
+                (b = name_token()) != null  // NAME
                 &&
                 genLookahead_t_lookahead_rule(false)
             )
             {
                 debugMessageln("%d target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '.' NAME !t_lookahead");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME !t_lookahead");
-                return cache.putResult(pos, TARGET_ID, _res);
+                return cache.putResult(_mark, TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s target[%d-%d]: %s failed!", level, ' ',
@@ -12634,11 +12634,11 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = t_primary_rule) != null  // t_primary
+                (a = t_primary_rule()) != null  // t_primary
                 &&
                 (_literal = expect(9)) != null  // token='['
                 &&
-                (b = slices_rule) != null  // slices
+                (b = slices_rule()) != null  // slices
                 &&
                 (_literal_1 = expect(10)) != null  // token=']'
                 &&
@@ -12647,15 +12647,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Subscript ( a , b , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
-                return cache.putResult(pos, TARGET_ID, _res);
+                return cache.putResult(_mark, TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s target[%d-%d]: %s failed!", level, ' ',
@@ -12665,13 +12665,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> target[%d-%d]: %s", level, ' ', _mark, mark(), "t_atom");
             SSTNode t_atom_var;
             if (
-                (t_atom_var = t_atom_rule) != null  // t_atom
+                (t_atom_var = t_atom_rule()) != null  // t_atom
             )
             {
                 debugMessageln("%d target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_atom");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "t_atom");
                 _res = t_atom_var;
-                return cache.putResult(pos, TARGET_ID, _res);
+                return cache.putResult(_mark, TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s target[%d-%d]: %s failed!", level, ' ',
@@ -12679,7 +12679,7 @@ public final class Parser extends AbstractParser {
         }
         debugMessageln("Fail at %d: target", _mark);
         _res = null;
-        cache.putResult(pos, TARGET_ID, _res);
+        cache.putResult(_mark, TARGET_ID, _res);
         level--;
         return _res;
     }
@@ -12704,12 +12704,12 @@ public final class Parser extends AbstractParser {
         int _resmark = mark();
         while (true) {
             try {
-                cache.putResult(pos, T_PRIMARY_ID, _res);
+                cache.putResult(_mark, T_PRIMARY_ID, _res);
             } catch (Exception e) {
                 level--;
                 return _res;
             }
-            reset(pos);
+            reset(_mark);
             Object _raw = t_primary_raw();
             if (_raw == null || mark() <= _resmark)
                 break;
@@ -12726,33 +12726,33 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME &t_lookahead
             debugMessageln("%d> t_primary[%d-%d]: %s", level, ' ', _mark, mark(), "t_primary '.' NAME &t_lookahead");
             Token _literal;
             SSTNode a;
             SSTNode b;
             if (
-                (a = t_primary_rule) != null  // t_primary
+                (a = t_primary_rule()) != null  // t_primary
                 &&
                 (_literal = expect(23)) != null  // token='.'
                 &&
-                (b = name_token) != null  // NAME
+                (b = name_token()) != null  // NAME
                 &&
                 genLookahead_t_lookahead_rule(true)
             )
             {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '.' NAME &t_lookahead");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME &t_lookahead");
-                return cache.putResult(pos, T_PRIMARY_ID, _res);
+                return cache.putResult(_mark, T_PRIMARY_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s t_primary[%d-%d]: %s failed!", level, ' ',
@@ -12765,11 +12765,11 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = t_primary_rule) != null  // t_primary
+                (a = t_primary_rule()) != null  // t_primary
                 &&
                 (_literal = expect(9)) != null  // token='['
                 &&
-                (b = slices_rule) != null  // slices
+                (b = slices_rule()) != null  // slices
                 &&
                 (_literal_1 = expect(10)) != null  // token=']'
                 &&
@@ -12778,15 +12778,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '[' slices ']' &t_lookahead");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Subscript ( a , b , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' &t_lookahead");
-                return cache.putResult(pos, T_PRIMARY_ID, _res);
+                return cache.putResult(_mark, T_PRIMARY_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s t_primary[%d-%d]: %s failed!", level, ' ',
@@ -12797,24 +12797,24 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode b;
             if (
-                (a = t_primary_rule) != null  // t_primary
+                (a = t_primary_rule()) != null  // t_primary
                 &&
-                (b = genexp_rule) != null  // genexp
+                (b = genexp_rule()) != null  // genexp
                 &&
                 genLookahead_t_lookahead_rule(true)
             )
             {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary genexp &t_lookahead");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , b ) ) , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary genexp &t_lookahead");
-                return cache.putResult(pos, T_PRIMARY_ID, _res);
+                return cache.putResult(_mark, T_PRIMARY_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s t_primary[%d-%d]: %s failed!", level, ' ',
@@ -12827,11 +12827,11 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             Object b;
             if (
-                (a = t_primary_rule) != null  // t_primary
+                (a = t_primary_rule()) != null  // t_primary
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
-                ((b = _tmp_197_rule) != null || true)  // arguments?
+                ((b = _tmp_197_rule()) != null || true)  // arguments?
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
                 &&
@@ -12840,15 +12840,15 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '(' arguments? ')' &t_lookahead");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Call ( a , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '(' arguments? ')' &t_lookahead");
-                return cache.putResult(pos, T_PRIMARY_ID, _res);
+                return cache.putResult(_mark, T_PRIMARY_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s t_primary[%d-%d]: %s failed!", level, ' ',
@@ -12858,7 +12858,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> t_primary[%d-%d]: %s", level, ' ', _mark, mark(), "atom &t_lookahead");
             SSTNode a;
             if (
-                (a = atom_rule) != null  // atom
+                (a = atom_rule()) != null  // atom
                 &&
                 genLookahead_t_lookahead_rule(true)
             )
@@ -12866,7 +12866,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "atom &t_lookahead");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "atom &t_lookahead");
-                return cache.putResult(pos, T_PRIMARY_ID, _res);
+                return cache.putResult(_mark, T_PRIMARY_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s t_primary[%d-%d]: %s failed!", level, ' ',
@@ -12894,7 +12894,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d t_lookahead[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'('");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'('");
                 _res = _literal;
-                return cache.putResult(pos, T_LOOKAHEAD_ID, _res);
+                return cache.putResult(_mark, T_LOOKAHEAD_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s t_lookahead[%d-%d]: %s failed!", level, ' ',
@@ -12910,7 +12910,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d t_lookahead[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'['");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'['");
                 _res = _literal;
-                return cache.putResult(pos, T_LOOKAHEAD_ID, _res);
+                return cache.putResult(_mark, T_LOOKAHEAD_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s t_lookahead[%d-%d]: %s failed!", level, ' ',
@@ -12926,7 +12926,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d t_lookahead[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'.'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'.'");
                 _res = _literal;
-                return cache.putResult(pos, T_LOOKAHEAD_ID, _res);
+                return cache.putResult(_mark, T_LOOKAHEAD_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s t_lookahead[%d-%d]: %s failed!", level, ' ',
@@ -12945,19 +12945,19 @@ public final class Parser extends AbstractParser {
         int _mark = mark();
         SSTNode _res = null;
         // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken(pos);
+        Token startToken = getAndInitializeToken();
         { // NAME
             debugMessageln("%d> t_atom[%d-%d]: %s", level, ' ', _mark, mark(), "NAME");
             SSTNode a;
             if (
-                (a = name_token) != null  // NAME
+                (a = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d t_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME");
                 // TODO: node.action: _PyPegen_set_expr_context ( p , a , Store )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
-                return cache.putResult(pos, T_ATOM_ID, _res);
+                return cache.putResult(_mark, T_ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s t_atom[%d-%d]: %s failed!", level, ' ',
@@ -12971,7 +12971,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                (a = target_rule) != null  // target
+                (a = target_rule()) != null  // target
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
@@ -12980,7 +12980,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_set_expr_context ( p , a , Store )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' target ')'");
-                return cache.putResult(pos, T_ATOM_ID, _res);
+                return cache.putResult(_mark, T_ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s t_atom[%d-%d]: %s failed!", level, ' ',
@@ -12994,22 +12994,22 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                ((b = _tmp_198_rule) != null || true)  // targets?
+                ((b = _tmp_198_rule()) != null || true)  // targets?
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
             {
                 debugMessageln("%d t_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' targets? ')'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_Tuple ( b , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' targets? ')'");
-                return cache.putResult(pos, T_ATOM_ID, _res);
+                return cache.putResult(_mark, T_ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s t_atom[%d-%d]: %s failed!", level, ' ',
@@ -13023,22 +13023,22 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(9)) != null  // token='['
                 &&
-                ((b = _tmp_199_rule) != null || true)  // targets?
+                ((b = _tmp_199_rule()) != null || true)  // targets?
                 &&
                 (_literal_1 = expect(10)) != null  // token=']'
             )
             {
                 debugMessageln("%d t_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'[' targets? ']'");
                 // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken(mark());
-                if (_token == NULL) {
+                Token _token = getLastNonWhitespaceToken();
+                if (_token == null) {
                     level--;
                     return null;
                 }
                 // TODO: node.action: _PyAST_List ( b , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' targets? ']'");
-                return cache.putResult(pos, T_ATOM_ID, _res);
+                return cache.putResult(_mark, T_ATOM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s t_atom[%d-%d]: %s failed!", level, ' ',
@@ -13067,7 +13067,7 @@ public final class Parser extends AbstractParser {
             Token _literal_1;
             SSTNode args_var;
             if (
-                (args_var = args_rule) != null  // args
+                (args_var = args_rule()) != null  // args
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
@@ -13078,7 +13078,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "iterable argument unpacking follows keyword argument unpacking" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "args ',' '*'");
-                return cache.putResult(pos, INVALID_ARGUMENTS_ID, _res);
+                return cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_arguments[%d-%d]: %s failed!", level, ' ',
@@ -13092,21 +13092,21 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode[] for_if_clauses_var;
             if (
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
                 &&
                 // TODO replacing asdl_comprehension_seq* --> SSTNode[]
-                (for_if_clauses_var = for_if_clauses_rule) != null  // for_if_clauses
+                (for_if_clauses_var = for_if_clauses_rule()) != null  // for_if_clauses
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
-                ((_opt_var = _tmp_200_rule) != null || true)  // [args | expression for_if_clauses]
+                ((_opt_var = _tmp_200_rule()) != null || true)  // [args | expression for_if_clauses]
             )
             {
                 debugMessageln("%d invalid_arguments[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression for_if_clauses ',' [args | expression for_if_clauses]");
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "Generator expression must be parenthesized" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression for_if_clauses ',' [args | expression for_if_clauses]");
-                return cache.putResult(pos, INVALID_ARGUMENTS_ID, _res);
+                return cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_arguments[%d-%d]: %s failed!", level, ' ',
@@ -13118,17 +13118,17 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode[] for_if_clauses_var;
             if (
-                (a = args_rule) != null  // args
+                (a = args_rule()) != null  // args
                 &&
                 // TODO replacing asdl_comprehension_seq* --> SSTNode[]
-                (for_if_clauses_var = for_if_clauses_rule) != null  // for_if_clauses
+                (for_if_clauses_var = for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
                 debugMessageln("%d invalid_arguments[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "args for_if_clauses");
                 // TODO: node.action: _PyPegen_nonparen_genexp_in_call ( p , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "args for_if_clauses");
-                return cache.putResult(pos, INVALID_ARGUMENTS_ID, _res);
+                return cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_arguments[%d-%d]: %s failed!", level, ' ',
@@ -13142,21 +13142,21 @@ public final class Parser extends AbstractParser {
             SSTNode args_var;
             SSTNode[] for_if_clauses_var;
             if (
-                (args_var = args_rule) != null  // args
+                (args_var = args_rule()) != null  // args
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
                 &&
                 // TODO replacing asdl_comprehension_seq* --> SSTNode[]
-                (for_if_clauses_var = for_if_clauses_rule) != null  // for_if_clauses
+                (for_if_clauses_var = for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
                 debugMessageln("%d invalid_arguments[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "args ',' expression for_if_clauses");
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "Generator expression must be parenthesized" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "args ',' expression for_if_clauses");
-                return cache.putResult(pos, INVALID_ARGUMENTS_ID, _res);
+                return cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_arguments[%d-%d]: %s failed!", level, ' ',
@@ -13168,18 +13168,18 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode args_var;
             if (
-                (a = args_rule) != null  // args
+                (a = args_rule()) != null  // args
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (args_var = args_rule) != null  // args
+                (args_var = args_rule()) != null  // args
             )
             {
                 debugMessageln("%d invalid_arguments[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "args ',' args");
                 // TODO: node.action: _PyPegen_arguments_parsing_error ( p , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "args ',' args");
-                return cache.putResult(pos, INVALID_ARGUMENTS_ID, _res);
+                return cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_arguments[%d-%d]: %s failed!", level, ' ',
@@ -13202,7 +13202,7 @@ public final class Parser extends AbstractParser {
             Token a;
             SSTNode expression_var;
             if (
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
                 &&
                 (a = expect(22)) != null  // token='='
             )
@@ -13211,7 +13211,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "expression cannot contain assignment, perhaps you meant \"==\"?" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression '='");
-                return cache.putResult(pos, INVALID_KWARG_ID, _res);
+                return cache.putResult(_mark, INVALID_KWARG_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_kwarg[%d-%d]: %s failed!", level, ' ',
@@ -13236,16 +13236,16 @@ public final class Parser extends AbstractParser {
             if (
                 genLookahead__tmp_201_rule(false)
                 &&
-                (a = disjunction_rule) != null  // disjunction
+                (a = disjunction_rule()) != null  // disjunction
                 &&
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d invalid_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "!(NAME STRING | SOFT_KEYWORD) disjunction expression");
                 // TODO: node.action: RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , "invalid syntax. Perhaps you forgot a comma?" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "!(NAME STRING | SOFT_KEYWORD) disjunction expression");
-                return cache.putResult(pos, INVALID_EXPRESSION_ID, _res);
+                return cache.putResult(_mark, INVALID_EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_expression[%d-%d]: %s failed!", level, ' ',
@@ -13272,18 +13272,18 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode expression_var;
             if (
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
                 &&
                 (_literal = expect(53)) != null  // token=':='
                 &&
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d invalid_named_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression ':=' expression");
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use assignment expressions with %s" , _PyPegen_get_expr_name ( a ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':=' expression");
-                return cache.putResult(pos, INVALID_NAMED_EXPRESSION_ID, _res);
+                return cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_named_expression[%d-%d]: %s failed!", level, ' ',
@@ -13295,11 +13295,11 @@ public final class Parser extends AbstractParser {
             Token b;
             SSTNode bitwise_or_var;
             if (
-                (a = name_token) != null  // NAME
+                (a = name_token()) != null  // NAME
                 &&
                 (b = expect(22)) != null  // token='='
                 &&
-                (bitwise_or_var = bitwise_or_rule) != null  // bitwise_or
+                (bitwise_or_var = bitwise_or_rule()) != null  // bitwise_or
                 &&
                 genLookahead__tmp_202_rule(false)
             )
@@ -13308,7 +13308,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( b , "invalid syntax. Maybe you meant '==' or ':=' instead of '='?" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME '=' bitwise_or !('=' | ':=' | ',')");
-                return cache.putResult(pos, INVALID_NAMED_EXPRESSION_ID, _res);
+                return cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_named_expression[%d-%d]: %s failed!", level, ' ',
@@ -13322,11 +13322,11 @@ public final class Parser extends AbstractParser {
             if (
                 genLookahead__tmp_203_rule(false)
                 &&
-                (a = bitwise_or_rule) != null  // bitwise_or
+                (a = bitwise_or_rule()) != null  // bitwise_or
                 &&
                 (b = expect(22)) != null  // token='='
                 &&
-                (bitwise_or_var = bitwise_or_rule) != null  // bitwise_or
+                (bitwise_or_var = bitwise_or_rule()) != null  // bitwise_or
                 &&
                 genLookahead__tmp_204_rule(false)
             )
@@ -13335,7 +13335,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( b , "cannot assign to %s here. Maybe you meant '==' instead of '='?" , _PyPegen_get_expr_name ( a ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "!(list | tuple | genexp | 'True' | 'None' | 'False') bitwise_or '=' bitwise_or !('=' | ':=' | ',')");
-                return cache.putResult(pos, INVALID_NAMED_EXPRESSION_ID, _res);
+                return cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_named_expression[%d-%d]: %s failed!", level, ' ',
@@ -13365,18 +13365,18 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode expression_var;
             if (
-                (a = invalid_ann_assign_target_rule) != null  // invalid_ann_assign_target
+                (a = invalid_ann_assign_target_rule()) != null  // invalid_ann_assign_target
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d invalid_assignment[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "invalid_ann_assign_target ':' expression");
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "only single target (not %s) can be annotated" , _PyPegen_get_expr_name ( a ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "invalid_ann_assign_target ':' expression");
-                return cache.putResult(pos, INVALID_ASSIGNMENT_ID, _res);
+                return cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_assignment[%d-%d]: %s failed!", level, ' ',
@@ -13390,22 +13390,22 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode expression_var;
             if (
-                (a = star_named_expression_rule) != null  // star_named_expression
+                (a = star_named_expression_rule()) != null  // star_named_expression
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (_loop0_205_var = _loop0_205_rule) != null  // star_named_expressions*
+                (_loop0_205_var = _loop0_205_rule()) != null  // star_named_expressions*
                 &&
                 (_literal_1 = expect(11)) != null  // token=':'
                 &&
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d invalid_assignment[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_named_expression ',' star_named_expressions* ':' expression");
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "only single target (not tuple) can be annotated" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_named_expression ',' star_named_expressions* ':' expression");
-                return cache.putResult(pos, INVALID_ASSIGNMENT_ID, _res);
+                return cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_assignment[%d-%d]: %s failed!", level, ' ',
@@ -13417,18 +13417,18 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode expression_var;
             if (
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d invalid_assignment[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression ':' expression");
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "illegal target for annotation" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':' expression");
-                return cache.putResult(pos, INVALID_ASSIGNMENT_ID, _res);
+                return cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_assignment[%d-%d]: %s failed!", level, ' ',
@@ -13440,9 +13440,9 @@ public final class Parser extends AbstractParser {
             SSTNode[] _loop0_206_var;
             SSTNode a;
             if (
-                (_loop0_206_var = _loop0_206_rule) != null  // ((star_targets '='))*
+                (_loop0_206_var = _loop0_206_rule()) != null  // ((star_targets '='))*
                 &&
-                (a = star_expressions_rule) != null  // star_expressions
+                (a = star_expressions_rule()) != null  // star_expressions
                 &&
                 (_literal = expect(22)) != null  // token='='
             )
@@ -13451,7 +13451,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "((star_targets '='))* star_expressions '='");
-                return cache.putResult(pos, INVALID_ASSIGNMENT_ID, _res);
+                return cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_assignment[%d-%d]: %s failed!", level, ' ',
@@ -13463,9 +13463,9 @@ public final class Parser extends AbstractParser {
             SSTNode[] _loop0_207_var;
             SSTNode a;
             if (
-                (_loop0_207_var = _loop0_207_rule) != null  // ((star_targets '='))*
+                (_loop0_207_var = _loop0_207_rule()) != null  // ((star_targets '='))*
                 &&
-                (a = yield_expr_rule) != null  // yield_expr
+                (a = yield_expr_rule()) != null  // yield_expr
                 &&
                 (_literal = expect(22)) != null  // token='='
             )
@@ -13474,7 +13474,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "assignment to yield expression not possible" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "((star_targets '='))* yield_expr '='");
-                return cache.putResult(pos, INVALID_ASSIGNMENT_ID, _res);
+                return cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_assignment[%d-%d]: %s failed!", level, ' ',
@@ -13487,19 +13487,19 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode[] augassign_var;
             if (
-                (a = star_expressions_rule) != null  // star_expressions
+                (a = star_expressions_rule()) != null  // star_expressions
                 &&
                 // TODO replacing AugOperator* --> SSTNode[]
-                (augassign_var = augassign_rule) != null  // augassign
+                (augassign_var = augassign_rule()) != null  // augassign
                 &&
-                (_tmp_208_var = _tmp_208_rule) != null  // yield_expr | star_expressions
+                (_tmp_208_var = _tmp_208_rule()) != null  // yield_expr | star_expressions
             )
             {
                 debugMessageln("%d invalid_assignment[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_expressions augassign (yield_expr | star_expressions)");
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "'%s' is an illegal expression for augmented assignment" , _PyPegen_get_expr_name ( a ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_expressions augassign (yield_expr | star_expressions)");
-                return cache.putResult(pos, INVALID_ASSIGNMENT_ID, _res);
+                return cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_assignment[%d-%d]: %s failed!", level, ' ',
@@ -13521,13 +13521,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> invalid_ann_assign_target[%d-%d]: %s", level, ' ', _mark, mark(), "list");
             SSTNode list_var;
             if (
-                (list_var = list_rule) != null  // list
+                (list_var = list_rule()) != null  // list
             )
             {
                 debugMessageln("%d invalid_ann_assign_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "list");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "list");
                 _res = list_var;
-                return cache.putResult(pos, INVALID_ANN_ASSIGN_TARGET_ID, _res);
+                return cache.putResult(_mark, INVALID_ANN_ASSIGN_TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_ann_assign_target[%d-%d]: %s failed!", level, ' ',
@@ -13537,13 +13537,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> invalid_ann_assign_target[%d-%d]: %s", level, ' ', _mark, mark(), "tuple");
             SSTNode tuple_var;
             if (
-                (tuple_var = tuple_rule) != null  // tuple
+                (tuple_var = tuple_rule()) != null  // tuple
             )
             {
                 debugMessageln("%d invalid_ann_assign_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "tuple");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "tuple");
                 _res = tuple_var;
-                return cache.putResult(pos, INVALID_ANN_ASSIGN_TARGET_ID, _res);
+                return cache.putResult(_mark, INVALID_ANN_ASSIGN_TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_ann_assign_target[%d-%d]: %s failed!", level, ' ',
@@ -13557,7 +13557,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                (a = invalid_ann_assign_target_rule) != null  // invalid_ann_assign_target
+                (a = invalid_ann_assign_target_rule()) != null  // invalid_ann_assign_target
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
@@ -13565,7 +13565,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d invalid_ann_assign_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' invalid_ann_assign_target ')'");
                 _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' invalid_ann_assign_target ')'");
-                return cache.putResult(pos, INVALID_ANN_ASSIGN_TARGET_ID, _res);
+                return cache.putResult(_mark, INVALID_ANN_ASSIGN_TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_ann_assign_target[%d-%d]: %s failed!", level, ' ',
@@ -13590,14 +13590,14 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(503)) != null  // token='del'
                 &&
-                (a = star_expressions_rule) != null  // star_expressions
+                (a = star_expressions_rule()) != null  // star_expressions
             )
             {
                 debugMessageln("%d invalid_del_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'del' star_expressions");
                 // TODO: node.action: RAISE_SYNTAX_ERROR_INVALID_TARGET ( DEL_TARGETS , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'del' star_expressions");
-                return cache.putResult(pos, INVALID_DEL_STMT_ID, _res);
+                return cache.putResult(_mark, INVALID_DEL_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_del_stmt[%d-%d]: %s failed!", level, ' ',
@@ -13628,7 +13628,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_INDENTATION_ERROR ( "expected an indented block" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NEWLINE !INDENT");
-                return cache.putResult(pos, INVALID_BLOCK_ID, _res);
+                return cache.putResult(_mark, INVALID_BLOCK_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_block[%d-%d]: %s failed!", level, ' ',
@@ -13652,7 +13652,7 @@ public final class Parser extends AbstractParser {
             Token a;
             SSTNode primary_var;
             if (
-                (primary_var = primary_rule) != null  // primary
+                (primary_var = primary_rule()) != null  // primary
                 &&
                 (a = expect(25)) != null  // token='{'
             )
@@ -13661,7 +13661,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "invalid syntax" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary '{'");
-                return cache.putResult(pos, INVALID_PRIMARY_ID, _res);
+                return cache.putResult(_mark, INVALID_PRIMARY_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_primary[%d-%d]: %s failed!", level, ' ',
@@ -13688,19 +13688,19 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode[] for_if_clauses_var;
             if (
-                (_tmp_209_var = _tmp_209_rule) != null  // '[' | '(' | '{'
+                (_tmp_209_var = _tmp_209_rule()) != null  // '[' | '(' | '{'
                 &&
-                (a = starred_expression_rule) != null  // starred_expression
+                (a = starred_expression_rule()) != null  // starred_expression
                 &&
                 // TODO replacing asdl_comprehension_seq* --> SSTNode[]
-                (for_if_clauses_var = for_if_clauses_rule) != null  // for_if_clauses
+                (for_if_clauses_var = for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
                 debugMessageln("%d invalid_comprehension[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "('[' | '(' | '{') starred_expression for_if_clauses");
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "iterable unpacking cannot be used in comprehension" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "('[' | '(' | '{') starred_expression for_if_clauses");
-                return cache.putResult(pos, INVALID_COMPREHENSION_ID, _res);
+                return cache.putResult(_mark, INVALID_COMPREHENSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_comprehension[%d-%d]: %s failed!", level, ' ',
@@ -13715,23 +13715,23 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode[] for_if_clauses_var;
             if (
-                (_tmp_210_var = _tmp_210_rule) != null  // '[' | '{'
+                (_tmp_210_var = _tmp_210_rule()) != null  // '[' | '{'
                 &&
-                (a = star_named_expression_rule) != null  // star_named_expression
+                (a = star_named_expression_rule()) != null  // star_named_expression
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
-                ((_opt_var = _tmp_211_rule) != null || true)  // star_named_expressions?
+                ((_opt_var = _tmp_211_rule()) != null || true)  // star_named_expressions?
                 &&
                 // TODO replacing asdl_comprehension_seq* --> SSTNode[]
-                (for_if_clauses_var = for_if_clauses_rule) != null  // for_if_clauses
+                (for_if_clauses_var = for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
                 debugMessageln("%d invalid_comprehension[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "('[' | '{') star_named_expression ',' star_named_expressions? for_if_clauses");
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "did you forget parentheses around the comprehension target?" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "('[' | '{') star_named_expression ',' star_named_expressions? for_if_clauses");
-                return cache.putResult(pos, INVALID_COMPREHENSION_ID, _res);
+                return cache.putResult(_mark, INVALID_COMPREHENSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_comprehension[%d-%d]: %s failed!", level, ' ',
@@ -13762,10 +13762,10 @@ public final class Parser extends AbstractParser {
                 &&
                 (a = expect(35)) != null  // token='**'
                 &&
-                (bitwise_or_var = bitwise_or_rule) != null  // bitwise_or
+                (bitwise_or_var = bitwise_or_rule()) != null  // bitwise_or
                 &&
                 // TODO replacing asdl_comprehension_seq* --> SSTNode[]
-                (for_if_clauses_var = for_if_clauses_rule) != null  // for_if_clauses
+                (for_if_clauses_var = for_if_clauses_rule()) != null  // for_if_clauses
                 &&
                 (_literal_1 = expect(26)) != null  // token='}'
             )
@@ -13774,7 +13774,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "dict unpacking cannot be used in dict comprehension" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' '**' bitwise_or for_if_clauses '}'");
-                return cache.putResult(pos, INVALID_DICT_COMPREHENSION_ID, _res);
+                return cache.putResult(_mark, INVALID_DICT_COMPREHENSION_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_dict_comprehension[%d-%d]: %s failed!", level, ' ',
@@ -13799,19 +13799,19 @@ public final class Parser extends AbstractParser {
             Object invalid_parameters_helper_var;
             SSTNode param_no_default_var;
             if (
-                (_loop0_212_var = _loop0_212_rule) != null  // param_no_default*
+                (_loop0_212_var = _loop0_212_rule()) != null  // param_no_default*
                 &&
-                (invalid_parameters_helper_var = invalid_parameters_helper_rule) != null  // invalid_parameters_helper
+                (invalid_parameters_helper_var = invalid_parameters_helper_rule()) != null  // invalid_parameters_helper
                 &&
                 // TODO replacing arg_ty --> SSTNode
-                (param_no_default_var = param_no_default_rule) != null  // param_no_default
+                (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
                 debugMessageln("%d invalid_parameters[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "param_no_default* invalid_parameters_helper param_no_default");
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "non-default argument follows default argument" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default* invalid_parameters_helper param_no_default");
-                return cache.putResult(pos, INVALID_PARAMETERS_ID, _res);
+                return cache.putResult(_mark, INVALID_PARAMETERS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_parameters[%d-%d]: %s failed!", level, ' ',
@@ -13835,14 +13835,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] a;
             if (
                 // TODO replacing SlashWithDefault* --> SSTNode[]
-                (a = slash_with_default_rule) != null  // slash_with_default
+                (a = slash_with_default_rule()) != null  // slash_with_default
             )
             {
                 debugMessageln("%d invalid_parameters_helper[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "slash_with_default");
                 // TODO: node.action: _PyPegen_singleton_seq ( p , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "slash_with_default");
-                return cache.putResult(pos, INVALID_PARAMETERS_HELPER_ID, _res);
+                return cache.putResult(_mark, INVALID_PARAMETERS_HELPER_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_parameters_helper[%d-%d]: %s failed!", level, ' ',
@@ -13852,13 +13852,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> invalid_parameters_helper[%d-%d]: %s", level, ' ', _mark, mark(), "param_with_default+");
             SSTNode[] _loop1_213_var;
             if (
-                (_loop1_213_var = _loop1_213_rule) != null  // param_with_default+
+                (_loop1_213_var = _loop1_213_rule()) != null  // param_with_default+
             )
             {
                 debugMessageln("%d invalid_parameters_helper[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "param_with_default+");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default+");
                 _res = _loop1_213_var;
-                return cache.putResult(pos, INVALID_PARAMETERS_HELPER_ID, _res);
+                return cache.putResult(_mark, INVALID_PARAMETERS_HELPER_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_parameters_helper[%d-%d]: %s failed!", level, ' ',
@@ -13884,19 +13884,19 @@ public final class Parser extends AbstractParser {
             Object invalid_lambda_parameters_helper_var;
             SSTNode lambda_param_no_default_var;
             if (
-                (_loop0_214_var = _loop0_214_rule) != null  // lambda_param_no_default*
+                (_loop0_214_var = _loop0_214_rule()) != null  // lambda_param_no_default*
                 &&
-                (invalid_lambda_parameters_helper_var = invalid_lambda_parameters_helper_rule) != null  // invalid_lambda_parameters_helper
+                (invalid_lambda_parameters_helper_var = invalid_lambda_parameters_helper_rule()) != null  // invalid_lambda_parameters_helper
                 &&
                 // TODO replacing arg_ty --> SSTNode
-                (lambda_param_no_default_var = lambda_param_no_default_rule) != null  // lambda_param_no_default
+                (lambda_param_no_default_var = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
                 debugMessageln("%d invalid_lambda_parameters[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default");
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "non-default argument follows default argument" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default");
-                return cache.putResult(pos, INVALID_LAMBDA_PARAMETERS_ID, _res);
+                return cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_lambda_parameters[%d-%d]: %s failed!", level, ' ',
@@ -13922,14 +13922,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] a;
             if (
                 // TODO replacing SlashWithDefault* --> SSTNode[]
-                (a = lambda_slash_with_default_rule) != null  // lambda_slash_with_default
+                (a = lambda_slash_with_default_rule()) != null  // lambda_slash_with_default
             )
             {
                 debugMessageln("%d invalid_lambda_parameters_helper[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_slash_with_default");
                 // TODO: node.action: _PyPegen_singleton_seq ( p , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_slash_with_default");
-                return cache.putResult(pos, INVALID_LAMBDA_PARAMETERS_HELPER_ID, _res);
+                return cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_lambda_parameters_helper[%d-%d]: %s failed!", level, ' ',
@@ -13939,13 +13939,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> invalid_lambda_parameters_helper[%d-%d]: %s", level, ' ', _mark, mark(), "lambda_param_with_default+");
             SSTNode[] _loop1_215_var;
             if (
-                (_loop1_215_var = _loop1_215_rule) != null  // lambda_param_with_default+
+                (_loop1_215_var = _loop1_215_rule()) != null  // lambda_param_with_default+
             )
             {
                 debugMessageln("%d invalid_lambda_parameters_helper[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_param_with_default+");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default+");
                 _res = _loop1_215_var;
-                return cache.putResult(pos, INVALID_LAMBDA_PARAMETERS_HELPER_ID, _res);
+                return cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_lambda_parameters_helper[%d-%d]: %s failed!", level, ' ',
@@ -13970,14 +13970,14 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(16)) != null  // token='*'
                 &&
-                (_tmp_216_var = _tmp_216_rule) != null  // ')' | ',' (')' | '**')
+                (_tmp_216_var = _tmp_216_rule()) != null  // ')' | ',' (')' | '**')
             )
             {
                 debugMessageln("%d invalid_star_etc[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' (')' | ',' (')' | '**'))");
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "named arguments must follow bare *" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' (')' | ',' (')' | '**'))");
-                return cache.putResult(pos, INVALID_STAR_ETC_ID, _res);
+                return cache.putResult(_mark, INVALID_STAR_ETC_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_star_etc[%d-%d]: %s failed!", level, ' ',
@@ -14000,7 +14000,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "bare * has associated type comment" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' ',' TYPE_COMMENT");
-                return cache.putResult(pos, INVALID_STAR_ETC_ID, _res);
+                return cache.putResult(_mark, INVALID_STAR_ETC_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_star_etc[%d-%d]: %s failed!", level, ' ',
@@ -14025,14 +14025,14 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(16)) != null  // token='*'
                 &&
-                (_tmp_217_var = _tmp_217_rule) != null  // ':' | ',' (':' | '**')
+                (_tmp_217_var = _tmp_217_rule()) != null  // ':' | ',' (':' | '**')
             )
             {
                 debugMessageln("%d invalid_lambda_star_etc[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' (':' | ',' (':' | '**'))");
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "named arguments must follow bare *" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' (':' | ',' (':' | '**'))");
-                return cache.putResult(pos, INVALID_LAMBDA_STAR_ETC_ID, _res);
+                return cache.putResult(_mark, INVALID_LAMBDA_STAR_ETC_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_lambda_star_etc[%d-%d]: %s failed!", level, ' ',
@@ -14073,7 +14073,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "Cannot have two type comments on def" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "TYPE_COMMENT NEWLINE TYPE_COMMENT NEWLINE INDENT");
-                return cache.putResult(pos, INVALID_DOUBLE_TYPE_COMMENTS_ID, _res);
+                return cache.putResult(_mark, INVALID_DOUBLE_TYPE_COMMENTS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_double_type_comments[%d-%d]: %s failed!", level, ' ',
@@ -14097,11 +14097,11 @@ public final class Parser extends AbstractParser {
             SSTNode a;
             SSTNode expression_var;
             if (
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
                 &&
                 (_keyword = expect(520)) != null  // token='as'
                 &&
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
                 &&
                 genLookahead__tmp_218_rule(true)
             )
@@ -14110,7 +14110,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_INVALID_TARGET ( STAR_TARGETS , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression 'as' expression &(',' | ')' | ':')");
-                return cache.putResult(pos, INVALID_WITH_ITEM_ID, _res);
+                return cache.putResult(_mark, INVALID_WITH_ITEM_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_with_item[%d-%d]: %s failed!", level, ' ',
@@ -14138,14 +14138,14 @@ public final class Parser extends AbstractParser {
                 &&
                 (_keyword = expect(517)) != null  // token='for'
                 &&
-                (a = star_expressions_rule) != null  // star_expressions
+                (a = star_expressions_rule()) != null  // star_expressions
             )
             {
                 debugMessageln("%d invalid_for_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC? 'for' star_expressions");
                 // TODO: node.action: RAISE_SYNTAX_ERROR_INVALID_TARGET ( FOR_TARGETS , a )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC? 'for' star_expressions");
-                return cache.putResult(pos, INVALID_FOR_TARGET_ID, _res);
+                return cache.putResult(_mark, INVALID_FOR_TARGET_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_for_target[%d-%d]: %s failed!", level, ' ',
@@ -14171,7 +14171,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                (a = starred_expression_rule) != null  // starred_expression
+                (a = starred_expression_rule()) != null  // starred_expression
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
@@ -14180,7 +14180,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use starred expression here" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' starred_expression ')'");
-                return cache.putResult(pos, INVALID_GROUP_ID, _res);
+                return cache.putResult(_mark, INVALID_GROUP_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_group[%d-%d]: %s failed!", level, ' ',
@@ -14197,7 +14197,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (a = expect(35)) != null  // token='**'
                 &&
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
@@ -14206,7 +14206,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use double starred expression here" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' '**' expression ')'");
-                return cache.putResult(pos, INVALID_GROUP_ID, _res);
+                return cache.putResult(_mark, INVALID_GROUP_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_group[%d-%d]: %s failed!", level, ' ',
@@ -14231,7 +14231,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] import_from_as_names_var;
             if (
                 // TODO replacing asdl_alias_seq* --> SSTNode[]
-                (import_from_as_names_var = import_from_as_names_rule) != null  // import_from_as_names
+                (import_from_as_names_var = import_from_as_names_rule()) != null  // import_from_as_names
                 &&
                 (_literal = expect(12)) != null  // token=','
             )
@@ -14240,7 +14240,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "trailing comma not allowed without surrounding parentheses" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "import_from_as_names ','");
-                return cache.putResult(pos, INVALID_IMPORT_FROM_TARGETS_ID, _res);
+                return cache.putResult(_mark, INVALID_IMPORT_FROM_TARGETS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_import_from_targets[%d-%d]: %s failed!", level, ' ',
@@ -14267,11 +14267,11 @@ public final class Parser extends AbstractParser {
             Token _literal;
             Object _opt_var;
             if (
-                ((_opt_var = _tmp_219_rule) != null || true)  // ASYNC?
+                ((_opt_var = _tmp_219_rule()) != null || true)  // ASYNC?
                 &&
                 (_keyword = expect(519)) != null  // token='with'
                 &&
-                (_gather_220_var = _gather_220_rule) != null  // ','.(expression ['as' star_target])+
+                (_gather_220_var = _gather_220_rule()) != null  // ','.(expression ['as' star_target])+
                 &&
                 (_literal = expect_forced_token(11, ":")) != null  // forced_token=':'
             )
@@ -14279,7 +14279,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d invalid_with_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC? 'with' ','.(expression ['as' star_target])+ &&':'");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "ASYNC? 'with' ','.(expression ['as' star_target])+ &&':'");
                 _res = dummyName(_opt_var, _keyword, _gather_220_var, _literal);
-                return cache.putResult(pos, INVALID_WITH_STMT_ID, _res);
+                return cache.putResult(_mark, INVALID_WITH_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_with_stmt[%d-%d]: %s failed!", level, ' ',
@@ -14295,13 +14295,13 @@ public final class Parser extends AbstractParser {
             Object _opt_var;
             Object _opt_var_1;
             if (
-                ((_opt_var = _tmp_222_rule) != null || true)  // ASYNC?
+                ((_opt_var = _tmp_222_rule()) != null || true)  // ASYNC?
                 &&
                 (_keyword = expect(519)) != null  // token='with'
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
-                (_gather_223_var = _gather_223_rule) != null  // ','.(expressions ['as' star_target])+
+                (_gather_223_var = _gather_223_rule()) != null  // ','.(expressions ['as' star_target])+
                 &&
                 ((_opt_var_1 = expect(12)) != null || true)  // ','?
                 &&
@@ -14313,7 +14313,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d invalid_with_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC? 'with' '(' ','.(expressions ['as' star_target])+ ','? ')' &&':'");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "ASYNC? 'with' '(' ','.(expressions ['as' star_target])+ ','? ')' &&':'");
                 _res = dummyName(_opt_var, _keyword, _literal, _gather_223_var, _opt_var_1, _literal_1, _literal_2);
-                return cache.putResult(pos, INVALID_WITH_STMT_ID, _res);
+                return cache.putResult(_mark, INVALID_WITH_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_with_stmt[%d-%d]: %s failed!", level, ' ',
@@ -14345,13 +14345,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(521)) != null  // token='except'
                 &&
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (expressions_var = expressions_rule) != null  // expressions
+                (expressions_var = expressions_rule()) != null  // expressions
                 &&
-                ((_opt_var = _tmp_225_rule) != null || true)  // ['as' NAME]
+                ((_opt_var = _tmp_225_rule()) != null || true)  // ['as' NAME]
                 &&
                 (_literal_1 = expect(11)) != null  // token=':'
             )
@@ -14360,7 +14360,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "exception group must be parenthesized" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'except' expression ',' expressions ['as' NAME] ':'");
-                return cache.putResult(pos, INVALID_EXCEPT_BLOCK_ID, _res);
+                return cache.putResult(_mark, INVALID_EXCEPT_BLOCK_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_except_block[%d-%d]: %s failed!", level, ' ',
@@ -14375,9 +14375,9 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(521)) != null  // token='except'
                 &&
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
                 &&
-                ((_opt_var = _tmp_226_rule) != null || true)  // ['as' NAME]
+                ((_opt_var = _tmp_226_rule()) != null || true)  // ['as' NAME]
                 &&
                 (_literal = expect_forced_token(11, ":")) != null  // forced_token=':'
             )
@@ -14385,7 +14385,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d invalid_except_block[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'except' expression ['as' NAME] &&':'");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "'except' expression ['as' NAME] &&':'");
                 _res = dummyName(_keyword, expression_var, _opt_var, _literal);
-                return cache.putResult(pos, INVALID_EXCEPT_BLOCK_ID, _res);
+                return cache.putResult(_mark, INVALID_EXCEPT_BLOCK_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_except_block[%d-%d]: %s failed!", level, ' ',
@@ -14404,7 +14404,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d invalid_except_block[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'except' &&':'");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "'except' &&':'");
                 _res = dummyName(_keyword, _literal);
-                return cache.putResult(pos, INVALID_EXCEPT_BLOCK_ID, _res);
+                return cache.putResult(_mark, INVALID_EXCEPT_BLOCK_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_except_block[%d-%d]: %s failed!", level, ' ',
@@ -14429,7 +14429,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect_SOFT_KEYWORD("match")) != null  // soft_keyword='"match"'
                 &&
-                (subject_expr_var = subject_expr_rule) != null  // subject_expr
+                (subject_expr_var = subject_expr_rule()) != null  // subject_expr
                 &&
                 genLookahead_expect(false, 11)  // token=':'
             )
@@ -14438,7 +14438,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: CHECK_VERSION ( void * , 10 , "Pattern matching is" , RAISE_SYNTAX_ERROR ( "expected ':'" ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'match' subject_expr !':'");
-                return cache.putResult(pos, INVALID_MATCH_STMT_ID, _res);
+                return cache.putResult(_mark, INVALID_MATCH_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_match_stmt[%d-%d]: %s failed!", level, ' ',
@@ -14464,9 +14464,9 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect_SOFT_KEYWORD("case")) != null  // soft_keyword='"case"'
                 &&
-                (patterns_var = patterns_rule) != null  // patterns
+                (patterns_var = patterns_rule()) != null  // patterns
                 &&
-                ((_opt_var = guard_rule) != null || true)  // guard?
+                ((_opt_var = guard_rule()) != null || true)  // guard?
                 &&
                 genLookahead_expect(false, 11)  // token=':'
             )
@@ -14475,7 +14475,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "expected ':'" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'case' patterns guard? !':'");
-                return cache.putResult(pos, INVALID_CASE_BLOCK_ID, _res);
+                return cache.putResult(_mark, INVALID_CASE_BLOCK_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_case_block[%d-%d]: %s failed!", level, ' ',
@@ -14501,7 +14501,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(510)) != null  // token='if'
                 &&
-                (named_expression_var = named_expression_rule) != null  // named_expression
+                (named_expression_var = named_expression_rule()) != null  // named_expression
                 &&
                 (newline_var = expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
             )
@@ -14510,7 +14510,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "expected ':'" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' named_expression NEWLINE");
-                return cache.putResult(pos, INVALID_IF_STMT_ID, _res);
+                return cache.putResult(_mark, INVALID_IF_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_if_stmt[%d-%d]: %s failed!", level, ' ',
@@ -14536,7 +14536,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(515)) != null  // token='elif'
                 &&
-                (named_expression_var = named_expression_rule) != null  // named_expression
+                (named_expression_var = named_expression_rule()) != null  // named_expression
                 &&
                 (newline_var = expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
             )
@@ -14545,7 +14545,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "expected ':'" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'elif' named_expression NEWLINE");
-                return cache.putResult(pos, INVALID_ELIF_STMT_ID, _res);
+                return cache.putResult(_mark, INVALID_ELIF_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_elif_stmt[%d-%d]: %s failed!", level, ' ',
@@ -14571,7 +14571,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(512)) != null  // token='while'
                 &&
-                (named_expression_var = named_expression_rule) != null  // named_expression
+                (named_expression_var = named_expression_rule()) != null  // named_expression
                 &&
                 (newline_var = expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
             )
@@ -14580,7 +14580,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR ( "expected ':'" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'while' named_expression NEWLINE");
-                return cache.putResult(pos, INVALID_WHILE_STMT_ID, _res);
+                return cache.putResult(_mark, INVALID_WHILE_STMT_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_while_stmt[%d-%d]: %s failed!", level, ' ',
@@ -14607,17 +14607,17 @@ public final class Parser extends AbstractParser {
             Token _literal;
             Object invalid_kvpair_var;
             if (
-                (_gather_227_var = _gather_227_rule) != null  // ','.double_starred_kvpair+
+                (_gather_227_var = _gather_227_rule()) != null  // ','.double_starred_kvpair+
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (invalid_kvpair_var = invalid_kvpair_rule) != null  // invalid_kvpair
+                (invalid_kvpair_var = invalid_kvpair_rule()) != null  // invalid_kvpair
             )
             {
                 debugMessageln("%d invalid_double_starred_kvpairs[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.double_starred_kvpair+ ',' invalid_kvpair");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "','.double_starred_kvpair+ ',' invalid_kvpair");
                 _res = dummyName(_gather_227_var, _literal, invalid_kvpair_var);
-                return cache.putResult(pos, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
+                return cache.putResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_double_starred_kvpairs[%d-%d]: %s failed!", level, ' ',
@@ -14630,20 +14630,20 @@ public final class Parser extends AbstractParser {
             SSTNode bitwise_or_var;
             SSTNode expression_var;
             if (
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
                 (a = expect(16)) != null  // token='*'
                 &&
-                (bitwise_or_var = bitwise_or_rule) != null  // bitwise_or
+                (bitwise_or_var = bitwise_or_rule()) != null  // bitwise_or
             )
             {
                 debugMessageln("%d invalid_double_starred_kvpairs[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression ':' '*' bitwise_or");
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use a starred expression in a dictionary value" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':' '*' bitwise_or");
-                return cache.putResult(pos, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
+                return cache.putResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_double_starred_kvpairs[%d-%d]: %s failed!", level, ' ',
@@ -14654,7 +14654,7 @@ public final class Parser extends AbstractParser {
             Token a;
             SSTNode expression_var;
             if (
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
                 &&
                 (a = expect(11)) != null  // token=':'
                 &&
@@ -14665,7 +14665,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "expression expected after dictionary key and ':'" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':' &('}' | ',')");
-                return cache.putResult(pos, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
+                return cache.putResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_double_starred_kvpairs[%d-%d]: %s failed!", level, ' ',
@@ -14687,7 +14687,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> invalid_kvpair[%d-%d]: %s", level, ' ', _mark, mark(), "expression !(':')");
             SSTNode a;
             if (
-                (a = expression_rule) != null  // expression
+                (a = expression_rule()) != null  // expression
                 &&
                 genLookahead__tmp_230_rule(false)
             )
@@ -14696,7 +14696,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_ERROR_KNOWN_LOCATION ( p , PyExc_SyntaxError , a -> lineno , a -> end_col_offset - 1 , "':' expected after dictionary key" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression !(':')");
-                return cache.putResult(pos, INVALID_KVPAIR_ID, _res);
+                return cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_kvpair[%d-%d]: %s failed!", level, ' ',
@@ -14709,20 +14709,20 @@ public final class Parser extends AbstractParser {
             SSTNode bitwise_or_var;
             SSTNode expression_var;
             if (
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
                 &&
                 (_literal = expect(11)) != null  // token=':'
                 &&
                 (a = expect(16)) != null  // token='*'
                 &&
-                (bitwise_or_var = bitwise_or_rule) != null  // bitwise_or
+                (bitwise_or_var = bitwise_or_rule()) != null  // bitwise_or
             )
             {
                 debugMessageln("%d invalid_kvpair[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression ':' '*' bitwise_or");
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "cannot use a starred expression in a dictionary value" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':' '*' bitwise_or");
-                return cache.putResult(pos, INVALID_KVPAIR_ID, _res);
+                return cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_kvpair[%d-%d]: %s failed!", level, ' ',
@@ -14733,7 +14733,7 @@ public final class Parser extends AbstractParser {
             Token a;
             SSTNode expression_var;
             if (
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
                 &&
                 (a = expect(11)) != null  // token=':'
             )
@@ -14742,7 +14742,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: RAISE_SYNTAX_ERROR_KNOWN_LOCATION ( a , "expression expected after dictionary key and ':'" )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':'");
-                return cache.putResult(pos, INVALID_KVPAIR_ID, _res);
+                return cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s invalid_kvpair[%d-%d]: %s failed!", level, ' ',
@@ -14764,13 +14764,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_1[%d-%d]: %s", level, ' ', _mark, mark(), "statements");
             SSTNode[] statements_var;
             if (
-                (statements_var = statements_rule) != null  // statements
+                (statements_var = statements_rule()) != null  // statements
             )
             {
                 debugMessageln("%d _tmp_1[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "statements");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "statements");
                 _res = statements_var;
-                return cache.putResult(pos, _TMP_1_ID, _res);
+                return cache.putResult(_mark, _TMP_1_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_1[%d-%d]: %s failed!", level, ' ',
@@ -14826,13 +14826,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] type_expressions_var;
             if (
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (type_expressions_var = type_expressions_rule) != null  // type_expressions
+                (type_expressions_var = type_expressions_rule()) != null  // type_expressions
             )
             {
                 debugMessageln("%d _tmp_3[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "type_expressions");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "type_expressions");
                 _res = type_expressions_var;
-                return cache.putResult(pos, _TMP_3_ID, _res);
+                return cache.putResult(_mark, _TMP_3_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_3[%d-%d]: %s failed!", level, ' ',
@@ -14893,7 +14893,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (elem = expression_rule) != null  // expression
+                (elem = expression_rule()) != null  // expression
             )
             {
                 // TODO: node.action: elem
@@ -14923,14 +14923,14 @@ public final class Parser extends AbstractParser {
             SSTNode elem;
             SSTNode[] seq;
             if (
-                (elem = expression_rule) != null  // expression
+                (elem = expression_rule()) != null  // expression
                 &&
-                (seq = _loop0_6_rule) != null  // _loop0_6
+                (seq = _loop0_6_rule()) != null  // _loop0_6
             )
             {
                 debugMessageln("%d _gather_5[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression _loop0_6");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_5_ID, _res);
+                return cache.putResult(_mark, _GATHER_5_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_5[%d-%d]: %s failed!", level, ' ',
@@ -14959,7 +14959,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (elem = expression_rule) != null  // expression
+                (elem = expression_rule()) != null  // expression
             )
             {
                 // TODO: node.action: elem
@@ -14989,14 +14989,14 @@ public final class Parser extends AbstractParser {
             SSTNode elem;
             SSTNode[] seq;
             if (
-                (elem = expression_rule) != null  // expression
+                (elem = expression_rule()) != null  // expression
                 &&
-                (seq = _loop0_8_rule) != null  // _loop0_8
+                (seq = _loop0_8_rule()) != null  // _loop0_8
             )
             {
                 debugMessageln("%d _gather_7[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression _loop0_8");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_7_ID, _res);
+                return cache.putResult(_mark, _GATHER_7_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_7[%d-%d]: %s failed!", level, ' ',
@@ -15025,7 +15025,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (elem = expression_rule) != null  // expression
+                (elem = expression_rule()) != null  // expression
             )
             {
                 // TODO: node.action: elem
@@ -15055,14 +15055,14 @@ public final class Parser extends AbstractParser {
             SSTNode elem;
             SSTNode[] seq;
             if (
-                (elem = expression_rule) != null  // expression
+                (elem = expression_rule()) != null  // expression
                 &&
-                (seq = _loop0_10_rule) != null  // _loop0_10
+                (seq = _loop0_10_rule()) != null  // _loop0_10
             )
             {
                 debugMessageln("%d _gather_9[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression _loop0_10");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_9_ID, _res);
+                return cache.putResult(_mark, _GATHER_9_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_9[%d-%d]: %s failed!", level, ' ',
@@ -15091,7 +15091,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (elem = expression_rule) != null  // expression
+                (elem = expression_rule()) != null  // expression
             )
             {
                 // TODO: node.action: elem
@@ -15121,14 +15121,14 @@ public final class Parser extends AbstractParser {
             SSTNode elem;
             SSTNode[] seq;
             if (
-                (elem = expression_rule) != null  // expression
+                (elem = expression_rule()) != null  // expression
                 &&
-                (seq = _loop0_12_rule) != null  // _loop0_12
+                (seq = _loop0_12_rule()) != null  // _loop0_12
             )
             {
                 debugMessageln("%d _gather_11[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression _loop0_12");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_11_ID, _res);
+                return cache.putResult(_mark, _GATHER_11_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_11[%d-%d]: %s failed!", level, ' ',
@@ -15154,7 +15154,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop1_13[%d-%d]: %s", level, ' ', _mark, mark(), "statement");
             SSTNode[] statement_var;
             while (
-                (statement_var = statement_rule) != null  // statement
+                (statement_var = statement_rule()) != null  // statement
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "statement");
@@ -15195,7 +15195,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(13)) != null  // token=';'
                 &&
                 // TODO replacing stmt_ty --> SSTNode
-                (elem = simple_stmt_rule) != null  // simple_stmt
+                (elem = simple_stmt_rule()) != null  // simple_stmt
             )
             {
                 // TODO: node.action: elem
@@ -15227,14 +15227,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] seq;
             if (
                 // TODO replacing stmt_ty --> SSTNode
-                (elem = simple_stmt_rule) != null  // simple_stmt
+                (elem = simple_stmt_rule()) != null  // simple_stmt
                 &&
-                (seq = _loop0_15_rule) != null  // _loop0_15
+                (seq = _loop0_15_rule()) != null  // _loop0_15
             )
             {
                 debugMessageln("%d _gather_14[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "simple_stmt _loop0_15");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_14_ID, _res);
+                return cache.putResult(_mark, _GATHER_14_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_14[%d-%d]: %s failed!", level, ' ',
@@ -15262,7 +15262,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_16[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "';'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "';'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_16_ID, _res);
+                return cache.putResult(_mark, _TMP_16_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_16[%d-%d]: %s failed!", level, ' ',
@@ -15290,7 +15290,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_17[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'import'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'import'");
                 _res = _keyword;
-                return cache.putResult(pos, _TMP_17_ID, _res);
+                return cache.putResult(_mark, _TMP_17_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_17[%d-%d]: %s failed!", level, ' ',
@@ -15306,7 +15306,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_17[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'from'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'from'");
                 _res = _keyword;
-                return cache.putResult(pos, _TMP_17_ID, _res);
+                return cache.putResult(_mark, _TMP_17_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_17[%d-%d]: %s failed!", level, ' ',
@@ -15334,7 +15334,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_18[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'def'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'def'");
                 _res = _keyword;
-                return cache.putResult(pos, _TMP_18_ID, _res);
+                return cache.putResult(_mark, _TMP_18_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_18[%d-%d]: %s failed!", level, ' ',
@@ -15350,7 +15350,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_18[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'@'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'@'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_18_ID, _res);
+                return cache.putResult(_mark, _TMP_18_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_18[%d-%d]: %s failed!", level, ' ',
@@ -15366,7 +15366,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_18[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "ASYNC");
                 _res = async_var;
-                return cache.putResult(pos, _TMP_18_ID, _res);
+                return cache.putResult(_mark, _TMP_18_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_18[%d-%d]: %s failed!", level, ' ',
@@ -15394,7 +15394,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_19[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'class'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'class'");
                 _res = _keyword;
-                return cache.putResult(pos, _TMP_19_ID, _res);
+                return cache.putResult(_mark, _TMP_19_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_19[%d-%d]: %s failed!", level, ' ',
@@ -15410,7 +15410,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_19[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'@'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'@'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_19_ID, _res);
+                return cache.putResult(_mark, _TMP_19_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_19[%d-%d]: %s failed!", level, ' ',
@@ -15438,7 +15438,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_20[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'with'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'with'");
                 _res = _keyword;
-                return cache.putResult(pos, _TMP_20_ID, _res);
+                return cache.putResult(_mark, _TMP_20_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_20[%d-%d]: %s failed!", level, ' ',
@@ -15454,7 +15454,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_20[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "ASYNC");
                 _res = async_var;
-                return cache.putResult(pos, _TMP_20_ID, _res);
+                return cache.putResult(_mark, _TMP_20_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_20[%d-%d]: %s failed!", level, ' ',
@@ -15482,7 +15482,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_21[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'for'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'for'");
                 _res = _keyword;
-                return cache.putResult(pos, _TMP_21_ID, _res);
+                return cache.putResult(_mark, _TMP_21_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_21[%d-%d]: %s failed!", level, ' ',
@@ -15498,7 +15498,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_21[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "ASYNC");
                 _res = async_var;
-                return cache.putResult(pos, _TMP_21_ID, _res);
+                return cache.putResult(_mark, _TMP_21_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_21[%d-%d]: %s failed!", level, ' ',
@@ -15523,13 +15523,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(22)) != null  // token='='
                 &&
-                (d = annotated_rhs_rule) != null  // annotated_rhs
+                (d = annotated_rhs_rule()) != null  // annotated_rhs
             )
             {
                 debugMessageln("%d _tmp_22[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'=' annotated_rhs");
                 _res = d;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'=' annotated_rhs");
-                return cache.putResult(pos, _TMP_22_ID, _res);
+                return cache.putResult(_mark, _TMP_22_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_22[%d-%d]: %s failed!", level, ' ',
@@ -15555,7 +15555,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                (b = single_target_rule) != null  // single_target
+                (b = single_target_rule()) != null  // single_target
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
@@ -15563,7 +15563,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_23[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' single_target ')'");
                 _res = b;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' single_target ')'");
-                return cache.putResult(pos, _TMP_23_ID, _res);
+                return cache.putResult(_mark, _TMP_23_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_23[%d-%d]: %s failed!", level, ' ',
@@ -15573,13 +15573,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_23[%d-%d]: %s", level, ' ', _mark, mark(), "single_subscript_attribute_target");
             SSTNode single_subscript_attribute_target_var;
             if (
-                (single_subscript_attribute_target_var = single_subscript_attribute_target_rule) != null  // single_subscript_attribute_target
+                (single_subscript_attribute_target_var = single_subscript_attribute_target_rule()) != null  // single_subscript_attribute_target
             )
             {
                 debugMessageln("%d _tmp_23[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "single_subscript_attribute_target");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "single_subscript_attribute_target");
                 _res = single_subscript_attribute_target_var;
-                return cache.putResult(pos, _TMP_23_ID, _res);
+                return cache.putResult(_mark, _TMP_23_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_23[%d-%d]: %s failed!", level, ' ',
@@ -15604,13 +15604,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(22)) != null  // token='='
                 &&
-                (d = annotated_rhs_rule) != null  // annotated_rhs
+                (d = annotated_rhs_rule()) != null  // annotated_rhs
             )
             {
                 debugMessageln("%d _tmp_24[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'=' annotated_rhs");
                 _res = d;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'=' annotated_rhs");
-                return cache.putResult(pos, _TMP_24_ID, _res);
+                return cache.putResult(_mark, _TMP_24_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_24[%d-%d]: %s failed!", level, ' ',
@@ -15636,7 +15636,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop1_25[%d-%d]: %s", level, ' ', _mark, mark(), "(star_targets '=')");
             Object _tmp_231_var;
             while (
-                (_tmp_231_var = _tmp_231_rule) != null  // star_targets '='
+                (_tmp_231_var = _tmp_231_rule()) != null  // star_targets '='
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(star_targets '=')");
@@ -15668,13 +15668,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_26[%d-%d]: %s", level, ' ', _mark, mark(), "yield_expr");
             SSTNode yield_expr_var;
             if (
-                (yield_expr_var = yield_expr_rule) != null  // yield_expr
+                (yield_expr_var = yield_expr_rule()) != null  // yield_expr
             )
             {
                 debugMessageln("%d _tmp_26[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "yield_expr");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "yield_expr");
                 _res = yield_expr_var;
-                return cache.putResult(pos, _TMP_26_ID, _res);
+                return cache.putResult(_mark, _TMP_26_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_26[%d-%d]: %s failed!", level, ' ',
@@ -15684,13 +15684,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_26[%d-%d]: %s", level, ' ', _mark, mark(), "star_expressions");
             SSTNode star_expressions_var;
             if (
-                (star_expressions_var = star_expressions_rule) != null  // star_expressions
+                (star_expressions_var = star_expressions_rule()) != null  // star_expressions
             )
             {
                 debugMessageln("%d _tmp_26[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_expressions");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_expressions");
                 _res = star_expressions_var;
-                return cache.putResult(pos, _TMP_26_ID, _res);
+                return cache.putResult(_mark, _TMP_26_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_26[%d-%d]: %s failed!", level, ' ',
@@ -15718,7 +15718,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_27[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "TYPE_COMMENT");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "TYPE_COMMENT");
                 _res = type_comment_var;
-                return cache.putResult(pos, _TMP_27_ID, _res);
+                return cache.putResult(_mark, _TMP_27_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_27[%d-%d]: %s failed!", level, ' ',
@@ -15740,13 +15740,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_28[%d-%d]: %s", level, ' ', _mark, mark(), "yield_expr");
             SSTNode yield_expr_var;
             if (
-                (yield_expr_var = yield_expr_rule) != null  // yield_expr
+                (yield_expr_var = yield_expr_rule()) != null  // yield_expr
             )
             {
                 debugMessageln("%d _tmp_28[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "yield_expr");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "yield_expr");
                 _res = yield_expr_var;
-                return cache.putResult(pos, _TMP_28_ID, _res);
+                return cache.putResult(_mark, _TMP_28_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_28[%d-%d]: %s failed!", level, ' ',
@@ -15756,13 +15756,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_28[%d-%d]: %s", level, ' ', _mark, mark(), "star_expressions");
             SSTNode star_expressions_var;
             if (
-                (star_expressions_var = star_expressions_rule) != null  // star_expressions
+                (star_expressions_var = star_expressions_rule()) != null  // star_expressions
             )
             {
                 debugMessageln("%d _tmp_28[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_expressions");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_expressions");
                 _res = star_expressions_var;
-                return cache.putResult(pos, _TMP_28_ID, _res);
+                return cache.putResult(_mark, _TMP_28_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_28[%d-%d]: %s failed!", level, ' ',
@@ -15791,7 +15791,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (elem = name_token) != null  // NAME
+                (elem = name_token()) != null  // NAME
             )
             {
                 // TODO: node.action: elem
@@ -15821,14 +15821,14 @@ public final class Parser extends AbstractParser {
             SSTNode elem;
             SSTNode[] seq;
             if (
-                (elem = name_token) != null  // NAME
+                (elem = name_token()) != null  // NAME
                 &&
-                (seq = _loop0_30_rule) != null  // _loop0_30
+                (seq = _loop0_30_rule()) != null  // _loop0_30
             )
             {
                 debugMessageln("%d _gather_29[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME _loop0_30");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_29_ID, _res);
+                return cache.putResult(_mark, _GATHER_29_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_29[%d-%d]: %s failed!", level, ' ',
@@ -15857,7 +15857,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (elem = name_token) != null  // NAME
+                (elem = name_token()) != null  // NAME
             )
             {
                 // TODO: node.action: elem
@@ -15887,14 +15887,14 @@ public final class Parser extends AbstractParser {
             SSTNode elem;
             SSTNode[] seq;
             if (
-                (elem = name_token) != null  // NAME
+                (elem = name_token()) != null  // NAME
                 &&
-                (seq = _loop0_32_rule) != null  // _loop0_32
+                (seq = _loop0_32_rule()) != null  // _loop0_32
             )
             {
                 debugMessageln("%d _gather_31[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME _loop0_32");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_31_ID, _res);
+                return cache.putResult(_mark, _GATHER_31_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_31[%d-%d]: %s failed!", level, ' ',
@@ -15919,13 +15919,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (z = expression_rule) != null  // expression
+                (z = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d _tmp_33[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "',' expression");
                 _res = z;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
-                return cache.putResult(pos, _TMP_33_ID, _res);
+                return cache.putResult(_mark, _TMP_33_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_33[%d-%d]: %s failed!", level, ' ',
@@ -15953,7 +15953,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_34[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "';'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "';'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_34_ID, _res);
+                return cache.putResult(_mark, _TMP_34_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_34[%d-%d]: %s failed!", level, ' ',
@@ -15969,7 +15969,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_34[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NEWLINE");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NEWLINE");
                 _res = newline_var;
-                return cache.putResult(pos, _TMP_34_ID, _res);
+                return cache.putResult(_mark, _TMP_34_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_34[%d-%d]: %s failed!", level, ' ',
@@ -15995,7 +15995,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop0_35[%d-%d]: %s", level, ' ', _mark, mark(), "('.' | '...')");
             Object _tmp_232_var;
             while (
-                (_tmp_232_var = _tmp_232_rule) != null  // '.' | '...'
+                (_tmp_232_var = _tmp_232_rule()) != null  // '.' | '...'
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('.' | '...')");
@@ -16027,7 +16027,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop1_36[%d-%d]: %s", level, ' ', _mark, mark(), "('.' | '...')");
             Object _tmp_233_var;
             while (
-                (_tmp_233_var = _tmp_233_rule) != null  // '.' | '...'
+                (_tmp_233_var = _tmp_233_rule()) != null  // '.' | '...'
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('.' | '...')");
@@ -16065,7 +16065,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_37[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_37_ID, _res);
+                return cache.putResult(_mark, _TMP_37_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_37[%d-%d]: %s failed!", level, ' ',
@@ -16096,7 +16096,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing alias_ty --> SSTNode
-                (elem = import_from_as_name_rule) != null  // import_from_as_name
+                (elem = import_from_as_name_rule()) != null  // import_from_as_name
             )
             {
                 // TODO: node.action: elem
@@ -16128,14 +16128,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] seq;
             if (
                 // TODO replacing alias_ty --> SSTNode
-                (elem = import_from_as_name_rule) != null  // import_from_as_name
+                (elem = import_from_as_name_rule()) != null  // import_from_as_name
                 &&
-                (seq = _loop0_39_rule) != null  // _loop0_39
+                (seq = _loop0_39_rule()) != null  // _loop0_39
             )
             {
                 debugMessageln("%d _gather_38[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "import_from_as_name _loop0_39");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_38_ID, _res);
+                return cache.putResult(_mark, _GATHER_38_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_38[%d-%d]: %s failed!", level, ' ',
@@ -16160,13 +16160,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(520)) != null  // token='as'
                 &&
-                (z = name_token) != null  // NAME
+                (z = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d _tmp_40[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'as' NAME");
                 _res = z;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'as' NAME");
-                return cache.putResult(pos, _TMP_40_ID, _res);
+                return cache.putResult(_mark, _TMP_40_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_40[%d-%d]: %s failed!", level, ' ',
@@ -16197,7 +16197,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing alias_ty --> SSTNode
-                (elem = dotted_as_name_rule) != null  // dotted_as_name
+                (elem = dotted_as_name_rule()) != null  // dotted_as_name
             )
             {
                 // TODO: node.action: elem
@@ -16229,14 +16229,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] seq;
             if (
                 // TODO replacing alias_ty --> SSTNode
-                (elem = dotted_as_name_rule) != null  // dotted_as_name
+                (elem = dotted_as_name_rule()) != null  // dotted_as_name
                 &&
-                (seq = _loop0_42_rule) != null  // _loop0_42
+                (seq = _loop0_42_rule()) != null  // _loop0_42
             )
             {
                 debugMessageln("%d _gather_41[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "dotted_as_name _loop0_42");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_41_ID, _res);
+                return cache.putResult(_mark, _GATHER_41_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_41[%d-%d]: %s failed!", level, ' ',
@@ -16261,13 +16261,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(520)) != null  // token='as'
                 &&
-                (z = name_token) != null  // NAME
+                (z = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d _tmp_43[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'as' NAME");
                 _res = z;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'as' NAME");
-                return cache.putResult(pos, _TMP_43_ID, _res);
+                return cache.putResult(_mark, _TMP_43_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_43[%d-%d]: %s failed!", level, ' ',
@@ -16289,13 +16289,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_44[%d-%d]: %s", level, ' ', _mark, mark(), "else_block");
             SSTNode[] else_block_var;
             if (
-                (else_block_var = else_block_rule) != null  // else_block
+                (else_block_var = else_block_rule()) != null  // else_block
             )
             {
                 debugMessageln("%d _tmp_44[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "else_block");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "else_block");
                 _res = else_block_var;
-                return cache.putResult(pos, _TMP_44_ID, _res);
+                return cache.putResult(_mark, _TMP_44_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_44[%d-%d]: %s failed!", level, ' ',
@@ -16317,13 +16317,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_45[%d-%d]: %s", level, ' ', _mark, mark(), "else_block");
             SSTNode[] else_block_var;
             if (
-                (else_block_var = else_block_rule) != null  // else_block
+                (else_block_var = else_block_rule()) != null  // else_block
             )
             {
                 debugMessageln("%d _tmp_45[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "else_block");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "else_block");
                 _res = else_block_var;
-                return cache.putResult(pos, _TMP_45_ID, _res);
+                return cache.putResult(_mark, _TMP_45_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_45[%d-%d]: %s failed!", level, ' ',
@@ -16345,13 +16345,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_46[%d-%d]: %s", level, ' ', _mark, mark(), "else_block");
             SSTNode[] else_block_var;
             if (
-                (else_block_var = else_block_rule) != null  // else_block
+                (else_block_var = else_block_rule()) != null  // else_block
             )
             {
                 debugMessageln("%d _tmp_46[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "else_block");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "else_block");
                 _res = else_block_var;
-                return cache.putResult(pos, _TMP_46_ID, _res);
+                return cache.putResult(_mark, _TMP_46_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_46[%d-%d]: %s failed!", level, ' ',
@@ -16379,7 +16379,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_47[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "TYPE_COMMENT");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "TYPE_COMMENT");
                 _res = type_comment_var;
-                return cache.putResult(pos, _TMP_47_ID, _res);
+                return cache.putResult(_mark, _TMP_47_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_47[%d-%d]: %s failed!", level, ' ',
@@ -16401,13 +16401,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_48[%d-%d]: %s", level, ' ', _mark, mark(), "else_block");
             SSTNode[] else_block_var;
             if (
-                (else_block_var = else_block_rule) != null  // else_block
+                (else_block_var = else_block_rule()) != null  // else_block
             )
             {
                 debugMessageln("%d _tmp_48[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "else_block");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "else_block");
                 _res = else_block_var;
-                return cache.putResult(pos, _TMP_48_ID, _res);
+                return cache.putResult(_mark, _TMP_48_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_48[%d-%d]: %s failed!", level, ' ',
@@ -16435,7 +16435,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_49[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "TYPE_COMMENT");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "TYPE_COMMENT");
                 _res = type_comment_var;
-                return cache.putResult(pos, _TMP_49_ID, _res);
+                return cache.putResult(_mark, _TMP_49_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_49[%d-%d]: %s failed!", level, ' ',
@@ -16457,13 +16457,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_50[%d-%d]: %s", level, ' ', _mark, mark(), "else_block");
             SSTNode[] else_block_var;
             if (
-                (else_block_var = else_block_rule) != null  // else_block
+                (else_block_var = else_block_rule()) != null  // else_block
             )
             {
                 debugMessageln("%d _tmp_50[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "else_block");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "else_block");
                 _res = else_block_var;
-                return cache.putResult(pos, _TMP_50_ID, _res);
+                return cache.putResult(_mark, _TMP_50_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_50[%d-%d]: %s failed!", level, ' ',
@@ -16494,7 +16494,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing withitem_ty --> SSTNode
-                (elem = with_item_rule) != null  // with_item
+                (elem = with_item_rule()) != null  // with_item
             )
             {
                 // TODO: node.action: elem
@@ -16526,14 +16526,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] seq;
             if (
                 // TODO replacing withitem_ty --> SSTNode
-                (elem = with_item_rule) != null  // with_item
+                (elem = with_item_rule()) != null  // with_item
                 &&
-                (seq = _loop0_52_rule) != null  // _loop0_52
+                (seq = _loop0_52_rule()) != null  // _loop0_52
             )
             {
                 debugMessageln("%d _gather_51[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "with_item _loop0_52");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_51_ID, _res);
+                return cache.putResult(_mark, _GATHER_51_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_51[%d-%d]: %s failed!", level, ' ',
@@ -16564,7 +16564,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing withitem_ty --> SSTNode
-                (elem = with_item_rule) != null  // with_item
+                (elem = with_item_rule()) != null  // with_item
             )
             {
                 // TODO: node.action: elem
@@ -16596,14 +16596,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] seq;
             if (
                 // TODO replacing withitem_ty --> SSTNode
-                (elem = with_item_rule) != null  // with_item
+                (elem = with_item_rule()) != null  // with_item
                 &&
-                (seq = _loop0_54_rule) != null  // _loop0_54
+                (seq = _loop0_54_rule()) != null  // _loop0_54
             )
             {
                 debugMessageln("%d _gather_53[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "with_item _loop0_54");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_53_ID, _res);
+                return cache.putResult(_mark, _GATHER_53_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_53[%d-%d]: %s failed!", level, ' ',
@@ -16631,7 +16631,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_55[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "TYPE_COMMENT");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "TYPE_COMMENT");
                 _res = type_comment_var;
-                return cache.putResult(pos, _TMP_55_ID, _res);
+                return cache.putResult(_mark, _TMP_55_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_55[%d-%d]: %s failed!", level, ' ',
@@ -16662,7 +16662,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing withitem_ty --> SSTNode
-                (elem = with_item_rule) != null  // with_item
+                (elem = with_item_rule()) != null  // with_item
             )
             {
                 // TODO: node.action: elem
@@ -16694,14 +16694,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] seq;
             if (
                 // TODO replacing withitem_ty --> SSTNode
-                (elem = with_item_rule) != null  // with_item
+                (elem = with_item_rule()) != null  // with_item
                 &&
-                (seq = _loop0_57_rule) != null  // _loop0_57
+                (seq = _loop0_57_rule()) != null  // _loop0_57
             )
             {
                 debugMessageln("%d _gather_56[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "with_item _loop0_57");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_56_ID, _res);
+                return cache.putResult(_mark, _GATHER_56_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_56[%d-%d]: %s failed!", level, ' ',
@@ -16732,7 +16732,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing withitem_ty --> SSTNode
-                (elem = with_item_rule) != null  // with_item
+                (elem = with_item_rule()) != null  // with_item
             )
             {
                 // TODO: node.action: elem
@@ -16764,14 +16764,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] seq;
             if (
                 // TODO replacing withitem_ty --> SSTNode
-                (elem = with_item_rule) != null  // with_item
+                (elem = with_item_rule()) != null  // with_item
                 &&
-                (seq = _loop0_59_rule) != null  // _loop0_59
+                (seq = _loop0_59_rule()) != null  // _loop0_59
             )
             {
                 debugMessageln("%d _gather_58[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "with_item _loop0_59");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_58_ID, _res);
+                return cache.putResult(_mark, _GATHER_58_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_58[%d-%d]: %s failed!", level, ' ',
@@ -16799,7 +16799,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_60[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "TYPE_COMMENT");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "TYPE_COMMENT");
                 _res = type_comment_var;
-                return cache.putResult(pos, _TMP_60_ID, _res);
+                return cache.putResult(_mark, _TMP_60_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_60[%d-%d]: %s failed!", level, ' ',
@@ -16827,7 +16827,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_61[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_61_ID, _res);
+                return cache.putResult(_mark, _TMP_61_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_61[%d-%d]: %s failed!", level, ' ',
@@ -16843,7 +16843,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_61[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "')'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "')'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_61_ID, _res);
+                return cache.putResult(_mark, _TMP_61_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_61[%d-%d]: %s failed!", level, ' ',
@@ -16859,7 +16859,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_61[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "':'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "':'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_61_ID, _res);
+                return cache.putResult(_mark, _TMP_61_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_61[%d-%d]: %s failed!", level, ' ',
@@ -16887,7 +16887,7 @@ public final class Parser extends AbstractParser {
             SSTNode except_block_var;
             while (
                 // TODO replacing excepthandler_ty --> SSTNode
-                (except_block_var = except_block_rule) != null  // except_block
+                (except_block_var = except_block_rule()) != null  // except_block
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "except_block");
@@ -16919,13 +16919,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_63[%d-%d]: %s", level, ' ', _mark, mark(), "else_block");
             SSTNode[] else_block_var;
             if (
-                (else_block_var = else_block_rule) != null  // else_block
+                (else_block_var = else_block_rule()) != null  // else_block
             )
             {
                 debugMessageln("%d _tmp_63[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "else_block");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "else_block");
                 _res = else_block_var;
-                return cache.putResult(pos, _TMP_63_ID, _res);
+                return cache.putResult(_mark, _TMP_63_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_63[%d-%d]: %s failed!", level, ' ',
@@ -16947,13 +16947,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_64[%d-%d]: %s", level, ' ', _mark, mark(), "finally_block");
             SSTNode[] finally_block_var;
             if (
-                (finally_block_var = finally_block_rule) != null  // finally_block
+                (finally_block_var = finally_block_rule()) != null  // finally_block
             )
             {
                 debugMessageln("%d _tmp_64[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "finally_block");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "finally_block");
                 _res = finally_block_var;
-                return cache.putResult(pos, _TMP_64_ID, _res);
+                return cache.putResult(_mark, _TMP_64_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_64[%d-%d]: %s failed!", level, ' ',
@@ -16978,13 +16978,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(520)) != null  // token='as'
                 &&
-                (z = name_token) != null  // NAME
+                (z = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d _tmp_65[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'as' NAME");
                 _res = z;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'as' NAME");
-                return cache.putResult(pos, _TMP_65_ID, _res);
+                return cache.putResult(_mark, _TMP_65_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_65[%d-%d]: %s failed!", level, ' ',
@@ -17012,7 +17012,7 @@ public final class Parser extends AbstractParser {
             SSTNode case_block_var;
             while (
                 // TODO replacing match_case_ty --> SSTNode
-                (case_block_var = case_block_rule) != null  // case_block
+                (case_block_var = case_block_rule()) != null  // case_block
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "case_block");
@@ -17051,7 +17051,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(18)) != null  // token='|'
                 &&
-                (elem = closed_pattern_rule) != null  // closed_pattern
+                (elem = closed_pattern_rule()) != null  // closed_pattern
             )
             {
                 // TODO: node.action: elem
@@ -17081,14 +17081,14 @@ public final class Parser extends AbstractParser {
             SSTNode elem;
             SSTNode[] seq;
             if (
-                (elem = closed_pattern_rule) != null  // closed_pattern
+                (elem = closed_pattern_rule()) != null  // closed_pattern
                 &&
-                (seq = _loop0_68_rule) != null  // _loop0_68
+                (seq = _loop0_68_rule()) != null  // _loop0_68
             )
             {
                 debugMessageln("%d _gather_67[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "closed_pattern _loop0_68");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_67_ID, _res);
+                return cache.putResult(_mark, _GATHER_67_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_67[%d-%d]: %s failed!", level, ' ',
@@ -17116,7 +17116,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_69[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'+'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'+'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_69_ID, _res);
+                return cache.putResult(_mark, _TMP_69_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_69[%d-%d]: %s failed!", level, ' ',
@@ -17132,7 +17132,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_69[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'-'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'-'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_69_ID, _res);
+                return cache.putResult(_mark, _TMP_69_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_69[%d-%d]: %s failed!", level, ' ',
@@ -17160,7 +17160,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_70[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'.'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'.'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_70_ID, _res);
+                return cache.putResult(_mark, _TMP_70_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_70[%d-%d]: %s failed!", level, ' ',
@@ -17176,7 +17176,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_70[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'('");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'('");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_70_ID, _res);
+                return cache.putResult(_mark, _TMP_70_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_70[%d-%d]: %s failed!", level, ' ',
@@ -17192,7 +17192,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_70[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'='");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'='");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_70_ID, _res);
+                return cache.putResult(_mark, _TMP_70_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_70[%d-%d]: %s failed!", level, ' ',
@@ -17220,7 +17220,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_71[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'.'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'.'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_71_ID, _res);
+                return cache.putResult(_mark, _TMP_71_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_71[%d-%d]: %s failed!", level, ' ',
@@ -17236,7 +17236,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_71[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'('");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'('");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_71_ID, _res);
+                return cache.putResult(_mark, _TMP_71_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_71[%d-%d]: %s failed!", level, ' ',
@@ -17252,7 +17252,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_71[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'='");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'='");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_71_ID, _res);
+                return cache.putResult(_mark, _TMP_71_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_71[%d-%d]: %s failed!", level, ' ',
@@ -17281,7 +17281,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (elem = maybe_star_pattern_rule) != null  // maybe_star_pattern
+                (elem = maybe_star_pattern_rule()) != null  // maybe_star_pattern
             )
             {
                 // TODO: node.action: elem
@@ -17311,14 +17311,14 @@ public final class Parser extends AbstractParser {
             SSTNode elem;
             SSTNode[] seq;
             if (
-                (elem = maybe_star_pattern_rule) != null  // maybe_star_pattern
+                (elem = maybe_star_pattern_rule()) != null  // maybe_star_pattern
                 &&
-                (seq = _loop0_73_rule) != null  // _loop0_73
+                (seq = _loop0_73_rule()) != null  // _loop0_73
             )
             {
                 debugMessageln("%d _gather_72[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "maybe_star_pattern _loop0_73");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_72_ID, _res);
+                return cache.putResult(_mark, _GATHER_72_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_72[%d-%d]: %s failed!", level, ' ',
@@ -17340,13 +17340,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_74[%d-%d]: %s", level, ' ', _mark, mark(), "capture_pattern");
             SSTNode capture_pattern_var;
             if (
-                (capture_pattern_var = capture_pattern_rule) != null  // capture_pattern
+                (capture_pattern_var = capture_pattern_rule()) != null  // capture_pattern
             )
             {
                 debugMessageln("%d _tmp_74[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "capture_pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "capture_pattern");
                 _res = capture_pattern_var;
-                return cache.putResult(pos, _TMP_74_ID, _res);
+                return cache.putResult(_mark, _TMP_74_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_74[%d-%d]: %s failed!", level, ' ',
@@ -17356,13 +17356,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_74[%d-%d]: %s", level, ' ', _mark, mark(), "wildcard_pattern");
             SSTNode wildcard_pattern_var;
             if (
-                (wildcard_pattern_var = wildcard_pattern_rule) != null  // wildcard_pattern
+                (wildcard_pattern_var = wildcard_pattern_rule()) != null  // wildcard_pattern
             )
             {
                 debugMessageln("%d _tmp_74[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "wildcard_pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "wildcard_pattern");
                 _res = wildcard_pattern_var;
-                return cache.putResult(pos, _TMP_74_ID, _res);
+                return cache.putResult(_mark, _TMP_74_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_74[%d-%d]: %s failed!", level, ' ',
@@ -17393,7 +17393,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing KeyValuePair* --> SSTNode[]
-                (elem = key_value_pattern_rule) != null  // key_value_pattern
+                (elem = key_value_pattern_rule()) != null  // key_value_pattern
             )
             {
                 // TODO: node.action: elem
@@ -17425,14 +17425,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] seq;
             if (
                 // TODO replacing KeyValuePair* --> SSTNode[]
-                (elem = key_value_pattern_rule) != null  // key_value_pattern
+                (elem = key_value_pattern_rule()) != null  // key_value_pattern
                 &&
-                (seq = _loop0_76_rule) != null  // _loop0_76
+                (seq = _loop0_76_rule()) != null  // _loop0_76
             )
             {
                 debugMessageln("%d _gather_75[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "key_value_pattern _loop0_76");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_75_ID, _res);
+                return cache.putResult(_mark, _GATHER_75_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_75[%d-%d]: %s failed!", level, ' ',
@@ -17454,13 +17454,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_77[%d-%d]: %s", level, ' ', _mark, mark(), "literal_pattern");
             SSTNode literal_pattern_var;
             if (
-                (literal_pattern_var = literal_pattern_rule) != null  // literal_pattern
+                (literal_pattern_var = literal_pattern_rule()) != null  // literal_pattern
             )
             {
                 debugMessageln("%d _tmp_77[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "literal_pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "literal_pattern");
                 _res = literal_pattern_var;
-                return cache.putResult(pos, _TMP_77_ID, _res);
+                return cache.putResult(_mark, _TMP_77_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_77[%d-%d]: %s failed!", level, ' ',
@@ -17470,13 +17470,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_77[%d-%d]: %s", level, ' ', _mark, mark(), "value_pattern");
             SSTNode value_pattern_var;
             if (
-                (value_pattern_var = value_pattern_rule) != null  // value_pattern
+                (value_pattern_var = value_pattern_rule()) != null  // value_pattern
             )
             {
                 debugMessageln("%d _tmp_77[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "value_pattern");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "value_pattern");
                 _res = value_pattern_var;
-                return cache.putResult(pos, _TMP_77_ID, _res);
+                return cache.putResult(_mark, _TMP_77_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_77[%d-%d]: %s failed!", level, ' ',
@@ -17505,7 +17505,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (elem = pattern_rule) != null  // pattern
+                (elem = pattern_rule()) != null  // pattern
             )
             {
                 // TODO: node.action: elem
@@ -17535,14 +17535,14 @@ public final class Parser extends AbstractParser {
             SSTNode elem;
             SSTNode[] seq;
             if (
-                (elem = pattern_rule) != null  // pattern
+                (elem = pattern_rule()) != null  // pattern
                 &&
-                (seq = _loop0_79_rule) != null  // _loop0_79
+                (seq = _loop0_79_rule()) != null  // _loop0_79
             )
             {
                 debugMessageln("%d _gather_78[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "pattern _loop0_79");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_78_ID, _res);
+                return cache.putResult(_mark, _GATHER_78_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_78[%d-%d]: %s failed!", level, ' ',
@@ -17573,7 +17573,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing keyword_ty --> SSTNode
-                (elem = keyword_pattern_rule) != null  // keyword_pattern
+                (elem = keyword_pattern_rule()) != null  // keyword_pattern
             )
             {
                 // TODO: node.action: elem
@@ -17605,14 +17605,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] seq;
             if (
                 // TODO replacing keyword_ty --> SSTNode
-                (elem = keyword_pattern_rule) != null  // keyword_pattern
+                (elem = keyword_pattern_rule()) != null  // keyword_pattern
                 &&
-                (seq = _loop0_81_rule) != null  // _loop0_81
+                (seq = _loop0_81_rule()) != null  // _loop0_81
             )
             {
                 debugMessageln("%d _gather_80[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "keyword_pattern _loop0_81");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_80_ID, _res);
+                return cache.putResult(_mark, _GATHER_80_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_80[%d-%d]: %s failed!", level, ' ',
@@ -17634,13 +17634,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_82[%d-%d]: %s", level, ' ', _mark, mark(), "star_expressions");
             SSTNode star_expressions_var;
             if (
-                (star_expressions_var = star_expressions_rule) != null  // star_expressions
+                (star_expressions_var = star_expressions_rule()) != null  // star_expressions
             )
             {
                 debugMessageln("%d _tmp_82[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_expressions");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_expressions");
                 _res = star_expressions_var;
-                return cache.putResult(pos, _TMP_82_ID, _res);
+                return cache.putResult(_mark, _TMP_82_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_82[%d-%d]: %s failed!", level, ' ',
@@ -17665,13 +17665,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(514)) != null  // token='from'
                 &&
-                (z = expression_rule) != null  // expression
+                (z = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d _tmp_83[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'from' expression");
                 _res = z;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'from' expression");
-                return cache.putResult(pos, _TMP_83_ID, _res);
+                return cache.putResult(_mark, _TMP_83_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_83[%d-%d]: %s failed!", level, ' ',
@@ -17695,13 +17695,13 @@ public final class Parser extends AbstractParser {
             SSTNode params_var;
             if (
                 // TODO replacing arguments_ty --> SSTNode
-                (params_var = params_rule) != null  // params
+                (params_var = params_rule()) != null  // params
             )
             {
                 debugMessageln("%d _tmp_84[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "params");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "params");
                 _res = params_var;
-                return cache.putResult(pos, _TMP_84_ID, _res);
+                return cache.putResult(_mark, _TMP_84_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_84[%d-%d]: %s failed!", level, ' ',
@@ -17726,13 +17726,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(51)) != null  // token='->'
                 &&
-                (z = expression_rule) != null  // expression
+                (z = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d _tmp_85[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'->' expression");
                 _res = z;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'->' expression");
-                return cache.putResult(pos, _TMP_85_ID, _res);
+                return cache.putResult(_mark, _TMP_85_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_85[%d-%d]: %s failed!", level, ' ',
@@ -17756,13 +17756,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] func_type_comment_var;
             if (
                 // TODO replacing Token* --> SSTNode[]
-                (func_type_comment_var = func_type_comment_rule) != null  // func_type_comment
+                (func_type_comment_var = func_type_comment_rule()) != null  // func_type_comment
             )
             {
                 debugMessageln("%d _tmp_86[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "func_type_comment");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "func_type_comment");
                 _res = func_type_comment_var;
-                return cache.putResult(pos, _TMP_86_ID, _res);
+                return cache.putResult(_mark, _TMP_86_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_86[%d-%d]: %s failed!", level, ' ',
@@ -17786,13 +17786,13 @@ public final class Parser extends AbstractParser {
             SSTNode params_var;
             if (
                 // TODO replacing arguments_ty --> SSTNode
-                (params_var = params_rule) != null  // params
+                (params_var = params_rule()) != null  // params
             )
             {
                 debugMessageln("%d _tmp_87[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "params");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "params");
                 _res = params_var;
-                return cache.putResult(pos, _TMP_87_ID, _res);
+                return cache.putResult(_mark, _TMP_87_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_87[%d-%d]: %s failed!", level, ' ',
@@ -17817,13 +17817,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(51)) != null  // token='->'
                 &&
-                (z = expression_rule) != null  // expression
+                (z = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d _tmp_88[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'->' expression");
                 _res = z;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'->' expression");
-                return cache.putResult(pos, _TMP_88_ID, _res);
+                return cache.putResult(_mark, _TMP_88_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_88[%d-%d]: %s failed!", level, ' ',
@@ -17847,13 +17847,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] func_type_comment_var;
             if (
                 // TODO replacing Token* --> SSTNode[]
-                (func_type_comment_var = func_type_comment_rule) != null  // func_type_comment
+                (func_type_comment_var = func_type_comment_rule()) != null  // func_type_comment
             )
             {
                 debugMessageln("%d _tmp_89[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "func_type_comment");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "func_type_comment");
                 _res = func_type_comment_var;
-                return cache.putResult(pos, _TMP_89_ID, _res);
+                return cache.putResult(_mark, _TMP_89_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_89[%d-%d]: %s failed!", level, ' ',
@@ -17884,7 +17884,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_90[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NEWLINE INDENT");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "NEWLINE INDENT");
                 _res = dummyName(newline_var, indent_var);
-                return cache.putResult(pos, _TMP_90_ID, _res);
+                return cache.putResult(_mark, _TMP_90_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_90[%d-%d]: %s failed!", level, ' ',
@@ -17912,7 +17912,7 @@ public final class Parser extends AbstractParser {
             SSTNode param_no_default_var;
             while (
                 // TODO replacing arg_ty --> SSTNode
-                (param_no_default_var = param_no_default_rule) != null  // param_no_default
+                (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
@@ -17946,7 +17946,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] param_with_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (param_with_default_var = param_with_default_rule) != null  // param_with_default
+                (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
@@ -17976,13 +17976,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] star_etc_var;
             if (
                 // TODO replacing StarEtc* --> SSTNode[]
-                (star_etc_var = star_etc_rule) != null  // star_etc
+                (star_etc_var = star_etc_rule()) != null  // star_etc
             )
             {
                 debugMessageln("%d _tmp_93[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_etc");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_etc");
                 _res = star_etc_var;
-                return cache.putResult(pos, _TMP_93_ID, _res);
+                return cache.putResult(_mark, _TMP_93_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_93[%d-%d]: %s failed!", level, ' ',
@@ -18010,7 +18010,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] param_with_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (param_with_default_var = param_with_default_rule) != null  // param_with_default
+                (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
@@ -18040,13 +18040,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] star_etc_var;
             if (
                 // TODO replacing StarEtc* --> SSTNode[]
-                (star_etc_var = star_etc_rule) != null  // star_etc
+                (star_etc_var = star_etc_rule()) != null  // star_etc
             )
             {
                 debugMessageln("%d _tmp_95[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_etc");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_etc");
                 _res = star_etc_var;
-                return cache.putResult(pos, _TMP_95_ID, _res);
+                return cache.putResult(_mark, _TMP_95_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_95[%d-%d]: %s failed!", level, ' ',
@@ -18074,7 +18074,7 @@ public final class Parser extends AbstractParser {
             SSTNode param_no_default_var;
             while (
                 // TODO replacing arg_ty --> SSTNode
-                (param_no_default_var = param_no_default_rule) != null  // param_no_default
+                (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
@@ -18112,7 +18112,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] param_with_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (param_with_default_var = param_with_default_rule) != null  // param_with_default
+                (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
@@ -18142,13 +18142,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] star_etc_var;
             if (
                 // TODO replacing StarEtc* --> SSTNode[]
-                (star_etc_var = star_etc_rule) != null  // star_etc
+                (star_etc_var = star_etc_rule()) != null  // star_etc
             )
             {
                 debugMessageln("%d _tmp_98[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_etc");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_etc");
                 _res = star_etc_var;
-                return cache.putResult(pos, _TMP_98_ID, _res);
+                return cache.putResult(_mark, _TMP_98_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_98[%d-%d]: %s failed!", level, ' ',
@@ -18176,7 +18176,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] param_with_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (param_with_default_var = param_with_default_rule) != null  // param_with_default
+                (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
@@ -18210,13 +18210,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] star_etc_var;
             if (
                 // TODO replacing StarEtc* --> SSTNode[]
-                (star_etc_var = star_etc_rule) != null  // star_etc
+                (star_etc_var = star_etc_rule()) != null  // star_etc
             )
             {
                 debugMessageln("%d _tmp_100[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_etc");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_etc");
                 _res = star_etc_var;
-                return cache.putResult(pos, _TMP_100_ID, _res);
+                return cache.putResult(_mark, _TMP_100_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_100[%d-%d]: %s failed!", level, ' ',
@@ -18244,7 +18244,7 @@ public final class Parser extends AbstractParser {
             SSTNode param_no_default_var;
             while (
                 // TODO replacing arg_ty --> SSTNode
-                (param_no_default_var = param_no_default_rule) != null  // param_no_default
+                (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
@@ -18282,7 +18282,7 @@ public final class Parser extends AbstractParser {
             SSTNode param_no_default_var;
             while (
                 // TODO replacing arg_ty --> SSTNode
-                (param_no_default_var = param_no_default_rule) != null  // param_no_default
+                (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
@@ -18320,7 +18320,7 @@ public final class Parser extends AbstractParser {
             SSTNode param_no_default_var;
             while (
                 // TODO replacing arg_ty --> SSTNode
-                (param_no_default_var = param_no_default_rule) != null  // param_no_default
+                (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
@@ -18354,7 +18354,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] param_with_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (param_with_default_var = param_with_default_rule) != null  // param_with_default
+                (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
@@ -18392,7 +18392,7 @@ public final class Parser extends AbstractParser {
             SSTNode param_no_default_var;
             while (
                 // TODO replacing arg_ty --> SSTNode
-                (param_no_default_var = param_no_default_rule) != null  // param_no_default
+                (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
@@ -18426,7 +18426,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] param_with_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (param_with_default_var = param_with_default_rule) != null  // param_with_default
+                (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
@@ -18464,7 +18464,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] param_maybe_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (param_maybe_default_var = param_maybe_default_rule) != null  // param_maybe_default
+                (param_maybe_default_var = param_maybe_default_rule()) != null  // param_maybe_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_maybe_default");
@@ -18494,13 +18494,13 @@ public final class Parser extends AbstractParser {
             SSTNode kwds_var;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (kwds_var = kwds_rule) != null  // kwds
+                (kwds_var = kwds_rule()) != null  // kwds
             )
             {
                 debugMessageln("%d _tmp_108[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "kwds");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "kwds");
                 _res = kwds_var;
-                return cache.putResult(pos, _TMP_108_ID, _res);
+                return cache.putResult(_mark, _TMP_108_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_108[%d-%d]: %s failed!", level, ' ',
@@ -18528,7 +18528,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] param_maybe_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (param_maybe_default_var = param_maybe_default_rule) != null  // param_maybe_default
+                (param_maybe_default_var = param_maybe_default_rule()) != null  // param_maybe_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_maybe_default");
@@ -18562,13 +18562,13 @@ public final class Parser extends AbstractParser {
             SSTNode kwds_var;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (kwds_var = kwds_rule) != null  // kwds
+                (kwds_var = kwds_rule()) != null  // kwds
             )
             {
                 debugMessageln("%d _tmp_110[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "kwds");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "kwds");
                 _res = kwds_var;
-                return cache.putResult(pos, _TMP_110_ID, _res);
+                return cache.putResult(_mark, _TMP_110_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_110[%d-%d]: %s failed!", level, ' ',
@@ -18594,7 +18594,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop1_111[%d-%d]: %s", level, ' ', _mark, mark(), "('@' named_expression NEWLINE)");
             Object _tmp_234_var;
             while (
-                (_tmp_234_var = _tmp_234_rule) != null  // '@' named_expression NEWLINE
+                (_tmp_234_var = _tmp_234_rule()) != null  // '@' named_expression NEWLINE
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('@' named_expression NEWLINE)");
@@ -18630,7 +18630,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                ((z = _tmp_235_rule) != null || true)  // arguments?
+                ((z = _tmp_235_rule()) != null || true)  // arguments?
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
             )
@@ -18638,7 +18638,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_112[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' arguments? ')'");
                 _res = z;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' arguments? ')'");
-                return cache.putResult(pos, _TMP_112_ID, _res);
+                return cache.putResult(_mark, _TMP_112_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_112[%d-%d]: %s failed!", level, ' ',
@@ -18664,7 +18664,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop1_113[%d-%d]: %s", level, ' ', _mark, mark(), "(',' star_expression)");
             Object _tmp_236_var;
             while (
-                (_tmp_236_var = _tmp_236_rule) != null  // ',' star_expression
+                (_tmp_236_var = _tmp_236_rule()) != null  // ',' star_expression
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(',' star_expression)");
@@ -18702,7 +18702,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_114[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_114_ID, _res);
+                return cache.putResult(_mark, _TMP_114_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_114[%d-%d]: %s failed!", level, ' ',
@@ -18731,7 +18731,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (elem = star_named_expression_rule) != null  // star_named_expression
+                (elem = star_named_expression_rule()) != null  // star_named_expression
             )
             {
                 // TODO: node.action: elem
@@ -18761,14 +18761,14 @@ public final class Parser extends AbstractParser {
             SSTNode elem;
             SSTNode[] seq;
             if (
-                (elem = star_named_expression_rule) != null  // star_named_expression
+                (elem = star_named_expression_rule()) != null  // star_named_expression
                 &&
-                (seq = _loop0_116_rule) != null  // _loop0_116
+                (seq = _loop0_116_rule()) != null  // _loop0_116
             )
             {
                 debugMessageln("%d _gather_115[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_named_expression _loop0_116");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_115_ID, _res);
+                return cache.putResult(_mark, _GATHER_115_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_115[%d-%d]: %s failed!", level, ' ',
@@ -18796,7 +18796,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_117[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_117_ID, _res);
+                return cache.putResult(_mark, _TMP_117_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_117[%d-%d]: %s failed!", level, ' ',
@@ -18822,7 +18822,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop1_118[%d-%d]: %s", level, ' ', _mark, mark(), "(',' expression)");
             Object _tmp_237_var;
             while (
-                (_tmp_237_var = _tmp_237_rule) != null  // ',' expression
+                (_tmp_237_var = _tmp_237_rule()) != null  // ',' expression
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(',' expression)");
@@ -18860,7 +18860,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_119[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_119_ID, _res);
+                return cache.putResult(_mark, _TMP_119_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_119[%d-%d]: %s failed!", level, ' ',
@@ -18884,13 +18884,13 @@ public final class Parser extends AbstractParser {
             SSTNode lambda_params_var;
             if (
                 // TODO replacing arguments_ty --> SSTNode
-                (lambda_params_var = lambda_params_rule) != null  // lambda_params
+                (lambda_params_var = lambda_params_rule()) != null  // lambda_params
             )
             {
                 debugMessageln("%d _tmp_120[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_params");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_params");
                 _res = lambda_params_var;
-                return cache.putResult(pos, _TMP_120_ID, _res);
+                return cache.putResult(_mark, _TMP_120_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_120[%d-%d]: %s failed!", level, ' ',
@@ -18918,7 +18918,7 @@ public final class Parser extends AbstractParser {
             SSTNode lambda_param_no_default_var;
             while (
                 // TODO replacing arg_ty --> SSTNode
-                (lambda_param_no_default_var = lambda_param_no_default_rule) != null  // lambda_param_no_default
+                (lambda_param_no_default_var = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
@@ -18952,7 +18952,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] lambda_param_with_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (lambda_param_with_default_var = lambda_param_with_default_rule) != null  // lambda_param_with_default
+                (lambda_param_with_default_var = lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
@@ -18982,13 +18982,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] lambda_star_etc_var;
             if (
                 // TODO replacing StarEtc* --> SSTNode[]
-                (lambda_star_etc_var = lambda_star_etc_rule) != null  // lambda_star_etc
+                (lambda_star_etc_var = lambda_star_etc_rule()) != null  // lambda_star_etc
             )
             {
                 debugMessageln("%d _tmp_123[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_star_etc");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_star_etc");
                 _res = lambda_star_etc_var;
-                return cache.putResult(pos, _TMP_123_ID, _res);
+                return cache.putResult(_mark, _TMP_123_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_123[%d-%d]: %s failed!", level, ' ',
@@ -19016,7 +19016,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] lambda_param_with_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (lambda_param_with_default_var = lambda_param_with_default_rule) != null  // lambda_param_with_default
+                (lambda_param_with_default_var = lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
@@ -19046,13 +19046,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] lambda_star_etc_var;
             if (
                 // TODO replacing StarEtc* --> SSTNode[]
-                (lambda_star_etc_var = lambda_star_etc_rule) != null  // lambda_star_etc
+                (lambda_star_etc_var = lambda_star_etc_rule()) != null  // lambda_star_etc
             )
             {
                 debugMessageln("%d _tmp_125[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_star_etc");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_star_etc");
                 _res = lambda_star_etc_var;
-                return cache.putResult(pos, _TMP_125_ID, _res);
+                return cache.putResult(_mark, _TMP_125_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_125[%d-%d]: %s failed!", level, ' ',
@@ -19080,7 +19080,7 @@ public final class Parser extends AbstractParser {
             SSTNode lambda_param_no_default_var;
             while (
                 // TODO replacing arg_ty --> SSTNode
-                (lambda_param_no_default_var = lambda_param_no_default_rule) != null  // lambda_param_no_default
+                (lambda_param_no_default_var = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
@@ -19118,7 +19118,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] lambda_param_with_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (lambda_param_with_default_var = lambda_param_with_default_rule) != null  // lambda_param_with_default
+                (lambda_param_with_default_var = lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
@@ -19148,13 +19148,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] lambda_star_etc_var;
             if (
                 // TODO replacing StarEtc* --> SSTNode[]
-                (lambda_star_etc_var = lambda_star_etc_rule) != null  // lambda_star_etc
+                (lambda_star_etc_var = lambda_star_etc_rule()) != null  // lambda_star_etc
             )
             {
                 debugMessageln("%d _tmp_128[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_star_etc");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_star_etc");
                 _res = lambda_star_etc_var;
-                return cache.putResult(pos, _TMP_128_ID, _res);
+                return cache.putResult(_mark, _TMP_128_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_128[%d-%d]: %s failed!", level, ' ',
@@ -19182,7 +19182,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] lambda_param_with_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (lambda_param_with_default_var = lambda_param_with_default_rule) != null  // lambda_param_with_default
+                (lambda_param_with_default_var = lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
@@ -19216,13 +19216,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] lambda_star_etc_var;
             if (
                 // TODO replacing StarEtc* --> SSTNode[]
-                (lambda_star_etc_var = lambda_star_etc_rule) != null  // lambda_star_etc
+                (lambda_star_etc_var = lambda_star_etc_rule()) != null  // lambda_star_etc
             )
             {
                 debugMessageln("%d _tmp_130[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_star_etc");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_star_etc");
                 _res = lambda_star_etc_var;
-                return cache.putResult(pos, _TMP_130_ID, _res);
+                return cache.putResult(_mark, _TMP_130_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_130[%d-%d]: %s failed!", level, ' ',
@@ -19250,7 +19250,7 @@ public final class Parser extends AbstractParser {
             SSTNode lambda_param_no_default_var;
             while (
                 // TODO replacing arg_ty --> SSTNode
-                (lambda_param_no_default_var = lambda_param_no_default_rule) != null  // lambda_param_no_default
+                (lambda_param_no_default_var = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
@@ -19288,7 +19288,7 @@ public final class Parser extends AbstractParser {
             SSTNode lambda_param_no_default_var;
             while (
                 // TODO replacing arg_ty --> SSTNode
-                (lambda_param_no_default_var = lambda_param_no_default_rule) != null  // lambda_param_no_default
+                (lambda_param_no_default_var = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
@@ -19326,7 +19326,7 @@ public final class Parser extends AbstractParser {
             SSTNode lambda_param_no_default_var;
             while (
                 // TODO replacing arg_ty --> SSTNode
-                (lambda_param_no_default_var = lambda_param_no_default_rule) != null  // lambda_param_no_default
+                (lambda_param_no_default_var = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
@@ -19360,7 +19360,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] lambda_param_with_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (lambda_param_with_default_var = lambda_param_with_default_rule) != null  // lambda_param_with_default
+                (lambda_param_with_default_var = lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
@@ -19398,7 +19398,7 @@ public final class Parser extends AbstractParser {
             SSTNode lambda_param_no_default_var;
             while (
                 // TODO replacing arg_ty --> SSTNode
-                (lambda_param_no_default_var = lambda_param_no_default_rule) != null  // lambda_param_no_default
+                (lambda_param_no_default_var = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
@@ -19432,7 +19432,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] lambda_param_with_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (lambda_param_with_default_var = lambda_param_with_default_rule) != null  // lambda_param_with_default
+                (lambda_param_with_default_var = lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
@@ -19470,7 +19470,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] lambda_param_maybe_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (lambda_param_maybe_default_var = lambda_param_maybe_default_rule) != null  // lambda_param_maybe_default
+                (lambda_param_maybe_default_var = lambda_param_maybe_default_rule()) != null  // lambda_param_maybe_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_maybe_default");
@@ -19500,13 +19500,13 @@ public final class Parser extends AbstractParser {
             SSTNode lambda_kwds_var;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (lambda_kwds_var = lambda_kwds_rule) != null  // lambda_kwds
+                (lambda_kwds_var = lambda_kwds_rule()) != null  // lambda_kwds
             )
             {
                 debugMessageln("%d _tmp_138[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_kwds");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_kwds");
                 _res = lambda_kwds_var;
-                return cache.putResult(pos, _TMP_138_ID, _res);
+                return cache.putResult(_mark, _TMP_138_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_138[%d-%d]: %s failed!", level, ' ',
@@ -19534,7 +19534,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] lambda_param_maybe_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (lambda_param_maybe_default_var = lambda_param_maybe_default_rule) != null  // lambda_param_maybe_default
+                (lambda_param_maybe_default_var = lambda_param_maybe_default_rule()) != null  // lambda_param_maybe_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_maybe_default");
@@ -19568,13 +19568,13 @@ public final class Parser extends AbstractParser {
             SSTNode lambda_kwds_var;
             if (
                 // TODO replacing arg_ty --> SSTNode
-                (lambda_kwds_var = lambda_kwds_rule) != null  // lambda_kwds
+                (lambda_kwds_var = lambda_kwds_rule()) != null  // lambda_kwds
             )
             {
                 debugMessageln("%d _tmp_140[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "lambda_kwds");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_kwds");
                 _res = lambda_kwds_var;
-                return cache.putResult(pos, _TMP_140_ID, _res);
+                return cache.putResult(_mark, _TMP_140_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_140[%d-%d]: %s failed!", level, ' ',
@@ -19600,7 +19600,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop1_141[%d-%d]: %s", level, ' ', _mark, mark(), "('or' conjunction)");
             Object _tmp_238_var;
             while (
-                (_tmp_238_var = _tmp_238_rule) != null  // 'or' conjunction
+                (_tmp_238_var = _tmp_238_rule()) != null  // 'or' conjunction
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('or' conjunction)");
@@ -19636,7 +19636,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop1_142[%d-%d]: %s", level, ' ', _mark, mark(), "('and' inversion)");
             Object _tmp_239_var;
             while (
-                (_tmp_239_var = _tmp_239_rule) != null  // 'and' inversion
+                (_tmp_239_var = _tmp_239_rule()) != null  // 'and' inversion
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('and' inversion)");
@@ -19672,7 +19672,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop1_143[%d-%d]: %s", level, ' ', _mark, mark(), "compare_op_bitwise_or_pair");
             BinaryArithmeticSSTNode compare_op_bitwise_or_pair_var;
             while (
-                (compare_op_bitwise_or_pair_var = compare_op_bitwise_or_pair_rule) != null  // compare_op_bitwise_or_pair
+                (compare_op_bitwise_or_pair_var = compare_op_bitwise_or_pair_rule()) != null  // compare_op_bitwise_or_pair
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "compare_op_bitwise_or_pair");
@@ -19711,7 +19711,7 @@ public final class Parser extends AbstractParser {
                 // TODO: node.action: _PyPegen_check_barry_as_flufl ( p , tok ) ? NULL : tok
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'!='");
-                return cache.putResult(pos, _TMP_144_ID, _res);
+                return cache.putResult(_mark, _TMP_144_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_144[%d-%d]: %s failed!", level, ' ',
@@ -19733,13 +19733,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_145[%d-%d]: %s", level, ' ', _mark, mark(), "arguments");
             SSTNode arguments_var;
             if (
-                (arguments_var = arguments_rule) != null  // arguments
+                (arguments_var = arguments_rule()) != null  // arguments
             )
             {
                 debugMessageln("%d _tmp_145[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "arguments");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "arguments");
                 _res = arguments_var;
-                return cache.putResult(pos, _TMP_145_ID, _res);
+                return cache.putResult(_mark, _TMP_145_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_145[%d-%d]: %s failed!", level, ' ',
@@ -19768,7 +19768,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (elem = slice_rule) != null  // slice
+                (elem = slice_rule()) != null  // slice
             )
             {
                 // TODO: node.action: elem
@@ -19798,14 +19798,14 @@ public final class Parser extends AbstractParser {
             SSTNode elem;
             SSTNode[] seq;
             if (
-                (elem = slice_rule) != null  // slice
+                (elem = slice_rule()) != null  // slice
                 &&
-                (seq = _loop0_147_rule) != null  // _loop0_147
+                (seq = _loop0_147_rule()) != null  // _loop0_147
             )
             {
                 debugMessageln("%d _gather_146[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "slice _loop0_147");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_146_ID, _res);
+                return cache.putResult(_mark, _GATHER_146_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_146[%d-%d]: %s failed!", level, ' ',
@@ -19833,7 +19833,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_148[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_148_ID, _res);
+                return cache.putResult(_mark, _TMP_148_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_148[%d-%d]: %s failed!", level, ' ',
@@ -19855,13 +19855,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_149[%d-%d]: %s", level, ' ', _mark, mark(), "expression");
             SSTNode expression_var;
             if (
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d _tmp_149[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "expression");
                 _res = expression_var;
-                return cache.putResult(pos, _TMP_149_ID, _res);
+                return cache.putResult(_mark, _TMP_149_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_149[%d-%d]: %s failed!", level, ' ',
@@ -19883,13 +19883,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_150[%d-%d]: %s", level, ' ', _mark, mark(), "expression");
             SSTNode expression_var;
             if (
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d _tmp_150[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "expression");
                 _res = expression_var;
-                return cache.putResult(pos, _TMP_150_ID, _res);
+                return cache.putResult(_mark, _TMP_150_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_150[%d-%d]: %s failed!", level, ' ',
@@ -19914,13 +19914,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(11)) != null  // token=':'
                 &&
-                ((d = _tmp_240_rule) != null || true)  // expression?
+                ((d = _tmp_240_rule()) != null || true)  // expression?
             )
             {
                 debugMessageln("%d _tmp_151[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "':' expression?");
                 _res = d;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "':' expression?");
-                return cache.putResult(pos, _TMP_151_ID, _res);
+                return cache.putResult(_mark, _TMP_151_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_151[%d-%d]: %s failed!", level, ' ',
@@ -19942,13 +19942,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_152[%d-%d]: %s", level, ' ', _mark, mark(), "tuple");
             SSTNode tuple_var;
             if (
-                (tuple_var = tuple_rule) != null  // tuple
+                (tuple_var = tuple_rule()) != null  // tuple
             )
             {
                 debugMessageln("%d _tmp_152[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "tuple");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "tuple");
                 _res = tuple_var;
-                return cache.putResult(pos, _TMP_152_ID, _res);
+                return cache.putResult(_mark, _TMP_152_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_152[%d-%d]: %s failed!", level, ' ',
@@ -19958,13 +19958,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_152[%d-%d]: %s", level, ' ', _mark, mark(), "group");
             SSTNode group_var;
             if (
-                (group_var = group_rule) != null  // group
+                (group_var = group_rule()) != null  // group
             )
             {
                 debugMessageln("%d _tmp_152[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "group");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "group");
                 _res = group_var;
-                return cache.putResult(pos, _TMP_152_ID, _res);
+                return cache.putResult(_mark, _TMP_152_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_152[%d-%d]: %s failed!", level, ' ',
@@ -19974,13 +19974,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_152[%d-%d]: %s", level, ' ', _mark, mark(), "genexp");
             SSTNode genexp_var;
             if (
-                (genexp_var = genexp_rule) != null  // genexp
+                (genexp_var = genexp_rule()) != null  // genexp
             )
             {
                 debugMessageln("%d _tmp_152[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "genexp");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "genexp");
                 _res = genexp_var;
-                return cache.putResult(pos, _TMP_152_ID, _res);
+                return cache.putResult(_mark, _TMP_152_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_152[%d-%d]: %s failed!", level, ' ',
@@ -20002,13 +20002,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_153[%d-%d]: %s", level, ' ', _mark, mark(), "list");
             SSTNode list_var;
             if (
-                (list_var = list_rule) != null  // list
+                (list_var = list_rule()) != null  // list
             )
             {
                 debugMessageln("%d _tmp_153[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "list");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "list");
                 _res = list_var;
-                return cache.putResult(pos, _TMP_153_ID, _res);
+                return cache.putResult(_mark, _TMP_153_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_153[%d-%d]: %s failed!", level, ' ',
@@ -20018,13 +20018,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_153[%d-%d]: %s", level, ' ', _mark, mark(), "listcomp");
             SSTNode listcomp_var;
             if (
-                (listcomp_var = listcomp_rule) != null  // listcomp
+                (listcomp_var = listcomp_rule()) != null  // listcomp
             )
             {
                 debugMessageln("%d _tmp_153[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "listcomp");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "listcomp");
                 _res = listcomp_var;
-                return cache.putResult(pos, _TMP_153_ID, _res);
+                return cache.putResult(_mark, _TMP_153_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_153[%d-%d]: %s failed!", level, ' ',
@@ -20046,13 +20046,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_154[%d-%d]: %s", level, ' ', _mark, mark(), "dict");
             SSTNode dict_var;
             if (
-                (dict_var = dict_rule) != null  // dict
+                (dict_var = dict_rule()) != null  // dict
             )
             {
                 debugMessageln("%d _tmp_154[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "dict");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "dict");
                 _res = dict_var;
-                return cache.putResult(pos, _TMP_154_ID, _res);
+                return cache.putResult(_mark, _TMP_154_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_154[%d-%d]: %s failed!", level, ' ',
@@ -20062,13 +20062,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_154[%d-%d]: %s", level, ' ', _mark, mark(), "set");
             SSTNode set_var;
             if (
-                (set_var = set_rule) != null  // set
+                (set_var = set_rule()) != null  // set
             )
             {
                 debugMessageln("%d _tmp_154[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "set");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "set");
                 _res = set_var;
-                return cache.putResult(pos, _TMP_154_ID, _res);
+                return cache.putResult(_mark, _TMP_154_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_154[%d-%d]: %s failed!", level, ' ',
@@ -20078,13 +20078,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_154[%d-%d]: %s", level, ' ', _mark, mark(), "dictcomp");
             SSTNode dictcomp_var;
             if (
-                (dictcomp_var = dictcomp_rule) != null  // dictcomp
+                (dictcomp_var = dictcomp_rule()) != null  // dictcomp
             )
             {
                 debugMessageln("%d _tmp_154[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "dictcomp");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "dictcomp");
                 _res = dictcomp_var;
-                return cache.putResult(pos, _TMP_154_ID, _res);
+                return cache.putResult(_mark, _TMP_154_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_154[%d-%d]: %s failed!", level, ' ',
@@ -20094,13 +20094,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_154[%d-%d]: %s", level, ' ', _mark, mark(), "setcomp");
             SSTNode setcomp_var;
             if (
-                (setcomp_var = setcomp_rule) != null  // setcomp
+                (setcomp_var = setcomp_rule()) != null  // setcomp
             )
             {
                 debugMessageln("%d _tmp_154[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "setcomp");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "setcomp");
                 _res = setcomp_var;
-                return cache.putResult(pos, _TMP_154_ID, _res);
+                return cache.putResult(_mark, _TMP_154_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_154[%d-%d]: %s failed!", level, ' ',
@@ -20126,7 +20126,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop1_155[%d-%d]: %s", level, ' ', _mark, mark(), "STRING");
             SSTNode string_var;
             while (
-                (string_var = string_token) != null  // STRING
+                (string_var = string_token()) != null  // STRING
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "STRING");
@@ -20160,13 +20160,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] star_named_expressions_var;
             if (
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (star_named_expressions_var = star_named_expressions_rule) != null  // star_named_expressions
+                (star_named_expressions_var = star_named_expressions_rule()) != null  // star_named_expressions
             )
             {
                 debugMessageln("%d _tmp_156[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_named_expressions");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_named_expressions");
                 _res = star_named_expressions_var;
-                return cache.putResult(pos, _TMP_156_ID, _res);
+                return cache.putResult(_mark, _TMP_156_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_156[%d-%d]: %s failed!", level, ' ',
@@ -20190,18 +20190,18 @@ public final class Parser extends AbstractParser {
             SSTNode y;
             Object z;
             if (
-                (y = star_named_expression_rule) != null  // star_named_expression
+                (y = star_named_expression_rule()) != null  // star_named_expression
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
-                ((z = _tmp_241_rule) != null || true)  // star_named_expressions?
+                ((z = _tmp_241_rule()) != null || true)  // star_named_expressions?
             )
             {
                 debugMessageln("%d _tmp_157[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_named_expression ',' star_named_expressions?");
                 // TODO: node.action: _PyPegen_seq_insert_in_front ( p , y , z )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_named_expression ',' star_named_expressions?");
-                return cache.putResult(pos, _TMP_157_ID, _res);
+                return cache.putResult(_mark, _TMP_157_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_157[%d-%d]: %s failed!", level, ' ',
@@ -20223,13 +20223,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_158[%d-%d]: %s", level, ' ', _mark, mark(), "yield_expr");
             SSTNode yield_expr_var;
             if (
-                (yield_expr_var = yield_expr_rule) != null  // yield_expr
+                (yield_expr_var = yield_expr_rule()) != null  // yield_expr
             )
             {
                 debugMessageln("%d _tmp_158[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "yield_expr");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "yield_expr");
                 _res = yield_expr_var;
-                return cache.putResult(pos, _TMP_158_ID, _res);
+                return cache.putResult(_mark, _TMP_158_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_158[%d-%d]: %s failed!", level, ' ',
@@ -20239,13 +20239,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_158[%d-%d]: %s", level, ' ', _mark, mark(), "named_expression");
             SSTNode named_expression_var;
             if (
-                (named_expression_var = named_expression_rule) != null  // named_expression
+                (named_expression_var = named_expression_rule()) != null  // named_expression
             )
             {
                 debugMessageln("%d _tmp_158[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "named_expression");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "named_expression");
                 _res = named_expression_var;
-                return cache.putResult(pos, _TMP_158_ID, _res);
+                return cache.putResult(_mark, _TMP_158_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_158[%d-%d]: %s failed!", level, ' ',
@@ -20269,13 +20269,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] double_starred_kvpairs_var;
             if (
                 // TODO replacing asdl_seq* --> SSTNode[]
-                (double_starred_kvpairs_var = double_starred_kvpairs_rule) != null  // double_starred_kvpairs
+                (double_starred_kvpairs_var = double_starred_kvpairs_rule()) != null  // double_starred_kvpairs
             )
             {
                 debugMessageln("%d _tmp_159[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "double_starred_kvpairs");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "double_starred_kvpairs");
                 _res = double_starred_kvpairs_var;
-                return cache.putResult(pos, _TMP_159_ID, _res);
+                return cache.putResult(_mark, _TMP_159_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_159[%d-%d]: %s failed!", level, ' ',
@@ -20306,7 +20306,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing KeyValuePair* --> SSTNode[]
-                (elem = double_starred_kvpair_rule) != null  // double_starred_kvpair
+                (elem = double_starred_kvpair_rule()) != null  // double_starred_kvpair
             )
             {
                 // TODO: node.action: elem
@@ -20338,14 +20338,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] seq;
             if (
                 // TODO replacing KeyValuePair* --> SSTNode[]
-                (elem = double_starred_kvpair_rule) != null  // double_starred_kvpair
+                (elem = double_starred_kvpair_rule()) != null  // double_starred_kvpair
                 &&
-                (seq = _loop0_161_rule) != null  // _loop0_161
+                (seq = _loop0_161_rule()) != null  // _loop0_161
             )
             {
                 debugMessageln("%d _gather_160[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "double_starred_kvpair _loop0_161");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_160_ID, _res);
+                return cache.putResult(_mark, _GATHER_160_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_160[%d-%d]: %s failed!", level, ' ',
@@ -20373,7 +20373,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_162[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_162_ID, _res);
+                return cache.putResult(_mark, _TMP_162_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_162[%d-%d]: %s failed!", level, ' ',
@@ -20401,7 +20401,7 @@ public final class Parser extends AbstractParser {
             SSTNode for_if_clause_var;
             while (
                 // TODO replacing comprehension_ty --> SSTNode
-                (for_if_clause_var = for_if_clause_rule) != null  // for_if_clause
+                (for_if_clause_var = for_if_clause_rule()) != null  // for_if_clause
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "for_if_clause");
@@ -20437,7 +20437,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop0_164[%d-%d]: %s", level, ' ', _mark, mark(), "('if' disjunction)");
             Object _tmp_242_var;
             while (
-                (_tmp_242_var = _tmp_242_rule) != null  // 'if' disjunction
+                (_tmp_242_var = _tmp_242_rule()) != null  // 'if' disjunction
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('if' disjunction)");
@@ -20469,7 +20469,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop0_165[%d-%d]: %s", level, ' ', _mark, mark(), "('if' disjunction)");
             Object _tmp_243_var;
             while (
-                (_tmp_243_var = _tmp_243_rule) != null  // 'if' disjunction
+                (_tmp_243_var = _tmp_243_rule()) != null  // 'if' disjunction
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('if' disjunction)");
@@ -20497,13 +20497,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_166[%d-%d]: %s", level, ' ', _mark, mark(), "star_expressions");
             SSTNode star_expressions_var;
             if (
-                (star_expressions_var = star_expressions_rule) != null  // star_expressions
+                (star_expressions_var = star_expressions_rule()) != null  // star_expressions
             )
             {
                 debugMessageln("%d _tmp_166[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_expressions");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_expressions");
                 _res = star_expressions_var;
-                return cache.putResult(pos, _TMP_166_ID, _res);
+                return cache.putResult(_mark, _TMP_166_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_166[%d-%d]: %s failed!", level, ' ',
@@ -20531,7 +20531,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_167[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_167_ID, _res);
+                return cache.putResult(_mark, _TMP_167_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_167[%d-%d]: %s failed!", level, ' ',
@@ -20560,7 +20560,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (elem = _tmp_244_rule) != null  // starred_expression | direct_named_expression !'='
+                (elem = _tmp_244_rule()) != null  // starred_expression | direct_named_expression !'='
             )
             {
                 // TODO: node.action: elem
@@ -20590,14 +20590,14 @@ public final class Parser extends AbstractParser {
             Object elem;
             SSTNode[] seq;
             if (
-                (elem = _tmp_244_rule) != null  // starred_expression | direct_named_expression !'='
+                (elem = _tmp_244_rule()) != null  // starred_expression | direct_named_expression !'='
                 &&
-                (seq = _loop0_169_rule) != null  // _loop0_169
+                (seq = _loop0_169_rule()) != null  // _loop0_169
             )
             {
                 debugMessageln("%d _gather_168[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "(starred_expression | direct_named_expression !'=') _loop0_169");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_168_ID, _res);
+                return cache.putResult(_mark, _GATHER_168_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_168[%d-%d]: %s failed!", level, ' ',
@@ -20624,13 +20624,13 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing asdl_seq* --> SSTNode[]
-                (k = kwargs_rule) != null  // kwargs
+                (k = kwargs_rule()) != null  // kwargs
             )
             {
                 debugMessageln("%d _tmp_170[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "',' kwargs");
                 _res = k;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' kwargs");
-                return cache.putResult(pos, _TMP_170_ID, _res);
+                return cache.putResult(_mark, _TMP_170_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_170[%d-%d]: %s failed!", level, ' ',
@@ -20661,7 +20661,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing KeywordOrStarred* --> SSTNode[]
-                (elem = kwarg_or_starred_rule) != null  // kwarg_or_starred
+                (elem = kwarg_or_starred_rule()) != null  // kwarg_or_starred
             )
             {
                 // TODO: node.action: elem
@@ -20693,14 +20693,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] seq;
             if (
                 // TODO replacing KeywordOrStarred* --> SSTNode[]
-                (elem = kwarg_or_starred_rule) != null  // kwarg_or_starred
+                (elem = kwarg_or_starred_rule()) != null  // kwarg_or_starred
                 &&
-                (seq = _loop0_172_rule) != null  // _loop0_172
+                (seq = _loop0_172_rule()) != null  // _loop0_172
             )
             {
                 debugMessageln("%d _gather_171[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "kwarg_or_starred _loop0_172");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_171_ID, _res);
+                return cache.putResult(_mark, _GATHER_171_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_171[%d-%d]: %s failed!", level, ' ',
@@ -20731,7 +20731,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing KeywordOrStarred* --> SSTNode[]
-                (elem = kwarg_or_double_starred_rule) != null  // kwarg_or_double_starred
+                (elem = kwarg_or_double_starred_rule()) != null  // kwarg_or_double_starred
             )
             {
                 // TODO: node.action: elem
@@ -20763,14 +20763,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] seq;
             if (
                 // TODO replacing KeywordOrStarred* --> SSTNode[]
-                (elem = kwarg_or_double_starred_rule) != null  // kwarg_or_double_starred
+                (elem = kwarg_or_double_starred_rule()) != null  // kwarg_or_double_starred
                 &&
-                (seq = _loop0_174_rule) != null  // _loop0_174
+                (seq = _loop0_174_rule()) != null  // _loop0_174
             )
             {
                 debugMessageln("%d _gather_173[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "kwarg_or_double_starred _loop0_174");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_173_ID, _res);
+                return cache.putResult(_mark, _GATHER_173_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_173[%d-%d]: %s failed!", level, ' ',
@@ -20801,7 +20801,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing KeywordOrStarred* --> SSTNode[]
-                (elem = kwarg_or_starred_rule) != null  // kwarg_or_starred
+                (elem = kwarg_or_starred_rule()) != null  // kwarg_or_starred
             )
             {
                 // TODO: node.action: elem
@@ -20833,14 +20833,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] seq;
             if (
                 // TODO replacing KeywordOrStarred* --> SSTNode[]
-                (elem = kwarg_or_starred_rule) != null  // kwarg_or_starred
+                (elem = kwarg_or_starred_rule()) != null  // kwarg_or_starred
                 &&
-                (seq = _loop0_176_rule) != null  // _loop0_176
+                (seq = _loop0_176_rule()) != null  // _loop0_176
             )
             {
                 debugMessageln("%d _gather_175[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "kwarg_or_starred _loop0_176");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_175_ID, _res);
+                return cache.putResult(_mark, _GATHER_175_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_175[%d-%d]: %s failed!", level, ' ',
@@ -20871,7 +20871,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing KeywordOrStarred* --> SSTNode[]
-                (elem = kwarg_or_double_starred_rule) != null  // kwarg_or_double_starred
+                (elem = kwarg_or_double_starred_rule()) != null  // kwarg_or_double_starred
             )
             {
                 // TODO: node.action: elem
@@ -20903,14 +20903,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] seq;
             if (
                 // TODO replacing KeywordOrStarred* --> SSTNode[]
-                (elem = kwarg_or_double_starred_rule) != null  // kwarg_or_double_starred
+                (elem = kwarg_or_double_starred_rule()) != null  // kwarg_or_double_starred
                 &&
-                (seq = _loop0_178_rule) != null  // _loop0_178
+                (seq = _loop0_178_rule()) != null  // _loop0_178
             )
             {
                 debugMessageln("%d _gather_177[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "kwarg_or_double_starred _loop0_178");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_177_ID, _res);
+                return cache.putResult(_mark, _GATHER_177_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_177[%d-%d]: %s failed!", level, ' ',
@@ -20936,7 +20936,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop0_179[%d-%d]: %s", level, ' ', _mark, mark(), "(',' star_target)");
             Object _tmp_245_var;
             while (
-                (_tmp_245_var = _tmp_245_rule) != null  // ',' star_target
+                (_tmp_245_var = _tmp_245_rule()) != null  // ',' star_target
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(',' star_target)");
@@ -20970,7 +20970,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_180[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_180_ID, _res);
+                return cache.putResult(_mark, _TMP_180_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_180[%d-%d]: %s failed!", level, ' ',
@@ -20999,7 +20999,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (elem = star_target_rule) != null  // star_target
+                (elem = star_target_rule()) != null  // star_target
             )
             {
                 // TODO: node.action: elem
@@ -21029,14 +21029,14 @@ public final class Parser extends AbstractParser {
             SSTNode elem;
             SSTNode[] seq;
             if (
-                (elem = star_target_rule) != null  // star_target
+                (elem = star_target_rule()) != null  // star_target
                 &&
-                (seq = _loop0_182_rule) != null  // _loop0_182
+                (seq = _loop0_182_rule()) != null  // _loop0_182
             )
             {
                 debugMessageln("%d _gather_181[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_target _loop0_182");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_181_ID, _res);
+                return cache.putResult(_mark, _GATHER_181_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_181[%d-%d]: %s failed!", level, ' ',
@@ -21064,7 +21064,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_183[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_183_ID, _res);
+                return cache.putResult(_mark, _TMP_183_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_183[%d-%d]: %s failed!", level, ' ',
@@ -21090,7 +21090,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop1_184[%d-%d]: %s", level, ' ', _mark, mark(), "(',' star_target)");
             Object _tmp_246_var;
             while (
-                (_tmp_246_var = _tmp_246_rule) != null  // ',' star_target
+                (_tmp_246_var = _tmp_246_rule()) != null  // ',' star_target
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(',' star_target)");
@@ -21128,7 +21128,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_185[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_185_ID, _res);
+                return cache.putResult(_mark, _TMP_185_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_185[%d-%d]: %s failed!", level, ' ',
@@ -21152,13 +21152,13 @@ public final class Parser extends AbstractParser {
             if (
                 genLookahead_expect(false, 16)  // token='*'
                 &&
-                (star_target_var = star_target_rule) != null  // star_target
+                (star_target_var = star_target_rule()) != null  // star_target
             )
             {
                 debugMessageln("%d _tmp_186[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "!'*' star_target");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "!'*' star_target");
                 _res = star_target_var;
-                return cache.putResult(pos, _TMP_186_ID, _res);
+                return cache.putResult(_mark, _TMP_186_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_186[%d-%d]: %s failed!", level, ' ',
@@ -21182,13 +21182,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] star_targets_tuple_seq_var;
             if (
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (star_targets_tuple_seq_var = star_targets_tuple_seq_rule) != null  // star_targets_tuple_seq
+                (star_targets_tuple_seq_var = star_targets_tuple_seq_rule()) != null  // star_targets_tuple_seq
             )
             {
                 debugMessageln("%d _tmp_187[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_targets_tuple_seq");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_targets_tuple_seq");
                 _res = star_targets_tuple_seq_var;
-                return cache.putResult(pos, _TMP_187_ID, _res);
+                return cache.putResult(_mark, _TMP_187_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_187[%d-%d]: %s failed!", level, ' ',
@@ -21212,13 +21212,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] star_targets_list_seq_var;
             if (
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (star_targets_list_seq_var = star_targets_list_seq_rule) != null  // star_targets_list_seq
+                (star_targets_list_seq_var = star_targets_list_seq_rule()) != null  // star_targets_list_seq
             )
             {
                 debugMessageln("%d _tmp_188[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_targets_list_seq");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_targets_list_seq");
                 _res = star_targets_list_seq_var;
-                return cache.putResult(pos, _TMP_188_ID, _res);
+                return cache.putResult(_mark, _TMP_188_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_188[%d-%d]: %s failed!", level, ' ',
@@ -21247,7 +21247,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (elem = del_target_rule) != null  // del_target
+                (elem = del_target_rule()) != null  // del_target
             )
             {
                 // TODO: node.action: elem
@@ -21277,14 +21277,14 @@ public final class Parser extends AbstractParser {
             SSTNode elem;
             SSTNode[] seq;
             if (
-                (elem = del_target_rule) != null  // del_target
+                (elem = del_target_rule()) != null  // del_target
                 &&
-                (seq = _loop0_190_rule) != null  // _loop0_190
+                (seq = _loop0_190_rule()) != null  // _loop0_190
             )
             {
                 debugMessageln("%d _gather_189[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "del_target _loop0_190");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_189_ID, _res);
+                return cache.putResult(_mark, _GATHER_189_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_189[%d-%d]: %s failed!", level, ' ',
@@ -21312,7 +21312,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_191[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_191_ID, _res);
+                return cache.putResult(_mark, _TMP_191_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_191[%d-%d]: %s failed!", level, ' ',
@@ -21336,13 +21336,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] del_targets_var;
             if (
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (del_targets_var = del_targets_rule) != null  // del_targets
+                (del_targets_var = del_targets_rule()) != null  // del_targets
             )
             {
                 debugMessageln("%d _tmp_192[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "del_targets");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "del_targets");
                 _res = del_targets_var;
-                return cache.putResult(pos, _TMP_192_ID, _res);
+                return cache.putResult(_mark, _TMP_192_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_192[%d-%d]: %s failed!", level, ' ',
@@ -21366,13 +21366,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] del_targets_var;
             if (
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (del_targets_var = del_targets_rule) != null  // del_targets
+                (del_targets_var = del_targets_rule()) != null  // del_targets
             )
             {
                 debugMessageln("%d _tmp_193[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "del_targets");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "del_targets");
                 _res = del_targets_var;
-                return cache.putResult(pos, _TMP_193_ID, _res);
+                return cache.putResult(_mark, _TMP_193_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_193[%d-%d]: %s failed!", level, ' ',
@@ -21401,7 +21401,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (elem = target_rule) != null  // target
+                (elem = target_rule()) != null  // target
             )
             {
                 // TODO: node.action: elem
@@ -21431,14 +21431,14 @@ public final class Parser extends AbstractParser {
             SSTNode elem;
             SSTNode[] seq;
             if (
-                (elem = target_rule) != null  // target
+                (elem = target_rule()) != null  // target
                 &&
-                (seq = _loop0_195_rule) != null  // _loop0_195
+                (seq = _loop0_195_rule()) != null  // _loop0_195
             )
             {
                 debugMessageln("%d _gather_194[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "target _loop0_195");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_194_ID, _res);
+                return cache.putResult(_mark, _GATHER_194_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_194[%d-%d]: %s failed!", level, ' ',
@@ -21466,7 +21466,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_196[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_196_ID, _res);
+                return cache.putResult(_mark, _TMP_196_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_196[%d-%d]: %s failed!", level, ' ',
@@ -21488,13 +21488,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_197[%d-%d]: %s", level, ' ', _mark, mark(), "arguments");
             SSTNode arguments_var;
             if (
-                (arguments_var = arguments_rule) != null  // arguments
+                (arguments_var = arguments_rule()) != null  // arguments
             )
             {
                 debugMessageln("%d _tmp_197[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "arguments");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "arguments");
                 _res = arguments_var;
-                return cache.putResult(pos, _TMP_197_ID, _res);
+                return cache.putResult(_mark, _TMP_197_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_197[%d-%d]: %s failed!", level, ' ',
@@ -21518,13 +21518,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] targets_var;
             if (
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (targets_var = targets_rule) != null  // targets
+                (targets_var = targets_rule()) != null  // targets
             )
             {
                 debugMessageln("%d _tmp_198[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "targets");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "targets");
                 _res = targets_var;
-                return cache.putResult(pos, _TMP_198_ID, _res);
+                return cache.putResult(_mark, _TMP_198_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_198[%d-%d]: %s failed!", level, ' ',
@@ -21548,13 +21548,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] targets_var;
             if (
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (targets_var = targets_rule) != null  // targets
+                (targets_var = targets_rule()) != null  // targets
             )
             {
                 debugMessageln("%d _tmp_199[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "targets");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "targets");
                 _res = targets_var;
-                return cache.putResult(pos, _TMP_199_ID, _res);
+                return cache.putResult(_mark, _TMP_199_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_199[%d-%d]: %s failed!", level, ' ',
@@ -21576,13 +21576,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_200[%d-%d]: %s", level, ' ', _mark, mark(), "args");
             SSTNode args_var;
             if (
-                (args_var = args_rule) != null  // args
+                (args_var = args_rule()) != null  // args
             )
             {
                 debugMessageln("%d _tmp_200[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "args");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "args");
                 _res = args_var;
-                return cache.putResult(pos, _TMP_200_ID, _res);
+                return cache.putResult(_mark, _TMP_200_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_200[%d-%d]: %s failed!", level, ' ',
@@ -21594,16 +21594,16 @@ public final class Parser extends AbstractParser {
             SSTNode expression_var;
             SSTNode[] for_if_clauses_var;
             if (
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
                 &&
                 // TODO replacing asdl_comprehension_seq* --> SSTNode[]
-                (for_if_clauses_var = for_if_clauses_rule) != null  // for_if_clauses
+                (for_if_clauses_var = for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
                 debugMessageln("%d _tmp_200[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression for_if_clauses");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "expression for_if_clauses");
                 _res = dummyName(expression_var, for_if_clauses_var);
-                return cache.putResult(pos, _TMP_200_ID, _res);
+                return cache.putResult(_mark, _TMP_200_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_200[%d-%d]: %s failed!", level, ' ',
@@ -21626,15 +21626,15 @@ public final class Parser extends AbstractParser {
             SSTNode name_var;
             SSTNode string_var;
             if (
-                (name_var = name_token) != null  // NAME
+                (name_var = name_token()) != null  // NAME
                 &&
-                (string_var = string_token) != null  // STRING
+                (string_var = string_token()) != null  // STRING
             )
             {
                 debugMessageln("%d _tmp_201[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME STRING");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "NAME STRING");
                 _res = dummyName(name_var, string_var);
-                return cache.putResult(pos, _TMP_201_ID, _res);
+                return cache.putResult(_mark, _TMP_201_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_201[%d-%d]: %s failed!", level, ' ',
@@ -21644,13 +21644,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_201[%d-%d]: %s", level, ' ', _mark, mark(), "SOFT_KEYWORD");
             SSTNode soft_keyword_var;
             if (
-                (soft_keyword_var = soft_keyword_token) != null  // SOFT_KEYWORD
+                (soft_keyword_var = soft_keyword_token()) != null  // SOFT_KEYWORD
             )
             {
                 debugMessageln("%d _tmp_201[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "SOFT_KEYWORD");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "SOFT_KEYWORD");
                 _res = soft_keyword_var;
-                return cache.putResult(pos, _TMP_201_ID, _res);
+                return cache.putResult(_mark, _TMP_201_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_201[%d-%d]: %s failed!", level, ' ',
@@ -21678,7 +21678,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_202[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'='");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'='");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_202_ID, _res);
+                return cache.putResult(_mark, _TMP_202_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_202[%d-%d]: %s failed!", level, ' ',
@@ -21694,7 +21694,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_202[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "':='");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "':='");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_202_ID, _res);
+                return cache.putResult(_mark, _TMP_202_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_202[%d-%d]: %s failed!", level, ' ',
@@ -21710,7 +21710,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_202[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_202_ID, _res);
+                return cache.putResult(_mark, _TMP_202_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_202[%d-%d]: %s failed!", level, ' ',
@@ -21732,13 +21732,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_203[%d-%d]: %s", level, ' ', _mark, mark(), "list");
             SSTNode list_var;
             if (
-                (list_var = list_rule) != null  // list
+                (list_var = list_rule()) != null  // list
             )
             {
                 debugMessageln("%d _tmp_203[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "list");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "list");
                 _res = list_var;
-                return cache.putResult(pos, _TMP_203_ID, _res);
+                return cache.putResult(_mark, _TMP_203_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_203[%d-%d]: %s failed!", level, ' ',
@@ -21748,13 +21748,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_203[%d-%d]: %s", level, ' ', _mark, mark(), "tuple");
             SSTNode tuple_var;
             if (
-                (tuple_var = tuple_rule) != null  // tuple
+                (tuple_var = tuple_rule()) != null  // tuple
             )
             {
                 debugMessageln("%d _tmp_203[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "tuple");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "tuple");
                 _res = tuple_var;
-                return cache.putResult(pos, _TMP_203_ID, _res);
+                return cache.putResult(_mark, _TMP_203_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_203[%d-%d]: %s failed!", level, ' ',
@@ -21764,13 +21764,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_203[%d-%d]: %s", level, ' ', _mark, mark(), "genexp");
             SSTNode genexp_var;
             if (
-                (genexp_var = genexp_rule) != null  // genexp
+                (genexp_var = genexp_rule()) != null  // genexp
             )
             {
                 debugMessageln("%d _tmp_203[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "genexp");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "genexp");
                 _res = genexp_var;
-                return cache.putResult(pos, _TMP_203_ID, _res);
+                return cache.putResult(_mark, _TMP_203_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_203[%d-%d]: %s failed!", level, ' ',
@@ -21786,7 +21786,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_203[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'True'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'True'");
                 _res = _keyword;
-                return cache.putResult(pos, _TMP_203_ID, _res);
+                return cache.putResult(_mark, _TMP_203_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_203[%d-%d]: %s failed!", level, ' ',
@@ -21802,7 +21802,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_203[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'None'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'None'");
                 _res = _keyword;
-                return cache.putResult(pos, _TMP_203_ID, _res);
+                return cache.putResult(_mark, _TMP_203_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_203[%d-%d]: %s failed!", level, ' ',
@@ -21818,7 +21818,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_203[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'False'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'False'");
                 _res = _keyword;
-                return cache.putResult(pos, _TMP_203_ID, _res);
+                return cache.putResult(_mark, _TMP_203_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_203[%d-%d]: %s failed!", level, ' ',
@@ -21846,7 +21846,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_204[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'='");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'='");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_204_ID, _res);
+                return cache.putResult(_mark, _TMP_204_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_204[%d-%d]: %s failed!", level, ' ',
@@ -21862,7 +21862,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_204[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "':='");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "':='");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_204_ID, _res);
+                return cache.putResult(_mark, _TMP_204_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_204[%d-%d]: %s failed!", level, ' ',
@@ -21878,7 +21878,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_204[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_204_ID, _res);
+                return cache.putResult(_mark, _TMP_204_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_204[%d-%d]: %s failed!", level, ' ',
@@ -21906,7 +21906,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] star_named_expressions_var;
             while (
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (star_named_expressions_var = star_named_expressions_rule) != null  // star_named_expressions
+                (star_named_expressions_var = star_named_expressions_rule()) != null  // star_named_expressions
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_named_expressions");
@@ -21938,7 +21938,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop0_206[%d-%d]: %s", level, ' ', _mark, mark(), "(star_targets '=')");
             Object _tmp_247_var;
             while (
-                (_tmp_247_var = _tmp_247_rule) != null  // star_targets '='
+                (_tmp_247_var = _tmp_247_rule()) != null  // star_targets '='
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(star_targets '=')");
@@ -21970,7 +21970,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _loop0_207[%d-%d]: %s", level, ' ', _mark, mark(), "(star_targets '=')");
             Object _tmp_248_var;
             while (
-                (_tmp_248_var = _tmp_248_rule) != null  // star_targets '='
+                (_tmp_248_var = _tmp_248_rule()) != null  // star_targets '='
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(star_targets '=')");
@@ -21998,13 +21998,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_208[%d-%d]: %s", level, ' ', _mark, mark(), "yield_expr");
             SSTNode yield_expr_var;
             if (
-                (yield_expr_var = yield_expr_rule) != null  // yield_expr
+                (yield_expr_var = yield_expr_rule()) != null  // yield_expr
             )
             {
                 debugMessageln("%d _tmp_208[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "yield_expr");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "yield_expr");
                 _res = yield_expr_var;
-                return cache.putResult(pos, _TMP_208_ID, _res);
+                return cache.putResult(_mark, _TMP_208_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_208[%d-%d]: %s failed!", level, ' ',
@@ -22014,13 +22014,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_208[%d-%d]: %s", level, ' ', _mark, mark(), "star_expressions");
             SSTNode star_expressions_var;
             if (
-                (star_expressions_var = star_expressions_rule) != null  // star_expressions
+                (star_expressions_var = star_expressions_rule()) != null  // star_expressions
             )
             {
                 debugMessageln("%d _tmp_208[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_expressions");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_expressions");
                 _res = star_expressions_var;
-                return cache.putResult(pos, _TMP_208_ID, _res);
+                return cache.putResult(_mark, _TMP_208_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_208[%d-%d]: %s failed!", level, ' ',
@@ -22048,7 +22048,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_209[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'['");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'['");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_209_ID, _res);
+                return cache.putResult(_mark, _TMP_209_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_209[%d-%d]: %s failed!", level, ' ',
@@ -22064,7 +22064,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_209[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'('");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'('");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_209_ID, _res);
+                return cache.putResult(_mark, _TMP_209_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_209[%d-%d]: %s failed!", level, ' ',
@@ -22080,7 +22080,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_209[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'{'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'{'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_209_ID, _res);
+                return cache.putResult(_mark, _TMP_209_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_209[%d-%d]: %s failed!", level, ' ',
@@ -22108,7 +22108,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_210[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'['");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'['");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_210_ID, _res);
+                return cache.putResult(_mark, _TMP_210_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_210[%d-%d]: %s failed!", level, ' ',
@@ -22124,7 +22124,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_210[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'{'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'{'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_210_ID, _res);
+                return cache.putResult(_mark, _TMP_210_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_210[%d-%d]: %s failed!", level, ' ',
@@ -22148,13 +22148,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] star_named_expressions_var;
             if (
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (star_named_expressions_var = star_named_expressions_rule) != null  // star_named_expressions
+                (star_named_expressions_var = star_named_expressions_rule()) != null  // star_named_expressions
             )
             {
                 debugMessageln("%d _tmp_211[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_named_expressions");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_named_expressions");
                 _res = star_named_expressions_var;
-                return cache.putResult(pos, _TMP_211_ID, _res);
+                return cache.putResult(_mark, _TMP_211_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_211[%d-%d]: %s failed!", level, ' ',
@@ -22182,7 +22182,7 @@ public final class Parser extends AbstractParser {
             SSTNode param_no_default_var;
             while (
                 // TODO replacing arg_ty --> SSTNode
-                (param_no_default_var = param_no_default_rule) != null  // param_no_default
+                (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
@@ -22216,7 +22216,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] param_with_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (param_with_default_var = param_with_default_rule) != null  // param_with_default
+                (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
@@ -22254,7 +22254,7 @@ public final class Parser extends AbstractParser {
             SSTNode lambda_param_no_default_var;
             while (
                 // TODO replacing arg_ty --> SSTNode
-                (lambda_param_no_default_var = lambda_param_no_default_rule) != null  // lambda_param_no_default
+                (lambda_param_no_default_var = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
@@ -22288,7 +22288,7 @@ public final class Parser extends AbstractParser {
             SSTNode[] lambda_param_with_default_var;
             while (
                 // TODO replacing NameDefaultPair* --> SSTNode[]
-                (lambda_param_with_default_var = lambda_param_with_default_rule) != null  // lambda_param_with_default
+                (lambda_param_with_default_var = lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
@@ -22326,7 +22326,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_216[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "')'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "')'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_216_ID, _res);
+                return cache.putResult(_mark, _TMP_216_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_216[%d-%d]: %s failed!", level, ' ',
@@ -22339,13 +22339,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (_tmp_249_var = _tmp_249_rule) != null  // ')' | '**'
+                (_tmp_249_var = _tmp_249_rule()) != null  // ')' | '**'
             )
             {
                 debugMessageln("%d _tmp_216[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "',' (')' | '**')");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "',' (')' | '**')");
                 _res = dummyName(_literal, _tmp_249_var);
-                return cache.putResult(pos, _TMP_216_ID, _res);
+                return cache.putResult(_mark, _TMP_216_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_216[%d-%d]: %s failed!", level, ' ',
@@ -22373,7 +22373,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_217[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "':'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "':'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_217_ID, _res);
+                return cache.putResult(_mark, _TMP_217_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_217[%d-%d]: %s failed!", level, ' ',
@@ -22386,13 +22386,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (_tmp_250_var = _tmp_250_rule) != null  // ':' | '**'
+                (_tmp_250_var = _tmp_250_rule()) != null  // ':' | '**'
             )
             {
                 debugMessageln("%d _tmp_217[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "',' (':' | '**')");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "',' (':' | '**')");
                 _res = dummyName(_literal, _tmp_250_var);
-                return cache.putResult(pos, _TMP_217_ID, _res);
+                return cache.putResult(_mark, _TMP_217_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_217[%d-%d]: %s failed!", level, ' ',
@@ -22420,7 +22420,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_218[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_218_ID, _res);
+                return cache.putResult(_mark, _TMP_218_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_218[%d-%d]: %s failed!", level, ' ',
@@ -22436,7 +22436,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_218[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "')'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "')'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_218_ID, _res);
+                return cache.putResult(_mark, _TMP_218_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_218[%d-%d]: %s failed!", level, ' ',
@@ -22452,7 +22452,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_218[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "':'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "':'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_218_ID, _res);
+                return cache.putResult(_mark, _TMP_218_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_218[%d-%d]: %s failed!", level, ' ',
@@ -22480,7 +22480,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_219[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "ASYNC");
                 _res = async_var;
-                return cache.putResult(pos, _TMP_219_ID, _res);
+                return cache.putResult(_mark, _TMP_219_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_219[%d-%d]: %s failed!", level, ' ',
@@ -22509,7 +22509,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (elem = _tmp_251_rule) != null  // expression ['as' star_target]
+                (elem = _tmp_251_rule()) != null  // expression ['as' star_target]
             )
             {
                 // TODO: node.action: elem
@@ -22539,14 +22539,14 @@ public final class Parser extends AbstractParser {
             Object elem;
             SSTNode[] seq;
             if (
-                (elem = _tmp_251_rule) != null  // expression ['as' star_target]
+                (elem = _tmp_251_rule()) != null  // expression ['as' star_target]
                 &&
-                (seq = _loop0_221_rule) != null  // _loop0_221
+                (seq = _loop0_221_rule()) != null  // _loop0_221
             )
             {
                 debugMessageln("%d _gather_220[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "(expression ['as' star_target]) _loop0_221");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_220_ID, _res);
+                return cache.putResult(_mark, _GATHER_220_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_220[%d-%d]: %s failed!", level, ' ',
@@ -22574,7 +22574,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_222[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "ASYNC");
                 _res = async_var;
-                return cache.putResult(pos, _TMP_222_ID, _res);
+                return cache.putResult(_mark, _TMP_222_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_222[%d-%d]: %s failed!", level, ' ',
@@ -22603,7 +22603,7 @@ public final class Parser extends AbstractParser {
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (elem = _tmp_252_rule) != null  // expressions ['as' star_target]
+                (elem = _tmp_252_rule()) != null  // expressions ['as' star_target]
             )
             {
                 // TODO: node.action: elem
@@ -22633,14 +22633,14 @@ public final class Parser extends AbstractParser {
             Object elem;
             SSTNode[] seq;
             if (
-                (elem = _tmp_252_rule) != null  // expressions ['as' star_target]
+                (elem = _tmp_252_rule()) != null  // expressions ['as' star_target]
                 &&
-                (seq = _loop0_224_rule) != null  // _loop0_224
+                (seq = _loop0_224_rule()) != null  // _loop0_224
             )
             {
                 debugMessageln("%d _gather_223[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "(expressions ['as' star_target]) _loop0_224");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_223_ID, _res);
+                return cache.putResult(_mark, _GATHER_223_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_223[%d-%d]: %s failed!", level, ' ',
@@ -22665,13 +22665,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(520)) != null  // token='as'
                 &&
-                (name_var = name_token) != null  // NAME
+                (name_var = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d _tmp_225[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'as' NAME");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "'as' NAME");
                 _res = dummyName(_keyword, name_var);
-                return cache.putResult(pos, _TMP_225_ID, _res);
+                return cache.putResult(_mark, _TMP_225_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_225[%d-%d]: %s failed!", level, ' ',
@@ -22696,13 +22696,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(520)) != null  // token='as'
                 &&
-                (name_var = name_token) != null  // NAME
+                (name_var = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d _tmp_226[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'as' NAME");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "'as' NAME");
                 _res = dummyName(_keyword, name_var);
-                return cache.putResult(pos, _TMP_226_ID, _res);
+                return cache.putResult(_mark, _TMP_226_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_226[%d-%d]: %s failed!", level, ' ',
@@ -22733,7 +22733,7 @@ public final class Parser extends AbstractParser {
                 (_literal = expect(12)) != null  // token=','
                 &&
                 // TODO replacing KeyValuePair* --> SSTNode[]
-                (elem = double_starred_kvpair_rule) != null  // double_starred_kvpair
+                (elem = double_starred_kvpair_rule()) != null  // double_starred_kvpair
             )
             {
                 // TODO: node.action: elem
@@ -22765,14 +22765,14 @@ public final class Parser extends AbstractParser {
             SSTNode[] seq;
             if (
                 // TODO replacing KeyValuePair* --> SSTNode[]
-                (elem = double_starred_kvpair_rule) != null  // double_starred_kvpair
+                (elem = double_starred_kvpair_rule()) != null  // double_starred_kvpair
                 &&
-                (seq = _loop0_228_rule) != null  // _loop0_228
+                (seq = _loop0_228_rule()) != null  // _loop0_228
             )
             {
                 debugMessageln("%d _gather_227[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "double_starred_kvpair _loop0_228");
                 _res = insertInFront(elem, seq);
-                return cache.putResult(pos, _GATHER_227_ID, _res);
+                return cache.putResult(_mark, _GATHER_227_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _gather_227[%d-%d]: %s failed!", level, ' ',
@@ -22800,7 +22800,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_229[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'}'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'}'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_229_ID, _res);
+                return cache.putResult(_mark, _TMP_229_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_229[%d-%d]: %s failed!", level, ' ',
@@ -22816,7 +22816,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_229[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "','");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_229_ID, _res);
+                return cache.putResult(_mark, _TMP_229_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_229[%d-%d]: %s failed!", level, ' ',
@@ -22844,7 +22844,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_230[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "':'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "':'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_230_ID, _res);
+                return cache.putResult(_mark, _TMP_230_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_230[%d-%d]: %s failed!", level, ' ',
@@ -22867,7 +22867,7 @@ public final class Parser extends AbstractParser {
             Token _literal;
             SSTNode z;
             if (
-                (z = star_targets_rule) != null  // star_targets
+                (z = star_targets_rule()) != null  // star_targets
                 &&
                 (_literal = expect(22)) != null  // token='='
             )
@@ -22875,7 +22875,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_231[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_targets '='");
                 _res = z;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_targets '='");
-                return cache.putResult(pos, _TMP_231_ID, _res);
+                return cache.putResult(_mark, _TMP_231_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_231[%d-%d]: %s failed!", level, ' ',
@@ -22903,7 +22903,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_232[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'.'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'.'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_232_ID, _res);
+                return cache.putResult(_mark, _TMP_232_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_232[%d-%d]: %s failed!", level, ' ',
@@ -22919,7 +22919,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_232[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'...'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'...'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_232_ID, _res);
+                return cache.putResult(_mark, _TMP_232_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_232[%d-%d]: %s failed!", level, ' ',
@@ -22947,7 +22947,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_233[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'.'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'.'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_233_ID, _res);
+                return cache.putResult(_mark, _TMP_233_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_233[%d-%d]: %s failed!", level, ' ',
@@ -22963,7 +22963,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_233[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'...'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'...'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_233_ID, _res);
+                return cache.putResult(_mark, _TMP_233_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_233[%d-%d]: %s failed!", level, ' ',
@@ -22989,7 +22989,7 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(49)) != null  // token='@'
                 &&
-                (f = named_expression_rule) != null  // named_expression
+                (f = named_expression_rule()) != null  // named_expression
                 &&
                 (newline_var = expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
             )
@@ -22997,7 +22997,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_234[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'@' named_expression NEWLINE");
                 _res = f;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'@' named_expression NEWLINE");
-                return cache.putResult(pos, _TMP_234_ID, _res);
+                return cache.putResult(_mark, _TMP_234_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_234[%d-%d]: %s failed!", level, ' ',
@@ -23019,13 +23019,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_235[%d-%d]: %s", level, ' ', _mark, mark(), "arguments");
             SSTNode arguments_var;
             if (
-                (arguments_var = arguments_rule) != null  // arguments
+                (arguments_var = arguments_rule()) != null  // arguments
             )
             {
                 debugMessageln("%d _tmp_235[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "arguments");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "arguments");
                 _res = arguments_var;
-                return cache.putResult(pos, _TMP_235_ID, _res);
+                return cache.putResult(_mark, _TMP_235_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_235[%d-%d]: %s failed!", level, ' ',
@@ -23050,13 +23050,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (c = star_expression_rule) != null  // star_expression
+                (c = star_expression_rule()) != null  // star_expression
             )
             {
                 debugMessageln("%d _tmp_236[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "',' star_expression");
                 _res = c;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' star_expression");
-                return cache.putResult(pos, _TMP_236_ID, _res);
+                return cache.putResult(_mark, _TMP_236_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_236[%d-%d]: %s failed!", level, ' ',
@@ -23081,13 +23081,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (c = expression_rule) != null  // expression
+                (c = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d _tmp_237[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "',' expression");
                 _res = c;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
-                return cache.putResult(pos, _TMP_237_ID, _res);
+                return cache.putResult(_mark, _TMP_237_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_237[%d-%d]: %s failed!", level, ' ',
@@ -23112,13 +23112,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(531)) != null  // token='or'
                 &&
-                (c = conjunction_rule) != null  // conjunction
+                (c = conjunction_rule()) != null  // conjunction
             )
             {
                 debugMessageln("%d _tmp_238[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'or' conjunction");
                 _res = c;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'or' conjunction");
-                return cache.putResult(pos, _TMP_238_ID, _res);
+                return cache.putResult(_mark, _TMP_238_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_238[%d-%d]: %s failed!", level, ' ',
@@ -23143,13 +23143,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(532)) != null  // token='and'
                 &&
-                (c = inversion_rule) != null  // inversion
+                (c = inversion_rule()) != null  // inversion
             )
             {
                 debugMessageln("%d _tmp_239[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'and' inversion");
                 _res = c;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'and' inversion");
-                return cache.putResult(pos, _TMP_239_ID, _res);
+                return cache.putResult(_mark, _TMP_239_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_239[%d-%d]: %s failed!", level, ' ',
@@ -23171,13 +23171,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_240[%d-%d]: %s", level, ' ', _mark, mark(), "expression");
             SSTNode expression_var;
             if (
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
             )
             {
                 debugMessageln("%d _tmp_240[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "expression");
                 _res = expression_var;
-                return cache.putResult(pos, _TMP_240_ID, _res);
+                return cache.putResult(_mark, _TMP_240_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_240[%d-%d]: %s failed!", level, ' ',
@@ -23201,13 +23201,13 @@ public final class Parser extends AbstractParser {
             SSTNode[] star_named_expressions_var;
             if (
                 // TODO replacing asdl_expr_seq* --> SSTNode[]
-                (star_named_expressions_var = star_named_expressions_rule) != null  // star_named_expressions
+                (star_named_expressions_var = star_named_expressions_rule()) != null  // star_named_expressions
             )
             {
                 debugMessageln("%d _tmp_241[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_named_expressions");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_named_expressions");
                 _res = star_named_expressions_var;
-                return cache.putResult(pos, _TMP_241_ID, _res);
+                return cache.putResult(_mark, _TMP_241_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_241[%d-%d]: %s failed!", level, ' ',
@@ -23232,13 +23232,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(510)) != null  // token='if'
                 &&
-                (z = disjunction_rule) != null  // disjunction
+                (z = disjunction_rule()) != null  // disjunction
             )
             {
                 debugMessageln("%d _tmp_242[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'if' disjunction");
                 _res = z;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' disjunction");
-                return cache.putResult(pos, _TMP_242_ID, _res);
+                return cache.putResult(_mark, _TMP_242_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_242[%d-%d]: %s failed!", level, ' ',
@@ -23263,13 +23263,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(510)) != null  // token='if'
                 &&
-                (z = disjunction_rule) != null  // disjunction
+                (z = disjunction_rule()) != null  // disjunction
             )
             {
                 debugMessageln("%d _tmp_243[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'if' disjunction");
                 _res = z;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' disjunction");
-                return cache.putResult(pos, _TMP_243_ID, _res);
+                return cache.putResult(_mark, _TMP_243_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_243[%d-%d]: %s failed!", level, ' ',
@@ -23291,13 +23291,13 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_244[%d-%d]: %s", level, ' ', _mark, mark(), "starred_expression");
             SSTNode starred_expression_var;
             if (
-                (starred_expression_var = starred_expression_rule) != null  // starred_expression
+                (starred_expression_var = starred_expression_rule()) != null  // starred_expression
             )
             {
                 debugMessageln("%d _tmp_244[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "starred_expression");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "starred_expression");
                 _res = starred_expression_var;
-                return cache.putResult(pos, _TMP_244_ID, _res);
+                return cache.putResult(_mark, _TMP_244_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_244[%d-%d]: %s failed!", level, ' ',
@@ -23307,7 +23307,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> _tmp_244[%d-%d]: %s", level, ' ', _mark, mark(), "direct_named_expression !'='");
             SSTNode direct_named_expression_var;
             if (
-                (direct_named_expression_var = direct_named_expression_rule) != null  // direct_named_expression
+                (direct_named_expression_var = direct_named_expression_rule()) != null  // direct_named_expression
                 &&
                 genLookahead_expect(false, 22)  // token='='
             )
@@ -23315,7 +23315,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_244[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "direct_named_expression !'='");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "direct_named_expression !'='");
                 _res = direct_named_expression_var;
-                return cache.putResult(pos, _TMP_244_ID, _res);
+                return cache.putResult(_mark, _TMP_244_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_244[%d-%d]: %s failed!", level, ' ',
@@ -23340,13 +23340,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (c = star_target_rule) != null  // star_target
+                (c = star_target_rule()) != null  // star_target
             )
             {
                 debugMessageln("%d _tmp_245[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "',' star_target");
                 _res = c;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' star_target");
-                return cache.putResult(pos, _TMP_245_ID, _res);
+                return cache.putResult(_mark, _TMP_245_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_245[%d-%d]: %s failed!", level, ' ',
@@ -23371,13 +23371,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                (c = star_target_rule) != null  // star_target
+                (c = star_target_rule()) != null  // star_target
             )
             {
                 debugMessageln("%d _tmp_246[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "',' star_target");
                 _res = c;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' star_target");
-                return cache.putResult(pos, _TMP_246_ID, _res);
+                return cache.putResult(_mark, _TMP_246_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_246[%d-%d]: %s failed!", level, ' ',
@@ -23400,7 +23400,7 @@ public final class Parser extends AbstractParser {
             Token _literal;
             SSTNode star_targets_var;
             if (
-                (star_targets_var = star_targets_rule) != null  // star_targets
+                (star_targets_var = star_targets_rule()) != null  // star_targets
                 &&
                 (_literal = expect(22)) != null  // token='='
             )
@@ -23408,7 +23408,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_247[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_targets '='");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "star_targets '='");
                 _res = dummyName(star_targets_var, _literal);
-                return cache.putResult(pos, _TMP_247_ID, _res);
+                return cache.putResult(_mark, _TMP_247_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_247[%d-%d]: %s failed!", level, ' ',
@@ -23431,7 +23431,7 @@ public final class Parser extends AbstractParser {
             Token _literal;
             SSTNode star_targets_var;
             if (
-                (star_targets_var = star_targets_rule) != null  // star_targets
+                (star_targets_var = star_targets_rule()) != null  // star_targets
                 &&
                 (_literal = expect(22)) != null  // token='='
             )
@@ -23439,7 +23439,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_248[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_targets '='");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "star_targets '='");
                 _res = dummyName(star_targets_var, _literal);
-                return cache.putResult(pos, _TMP_248_ID, _res);
+                return cache.putResult(_mark, _TMP_248_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_248[%d-%d]: %s failed!", level, ' ',
@@ -23467,7 +23467,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_249[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "')'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "')'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_249_ID, _res);
+                return cache.putResult(_mark, _TMP_249_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_249[%d-%d]: %s failed!", level, ' ',
@@ -23483,7 +23483,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_249[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'**'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'**'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_249_ID, _res);
+                return cache.putResult(_mark, _TMP_249_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_249[%d-%d]: %s failed!", level, ' ',
@@ -23511,7 +23511,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_250[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "':'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "':'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_250_ID, _res);
+                return cache.putResult(_mark, _TMP_250_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_250[%d-%d]: %s failed!", level, ' ',
@@ -23527,7 +23527,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("%d _tmp_250[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'**'");
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "'**'");
                 _res = _literal;
-                return cache.putResult(pos, _TMP_250_ID, _res);
+                return cache.putResult(_mark, _TMP_250_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_250[%d-%d]: %s failed!", level, ' ',
@@ -23550,15 +23550,15 @@ public final class Parser extends AbstractParser {
             Object _opt_var;
             SSTNode expression_var;
             if (
-                (expression_var = expression_rule) != null  // expression
+                (expression_var = expression_rule()) != null  // expression
                 &&
-                ((_opt_var = _tmp_253_rule) != null || true)  // ['as' star_target]
+                ((_opt_var = _tmp_253_rule()) != null || true)  // ['as' star_target]
             )
             {
                 debugMessageln("%d _tmp_251[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression ['as' star_target]");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "expression ['as' star_target]");
                 _res = dummyName(expression_var, _opt_var);
-                return cache.putResult(pos, _TMP_251_ID, _res);
+                return cache.putResult(_mark, _TMP_251_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_251[%d-%d]: %s failed!", level, ' ',
@@ -23581,15 +23581,15 @@ public final class Parser extends AbstractParser {
             Object _opt_var;
             SSTNode expressions_var;
             if (
-                (expressions_var = expressions_rule) != null  // expressions
+                (expressions_var = expressions_rule()) != null  // expressions
                 &&
-                ((_opt_var = _tmp_254_rule) != null || true)  // ['as' star_target]
+                ((_opt_var = _tmp_254_rule()) != null || true)  // ['as' star_target]
             )
             {
                 debugMessageln("%d _tmp_252[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expressions ['as' star_target]");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "expressions ['as' star_target]");
                 _res = dummyName(expressions_var, _opt_var);
-                return cache.putResult(pos, _TMP_252_ID, _res);
+                return cache.putResult(_mark, _TMP_252_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_252[%d-%d]: %s failed!", level, ' ',
@@ -23614,13 +23614,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(520)) != null  // token='as'
                 &&
-                (star_target_var = star_target_rule) != null  // star_target
+                (star_target_var = star_target_rule()) != null  // star_target
             )
             {
                 debugMessageln("%d _tmp_253[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'as' star_target");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "'as' star_target");
                 _res = dummyName(_keyword, star_target_var);
-                return cache.putResult(pos, _TMP_253_ID, _res);
+                return cache.putResult(_mark, _TMP_253_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_253[%d-%d]: %s failed!", level, ' ',
@@ -23645,13 +23645,13 @@ public final class Parser extends AbstractParser {
             if (
                 (_keyword = expect(520)) != null  // token='as'
                 &&
-                (star_target_var = star_target_rule) != null  // star_target
+                (star_target_var = star_target_rule()) != null  // star_target
             )
             {
                 debugMessageln("%d _tmp_254[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'as' star_target");
                 debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "'as' star_target");
                 _res = dummyName(_keyword, star_target_var);
-                return cache.putResult(pos, _TMP_254_ID, _res);
+                return cache.putResult(_mark, _TMP_254_ID, _res);
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_254[%d-%d]: %s failed!", level, ' ',
@@ -23818,36 +23818,4 @@ public final class Parser extends AbstractParser {
         return (result != null) == match;
     }
 
-    // debug methods
-    private void indent(StringBuffer sb) {
-        for (int i = 0; i < level; i++) {
-            sb.append("  ");
-        }
-    }
-
-    void debugMessage(String text) {
-        debugMessage(text, true);
-    }
-
-    void debugMessage(String text, boolean indent) {
-        StringBuffer sb = new StringBuffer();
-        if(indent) {
-            indent(sb);
-        }
-        sb.append(text);
-        System.out.print(sb.toString());
-    }
-
-    void debugMessageln(String text) {
-        debugMessageln(text, true);
-    }
-
-    void debugMessageln(String text, boolean indent) {
-        StringBuffer sb = new StringBuffer();
-        if (indent) {
-            indent(sb);
-        }
-        sb.append(text);
-        System.out.println(sb.toString());
-    }
 }
