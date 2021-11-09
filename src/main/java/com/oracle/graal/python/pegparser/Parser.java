@@ -6,14 +6,24 @@
 package com.oracle.graal.python.pegparser;
 
 import com.oracle.graal.python.pegparser.tokenizer.Token;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * From this class is extended the generated parser. It allow access to the tokenizer.
  */
-public class Parser {
-
+public abstract class Parser {
     private final ParserTokenizer tokenizer;
     protected final NodeFactory factory;
+
+    protected int level = 0;
+    protected boolean callInvalidRules = false;
+    protected final RuleResultCache<Object> cache = new RuleResultCache(this);
+    protected final Set<String> softKeywords = new HashSet<>();
+    protected final List<Map<String, Integer>> reservedKeywords = new ArrayList<>();
 
     public Parser(ParserTokenizer tokenizer, NodeFactory factory) {
         this.tokenizer = tokenizer;
@@ -43,7 +53,7 @@ public class Parser {
      * @return The expected token or null if the token on the current position is not
      * the expected one.
      */
-    public Token expect(Token.Kind tokenKind) {
+    public Token expect(int tokenKind) {
         Token token = tokenizer.peekToken();
         if (token.type == tokenKind) {
             return tokenizer.getToken();
@@ -67,6 +77,28 @@ public class Parser {
     }
 
     /**
+     * Check if the next token that'll be read is if the expected kind. This has
+     * does not advance the tokenizer, in contrast to {@link expect(int)}.
+     */
+    protected boolean lookahead(boolean match, int kind) {
+        int pos = mark();
+        Token token = expect(kind);
+        reset(pos);
+        return (token != null) == match;
+    }
+
+    /**
+     * Check if the next token that'll be read is if the expected kind. This has
+     * does not advance the tokenizer, in contrast to {@link expect(String)}.
+     */
+    protected boolean lookahead(boolean match, String text) {
+        int pos = mark();
+        Token token = expect(text);
+        reset(pos);
+        return (token != null) == match;
+    }
+
+    /**
      * Shortcut to Tokenizer.getText(Token)
      * @param token
      * @return
@@ -82,7 +114,34 @@ public class Parser {
         }
         int helpPos = mark();
         Token token =  tokenizer.peekToken();
+        
         tokenizer.reset(pos);
+        return token;
+    }
+
+    protected Token expect_SOFT_KEYWORD() {
+        Token t = expect(Token.Kind.SOFT_KEYWORD);
+        if (t != null) {
+            String text = getText(t);
+            if (softKeywords.contains(text)) {
+                return t;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Token getToken(int pos) {
+        Token token = super.getToken(pos);
+        if (token.type == Token.Kind.NAME) {
+            int len = token.endOffset - token.startColumn;
+            if (len < reserved_keywords.length) {
+                Map<String, Integer> keywords = reserved_keywords[len];
+                if (keywords != null && keywords.containsKey(getText(token))) {
+                    //TODO we should here change the kind to the keyword.
+                }
+            }
+        }
         return token;
     }
 

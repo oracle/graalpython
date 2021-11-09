@@ -44,7 +44,7 @@ public class RuleResultCache <T> {
             return (T)item.node;
         }
 
-        public T putResult(int pos, int ruleId, T node) {
+        public <T2> T2 putResult(int pos, int ruleId, T2 node) {
             HashMap posCache = mainCache.get(pos);
             if (posCache == null) {
                 posCache = new HashMap();
