@@ -476,19 +476,19 @@ public abstract class ExecutionContext {
             return enter(threadState, pArguments, calleeRootNode.needsExceptionState());
         }
 
-        private static IndirectCallState enter(PythonThreadState threadState, Object[] pArguments, boolean needsExceptionState) {
+        private static Object enter(PythonThreadState threadState, Object[] pArguments, boolean needsExceptionState) {
             Reference popTopFrameInfo = threadState.popTopFrameInfo();
             PArguments.setCallerFrameInfo(pArguments, popTopFrameInfo);
 
-            PException curExc = null;
             if (needsExceptionState) {
-                curExc = threadState.getCaughtException();
+                PException curExc = threadState.getCaughtException();
                 if (curExc != null) {
                     threadState.setCaughtException(null);
                 }
                 PArguments.setException(pArguments, curExc);
+                return new IndirectCallState(popTopFrameInfo, curExc);
             }
-            return new IndirectCallState(popTopFrameInfo, curExc);
+            return popTopFrameInfo;
         }
 
         public static void exit(PythonLanguage language, PythonContext context, Object state) {
@@ -501,10 +501,12 @@ public abstract class ExecutionContext {
              * CalleeContext in its RootNode. If this topframeref was marked as escaped, it'll be
              * materialized at the latest needed time
              */
-            IndirectCallState indirectCallState = (IndirectCallState) state;
-            threadState.setTopFrameInfo(indirectCallState.info);
-            if (indirectCallState.curExc != null) {
+            if (state instanceof IndirectCallState) {
+                IndirectCallState indirectCallState = (IndirectCallState) state;
+                threadState.setTopFrameInfo(indirectCallState.info);
                 threadState.setCaughtException(indirectCallState.curExc);
+            } else {
+                threadState.setTopFrameInfo((Reference) state);
             }
         }
     }
