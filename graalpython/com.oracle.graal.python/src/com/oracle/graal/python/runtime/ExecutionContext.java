@@ -142,7 +142,7 @@ public abstract class ExecutionContext {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     neededExceptionState = true;
                 }
-                PException curExc = null;
+                PException curExc;
                 if (isPythonFrame(frame, callNode)) {
                     curExc = PArguments.getException(frame);
                     if (curExc == null) {
@@ -449,21 +449,21 @@ public abstract class ExecutionContext {
         /**
          * Prepare an indirect call from a foreign frame to a Python function.
          */
-        public static PFrame.Reference enterIndirect(PythonLanguage language, PythonContext context, Object[] pArguments) {
+        public static Object enterIndirect(PythonLanguage language, PythonContext context, Object[] pArguments) {
             return enter(context.getThreadState(language), pArguments, true);
         }
 
         /**
          * @see #enterIndirect(PythonLanguage, PythonContext, Object[])
          */
-        public static PFrame.Reference enterIndirect(PythonThreadState threadState, Object[] pArguments) {
+        public static Object enterIndirect(PythonThreadState threadState, Object[] pArguments) {
             return enter(threadState, pArguments, true);
         }
 
         /**
          * @see #enter(PythonThreadState, Object[], RootCallTarget)
          */
-        public static PFrame.Reference enter(PythonLanguage language, PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
+        public static Object enter(PythonLanguage language, PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
             PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
             return enter(context.getThreadState(language), pArguments, calleeRootNode.needsExceptionState());
         }
@@ -471,33 +471,43 @@ public abstract class ExecutionContext {
         /**
          * Prepare a call from a foreign frame to a Python function.
          */
-        public static PFrame.Reference enter(PythonThreadState threadState, Object[] pArguments, RootCallTarget callTarget) {
+        public static Object enter(PythonThreadState threadState, Object[] pArguments, RootCallTarget callTarget) {
             PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
             return enter(threadState, pArguments, calleeRootNode.needsExceptionState());
         }
 
-        private static PFrame.Reference enter(PythonThreadState threadState, Object[] pArguments, boolean needsExceptionState) {
+        private static Object enter(PythonThreadState threadState, Object[] pArguments, boolean needsExceptionState) {
             Reference popTopFrameInfo = threadState.popTopFrameInfo();
             PArguments.setCallerFrameInfo(pArguments, popTopFrameInfo);
 
             if (needsExceptionState) {
                 PException curExc = threadState.getCaughtException();
+                if (curExc != null) {
+                    threadState.setCaughtException(null);
+                }
                 PArguments.setException(pArguments, curExc);
+                return new IndirectCallState(popTopFrameInfo, curExc);
             }
             return popTopFrameInfo;
         }
 
-        public static void exit(PythonLanguage language, PythonContext context, PFrame.Reference frameInfo) {
-            exit(context.getThreadState(language), frameInfo);
+        public static void exit(PythonLanguage language, PythonContext context, Object state) {
+            exit(context.getThreadState(language), state);
         }
 
-        public static void exit(PythonThreadState threadState, PFrame.Reference frameInfo) {
+        public static void exit(PythonThreadState threadState, Object state) {
             /*
              * Note that the Python callee, if it escaped, has already been materialized due to a
              * CalleeContext in its RootNode. If this topframeref was marked as escaped, it'll be
              * materialized at the latest needed time
              */
-            threadState.setTopFrameInfo(frameInfo);
+            if (state instanceof IndirectCallState) {
+                IndirectCallState indirectCallState = (IndirectCallState) state;
+                threadState.setTopFrameInfo(indirectCallState.info);
+                threadState.setCaughtException(indirectCallState.curExc);
+            } else {
+                threadState.setTopFrameInfo((Reference) state);
+            }
         }
     }
 }

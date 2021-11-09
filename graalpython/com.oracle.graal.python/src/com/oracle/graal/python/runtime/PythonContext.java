@@ -170,7 +170,7 @@ public final class PythonContext extends Python3Core {
         PException currentException;
 
         /* corresponds to 'PyThreadState.exc_*' */
-        PException caughtException;
+        PException caughtException = PException.NO_EXCEPTION;
 
         /* set to emulate Py_ReprEnter/Leave */
         HashSet<Object> reprObjectSet;
