@@ -424,16 +424,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = getIter.execute(frame, object);
+            int nbrIter = 0;
+
             while (true) {
                 try {
-                    LoopNode.reportLoopCount(this, 1);
                     Object next = nextNode.execute(frame, iterator);
+                    nbrIter++;
                     if (!isTrueNode.execute(frame, next)) {
                         return false;
                     }
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     break;
+                } finally {
+                    LoopNode.reportLoopCount(this, nbrIter);
                 }
             }
 
@@ -477,16 +481,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = getIter.execute(frame, object);
+            int nbrIter = 0;
+
             while (true) {
                 try {
-                    LoopNode.reportLoopCount(this, 1);
                     Object next = nextNode.execute(frame, iterator);
+                    nbrIter++;
                     if (isTrueNode.execute(frame, next)) {
                         return true;
                     }
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     break;
+                } finally {
+                    LoopNode.reportLoopCount(this, nbrIter);
                 }
             }
 
