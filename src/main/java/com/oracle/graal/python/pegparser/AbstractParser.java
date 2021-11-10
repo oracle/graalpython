@@ -189,7 +189,7 @@ public abstract class AbstractParser {
     }
 
     public SSTNode number_token() {
-        Token t = expect(Token.Kind.NAME);
+        Token t = expect(Token.Kind.NUMBER);
         if (t != null) {            
             return factory.createNumber(getText(t), t.startOffset, t.endOffset);
         } else {

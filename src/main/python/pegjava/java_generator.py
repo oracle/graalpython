@@ -706,7 +706,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         with self.indent():
             node_str = str(node).replace('"', '\\"')
             self.print(
-                f'debugMessageln("%d {rulename}[%d-%d]: %s succeeded!", level, \' \', _mark, mark(), "{node_str}");'
+                f'debugMessageln("%d {rulename}[%d-%d]: %s succeeded!", level, _mark, mark(), "{node_str}");'
             )
             # Prepare to emmit the rule action and do so
             if node.action and "endToken" in node.action:
@@ -741,7 +741,11 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
 
             # Add the result of rule to the temporary buffer of children. This buffer
             # will populate later an asdl_seq with all elements to return.
-            self.print("_children.add((SSTNode)_res);")
+            self.print("if (_res instanceof  SSTNode) {")
+            self.print("    _children.add((SSTNode)_res);")
+            self.print("} else {")
+            self.print("    _children.addAll(Arrays.asList((SSTNode[])_res));")
+            self.print("}")
             self.print("_mark = mark();")
         self.print("}")
 
@@ -756,7 +760,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self._check_for_errors()
             node_str = str(node).replace('"', '\\"')
             self.print(
-                f'debugMessageln("%d> {rulename}[%d-%d]: %s", level, \' \', _mark, mark(), "{node_str}");'
+                f'debugMessageln("%d> {rulename}[%d-%d]: %s", level, _mark, mark(), "{node_str}");'
             )
             # Prepare variable declarations for the alternative
             vars = self.collect_vars(node)
@@ -778,7 +782,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print("reset(_mark);")
             node_str = str(node).replace('"', '\\"')
             self.print(
-                f"debugMessageln(\"%d%s {rulename}[%d-%d]: %s failed!\", level, ' ',\n"
+                f"debugMessageln(\"%d%s {rulename}[%d-%d]: %s failed!\", level,\n"
                 f'                  "-", _mark, mark(), "{node_str}");'
             )
             if "_cut_var" in vars:
