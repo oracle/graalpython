@@ -735,7 +735,7 @@ public final class Parser extends AbstractParser {
     }
 
     // file: statements? $
-    private SSTNode file_rule()
+    public SSTNode file_rule()
     {
         level++;
         int _mark = mark();
@@ -782,7 +782,7 @@ public final class Parser extends AbstractParser {
     }
 
     // interactive: statement_newline
-    private SSTNode interactive_rule()
+    public SSTNode interactive_rule()
     {
         level++;
         int _mark = mark();
@@ -819,7 +819,7 @@ public final class Parser extends AbstractParser {
     }
 
     // eval: expressions NEWLINE* $
-    private SSTNode eval_rule()
+    public SSTNode eval_rule()
     {
         level++;
         int _mark = mark();
@@ -862,7 +862,7 @@ public final class Parser extends AbstractParser {
     }
 
     // func_type: '(' type_expressions? ')' '->' expression NEWLINE* $
-    private SSTNode func_type_rule()
+    public SSTNode func_type_rule()
     {
         level++;
         int _mark = mark();
@@ -917,7 +917,7 @@ public final class Parser extends AbstractParser {
     }
 
     // fstring: star_expressions
-    private SSTNode fstring_rule()
+    public SSTNode fstring_rule()
     {
         level++;
         int _mark = mark();
@@ -961,7 +961,7 @@ public final class Parser extends AbstractParser {
     //     | '*' expression
     //     | '**' expression
     //     | ','.expression+
-    private SSTNode[] type_expressions_rule()
+    public SSTNode[] type_expressions_rule()
     {
         level++;
         int _mark = mark();
@@ -1166,7 +1166,7 @@ public final class Parser extends AbstractParser {
     }
 
     // statements: statement+
-    private SSTNode[] statements_rule()
+    public SSTNode[] statements_rule()
     {
         level++;
         int _mark = mark();
@@ -1202,7 +1202,7 @@ public final class Parser extends AbstractParser {
     }
 
     // statement: compound_stmt | simple_stmts
-    private SSTNode[] statement_rule()
+    public SSTNode[] statement_rule()
     {
         level++;
         int _mark = mark();
@@ -1258,7 +1258,7 @@ public final class Parser extends AbstractParser {
     }
 
     // statement_newline: compound_stmt NEWLINE | simple_stmts | NEWLINE | $
-    private SSTNode[] statement_newline_rule()
+    public SSTNode[] statement_newline_rule()
     {
         level++;
         int _mark = mark();
@@ -1356,7 +1356,7 @@ public final class Parser extends AbstractParser {
     }
 
     // simple_stmts: simple_stmt !';' NEWLINE | ';'.simple_stmt+ ';'? NEWLINE
-    private SSTNode[] simple_stmts_rule()
+    public SSTNode[] simple_stmts_rule()
     {
         level++;
         int _mark = mark();
@@ -1437,7 +1437,7 @@ public final class Parser extends AbstractParser {
     //     | 'continue'
     //     | &'global' global_stmt
     //     | &'nonlocal' nonlocal_stmt
-    private SSTNode simple_stmt_rule()
+    public SSTNode simple_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -1733,7 +1733,7 @@ public final class Parser extends AbstractParser {
     //     | &'try' try_stmt
     //     | &'while' while_stmt
     //     | match_stmt
-    private SSTNode compound_stmt_rule()
+    public SSTNode compound_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -1930,7 +1930,7 @@ public final class Parser extends AbstractParser {
     //     | ((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?
     //     | single_target augassign ~ (yield_expr | star_expressions)
     //     | invalid_assignment
-    private SSTNode assignment_rule()
+    public SSTNode assignment_rule()
     {
         level++;
         int _mark = mark();
@@ -2105,7 +2105,7 @@ public final class Parser extends AbstractParser {
     //     | '>>='
     //     | '**='
     //     | '//='
-    private SSTNode[] augassign_rule()
+    public SSTNode[] augassign_rule()
     {
         level++;
         int _mark = mark();
@@ -2371,7 +2371,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing stmt_ty --> SSTNode
     // global_stmt: 'global' ','.NAME+
-    private SSTNode global_stmt_rule()
+    public SSTNode global_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -2413,7 +2413,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing stmt_ty --> SSTNode
     // nonlocal_stmt: 'nonlocal' ','.NAME+
-    private SSTNode nonlocal_stmt_rule()
+    public SSTNode nonlocal_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -2455,7 +2455,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing stmt_ty --> SSTNode
     // yield_stmt: yield_expr
-    private SSTNode yield_stmt_rule()
+    public SSTNode yield_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -2493,7 +2493,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing stmt_ty --> SSTNode
     // assert_stmt: 'assert' expression [',' expression]
-    private SSTNode assert_stmt_rule()
+    public SSTNode assert_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -2537,7 +2537,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing stmt_ty --> SSTNode
     // del_stmt: 'del' del_targets &(';' | NEWLINE) | invalid_del_stmt
-    private SSTNode del_stmt_rule()
+    public SSTNode del_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -2600,7 +2600,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing stmt_ty --> SSTNode
     // import_stmt: import_name | import_from
-    private SSTNode import_stmt_rule()
+    public SSTNode import_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -2659,7 +2659,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing stmt_ty --> SSTNode
     // import_name: 'import' dotted_as_names
-    private SSTNode import_name_rule()
+    public SSTNode import_name_rule()
     {
         level++;
         int _mark = mark();
@@ -2704,7 +2704,7 @@ public final class Parser extends AbstractParser {
     // import_from:
     //     | 'from' (('.' | '...'))* dotted_name 'import' import_from_targets
     //     | 'from' (('.' | '...'))+ 'import' import_from_targets
-    private SSTNode import_from_rule()
+    public SSTNode import_from_rule()
     {
         level++;
         int _mark = mark();
@@ -2790,7 +2790,7 @@ public final class Parser extends AbstractParser {
     //     | import_from_as_names !','
     //     | '*'
     //     | invalid_import_from_targets
-    private SSTNode[] import_from_targets_rule()
+    public SSTNode[] import_from_targets_rule()
     {
         level++;
         int _mark = mark();
@@ -2897,7 +2897,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing asdl_alias_seq* --> SSTNode[]
     // import_from_as_names: ','.import_from_as_name+
-    private SSTNode[] import_from_as_names_rule()
+    public SSTNode[] import_from_as_names_rule()
     {
         level++;
         int _mark = mark();
@@ -2935,7 +2935,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing alias_ty --> SSTNode
     // import_from_as_name: NAME ['as' NAME]
-    private SSTNode import_from_as_name_rule()
+    public SSTNode import_from_as_name_rule()
     {
         level++;
         int _mark = mark();
@@ -2976,7 +2976,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing asdl_alias_seq* --> SSTNode[]
     // dotted_as_names: ','.dotted_as_name+
-    private SSTNode[] dotted_as_names_rule()
+    public SSTNode[] dotted_as_names_rule()
     {
         level++;
         int _mark = mark();
@@ -3014,7 +3014,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing alias_ty --> SSTNode
     // dotted_as_name: dotted_name ['as' NAME]
-    private SSTNode dotted_as_name_rule()
+    public SSTNode dotted_as_name_rule()
     {
         level++;
         int _mark = mark();
@@ -3055,7 +3055,7 @@ public final class Parser extends AbstractParser {
 
     // Left-recursive
     // dotted_name: dotted_name '.' NAME | NAME
-    private SSTNode dotted_name_rule()
+    public SSTNode dotted_name_rule()
     {
         level++;
         int _mark = mark();
@@ -3136,7 +3136,7 @@ public final class Parser extends AbstractParser {
     //     | 'if' named_expression ':' block elif_stmt
     //     | 'if' named_expression ':' block else_block?
     //     | invalid_if_stmt
-    private SSTNode if_stmt_rule()
+    public SSTNode if_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -3240,7 +3240,7 @@ public final class Parser extends AbstractParser {
     //     | 'elif' named_expression ':' block elif_stmt
     //     | 'elif' named_expression ':' block else_block?
     //     | invalid_elif_stmt
-    private SSTNode elif_stmt_rule()
+    public SSTNode elif_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -3340,7 +3340,7 @@ public final class Parser extends AbstractParser {
     }
 
     // else_block: 'else' &&':' block
-    private SSTNode[] else_block_rule()
+    public SSTNode[] else_block_rule()
     {
         level++;
         int _mark = mark();
@@ -3383,7 +3383,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing stmt_ty --> SSTNode
     // while_stmt: 'while' named_expression ':' block else_block? | invalid_while_stmt
-    private SSTNode while_stmt_rule()
+    public SSTNode while_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -3454,7 +3454,7 @@ public final class Parser extends AbstractParser {
     //     | 'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?
     //     | ASYNC 'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?
     //     | invalid_for_target
-    private SSTNode for_stmt_rule()
+    public SSTNode for_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -3593,7 +3593,7 @@ public final class Parser extends AbstractParser {
     //     | ASYNC 'with' '(' ','.with_item+ ','? ')' ':' block
     //     | ASYNC 'with' ','.with_item+ ':' TYPE_COMMENT? block
     //     | invalid_with_stmt
-    private SSTNode with_stmt_rule()
+    public SSTNode with_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -3779,7 +3779,7 @@ public final class Parser extends AbstractParser {
     //     | expression 'as' star_target &(',' | ')' | ':')
     //     | invalid_with_item
     //     | expression
-    private SSTNode with_item_rule()
+    public SSTNode with_item_rule()
     {
         level++;
         int _mark = mark();
@@ -3864,7 +3864,7 @@ public final class Parser extends AbstractParser {
     // try_stmt:
     //     | 'try' &&':' block finally_block
     //     | 'try' &&':' block except_block+ else_block? finally_block?
-    private SSTNode try_stmt_rule()
+    public SSTNode try_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -3949,7 +3949,7 @@ public final class Parser extends AbstractParser {
     //     | 'except' expression ['as' NAME] ':' block
     //     | 'except' ':' block
     //     | invalid_except_block
-    private SSTNode except_block_rule()
+    public SSTNode except_block_rule()
     {
         level++;
         int _mark = mark();
@@ -4041,7 +4041,7 @@ public final class Parser extends AbstractParser {
     }
 
     // finally_block: 'finally' ':' block
-    private SSTNode[] finally_block_rule()
+    public SSTNode[] finally_block_rule()
     {
         level++;
         int _mark = mark();
@@ -4086,7 +4086,7 @@ public final class Parser extends AbstractParser {
     // match_stmt:
     //     | "match" subject_expr ':' NEWLINE INDENT case_block+ DEDENT
     //     | invalid_match_stmt
-    private SSTNode match_stmt_rule()
+    public SSTNode match_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -4160,7 +4160,7 @@ public final class Parser extends AbstractParser {
     }
 
     // subject_expr: star_named_expression ',' star_named_expressions? | named_expression
-    private SSTNode subject_expr_rule()
+    public SSTNode subject_expr_rule()
     {
         level++;
         int _mark = mark();
@@ -4224,7 +4224,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing match_case_ty --> SSTNode
     // case_block: "case" patterns guard? ':' block | invalid_case_block
-    private SSTNode case_block_rule()
+    public SSTNode case_block_rule()
     {
         level++;
         int _mark = mark();
@@ -4291,7 +4291,7 @@ public final class Parser extends AbstractParser {
     }
 
     // guard: 'if' named_expression
-    private SSTNode guard_rule()
+    public SSTNode guard_rule()
     {
         level++;
         int _mark = mark();
@@ -4331,7 +4331,7 @@ public final class Parser extends AbstractParser {
     }
 
     // patterns: open_sequence_pattern | pattern
-    private SSTNode patterns_rule()
+    public SSTNode patterns_rule()
     {
         level++;
         int _mark = mark();
@@ -4389,7 +4389,7 @@ public final class Parser extends AbstractParser {
     }
 
     // pattern: as_pattern | or_pattern
-    private SSTNode pattern_rule()
+    public SSTNode pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -4443,7 +4443,7 @@ public final class Parser extends AbstractParser {
     }
 
     // as_pattern: or_pattern 'as' capture_pattern
-    private SSTNode as_pattern_rule()
+    public SSTNode as_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -4486,7 +4486,7 @@ public final class Parser extends AbstractParser {
     }
 
     // or_pattern: '|'.closed_pattern+
-    private SSTNode or_pattern_rule()
+    public SSTNode or_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -4532,7 +4532,7 @@ public final class Parser extends AbstractParser {
     //     | sequence_pattern
     //     | mapping_pattern
     //     | class_pattern
-    private SSTNode closed_pattern_rule()
+    public SSTNode closed_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -4701,7 +4701,7 @@ public final class Parser extends AbstractParser {
     //     | 'None'
     //     | 'True'
     //     | 'False'
-    private SSTNode literal_pattern_rule()
+    public SSTNode literal_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -4864,7 +4864,7 @@ public final class Parser extends AbstractParser {
     }
 
     // signed_number: NUMBER | '-' NUMBER
-    private SSTNode signed_number_rule()
+    public SSTNode signed_number_rule()
     {
         level++;
         int _mark = mark();
@@ -4922,7 +4922,7 @@ public final class Parser extends AbstractParser {
     }
 
     // capture_pattern: !"_" NAME !('.' | '(' | '=')
-    private SSTNode capture_pattern_rule()
+    public SSTNode capture_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -4963,7 +4963,7 @@ public final class Parser extends AbstractParser {
     }
 
     // wildcard_pattern: "_"
-    private SSTNode wildcard_pattern_rule()
+    public SSTNode wildcard_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -5000,7 +5000,7 @@ public final class Parser extends AbstractParser {
     }
 
     // value_pattern: attr !('.' | '(' | '=')
-    private SSTNode value_pattern_rule()
+    public SSTNode value_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -5040,7 +5040,7 @@ public final class Parser extends AbstractParser {
 
     // Left-recursive
     // attr: name_or_attr '.' NAME
-    private SSTNode attr_rule()
+    public SSTNode attr_rule()
     {
         level++;
         int _mark = mark();
@@ -5101,7 +5101,7 @@ public final class Parser extends AbstractParser {
 
     // Left-recursive
     // name_or_attr: attr | NAME
-    private SSTNode name_or_attr_rule()
+    public SSTNode name_or_attr_rule()
     {
         level++;
         int _mark = mark();
@@ -5147,7 +5147,7 @@ public final class Parser extends AbstractParser {
     }
 
     // group_pattern: '(' pattern ')'
-    private SSTNode group_pattern_rule()
+    public SSTNode group_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -5190,7 +5190,7 @@ public final class Parser extends AbstractParser {
     }
 
     // sequence_pattern: '[' maybe_sequence_pattern? ']' | '(' open_sequence_pattern? ')'
-    private SSTNode sequence_pattern_rule()
+    public SSTNode sequence_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -5263,7 +5263,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing asdl_seq* --> SSTNode[]
     // open_sequence_pattern: maybe_star_pattern ',' maybe_sequence_pattern?
-    private SSTNode[] open_sequence_pattern_rule()
+    public SSTNode[] open_sequence_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -5309,7 +5309,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing asdl_seq* --> SSTNode[]
     // maybe_sequence_pattern: ','.maybe_star_pattern+ ','?
-    private SSTNode[] maybe_sequence_pattern_rule()
+    public SSTNode[] maybe_sequence_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -5349,7 +5349,7 @@ public final class Parser extends AbstractParser {
     }
 
     // maybe_star_pattern: star_pattern | pattern
-    private SSTNode maybe_star_pattern_rule()
+    public SSTNode maybe_star_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -5403,7 +5403,7 @@ public final class Parser extends AbstractParser {
     }
 
     // star_pattern: '*' (capture_pattern | wildcard_pattern)
-    private SSTNode star_pattern_rule()
+    public SSTNode star_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -5443,7 +5443,7 @@ public final class Parser extends AbstractParser {
     }
 
     // mapping_pattern: '{' items_pattern? '}'
-    private SSTNode mapping_pattern_rule()
+    public SSTNode mapping_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -5489,7 +5489,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing asdl_seq* --> SSTNode[]
     // items_pattern: ','.key_value_pattern+ ','?
-    private SSTNode[] items_pattern_rule()
+    public SSTNode[] items_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -5530,7 +5530,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing KeyValuePair* --> SSTNode[]
     // key_value_pattern: (literal_pattern | value_pattern) ':' pattern | double_star_pattern
-    private SSTNode[] key_value_pattern_rule()
+    public SSTNode[] key_value_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -5594,7 +5594,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing KeyValuePair* --> SSTNode[]
     // double_star_pattern: '**' capture_pattern
-    private SSTNode[] double_star_pattern_rule()
+    public SSTNode[] double_star_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -5638,7 +5638,7 @@ public final class Parser extends AbstractParser {
     //     | name_or_attr '(' positional_patterns ','? ')'
     //     | name_or_attr '(' keyword_patterns ','? ')'
     //     | name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')'
-    private SSTNode class_pattern_rule()
+    public SSTNode class_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -5789,7 +5789,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing asdl_expr_seq* --> SSTNode[]
     // positional_patterns: ','.pattern+
-    private SSTNode[] positional_patterns_rule()
+    public SSTNode[] positional_patterns_rule()
     {
         level++;
         int _mark = mark();
@@ -5828,7 +5828,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing asdl_keyword_seq* --> SSTNode[]
     // keyword_patterns: ','.keyword_pattern+
-    private SSTNode[] keyword_patterns_rule()
+    public SSTNode[] keyword_patterns_rule()
     {
         level++;
         int _mark = mark();
@@ -5867,7 +5867,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing keyword_ty --> SSTNode
     // keyword_pattern: NAME '=' pattern
-    private SSTNode keyword_pattern_rule()
+    public SSTNode keyword_pattern_rule()
     {
         level++;
         int _mark = mark();
@@ -5911,7 +5911,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing stmt_ty --> SSTNode
     // return_stmt: 'return' star_expressions?
-    private SSTNode return_stmt_rule()
+    public SSTNode return_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -5952,7 +5952,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing stmt_ty --> SSTNode
     // raise_stmt: 'raise' expression ['from' expression] | 'raise'
-    private SSTNode raise_stmt_rule()
+    public SSTNode raise_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -6015,7 +6015,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing stmt_ty --> SSTNode
     // function_def: decorators function_def_raw | function_def_raw
-    private SSTNode function_def_rule()
+    public SSTNode function_def_rule()
     {
         level++;
         int _mark = mark();
@@ -6082,7 +6082,7 @@ public final class Parser extends AbstractParser {
     // function_def_raw:
     //     | 'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block
     //     | ASYNC 'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block
-    private SSTNode function_def_raw_rule()
+    public SSTNode function_def_raw_rule()
     {
         level++;
         int _mark = mark();
@@ -6193,7 +6193,7 @@ public final class Parser extends AbstractParser {
     //     | NEWLINE TYPE_COMMENT &(NEWLINE INDENT)
     //     | invalid_double_type_comments
     //     | TYPE_COMMENT
-    private SSTNode[] func_type_comment_rule()
+    public SSTNode[] func_type_comment_rule()
     {
         level++;
         int _mark = mark();
@@ -6271,7 +6271,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing arguments_ty --> SSTNode
     // params: invalid_parameters | parameters
-    private SSTNode params_rule()
+    public SSTNode params_rule()
     {
         level++;
         int _mark = mark();
@@ -6333,7 +6333,7 @@ public final class Parser extends AbstractParser {
     //     | param_no_default+ param_with_default* star_etc?
     //     | param_with_default+ star_etc?
     //     | star_etc
-    private SSTNode parameters_rule()
+    public SSTNode parameters_rule()
     {
         level++;
         int _mark = mark();
@@ -6479,7 +6479,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing asdl_arg_seq* --> SSTNode[]
     // slash_no_default: param_no_default+ '/' ',' | param_no_default+ '/' &')'
-    private SSTNode[] slash_no_default_rule()
+    public SSTNode[] slash_no_default_rule()
     {
         level++;
         int _mark = mark();
@@ -6549,7 +6549,7 @@ public final class Parser extends AbstractParser {
     // slash_with_default:
     //     | param_no_default* param_with_default+ '/' ','
     //     | param_no_default* param_with_default+ '/' &')'
-    private SSTNode[] slash_with_default_rule()
+    public SSTNode[] slash_with_default_rule()
     {
         level++;
         int _mark = mark();
@@ -6627,7 +6627,7 @@ public final class Parser extends AbstractParser {
     //     | '*' ',' param_maybe_default+ kwds?
     //     | kwds
     //     | invalid_star_etc
-    private SSTNode[] star_etc_rule()
+    public SSTNode[] star_etc_rule()
     {
         level++;
         int _mark = mark();
@@ -6743,7 +6743,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing arg_ty --> SSTNode
     // kwds: '**' param_no_default
-    private SSTNode kwds_rule()
+    public SSTNode kwds_rule()
     {
         level++;
         int _mark = mark();
@@ -6785,7 +6785,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing arg_ty --> SSTNode
     // param_no_default: param ',' TYPE_COMMENT? | param TYPE_COMMENT? &')'
-    private SSTNode param_no_default_rule()
+    public SSTNode param_no_default_rule()
     {
         level++;
         int _mark = mark();
@@ -6859,7 +6859,7 @@ public final class Parser extends AbstractParser {
     // param_with_default:
     //     | param default_param ',' TYPE_COMMENT?
     //     | param default_param TYPE_COMMENT? &')'
-    private SSTNode[] param_with_default_rule()
+    public SSTNode[] param_with_default_rule()
     {
         level++;
         int _mark = mark();
@@ -6939,7 +6939,7 @@ public final class Parser extends AbstractParser {
     // param_maybe_default:
     //     | param default_param? ',' TYPE_COMMENT?
     //     | param default_param? TYPE_COMMENT? &')'
-    private SSTNode[] param_maybe_default_rule()
+    public SSTNode[] param_maybe_default_rule()
     {
         level++;
         int _mark = mark();
@@ -7017,7 +7017,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing arg_ty --> SSTNode
     // param: NAME annotation?
-    private SSTNode param_rule()
+    public SSTNode param_rule()
     {
         level++;
         int _mark = mark();
@@ -7057,7 +7057,7 @@ public final class Parser extends AbstractParser {
     }
 
     // annotation: ':' expression
-    private SSTNode annotation_rule()
+    public SSTNode annotation_rule()
     {
         level++;
         int _mark = mark();
@@ -7096,7 +7096,7 @@ public final class Parser extends AbstractParser {
     }
 
     // default_param: '=' expression
-    private SSTNode default_param_rule()
+    public SSTNode default_param_rule()
     {
         level++;
         int _mark = mark();
@@ -7136,7 +7136,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing asdl_expr_seq* --> SSTNode[]
     // decorators: (('@' named_expression NEWLINE))+
-    private SSTNode[] decorators_rule()
+    public SSTNode[] decorators_rule()
     {
         level++;
         int _mark = mark();
@@ -7174,7 +7174,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing stmt_ty --> SSTNode
     // class_def: decorators class_def_raw | class_def_raw
-    private SSTNode class_def_rule()
+    public SSTNode class_def_rule()
     {
         level++;
         int _mark = mark();
@@ -7239,7 +7239,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing stmt_ty --> SSTNode
     // class_def_raw: 'class' NAME ['(' arguments? ')'] &&':' block
-    private SSTNode class_def_raw_rule()
+    public SSTNode class_def_raw_rule()
     {
         level++;
         int _mark = mark();
@@ -7288,7 +7288,7 @@ public final class Parser extends AbstractParser {
     }
 
     // block: NEWLINE INDENT statements DEDENT | simple_stmts | invalid_block
-    private SSTNode[] block_rule()
+    public SSTNode[] block_rule()
     {
         level++;
         int _mark = mark();
@@ -7372,7 +7372,7 @@ public final class Parser extends AbstractParser {
     //     | star_expression ((',' star_expression))+ ','?
     //     | star_expression ','
     //     | star_expression
-    private SSTNode star_expressions_rule()
+    public SSTNode star_expressions_rule()
     {
         level++;
         int _mark = mark();
@@ -7455,7 +7455,7 @@ public final class Parser extends AbstractParser {
     }
 
     // star_expression: '*' bitwise_or | expression
-    private SSTNode star_expression_rule()
+    public SSTNode star_expression_rule()
     {
         level++;
         int _mark = mark();
@@ -7514,7 +7514,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing asdl_expr_seq* --> SSTNode[]
     // star_named_expressions: ','.star_named_expression+ ','?
-    private SSTNode[] star_named_expressions_rule()
+    public SSTNode[] star_named_expressions_rule()
     {
         level++;
         int _mark = mark();
@@ -7554,7 +7554,7 @@ public final class Parser extends AbstractParser {
     }
 
     // star_named_expression: '*' bitwise_or | named_expression
-    private SSTNode star_named_expression_rule()
+    public SSTNode star_named_expression_rule()
     {
         level++;
         int _mark = mark();
@@ -7612,7 +7612,7 @@ public final class Parser extends AbstractParser {
     }
 
     // named_expression: NAME ':=' ~ expression | invalid_named_expression | expression !':='
-    private SSTNode named_expression_rule()
+    public SSTNode named_expression_rule()
     {
         level++;
         int _mark = mark();
@@ -7700,7 +7700,7 @@ public final class Parser extends AbstractParser {
     }
 
     // direct_named_expression: NAME ':=' ~ expression | expression !':='
-    private SSTNode direct_named_expression_rule()
+    public SSTNode direct_named_expression_rule()
     {
         level++;
         int _mark = mark();
@@ -7770,7 +7770,7 @@ public final class Parser extends AbstractParser {
     }
 
     // annotated_rhs: yield_expr | star_expressions
-    private SSTNode annotated_rhs_rule()
+    public SSTNode annotated_rhs_rule()
     {
         level++;
         int _mark = mark();
@@ -7824,7 +7824,7 @@ public final class Parser extends AbstractParser {
     }
 
     // expressions: expression ((',' expression))+ ','? | expression ',' | expression
-    private SSTNode expressions_rule()
+    public SSTNode expressions_rule()
     {
         level++;
         int _mark = mark();
@@ -7911,7 +7911,7 @@ public final class Parser extends AbstractParser {
     //     | disjunction 'if' disjunction 'else' expression
     //     | disjunction
     //     | lambdef
-    private SSTNode expression_rule()
+    public SSTNode expression_rule()
     {
         level++;
         int _mark = mark();
@@ -8014,7 +8014,7 @@ public final class Parser extends AbstractParser {
     }
 
     // lambdef: 'lambda' lambda_params? ':' expression
-    private SSTNode lambdef_rule()
+    public SSTNode lambdef_rule()
     {
         level++;
         int _mark = mark();
@@ -8061,7 +8061,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing arguments_ty --> SSTNode
     // lambda_params: invalid_lambda_parameters | lambda_parameters
-    private SSTNode lambda_params_rule()
+    public SSTNode lambda_params_rule()
     {
         level++;
         int _mark = mark();
@@ -8123,7 +8123,7 @@ public final class Parser extends AbstractParser {
     //     | lambda_param_no_default+ lambda_param_with_default* lambda_star_etc?
     //     | lambda_param_with_default+ lambda_star_etc?
     //     | lambda_star_etc
-    private SSTNode lambda_parameters_rule()
+    public SSTNode lambda_parameters_rule()
     {
         level++;
         int _mark = mark();
@@ -8271,7 +8271,7 @@ public final class Parser extends AbstractParser {
     // lambda_slash_no_default:
     //     | lambda_param_no_default+ '/' ','
     //     | lambda_param_no_default+ '/' &':'
-    private SSTNode[] lambda_slash_no_default_rule()
+    public SSTNode[] lambda_slash_no_default_rule()
     {
         level++;
         int _mark = mark();
@@ -8341,7 +8341,7 @@ public final class Parser extends AbstractParser {
     // lambda_slash_with_default:
     //     | lambda_param_no_default* lambda_param_with_default+ '/' ','
     //     | lambda_param_no_default* lambda_param_with_default+ '/' &':'
-    private SSTNode[] lambda_slash_with_default_rule()
+    public SSTNode[] lambda_slash_with_default_rule()
     {
         level++;
         int _mark = mark();
@@ -8419,7 +8419,7 @@ public final class Parser extends AbstractParser {
     //     | '*' ',' lambda_param_maybe_default+ lambda_kwds?
     //     | lambda_kwds
     //     | invalid_lambda_star_etc
-    private SSTNode[] lambda_star_etc_rule()
+    public SSTNode[] lambda_star_etc_rule()
     {
         level++;
         int _mark = mark();
@@ -8535,7 +8535,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing arg_ty --> SSTNode
     // lambda_kwds: '**' lambda_param_no_default
-    private SSTNode lambda_kwds_rule()
+    public SSTNode lambda_kwds_rule()
     {
         level++;
         int _mark = mark();
@@ -8577,7 +8577,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing arg_ty --> SSTNode
     // lambda_param_no_default: lambda_param ',' | lambda_param &':'
-    private SSTNode lambda_param_no_default_rule()
+    public SSTNode lambda_param_no_default_rule()
     {
         level++;
         int _mark = mark();
@@ -8643,7 +8643,7 @@ public final class Parser extends AbstractParser {
     // lambda_param_with_default:
     //     | lambda_param default_param ','
     //     | lambda_param default_param &':'
-    private SSTNode[] lambda_param_with_default_rule()
+    public SSTNode[] lambda_param_with_default_rule()
     {
         level++;
         int _mark = mark();
@@ -8717,7 +8717,7 @@ public final class Parser extends AbstractParser {
     // lambda_param_maybe_default:
     //     | lambda_param default_param? ','
     //     | lambda_param default_param? &':'
-    private SSTNode[] lambda_param_maybe_default_rule()
+    public SSTNode[] lambda_param_maybe_default_rule()
     {
         level++;
         int _mark = mark();
@@ -8789,7 +8789,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing arg_ty --> SSTNode
     // lambda_param: NAME
-    private SSTNode lambda_param_rule()
+    public SSTNode lambda_param_rule()
     {
         level++;
         int _mark = mark();
@@ -8826,7 +8826,7 @@ public final class Parser extends AbstractParser {
     }
 
     // disjunction: conjunction (('or' conjunction))+ | conjunction
-    private SSTNode disjunction_rule()
+    public SSTNode disjunction_rule()
     {
         level++;
         int _mark = mark();
@@ -8884,7 +8884,7 @@ public final class Parser extends AbstractParser {
     }
 
     // conjunction: inversion (('and' inversion))+ | inversion
-    private SSTNode conjunction_rule()
+    public SSTNode conjunction_rule()
     {
         level++;
         int _mark = mark();
@@ -8942,7 +8942,7 @@ public final class Parser extends AbstractParser {
     }
 
     // inversion: 'not' inversion | comparison
-    private SSTNode inversion_rule()
+    public SSTNode inversion_rule()
     {
         level++;
         int _mark = mark();
@@ -9000,7 +9000,7 @@ public final class Parser extends AbstractParser {
     }
 
     // comparison: bitwise_or compare_op_bitwise_or_pair+ | bitwise_or
-    private SSTNode comparison_rule()
+    public SSTNode comparison_rule()
     {
         level++;
         int _mark = mark();
@@ -9067,7 +9067,7 @@ public final class Parser extends AbstractParser {
     //     | in_bitwise_or
     //     | isnot_bitwise_or
     //     | is_bitwise_or
-    private BinaryArithmeticSSTNode compare_op_bitwise_or_pair_rule()
+    public BinaryArithmeticSSTNode compare_op_bitwise_or_pair_rule()
     {
         level++;
         int _mark = mark();
@@ -9283,7 +9283,7 @@ public final class Parser extends AbstractParser {
     }
 
     // eq_bitwise_or: '==' bitwise_or
-    private BinaryArithmeticSSTNode eq_bitwise_or_rule()
+    public BinaryArithmeticSSTNode eq_bitwise_or_rule()
     {
         level++;
         int _mark = mark();
@@ -9331,7 +9331,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing CmpopExprPair* --> SSTNode[]
     // noteq_bitwise_or: ('!=') bitwise_or
-    private SSTNode[] noteq_bitwise_or_rule()
+    public SSTNode[] noteq_bitwise_or_rule()
     {
         level++;
         int _mark = mark();
@@ -9372,7 +9372,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing CmpopExprPair* --> SSTNode[]
     // lte_bitwise_or: '<=' bitwise_or
-    private SSTNode[] lte_bitwise_or_rule()
+    public SSTNode[] lte_bitwise_or_rule()
     {
         level++;
         int _mark = mark();
@@ -9413,7 +9413,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing CmpopExprPair* --> SSTNode[]
     // lt_bitwise_or: '<' bitwise_or
-    private SSTNode[] lt_bitwise_or_rule()
+    public SSTNode[] lt_bitwise_or_rule()
     {
         level++;
         int _mark = mark();
@@ -9454,7 +9454,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing CmpopExprPair* --> SSTNode[]
     // gte_bitwise_or: '>=' bitwise_or
-    private SSTNode[] gte_bitwise_or_rule()
+    public SSTNode[] gte_bitwise_or_rule()
     {
         level++;
         int _mark = mark();
@@ -9495,7 +9495,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing CmpopExprPair* --> SSTNode[]
     // gt_bitwise_or: '>' bitwise_or
-    private SSTNode[] gt_bitwise_or_rule()
+    public SSTNode[] gt_bitwise_or_rule()
     {
         level++;
         int _mark = mark();
@@ -9536,7 +9536,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing CmpopExprPair* --> SSTNode[]
     // notin_bitwise_or: 'not' 'in' bitwise_or
-    private SSTNode[] notin_bitwise_or_rule()
+    public SSTNode[] notin_bitwise_or_rule()
     {
         level++;
         int _mark = mark();
@@ -9580,7 +9580,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing CmpopExprPair* --> SSTNode[]
     // in_bitwise_or: 'in' bitwise_or
-    private SSTNode[] in_bitwise_or_rule()
+    public SSTNode[] in_bitwise_or_rule()
     {
         level++;
         int _mark = mark();
@@ -9621,7 +9621,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing CmpopExprPair* --> SSTNode[]
     // isnot_bitwise_or: 'is' 'not' bitwise_or
-    private SSTNode[] isnot_bitwise_or_rule()
+    public SSTNode[] isnot_bitwise_or_rule()
     {
         level++;
         int _mark = mark();
@@ -9665,7 +9665,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing CmpopExprPair* --> SSTNode[]
     // is_bitwise_or: 'is' bitwise_or
-    private SSTNode[] is_bitwise_or_rule()
+    public SSTNode[] is_bitwise_or_rule()
     {
         level++;
         int _mark = mark();
@@ -9706,7 +9706,7 @@ public final class Parser extends AbstractParser {
 
     // Left-recursive
     // bitwise_or: bitwise_or '|' bitwise_xor | bitwise_xor
-    private SSTNode bitwise_or_rule()
+    public SSTNode bitwise_or_rule()
     {
         level++;
         int _mark = mark();
@@ -9784,7 +9784,7 @@ public final class Parser extends AbstractParser {
 
     // Left-recursive
     // bitwise_xor: bitwise_xor '^' bitwise_and | bitwise_and
-    private SSTNode bitwise_xor_rule()
+    public SSTNode bitwise_xor_rule()
     {
         level++;
         int _mark = mark();
@@ -9862,7 +9862,7 @@ public final class Parser extends AbstractParser {
 
     // Left-recursive
     // bitwise_and: bitwise_and '&' shift_expr | shift_expr
-    private SSTNode bitwise_and_rule()
+    public SSTNode bitwise_and_rule()
     {
         level++;
         int _mark = mark();
@@ -9940,7 +9940,7 @@ public final class Parser extends AbstractParser {
 
     // Left-recursive
     // shift_expr: shift_expr '<<' sum | shift_expr '>>' sum | sum
-    private SSTNode shift_expr_rule()
+    public SSTNode shift_expr_rule()
     {
         level++;
         int _mark = mark();
@@ -10042,7 +10042,7 @@ public final class Parser extends AbstractParser {
 
     // Left-recursive
     // sum: sum '+' term | sum '-' term | term
-    private SSTNode sum_rule()
+    public SSTNode sum_rule()
     {
         level++;
         int _mark = mark();
@@ -10150,7 +10150,7 @@ public final class Parser extends AbstractParser {
     //     | term '%' factor
     //     | term '@' factor
     //     | factor
-    private SSTNode term_rule()
+    public SSTNode term_rule()
     {
         level++;
         int _mark = mark();
@@ -10323,7 +10323,7 @@ public final class Parser extends AbstractParser {
     }
 
     // factor: '+' factor | '-' factor | '~' factor | power
-    private SSTNode factor_rule()
+    public SSTNode factor_rule()
     {
         level++;
         int _mark = mark();
@@ -10442,7 +10442,7 @@ public final class Parser extends AbstractParser {
     }
 
     // power: await_primary '**' factor | await_primary
-    private SSTNode power_rule()
+    public SSTNode power_rule()
     {
         level++;
         int _mark = mark();
@@ -10503,7 +10503,7 @@ public final class Parser extends AbstractParser {
     }
 
     // await_primary: AWAIT primary | primary
-    private SSTNode await_primary_rule()
+    public SSTNode await_primary_rule()
     {
         level++;
         int _mark = mark();
@@ -10568,7 +10568,7 @@ public final class Parser extends AbstractParser {
     //     | primary '(' arguments? ')'
     //     | primary '[' slices ']'
     //     | atom
-    private SSTNode primary_rule()
+    public SSTNode primary_rule()
     {
         level++;
         int _mark = mark();
@@ -10737,7 +10737,7 @@ public final class Parser extends AbstractParser {
     }
 
     // slices: slice !',' | ','.slice+ ','?
-    private SSTNode slices_rule()
+    public SSTNode slices_rule()
     {
         level++;
         int _mark = mark();
@@ -10798,7 +10798,7 @@ public final class Parser extends AbstractParser {
     }
 
     // slice: expression? ':' expression? [':' expression?] | named_expression
-    private SSTNode slice_rule()
+    public SSTNode slice_rule()
     {
         level++;
         int _mark = mark();
@@ -10872,7 +10872,7 @@ public final class Parser extends AbstractParser {
     //     | &'[' (list | listcomp)
     //     | &'{' (dict | set | dictcomp | setcomp)
     //     | '...'
-    private SSTNode atom_rule()
+    public SSTNode atom_rule()
     {
         level++;
         int _mark = mark();
@@ -11082,7 +11082,7 @@ public final class Parser extends AbstractParser {
     }
 
     // strings: STRING+
-    private SSTNode strings_rule()
+    public SSTNode strings_rule()
     {
         level++;
         int _mark = mark();
@@ -11119,7 +11119,7 @@ public final class Parser extends AbstractParser {
     }
 
     // list: '[' star_named_expressions? ']'
-    private SSTNode list_rule()
+    public SSTNode list_rule()
     {
         level++;
         int _mark = mark();
@@ -11162,7 +11162,7 @@ public final class Parser extends AbstractParser {
     }
 
     // listcomp: '[' named_expression for_if_clauses ']' | invalid_comprehension
-    private SSTNode listcomp_rule()
+    public SSTNode listcomp_rule()
     {
         level++;
         int _mark = mark();
@@ -11228,7 +11228,7 @@ public final class Parser extends AbstractParser {
     }
 
     // tuple: '(' [star_named_expression ',' star_named_expressions?] ')'
-    private SSTNode tuple_rule()
+    public SSTNode tuple_rule()
     {
         level++;
         int _mark = mark();
@@ -11271,7 +11271,7 @@ public final class Parser extends AbstractParser {
     }
 
     // group: '(' (yield_expr | named_expression) ')' | invalid_group
-    private SSTNode group_rule()
+    public SSTNode group_rule()
     {
         level++;
         int _mark = mark();
@@ -11331,7 +11331,7 @@ public final class Parser extends AbstractParser {
     }
 
     // genexp: '(' direct_named_expression for_if_clauses ')' | invalid_comprehension
-    private SSTNode genexp_rule()
+    public SSTNode genexp_rule()
     {
         level++;
         int _mark = mark();
@@ -11397,7 +11397,7 @@ public final class Parser extends AbstractParser {
     }
 
     // set: '{' star_named_expressions '}'
-    private SSTNode set_rule()
+    public SSTNode set_rule()
     {
         level++;
         int _mark = mark();
@@ -11442,7 +11442,7 @@ public final class Parser extends AbstractParser {
     }
 
     // setcomp: '{' named_expression for_if_clauses '}' | invalid_comprehension
-    private SSTNode setcomp_rule()
+    public SSTNode setcomp_rule()
     {
         level++;
         int _mark = mark();
@@ -11508,7 +11508,7 @@ public final class Parser extends AbstractParser {
     }
 
     // dict: '{' double_starred_kvpairs? '}' | '{' invalid_double_starred_kvpairs '}'
-    private SSTNode dict_rule()
+    public SSTNode dict_rule()
     {
         level++;
         int _mark = mark();
@@ -11575,7 +11575,7 @@ public final class Parser extends AbstractParser {
     }
 
     // dictcomp: '{' kvpair for_if_clauses '}' | invalid_dict_comprehension
-    private SSTNode dictcomp_rule()
+    public SSTNode dictcomp_rule()
     {
         level++;
         int _mark = mark();
@@ -11644,7 +11644,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing asdl_seq* --> SSTNode[]
     // double_starred_kvpairs: ','.double_starred_kvpair+ ','?
-    private SSTNode[] double_starred_kvpairs_rule()
+    public SSTNode[] double_starred_kvpairs_rule()
     {
         level++;
         int _mark = mark();
@@ -11684,7 +11684,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing KeyValuePair* --> SSTNode[]
     // double_starred_kvpair: '**' bitwise_or | kvpair
-    private SSTNode[] double_starred_kvpair_rule()
+    public SSTNode[] double_starred_kvpair_rule()
     {
         level++;
         int _mark = mark();
@@ -11745,7 +11745,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing KeyValuePair* --> SSTNode[]
     // kvpair: expression ':' expression
-    private SSTNode[] kvpair_rule()
+    public SSTNode[] kvpair_rule()
     {
         level++;
         int _mark = mark();
@@ -11789,7 +11789,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing asdl_comprehension_seq* --> SSTNode[]
     // for_if_clauses: for_if_clause+
-    private SSTNode[] for_if_clauses_rule()
+    public SSTNode[] for_if_clauses_rule()
     {
         level++;
         int _mark = mark();
@@ -11830,7 +11830,7 @@ public final class Parser extends AbstractParser {
     //     | ASYNC 'for' star_targets 'in' ~ disjunction (('if' disjunction))*
     //     | 'for' star_targets 'in' ~ disjunction (('if' disjunction))*
     //     | invalid_for_target
-    private SSTNode for_if_clause_rule()
+    public SSTNode for_if_clause_rule()
     {
         level++;
         int _mark = mark();
@@ -11947,7 +11947,7 @@ public final class Parser extends AbstractParser {
     }
 
     // yield_expr: 'yield' 'from' expression | 'yield' star_expressions?
-    private SSTNode yield_expr_rule()
+    public SSTNode yield_expr_rule()
     {
         level++;
         int _mark = mark();
@@ -12012,7 +12012,7 @@ public final class Parser extends AbstractParser {
     }
 
     // arguments: args ','? &')' | invalid_arguments
-    private SSTNode arguments_rule()
+    public SSTNode arguments_rule()
     {
         level++;
         int _mark = mark();
@@ -12071,7 +12071,7 @@ public final class Parser extends AbstractParser {
     }
 
     // args: ','.(starred_expression | direct_named_expression !'=')+ [',' kwargs] | kwargs
-    private SSTNode args_rule()
+    public SSTNode args_rule()
     {
         level++;
         int _mark = mark();
@@ -12137,7 +12137,7 @@ public final class Parser extends AbstractParser {
     //     | ','.kwarg_or_starred+ ',' ','.kwarg_or_double_starred+
     //     | ','.kwarg_or_starred+
     //     | ','.kwarg_or_double_starred+
-    private SSTNode[] kwargs_rule()
+    public SSTNode[] kwargs_rule()
     {
         level++;
         int _mark = mark();
@@ -12216,7 +12216,7 @@ public final class Parser extends AbstractParser {
     }
 
     // starred_expression: '*' expression
-    private SSTNode starred_expression_rule()
+    public SSTNode starred_expression_rule()
     {
         level++;
         int _mark = mark();
@@ -12257,7 +12257,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing KeywordOrStarred* --> SSTNode[]
     // kwarg_or_starred: NAME '=' expression | starred_expression | invalid_kwarg
-    private SSTNode[] kwarg_or_starred_rule()
+    public SSTNode[] kwarg_or_starred_rule()
     {
         level++;
         int _mark = mark();
@@ -12338,7 +12338,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing KeywordOrStarred* --> SSTNode[]
     // kwarg_or_double_starred: NAME '=' expression | '**' expression | invalid_kwarg
-    private SSTNode[] kwarg_or_double_starred_rule()
+    public SSTNode[] kwarg_or_double_starred_rule()
     {
         level++;
         int _mark = mark();
@@ -12421,7 +12421,7 @@ public final class Parser extends AbstractParser {
     }
 
     // star_targets: star_target !',' | star_target ((',' star_target))* ','?
-    private SSTNode star_targets_rule()
+    public SSTNode star_targets_rule()
     {
         level++;
         int _mark = mark();
@@ -12485,7 +12485,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing asdl_expr_seq* --> SSTNode[]
     // star_targets_list_seq: ','.star_target+ ','?
-    private SSTNode[] star_targets_list_seq_rule()
+    public SSTNode[] star_targets_list_seq_rule()
     {
         level++;
         int _mark = mark();
@@ -12526,7 +12526,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing asdl_expr_seq* --> SSTNode[]
     // star_targets_tuple_seq: star_target ((',' star_target))+ ','? | star_target ','
-    private SSTNode[] star_targets_tuple_seq_rule()
+    public SSTNode[] star_targets_tuple_seq_rule()
     {
         level++;
         int _mark = mark();
@@ -12591,7 +12591,7 @@ public final class Parser extends AbstractParser {
     }
 
     // star_target: '*' (!'*' star_target) | target_with_star_atom
-    private SSTNode star_target_rule()
+    public SSTNode star_target_rule()
     {
         level++;
         int _mark = mark();
@@ -12652,7 +12652,7 @@ public final class Parser extends AbstractParser {
     //     | t_primary '.' NAME !t_lookahead
     //     | t_primary '[' slices ']' !t_lookahead
     //     | star_atom
-    private SSTNode target_with_star_atom_rule()
+    public SSTNode target_with_star_atom_rule()
     {
         level++;
         int _mark = mark();
@@ -12749,7 +12749,7 @@ public final class Parser extends AbstractParser {
     //     | '(' target_with_star_atom ')'
     //     | '(' star_targets_tuple_seq? ')'
     //     | '[' star_targets_list_seq? ']'
-    private SSTNode star_atom_rule()
+    public SSTNode star_atom_rule()
     {
         level++;
         int _mark = mark();
@@ -12861,7 +12861,7 @@ public final class Parser extends AbstractParser {
     }
 
     // single_target: single_subscript_attribute_target | NAME | '(' single_target ')'
-    private SSTNode single_target_rule()
+    public SSTNode single_target_rule()
     {
         level++;
         int _mark = mark();
@@ -12942,7 +12942,7 @@ public final class Parser extends AbstractParser {
     // single_subscript_attribute_target:
     //     | t_primary '.' NAME !t_lookahead
     //     | t_primary '[' slices ']' !t_lookahead
-    private SSTNode single_subscript_attribute_target_rule()
+    public SSTNode single_subscript_attribute_target_rule()
     {
         level++;
         int _mark = mark();
@@ -13018,7 +13018,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing asdl_expr_seq* --> SSTNode[]
     // del_targets: ','.del_target+ ','?
-    private SSTNode[] del_targets_rule()
+    public SSTNode[] del_targets_rule()
     {
         level++;
         int _mark = mark();
@@ -13061,7 +13061,7 @@ public final class Parser extends AbstractParser {
     //     | t_primary '.' NAME !t_lookahead
     //     | t_primary '[' slices ']' !t_lookahead
     //     | del_t_atom
-    private SSTNode del_target_rule()
+    public SSTNode del_target_rule()
     {
         level++;
         int _mark = mark();
@@ -13154,7 +13154,7 @@ public final class Parser extends AbstractParser {
     }
 
     // del_t_atom: NAME | '(' del_target ')' | '(' del_targets? ')' | '[' del_targets? ']'
-    private SSTNode del_t_atom_rule()
+    public SSTNode del_t_atom_rule()
     {
         level++;
         int _mark = mark();
@@ -13267,7 +13267,7 @@ public final class Parser extends AbstractParser {
 
     // TODO replacing asdl_expr_seq* --> SSTNode[]
     // targets: ','.target+ ','?
-    private SSTNode[] targets_rule()
+    public SSTNode[] targets_rule()
     {
         level++;
         int _mark = mark();
@@ -13310,7 +13310,7 @@ public final class Parser extends AbstractParser {
     //     | t_primary '.' NAME !t_lookahead
     //     | t_primary '[' slices ']' !t_lookahead
     //     | t_atom
-    private SSTNode target_rule()
+    public SSTNode target_rule()
     {
         level++;
         int _mark = mark();
@@ -13409,7 +13409,7 @@ public final class Parser extends AbstractParser {
     //     | t_primary genexp &t_lookahead
     //     | t_primary '(' arguments? ')' &t_lookahead
     //     | atom &t_lookahead
-    private SSTNode t_primary_rule()
+    public SSTNode t_primary_rule()
     {
         level++;
         int _mark = mark();
@@ -13571,7 +13571,7 @@ public final class Parser extends AbstractParser {
     }
 
     // t_lookahead: '(' | '[' | '.'
-    private SSTNode t_lookahead_rule()
+    public SSTNode t_lookahead_rule()
     {
         level++;
         int _mark = mark();
@@ -13643,7 +13643,7 @@ public final class Parser extends AbstractParser {
     }
 
     // t_atom: NAME | '(' target ')' | '(' targets? ')' | '[' targets? ']'
-    private SSTNode t_atom_rule()
+    public SSTNode t_atom_rule()
     {
         level++;
         int _mark = mark();
@@ -13760,7 +13760,7 @@ public final class Parser extends AbstractParser {
     //     | args for_if_clauses
     //     | args ',' expression for_if_clauses
     //     | args ',' args
-    private SSTNode invalid_arguments_rule()
+    public SSTNode invalid_arguments_rule()
     {
         level++;
         int _mark = mark();
@@ -13912,7 +13912,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_kwarg: expression '='
-    private SSTNode invalid_kwarg_rule()
+    public SSTNode invalid_kwarg_rule()
     {
         level++;
         int _mark = mark();
@@ -13952,7 +13952,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_expression: !(NAME STRING | SOFT_KEYWORD) disjunction expression
-    private SSTNode invalid_expression_rule()
+    public SSTNode invalid_expression_rule()
     {
         level++;
         int _mark = mark();
@@ -13997,7 +13997,7 @@ public final class Parser extends AbstractParser {
     //     | expression ':=' expression
     //     | NAME '=' bitwise_or !('=' | ':=' | ',')
     //     | !(list | tuple | genexp | 'True' | 'None' | 'False') bitwise_or '=' bitwise_or !('=' | ':=' | ',')
-    private SSTNode invalid_named_expression_rule()
+    public SSTNode invalid_named_expression_rule()
     {
         level++;
         int _mark = mark();
@@ -14102,7 +14102,7 @@ public final class Parser extends AbstractParser {
     //     | ((star_targets '='))* star_expressions '='
     //     | ((star_targets '='))* yield_expr '='
     //     | star_expressions augassign (yield_expr | star_expressions)
-    private SSTNode invalid_assignment_rule()
+    public SSTNode invalid_assignment_rule()
     {
         level++;
         int _mark = mark();
@@ -14278,7 +14278,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_ann_assign_target: list | tuple | '(' invalid_ann_assign_target ')'
-    private SSTNode invalid_ann_assign_target_rule()
+    public SSTNode invalid_ann_assign_target_rule()
     {
         level++;
         int _mark = mark();
@@ -14356,7 +14356,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_del_stmt: 'del' star_expressions
-    private SSTNode invalid_del_stmt_rule()
+    public SSTNode invalid_del_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -14396,7 +14396,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_block: NEWLINE !INDENT
-    private SSTNode invalid_block_rule()
+    public SSTNode invalid_block_rule()
     {
         level++;
         int _mark = mark();
@@ -14436,7 +14436,7 @@ public final class Parser extends AbstractParser {
 
     // Left-recursive
     // invalid_primary: primary '{'
-    private SSTNode invalid_primary_rule()
+    public SSTNode invalid_primary_rule()
     {
         level++;
         int _mark = mark();
@@ -14471,7 +14471,7 @@ public final class Parser extends AbstractParser {
     // invalid_comprehension:
     //     | ('[' | '(' | '{') starred_expression for_if_clauses
     //     | ('[' | '{') star_named_expression ',' star_named_expressions? for_if_clauses
-    private SSTNode invalid_comprehension_rule()
+    public SSTNode invalid_comprehension_rule()
     {
         level++;
         int _mark = mark();
@@ -14549,7 +14549,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_dict_comprehension: '{' '**' bitwise_or for_if_clauses '}'
-    private SSTNode invalid_dict_comprehension_rule()
+    public SSTNode invalid_dict_comprehension_rule()
     {
         level++;
         int _mark = mark();
@@ -14600,7 +14600,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_parameters: param_no_default* invalid_parameters_helper param_no_default
-    private SSTNode invalid_parameters_rule()
+    public SSTNode invalid_parameters_rule()
     {
         level++;
         int _mark = mark();
@@ -14645,7 +14645,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_parameters_helper: slash_with_default | param_with_default+
-    private SSTNode invalid_parameters_helper_rule()
+    public SSTNode invalid_parameters_helper_rule()
     {
         level++;
         int _mark = mark();
@@ -14703,7 +14703,7 @@ public final class Parser extends AbstractParser {
 
     // invalid_lambda_parameters:
     //     | lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default
-    private SSTNode invalid_lambda_parameters_rule()
+    public SSTNode invalid_lambda_parameters_rule()
     {
         level++;
         int _mark = mark();
@@ -14750,7 +14750,7 @@ public final class Parser extends AbstractParser {
     // invalid_lambda_parameters_helper:
     //     | lambda_slash_with_default
     //     | lambda_param_with_default+
-    private SSTNode invalid_lambda_parameters_helper_rule()
+    public SSTNode invalid_lambda_parameters_helper_rule()
     {
         level++;
         int _mark = mark();
@@ -14807,7 +14807,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_star_etc: '*' (')' | ',' (')' | '**')) | '*' ',' TYPE_COMMENT
-    private SSTNode invalid_star_etc_rule()
+    public SSTNode invalid_star_etc_rule()
     {
         level++;
         int _mark = mark();
@@ -14872,7 +14872,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_lambda_star_etc: '*' (':' | ',' (':' | '**'))
-    private SSTNode invalid_lambda_star_etc_rule()
+    public SSTNode invalid_lambda_star_etc_rule()
     {
         level++;
         int _mark = mark();
@@ -14912,7 +14912,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_double_type_comments: TYPE_COMMENT NEWLINE TYPE_COMMENT NEWLINE INDENT
-    private SSTNode invalid_double_type_comments_rule()
+    public SSTNode invalid_double_type_comments_rule()
     {
         level++;
         int _mark = mark();
@@ -14961,7 +14961,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_with_item: expression 'as' expression &(',' | ')' | ':')
-    private SSTNode invalid_with_item_rule()
+    public SSTNode invalid_with_item_rule()
     {
         level++;
         int _mark = mark();
@@ -15006,7 +15006,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_for_target: ASYNC? 'for' star_expressions
-    private SSTNode invalid_for_target_rule()
+    public SSTNode invalid_for_target_rule()
     {
         level++;
         int _mark = mark();
@@ -15049,7 +15049,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_group: '(' starred_expression ')' | '(' '**' expression ')'
-    private SSTNode invalid_group_rule()
+    public SSTNode invalid_group_rule()
     {
         level++;
         int _mark = mark();
@@ -15120,7 +15120,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_import_from_targets: import_from_as_names ','
-    private SSTNode invalid_import_from_targets_rule()
+    public SSTNode invalid_import_from_targets_rule()
     {
         level++;
         int _mark = mark();
@@ -15164,7 +15164,7 @@ public final class Parser extends AbstractParser {
     // invalid_with_stmt:
     //     | ASYNC? 'with' ','.(expression ['as' star_target])+ &&':'
     //     | ASYNC? 'with' '(' ','.(expressions ['as' star_target])+ ','? ')' &&':'
-    private SSTNode invalid_with_stmt_rule()
+    public SSTNode invalid_with_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -15248,7 +15248,7 @@ public final class Parser extends AbstractParser {
     //     | 'except' expression ',' expressions ['as' NAME] ':'
     //     | 'except' expression ['as' NAME] &&':'
     //     | 'except' &&':'
-    private SSTNode invalid_except_block_rule()
+    public SSTNode invalid_except_block_rule()
     {
         level++;
         int _mark = mark();
@@ -15348,7 +15348,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_match_stmt: "match" subject_expr !':'
-    private SSTNode invalid_match_stmt_rule()
+    public SSTNode invalid_match_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -15390,7 +15390,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_case_block: "case" patterns guard? !':'
-    private SSTNode invalid_case_block_rule()
+    public SSTNode invalid_case_block_rule()
     {
         level++;
         int _mark = mark();
@@ -15435,7 +15435,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_if_stmt: 'if' named_expression NEWLINE
-    private SSTNode invalid_if_stmt_rule()
+    public SSTNode invalid_if_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -15478,7 +15478,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_elif_stmt: 'elif' named_expression NEWLINE
-    private SSTNode invalid_elif_stmt_rule()
+    public SSTNode invalid_elif_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -15521,7 +15521,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_while_stmt: 'while' named_expression NEWLINE
-    private SSTNode invalid_while_stmt_rule()
+    public SSTNode invalid_while_stmt_rule()
     {
         level++;
         int _mark = mark();
@@ -15567,7 +15567,7 @@ public final class Parser extends AbstractParser {
     //     | ','.double_starred_kvpair+ ',' invalid_kvpair
     //     | expression ':' '*' bitwise_or
     //     | expression ':' &('}' | ',')
-    private SSTNode invalid_double_starred_kvpairs_rule()
+    public SSTNode invalid_double_starred_kvpairs_rule()
     {
         level++;
         int _mark = mark();
@@ -15661,7 +15661,7 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_kvpair: expression !(':') | expression ':' '*' bitwise_or | expression ':'
-    private SSTNode invalid_kvpair_rule()
+    public SSTNode invalid_kvpair_rule()
     {
         level++;
         int _mark = mark();
@@ -15750,7 +15750,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_1: statements
-    private SSTNode _tmp_1_rule()
+    public SSTNode _tmp_1_rule()
     {
         level++;
         int _mark = mark();
@@ -15786,7 +15786,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_2: NEWLINE
-    private SSTNode[] _loop0_2_rule()
+    public SSTNode[] _loop0_2_rule()
     {
         level++;
         Object _res = null;
@@ -15823,7 +15823,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_3: type_expressions
-    private SSTNode _tmp_3_rule()
+    public SSTNode _tmp_3_rule()
     {
         level++;
         int _mark = mark();
@@ -15861,7 +15861,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_4: NEWLINE
-    private SSTNode[] _loop0_4_rule()
+    public SSTNode[] _loop0_4_rule()
     {
         level++;
         Object _res = null;
@@ -15898,7 +15898,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_6: ',' expression
-    private SSTNode[] _loop0_6_rule()
+    public SSTNode[] _loop0_6_rule()
     {
         level++;
         Object _res = null;
@@ -15939,7 +15939,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_5: expression _loop0_6
-    private SSTNode[] _gather_5_rule()
+    public SSTNode[] _gather_5_rule()
     {
         level++;
         int _mark = mark();
@@ -15977,7 +15977,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_8: ',' expression
-    private SSTNode[] _loop0_8_rule()
+    public SSTNode[] _loop0_8_rule()
     {
         level++;
         Object _res = null;
@@ -16018,7 +16018,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_7: expression _loop0_8
-    private SSTNode[] _gather_7_rule()
+    public SSTNode[] _gather_7_rule()
     {
         level++;
         int _mark = mark();
@@ -16056,7 +16056,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_10: ',' expression
-    private SSTNode[] _loop0_10_rule()
+    public SSTNode[] _loop0_10_rule()
     {
         level++;
         Object _res = null;
@@ -16097,7 +16097,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_9: expression _loop0_10
-    private SSTNode[] _gather_9_rule()
+    public SSTNode[] _gather_9_rule()
     {
         level++;
         int _mark = mark();
@@ -16135,7 +16135,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_12: ',' expression
-    private SSTNode[] _loop0_12_rule()
+    public SSTNode[] _loop0_12_rule()
     {
         level++;
         Object _res = null;
@@ -16176,7 +16176,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_11: expression _loop0_12
-    private SSTNode[] _gather_11_rule()
+    public SSTNode[] _gather_11_rule()
     {
         level++;
         int _mark = mark();
@@ -16214,7 +16214,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_13: statement
-    private SSTNode[] _loop1_13_rule()
+    public SSTNode[] _loop1_13_rule()
     {
         level++;
         Object _res = null;
@@ -16255,7 +16255,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_15: ';' simple_stmt
-    private SSTNode[] _loop0_15_rule()
+    public SSTNode[] _loop0_15_rule()
     {
         level++;
         Object _res = null;
@@ -16298,7 +16298,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_14: simple_stmt _loop0_15
-    private SSTNode[] _gather_14_rule()
+    public SSTNode[] _gather_14_rule()
     {
         level++;
         int _mark = mark();
@@ -16338,7 +16338,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_16: ';'
-    private SSTNode _tmp_16_rule()
+    public SSTNode _tmp_16_rule()
     {
         level++;
         int _mark = mark();
@@ -16374,7 +16374,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_17: 'import' | 'from'
-    private SSTNode _tmp_17_rule()
+    public SSTNode _tmp_17_rule()
     {
         level++;
         int _mark = mark();
@@ -16428,7 +16428,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_18: 'def' | '@' | ASYNC
-    private SSTNode _tmp_18_rule()
+    public SSTNode _tmp_18_rule()
     {
         level++;
         int _mark = mark();
@@ -16500,7 +16500,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_19: 'class' | '@'
-    private SSTNode _tmp_19_rule()
+    public SSTNode _tmp_19_rule()
     {
         level++;
         int _mark = mark();
@@ -16554,7 +16554,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_20: 'with' | ASYNC
-    private SSTNode _tmp_20_rule()
+    public SSTNode _tmp_20_rule()
     {
         level++;
         int _mark = mark();
@@ -16608,7 +16608,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_21: 'for' | ASYNC
-    private SSTNode _tmp_21_rule()
+    public SSTNode _tmp_21_rule()
     {
         level++;
         int _mark = mark();
@@ -16662,7 +16662,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_22: '=' annotated_rhs
-    private SSTNode _tmp_22_rule()
+    public SSTNode _tmp_22_rule()
     {
         level++;
         int _mark = mark();
@@ -16701,7 +16701,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_23: '(' single_target ')' | single_subscript_attribute_target
-    private SSTNode _tmp_23_rule()
+    public SSTNode _tmp_23_rule()
     {
         level++;
         int _mark = mark();
@@ -16761,7 +16761,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_24: '=' annotated_rhs
-    private SSTNode _tmp_24_rule()
+    public SSTNode _tmp_24_rule()
     {
         level++;
         int _mark = mark();
@@ -16800,7 +16800,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_25: (star_targets '=')
-    private SSTNode[] _loop1_25_rule()
+    public SSTNode[] _loop1_25_rule()
     {
         level++;
         Object _res = null;
@@ -16841,7 +16841,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_26: yield_expr | star_expressions
-    private SSTNode _tmp_26_rule()
+    public SSTNode _tmp_26_rule()
     {
         level++;
         int _mark = mark();
@@ -16895,7 +16895,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_27: TYPE_COMMENT
-    private SSTNode _tmp_27_rule()
+    public SSTNode _tmp_27_rule()
     {
         level++;
         int _mark = mark();
@@ -16931,7 +16931,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_28: yield_expr | star_expressions
-    private SSTNode _tmp_28_rule()
+    public SSTNode _tmp_28_rule()
     {
         level++;
         int _mark = mark();
@@ -16985,7 +16985,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_30: ',' NAME
-    private SSTNode[] _loop0_30_rule()
+    public SSTNode[] _loop0_30_rule()
     {
         level++;
         Object _res = null;
@@ -17026,7 +17026,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_29: NAME _loop0_30
-    private SSTNode[] _gather_29_rule()
+    public SSTNode[] _gather_29_rule()
     {
         level++;
         int _mark = mark();
@@ -17064,7 +17064,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_32: ',' NAME
-    private SSTNode[] _loop0_32_rule()
+    public SSTNode[] _loop0_32_rule()
     {
         level++;
         Object _res = null;
@@ -17105,7 +17105,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_31: NAME _loop0_32
-    private SSTNode[] _gather_31_rule()
+    public SSTNode[] _gather_31_rule()
     {
         level++;
         int _mark = mark();
@@ -17143,7 +17143,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_33: ',' expression
-    private SSTNode _tmp_33_rule()
+    public SSTNode _tmp_33_rule()
     {
         level++;
         int _mark = mark();
@@ -17182,7 +17182,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_34: ';' | NEWLINE
-    private SSTNode _tmp_34_rule()
+    public SSTNode _tmp_34_rule()
     {
         level++;
         int _mark = mark();
@@ -17236,7 +17236,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_35: ('.' | '...')
-    private SSTNode[] _loop0_35_rule()
+    public SSTNode[] _loop0_35_rule()
     {
         level++;
         Object _res = null;
@@ -17273,7 +17273,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_36: ('.' | '...')
-    private SSTNode[] _loop1_36_rule()
+    public SSTNode[] _loop1_36_rule()
     {
         level++;
         Object _res = null;
@@ -17314,7 +17314,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_37: ','
-    private SSTNode _tmp_37_rule()
+    public SSTNode _tmp_37_rule()
     {
         level++;
         int _mark = mark();
@@ -17350,7 +17350,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_39: ',' import_from_as_name
-    private SSTNode[] _loop0_39_rule()
+    public SSTNode[] _loop0_39_rule()
     {
         level++;
         Object _res = null;
@@ -17393,7 +17393,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_38: import_from_as_name _loop0_39
-    private SSTNode[] _gather_38_rule()
+    public SSTNode[] _gather_38_rule()
     {
         level++;
         int _mark = mark();
@@ -17433,7 +17433,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_40: 'as' NAME
-    private SSTNode _tmp_40_rule()
+    public SSTNode _tmp_40_rule()
     {
         level++;
         int _mark = mark();
@@ -17472,7 +17472,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_42: ',' dotted_as_name
-    private SSTNode[] _loop0_42_rule()
+    public SSTNode[] _loop0_42_rule()
     {
         level++;
         Object _res = null;
@@ -17515,7 +17515,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_41: dotted_as_name _loop0_42
-    private SSTNode[] _gather_41_rule()
+    public SSTNode[] _gather_41_rule()
     {
         level++;
         int _mark = mark();
@@ -17555,7 +17555,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_43: 'as' NAME
-    private SSTNode _tmp_43_rule()
+    public SSTNode _tmp_43_rule()
     {
         level++;
         int _mark = mark();
@@ -17594,7 +17594,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_44: else_block
-    private SSTNode _tmp_44_rule()
+    public SSTNode _tmp_44_rule()
     {
         level++;
         int _mark = mark();
@@ -17630,7 +17630,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_45: else_block
-    private SSTNode _tmp_45_rule()
+    public SSTNode _tmp_45_rule()
     {
         level++;
         int _mark = mark();
@@ -17666,7 +17666,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_46: else_block
-    private SSTNode _tmp_46_rule()
+    public SSTNode _tmp_46_rule()
     {
         level++;
         int _mark = mark();
@@ -17702,7 +17702,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_47: TYPE_COMMENT
-    private SSTNode _tmp_47_rule()
+    public SSTNode _tmp_47_rule()
     {
         level++;
         int _mark = mark();
@@ -17738,7 +17738,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_48: else_block
-    private SSTNode _tmp_48_rule()
+    public SSTNode _tmp_48_rule()
     {
         level++;
         int _mark = mark();
@@ -17774,7 +17774,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_49: TYPE_COMMENT
-    private SSTNode _tmp_49_rule()
+    public SSTNode _tmp_49_rule()
     {
         level++;
         int _mark = mark();
@@ -17810,7 +17810,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_50: else_block
-    private SSTNode _tmp_50_rule()
+    public SSTNode _tmp_50_rule()
     {
         level++;
         int _mark = mark();
@@ -17846,7 +17846,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_52: ',' with_item
-    private SSTNode[] _loop0_52_rule()
+    public SSTNode[] _loop0_52_rule()
     {
         level++;
         Object _res = null;
@@ -17889,7 +17889,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_51: with_item _loop0_52
-    private SSTNode[] _gather_51_rule()
+    public SSTNode[] _gather_51_rule()
     {
         level++;
         int _mark = mark();
@@ -17929,7 +17929,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_54: ',' with_item
-    private SSTNode[] _loop0_54_rule()
+    public SSTNode[] _loop0_54_rule()
     {
         level++;
         Object _res = null;
@@ -17972,7 +17972,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_53: with_item _loop0_54
-    private SSTNode[] _gather_53_rule()
+    public SSTNode[] _gather_53_rule()
     {
         level++;
         int _mark = mark();
@@ -18012,7 +18012,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_55: TYPE_COMMENT
-    private SSTNode _tmp_55_rule()
+    public SSTNode _tmp_55_rule()
     {
         level++;
         int _mark = mark();
@@ -18048,7 +18048,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_57: ',' with_item
-    private SSTNode[] _loop0_57_rule()
+    public SSTNode[] _loop0_57_rule()
     {
         level++;
         Object _res = null;
@@ -18091,7 +18091,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_56: with_item _loop0_57
-    private SSTNode[] _gather_56_rule()
+    public SSTNode[] _gather_56_rule()
     {
         level++;
         int _mark = mark();
@@ -18131,7 +18131,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_59: ',' with_item
-    private SSTNode[] _loop0_59_rule()
+    public SSTNode[] _loop0_59_rule()
     {
         level++;
         Object _res = null;
@@ -18174,7 +18174,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_58: with_item _loop0_59
-    private SSTNode[] _gather_58_rule()
+    public SSTNode[] _gather_58_rule()
     {
         level++;
         int _mark = mark();
@@ -18214,7 +18214,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_60: TYPE_COMMENT
-    private SSTNode _tmp_60_rule()
+    public SSTNode _tmp_60_rule()
     {
         level++;
         int _mark = mark();
@@ -18250,7 +18250,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_61: ',' | ')' | ':'
-    private SSTNode _tmp_61_rule()
+    public SSTNode _tmp_61_rule()
     {
         level++;
         int _mark = mark();
@@ -18322,7 +18322,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_62: except_block
-    private SSTNode[] _loop1_62_rule()
+    public SSTNode[] _loop1_62_rule()
     {
         level++;
         Object _res = null;
@@ -18365,7 +18365,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_63: else_block
-    private SSTNode _tmp_63_rule()
+    public SSTNode _tmp_63_rule()
     {
         level++;
         int _mark = mark();
@@ -18401,7 +18401,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_64: finally_block
-    private SSTNode _tmp_64_rule()
+    public SSTNode _tmp_64_rule()
     {
         level++;
         int _mark = mark();
@@ -18437,7 +18437,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_65: 'as' NAME
-    private SSTNode _tmp_65_rule()
+    public SSTNode _tmp_65_rule()
     {
         level++;
         int _mark = mark();
@@ -18476,7 +18476,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_66: case_block
-    private SSTNode[] _loop1_66_rule()
+    public SSTNode[] _loop1_66_rule()
     {
         level++;
         Object _res = null;
@@ -18519,7 +18519,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_68: '|' closed_pattern
-    private SSTNode[] _loop0_68_rule()
+    public SSTNode[] _loop0_68_rule()
     {
         level++;
         Object _res = null;
@@ -18560,7 +18560,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_67: closed_pattern _loop0_68
-    private SSTNode[] _gather_67_rule()
+    public SSTNode[] _gather_67_rule()
     {
         level++;
         int _mark = mark();
@@ -18598,7 +18598,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_69: '+' | '-'
-    private SSTNode _tmp_69_rule()
+    public SSTNode _tmp_69_rule()
     {
         level++;
         int _mark = mark();
@@ -18652,7 +18652,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_70: '.' | '(' | '='
-    private SSTNode _tmp_70_rule()
+    public SSTNode _tmp_70_rule()
     {
         level++;
         int _mark = mark();
@@ -18724,7 +18724,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_71: '.' | '(' | '='
-    private SSTNode _tmp_71_rule()
+    public SSTNode _tmp_71_rule()
     {
         level++;
         int _mark = mark();
@@ -18796,7 +18796,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_73: ',' maybe_star_pattern
-    private SSTNode[] _loop0_73_rule()
+    public SSTNode[] _loop0_73_rule()
     {
         level++;
         Object _res = null;
@@ -18837,7 +18837,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_72: maybe_star_pattern _loop0_73
-    private SSTNode[] _gather_72_rule()
+    public SSTNode[] _gather_72_rule()
     {
         level++;
         int _mark = mark();
@@ -18875,7 +18875,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_74: capture_pattern | wildcard_pattern
-    private SSTNode _tmp_74_rule()
+    public SSTNode _tmp_74_rule()
     {
         level++;
         int _mark = mark();
@@ -18929,7 +18929,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_76: ',' key_value_pattern
-    private SSTNode[] _loop0_76_rule()
+    public SSTNode[] _loop0_76_rule()
     {
         level++;
         Object _res = null;
@@ -18972,7 +18972,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_75: key_value_pattern _loop0_76
-    private SSTNode[] _gather_75_rule()
+    public SSTNode[] _gather_75_rule()
     {
         level++;
         int _mark = mark();
@@ -19012,7 +19012,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_77: literal_pattern | value_pattern
-    private SSTNode _tmp_77_rule()
+    public SSTNode _tmp_77_rule()
     {
         level++;
         int _mark = mark();
@@ -19066,7 +19066,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_79: ',' pattern
-    private SSTNode[] _loop0_79_rule()
+    public SSTNode[] _loop0_79_rule()
     {
         level++;
         Object _res = null;
@@ -19107,7 +19107,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_78: pattern _loop0_79
-    private SSTNode[] _gather_78_rule()
+    public SSTNode[] _gather_78_rule()
     {
         level++;
         int _mark = mark();
@@ -19145,7 +19145,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_81: ',' keyword_pattern
-    private SSTNode[] _loop0_81_rule()
+    public SSTNode[] _loop0_81_rule()
     {
         level++;
         Object _res = null;
@@ -19188,7 +19188,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_80: keyword_pattern _loop0_81
-    private SSTNode[] _gather_80_rule()
+    public SSTNode[] _gather_80_rule()
     {
         level++;
         int _mark = mark();
@@ -19228,7 +19228,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_82: star_expressions
-    private SSTNode _tmp_82_rule()
+    public SSTNode _tmp_82_rule()
     {
         level++;
         int _mark = mark();
@@ -19264,7 +19264,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_83: 'from' expression
-    private SSTNode _tmp_83_rule()
+    public SSTNode _tmp_83_rule()
     {
         level++;
         int _mark = mark();
@@ -19303,7 +19303,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_84: params
-    private SSTNode _tmp_84_rule()
+    public SSTNode _tmp_84_rule()
     {
         level++;
         int _mark = mark();
@@ -19341,7 +19341,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_85: '->' expression
-    private SSTNode _tmp_85_rule()
+    public SSTNode _tmp_85_rule()
     {
         level++;
         int _mark = mark();
@@ -19380,7 +19380,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_86: func_type_comment
-    private SSTNode _tmp_86_rule()
+    public SSTNode _tmp_86_rule()
     {
         level++;
         int _mark = mark();
@@ -19418,7 +19418,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_87: params
-    private SSTNode _tmp_87_rule()
+    public SSTNode _tmp_87_rule()
     {
         level++;
         int _mark = mark();
@@ -19456,7 +19456,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_88: '->' expression
-    private SSTNode _tmp_88_rule()
+    public SSTNode _tmp_88_rule()
     {
         level++;
         int _mark = mark();
@@ -19495,7 +19495,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_89: func_type_comment
-    private SSTNode _tmp_89_rule()
+    public SSTNode _tmp_89_rule()
     {
         level++;
         int _mark = mark();
@@ -19533,7 +19533,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_90: NEWLINE INDENT
-    private SSTNode _tmp_90_rule()
+    public SSTNode _tmp_90_rule()
     {
         level++;
         int _mark = mark();
@@ -19572,7 +19572,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_91: param_no_default
-    private SSTNode[] _loop0_91_rule()
+    public SSTNode[] _loop0_91_rule()
     {
         level++;
         Object _res = null;
@@ -19611,7 +19611,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_92: param_with_default
-    private SSTNode[] _loop0_92_rule()
+    public SSTNode[] _loop0_92_rule()
     {
         level++;
         Object _res = null;
@@ -19650,7 +19650,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_93: star_etc
-    private SSTNode _tmp_93_rule()
+    public SSTNode _tmp_93_rule()
     {
         level++;
         int _mark = mark();
@@ -19688,7 +19688,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_94: param_with_default
-    private SSTNode[] _loop0_94_rule()
+    public SSTNode[] _loop0_94_rule()
     {
         level++;
         Object _res = null;
@@ -19727,7 +19727,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_95: star_etc
-    private SSTNode _tmp_95_rule()
+    public SSTNode _tmp_95_rule()
     {
         level++;
         int _mark = mark();
@@ -19765,7 +19765,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_96: param_no_default
-    private SSTNode[] _loop1_96_rule()
+    public SSTNode[] _loop1_96_rule()
     {
         level++;
         Object _res = null;
@@ -19808,7 +19808,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_97: param_with_default
-    private SSTNode[] _loop0_97_rule()
+    public SSTNode[] _loop0_97_rule()
     {
         level++;
         Object _res = null;
@@ -19847,7 +19847,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_98: star_etc
-    private SSTNode _tmp_98_rule()
+    public SSTNode _tmp_98_rule()
     {
         level++;
         int _mark = mark();
@@ -19885,7 +19885,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_99: param_with_default
-    private SSTNode[] _loop1_99_rule()
+    public SSTNode[] _loop1_99_rule()
     {
         level++;
         Object _res = null;
@@ -19928,7 +19928,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_100: star_etc
-    private SSTNode _tmp_100_rule()
+    public SSTNode _tmp_100_rule()
     {
         level++;
         int _mark = mark();
@@ -19966,7 +19966,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_101: param_no_default
-    private SSTNode[] _loop1_101_rule()
+    public SSTNode[] _loop1_101_rule()
     {
         level++;
         Object _res = null;
@@ -20009,7 +20009,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_102: param_no_default
-    private SSTNode[] _loop1_102_rule()
+    public SSTNode[] _loop1_102_rule()
     {
         level++;
         Object _res = null;
@@ -20052,7 +20052,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_103: param_no_default
-    private SSTNode[] _loop0_103_rule()
+    public SSTNode[] _loop0_103_rule()
     {
         level++;
         Object _res = null;
@@ -20091,7 +20091,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_104: param_with_default
-    private SSTNode[] _loop1_104_rule()
+    public SSTNode[] _loop1_104_rule()
     {
         level++;
         Object _res = null;
@@ -20134,7 +20134,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_105: param_no_default
-    private SSTNode[] _loop0_105_rule()
+    public SSTNode[] _loop0_105_rule()
     {
         level++;
         Object _res = null;
@@ -20173,7 +20173,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_106: param_with_default
-    private SSTNode[] _loop1_106_rule()
+    public SSTNode[] _loop1_106_rule()
     {
         level++;
         Object _res = null;
@@ -20216,7 +20216,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_107: param_maybe_default
-    private SSTNode[] _loop0_107_rule()
+    public SSTNode[] _loop0_107_rule()
     {
         level++;
         Object _res = null;
@@ -20255,7 +20255,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_108: kwds
-    private SSTNode _tmp_108_rule()
+    public SSTNode _tmp_108_rule()
     {
         level++;
         int _mark = mark();
@@ -20293,7 +20293,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_109: param_maybe_default
-    private SSTNode[] _loop1_109_rule()
+    public SSTNode[] _loop1_109_rule()
     {
         level++;
         Object _res = null;
@@ -20336,7 +20336,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_110: kwds
-    private SSTNode _tmp_110_rule()
+    public SSTNode _tmp_110_rule()
     {
         level++;
         int _mark = mark();
@@ -20374,7 +20374,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_111: ('@' named_expression NEWLINE)
-    private SSTNode[] _loop1_111_rule()
+    public SSTNode[] _loop1_111_rule()
     {
         level++;
         Object _res = null;
@@ -20415,7 +20415,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_112: '(' arguments? ')'
-    private SSTNode _tmp_112_rule()
+    public SSTNode _tmp_112_rule()
     {
         level++;
         int _mark = mark();
@@ -20457,7 +20457,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_113: (',' star_expression)
-    private SSTNode[] _loop1_113_rule()
+    public SSTNode[] _loop1_113_rule()
     {
         level++;
         Object _res = null;
@@ -20498,7 +20498,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_114: ','
-    private SSTNode _tmp_114_rule()
+    public SSTNode _tmp_114_rule()
     {
         level++;
         int _mark = mark();
@@ -20534,7 +20534,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_116: ',' star_named_expression
-    private SSTNode[] _loop0_116_rule()
+    public SSTNode[] _loop0_116_rule()
     {
         level++;
         Object _res = null;
@@ -20575,7 +20575,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_115: star_named_expression _loop0_116
-    private SSTNode[] _gather_115_rule()
+    public SSTNode[] _gather_115_rule()
     {
         level++;
         int _mark = mark();
@@ -20613,7 +20613,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_117: ','
-    private SSTNode _tmp_117_rule()
+    public SSTNode _tmp_117_rule()
     {
         level++;
         int _mark = mark();
@@ -20649,7 +20649,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_118: (',' expression)
-    private SSTNode[] _loop1_118_rule()
+    public SSTNode[] _loop1_118_rule()
     {
         level++;
         Object _res = null;
@@ -20690,7 +20690,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_119: ','
-    private SSTNode _tmp_119_rule()
+    public SSTNode _tmp_119_rule()
     {
         level++;
         int _mark = mark();
@@ -20726,7 +20726,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_120: lambda_params
-    private SSTNode _tmp_120_rule()
+    public SSTNode _tmp_120_rule()
     {
         level++;
         int _mark = mark();
@@ -20764,7 +20764,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_121: lambda_param_no_default
-    private SSTNode[] _loop0_121_rule()
+    public SSTNode[] _loop0_121_rule()
     {
         level++;
         Object _res = null;
@@ -20803,7 +20803,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_122: lambda_param_with_default
-    private SSTNode[] _loop0_122_rule()
+    public SSTNode[] _loop0_122_rule()
     {
         level++;
         Object _res = null;
@@ -20842,7 +20842,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_123: lambda_star_etc
-    private SSTNode _tmp_123_rule()
+    public SSTNode _tmp_123_rule()
     {
         level++;
         int _mark = mark();
@@ -20880,7 +20880,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_124: lambda_param_with_default
-    private SSTNode[] _loop0_124_rule()
+    public SSTNode[] _loop0_124_rule()
     {
         level++;
         Object _res = null;
@@ -20919,7 +20919,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_125: lambda_star_etc
-    private SSTNode _tmp_125_rule()
+    public SSTNode _tmp_125_rule()
     {
         level++;
         int _mark = mark();
@@ -20957,7 +20957,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_126: lambda_param_no_default
-    private SSTNode[] _loop1_126_rule()
+    public SSTNode[] _loop1_126_rule()
     {
         level++;
         Object _res = null;
@@ -21000,7 +21000,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_127: lambda_param_with_default
-    private SSTNode[] _loop0_127_rule()
+    public SSTNode[] _loop0_127_rule()
     {
         level++;
         Object _res = null;
@@ -21039,7 +21039,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_128: lambda_star_etc
-    private SSTNode _tmp_128_rule()
+    public SSTNode _tmp_128_rule()
     {
         level++;
         int _mark = mark();
@@ -21077,7 +21077,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_129: lambda_param_with_default
-    private SSTNode[] _loop1_129_rule()
+    public SSTNode[] _loop1_129_rule()
     {
         level++;
         Object _res = null;
@@ -21120,7 +21120,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_130: lambda_star_etc
-    private SSTNode _tmp_130_rule()
+    public SSTNode _tmp_130_rule()
     {
         level++;
         int _mark = mark();
@@ -21158,7 +21158,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_131: lambda_param_no_default
-    private SSTNode[] _loop1_131_rule()
+    public SSTNode[] _loop1_131_rule()
     {
         level++;
         Object _res = null;
@@ -21201,7 +21201,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_132: lambda_param_no_default
-    private SSTNode[] _loop1_132_rule()
+    public SSTNode[] _loop1_132_rule()
     {
         level++;
         Object _res = null;
@@ -21244,7 +21244,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_133: lambda_param_no_default
-    private SSTNode[] _loop0_133_rule()
+    public SSTNode[] _loop0_133_rule()
     {
         level++;
         Object _res = null;
@@ -21283,7 +21283,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_134: lambda_param_with_default
-    private SSTNode[] _loop1_134_rule()
+    public SSTNode[] _loop1_134_rule()
     {
         level++;
         Object _res = null;
@@ -21326,7 +21326,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_135: lambda_param_no_default
-    private SSTNode[] _loop0_135_rule()
+    public SSTNode[] _loop0_135_rule()
     {
         level++;
         Object _res = null;
@@ -21365,7 +21365,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_136: lambda_param_with_default
-    private SSTNode[] _loop1_136_rule()
+    public SSTNode[] _loop1_136_rule()
     {
         level++;
         Object _res = null;
@@ -21408,7 +21408,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_137: lambda_param_maybe_default
-    private SSTNode[] _loop0_137_rule()
+    public SSTNode[] _loop0_137_rule()
     {
         level++;
         Object _res = null;
@@ -21447,7 +21447,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_138: lambda_kwds
-    private SSTNode _tmp_138_rule()
+    public SSTNode _tmp_138_rule()
     {
         level++;
         int _mark = mark();
@@ -21485,7 +21485,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_139: lambda_param_maybe_default
-    private SSTNode[] _loop1_139_rule()
+    public SSTNode[] _loop1_139_rule()
     {
         level++;
         Object _res = null;
@@ -21528,7 +21528,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_140: lambda_kwds
-    private SSTNode _tmp_140_rule()
+    public SSTNode _tmp_140_rule()
     {
         level++;
         int _mark = mark();
@@ -21566,7 +21566,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_141: ('or' conjunction)
-    private SSTNode[] _loop1_141_rule()
+    public SSTNode[] _loop1_141_rule()
     {
         level++;
         Object _res = null;
@@ -21607,7 +21607,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_142: ('and' inversion)
-    private SSTNode[] _loop1_142_rule()
+    public SSTNode[] _loop1_142_rule()
     {
         level++;
         Object _res = null;
@@ -21648,7 +21648,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_143: compare_op_bitwise_or_pair
-    private SSTNode[] _loop1_143_rule()
+    public SSTNode[] _loop1_143_rule()
     {
         level++;
         Object _res = null;
@@ -21689,7 +21689,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_144: '!='
-    private SSTNode _tmp_144_rule()
+    public SSTNode _tmp_144_rule()
     {
         level++;
         int _mark = mark();
@@ -21726,7 +21726,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_145: arguments
-    private SSTNode _tmp_145_rule()
+    public SSTNode _tmp_145_rule()
     {
         level++;
         int _mark = mark();
@@ -21762,7 +21762,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_147: ',' slice
-    private SSTNode[] _loop0_147_rule()
+    public SSTNode[] _loop0_147_rule()
     {
         level++;
         Object _res = null;
@@ -21803,7 +21803,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_146: slice _loop0_147
-    private SSTNode[] _gather_146_rule()
+    public SSTNode[] _gather_146_rule()
     {
         level++;
         int _mark = mark();
@@ -21841,7 +21841,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_148: ','
-    private SSTNode _tmp_148_rule()
+    public SSTNode _tmp_148_rule()
     {
         level++;
         int _mark = mark();
@@ -21877,7 +21877,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_149: expression
-    private SSTNode _tmp_149_rule()
+    public SSTNode _tmp_149_rule()
     {
         level++;
         int _mark = mark();
@@ -21913,7 +21913,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_150: expression
-    private SSTNode _tmp_150_rule()
+    public SSTNode _tmp_150_rule()
     {
         level++;
         int _mark = mark();
@@ -21949,7 +21949,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_151: ':' expression?
-    private SSTNode _tmp_151_rule()
+    public SSTNode _tmp_151_rule()
     {
         level++;
         int _mark = mark();
@@ -21988,7 +21988,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_152: tuple | group | genexp
-    private SSTNode _tmp_152_rule()
+    public SSTNode _tmp_152_rule()
     {
         level++;
         int _mark = mark();
@@ -22060,7 +22060,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_153: list | listcomp
-    private SSTNode _tmp_153_rule()
+    public SSTNode _tmp_153_rule()
     {
         level++;
         int _mark = mark();
@@ -22114,7 +22114,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_154: dict | set | dictcomp | setcomp
-    private SSTNode _tmp_154_rule()
+    public SSTNode _tmp_154_rule()
     {
         level++;
         int _mark = mark();
@@ -22204,7 +22204,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_155: STRING
-    private SSTNode[] _loop1_155_rule()
+    public SSTNode[] _loop1_155_rule()
     {
         level++;
         Object _res = null;
@@ -22245,7 +22245,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_156: star_named_expressions
-    private SSTNode _tmp_156_rule()
+    public SSTNode _tmp_156_rule()
     {
         level++;
         int _mark = mark();
@@ -22283,7 +22283,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_157: star_named_expression ',' star_named_expressions?
-    private SSTNode _tmp_157_rule()
+    public SSTNode _tmp_157_rule()
     {
         level++;
         int _mark = mark();
@@ -22326,7 +22326,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_158: yield_expr | named_expression
-    private SSTNode _tmp_158_rule()
+    public SSTNode _tmp_158_rule()
     {
         level++;
         int _mark = mark();
@@ -22380,7 +22380,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_159: double_starred_kvpairs
-    private SSTNode _tmp_159_rule()
+    public SSTNode _tmp_159_rule()
     {
         level++;
         int _mark = mark();
@@ -22418,7 +22418,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_161: ',' double_starred_kvpair
-    private SSTNode[] _loop0_161_rule()
+    public SSTNode[] _loop0_161_rule()
     {
         level++;
         Object _res = null;
@@ -22461,7 +22461,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_160: double_starred_kvpair _loop0_161
-    private SSTNode[] _gather_160_rule()
+    public SSTNode[] _gather_160_rule()
     {
         level++;
         int _mark = mark();
@@ -22501,7 +22501,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_162: ','
-    private SSTNode _tmp_162_rule()
+    public SSTNode _tmp_162_rule()
     {
         level++;
         int _mark = mark();
@@ -22537,7 +22537,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_163: for_if_clause
-    private SSTNode[] _loop1_163_rule()
+    public SSTNode[] _loop1_163_rule()
     {
         level++;
         Object _res = null;
@@ -22580,7 +22580,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_164: ('if' disjunction)
-    private SSTNode[] _loop0_164_rule()
+    public SSTNode[] _loop0_164_rule()
     {
         level++;
         Object _res = null;
@@ -22617,7 +22617,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_165: ('if' disjunction)
-    private SSTNode[] _loop0_165_rule()
+    public SSTNode[] _loop0_165_rule()
     {
         level++;
         Object _res = null;
@@ -22654,7 +22654,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_166: star_expressions
-    private SSTNode _tmp_166_rule()
+    public SSTNode _tmp_166_rule()
     {
         level++;
         int _mark = mark();
@@ -22690,7 +22690,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_167: ','
-    private SSTNode _tmp_167_rule()
+    public SSTNode _tmp_167_rule()
     {
         level++;
         int _mark = mark();
@@ -22726,7 +22726,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_169: ',' (starred_expression | direct_named_expression !'=')
-    private SSTNode[] _loop0_169_rule()
+    public SSTNode[] _loop0_169_rule()
     {
         level++;
         Object _res = null;
@@ -22767,7 +22767,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_168: (starred_expression | direct_named_expression !'=') _loop0_169
-    private SSTNode[] _gather_168_rule()
+    public SSTNode[] _gather_168_rule()
     {
         level++;
         int _mark = mark();
@@ -22805,7 +22805,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_170: ',' kwargs
-    private SSTNode _tmp_170_rule()
+    public SSTNode _tmp_170_rule()
     {
         level++;
         int _mark = mark();
@@ -22846,7 +22846,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_172: ',' kwarg_or_starred
-    private SSTNode[] _loop0_172_rule()
+    public SSTNode[] _loop0_172_rule()
     {
         level++;
         Object _res = null;
@@ -22889,7 +22889,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_171: kwarg_or_starred _loop0_172
-    private SSTNode[] _gather_171_rule()
+    public SSTNode[] _gather_171_rule()
     {
         level++;
         int _mark = mark();
@@ -22929,7 +22929,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_174: ',' kwarg_or_double_starred
-    private SSTNode[] _loop0_174_rule()
+    public SSTNode[] _loop0_174_rule()
     {
         level++;
         Object _res = null;
@@ -22972,7 +22972,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_173: kwarg_or_double_starred _loop0_174
-    private SSTNode[] _gather_173_rule()
+    public SSTNode[] _gather_173_rule()
     {
         level++;
         int _mark = mark();
@@ -23012,7 +23012,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_176: ',' kwarg_or_starred
-    private SSTNode[] _loop0_176_rule()
+    public SSTNode[] _loop0_176_rule()
     {
         level++;
         Object _res = null;
@@ -23055,7 +23055,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_175: kwarg_or_starred _loop0_176
-    private SSTNode[] _gather_175_rule()
+    public SSTNode[] _gather_175_rule()
     {
         level++;
         int _mark = mark();
@@ -23095,7 +23095,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_178: ',' kwarg_or_double_starred
-    private SSTNode[] _loop0_178_rule()
+    public SSTNode[] _loop0_178_rule()
     {
         level++;
         Object _res = null;
@@ -23138,7 +23138,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_177: kwarg_or_double_starred _loop0_178
-    private SSTNode[] _gather_177_rule()
+    public SSTNode[] _gather_177_rule()
     {
         level++;
         int _mark = mark();
@@ -23178,7 +23178,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_179: (',' star_target)
-    private SSTNode[] _loop0_179_rule()
+    public SSTNode[] _loop0_179_rule()
     {
         level++;
         Object _res = null;
@@ -23215,7 +23215,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_180: ','
-    private SSTNode _tmp_180_rule()
+    public SSTNode _tmp_180_rule()
     {
         level++;
         int _mark = mark();
@@ -23251,7 +23251,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_182: ',' star_target
-    private SSTNode[] _loop0_182_rule()
+    public SSTNode[] _loop0_182_rule()
     {
         level++;
         Object _res = null;
@@ -23292,7 +23292,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_181: star_target _loop0_182
-    private SSTNode[] _gather_181_rule()
+    public SSTNode[] _gather_181_rule()
     {
         level++;
         int _mark = mark();
@@ -23330,7 +23330,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_183: ','
-    private SSTNode _tmp_183_rule()
+    public SSTNode _tmp_183_rule()
     {
         level++;
         int _mark = mark();
@@ -23366,7 +23366,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_184: (',' star_target)
-    private SSTNode[] _loop1_184_rule()
+    public SSTNode[] _loop1_184_rule()
     {
         level++;
         Object _res = null;
@@ -23407,7 +23407,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_185: ','
-    private SSTNode _tmp_185_rule()
+    public SSTNode _tmp_185_rule()
     {
         level++;
         int _mark = mark();
@@ -23443,7 +23443,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_186: !'*' star_target
-    private SSTNode _tmp_186_rule()
+    public SSTNode _tmp_186_rule()
     {
         level++;
         int _mark = mark();
@@ -23481,7 +23481,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_187: star_targets_tuple_seq
-    private SSTNode _tmp_187_rule()
+    public SSTNode _tmp_187_rule()
     {
         level++;
         int _mark = mark();
@@ -23519,7 +23519,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_188: star_targets_list_seq
-    private SSTNode _tmp_188_rule()
+    public SSTNode _tmp_188_rule()
     {
         level++;
         int _mark = mark();
@@ -23557,7 +23557,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_190: ',' del_target
-    private SSTNode[] _loop0_190_rule()
+    public SSTNode[] _loop0_190_rule()
     {
         level++;
         Object _res = null;
@@ -23598,7 +23598,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_189: del_target _loop0_190
-    private SSTNode[] _gather_189_rule()
+    public SSTNode[] _gather_189_rule()
     {
         level++;
         int _mark = mark();
@@ -23636,7 +23636,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_191: ','
-    private SSTNode _tmp_191_rule()
+    public SSTNode _tmp_191_rule()
     {
         level++;
         int _mark = mark();
@@ -23672,7 +23672,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_192: del_targets
-    private SSTNode _tmp_192_rule()
+    public SSTNode _tmp_192_rule()
     {
         level++;
         int _mark = mark();
@@ -23710,7 +23710,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_193: del_targets
-    private SSTNode _tmp_193_rule()
+    public SSTNode _tmp_193_rule()
     {
         level++;
         int _mark = mark();
@@ -23748,7 +23748,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_195: ',' target
-    private SSTNode[] _loop0_195_rule()
+    public SSTNode[] _loop0_195_rule()
     {
         level++;
         Object _res = null;
@@ -23789,7 +23789,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_194: target _loop0_195
-    private SSTNode[] _gather_194_rule()
+    public SSTNode[] _gather_194_rule()
     {
         level++;
         int _mark = mark();
@@ -23827,7 +23827,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_196: ','
-    private SSTNode _tmp_196_rule()
+    public SSTNode _tmp_196_rule()
     {
         level++;
         int _mark = mark();
@@ -23863,7 +23863,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_197: arguments
-    private SSTNode _tmp_197_rule()
+    public SSTNode _tmp_197_rule()
     {
         level++;
         int _mark = mark();
@@ -23899,7 +23899,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_198: targets
-    private SSTNode _tmp_198_rule()
+    public SSTNode _tmp_198_rule()
     {
         level++;
         int _mark = mark();
@@ -23937,7 +23937,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_199: targets
-    private SSTNode _tmp_199_rule()
+    public SSTNode _tmp_199_rule()
     {
         level++;
         int _mark = mark();
@@ -23975,7 +23975,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_200: args | expression for_if_clauses
-    private SSTNode _tmp_200_rule()
+    public SSTNode _tmp_200_rule()
     {
         level++;
         int _mark = mark();
@@ -24034,7 +24034,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_201: NAME STRING | SOFT_KEYWORD
-    private SSTNode _tmp_201_rule()
+    public SSTNode _tmp_201_rule()
     {
         level++;
         int _mark = mark();
@@ -24091,7 +24091,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_202: '=' | ':=' | ','
-    private SSTNode _tmp_202_rule()
+    public SSTNode _tmp_202_rule()
     {
         level++;
         int _mark = mark();
@@ -24163,7 +24163,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_203: list | tuple | genexp | 'True' | 'None' | 'False'
-    private SSTNode _tmp_203_rule()
+    public SSTNode _tmp_203_rule()
     {
         level++;
         int _mark = mark();
@@ -24289,7 +24289,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_204: '=' | ':=' | ','
-    private SSTNode _tmp_204_rule()
+    public SSTNode _tmp_204_rule()
     {
         level++;
         int _mark = mark();
@@ -24361,7 +24361,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_205: star_named_expressions
-    private SSTNode[] _loop0_205_rule()
+    public SSTNode[] _loop0_205_rule()
     {
         level++;
         Object _res = null;
@@ -24400,7 +24400,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_206: (star_targets '=')
-    private SSTNode[] _loop0_206_rule()
+    public SSTNode[] _loop0_206_rule()
     {
         level++;
         Object _res = null;
@@ -24437,7 +24437,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_207: (star_targets '=')
-    private SSTNode[] _loop0_207_rule()
+    public SSTNode[] _loop0_207_rule()
     {
         level++;
         Object _res = null;
@@ -24474,7 +24474,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_208: yield_expr | star_expressions
-    private SSTNode _tmp_208_rule()
+    public SSTNode _tmp_208_rule()
     {
         level++;
         int _mark = mark();
@@ -24528,7 +24528,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_209: '[' | '(' | '{'
-    private SSTNode _tmp_209_rule()
+    public SSTNode _tmp_209_rule()
     {
         level++;
         int _mark = mark();
@@ -24600,7 +24600,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_210: '[' | '{'
-    private SSTNode _tmp_210_rule()
+    public SSTNode _tmp_210_rule()
     {
         level++;
         int _mark = mark();
@@ -24654,7 +24654,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_211: star_named_expressions
-    private SSTNode _tmp_211_rule()
+    public SSTNode _tmp_211_rule()
     {
         level++;
         int _mark = mark();
@@ -24692,7 +24692,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_212: param_no_default
-    private SSTNode[] _loop0_212_rule()
+    public SSTNode[] _loop0_212_rule()
     {
         level++;
         Object _res = null;
@@ -24731,7 +24731,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_213: param_with_default
-    private SSTNode[] _loop1_213_rule()
+    public SSTNode[] _loop1_213_rule()
     {
         level++;
         Object _res = null;
@@ -24774,7 +24774,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_214: lambda_param_no_default
-    private SSTNode[] _loop0_214_rule()
+    public SSTNode[] _loop0_214_rule()
     {
         level++;
         Object _res = null;
@@ -24813,7 +24813,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_215: lambda_param_with_default
-    private SSTNode[] _loop1_215_rule()
+    public SSTNode[] _loop1_215_rule()
     {
         level++;
         Object _res = null;
@@ -24856,7 +24856,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_216: ')' | ',' (')' | '**')
-    private SSTNode _tmp_216_rule()
+    public SSTNode _tmp_216_rule()
     {
         level++;
         int _mark = mark();
@@ -24913,7 +24913,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_217: ':' | ',' (':' | '**')
-    private SSTNode _tmp_217_rule()
+    public SSTNode _tmp_217_rule()
     {
         level++;
         int _mark = mark();
@@ -24970,7 +24970,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_218: ',' | ')' | ':'
-    private SSTNode _tmp_218_rule()
+    public SSTNode _tmp_218_rule()
     {
         level++;
         int _mark = mark();
@@ -25042,7 +25042,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_219: ASYNC
-    private SSTNode _tmp_219_rule()
+    public SSTNode _tmp_219_rule()
     {
         level++;
         int _mark = mark();
@@ -25078,7 +25078,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_221: ',' (expression ['as' star_target])
-    private SSTNode[] _loop0_221_rule()
+    public SSTNode[] _loop0_221_rule()
     {
         level++;
         Object _res = null;
@@ -25119,7 +25119,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_220: (expression ['as' star_target]) _loop0_221
-    private SSTNode[] _gather_220_rule()
+    public SSTNode[] _gather_220_rule()
     {
         level++;
         int _mark = mark();
@@ -25157,7 +25157,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_222: ASYNC
-    private SSTNode _tmp_222_rule()
+    public SSTNode _tmp_222_rule()
     {
         level++;
         int _mark = mark();
@@ -25193,7 +25193,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_224: ',' (expressions ['as' star_target])
-    private SSTNode[] _loop0_224_rule()
+    public SSTNode[] _loop0_224_rule()
     {
         level++;
         Object _res = null;
@@ -25234,7 +25234,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_223: (expressions ['as' star_target]) _loop0_224
-    private SSTNode[] _gather_223_rule()
+    public SSTNode[] _gather_223_rule()
     {
         level++;
         int _mark = mark();
@@ -25272,7 +25272,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_225: 'as' NAME
-    private SSTNode _tmp_225_rule()
+    public SSTNode _tmp_225_rule()
     {
         level++;
         int _mark = mark();
@@ -25311,7 +25311,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_226: 'as' NAME
-    private SSTNode _tmp_226_rule()
+    public SSTNode _tmp_226_rule()
     {
         level++;
         int _mark = mark();
@@ -25350,7 +25350,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_228: ',' double_starred_kvpair
-    private SSTNode[] _loop0_228_rule()
+    public SSTNode[] _loop0_228_rule()
     {
         level++;
         Object _res = null;
@@ -25393,7 +25393,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _gather_227: double_starred_kvpair _loop0_228
-    private SSTNode[] _gather_227_rule()
+    public SSTNode[] _gather_227_rule()
     {
         level++;
         int _mark = mark();
@@ -25433,7 +25433,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_229: '}' | ','
-    private SSTNode _tmp_229_rule()
+    public SSTNode _tmp_229_rule()
     {
         level++;
         int _mark = mark();
@@ -25487,7 +25487,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_230: ':'
-    private SSTNode _tmp_230_rule()
+    public SSTNode _tmp_230_rule()
     {
         level++;
         int _mark = mark();
@@ -25523,7 +25523,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_231: star_targets '='
-    private SSTNode _tmp_231_rule()
+    public SSTNode _tmp_231_rule()
     {
         level++;
         int _mark = mark();
@@ -25562,7 +25562,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_232: '.' | '...'
-    private SSTNode _tmp_232_rule()
+    public SSTNode _tmp_232_rule()
     {
         level++;
         int _mark = mark();
@@ -25616,7 +25616,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_233: '.' | '...'
-    private SSTNode _tmp_233_rule()
+    public SSTNode _tmp_233_rule()
     {
         level++;
         int _mark = mark();
@@ -25670,7 +25670,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_234: '@' named_expression NEWLINE
-    private SSTNode _tmp_234_rule()
+    public SSTNode _tmp_234_rule()
     {
         level++;
         int _mark = mark();
@@ -25712,7 +25712,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_235: arguments
-    private SSTNode _tmp_235_rule()
+    public SSTNode _tmp_235_rule()
     {
         level++;
         int _mark = mark();
@@ -25748,7 +25748,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_236: ',' star_expression
-    private SSTNode _tmp_236_rule()
+    public SSTNode _tmp_236_rule()
     {
         level++;
         int _mark = mark();
@@ -25787,7 +25787,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_237: ',' expression
-    private SSTNode _tmp_237_rule()
+    public SSTNode _tmp_237_rule()
     {
         level++;
         int _mark = mark();
@@ -25826,7 +25826,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_238: 'or' conjunction
-    private SSTNode _tmp_238_rule()
+    public SSTNode _tmp_238_rule()
     {
         level++;
         int _mark = mark();
@@ -25865,7 +25865,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_239: 'and' inversion
-    private SSTNode _tmp_239_rule()
+    public SSTNode _tmp_239_rule()
     {
         level++;
         int _mark = mark();
@@ -25904,7 +25904,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_240: expression
-    private SSTNode _tmp_240_rule()
+    public SSTNode _tmp_240_rule()
     {
         level++;
         int _mark = mark();
@@ -25940,7 +25940,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_241: star_named_expressions
-    private SSTNode _tmp_241_rule()
+    public SSTNode _tmp_241_rule()
     {
         level++;
         int _mark = mark();
@@ -25978,7 +25978,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_242: 'if' disjunction
-    private SSTNode _tmp_242_rule()
+    public SSTNode _tmp_242_rule()
     {
         level++;
         int _mark = mark();
@@ -26017,7 +26017,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_243: 'if' disjunction
-    private SSTNode _tmp_243_rule()
+    public SSTNode _tmp_243_rule()
     {
         level++;
         int _mark = mark();
@@ -26056,7 +26056,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_244: starred_expression | direct_named_expression !'='
-    private SSTNode _tmp_244_rule()
+    public SSTNode _tmp_244_rule()
     {
         level++;
         int _mark = mark();
@@ -26112,7 +26112,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_245: ',' star_target
-    private SSTNode _tmp_245_rule()
+    public SSTNode _tmp_245_rule()
     {
         level++;
         int _mark = mark();
@@ -26151,7 +26151,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_246: ',' star_target
-    private SSTNode _tmp_246_rule()
+    public SSTNode _tmp_246_rule()
     {
         level++;
         int _mark = mark();
@@ -26190,7 +26190,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_247: star_targets '='
-    private SSTNode _tmp_247_rule()
+    public SSTNode _tmp_247_rule()
     {
         level++;
         int _mark = mark();
@@ -26229,7 +26229,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_248: star_targets '='
-    private SSTNode _tmp_248_rule()
+    public SSTNode _tmp_248_rule()
     {
         level++;
         int _mark = mark();
@@ -26268,7 +26268,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_249: ')' | '**'
-    private SSTNode _tmp_249_rule()
+    public SSTNode _tmp_249_rule()
     {
         level++;
         int _mark = mark();
@@ -26322,7 +26322,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_250: ':' | '**'
-    private SSTNode _tmp_250_rule()
+    public SSTNode _tmp_250_rule()
     {
         level++;
         int _mark = mark();
@@ -26376,7 +26376,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_251: expression ['as' star_target]
-    private SSTNode _tmp_251_rule()
+    public SSTNode _tmp_251_rule()
     {
         level++;
         int _mark = mark();
@@ -26415,7 +26415,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_252: expressions ['as' star_target]
-    private SSTNode _tmp_252_rule()
+    public SSTNode _tmp_252_rule()
     {
         level++;
         int _mark = mark();
@@ -26454,7 +26454,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_253: 'as' star_target
-    private SSTNode _tmp_253_rule()
+    public SSTNode _tmp_253_rule()
     {
         level++;
         int _mark = mark();
@@ -26493,7 +26493,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_254: 'as' star_target
-    private SSTNode _tmp_254_rule()
+    public SSTNode _tmp_254_rule()
     {
         level++;
         int _mark = mark();

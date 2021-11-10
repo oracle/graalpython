@@ -621,7 +621,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             # No need to declare in Java
             pass
 
-        self.print(f"private {result_type} {node.name}_rule()")
+        self.print(f"public {result_type} {node.name}_rule()")
 
         if node.left_recursive and node.leader:
             self._set_up_rule_memoization(node, result_type)
