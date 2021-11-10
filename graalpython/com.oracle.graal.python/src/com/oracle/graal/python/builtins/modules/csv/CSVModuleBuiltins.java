@@ -18,6 +18,8 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyDictGetItem;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -39,6 +41,9 @@ import java.util.List;
 
 @CoreFunctions(defineModule = "_csv")
 public class CSVModuleBuiltins extends PythonBuiltins {
+
+    static long fieldLimit = 128 * 1024; // max parsed field size
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CSVModuleBuiltinsFactory.getFactories();
@@ -68,7 +73,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             try {
                 name = nameNode.execute(nameObj);
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_STRING, "dialect name");
+                throw raise(TypeError, ErrorMessages.MUST_BE_STRING, "dialect name");
             }
 
             PythonModule module = getCore().lookupBuiltinModule("_csv");
@@ -149,6 +154,31 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             Object dialects = readNode.execute(module, "_dialects");
 
             return constructListNode.execute(frame, dialects);
+        }
+    }
+
+    @Builtin(name = "field_size_limit", parameterNames = {"limit"}, doc = "Sets an upper limit on parsed fields.\n" +
+            "csv.field_size_limit([limit])\n\n" +
+            "Returns old limit. If limit is not given, no new limit is set and\n" +
+            "the old limit is returned")
+    @GenerateNodeFactory
+    public abstract static class CSVFieldSizeLimitNode extends PythonBuiltinNode {
+        @Specialization
+        long getOrSetFieldSizeLimit(VirtualFrame frame, Object newLimit,
+                                    @Cached PyLongCheckExactNode checkIntNode,
+                                    @Cached PyLongAsLongNode castToLong) {
+
+            long oldLimit = fieldLimit;
+
+            if (newLimit != PNone.NO_VALUE) {
+                if (!PyLongCheckExactNode.getUncached().execute(newLimit)) {
+                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_INTEGER, "limit");
+                }
+
+                fieldLimit = castToLong.execute(frame, newLimit);
+            }
+
+            return oldLimit;
         }
     }
 

@@ -83,7 +83,7 @@
 __version__ = "1.0"
 
 QUOTE_MINIMAL, QUOTE_ALL, QUOTE_NONNUMERIC, QUOTE_NONE = range(4)
-_field_limit = 128 * 1024 # max parsed field size
+# _field_limit = 128 * 1024 # max parsed field size
 
 # class Error(Exception):
 #     pass
@@ -557,21 +557,21 @@ def writer(*args, **kwargs):
     return Writer(*args, **kwargs)
 
 
-undefined = object()
-def field_size_limit(limit=undefined):
-    """Sets an upper limit on parsed fields.
-    csv.field_size_limit([limit])
-
-    Returns old limit. If limit is not given, no new limit is set and
-    the old limit is returned"""
-
-    global _field_limit
-    old_limit = _field_limit
-    
-    if limit is not undefined:
-        if not isinstance(limit, int):
-            raise TypeError("int expected, got %s" %
-                            (limit.__class__.__name__,))
-        _field_limit = limit
-
-    return old_limit
+# undefined = object()
+# def field_size_limit(limit=undefined):
+#     """Sets an upper limit on parsed fields.
+#     csv.field_size_limit([limit])
+#
+#     Returns old limit. If limit is not given, no new limit is set and
+#     the old limit is returned"""
+#
+#     global _field_limit
+#     old_limit = _field_limit
+#
+#     if limit is not undefined:
+#         if not isinstance(limit, int):
+#             raise TypeError("int expected, got %s" %
+#                             (limit.__class__.__name__,))
+#         _field_limit = limit
+#
+#     return old_limit
