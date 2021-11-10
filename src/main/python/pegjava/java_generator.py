@@ -666,7 +666,9 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print(f"_res = {node_action};")
         else:
             self.print(f"// TODO: node.action: {node.action}")
-            self.print(f'debugMessageln("!!! TODO: Convert {node.action} to Java !!!");')
+            self.print(
+                f'''debugMessageln("!!! TODO: Convert {node.action.replace('"', "'")} to Java !!!");'''
+            )
             self.print(f"_res = null;")
 
         if self.debug:
