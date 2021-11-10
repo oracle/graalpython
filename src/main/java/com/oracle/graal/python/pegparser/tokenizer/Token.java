@@ -6,6 +6,9 @@
 package com.oracle.graal.python.pegparser.tokenizer;
 
 
+/**
+ * Kept close to CPython's token.c
+ */
 public class Token {
 
     public static final class Kind {
@@ -70,6 +73,77 @@ public class Token {
         public static final int TYPE_COMMENT = 58;
         public static final int SOFT_KEYWORD = 59;
         public static final int ERRORTOKEN = 60;
+        public static final int COMMENT = 61;
+        public static final int NL = 62;
+        public static final int ENCODING = 63;
+        public static final int N_TOKENS = 64;
+
+        public static final String[] TOKEN_NAMES = new String[]{
+            "ENDMARKER",
+            "NAME",
+            "NUMBER",
+            "STRING",
+            "NEWLINE",
+            "INDENT",
+            "DEDENT",
+            "LPAR",
+            "RPAR",
+            "LSQB",
+            "RSQB",
+            "COLON",
+            "COMMA",
+            "SEMI",
+            "PLUS",
+            "MINUS",
+            "STAR",
+            "SLASH",
+            "VBAR",
+            "AMPER",
+            "LESS",
+            "GREATER",
+            "EQUAL",
+            "DOT",
+            "PERCENT",
+            "LBRACE",
+            "RBRACE",
+            "EQEQUAL",
+            "NOTEQUAL",
+            "LESSEQUAL",
+            "GREATEREQUAL",
+            "TILDE",
+            "CIRCUMFLEX",
+            "LEFTSHIFT",
+            "RIGHTSHIFT",
+            "DOUBLESTAR",
+            "PLUSEQUAL",
+            "MINEQUAL",
+            "STAREQUAL",
+            "SLASHEQUAL",
+            "PERCENTEQUAL",
+            "AMPEREQUAL",
+            "VBAREQUAL",
+            "CIRCUMFLEXEQUAL",
+            "LEFTSHIFTEQUAL",
+            "RIGHTSHIFTEQUAL",
+            "DOUBLESTAREQUAL",
+            "DOUBLESLASH",
+            "DOUBLESLASHEQUAL",
+            "AT",
+            "ATEQUAL",
+            "RARROW",
+            "ELLIPSIS",
+            "COLONEQUAL",
+            "OP",
+            "AWAIT",
+            "ASYNC",
+            "TYPE_IGNORE",
+            "TYPE_COMMENT",
+            "SOFT_KEYWORD",
+            "<ERRORTOKEN>",
+            "<COMMENT>",
+            "<NL>",
+            "<ENCODING>"
+        };
     };
 
     public int type;
@@ -310,4 +384,7 @@ public class Token {
         return Kind.OP;
     }
 
+    public String typeName() {
+        return Kind.TOKEN_NAMES[type];
+    }
 }

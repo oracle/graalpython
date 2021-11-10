@@ -437,10 +437,10 @@ public class TokenizerTest {
                 boolean isOP = opTypes.contains(token.type);
                 StringBuffer sb = new StringBuffer();
                 sb.append("Token type:").append(isOP ? getCPythonValueOfTokenType(Token.Kind.OP) : getCPythonValueOfTokenType(token.type));
-                sb.append(" (").append(isOP ? Token.Kind.OP : token.type).append(") ");
+                sb.append(" (").append(isOP ? "OP" : token.typeName()).append(") ");
                 if (isOP) {
                     sb.append("exact_type:").append(getCPythonValueOfTokenType(token.type));
-                    sb.append(" (").append(token.type).append(") ");
+                    sb.append(" (").append(token.typeName()).append(") ");
                 }
                 sb.append("start:[").append(token.startLine).append(", ").append(token.startColumn).append("] ");
                 sb.append("end:[").append(token.endLine).append(", ").append(token.endColumn).append("] ");

@@ -1259,7 +1259,7 @@ public class Tokenizer {
     public String toString(Token token) {
         StringBuilder sb = new StringBuilder();
         sb.append("Token ");
-        sb.append(token.type);
+        sb.append(token.typeName());
         sb.append(" [").append(token.startOffset).append(", ").append(token.endOffset).append("]");
         sb.append(" (").append(token.startLine).append(", ").append(token.startColumn);
         sb.append(") (").append(token.endLine).append(", ").append(token.endColumn).append(") '");
