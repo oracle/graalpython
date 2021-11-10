@@ -1985,7 +1985,7 @@ public final class Parser extends AbstractParser {
                     level--;
                     return null;
                 }
-                _res = factory.createAnnAssignment(factory.createAnnotation(factory.createVariable(getText(a),a.startOffset,a.endOffset),b,a.startOffset,b.getEndOffset()),(SSTNode)c,startToken.startOffset,endToken.endOffset);//CHECK_VERSION(//stmt_ty,//6,//"Variableannotationsyntaxis",//_PyAST_AnnAssign(CHECK(expr_ty,_PyPegen_set_expr_context(p,a,Store)),b,c,1,EXTRA)//);
+                _res = factory.createAnnAssignment(factory.createAnnotation(a,b,a.getStartOffset(),b.getEndOffset()),(SSTNode)c,startToken.startOffset,endToken.endOffset);//CHECK_VERSION(//stmt_ty,//6,//"Variableannotationsyntaxis",//_PyAST_AnnAssign(CHECK(expr_ty,_PyPegen_set_expr_context(p,a,Store)),b,c,1,EXTRA)//);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME ':' expression ['=' annotated_rhs]");
                 cache.putResult(_mark, ASSIGNMENT_ID, _res);
                 level--;
@@ -2076,7 +2076,7 @@ public final class Parser extends AbstractParser {
                 // TODO replacing AugOperator* --> SSTNode[]
                 (b = augassign_rule()) != null  // augassign
                 &&
-                (_cut_var = 1) != null
+                (_cut_var = 1) != 0
                 &&
                 (c = _tmp_28_rule()) != null  // yield_expr | star_expressions
             )
@@ -3644,7 +3644,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (_keyword_1 = expect(518)) != null  // token='in'
                 &&
-                (_cut_var = 1) != null
+                (_cut_var = 1) != 0
                 &&
                 (ex = star_expressions_rule()) != null  // star_expressions
                 &&
@@ -3700,7 +3700,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (_keyword_1 = expect(518)) != null  // token='in'
                 &&
-                (_cut_var = 1) != null
+                (_cut_var = 1) != 0
                 &&
                 (ex = star_expressions_rule()) != null  // star_expressions
                 &&
@@ -4329,7 +4329,7 @@ public final class Parser extends AbstractParser {
         { // "match" subject_expr ':' NEWLINE INDENT case_block+ DEDENT
             debugMessageln("%d> match_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "\"match\" subject_expr ':' NEWLINE INDENT case_block+ DEDENT");
             // TODO replacing asdl_match_case_seq* --> SSTNode[]
-            Token _keyword;
+            SSTNode _keyword;
             Token _literal;
             SSTNode[] cases;
             Token dedent_var;
@@ -4480,7 +4480,7 @@ public final class Parser extends AbstractParser {
         }
         { // "case" patterns guard? ':' block
             debugMessageln("%d> case_block[%d-%d]: %s", level, ' ', _mark, mark(), "\"case\" patterns guard? ':' block");
-            Token _keyword;
+            SSTNode _keyword;
             Token _literal;
             SSTNode[] body;
             Object guard;
@@ -5271,7 +5271,7 @@ public final class Parser extends AbstractParser {
         Token startToken = getAndInitializeToken();
         { // "_"
             debugMessageln("%d> wildcard_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "\"_\"");
-            Token _keyword;
+            SSTNode _keyword;
             if (
                 (_keyword = expect_SOFT_KEYWORD("_")) != null  // soft_keyword='"_"'
             )
@@ -8091,7 +8091,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = expect(53)) != null  // token=':='
                 &&
-                (_cut_var = 1) != null
+                (_cut_var = 1) != 0
                 &&
                 (b = expression_rule()) != null  // expression
             )
@@ -8187,7 +8187,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = expect(53)) != null  // token=':='
                 &&
-                (_cut_var = 1) != null
+                (_cut_var = 1) != 0
                 &&
                 (b = expression_rule()) != null  // expression
             )
@@ -11534,14 +11534,14 @@ public final class Parser extends AbstractParser {
         Token startToken = getAndInitializeToken();
         { // NAME
             debugMessageln("%d> atom[%d-%d]: %s", level, ' ', _mark, mark(), "NAME");
-            SSTNode n;
+            SSTNode name_var;
             if (
-                (n = name_token()) != null  // NAME
+                (name_var = name_token()) != null  // NAME
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME");
-                _res = factory.createVariable(getText(n),n.startOffset,n.endOffset);
-                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NAME");
+                _res = name_var;
                 cache.putResult(_mark, ATOM_ID, _res);
                 level--;
                 return (SSTNode)_res;
@@ -11633,14 +11633,14 @@ public final class Parser extends AbstractParser {
         }
         { // NUMBER
             debugMessageln("%d> atom[%d-%d]: %s", level, ' ', _mark, mark(), "NUMBER");
-            SSTNode n;
+            SSTNode number_var;
             if (
-                (n = number_token()) != null  // NUMBER
+                (number_var = number_token()) != null  // NUMBER
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NUMBER");
-                _res = factory.createNumber(getText(n),n.startOffset,n.endOffset);
-                debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NUMBER");
+                debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NUMBER");
+                _res = number_var;
                 cache.putResult(_mark, ATOM_ID, _res);
                 level--;
                 return (SSTNode)_res;
@@ -12583,7 +12583,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (_keyword_1 = expect(518)) != null  // token='in'
                 &&
-                (_cut_var = 1) != null
+                (_cut_var = 1) != 0
                 &&
                 (b = disjunction_rule()) != null  // disjunction
                 &&
@@ -12622,7 +12622,7 @@ public final class Parser extends AbstractParser {
                 &&
                 (_keyword_1 = expect(518)) != null  // token='in'
                 &&
-                (_cut_var = 1) != null
+                (_cut_var = 1) != 0
                 &&
                 (b = disjunction_rule()) != null  // disjunction
                 &&
@@ -16282,7 +16282,7 @@ public final class Parser extends AbstractParser {
         }
         { // "match" subject_expr !':'
             debugMessageln("%d> invalid_match_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "\"match\" subject_expr !':'");
-            Token _keyword;
+            SSTNode _keyword;
             SSTNode subject_expr_var;
             if (
                 (_keyword = expect_SOFT_KEYWORD("match")) != null  // soft_keyword='"match"'
@@ -16324,7 +16324,7 @@ public final class Parser extends AbstractParser {
         }
         { // "case" patterns guard? !':'
             debugMessageln("%d> invalid_case_block[%d-%d]: %s", level, ' ', _mark, mark(), "\"case\" patterns guard? !':'");
-            Token _keyword;
+            SSTNode _keyword;
             Object _opt_var;
             SSTNode patterns_var;
             if (
@@ -27519,7 +27519,7 @@ public final class Parser extends AbstractParser {
 
     private boolean genLookahead_expect_SOFT_KEYWORD(boolean match, String arg0) {
         int tmpPos = mark();
-        Token result = expect_SOFT_KEYWORD(arg0);
+        SSTNode result = expect_SOFT_KEYWORD(arg0);
         reset(tmpPos);
         return (result != null) == match;
     }

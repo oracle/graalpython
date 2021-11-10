@@ -144,9 +144,9 @@ assignment[SSTNode]:
     | a=NAME ':' b=expression c=['=' d=annotated_rhs { d }] {
         factory.createAnnAssignment(
                     factory.createAnnotation(
-                        factory.createVariable(getText(a), a.startOffset, a.endOffset),
+                        a,
                         b,
-                        a.startOffset, b.getEndOffset()),
+                        a.getStartOffset(), b.getEndOffset()),
                     (SSTNode)c, startToken.startOffset, endToken.endOffset);
 
         //CHECK_VERSION(
@@ -670,12 +670,12 @@ slice[SSTNode]: # originally return type expr_ty
     | a=[expression] ':' b=[expression] c=[':' d=[expression] { d }] { _PyAST_Slice(a, b, c, EXTRA) }
     | a=named_expression { a }
 atom[SSTNode]: # originally return type expr_ty
-    | n=NAME { factory.createVariable(getText(n), n.startOffset, n.endOffset) }
+    | NAME
     | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, startToken.endOffset);}
     | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, startToken.endOffset); }
     | 'None' { _PyAST_Constant(Py_None, NULL, EXTRA) }
     | &STRING strings
-    | n=NUMBER { factory.createNumber(getText(n), n.startOffset, n.endOffset) }
+    | NUMBER
     | &'(' (tuple | group | genexp)
     | &'[' (list | listcomp)
     | &'{' (dict | set | dictcomp | setcomp)

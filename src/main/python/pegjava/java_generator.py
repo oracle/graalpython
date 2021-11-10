@@ -139,7 +139,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable="_keyword",
             function="expect_SOFT_KEYWORD",
             arguments=[value],
-            return_type="Token",
+            return_type="SSTNode",
             nodetype=NodeTypes.SOFT_KEYWORD,
             comment=f"soft_keyword='{value}'",
         )
