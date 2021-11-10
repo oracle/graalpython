@@ -72,16 +72,20 @@ class FunctionCall:
         if self.arguments is not None:
             parts.append(f"({', '.join(map(str, self.arguments))})")
         ft_part_start = ""
-        ft_part_end = ""
+        try:
+            int(self.function)
+            ft_part_end = ") != 0"
+        except:
+            ft_part_end = ") != null"
         if self.force_true:
             ft_part_start= "("
-            ft_part_end = f" || true)"
+            ft_part_end = f"{ft_part_end} || true)"
         if self.assigned_variable:
             if self.assigned_variable_type:
                 var_type = _check_type(self, self.assigned_variable_type);
-                parts = [ft_part_start, "(", self.assigned_variable, " = ", '(', var_type, ')', *parts, ") != null", ft_part_end]
+                parts = [ft_part_start, "(", self.assigned_variable, " = ", '(', var_type, ')', *parts, ft_part_end]
             else:
-                parts = [ft_part_start, "(", self.assigned_variable, " = ", *parts, ") != null", ft_part_end]
+                parts = [ft_part_start, "(", self.assigned_variable, " = ", *parts, ft_part_end]
         if self.comment:
             parts.append(f"  // {self.comment}")
         return "".join(parts)
