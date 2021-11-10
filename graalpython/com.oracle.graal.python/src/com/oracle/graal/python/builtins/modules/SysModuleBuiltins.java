@@ -1312,7 +1312,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     "\n" +
                     "This hook function is called by built-in breakpoint().\n")
     @GenerateNodeFactory
-    abstract static class BreakpointHookNode extends PythonVarargsBuiltinNode {
+    abstract static class BreakpointHookNode extends PythonBuiltinNode {
         static final String VAL_PDB_SETTRACE = "pdb.set_trace";
 
         @Child private ImportNode.ImportExpression importNode;
