@@ -49,7 +49,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
-public class PyGILStateNodes {
+public abstract class PyGILStateNodes {
     /**
      * A simple executable interop object that acquires the GIL if not acquired already. This cannot
      * be implemented as a Python built-in function in {@code PythonCextBuiltins} because if the
