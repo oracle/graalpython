@@ -745,6 +745,8 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        // _PyPegen_fill_token is called here in CPython
+        Token startToken = getAndInitializeToken();
         { // statements? $
             debugMessageln("%d> file[%d-%d]: %s", level, ' ', _mark, mark(), "statements? $");
             Object a;
@@ -756,6 +758,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d file[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "statements? $");
+                // _PyPegen_get_last_nonwhitespace_token is called here in CPython
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
                 _res = factory.createBlock((SSTNode[])a,startToken.startOffset,endToken.endOffset);;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "statements? $");
                 cache.putResult(_mark, FILE_ID, _res);
@@ -1260,8 +1268,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode[])_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // compound_stmt NEWLINE
             debugMessageln("%d> statement_newline[%d-%d]: %s", level, ' ', _mark, mark(), "compound_stmt NEWLINE");
             // TODO replacing stmt_ty --> SSTNode
@@ -1312,12 +1318,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d statement_newline[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NEWLINE");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: ( asdl_stmt_seq * ) _PyPegen_singleton_seq ( p , CHECK ( stmt_ty , _PyAST_Pass ( EXTRA ) ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NEWLINE");
@@ -1447,8 +1447,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // assignment
             debugMessageln("%d> simple_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "assignment");
             SSTNode assignment_var;
@@ -1559,12 +1557,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'pass'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Pass ( EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'pass'");
@@ -1650,12 +1642,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'break'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Break ( EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'break'");
@@ -1675,12 +1661,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'continue'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Continue ( EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'continue'");
@@ -1979,9 +1959,9 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d assignment[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME ':' expression ['=' annotated_rhs]");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
+                // _PyPegen_get_last_nonwhitespace_token is called here in CPython
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
                     level--;
                     return null;
                 }
@@ -2012,12 +1992,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d assignment[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "('(' single_target ')' | single_subscript_attribute_target) ':' expression ['=' annotated_rhs]");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 6 , "Variable annotations syntax is" , _PyAST_AnnAssign ( a , b , c , 0 , EXTRA ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "('(' single_target ')' | single_subscript_attribute_target) ':' expression ['=' annotated_rhs]");
@@ -2046,12 +2020,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d assignment[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Assign ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?");
@@ -2082,12 +2050,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d assignment[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "single_target augassign ~ (yield_expr | star_expressions)");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_AugAssign ( a , b -> kind , c , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "single_target augassign ~ (yield_expr | star_expressions)");
@@ -2419,8 +2381,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'global' ','.NAME+
             debugMessageln("%d> global_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'global' ','.NAME+");
             // TODO replacing asdl_expr_seq* --> SSTNode[]
@@ -2433,12 +2393,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d global_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'global' ','.NAME+");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Global ( CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'global' ','.NAME+");
@@ -2469,8 +2423,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'nonlocal' ','.NAME+
             debugMessageln("%d> nonlocal_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'nonlocal' ','.NAME+");
             // TODO replacing asdl_expr_seq* --> SSTNode[]
@@ -2483,12 +2435,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d nonlocal_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'nonlocal' ','.NAME+");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Nonlocal ( CHECK ( asdl_identifier_seq * , _PyPegen_map_names_to_ids ( p , a ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'nonlocal' ','.NAME+");
@@ -2519,8 +2465,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // yield_expr
             debugMessageln("%d> yield_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "yield_expr");
             SSTNode y;
@@ -2529,12 +2473,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d yield_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "yield_expr");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Expr ( y , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "yield_expr");
@@ -2565,8 +2503,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'assert' expression [',' expression]
             debugMessageln("%d> assert_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'assert' expression [',' expression]");
             Token _keyword;
@@ -2581,12 +2517,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d assert_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'assert' expression [',' expression]");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Assert ( a , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'assert' expression [',' expression]");
@@ -2617,8 +2547,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'del' del_targets &(';' | NEWLINE)
             debugMessageln("%d> del_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'del' del_targets &(';' | NEWLINE)");
             // TODO replacing asdl_expr_seq* --> SSTNode[]
@@ -2634,12 +2562,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d del_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'del' del_targets &(';' | NEWLINE)");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Delete ( a , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'del' del_targets &(';' | NEWLINE)");
@@ -2747,8 +2669,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'import' dotted_as_names
             debugMessageln("%d> import_name[%d-%d]: %s", level, ' ', _mark, mark(), "'import' dotted_as_names");
             // TODO replacing asdl_alias_seq* --> SSTNode[]
@@ -2762,12 +2682,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d import_name[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'import' dotted_as_names");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Import ( a , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'import' dotted_as_names");
@@ -2800,8 +2714,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'from' (('.' | '...'))* dotted_name 'import' import_from_targets
             debugMessageln("%d> import_from[%d-%d]: %s", level, ' ', _mark, mark(), "'from' (('.' | '...'))* dotted_name 'import' import_from_targets");
             // TODO replacing asdl_alias_seq* --> SSTNode[]
@@ -2824,12 +2736,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d import_from[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'from' (('.' | '...'))* dotted_name 'import' import_from_targets");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_ImportFrom ( b -> v . Name . id , c , _PyPegen_seq_count_dots ( a ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'from' (('.' | '...'))* dotted_name 'import' import_from_targets");
@@ -2860,12 +2766,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d import_from[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'from' (('.' | '...'))+ 'import' import_from_targets");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_ImportFrom ( NULL , b , _PyPegen_seq_count_dots ( a ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'from' (('.' | '...'))+ 'import' import_from_targets");
@@ -2900,8 +2800,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode[])_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '(' import_from_as_names ','? ')'
             debugMessageln("%d> import_from_targets[%d-%d]: %s", level, ' ', _mark, mark(), "'(' import_from_as_names ','? ')'");
             // TODO replacing asdl_alias_seq* --> SSTNode[]
@@ -2961,12 +2859,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d import_from_targets[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: ( asdl_alias_seq * ) _PyPegen_singleton_seq ( p , CHECK ( alias_ty , _PyPegen_alias_for_star ( p , EXTRA ) ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*'");
@@ -3053,8 +2945,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // NAME ['as' NAME]
             debugMessageln("%d> import_from_as_name[%d-%d]: %s", level, ' ', _mark, mark(), "NAME ['as' NAME]");
             SSTNode a;
@@ -3066,12 +2956,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d import_from_as_name[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME ['as' NAME]");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_alias ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Name . id : NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME ['as' NAME]");
@@ -3140,8 +3024,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // dotted_name ['as' NAME]
             debugMessageln("%d> dotted_as_name[%d-%d]: %s", level, ' ', _mark, mark(), "dotted_name ['as' NAME]");
             SSTNode a;
@@ -3153,12 +3035,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d dotted_as_name[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "dotted_name ['as' NAME]");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_alias ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Name . id : NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "dotted_name ['as' NAME]");
@@ -3270,8 +3146,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'if' named_expression ':' block elif_stmt
             debugMessageln("%d> if_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'if' named_expression ':' block elif_stmt");
             // TODO replacing stmt_ty --> SSTNode
@@ -3294,12 +3168,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d if_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'if' named_expression ':' block elif_stmt");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , _PyPegen_singleton_seq ( p , c ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' named_expression ':' block elif_stmt");
@@ -3331,12 +3199,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d if_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'if' named_expression ':' block else_block?");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_If ( a , b , c , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' named_expression ':' block else_block?");
@@ -3388,8 +3250,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'elif' named_expression ':' block elif_stmt
             debugMessageln("%d> elif_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'elif' named_expression ':' block elif_stmt");
             // TODO replacing stmt_ty --> SSTNode
@@ -3412,12 +3272,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d elif_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'elif' named_expression ':' block elif_stmt");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , _PyPegen_singleton_seq ( p , c ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'elif' named_expression ':' block elif_stmt");
@@ -3449,12 +3303,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d elif_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'elif' named_expression ':' block else_block?");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_If ( a , b , c , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'elif' named_expression ':' block else_block?");
@@ -3545,8 +3393,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'while' named_expression ':' block else_block?
             debugMessageln("%d> while_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'while' named_expression ':' block else_block?");
             Token _keyword;
@@ -3567,12 +3413,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d while_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'while' named_expression ':' block else_block?");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_While ( a , b , c , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'while' named_expression ':' block else_block?");
@@ -3624,8 +3464,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?
             debugMessageln("%d> for_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
             int _cut_var = 0;
@@ -3658,12 +3496,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d for_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_For ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
@@ -3714,12 +3546,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d for_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC 'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async for loops are" , _PyAST_AsyncFor ( t , ex , b , el , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC 'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?");
@@ -3777,8 +3603,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'with' '(' ','.with_item+ ','? ')' ':' block
             debugMessageln("%d> with_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'with' '(' ','.with_item+ ','? ')' ':' block");
             // TODO replacing asdl_withitem_seq* --> SSTNode[]
@@ -3806,12 +3630,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d with_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'with' '(' ','.with_item+ ','? ')' ':' block");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_With ( a , b , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'with' '(' ','.with_item+ ','? ')' ':' block");
@@ -3844,12 +3662,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d with_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'with' ','.with_item+ ':' TYPE_COMMENT? block");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_With ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'with' ','.with_item+ ':' TYPE_COMMENT? block");
@@ -3891,12 +3703,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d with_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC 'with' '(' ','.with_item+ ','? ')' ':' block");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NULL , EXTRA ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC 'with' '(' ','.with_item+ ','? ')' ':' block");
@@ -3932,12 +3738,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d with_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC 'with' ','.with_item+ ':' TYPE_COMMENT? block");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async with statements are" , _PyAST_AsyncWith ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC 'with' ','.with_item+ ':' TYPE_COMMENT? block");
@@ -4074,8 +3874,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'try' &&':' block finally_block
             debugMessageln("%d> try_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'try' &&':' block finally_block");
             Token _keyword;
@@ -4093,12 +3891,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d try_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'try' &&':' block finally_block");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Try ( b , NULL , NULL , f , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'try' &&':' block finally_block");
@@ -4134,12 +3926,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d try_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'try' &&':' block except_block+ else_block? finally_block?");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Try ( b , ex , el , f , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'try' &&':' block except_block+ else_block? finally_block?");
@@ -4173,8 +3959,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'except' expression ['as' NAME] ':' block
             debugMessageln("%d> except_block[%d-%d]: %s", level, ' ', _mark, mark(), "'except' expression ['as' NAME] ':' block");
             Token _keyword;
@@ -4195,12 +3979,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d except_block[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'except' expression ['as' NAME] ':' block");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_ExceptHandler ( e , ( t ) ? ( ( expr_ty ) t ) -> v . Name . id : NULL , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'except' expression ['as' NAME] ':' block");
@@ -4226,12 +4004,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d except_block[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'except' ':' block");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_ExceptHandler ( NULL , NULL , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'except' ':' block");
@@ -4324,8 +4096,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // "match" subject_expr ':' NEWLINE INDENT case_block+ DEDENT
             debugMessageln("%d> match_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "\"match\" subject_expr ':' NEWLINE INDENT case_block+ DEDENT");
             // TODO replacing asdl_match_case_seq* --> SSTNode[]
@@ -4353,12 +4123,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d match_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "\"match\" subject_expr ':' NEWLINE INDENT case_block+ DEDENT");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 10 , "Pattern matching is" , _PyAST_Match ( subject , cases , EXTRA ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'match' subject_expr ':' NEWLINE INDENT case_block+ DEDENT");
@@ -4406,8 +4170,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // star_named_expression ',' star_named_expressions?
             debugMessageln("%d> subject_expr[%d-%d]: %s", level, ' ', _mark, mark(), "star_named_expression ',' star_named_expressions?");
             // TODO replacing asdl_expr_seq* --> SSTNode[]
@@ -4424,12 +4186,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d subject_expr[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_named_expression ',' star_named_expressions?");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , value , values ) ) , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_named_expression ',' star_named_expressions?");
@@ -4585,8 +4341,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // open_sequence_pattern
             debugMessageln("%d> patterns[%d-%d]: %s", level, ' ', _mark, mark(), "open_sequence_pattern");
             // TODO replacing asdl_seq* --> SSTNode[]
@@ -4598,12 +4352,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d patterns[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "open_sequence_pattern");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Tuple ( values , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "open_sequence_pattern");
@@ -4705,8 +4453,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // or_pattern 'as' capture_pattern
             debugMessageln("%d> as_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "or_pattern 'as' capture_pattern");
             Token _keyword;
@@ -4721,12 +4467,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d as_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "or_pattern 'as' capture_pattern");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_MatchAs ( pattern , target -> v . Name . id , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "or_pattern 'as' capture_pattern");
@@ -4756,8 +4496,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '|'.closed_pattern+
             debugMessageln("%d> or_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "'|'.closed_pattern+");
             // TODO replacing asdl_expr_seq* --> SSTNode[]
@@ -4767,12 +4505,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d or_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'|'.closed_pattern+");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: asdl_seq_LEN ( patterns ) == 1 ? asdl_seq_GET ( patterns , 0 ) : _PyAST_MatchOr ( patterns , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'|'.closed_pattern+");
@@ -5015,12 +4747,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "signed_number '+' NUMBER");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_BinOp ( real , Add , imag , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "signed_number '+' NUMBER");
@@ -5046,12 +4772,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "signed_number '-' NUMBER");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_BinOp ( real , Sub , imag , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "signed_number '-' NUMBER");
@@ -5089,12 +4809,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'None'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Constant ( Py_None , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'None'");
@@ -5160,8 +4874,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // NUMBER
             debugMessageln("%d> signed_number[%d-%d]: %s", level, ' ', _mark, mark(), "NUMBER");
             SSTNode number_var;
@@ -5191,12 +4903,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d signed_number[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'-' NUMBER");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_UnaryOp ( USub , number , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'-' NUMBER");
@@ -5267,8 +4973,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // "_"
             debugMessageln("%d> wildcard_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "\"_\"");
             SSTNode _keyword;
@@ -5277,12 +4981,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d wildcard_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "\"_\"");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Name ( CHECK ( PyObject * , _PyPegen_new_identifier ( p , "_" ) ) , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'_'");
@@ -5371,8 +5069,6 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // name_or_attr '.' NAME
             debugMessageln("%d> attr[%d-%d]: %s", level, ' ', _mark, mark(), "name_or_attr '.' NAME");
             Token _literal;
@@ -5387,12 +5083,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d attr[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "name_or_attr '.' NAME");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Attribute ( value , attr -> v . Name . id , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "name_or_attr '.' NAME");
@@ -5510,8 +5200,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '[' maybe_sequence_pattern? ']'
             debugMessageln("%d> sequence_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "'[' maybe_sequence_pattern? ']'");
             // TODO replacing asdl_seq* --> SSTNode[]
@@ -5528,12 +5216,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d sequence_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'[' maybe_sequence_pattern? ']'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_List ( values , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' maybe_sequence_pattern? ']'");
@@ -5561,12 +5243,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d sequence_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' open_sequence_pattern? ')'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Tuple ( values , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' open_sequence_pattern? ')'");
@@ -5737,8 +5413,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '*' (capture_pattern | wildcard_pattern)
             debugMessageln("%d> star_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "'*' (capture_pattern | wildcard_pattern)");
             Token _literal;
@@ -5750,12 +5424,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' (capture_pattern | wildcard_pattern)");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Starred ( value , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' (capture_pattern | wildcard_pattern)");
@@ -5785,8 +5453,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '{' items_pattern? '}'
             debugMessageln("%d> mapping_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "'{' items_pattern? '}'");
             // TODO replacing asdl_seq* --> SSTNode[]
@@ -5803,12 +5469,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d mapping_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'{' items_pattern? '}'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Dict ( CHECK ( asdl_expr_seq * , _PyPegen_get_keys ( p , items ) ) , CHECK ( asdl_expr_seq * , _PyPegen_get_values ( p , items ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' items_pattern? '}'");
@@ -5988,8 +5648,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // name_or_attr '(' ')'
             debugMessageln("%d> class_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "name_or_attr '(' ')'");
             Token _literal;
@@ -6004,12 +5662,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d class_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "name_or_attr '(' ')'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Call ( func , NULL , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "name_or_attr '(' ')'");
@@ -6043,12 +5695,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d class_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "name_or_attr '(' positional_patterns ','? ')'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Call ( func , args , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "name_or_attr '(' positional_patterns ','? ')'");
@@ -6082,12 +5728,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d class_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "name_or_attr '(' keyword_patterns ','? ')'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Call ( func , NULL , keywords , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "name_or_attr '(' keyword_patterns ','? ')'");
@@ -6129,12 +5769,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d class_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Call ( func , args , keywords , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')'");
@@ -6243,8 +5877,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // NAME '=' pattern
             debugMessageln("%d> keyword_pattern[%d-%d]: %s", level, ' ', _mark, mark(), "NAME '=' pattern");
             Token _literal;
@@ -6259,12 +5891,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d keyword_pattern[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME '=' pattern");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_keyword ( arg -> v . Name . id , value , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME '=' pattern");
@@ -6295,8 +5921,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'return' star_expressions?
             debugMessageln("%d> return_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'return' star_expressions?");
             Token _keyword;
@@ -6308,12 +5932,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d return_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'return' star_expressions?");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Return ( a , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'return' star_expressions?");
@@ -6344,8 +5962,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'raise' expression ['from' expression]
             debugMessageln("%d> raise_stmt[%d-%d]: %s", level, ' ', _mark, mark(), "'raise' expression ['from' expression]");
             Token _keyword;
@@ -6360,12 +5976,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d raise_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'raise' expression ['from' expression]");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Raise ( a , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'raise' expression ['from' expression]");
@@ -6385,12 +5995,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d raise_stmt[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'raise'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Raise ( NULL , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'raise'");
@@ -6488,8 +6092,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block
             debugMessageln("%d> function_def_raw[%d-%d]: %s", level, ' ', _mark, mark(), "'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
             Token _keyword;
@@ -6522,12 +6124,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d function_def_raw[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
@@ -6574,12 +6170,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d function_def_raw[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "ASYNC 'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: CHECK_VERSION ( stmt_ty , 5 , "Async functions are" , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC 'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
@@ -7437,8 +7027,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // NAME annotation?
             debugMessageln("%d> param[%d-%d]: %s", level, ' ', _mark, mark(), "NAME annotation?");
             SSTNode a;
@@ -7450,12 +7038,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d param[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME annotation?");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_arg ( a -> v . Name . id , b , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME annotation?");
@@ -7667,8 +7249,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'class' NAME ['(' arguments? ')'] &&':' block
             debugMessageln("%d> class_def_raw[%d-%d]: %s", level, ' ', _mark, mark(), "'class' NAME ['(' arguments? ')'] &&':' block");
             Token _keyword;
@@ -7689,12 +7269,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d class_def_raw[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'class' NAME ['(' arguments? ')'] &&':' block");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_ClassDef ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , c , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'class' NAME ['(' arguments? ')'] &&':' block");
@@ -7808,8 +7382,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // star_expression ((',' star_expression))+ ','?
             debugMessageln("%d> star_expressions[%d-%d]: %s", level, ' ', _mark, mark(), "star_expression ((',' star_expression))+ ','?");
             Object _opt_var;
@@ -7824,12 +7396,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_expression ((',' star_expression))+ ','?");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_expression ((',' star_expression))+ ','?");
@@ -7852,12 +7418,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_expression ','");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_singleton_seq ( p , a ) ) , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_expression ','");
@@ -7905,8 +7465,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '*' bitwise_or
             debugMessageln("%d> star_expression[%d-%d]: %s", level, ' ', _mark, mark(), "'*' bitwise_or");
             Token _literal;
@@ -7918,12 +7476,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' bitwise_or");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Starred ( a , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' bitwise_or");
@@ -8012,8 +7564,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '*' bitwise_or
             debugMessageln("%d> star_named_expression[%d-%d]: %s", level, ' ', _mark, mark(), "'*' bitwise_or");
             Token _literal;
@@ -8025,12 +7575,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_named_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' bitwise_or");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Starred ( a , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' bitwise_or");
@@ -8078,8 +7622,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // NAME ':=' ~ expression
             debugMessageln("%d> named_expression[%d-%d]: %s", level, ' ', _mark, mark(), "NAME ':=' ~ expression");
             int _cut_var = 0;
@@ -8097,12 +7639,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d named_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME ':=' ~ expression");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME ':=' ~ expression");
@@ -8174,8 +7710,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // NAME ':=' ~ expression
             debugMessageln("%d> direct_named_expression[%d-%d]: %s", level, ' ', _mark, mark(), "NAME ':=' ~ expression");
             int _cut_var = 0;
@@ -8193,12 +7727,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d direct_named_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME ':=' ~ expression");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_NamedExpr ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME ':=' ~ expression");
@@ -8306,8 +7834,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // expression ((',' expression))+ ','?
             debugMessageln("%d> expressions[%d-%d]: %s", level, ' ', _mark, mark(), "expression ((',' expression))+ ','?");
             Object _opt_var;
@@ -8322,12 +7848,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression ((',' expression))+ ','?");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ((',' expression))+ ','?");
@@ -8350,12 +7870,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d expressions[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression ','");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_singleton_seq ( p , a ) ) , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ','");
@@ -8407,8 +7921,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_expression
             debugMessageln("%d> expression[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_expression");
             Object invalid_expression_var;
@@ -8447,12 +7959,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "disjunction 'if' disjunction 'else' expression");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_IfExp ( b , a , c , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "disjunction 'if' disjunction 'else' expression");
@@ -8518,8 +8024,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'lambda' lambda_params? ':' expression
             debugMessageln("%d> lambdef[%d-%d]: %s", level, ' ', _mark, mark(), "'lambda' lambda_params? ':' expression");
             Token _keyword;
@@ -8537,12 +8041,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambdef[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'lambda' lambda_params? ':' expression");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Lambda ( ( a ) ? a : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'lambda' lambda_params? ':' expression");
@@ -9301,8 +8799,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // NAME
             debugMessageln("%d> lambda_param[%d-%d]: %s", level, ' ', _mark, mark(), "NAME");
             SSTNode a;
@@ -9311,12 +8807,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d lambda_param[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_arg ( a -> v . Name . id , NULL , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
@@ -9346,8 +8836,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // conjunction (('or' conjunction))+
             debugMessageln("%d> disjunction[%d-%d]: %s", level, ' ', _mark, mark(), "conjunction (('or' conjunction))+");
             SSTNode a;
@@ -9359,12 +8847,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d disjunction[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "conjunction (('or' conjunction))+");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_BoolOp ( Or , CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "conjunction (('or' conjunction))+");
@@ -9412,8 +8894,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // inversion (('and' inversion))+
             debugMessageln("%d> conjunction[%d-%d]: %s", level, ' ', _mark, mark(), "inversion (('and' inversion))+");
             SSTNode a;
@@ -9425,12 +8905,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d conjunction[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "inversion (('and' inversion))+");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_BoolOp ( And , CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "inversion (('and' inversion))+");
@@ -9478,8 +8952,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'not' inversion
             debugMessageln("%d> inversion[%d-%d]: %s", level, ' ', _mark, mark(), "'not' inversion");
             Token _keyword;
@@ -9491,12 +8963,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d inversion[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'not' inversion");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_UnaryOp ( Not , a , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'not' inversion");
@@ -9827,6 +9293,8 @@ public final class Parser extends AbstractParser {
             level--;
             return (BinaryArithmeticSSTNode)_res;
         }
+        // _PyPegen_fill_token is called here in CPython
+        Token startToken = getAndInitializeToken();
         { // '==' bitwise_or
             debugMessageln("%d> eq_bitwise_or[%d-%d]: %s", level, ' ', _mark, mark(), "'==' bitwise_or");
             Token _literal;
@@ -9838,6 +9306,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d eq_bitwise_or[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'==' bitwise_or");
+                // _PyPegen_get_last_nonwhitespace_token is called here in CPython
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
                 _res = factory.createBinaryOp(BinaryArithmeticSSTNode.Type.EQ,null,a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'==' bitwise_or");
                 cache.putResult(_mark, EQ_BITWISE_OR_ID, _res);
@@ -10261,8 +9735,6 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // bitwise_or '|' bitwise_xor
             debugMessageln("%d> bitwise_or[%d-%d]: %s", level, ' ', _mark, mark(), "bitwise_or '|' bitwise_xor");
             Token _literal;
@@ -10277,12 +9749,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d bitwise_or[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "bitwise_or '|' bitwise_xor");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_BinOp ( a , BitOr , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "bitwise_or '|' bitwise_xor");
@@ -10347,8 +9813,6 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // bitwise_xor '^' bitwise_and
             debugMessageln("%d> bitwise_xor[%d-%d]: %s", level, ' ', _mark, mark(), "bitwise_xor '^' bitwise_and");
             Token _literal;
@@ -10363,12 +9827,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d bitwise_xor[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "bitwise_xor '^' bitwise_and");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_BinOp ( a , BitXor , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "bitwise_xor '^' bitwise_and");
@@ -10433,8 +9891,6 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // bitwise_and '&' shift_expr
             debugMessageln("%d> bitwise_and[%d-%d]: %s", level, ' ', _mark, mark(), "bitwise_and '&' shift_expr");
             Token _literal;
@@ -10449,12 +9905,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d bitwise_and[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "bitwise_and '&' shift_expr");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_BinOp ( a , BitAnd , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "bitwise_and '&' shift_expr");
@@ -10519,8 +9969,6 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // shift_expr '<<' sum
             debugMessageln("%d> shift_expr[%d-%d]: %s", level, ' ', _mark, mark(), "shift_expr '<<' sum");
             Token _literal;
@@ -10535,12 +9983,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d shift_expr[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "shift_expr '<<' sum");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_BinOp ( a , LShift , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "shift_expr '<<' sum");
@@ -10565,12 +10007,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d shift_expr[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "shift_expr '>>' sum");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_BinOp ( a , RShift , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "shift_expr '>>' sum");
@@ -10635,8 +10071,6 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // sum '+' term
             debugMessageln("%d> sum[%d-%d]: %s", level, ' ', _mark, mark(), "sum '+' term");
             Token _literal;
@@ -10651,12 +10085,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d sum[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "sum '+' term");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_BinOp ( a , Add , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "sum '+' term");
@@ -10681,12 +10109,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d sum[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "sum '-' term");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_BinOp ( a , Sub , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "sum '-' term");
@@ -10757,8 +10179,6 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // term '*' factor
             debugMessageln("%d> term[%d-%d]: %s", level, ' ', _mark, mark(), "term '*' factor");
             Token _literal;
@@ -10773,12 +10193,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "term '*' factor");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_BinOp ( a , Mult , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '*' factor");
@@ -10803,12 +10217,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "term '/' factor");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_BinOp ( a , Div , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '/' factor");
@@ -10833,12 +10241,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "term '//' factor");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_BinOp ( a , FloorDiv , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '//' factor");
@@ -10863,12 +10265,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "term '%' factor");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_BinOp ( a , Mod , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '%' factor");
@@ -10893,12 +10289,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d term[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "term '@' factor");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: CHECK_VERSION ( expr_ty , 5 , "The '@' operator is" , _PyAST_BinOp ( a , MatMult , b , EXTRA ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "term '@' factor");
@@ -10943,6 +10333,8 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        // _PyPegen_fill_token is called here in CPython
+        Token startToken = getAndInitializeToken();
         { // '+' factor
             debugMessageln("%d> factor[%d-%d]: %s", level, ' ', _mark, mark(), "'+' factor");
             Token _literal;
@@ -10954,6 +10346,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d factor[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'+' factor");
+                // _PyPegen_get_last_nonwhitespace_token is called here in CPython
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
                 _res = factory.createUnaryOp(UnarySSTNode.Type.ADD,a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'+' factor");
                 cache.putResult(_mark, FACTOR_ID, _res);
@@ -10975,6 +10373,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d factor[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'-' factor");
+                // _PyPegen_get_last_nonwhitespace_token is called here in CPython
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
                 _res = factory.createUnaryOp(UnarySSTNode.Type.SUB,a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'-' factor");
                 cache.putResult(_mark, FACTOR_ID, _res);
@@ -10996,6 +10400,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d factor[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'~' factor");
+                // _PyPegen_get_last_nonwhitespace_token is called here in CPython
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
                 _res = factory.createUnaryOp(UnarySSTNode.Type.INVERT,a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'~' factor");
                 cache.putResult(_mark, FACTOR_ID, _res);
@@ -11042,8 +10452,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // await_primary '**' factor
             debugMessageln("%d> power[%d-%d]: %s", level, ' ', _mark, mark(), "await_primary '**' factor");
             Token _literal;
@@ -11058,12 +10466,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d power[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "await_primary '**' factor");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_BinOp ( a , Pow , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "await_primary '**' factor");
@@ -11111,8 +10513,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // AWAIT primary
             debugMessageln("%d> await_primary[%d-%d]: %s", level, ' ', _mark, mark(), "AWAIT primary");
             SSTNode a;
@@ -11124,12 +10524,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d await_primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "AWAIT primary");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: CHECK_VERSION ( expr_ty , 5 , "Await expressions are" , _PyAST_Await ( a , EXTRA ) )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "AWAIT primary");
@@ -11203,8 +10597,6 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         if (callInvalidRules) { // invalid_primary
             debugMessageln("%d> primary[%d-%d]: %s", level, ' ', _mark, mark(), "invalid_primary");
             Object invalid_primary_var;
@@ -11236,12 +10628,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "primary '.' NAME");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary '.' NAME");
@@ -11263,12 +10649,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "primary genexp");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , b ) ) , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary genexp");
@@ -11296,12 +10676,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "primary '(' arguments? ')'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Call ( a , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary '(' arguments? ')'");
@@ -11329,12 +10703,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "primary '[' slices ']'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Subscript ( a , b , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary '[' slices ']'");
@@ -11379,8 +10747,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // slice !','
             debugMessageln("%d> slices[%d-%d]: %s", level, ' ', _mark, mark(), "slice !','");
             SSTNode a;
@@ -11413,12 +10779,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d slices[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.slice+ ','?");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Tuple ( a , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.slice+ ','?");
@@ -11448,8 +10808,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // expression? ':' expression? [':' expression?]
             debugMessageln("%d> slice[%d-%d]: %s", level, ' ', _mark, mark(), "expression? ':' expression? [':' expression?]");
             Token _literal;
@@ -11467,12 +10825,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d slice[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "expression? ':' expression? [':' expression?]");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Slice ( a , b , c , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression? ':' expression? [':' expression?]");
@@ -11594,12 +10946,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'None'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Constant ( Py_None , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'None'");
@@ -11717,12 +11063,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'...'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Constant ( Py_Ellipsis , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'...'");
@@ -11789,8 +11129,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '[' star_named_expressions? ']'
             debugMessageln("%d> list[%d-%d]: %s", level, ' ', _mark, mark(), "'[' star_named_expressions? ']'");
             Token _literal;
@@ -11805,12 +11143,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d list[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'[' star_named_expressions? ']'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_List ( a , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' star_named_expressions? ']'");
@@ -11840,8 +11172,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '[' named_expression for_if_clauses ']'
             debugMessageln("%d> listcomp[%d-%d]: %s", level, ' ', _mark, mark(), "'[' named_expression for_if_clauses ']'");
             // TODO replacing asdl_comprehension_seq* --> SSTNode[]
@@ -11861,12 +11191,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d listcomp[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'[' named_expression for_if_clauses ']'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_ListComp ( a , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' named_expression for_if_clauses ']'");
@@ -11914,8 +11238,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '(' [star_named_expression ',' star_named_expressions?] ')'
             debugMessageln("%d> tuple[%d-%d]: %s", level, ' ', _mark, mark(), "'(' [star_named_expression ',' star_named_expressions?] ')'");
             Token _literal;
@@ -11930,12 +11252,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d tuple[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' [star_named_expression ',' star_named_expressions?] ')'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Tuple ( a , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' [star_named_expression ',' star_named_expressions?] ')'");
@@ -12025,8 +11341,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '(' direct_named_expression for_if_clauses ')'
             debugMessageln("%d> genexp[%d-%d]: %s", level, ' ', _mark, mark(), "'(' direct_named_expression for_if_clauses ')'");
             // TODO replacing asdl_comprehension_seq* --> SSTNode[]
@@ -12046,12 +11360,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d genexp[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' direct_named_expression for_if_clauses ')'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_GeneratorExp ( a , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' direct_named_expression for_if_clauses ')'");
@@ -12099,8 +11407,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '{' star_named_expressions '}'
             debugMessageln("%d> set[%d-%d]: %s", level, ' ', _mark, mark(), "'{' star_named_expressions '}'");
             // TODO replacing asdl_expr_seq* --> SSTNode[]
@@ -12117,12 +11423,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d set[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'{' star_named_expressions '}'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Set ( a , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' star_named_expressions '}'");
@@ -12152,8 +11452,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '{' named_expression for_if_clauses '}'
             debugMessageln("%d> setcomp[%d-%d]: %s", level, ' ', _mark, mark(), "'{' named_expression for_if_clauses '}'");
             // TODO replacing asdl_comprehension_seq* --> SSTNode[]
@@ -12173,12 +11471,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d setcomp[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'{' named_expression for_if_clauses '}'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_SetComp ( a , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' named_expression for_if_clauses '}'");
@@ -12226,8 +11518,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '{' double_starred_kvpairs? '}'
             debugMessageln("%d> dict[%d-%d]: %s", level, ' ', _mark, mark(), "'{' double_starred_kvpairs? '}'");
             Token _literal;
@@ -12242,12 +11532,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d dict[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'{' double_starred_kvpairs? '}'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Dict ( CHECK ( asdl_expr_seq * , _PyPegen_get_keys ( p , a ) ) , CHECK ( asdl_expr_seq * , _PyPegen_get_values ( p , a ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' double_starred_kvpairs? '}'");
@@ -12301,8 +11585,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '{' kvpair for_if_clauses '}'
             debugMessageln("%d> dictcomp[%d-%d]: %s", level, ' ', _mark, mark(), "'{' kvpair for_if_clauses '}'");
             // TODO replacing KeyValuePair* --> SSTNode[]
@@ -12324,12 +11606,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d dictcomp[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'{' kvpair for_if_clauses '}'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_DictComp ( a -> key , a -> value , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' kvpair for_if_clauses '}'");
@@ -12681,8 +11957,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // 'yield' 'from' expression
             debugMessageln("%d> yield_expr[%d-%d]: %s", level, ' ', _mark, mark(), "'yield' 'from' expression");
             Token _keyword;
@@ -12697,12 +11971,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d yield_expr[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'yield' 'from' expression");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_YieldFrom ( a , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'yield' 'from' expression");
@@ -12725,12 +11993,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d yield_expr[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'yield' star_expressions?");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Yield ( a , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'yield' star_expressions?");
@@ -12819,8 +12081,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // ','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]
             debugMessageln("%d> args[%d-%d]: %s", level, ' ', _mark, mark(), "','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]");
             // TODO replacing asdl_expr_seq* --> SSTNode[]
@@ -12833,12 +12093,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d args[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyPegen_collect_call_seqs ( p , a , b , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]");
@@ -12860,12 +12114,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d args[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "kwargs");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Call ( _PyPegen_dummy_name ( p ) , CHECK_NULL_ALLOWED ( asdl_expr_seq * , _PyPegen_seq_extract_starred_exprs ( p , a ) ) , CHECK_NULL_ALLOWED ( asdl_keyword_seq * , _PyPegen_seq_delete_starred_exprs ( p , a ) ) , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "kwargs");
@@ -12978,8 +12226,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '*' expression
             debugMessageln("%d> starred_expression[%d-%d]: %s", level, ' ', _mark, mark(), "'*' expression");
             Token _literal;
@@ -12991,12 +12237,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d starred_expression[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' expression");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Starred ( a , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' expression");
@@ -13027,8 +12267,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode[])_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // NAME '=' expression
             debugMessageln("%d> kwarg_or_starred[%d-%d]: %s", level, ' ', _mark, mark(), "NAME '=' expression");
             Token _literal;
@@ -13043,12 +12281,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d kwarg_or_starred[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME '=' expression");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyPegen_keyword_or_starred ( p , CHECK ( keyword_ty , _PyAST_keyword ( a -> v . Name . id , b , EXTRA ) ) , 1 )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME '=' expression");
@@ -13116,8 +12348,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode[])_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // NAME '=' expression
             debugMessageln("%d> kwarg_or_double_starred[%d-%d]: %s", level, ' ', _mark, mark(), "NAME '=' expression");
             Token _literal;
@@ -13132,12 +12362,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d kwarg_or_double_starred[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "NAME '=' expression");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyPegen_keyword_or_starred ( p , CHECK ( keyword_ty , _PyAST_keyword ( a -> v . Name . id , b , EXTRA ) ) , 1 )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME '=' expression");
@@ -13160,12 +12384,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d kwarg_or_double_starred[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'**' expression");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyPegen_keyword_or_starred ( p , CHECK ( keyword_ty , _PyAST_keyword ( NULL , a , EXTRA ) ) , 1 )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' expression");
@@ -13213,8 +12431,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // star_target !','
             debugMessageln("%d> star_targets[%d-%d]: %s", level, ' ', _mark, mark(), "star_target !','");
             SSTNode a;
@@ -13249,12 +12465,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_targets[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "star_target ((',' star_target))* ','?");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_target ((',' star_target))* ','?");
@@ -13391,8 +12601,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // '*' (!'*' star_target)
             debugMessageln("%d> star_target[%d-%d]: %s", level, ' ', _mark, mark(), "'*' (!'*' star_target)");
             Token _literal;
@@ -13404,12 +12612,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'*' (!'*' star_target)");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Starred ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , a , Store ) ) , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' (!'*' star_target)");
@@ -13460,8 +12662,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME !t_lookahead
             debugMessageln("%d> target_with_star_atom[%d-%d]: %s", level, ' ', _mark, mark(), "t_primary '.' NAME !t_lookahead");
             Token _literal;
@@ -13478,12 +12678,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d target_with_star_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '.' NAME !t_lookahead");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME !t_lookahead");
@@ -13514,12 +12708,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d target_with_star_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Subscript ( a , b , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
@@ -13571,8 +12759,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // NAME
             debugMessageln("%d> star_atom[%d-%d]: %s", level, ' ', _mark, mark(), "NAME");
             SSTNode a;
@@ -13631,12 +12817,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' star_targets_tuple_seq? ')'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Tuple ( a , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' star_targets_tuple_seq? ')'");
@@ -13662,12 +12842,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'[' star_targets_list_seq? ']'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_List ( a , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' star_targets_list_seq? ']'");
@@ -13778,8 +12952,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME !t_lookahead
             debugMessageln("%d> single_subscript_attribute_target[%d-%d]: %s", level, ' ', _mark, mark(), "t_primary '.' NAME !t_lookahead");
             Token _literal;
@@ -13796,12 +12968,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d single_subscript_attribute_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '.' NAME !t_lookahead");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME !t_lookahead");
@@ -13832,12 +12998,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d single_subscript_attribute_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Subscript ( a , b , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
@@ -13911,8 +13071,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME !t_lookahead
             debugMessageln("%d> del_target[%d-%d]: %s", level, ' ', _mark, mark(), "t_primary '.' NAME !t_lookahead");
             Token _literal;
@@ -13929,12 +13087,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d del_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '.' NAME !t_lookahead");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Del , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME !t_lookahead");
@@ -13965,12 +13117,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d del_target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Subscript ( a , b , Del , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
@@ -14018,8 +13164,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // NAME
             debugMessageln("%d> del_t_atom[%d-%d]: %s", level, ' ', _mark, mark(), "NAME");
             SSTNode a;
@@ -14078,12 +13222,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d del_t_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' del_targets? ')'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Tuple ( a , Del , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' del_targets? ')'");
@@ -14109,12 +13247,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d del_t_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'[' del_targets? ']'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_List ( a , Del , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' del_targets? ']'");
@@ -14188,8 +13320,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME !t_lookahead
             debugMessageln("%d> target[%d-%d]: %s", level, ' ', _mark, mark(), "t_primary '.' NAME !t_lookahead");
             Token _literal;
@@ -14206,12 +13336,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '.' NAME !t_lookahead");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME !t_lookahead");
@@ -14242,12 +13366,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d target[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Subscript ( a , b , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' !t_lookahead");
@@ -14320,8 +13438,6 @@ public final class Parser extends AbstractParser {
         level++;
         int _mark = mark();
         Object _res = null;
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // t_primary '.' NAME &t_lookahead
             debugMessageln("%d> t_primary[%d-%d]: %s", level, ' ', _mark, mark(), "t_primary '.' NAME &t_lookahead");
             Token _literal;
@@ -14338,12 +13454,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '.' NAME &t_lookahead");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Attribute ( a , b -> v . Name . id , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '.' NAME &t_lookahead");
@@ -14373,12 +13483,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '[' slices ']' &t_lookahead");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Subscript ( a , b , Load , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '[' slices ']' &t_lookahead");
@@ -14402,12 +13506,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary genexp &t_lookahead");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , b ) ) , NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary genexp &t_lookahead");
@@ -14437,12 +13535,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "t_primary '(' arguments? ')' &t_lookahead");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Call ( a , ( b ) ? ( ( expr_ty ) b ) -> v . Call . args : NULL , ( b ) ? ( ( expr_ty ) b ) -> v . Call . keywords : NULL , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary '(' arguments? ')' &t_lookahead");
@@ -14561,8 +13653,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
-        Token startToken = getAndInitializeToken();
         { // NAME
             debugMessageln("%d> t_atom[%d-%d]: %s", level, ' ', _mark, mark(), "NAME");
             SSTNode a;
@@ -14621,12 +13711,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d t_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'(' targets? ')'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_Tuple ( b , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' targets? ')'");
@@ -14652,12 +13736,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d t_atom[%d-%d]: %s succeeded!", level, ' ', _mark, mark(), "'[' targets? ']'");
-                // _PyPegen_get_last_nonnwhitespace_token is called here in CPython
-                Token _token = getLastNonWhitespaceToken();
-                if (_token == null) {
-                    level--;
-                    return null;
-                }
                 // TODO: node.action: _PyAST_List ( b , Store , EXTRA )
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' targets? ']'");

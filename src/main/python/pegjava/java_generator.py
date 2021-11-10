@@ -491,9 +491,9 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.print("Token startToken = getAndInitializeToken();");
 
     def _set_up_token_end_metadata_extraction(self) -> None:
-        self.print("// _PyPegen_get_last_nonnwhitespace_token is called here in CPython");
-        self.print("Token _token = getLastNonWhitespaceToken();")
-        self.print("if (_token == null) {")
+        self.print("// _PyPegen_get_last_nonwhitespace_token is called here in CPython");
+        self.print("Token endToken = getLastNonWhitespaceToken();")
+        self.print("if (endToken == null) {")
         with self.indent():
             self.add_return("null")
         self.print("}")
@@ -556,7 +556,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.add_return(f"({result_type})_res")
             self.goto_targets.append(_goto_target)
             # End goto target setup
-            if any(alt.action and "EXTRA" in alt.action for alt in rhs.alts):
+            if any(alt.action and "startToken" in alt.action for alt in rhs.alts):
                 self._set_up_token_start_metadata_extraction()
             self.visit(
                 rhs, is_loop=False, is_gather=node.is_gather(), rulename=node.name,
@@ -588,7 +588,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.out_of_memory_return(f"!_children")
             self.print("int _children_capacity = 1;")
             self.print("int _n = 0;")
-            if any(alt.action and "EXTRA" in alt.action for alt in rhs.alts):
+            if any(alt.action and "startToken" in alt.action for alt in rhs.alts):
                 self._set_up_token_start_metadata_extraction()
             self.visit(
                 rhs, is_loop=True, is_gather=node.is_gather(), rulename=node.name,
@@ -709,7 +709,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 f'debugMessageln("%d {rulename}[%d-%d]: %s succeeded!", level, \' \', _mark, mark(), "{node_str}");'
             )
             # Prepare to emmit the rule action and do so
-            if node.action and "EXTRA" in node.action:
+            if node.action and "endToken" in node.action:
                 self._set_up_token_end_metadata_extraction()
             if self.skip_actions:
                 self.emit_dummy_action()
@@ -730,7 +730,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         # We have parsed successfully one item!
         with self.indent():
             # Prepare to emit the rule action and do so
-            if node.action and "EXTRA" in node.action:
+            if node.action and "endToken" in node.action:
                 self._set_up_token_end_metadata_extraction()
             if self.skip_actions:
                 self.emit_dummy_action()
