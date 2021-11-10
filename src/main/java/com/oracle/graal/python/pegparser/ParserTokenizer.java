@@ -10,16 +10,12 @@ import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
 
 public class ParserTokenizer {
-
-    private final String code;
-
     private int pos; // position of the mark
     private final ArrayList<Token> tokens;
 
     private final Tokenizer tokenizer;
 
     public ParserTokenizer(String code) {
-        this.code = code;
         this.pos = 0;
         this.tokens = new ArrayList<>();
         this.tokenizer = new Tokenizer(code);
@@ -52,11 +48,6 @@ public class ParserTokenizer {
     }
 
     public String getText(Token token) {
-        // TODO handle this in better way
-        if (token.endOffset <= code.length()) {
-            return code.substring(token.startOffset, token.endOffset);
-        }
-        return "";
+        return tokenizer.getTokenString(token);
     }
-
 }
