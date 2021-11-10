@@ -59,18 +59,6 @@ def exit(arg=None):
     raise SystemExit(code)
 
 @__graalpython__.builtin
-def getcheckinterval():
-    return __graalpython__.sys_state.checkinterval
-
-@__graalpython__.builtin
-def setcheckinterval(value):
-    import warnings
-    warnings.warn("sys.getcheckinterval() and sys.setcheckinterval() are deprecated. Use sys.setswitchinterval() instead.", DeprecationWarning)
-    if not isinstance(value, int):
-        raise TypeError("an integer is required")
-    __graalpython__.sys_state.checkinterval = value
-
-@__graalpython__.builtin
 def getswitchinterval():
     return __graalpython__.sys_state.switchinterval
 

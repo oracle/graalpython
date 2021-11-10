@@ -41,10 +41,10 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ImportError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeWarning;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemExit;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeEncodeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
@@ -69,7 +69,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.DISPLAYHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.EXCEPTHOOK;
-import static com.oracle.graal.python.nodes.BuiltinNames.EXIT;
 import static com.oracle.graal.python.nodes.BuiltinNames.PYTHONBREAKPOINT;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDIN;
@@ -87,6 +86,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.LOST_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.REC_LIMIT_GREATER_THAN_1;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_EXPECTED_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_CANNOT_RUN_PDB_YET;
+import static com.oracle.graal.python.nodes.ErrorMessages.WARN_DEPRECTATED_SYS_CHECKINTERVAL;
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
@@ -105,7 +105,6 @@ import java.util.Set;
 
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
-import com.oracle.graal.python.runtime.exception.PythonExitException;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -164,7 +163,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -1442,4 +1440,47 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "getcheckinterval", minNumOfPositionalArgs = 1, declaresExplicitSelf = true, doc = "getcheckinterval($module, /)\n" +
+                    "--\n" +
+                    "\n" +
+                    "Return the current check interval; see sys.setcheckinterval().")
+    @GenerateNodeFactory
+    abstract static class GetCheckIntervalNode extends PythonBuiltinNode {
+        @Specialization
+        Object getCheckInterval(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+            warnNode.warnFormat(frame, DeprecationWarning, WARN_DEPRECTATED_SYS_CHECKINTERVAL);
+            return getContext().getSysModuleState().getCheckInterval();
+        }
+    }
+
+    @Builtin(name = "setcheckinterval", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, doc = "setcheckinterval($module, n, /)\n" +
+                    "--\n" +
+                    "\n" +
+                    "Set the async event check interval to n instructions.\n" +
+                    "\n" +
+                    "This tells the Python interpreter to check for asynchronous events\n" +
+                    "every n instructions.\n" +
+                    "\n" +
+                    "This also affects how often thread switches occur.")
+    @GenerateNodeFactory
+    abstract static class SetCheckIntervalNode extends PythonBuiltinNode {
+        @Specialization
+        Object setCheckInterval(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object arg,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
+                        @Cached PyLongAsIntNode longAsIntNode,
+                        @Cached PyFloatCheckExactNode floatCheckExactNode) {
+            if (floatCheckExactNode.execute(arg)) {
+                throw raise(TypeError, S_EXPECTED_GOT_P, "integer", arg);
+            }
+
+            try {
+                final int n = longAsIntNode.execute(frame, arg);
+                warnNode.warnFormat(frame, DeprecationWarning, WARN_DEPRECTATED_SYS_CHECKINTERVAL);
+                getContext().getSysModuleState().setCheckInterval(n);
+            } catch (PException ignore) {
+            }
+            return PNone.NONE;
+        }
+    }
 }
