@@ -84,6 +84,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__UNRAISABLEHOOK__;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_TYPE_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.LOST_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.REC_LIMIT_GREATER_THAN_1;
+import static com.oracle.graal.python.nodes.ErrorMessages.SWITCH_INTERVAL_MUST_BE_POSITIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_EXPECTED_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_CANNOT_RUN_PDB_YET;
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_DEPRECTATED_SYS_CHECKINTERVAL;
@@ -103,6 +104,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import org.graalvm.nativeimage.ImageInfo;
@@ -1479,6 +1481,52 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 warnNode.warnFormat(frame, DeprecationWarning, WARN_DEPRECTATED_SYS_CHECKINTERVAL);
                 getContext().getSysModuleState().setCheckInterval(n);
             } catch (PException ignore) {
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "getswitchinterval", minNumOfPositionalArgs = 1, declaresExplicitSelf = true, doc = "getswitchinterval($module, /)\n" +
+                    "--\n" +
+                    "\n" +
+                    "Return the current thread switch interval; see sys.setswitchinterval().")
+    @GenerateNodeFactory
+    abstract static class GetSwitchIntervalNode extends PythonBuiltinNode {
+        private final static double FACTOR = 1.e-6;
+
+        @Specialization
+        Object getCheckInterval(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys) {
+            return FACTOR * getContext().getSysModuleState().getSwitchInterval();
+        }
+    }
+
+    @Builtin(name = "setswitchinterval", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, doc = "setswitchinterval($module, interval, /)\n" +
+                    "--\n" +
+                    "\n" +
+                    "Set the ideal thread switching delay inside the Python interpreter.\n" +
+                    "\n" +
+                    "The actual frequency of switching threads can be lower if the\n" +
+                    "interpreter executes long sequences of uninterruptible code" +
+                    "(this is implementation-specific and workload-dependent).\n" +
+                    "\n" +
+                    "The parameter must represent the desired switching delay in seconds\n" +
+                    "A typical value is 0.005 (5 milliseconds).")
+    @GenerateNodeFactory
+    abstract static class SetSwitchIntervalNode extends PythonBuiltinNode {
+        private final static double FACTOR = 1.e6;
+
+        @Specialization
+        Object setCheckInterval(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object arg,
+                        @Cached PyFloatAsDoubleNode floatAsDoubleNode,
+                        @Cached PyFloatCheckExactNode floatCheckExactNode) {
+            try {
+                double interval = floatAsDoubleNode.execute(frame, arg);
+                if (interval <= 0.0) {
+                    throw raise(ValueError, SWITCH_INTERVAL_MUST_BE_POSITIVE);
+                }
+                getContext().getSysModuleState().setSwitchInterval(FACTOR * interval);
+            } catch (PException ignore) {
+
             }
             return PNone.NONE;
         }

@@ -57,15 +57,3 @@ def exit(arg=None):
     if isinstance(arg, tuple) and len(arg) == 1:
         code = arg[0]
     raise SystemExit(code)
-
-@__graalpython__.builtin
-def getswitchinterval():
-    return __graalpython__.sys_state.switchinterval
-
-@__graalpython__.builtin
-def setswitchinterval(value):
-    if not isinstance(value, (int, float)):
-        raise TypeError("must be real number, not str")
-    if value <= 0:
-        raise ValueError("switch interval must be strictly positive")
-    __graalpython__.sys_state.switchinterval = value
