@@ -365,6 +365,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.lookahead_functions: Dict[str, FunctionCall] = {}
         self.debug = debug
         self.skip_actions = skip_actions
+        self.goto_targets = []
 
     def add_level(self) -> None:
         if self.debug:
@@ -544,14 +545,13 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                     self.print(f"_res = ({result_type})cache.getResult(_mark, {node.name.upper()}_ID);")
                     self.add_return(f"({result_type})_res")
                 self.print("}")
-            # Java change: set up the goto target via a loop and switch construct
-            if rhs.alts:
-                self.print("_goto_label = 0;")
-                self.print("GOTO_LOOP: while (true) {")
-                self.level += 1
-                self.print("switch (_goto_label) {")
-                self.print("case 0:")
-                self.level += 1
+            # Java change: set up the goto target via a lambda
+            def _goto_target():
+                if memoize:
+                    self.print(f"cache.putResult(_mark, {node.name.upper()}_ID, _res);")
+                self.add_return(f"({result_type})_res")
+            self.goto_targets.append(_goto_target)
+            # End goto target setup
             if any(alt.action and "EXTRA" in alt.action for alt in rhs.alts):
                 self._set_up_token_start_metadata_extraction()
             self.visit(
@@ -561,18 +561,8 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.print(f'debugMessageln("Fail at %d: {node.name}", _mark);')
             self.print("_res = null;")
         with self.indent():
-            if rhs.alts:
-                self.level -= 1
-                self.print("case 1:")
-                self.level += 1
-            if memoize:
-                self.print(f"cache.putResult(_mark, {node.name.upper()}_ID, _res);")
-            self.add_return(f"({result_type})_res")
-            if rhs.alts:
-                self.level -= 1
-                self.print("}")
-                self.level -= 1
-                self.print("}")
+            # insert and pop the goto target
+            self.goto_targets.pop()()
 
     def _handle_loop_rule_body(self, node: Rule, rhs: Rhs) -> None:
         memoize = self._should_memoize(node)
@@ -604,7 +594,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 with self.indent():
                     self.add_return("null")
                 self.print("}")
-            self.print("SSTNode[] _seq = children.toArray(new SSTNode[children.size()]);")
+            self.print("SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);")
             self.out_of_memory_return(f"!_seq", cleanup_code="PyMem_Free(_children);")
             if node.name:
                 self.print(f"cache.putResult(_start_mark, {node.name.upper()}_ID, _seq);")
@@ -725,9 +715,8 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.emit_default_action(is_gather, node)
 
             # As the current option has parsed correctly, do not continue with the rest.
-            # Java change: C uses a goto here
-            self.print("_goto_label = 1;");
-            self.print("continue GOTO_LOOP;")
+            # Java change: C uses a goto here, we have the goto target code in a lambda
+            self.goto_targets[-1]()
         self.print("}")
 
     def handle_alt_loop(self, node: Alt, is_gather: bool, rulename: Optional[str]) -> None:
@@ -748,7 +737,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
 
             # Add the result of rule to the temporary buffer of children. This buffer
             # will populate later an asdl_seq with all elements to return.
-            self.print("_children.add(_res);")
+            self.print("_children.add((SSTNode)_res);")
             self.print("_mark = mark();")
         self.print("}")
 
