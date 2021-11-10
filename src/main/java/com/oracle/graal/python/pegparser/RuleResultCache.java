@@ -8,10 +8,13 @@ package com.oracle.graal.python.pegparser;
 import java.util.HashMap;
 
 /**
- * Cache that is used in the generated parser.
- * @param <T>
+ * Cache that is used in the generated parser. Really just a convenient
+ * interface around nested HashMaps mapping
+ * <code>
+ * (int tokenPos) -> (int ruleId) -> (T cachedItem)
+ * </code>
  */
-public class RuleResultCache <T> {
+class RuleResultCache <T> {
 
     private final AbstractParser parser;
 
@@ -53,5 +56,4 @@ public class RuleResultCache <T> {
         posCache.put(ruleId, new CachedItem(node, parser.mark()));
         return node;
     }
-
 }
