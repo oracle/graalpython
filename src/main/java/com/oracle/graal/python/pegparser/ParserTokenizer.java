@@ -47,7 +47,7 @@ public class ParserTokenizer {
     }
 
     protected Token peekToken(int pos) {
-        assert pos < token.size();
+        assert pos < tokens.size();
         return tokens.get(pos);
     }
 

@@ -6,6 +6,7 @@
 package com.oracle.graal.python.pegparser;
 
 import com.oracle.graal.python.pegparser.sst.SSTNode;
+import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -26,6 +27,8 @@ abstract class AbstractParser {
 
     protected int level = 0;
     protected boolean callInvalidRules = false;
+    private VarLookupSSTNode cachedDummyName;
+
     protected final RuleResultCache<Object> cache = new RuleResultCache(this);
     protected final Map<Integer, String> comments = new LinkedHashMap<>();
 
@@ -123,17 +126,6 @@ abstract class AbstractParser {
         return token;
     }
 
-    protected Token expect_SOFT_KEYWORD() {
-        Token t = expect(Token.Kind.SOFT_KEYWORD);
-        if (t != null) {
-            String text = getText(t);
-            if (softKeywords.contains(text)) {
-                return t;
-            }
-        }
-        return null;
-    }
-
     /**
      * equivalent to PyPegen_fill_token in that it modifies the token
      */
@@ -171,6 +163,15 @@ abstract class AbstractParser {
         }
     }
 
+    protected SSTNode expect_SOFT_KEYWORD(String keyword) {
+        Token t = tokenizer.peekToken();
+        if (t.type == Token.Kind.NAME && getText(t).equals(keyword)) {
+            tokenizer.getToken();
+            return factory.createVariable(getText(t), t.startOffset, t.endOffset);
+        }
+        return null;
+    }
+
     public Token string_token() {
         return expect(Token.Kind.STRING);
     }
@@ -191,6 +192,21 @@ abstract class AbstractParser {
             return null;
         }
         return t;
+    }
+
+    public SSTNode dummyName(Object... args) {
+        if (cachedDummyName != null) {
+            return cachedDummyName;
+        }
+        cachedDummyName = factory.createVariable("", 0, 0);
+        return cachedDummyName;
+    }
+
+    public Object[] insertInFront(Object element, Object[] seq) {
+        Object[] result = new Object[seq.length + 1];
+        System.arraycopy(seq, 0, result, 1, seq.length);
+        result[0] = element;
+        return result;
     }
 
     /**
