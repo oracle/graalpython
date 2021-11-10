@@ -325,6 +325,7 @@ public abstract class ErrorMessages {
     public static final String INTEGER_DIVISION_BY_ZERO = "ZeroDivisionError: integer division or modulo by zero";
     public static final String INTEGER_DIVISION_RESULT_TOO_LARGE = "integer division result too large for a float";
     public static final String S_EXPECTED_GOT_P = "%s argument expected, got %p";
+    public static final String REC_LIMIT_GREATER_THAN_1 = "recursion limit must be greater or equal than 1";
     public static final String INTEGER_GREATER_THAN_MAX = "integer is greater than maximum";
     public static final String INTEGER_REQUIRED = "an integer is required";
     public static final String INTEGER_REQUIRED_GOT = "an integer is required (got type %p)";

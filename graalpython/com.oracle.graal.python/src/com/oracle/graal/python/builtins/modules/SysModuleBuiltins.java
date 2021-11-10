@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeE
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ImportError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeWarning;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemExit;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeEncodeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
@@ -68,6 +69,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.DISPLAYHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.EXCEPTHOOK;
+import static com.oracle.graal.python.nodes.BuiltinNames.EXIT;
 import static com.oracle.graal.python.nodes.BuiltinNames.PYTHONBREAKPOINT;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDIN;
@@ -82,6 +84,8 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__STDOUT__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__UNRAISABLEHOOK__;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_TYPE_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.LOST_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.REC_LIMIT_GREATER_THAN_1;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_EXPECTED_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_CANNOT_RUN_PDB_YET;
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__;
@@ -99,6 +103,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.oracle.graal.python.lib.PyFloatCheckExactNode;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
+import com.oracle.graal.python.runtime.exception.PythonExitException;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -1386,4 +1393,53 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return callNode.execute(hook, args, keywords);
         }
     }
+
+    @Builtin(name = "getrecursionlimit", minNumOfPositionalArgs = 1, declaresExplicitSelf = true, doc = "getrecursionlimit($module, /)\n" +
+                    "--\n" +
+                    "\n" +
+                    "Return the current value of the recursion limit.\n" +
+                    "\n" +
+                    "The recursion limit is the maximum depth of the Python interpreter\n" +
+                    "stack.  This limit prevents infinite recursion from causing an overflow\n" +
+                    "of the C stack and crashing Python.")
+    @GenerateNodeFactory
+    abstract static class GetRecursionLimitNode extends PythonBuiltinNode {
+        @Specialization
+        Object getRecLim(@SuppressWarnings("unused") PythonModule sys) {
+            return getContext().getSysModuleState().getRecursionLimit();
+        }
+    }
+
+    @Builtin(name = "setrecursionlimit", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, doc = "setrecursionlimit($module, limit, /)\n" +
+                    "--\n" +
+                    "\n" +
+                    "Set the maximum depth of the Python interpreter stack to n.\n" +
+                    "\n" +
+                    "This limit prevents infinite recursion from causing an overflow of the C\n" +
+                    "stack and crashing Python.  The highest possible limit is platform-\n" +
+                    "dependent.")
+    @GenerateNodeFactory
+    abstract static class SetRecursionLimitNode extends PythonBuiltinNode {
+        @Specialization
+        Object setRecLim(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object limit,
+                        @Cached PyLongAsIntNode longAsIntNode,
+                        @Cached PyFloatCheckExactNode floatCheckExactNode) {
+            if (floatCheckExactNode.execute(limit)) {
+                throw raise(TypeError, S_EXPECTED_GOT_P, "integer", limit);
+            }
+
+            try {
+                final int newLimit = longAsIntNode.execute(frame, limit);
+                if (newLimit < 1) {
+                    throw raise(ValueError, REC_LIMIT_GREATER_THAN_1);
+                }
+
+                // TODO: check to see if Issue #25274 applies
+                getContext().getSysModuleState().setRecursionLimit(newLimit);
+            } catch (PException ignore) {
+            }
+            return PNone.NONE;
+        }
+    }
+
 }

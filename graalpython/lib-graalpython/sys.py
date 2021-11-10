@@ -59,18 +59,6 @@ def exit(arg=None):
     raise SystemExit(code)
 
 @__graalpython__.builtin
-def getrecursionlimit():
-    return __graalpython__.sys_state.recursionlimit
-
-@__graalpython__.builtin
-def setrecursionlimit(value):
-    if not isinstance(value, int):
-        raise TypeError("an integer is required")
-    if value <= 0:
-        raise ValueError("recursion limit must be greater or equal than 1")
-    __graalpython__.sys_state.recursionlimit = value
-
-@__graalpython__.builtin
 def getcheckinterval():
     return __graalpython__.sys_state.checkinterval
 

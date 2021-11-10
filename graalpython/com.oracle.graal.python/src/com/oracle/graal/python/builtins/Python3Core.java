@@ -286,6 +286,8 @@ import com.oracle.truffle.api.source.SourceSection;
  * through an extra field in the context.
  */
 public abstract class Python3Core extends ParserErrorCallback {
+    private static final int REC_LIM = 8000;
+    private static final int NATIVE_REC_LIM = 1000;
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(Python3Core.class);
     private final String[] coreFiles;
 
@@ -601,6 +603,7 @@ public abstract class Python3Core extends ParserErrorCallback {
     @CompilationFinal private PFloat pyNaN;
 
     private final PythonParser parser;
+    private final SysModuleState sysModuleState = new SysModuleState();
 
     @CompilationFinal private Object globalScopeObject;
 
@@ -618,6 +621,41 @@ public abstract class Python3Core extends ParserErrorCallback {
         this.parser = parser;
         this.builtins = initializeBuiltins(isNativeSupportAllowed);
         this.coreFiles = initializeCoreFiles();
+    }
+
+    @CompilerDirectives.ValueType
+    public static class SysModuleState {
+        private int recursionLimit = ImageInfo.inImageCode() ? NATIVE_REC_LIM : REC_LIM;
+        private int checkInterval = 100;
+        private double switchInterval = 0.005;
+
+        public int getRecursionLimit() {
+            return recursionLimit;
+        }
+
+        public void setRecursionLimit(int recursionLimit) {
+            this.recursionLimit = recursionLimit;
+        }
+
+        public int getCheckInterval() {
+            return checkInterval;
+        }
+
+        public void setCheckInterval(int checkInterval) {
+            this.checkInterval = checkInterval;
+        }
+
+        public double getSwitchInterval() {
+            return switchInterval;
+        }
+
+        public void setSwitchInterval(double switchInterval) {
+            this.switchInterval = switchInterval;
+        }
+    }
+
+    public SysModuleState getSysModuleState() {
+        return sysModuleState;
     }
 
     @Override
