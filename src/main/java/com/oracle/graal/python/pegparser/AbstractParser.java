@@ -8,15 +8,16 @@ package com.oracle.graal.python.pegparser;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * From this class is extended the generated parser. It allow access to the tokenizer.
+ * From this class is extended the generated parser. It allow access to the
+ * tokenizer.  The methods defined in this class are mostly equivalents to those
+ * defined in CPython's {@code pegen.c}. This allows us to keep the actions and
+ * parser generator very similar to CPython for easier updating in the future.
  */
 abstract class AbstractParser {
     protected static final Set<String> softKeywords = new HashSet<>();
