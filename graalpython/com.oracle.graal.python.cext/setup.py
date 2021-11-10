@@ -332,6 +332,33 @@ class LZMADepedency(CAPIDependency):
         return self.build()
 
 
+class ExpatDependency(CAPIDependency):
+
+    def build(self, extracted_dir=None):
+        if not extracted_dir:
+            extracted_dir = self.download()
+        src_path = os.path.join(extracted_dir, self.package_name + "-" + self.version)
+
+        cmake_args = [
+            f"cmake -S '{src_path}' -B '{src_path}'",
+            f"-DCMAKE_C_COMPILER='{get_config_var('CC')}'",
+            f"-DCMAKE_INSTALL_PREFIX='{src_path}/install'",
+            f"-DCMAKE_INSTALL_LIBDIR='{os.path.abspath(self.lib_install_dir)}'",
+            f"-DCMAKE_INSTALL_INCLUDEDIR='{os.path.abspath(self.include_install_dir)}'",
+        ]
+        system(' '.join(cmake_args), msg="Could not configure expat")
+        system(f"make -C '{src_path}' install", msg="Could not build expat")
+        return self.lib_install_dir
+
+    def install(self, build_dir=None):
+        lib_path = os.path.join(self.lib_install_dir, "lib%s.%s" % (self.lib_name, lib_ext))
+        if os.path.exists(lib_path):
+            # library has been built earlier, so just return the install directory.
+            return self.lib_install_dir
+
+        return self.build()
+
+
 def _build_deps(deps):
     libs = []
     library_dirs = []
@@ -401,6 +428,7 @@ builtin_exts = (
     NativeBuiltinModule("_ctypes_test"),
     # the above modules are more core, we need them first to deal with later, more complex modules with dependencies
     NativeBuiltinModule("_bz2", deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")], extra_link_args=["-Wl,-rpath,%s/../lib/%s/" % (relative_rpath, SOABI)]),
+    NativeBuiltinModule("pyexpat", deps=[ExpatDependency("expat", "expat==2.2.8", "EXPAT")], extra_link_args=["-Wl,-rpath,%s/../lib/%s/" % (relative_rpath, SOABI)]),
 )
 
 
