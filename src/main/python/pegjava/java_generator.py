@@ -594,7 +594,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 rhs, is_loop=True, is_gather=node.is_gather(), rulename=node.name,
             )
             if is_repeat1:
-                self.print("if (_n == 0) {")
+                self.print("if (_children.size() == 0) {")
                 with self.indent():
                     self.add_return("null")
                 self.print("}")
@@ -613,7 +613,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         elif node.type:
             result_type = _check_type(self, node.type)
         else:
-            result_type = "SSTNode"
+            result_type = "Object"
 
         for line in str(node).splitlines():
             self.print(f"// {line}")

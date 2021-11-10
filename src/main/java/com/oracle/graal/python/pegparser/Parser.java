@@ -13571,15 +13571,15 @@ public final class Parser extends AbstractParser {
     }
 
     // t_lookahead: '(' | '[' | '.'
-    public SSTNode t_lookahead_rule()
+    public Object t_lookahead_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, T_LOOKAHEAD_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, T_LOOKAHEAD_ID);
+            _res = (Object)cache.getResult(_mark, T_LOOKAHEAD_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '('
             debugMessageln("%d> t_lookahead[%d-%d]: %s", level, _mark, mark(), "'('");
@@ -13593,7 +13593,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, T_LOOKAHEAD_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s t_lookahead[%d-%d]: %s failed!", level,
@@ -13611,7 +13611,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, T_LOOKAHEAD_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s t_lookahead[%d-%d]: %s failed!", level,
@@ -13629,7 +13629,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, T_LOOKAHEAD_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s t_lookahead[%d-%d]: %s failed!", level,
@@ -13639,7 +13639,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, T_LOOKAHEAD_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // t_atom: NAME | '(' target ')' | '(' targets? ')' | '[' targets? ']'
@@ -13760,15 +13760,15 @@ public final class Parser extends AbstractParser {
     //     | args for_if_clauses
     //     | args ',' expression for_if_clauses
     //     | args ',' args
-    public SSTNode invalid_arguments_rule()
+    public Object invalid_arguments_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_ARGUMENTS_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_ARGUMENTS_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_ARGUMENTS_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // args ',' '*'
             debugMessageln("%d> invalid_arguments[%d-%d]: %s", level, _mark, mark(), "args ',' '*'");
@@ -13789,7 +13789,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "args ',' '*'");
                 cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_arguments[%d-%d]: %s failed!", level,
@@ -13819,7 +13819,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression for_if_clauses ',' [args | expression for_if_clauses]");
                 cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_arguments[%d-%d]: %s failed!", level,
@@ -13843,7 +13843,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "args for_if_clauses");
                 cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_arguments[%d-%d]: %s failed!", level,
@@ -13873,7 +13873,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "args ',' expression for_if_clauses");
                 cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_arguments[%d-%d]: %s failed!", level,
@@ -13898,7 +13898,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "args ',' args");
                 cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_arguments[%d-%d]: %s failed!", level,
@@ -13908,19 +13908,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_ARGUMENTS_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_kwarg: expression '='
-    public SSTNode invalid_kwarg_rule()
+    public Object invalid_kwarg_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_KWARG_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_KWARG_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_KWARG_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // expression '='
             debugMessageln("%d> invalid_kwarg[%d-%d]: %s", level, _mark, mark(), "expression '='");
@@ -13938,7 +13938,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression '='");
                 cache.putResult(_mark, INVALID_KWARG_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_kwarg[%d-%d]: %s failed!", level,
@@ -13948,19 +13948,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_KWARG_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_expression: !(NAME STRING | SOFT_KEYWORD) disjunction expression
-    public SSTNode invalid_expression_rule()
+    public Object invalid_expression_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_EXPRESSION_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_EXPRESSION_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_EXPRESSION_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // !(NAME STRING | SOFT_KEYWORD) disjunction expression
             debugMessageln("%d> invalid_expression[%d-%d]: %s", level, _mark, mark(), "!(NAME STRING | SOFT_KEYWORD) disjunction expression");
@@ -13980,7 +13980,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "!(NAME STRING | SOFT_KEYWORD) disjunction expression");
                 cache.putResult(_mark, INVALID_EXPRESSION_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_expression[%d-%d]: %s failed!", level,
@@ -13990,22 +13990,22 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_EXPRESSION_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_named_expression:
     //     | expression ':=' expression
     //     | NAME '=' bitwise_or !('=' | ':=' | ',')
     //     | !(list | tuple | genexp | 'True' | 'None' | 'False') bitwise_or '=' bitwise_or !('=' | ':=' | ',')
-    public SSTNode invalid_named_expression_rule()
+    public Object invalid_named_expression_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_NAMED_EXPRESSION_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_NAMED_EXPRESSION_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_NAMED_EXPRESSION_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // expression ':=' expression
             debugMessageln("%d> invalid_named_expression[%d-%d]: %s", level, _mark, mark(), "expression ':=' expression");
@@ -14026,7 +14026,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':=' expression");
                 cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_named_expression[%d-%d]: %s failed!", level,
@@ -14053,7 +14053,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME '=' bitwise_or !('=' | ':=' | ',')");
                 cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_named_expression[%d-%d]: %s failed!", level,
@@ -14082,7 +14082,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "!(list | tuple | genexp | 'True' | 'None' | 'False') bitwise_or '=' bitwise_or !('=' | ':=' | ',')");
                 cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_named_expression[%d-%d]: %s failed!", level,
@@ -14092,7 +14092,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_NAMED_EXPRESSION_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_assignment:
@@ -14102,15 +14102,15 @@ public final class Parser extends AbstractParser {
     //     | ((star_targets '='))* star_expressions '='
     //     | ((star_targets '='))* yield_expr '='
     //     | star_expressions augassign (yield_expr | star_expressions)
-    public SSTNode invalid_assignment_rule()
+    public Object invalid_assignment_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_ASSIGNMENT_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_ASSIGNMENT_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_ASSIGNMENT_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // invalid_ann_assign_target ':' expression
             debugMessageln("%d> invalid_assignment[%d-%d]: %s", level, _mark, mark(), "invalid_ann_assign_target ':' expression");
@@ -14131,7 +14131,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "invalid_ann_assign_target ':' expression");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_assignment[%d-%d]: %s failed!", level,
@@ -14162,7 +14162,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_named_expression ',' star_named_expressions* ':' expression");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_assignment[%d-%d]: %s failed!", level,
@@ -14187,7 +14187,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':' expression");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_assignment[%d-%d]: %s failed!", level,
@@ -14212,7 +14212,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "((star_targets '='))* star_expressions '='");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_assignment[%d-%d]: %s failed!", level,
@@ -14237,7 +14237,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "((star_targets '='))* yield_expr '='");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_assignment[%d-%d]: %s failed!", level,
@@ -14264,7 +14264,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_expressions augassign (yield_expr | star_expressions)");
                 cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_assignment[%d-%d]: %s failed!", level,
@@ -14274,7 +14274,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_ASSIGNMENT_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_ann_assign_target: list | tuple | '(' invalid_ann_assign_target ')'
@@ -14356,15 +14356,15 @@ public final class Parser extends AbstractParser {
     }
 
     // invalid_del_stmt: 'del' star_expressions
-    public SSTNode invalid_del_stmt_rule()
+    public Object invalid_del_stmt_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_DEL_STMT_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_DEL_STMT_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_DEL_STMT_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'del' star_expressions
             debugMessageln("%d> invalid_del_stmt[%d-%d]: %s", level, _mark, mark(), "'del' star_expressions");
@@ -14382,7 +14382,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'del' star_expressions");
                 cache.putResult(_mark, INVALID_DEL_STMT_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_del_stmt[%d-%d]: %s failed!", level,
@@ -14392,19 +14392,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_DEL_STMT_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_block: NEWLINE !INDENT
-    public SSTNode invalid_block_rule()
+    public Object invalid_block_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_BLOCK_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_BLOCK_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_BLOCK_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // NEWLINE !INDENT
             debugMessageln("%d> invalid_block[%d-%d]: %s", level, _mark, mark(), "NEWLINE !INDENT");
@@ -14421,7 +14421,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NEWLINE !INDENT");
                 cache.putResult(_mark, INVALID_BLOCK_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_block[%d-%d]: %s failed!", level,
@@ -14431,12 +14431,12 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_BLOCK_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // Left-recursive
     // invalid_primary: primary '{'
-    public SSTNode invalid_primary_rule()
+    public Object invalid_primary_rule()
     {
         level++;
         int _mark = mark();
@@ -14456,7 +14456,7 @@ public final class Parser extends AbstractParser {
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary '{'");
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_primary[%d-%d]: %s failed!", level,
@@ -14465,21 +14465,21 @@ public final class Parser extends AbstractParser {
         debugMessageln("Fail at %d: invalid_primary", _mark);
         _res = null;
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_comprehension:
     //     | ('[' | '(' | '{') starred_expression for_if_clauses
     //     | ('[' | '{') star_named_expression ',' star_named_expressions? for_if_clauses
-    public SSTNode invalid_comprehension_rule()
+    public Object invalid_comprehension_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_COMPREHENSION_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_COMPREHENSION_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_COMPREHENSION_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ('[' | '(' | '{') starred_expression for_if_clauses
             debugMessageln("%d> invalid_comprehension[%d-%d]: %s", level, _mark, mark(), "('[' | '(' | '{') starred_expression for_if_clauses");
@@ -14502,7 +14502,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "('[' | '(' | '{') starred_expression for_if_clauses");
                 cache.putResult(_mark, INVALID_COMPREHENSION_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_comprehension[%d-%d]: %s failed!", level,
@@ -14535,7 +14535,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "('[' | '{') star_named_expression ',' star_named_expressions? for_if_clauses");
                 cache.putResult(_mark, INVALID_COMPREHENSION_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_comprehension[%d-%d]: %s failed!", level,
@@ -14545,19 +14545,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_COMPREHENSION_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_dict_comprehension: '{' '**' bitwise_or for_if_clauses '}'
-    public SSTNode invalid_dict_comprehension_rule()
+    public Object invalid_dict_comprehension_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_DICT_COMPREHENSION_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_DICT_COMPREHENSION_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_DICT_COMPREHENSION_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '{' '**' bitwise_or for_if_clauses '}'
             debugMessageln("%d> invalid_dict_comprehension[%d-%d]: %s", level, _mark, mark(), "'{' '**' bitwise_or for_if_clauses '}'");
@@ -14586,7 +14586,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' '**' bitwise_or for_if_clauses '}'");
                 cache.putResult(_mark, INVALID_DICT_COMPREHENSION_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_dict_comprehension[%d-%d]: %s failed!", level,
@@ -14596,19 +14596,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_DICT_COMPREHENSION_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_parameters: param_no_default* invalid_parameters_helper param_no_default
-    public SSTNode invalid_parameters_rule()
+    public Object invalid_parameters_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_PARAMETERS_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_PARAMETERS_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_PARAMETERS_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // param_no_default* invalid_parameters_helper param_no_default
             debugMessageln("%d> invalid_parameters[%d-%d]: %s", level, _mark, mark(), "param_no_default* invalid_parameters_helper param_no_default");
@@ -14631,7 +14631,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "param_no_default* invalid_parameters_helper param_no_default");
                 cache.putResult(_mark, INVALID_PARAMETERS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_parameters[%d-%d]: %s failed!", level,
@@ -14641,19 +14641,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_PARAMETERS_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_parameters_helper: slash_with_default | param_with_default+
-    public SSTNode invalid_parameters_helper_rule()
+    public Object invalid_parameters_helper_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_PARAMETERS_HELPER_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_PARAMETERS_HELPER_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_PARAMETERS_HELPER_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // slash_with_default
             debugMessageln("%d> invalid_parameters_helper[%d-%d]: %s", level, _mark, mark(), "slash_with_default");
@@ -14670,7 +14670,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "slash_with_default");
                 cache.putResult(_mark, INVALID_PARAMETERS_HELPER_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_parameters_helper[%d-%d]: %s failed!", level,
@@ -14688,7 +14688,7 @@ public final class Parser extends AbstractParser {
                 _res = _loop1_213_var;
                 cache.putResult(_mark, INVALID_PARAMETERS_HELPER_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_parameters_helper[%d-%d]: %s failed!", level,
@@ -14698,20 +14698,20 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_PARAMETERS_HELPER_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_lambda_parameters:
     //     | lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default
-    public SSTNode invalid_lambda_parameters_rule()
+    public Object invalid_lambda_parameters_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_LAMBDA_PARAMETERS_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_LAMBDA_PARAMETERS_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_LAMBDA_PARAMETERS_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default
             debugMessageln("%d> invalid_lambda_parameters[%d-%d]: %s", level, _mark, mark(), "lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default");
@@ -14734,7 +14734,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default");
                 cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_lambda_parameters[%d-%d]: %s failed!", level,
@@ -14744,21 +14744,21 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_lambda_parameters_helper:
     //     | lambda_slash_with_default
     //     | lambda_param_with_default+
-    public SSTNode invalid_lambda_parameters_helper_rule()
+    public Object invalid_lambda_parameters_helper_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // lambda_slash_with_default
             debugMessageln("%d> invalid_lambda_parameters_helper[%d-%d]: %s", level, _mark, mark(), "lambda_slash_with_default");
@@ -14775,7 +14775,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_slash_with_default");
                 cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_lambda_parameters_helper[%d-%d]: %s failed!", level,
@@ -14793,7 +14793,7 @@ public final class Parser extends AbstractParser {
                 _res = _loop1_215_var;
                 cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_lambda_parameters_helper[%d-%d]: %s failed!", level,
@@ -14803,19 +14803,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_star_etc: '*' (')' | ',' (')' | '**')) | '*' ',' TYPE_COMMENT
-    public SSTNode invalid_star_etc_rule()
+    public Object invalid_star_etc_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_STAR_ETC_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_STAR_ETC_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_STAR_ETC_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '*' (')' | ',' (')' | '**'))
             debugMessageln("%d> invalid_star_etc[%d-%d]: %s", level, _mark, mark(), "'*' (')' | ',' (')' | '**'))");
@@ -14833,7 +14833,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' (')' | ',' (')' | '**'))");
                 cache.putResult(_mark, INVALID_STAR_ETC_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_star_etc[%d-%d]: %s failed!", level,
@@ -14858,7 +14858,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' ',' TYPE_COMMENT");
                 cache.putResult(_mark, INVALID_STAR_ETC_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_star_etc[%d-%d]: %s failed!", level,
@@ -14868,19 +14868,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_STAR_ETC_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_lambda_star_etc: '*' (':' | ',' (':' | '**'))
-    public SSTNode invalid_lambda_star_etc_rule()
+    public Object invalid_lambda_star_etc_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_LAMBDA_STAR_ETC_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_LAMBDA_STAR_ETC_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_LAMBDA_STAR_ETC_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '*' (':' | ',' (':' | '**'))
             debugMessageln("%d> invalid_lambda_star_etc[%d-%d]: %s", level, _mark, mark(), "'*' (':' | ',' (':' | '**'))");
@@ -14898,7 +14898,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' (':' | ',' (':' | '**'))");
                 cache.putResult(_mark, INVALID_LAMBDA_STAR_ETC_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_lambda_star_etc[%d-%d]: %s failed!", level,
@@ -14908,19 +14908,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_LAMBDA_STAR_ETC_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_double_type_comments: TYPE_COMMENT NEWLINE TYPE_COMMENT NEWLINE INDENT
-    public SSTNode invalid_double_type_comments_rule()
+    public Object invalid_double_type_comments_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_DOUBLE_TYPE_COMMENTS_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_DOUBLE_TYPE_COMMENTS_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_DOUBLE_TYPE_COMMENTS_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // TYPE_COMMENT NEWLINE TYPE_COMMENT NEWLINE INDENT
             debugMessageln("%d> invalid_double_type_comments[%d-%d]: %s", level, _mark, mark(), "TYPE_COMMENT NEWLINE TYPE_COMMENT NEWLINE INDENT");
@@ -14947,7 +14947,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "TYPE_COMMENT NEWLINE TYPE_COMMENT NEWLINE INDENT");
                 cache.putResult(_mark, INVALID_DOUBLE_TYPE_COMMENTS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_double_type_comments[%d-%d]: %s failed!", level,
@@ -14957,19 +14957,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_DOUBLE_TYPE_COMMENTS_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_with_item: expression 'as' expression &(',' | ')' | ':')
-    public SSTNode invalid_with_item_rule()
+    public Object invalid_with_item_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_WITH_ITEM_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_WITH_ITEM_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_WITH_ITEM_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // expression 'as' expression &(',' | ')' | ':')
             debugMessageln("%d> invalid_with_item[%d-%d]: %s", level, _mark, mark(), "expression 'as' expression &(',' | ')' | ':')");
@@ -14992,7 +14992,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression 'as' expression &(',' | ')' | ':')");
                 cache.putResult(_mark, INVALID_WITH_ITEM_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_with_item[%d-%d]: %s failed!", level,
@@ -15002,19 +15002,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_WITH_ITEM_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_for_target: ASYNC? 'for' star_expressions
-    public SSTNode invalid_for_target_rule()
+    public Object invalid_for_target_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_FOR_TARGET_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_FOR_TARGET_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_FOR_TARGET_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ASYNC? 'for' star_expressions
             debugMessageln("%d> invalid_for_target[%d-%d]: %s", level, _mark, mark(), "ASYNC? 'for' star_expressions");
@@ -15035,7 +15035,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC? 'for' star_expressions");
                 cache.putResult(_mark, INVALID_FOR_TARGET_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_for_target[%d-%d]: %s failed!", level,
@@ -15045,19 +15045,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_FOR_TARGET_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_group: '(' starred_expression ')' | '(' '**' expression ')'
-    public SSTNode invalid_group_rule()
+    public Object invalid_group_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_GROUP_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_GROUP_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_GROUP_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '(' starred_expression ')'
             debugMessageln("%d> invalid_group[%d-%d]: %s", level, _mark, mark(), "'(' starred_expression ')'");
@@ -15078,7 +15078,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' starred_expression ')'");
                 cache.putResult(_mark, INVALID_GROUP_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_group[%d-%d]: %s failed!", level,
@@ -15106,7 +15106,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' '**' expression ')'");
                 cache.putResult(_mark, INVALID_GROUP_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_group[%d-%d]: %s failed!", level,
@@ -15116,19 +15116,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_GROUP_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_import_from_targets: import_from_as_names ','
-    public SSTNode invalid_import_from_targets_rule()
+    public Object invalid_import_from_targets_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_IMPORT_FROM_TARGETS_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_IMPORT_FROM_TARGETS_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_IMPORT_FROM_TARGETS_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // import_from_as_names ','
             debugMessageln("%d> invalid_import_from_targets[%d-%d]: %s", level, _mark, mark(), "import_from_as_names ','");
@@ -15148,7 +15148,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "import_from_as_names ','");
                 cache.putResult(_mark, INVALID_IMPORT_FROM_TARGETS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_import_from_targets[%d-%d]: %s failed!", level,
@@ -15158,21 +15158,21 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_IMPORT_FROM_TARGETS_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_with_stmt:
     //     | ASYNC? 'with' ','.(expression ['as' star_target])+ &&':'
     //     | ASYNC? 'with' '(' ','.(expressions ['as' star_target])+ ','? ')' &&':'
-    public SSTNode invalid_with_stmt_rule()
+    public Object invalid_with_stmt_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_WITH_STMT_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_WITH_STMT_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_WITH_STMT_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ASYNC? 'with' ','.(expression ['as' star_target])+ &&':'
             debugMessageln("%d> invalid_with_stmt[%d-%d]: %s", level, _mark, mark(), "ASYNC? 'with' ','.(expression ['as' star_target])+ &&':'");
@@ -15195,7 +15195,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(_opt_var, _keyword, _gather_220_var, _literal);
                 cache.putResult(_mark, INVALID_WITH_STMT_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_with_stmt[%d-%d]: %s failed!", level,
@@ -15231,7 +15231,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(_opt_var, _keyword, _literal, _gather_223_var, _opt_var_1, _literal_1, _literal_2);
                 cache.putResult(_mark, INVALID_WITH_STMT_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_with_stmt[%d-%d]: %s failed!", level,
@@ -15241,22 +15241,22 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_WITH_STMT_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_except_block:
     //     | 'except' expression ',' expressions ['as' NAME] ':'
     //     | 'except' expression ['as' NAME] &&':'
     //     | 'except' &&':'
-    public SSTNode invalid_except_block_rule()
+    public Object invalid_except_block_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_EXCEPT_BLOCK_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_EXCEPT_BLOCK_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_EXCEPT_BLOCK_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'except' expression ',' expressions ['as' NAME] ':'
             debugMessageln("%d> invalid_except_block[%d-%d]: %s", level, _mark, mark(), "'except' expression ',' expressions ['as' NAME] ':'");
@@ -15286,7 +15286,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'except' expression ',' expressions ['as' NAME] ':'");
                 cache.putResult(_mark, INVALID_EXCEPT_BLOCK_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_except_block[%d-%d]: %s failed!", level,
@@ -15313,7 +15313,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(_keyword, expression_var, _opt_var, _literal);
                 cache.putResult(_mark, INVALID_EXCEPT_BLOCK_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_except_block[%d-%d]: %s failed!", level,
@@ -15334,7 +15334,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(_keyword, _literal);
                 cache.putResult(_mark, INVALID_EXCEPT_BLOCK_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_except_block[%d-%d]: %s failed!", level,
@@ -15344,19 +15344,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_EXCEPT_BLOCK_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_match_stmt: "match" subject_expr !':'
-    public SSTNode invalid_match_stmt_rule()
+    public Object invalid_match_stmt_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_MATCH_STMT_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_MATCH_STMT_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_MATCH_STMT_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // "match" subject_expr !':'
             debugMessageln("%d> invalid_match_stmt[%d-%d]: %s", level, _mark, mark(), "\"match\" subject_expr !':'");
@@ -15376,7 +15376,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'match' subject_expr !':'");
                 cache.putResult(_mark, INVALID_MATCH_STMT_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_match_stmt[%d-%d]: %s failed!", level,
@@ -15386,19 +15386,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_MATCH_STMT_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_case_block: "case" patterns guard? !':'
-    public SSTNode invalid_case_block_rule()
+    public Object invalid_case_block_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_CASE_BLOCK_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_CASE_BLOCK_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_CASE_BLOCK_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // "case" patterns guard? !':'
             debugMessageln("%d> invalid_case_block[%d-%d]: %s", level, _mark, mark(), "\"case\" patterns guard? !':'");
@@ -15421,7 +15421,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'case' patterns guard? !':'");
                 cache.putResult(_mark, INVALID_CASE_BLOCK_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_case_block[%d-%d]: %s failed!", level,
@@ -15431,19 +15431,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_CASE_BLOCK_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_if_stmt: 'if' named_expression NEWLINE
-    public SSTNode invalid_if_stmt_rule()
+    public Object invalid_if_stmt_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_IF_STMT_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_IF_STMT_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_IF_STMT_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'if' named_expression NEWLINE
             debugMessageln("%d> invalid_if_stmt[%d-%d]: %s", level, _mark, mark(), "'if' named_expression NEWLINE");
@@ -15464,7 +15464,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' named_expression NEWLINE");
                 cache.putResult(_mark, INVALID_IF_STMT_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_if_stmt[%d-%d]: %s failed!", level,
@@ -15474,19 +15474,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_IF_STMT_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_elif_stmt: 'elif' named_expression NEWLINE
-    public SSTNode invalid_elif_stmt_rule()
+    public Object invalid_elif_stmt_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_ELIF_STMT_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_ELIF_STMT_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_ELIF_STMT_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'elif' named_expression NEWLINE
             debugMessageln("%d> invalid_elif_stmt[%d-%d]: %s", level, _mark, mark(), "'elif' named_expression NEWLINE");
@@ -15507,7 +15507,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'elif' named_expression NEWLINE");
                 cache.putResult(_mark, INVALID_ELIF_STMT_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_elif_stmt[%d-%d]: %s failed!", level,
@@ -15517,19 +15517,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_ELIF_STMT_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_while_stmt: 'while' named_expression NEWLINE
-    public SSTNode invalid_while_stmt_rule()
+    public Object invalid_while_stmt_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_WHILE_STMT_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_WHILE_STMT_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_WHILE_STMT_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'while' named_expression NEWLINE
             debugMessageln("%d> invalid_while_stmt[%d-%d]: %s", level, _mark, mark(), "'while' named_expression NEWLINE");
@@ -15550,7 +15550,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'while' named_expression NEWLINE");
                 cache.putResult(_mark, INVALID_WHILE_STMT_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_while_stmt[%d-%d]: %s failed!", level,
@@ -15560,22 +15560,22 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_WHILE_STMT_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_double_starred_kvpairs:
     //     | ','.double_starred_kvpair+ ',' invalid_kvpair
     //     | expression ':' '*' bitwise_or
     //     | expression ':' &('}' | ',')
-    public SSTNode invalid_double_starred_kvpairs_rule()
+    public Object invalid_double_starred_kvpairs_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ','.double_starred_kvpair+ ',' invalid_kvpair
             debugMessageln("%d> invalid_double_starred_kvpairs[%d-%d]: %s", level, _mark, mark(), "','.double_starred_kvpair+ ',' invalid_kvpair");
@@ -15595,7 +15595,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(_gather_227_var, _literal, invalid_kvpair_var);
                 cache.putResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_double_starred_kvpairs[%d-%d]: %s failed!", level,
@@ -15623,7 +15623,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':' '*' bitwise_or");
                 cache.putResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_double_starred_kvpairs[%d-%d]: %s failed!", level,
@@ -15647,7 +15647,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':' &('}' | ',')");
                 cache.putResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_double_starred_kvpairs[%d-%d]: %s failed!", level,
@@ -15657,19 +15657,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_DOUBLE_STARRED_KVPAIRS_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // invalid_kvpair: expression !(':') | expression ':' '*' bitwise_or | expression ':'
-    public SSTNode invalid_kvpair_rule()
+    public Object invalid_kvpair_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, INVALID_KVPAIR_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, INVALID_KVPAIR_ID);
+            _res = (Object)cache.getResult(_mark, INVALID_KVPAIR_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // expression !(':')
             debugMessageln("%d> invalid_kvpair[%d-%d]: %s", level, _mark, mark(), "expression !(':')");
@@ -15686,7 +15686,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression !(':')");
                 cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_kvpair[%d-%d]: %s failed!", level,
@@ -15714,7 +15714,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':' '*' bitwise_or");
                 cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_kvpair[%d-%d]: %s failed!", level,
@@ -15736,7 +15736,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':'");
                 cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s invalid_kvpair[%d-%d]: %s failed!", level,
@@ -15746,19 +15746,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, INVALID_KVPAIR_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_1: statements
-    public SSTNode _tmp_1_rule()
+    public Object _tmp_1_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_1_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_1_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_1_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // statements
             debugMessageln("%d> _tmp_1[%d-%d]: %s", level, _mark, mark(), "statements");
@@ -15772,7 +15772,7 @@ public final class Parser extends AbstractParser {
                 _res = statements_var;
                 cache.putResult(_mark, _TMP_1_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_1[%d-%d]: %s failed!", level,
@@ -15782,7 +15782,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_1_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_2: NEWLINE
@@ -15827,15 +15827,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_3: type_expressions
-    public SSTNode _tmp_3_rule()
+    public Object _tmp_3_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_3_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_3_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_3_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // type_expressions
             debugMessageln("%d> _tmp_3[%d-%d]: %s", level, _mark, mark(), "type_expressions");
@@ -15851,7 +15851,7 @@ public final class Parser extends AbstractParser {
                 _res = type_expressions_var;
                 cache.putResult(_mark, _TMP_3_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_3[%d-%d]: %s failed!", level,
@@ -15861,7 +15861,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_3_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_4: NEWLINE
@@ -16272,7 +16272,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_13[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "statement");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -16370,15 +16370,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_16: ';'
-    public SSTNode _tmp_16_rule()
+    public Object _tmp_16_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_16_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_16_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_16_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ';'
             debugMessageln("%d> _tmp_16[%d-%d]: %s", level, _mark, mark(), "';'");
@@ -16392,7 +16392,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_16_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_16[%d-%d]: %s failed!", level,
@@ -16402,19 +16402,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_16_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_17: 'import' | 'from'
-    public SSTNode _tmp_17_rule()
+    public Object _tmp_17_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_17_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_17_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_17_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'import'
             debugMessageln("%d> _tmp_17[%d-%d]: %s", level, _mark, mark(), "'import'");
@@ -16428,7 +16428,7 @@ public final class Parser extends AbstractParser {
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_17_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_17[%d-%d]: %s failed!", level,
@@ -16446,7 +16446,7 @@ public final class Parser extends AbstractParser {
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_17_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_17[%d-%d]: %s failed!", level,
@@ -16456,19 +16456,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_17_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_18: 'def' | '@' | ASYNC
-    public SSTNode _tmp_18_rule()
+    public Object _tmp_18_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_18_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_18_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_18_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'def'
             debugMessageln("%d> _tmp_18[%d-%d]: %s", level, _mark, mark(), "'def'");
@@ -16482,7 +16482,7 @@ public final class Parser extends AbstractParser {
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_18_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_18[%d-%d]: %s failed!", level,
@@ -16500,7 +16500,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_18_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_18[%d-%d]: %s failed!", level,
@@ -16518,7 +16518,7 @@ public final class Parser extends AbstractParser {
                 _res = async_var;
                 cache.putResult(_mark, _TMP_18_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_18[%d-%d]: %s failed!", level,
@@ -16528,19 +16528,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_18_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_19: 'class' | '@'
-    public SSTNode _tmp_19_rule()
+    public Object _tmp_19_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_19_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_19_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_19_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'class'
             debugMessageln("%d> _tmp_19[%d-%d]: %s", level, _mark, mark(), "'class'");
@@ -16554,7 +16554,7 @@ public final class Parser extends AbstractParser {
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_19_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_19[%d-%d]: %s failed!", level,
@@ -16572,7 +16572,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_19_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_19[%d-%d]: %s failed!", level,
@@ -16582,19 +16582,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_19_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_20: 'with' | ASYNC
-    public SSTNode _tmp_20_rule()
+    public Object _tmp_20_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_20_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_20_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_20_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'with'
             debugMessageln("%d> _tmp_20[%d-%d]: %s", level, _mark, mark(), "'with'");
@@ -16608,7 +16608,7 @@ public final class Parser extends AbstractParser {
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_20_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_20[%d-%d]: %s failed!", level,
@@ -16626,7 +16626,7 @@ public final class Parser extends AbstractParser {
                 _res = async_var;
                 cache.putResult(_mark, _TMP_20_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_20[%d-%d]: %s failed!", level,
@@ -16636,19 +16636,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_20_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_21: 'for' | ASYNC
-    public SSTNode _tmp_21_rule()
+    public Object _tmp_21_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_21_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_21_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_21_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'for'
             debugMessageln("%d> _tmp_21[%d-%d]: %s", level, _mark, mark(), "'for'");
@@ -16662,7 +16662,7 @@ public final class Parser extends AbstractParser {
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_21_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_21[%d-%d]: %s failed!", level,
@@ -16680,7 +16680,7 @@ public final class Parser extends AbstractParser {
                 _res = async_var;
                 cache.putResult(_mark, _TMP_21_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_21[%d-%d]: %s failed!", level,
@@ -16690,19 +16690,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_21_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_22: '=' annotated_rhs
-    public SSTNode _tmp_22_rule()
+    public Object _tmp_22_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_22_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_22_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_22_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '=' annotated_rhs
             debugMessageln("%d> _tmp_22[%d-%d]: %s", level, _mark, mark(), "'=' annotated_rhs");
@@ -16719,7 +16719,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'=' annotated_rhs");
                 cache.putResult(_mark, _TMP_22_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_22[%d-%d]: %s failed!", level,
@@ -16729,19 +16729,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_22_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_23: '(' single_target ')' | single_subscript_attribute_target
-    public SSTNode _tmp_23_rule()
+    public Object _tmp_23_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_23_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_23_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_23_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '(' single_target ')'
             debugMessageln("%d> _tmp_23[%d-%d]: %s", level, _mark, mark(), "'(' single_target ')'");
@@ -16761,7 +16761,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' single_target ')'");
                 cache.putResult(_mark, _TMP_23_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_23[%d-%d]: %s failed!", level,
@@ -16779,7 +16779,7 @@ public final class Parser extends AbstractParser {
                 _res = single_subscript_attribute_target_var;
                 cache.putResult(_mark, _TMP_23_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_23[%d-%d]: %s failed!", level,
@@ -16789,19 +16789,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_23_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_24: '=' annotated_rhs
-    public SSTNode _tmp_24_rule()
+    public Object _tmp_24_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_24_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_24_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_24_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '=' annotated_rhs
             debugMessageln("%d> _tmp_24[%d-%d]: %s", level, _mark, mark(), "'=' annotated_rhs");
@@ -16818,7 +16818,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'=' annotated_rhs");
                 cache.putResult(_mark, _TMP_24_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_24[%d-%d]: %s failed!", level,
@@ -16828,7 +16828,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_24_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_25: (star_targets '=')
@@ -16866,7 +16866,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_25[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "(star_targets '=')");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -16877,15 +16877,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_26: yield_expr | star_expressions
-    public SSTNode _tmp_26_rule()
+    public Object _tmp_26_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_26_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_26_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_26_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // yield_expr
             debugMessageln("%d> _tmp_26[%d-%d]: %s", level, _mark, mark(), "yield_expr");
@@ -16899,7 +16899,7 @@ public final class Parser extends AbstractParser {
                 _res = yield_expr_var;
                 cache.putResult(_mark, _TMP_26_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_26[%d-%d]: %s failed!", level,
@@ -16917,7 +16917,7 @@ public final class Parser extends AbstractParser {
                 _res = star_expressions_var;
                 cache.putResult(_mark, _TMP_26_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_26[%d-%d]: %s failed!", level,
@@ -16927,19 +16927,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_26_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_27: TYPE_COMMENT
-    public SSTNode _tmp_27_rule()
+    public Object _tmp_27_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_27_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_27_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_27_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // TYPE_COMMENT
             debugMessageln("%d> _tmp_27[%d-%d]: %s", level, _mark, mark(), "TYPE_COMMENT");
@@ -16953,7 +16953,7 @@ public final class Parser extends AbstractParser {
                 _res = type_comment_var;
                 cache.putResult(_mark, _TMP_27_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_27[%d-%d]: %s failed!", level,
@@ -16963,19 +16963,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_27_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_28: yield_expr | star_expressions
-    public SSTNode _tmp_28_rule()
+    public Object _tmp_28_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_28_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_28_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_28_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // yield_expr
             debugMessageln("%d> _tmp_28[%d-%d]: %s", level, _mark, mark(), "yield_expr");
@@ -16989,7 +16989,7 @@ public final class Parser extends AbstractParser {
                 _res = yield_expr_var;
                 cache.putResult(_mark, _TMP_28_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_28[%d-%d]: %s failed!", level,
@@ -17007,7 +17007,7 @@ public final class Parser extends AbstractParser {
                 _res = star_expressions_var;
                 cache.putResult(_mark, _TMP_28_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_28[%d-%d]: %s failed!", level,
@@ -17017,7 +17017,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_28_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_30: ',' NAME
@@ -17187,15 +17187,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_33: ',' expression
-    public SSTNode _tmp_33_rule()
+    public Object _tmp_33_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_33_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_33_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_33_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ',' expression
             debugMessageln("%d> _tmp_33[%d-%d]: %s", level, _mark, mark(), "',' expression");
@@ -17212,7 +17212,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
                 cache.putResult(_mark, _TMP_33_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_33[%d-%d]: %s failed!", level,
@@ -17222,19 +17222,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_33_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_34: ';' | NEWLINE
-    public SSTNode _tmp_34_rule()
+    public Object _tmp_34_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_34_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_34_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_34_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ';'
             debugMessageln("%d> _tmp_34[%d-%d]: %s", level, _mark, mark(), "';'");
@@ -17248,7 +17248,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_34_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_34[%d-%d]: %s failed!", level,
@@ -17266,7 +17266,7 @@ public final class Parser extends AbstractParser {
                 _res = newline_var;
                 cache.putResult(_mark, _TMP_34_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_34[%d-%d]: %s failed!", level,
@@ -17276,7 +17276,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_34_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_35: ('.' | '...')
@@ -17355,7 +17355,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_36[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "('.' | '...')");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -17366,15 +17366,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_37: ','
-    public SSTNode _tmp_37_rule()
+    public Object _tmp_37_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_37_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_37_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_37_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ','
             debugMessageln("%d> _tmp_37[%d-%d]: %s", level, _mark, mark(), "','");
@@ -17388,7 +17388,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_37_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_37[%d-%d]: %s failed!", level,
@@ -17398,7 +17398,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_37_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_39: ',' import_from_as_name
@@ -17489,15 +17489,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_40: 'as' NAME
-    public SSTNode _tmp_40_rule()
+    public Object _tmp_40_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_40_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_40_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_40_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'as' NAME
             debugMessageln("%d> _tmp_40[%d-%d]: %s", level, _mark, mark(), "'as' NAME");
@@ -17514,7 +17514,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'as' NAME");
                 cache.putResult(_mark, _TMP_40_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_40[%d-%d]: %s failed!", level,
@@ -17524,7 +17524,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_40_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_42: ',' dotted_as_name
@@ -17615,15 +17615,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_43: 'as' NAME
-    public SSTNode _tmp_43_rule()
+    public Object _tmp_43_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_43_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_43_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_43_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'as' NAME
             debugMessageln("%d> _tmp_43[%d-%d]: %s", level, _mark, mark(), "'as' NAME");
@@ -17640,7 +17640,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'as' NAME");
                 cache.putResult(_mark, _TMP_43_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_43[%d-%d]: %s failed!", level,
@@ -17650,19 +17650,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_43_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_44: else_block
-    public SSTNode _tmp_44_rule()
+    public Object _tmp_44_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_44_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_44_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_44_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // else_block
             debugMessageln("%d> _tmp_44[%d-%d]: %s", level, _mark, mark(), "else_block");
@@ -17676,7 +17676,7 @@ public final class Parser extends AbstractParser {
                 _res = else_block_var;
                 cache.putResult(_mark, _TMP_44_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_44[%d-%d]: %s failed!", level,
@@ -17686,19 +17686,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_44_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_45: else_block
-    public SSTNode _tmp_45_rule()
+    public Object _tmp_45_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_45_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_45_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_45_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // else_block
             debugMessageln("%d> _tmp_45[%d-%d]: %s", level, _mark, mark(), "else_block");
@@ -17712,7 +17712,7 @@ public final class Parser extends AbstractParser {
                 _res = else_block_var;
                 cache.putResult(_mark, _TMP_45_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_45[%d-%d]: %s failed!", level,
@@ -17722,19 +17722,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_45_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_46: else_block
-    public SSTNode _tmp_46_rule()
+    public Object _tmp_46_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_46_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_46_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_46_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // else_block
             debugMessageln("%d> _tmp_46[%d-%d]: %s", level, _mark, mark(), "else_block");
@@ -17748,7 +17748,7 @@ public final class Parser extends AbstractParser {
                 _res = else_block_var;
                 cache.putResult(_mark, _TMP_46_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_46[%d-%d]: %s failed!", level,
@@ -17758,19 +17758,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_46_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_47: TYPE_COMMENT
-    public SSTNode _tmp_47_rule()
+    public Object _tmp_47_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_47_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_47_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_47_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // TYPE_COMMENT
             debugMessageln("%d> _tmp_47[%d-%d]: %s", level, _mark, mark(), "TYPE_COMMENT");
@@ -17784,7 +17784,7 @@ public final class Parser extends AbstractParser {
                 _res = type_comment_var;
                 cache.putResult(_mark, _TMP_47_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_47[%d-%d]: %s failed!", level,
@@ -17794,19 +17794,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_47_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_48: else_block
-    public SSTNode _tmp_48_rule()
+    public Object _tmp_48_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_48_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_48_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_48_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // else_block
             debugMessageln("%d> _tmp_48[%d-%d]: %s", level, _mark, mark(), "else_block");
@@ -17820,7 +17820,7 @@ public final class Parser extends AbstractParser {
                 _res = else_block_var;
                 cache.putResult(_mark, _TMP_48_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_48[%d-%d]: %s failed!", level,
@@ -17830,19 +17830,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_48_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_49: TYPE_COMMENT
-    public SSTNode _tmp_49_rule()
+    public Object _tmp_49_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_49_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_49_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_49_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // TYPE_COMMENT
             debugMessageln("%d> _tmp_49[%d-%d]: %s", level, _mark, mark(), "TYPE_COMMENT");
@@ -17856,7 +17856,7 @@ public final class Parser extends AbstractParser {
                 _res = type_comment_var;
                 cache.putResult(_mark, _TMP_49_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_49[%d-%d]: %s failed!", level,
@@ -17866,19 +17866,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_49_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_50: else_block
-    public SSTNode _tmp_50_rule()
+    public Object _tmp_50_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_50_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_50_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_50_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // else_block
             debugMessageln("%d> _tmp_50[%d-%d]: %s", level, _mark, mark(), "else_block");
@@ -17892,7 +17892,7 @@ public final class Parser extends AbstractParser {
                 _res = else_block_var;
                 cache.putResult(_mark, _TMP_50_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_50[%d-%d]: %s failed!", level,
@@ -17902,7 +17902,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_50_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_52: ',' with_item
@@ -18080,15 +18080,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_55: TYPE_COMMENT
-    public SSTNode _tmp_55_rule()
+    public Object _tmp_55_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_55_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_55_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_55_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // TYPE_COMMENT
             debugMessageln("%d> _tmp_55[%d-%d]: %s", level, _mark, mark(), "TYPE_COMMENT");
@@ -18102,7 +18102,7 @@ public final class Parser extends AbstractParser {
                 _res = type_comment_var;
                 cache.putResult(_mark, _TMP_55_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_55[%d-%d]: %s failed!", level,
@@ -18112,7 +18112,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_55_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_57: ',' with_item
@@ -18290,15 +18290,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_60: TYPE_COMMENT
-    public SSTNode _tmp_60_rule()
+    public Object _tmp_60_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_60_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_60_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_60_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // TYPE_COMMENT
             debugMessageln("%d> _tmp_60[%d-%d]: %s", level, _mark, mark(), "TYPE_COMMENT");
@@ -18312,7 +18312,7 @@ public final class Parser extends AbstractParser {
                 _res = type_comment_var;
                 cache.putResult(_mark, _TMP_60_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_60[%d-%d]: %s failed!", level,
@@ -18322,19 +18322,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_60_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_61: ',' | ')' | ':'
-    public SSTNode _tmp_61_rule()
+    public Object _tmp_61_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_61_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_61_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_61_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ','
             debugMessageln("%d> _tmp_61[%d-%d]: %s", level, _mark, mark(), "','");
@@ -18348,7 +18348,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_61_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_61[%d-%d]: %s failed!", level,
@@ -18366,7 +18366,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_61_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_61[%d-%d]: %s failed!", level,
@@ -18384,7 +18384,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_61_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_61[%d-%d]: %s failed!", level,
@@ -18394,7 +18394,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_61_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_62: except_block
@@ -18434,7 +18434,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_62[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "except_block");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -18445,15 +18445,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_63: else_block
-    public SSTNode _tmp_63_rule()
+    public Object _tmp_63_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_63_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_63_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_63_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // else_block
             debugMessageln("%d> _tmp_63[%d-%d]: %s", level, _mark, mark(), "else_block");
@@ -18467,7 +18467,7 @@ public final class Parser extends AbstractParser {
                 _res = else_block_var;
                 cache.putResult(_mark, _TMP_63_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_63[%d-%d]: %s failed!", level,
@@ -18477,19 +18477,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_63_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_64: finally_block
-    public SSTNode _tmp_64_rule()
+    public Object _tmp_64_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_64_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_64_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_64_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // finally_block
             debugMessageln("%d> _tmp_64[%d-%d]: %s", level, _mark, mark(), "finally_block");
@@ -18503,7 +18503,7 @@ public final class Parser extends AbstractParser {
                 _res = finally_block_var;
                 cache.putResult(_mark, _TMP_64_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_64[%d-%d]: %s failed!", level,
@@ -18513,19 +18513,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_64_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_65: 'as' NAME
-    public SSTNode _tmp_65_rule()
+    public Object _tmp_65_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_65_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_65_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_65_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'as' NAME
             debugMessageln("%d> _tmp_65[%d-%d]: %s", level, _mark, mark(), "'as' NAME");
@@ -18542,7 +18542,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'as' NAME");
                 cache.putResult(_mark, _TMP_65_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_65[%d-%d]: %s failed!", level,
@@ -18552,7 +18552,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_65_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_66: case_block
@@ -18592,7 +18592,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_66[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "case_block");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -18686,15 +18686,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_69: '+' | '-'
-    public SSTNode _tmp_69_rule()
+    public Object _tmp_69_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_69_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_69_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_69_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '+'
             debugMessageln("%d> _tmp_69[%d-%d]: %s", level, _mark, mark(), "'+'");
@@ -18708,7 +18708,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_69_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_69[%d-%d]: %s failed!", level,
@@ -18726,7 +18726,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_69_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_69[%d-%d]: %s failed!", level,
@@ -18736,19 +18736,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_69_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_70: '.' | '(' | '='
-    public SSTNode _tmp_70_rule()
+    public Object _tmp_70_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_70_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_70_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_70_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '.'
             debugMessageln("%d> _tmp_70[%d-%d]: %s", level, _mark, mark(), "'.'");
@@ -18762,7 +18762,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_70_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_70[%d-%d]: %s failed!", level,
@@ -18780,7 +18780,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_70_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_70[%d-%d]: %s failed!", level,
@@ -18798,7 +18798,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_70_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_70[%d-%d]: %s failed!", level,
@@ -18808,19 +18808,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_70_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_71: '.' | '(' | '='
-    public SSTNode _tmp_71_rule()
+    public Object _tmp_71_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_71_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_71_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_71_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '.'
             debugMessageln("%d> _tmp_71[%d-%d]: %s", level, _mark, mark(), "'.'");
@@ -18834,7 +18834,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_71_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_71[%d-%d]: %s failed!", level,
@@ -18852,7 +18852,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_71_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_71[%d-%d]: %s failed!", level,
@@ -18870,7 +18870,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_71_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_71[%d-%d]: %s failed!", level,
@@ -18880,7 +18880,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_71_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_73: ',' maybe_star_pattern
@@ -18967,15 +18967,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_74: capture_pattern | wildcard_pattern
-    public SSTNode _tmp_74_rule()
+    public Object _tmp_74_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_74_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_74_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_74_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // capture_pattern
             debugMessageln("%d> _tmp_74[%d-%d]: %s", level, _mark, mark(), "capture_pattern");
@@ -18989,7 +18989,7 @@ public final class Parser extends AbstractParser {
                 _res = capture_pattern_var;
                 cache.putResult(_mark, _TMP_74_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_74[%d-%d]: %s failed!", level,
@@ -19007,7 +19007,7 @@ public final class Parser extends AbstractParser {
                 _res = wildcard_pattern_var;
                 cache.putResult(_mark, _TMP_74_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_74[%d-%d]: %s failed!", level,
@@ -19017,7 +19017,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_74_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_76: ',' key_value_pattern
@@ -19108,15 +19108,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_77: literal_pattern | value_pattern
-    public SSTNode _tmp_77_rule()
+    public Object _tmp_77_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_77_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_77_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_77_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // literal_pattern
             debugMessageln("%d> _tmp_77[%d-%d]: %s", level, _mark, mark(), "literal_pattern");
@@ -19130,7 +19130,7 @@ public final class Parser extends AbstractParser {
                 _res = literal_pattern_var;
                 cache.putResult(_mark, _TMP_77_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_77[%d-%d]: %s failed!", level,
@@ -19148,7 +19148,7 @@ public final class Parser extends AbstractParser {
                 _res = value_pattern_var;
                 cache.putResult(_mark, _TMP_77_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_77[%d-%d]: %s failed!", level,
@@ -19158,7 +19158,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_77_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_79: ',' pattern
@@ -19332,15 +19332,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_82: star_expressions
-    public SSTNode _tmp_82_rule()
+    public Object _tmp_82_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_82_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_82_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_82_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // star_expressions
             debugMessageln("%d> _tmp_82[%d-%d]: %s", level, _mark, mark(), "star_expressions");
@@ -19354,7 +19354,7 @@ public final class Parser extends AbstractParser {
                 _res = star_expressions_var;
                 cache.putResult(_mark, _TMP_82_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_82[%d-%d]: %s failed!", level,
@@ -19364,19 +19364,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_82_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_83: 'from' expression
-    public SSTNode _tmp_83_rule()
+    public Object _tmp_83_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_83_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_83_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_83_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'from' expression
             debugMessageln("%d> _tmp_83[%d-%d]: %s", level, _mark, mark(), "'from' expression");
@@ -19393,7 +19393,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'from' expression");
                 cache.putResult(_mark, _TMP_83_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_83[%d-%d]: %s failed!", level,
@@ -19403,19 +19403,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_83_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_84: params
-    public SSTNode _tmp_84_rule()
+    public Object _tmp_84_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_84_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_84_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_84_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // params
             debugMessageln("%d> _tmp_84[%d-%d]: %s", level, _mark, mark(), "params");
@@ -19431,7 +19431,7 @@ public final class Parser extends AbstractParser {
                 _res = params_var;
                 cache.putResult(_mark, _TMP_84_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_84[%d-%d]: %s failed!", level,
@@ -19441,19 +19441,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_84_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_85: '->' expression
-    public SSTNode _tmp_85_rule()
+    public Object _tmp_85_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_85_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_85_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_85_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '->' expression
             debugMessageln("%d> _tmp_85[%d-%d]: %s", level, _mark, mark(), "'->' expression");
@@ -19470,7 +19470,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'->' expression");
                 cache.putResult(_mark, _TMP_85_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_85[%d-%d]: %s failed!", level,
@@ -19480,19 +19480,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_85_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_86: func_type_comment
-    public SSTNode _tmp_86_rule()
+    public Object _tmp_86_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_86_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_86_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_86_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // func_type_comment
             debugMessageln("%d> _tmp_86[%d-%d]: %s", level, _mark, mark(), "func_type_comment");
@@ -19508,7 +19508,7 @@ public final class Parser extends AbstractParser {
                 _res = func_type_comment_var;
                 cache.putResult(_mark, _TMP_86_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_86[%d-%d]: %s failed!", level,
@@ -19518,19 +19518,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_86_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_87: params
-    public SSTNode _tmp_87_rule()
+    public Object _tmp_87_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_87_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_87_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_87_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // params
             debugMessageln("%d> _tmp_87[%d-%d]: %s", level, _mark, mark(), "params");
@@ -19546,7 +19546,7 @@ public final class Parser extends AbstractParser {
                 _res = params_var;
                 cache.putResult(_mark, _TMP_87_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_87[%d-%d]: %s failed!", level,
@@ -19556,19 +19556,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_87_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_88: '->' expression
-    public SSTNode _tmp_88_rule()
+    public Object _tmp_88_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_88_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_88_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_88_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '->' expression
             debugMessageln("%d> _tmp_88[%d-%d]: %s", level, _mark, mark(), "'->' expression");
@@ -19585,7 +19585,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'->' expression");
                 cache.putResult(_mark, _TMP_88_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_88[%d-%d]: %s failed!", level,
@@ -19595,19 +19595,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_88_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_89: func_type_comment
-    public SSTNode _tmp_89_rule()
+    public Object _tmp_89_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_89_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_89_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_89_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // func_type_comment
             debugMessageln("%d> _tmp_89[%d-%d]: %s", level, _mark, mark(), "func_type_comment");
@@ -19623,7 +19623,7 @@ public final class Parser extends AbstractParser {
                 _res = func_type_comment_var;
                 cache.putResult(_mark, _TMP_89_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_89[%d-%d]: %s failed!", level,
@@ -19633,19 +19633,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_89_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_90: NEWLINE INDENT
-    public SSTNode _tmp_90_rule()
+    public Object _tmp_90_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_90_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_90_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_90_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // NEWLINE INDENT
             debugMessageln("%d> _tmp_90[%d-%d]: %s", level, _mark, mark(), "NEWLINE INDENT");
@@ -19662,7 +19662,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(newline_var, indent_var);
                 cache.putResult(_mark, _TMP_90_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_90[%d-%d]: %s failed!", level,
@@ -19672,7 +19672,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_90_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_91: param_no_default
@@ -19762,15 +19762,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_93: star_etc
-    public SSTNode _tmp_93_rule()
+    public Object _tmp_93_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_93_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_93_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_93_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // star_etc
             debugMessageln("%d> _tmp_93[%d-%d]: %s", level, _mark, mark(), "star_etc");
@@ -19786,7 +19786,7 @@ public final class Parser extends AbstractParser {
                 _res = star_etc_var;
                 cache.putResult(_mark, _TMP_93_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_93[%d-%d]: %s failed!", level,
@@ -19796,7 +19796,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_93_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_94: param_with_default
@@ -19843,15 +19843,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_95: star_etc
-    public SSTNode _tmp_95_rule()
+    public Object _tmp_95_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_95_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_95_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_95_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // star_etc
             debugMessageln("%d> _tmp_95[%d-%d]: %s", level, _mark, mark(), "star_etc");
@@ -19867,7 +19867,7 @@ public final class Parser extends AbstractParser {
                 _res = star_etc_var;
                 cache.putResult(_mark, _TMP_95_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_95[%d-%d]: %s failed!", level,
@@ -19877,7 +19877,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_95_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_96: param_no_default
@@ -19917,7 +19917,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_96[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_no_default");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -19971,15 +19971,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_98: star_etc
-    public SSTNode _tmp_98_rule()
+    public Object _tmp_98_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_98_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_98_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_98_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // star_etc
             debugMessageln("%d> _tmp_98[%d-%d]: %s", level, _mark, mark(), "star_etc");
@@ -19995,7 +19995,7 @@ public final class Parser extends AbstractParser {
                 _res = star_etc_var;
                 cache.putResult(_mark, _TMP_98_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_98[%d-%d]: %s failed!", level,
@@ -20005,7 +20005,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_98_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_99: param_with_default
@@ -20045,7 +20045,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_99[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_with_default");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -20056,15 +20056,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_100: star_etc
-    public SSTNode _tmp_100_rule()
+    public Object _tmp_100_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_100_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_100_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_100_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // star_etc
             debugMessageln("%d> _tmp_100[%d-%d]: %s", level, _mark, mark(), "star_etc");
@@ -20080,7 +20080,7 @@ public final class Parser extends AbstractParser {
                 _res = star_etc_var;
                 cache.putResult(_mark, _TMP_100_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_100[%d-%d]: %s failed!", level,
@@ -20090,7 +20090,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_100_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_101: param_no_default
@@ -20130,7 +20130,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_101[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_no_default");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -20177,7 +20177,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_102[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_no_default");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -20267,7 +20267,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_104[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_with_default");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -20357,7 +20357,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_106[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_with_default");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -20411,15 +20411,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_108: kwds
-    public SSTNode _tmp_108_rule()
+    public Object _tmp_108_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_108_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_108_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_108_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // kwds
             debugMessageln("%d> _tmp_108[%d-%d]: %s", level, _mark, mark(), "kwds");
@@ -20435,7 +20435,7 @@ public final class Parser extends AbstractParser {
                 _res = kwds_var;
                 cache.putResult(_mark, _TMP_108_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_108[%d-%d]: %s failed!", level,
@@ -20445,7 +20445,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_108_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_109: param_maybe_default
@@ -20485,7 +20485,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_109[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_maybe_default");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -20496,15 +20496,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_110: kwds
-    public SSTNode _tmp_110_rule()
+    public Object _tmp_110_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_110_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_110_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_110_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // kwds
             debugMessageln("%d> _tmp_110[%d-%d]: %s", level, _mark, mark(), "kwds");
@@ -20520,7 +20520,7 @@ public final class Parser extends AbstractParser {
                 _res = kwds_var;
                 cache.putResult(_mark, _TMP_110_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_110[%d-%d]: %s failed!", level,
@@ -20530,7 +20530,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_110_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_111: ('@' named_expression NEWLINE)
@@ -20568,7 +20568,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_111[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "('@' named_expression NEWLINE)");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -20579,15 +20579,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_112: '(' arguments? ')'
-    public SSTNode _tmp_112_rule()
+    public Object _tmp_112_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_112_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_112_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_112_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '(' arguments? ')'
             debugMessageln("%d> _tmp_112[%d-%d]: %s", level, _mark, mark(), "'(' arguments? ')'");
@@ -20607,7 +20607,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' arguments? ')'");
                 cache.putResult(_mark, _TMP_112_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_112[%d-%d]: %s failed!", level,
@@ -20617,7 +20617,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_112_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_113: (',' star_expression)
@@ -20655,7 +20655,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_113[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "(',' star_expression)");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -20666,15 +20666,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_114: ','
-    public SSTNode _tmp_114_rule()
+    public Object _tmp_114_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_114_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_114_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_114_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ','
             debugMessageln("%d> _tmp_114[%d-%d]: %s", level, _mark, mark(), "','");
@@ -20688,7 +20688,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_114_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_114[%d-%d]: %s failed!", level,
@@ -20698,7 +20698,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_114_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_116: ',' star_named_expression
@@ -20785,15 +20785,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_117: ','
-    public SSTNode _tmp_117_rule()
+    public Object _tmp_117_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_117_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_117_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_117_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ','
             debugMessageln("%d> _tmp_117[%d-%d]: %s", level, _mark, mark(), "','");
@@ -20807,7 +20807,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_117_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_117[%d-%d]: %s failed!", level,
@@ -20817,7 +20817,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_117_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_118: (',' expression)
@@ -20855,7 +20855,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_118[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "(',' expression)");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -20866,15 +20866,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_119: ','
-    public SSTNode _tmp_119_rule()
+    public Object _tmp_119_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_119_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_119_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_119_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ','
             debugMessageln("%d> _tmp_119[%d-%d]: %s", level, _mark, mark(), "','");
@@ -20888,7 +20888,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_119_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_119[%d-%d]: %s failed!", level,
@@ -20898,19 +20898,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_119_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_120: lambda_params
-    public SSTNode _tmp_120_rule()
+    public Object _tmp_120_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_120_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_120_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_120_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // lambda_params
             debugMessageln("%d> _tmp_120[%d-%d]: %s", level, _mark, mark(), "lambda_params");
@@ -20926,7 +20926,7 @@ public final class Parser extends AbstractParser {
                 _res = lambda_params_var;
                 cache.putResult(_mark, _TMP_120_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_120[%d-%d]: %s failed!", level,
@@ -20936,7 +20936,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_120_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_121: lambda_param_no_default
@@ -21026,15 +21026,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_123: lambda_star_etc
-    public SSTNode _tmp_123_rule()
+    public Object _tmp_123_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_123_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_123_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_123_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // lambda_star_etc
             debugMessageln("%d> _tmp_123[%d-%d]: %s", level, _mark, mark(), "lambda_star_etc");
@@ -21050,7 +21050,7 @@ public final class Parser extends AbstractParser {
                 _res = lambda_star_etc_var;
                 cache.putResult(_mark, _TMP_123_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_123[%d-%d]: %s failed!", level,
@@ -21060,7 +21060,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_123_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_124: lambda_param_with_default
@@ -21107,15 +21107,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_125: lambda_star_etc
-    public SSTNode _tmp_125_rule()
+    public Object _tmp_125_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_125_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_125_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_125_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // lambda_star_etc
             debugMessageln("%d> _tmp_125[%d-%d]: %s", level, _mark, mark(), "lambda_star_etc");
@@ -21131,7 +21131,7 @@ public final class Parser extends AbstractParser {
                 _res = lambda_star_etc_var;
                 cache.putResult(_mark, _TMP_125_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_125[%d-%d]: %s failed!", level,
@@ -21141,7 +21141,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_125_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_126: lambda_param_no_default
@@ -21181,7 +21181,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_126[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_param_no_default");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -21235,15 +21235,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_128: lambda_star_etc
-    public SSTNode _tmp_128_rule()
+    public Object _tmp_128_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_128_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_128_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_128_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // lambda_star_etc
             debugMessageln("%d> _tmp_128[%d-%d]: %s", level, _mark, mark(), "lambda_star_etc");
@@ -21259,7 +21259,7 @@ public final class Parser extends AbstractParser {
                 _res = lambda_star_etc_var;
                 cache.putResult(_mark, _TMP_128_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_128[%d-%d]: %s failed!", level,
@@ -21269,7 +21269,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_128_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_129: lambda_param_with_default
@@ -21309,7 +21309,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_129[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_param_with_default");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -21320,15 +21320,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_130: lambda_star_etc
-    public SSTNode _tmp_130_rule()
+    public Object _tmp_130_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_130_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_130_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_130_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // lambda_star_etc
             debugMessageln("%d> _tmp_130[%d-%d]: %s", level, _mark, mark(), "lambda_star_etc");
@@ -21344,7 +21344,7 @@ public final class Parser extends AbstractParser {
                 _res = lambda_star_etc_var;
                 cache.putResult(_mark, _TMP_130_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_130[%d-%d]: %s failed!", level,
@@ -21354,7 +21354,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_130_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_131: lambda_param_no_default
@@ -21394,7 +21394,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_131[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_param_no_default");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -21441,7 +21441,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_132[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_param_no_default");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -21531,7 +21531,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_134[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_param_with_default");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -21621,7 +21621,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_136[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_param_with_default");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -21675,15 +21675,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_138: lambda_kwds
-    public SSTNode _tmp_138_rule()
+    public Object _tmp_138_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_138_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_138_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_138_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // lambda_kwds
             debugMessageln("%d> _tmp_138[%d-%d]: %s", level, _mark, mark(), "lambda_kwds");
@@ -21699,7 +21699,7 @@ public final class Parser extends AbstractParser {
                 _res = lambda_kwds_var;
                 cache.putResult(_mark, _TMP_138_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_138[%d-%d]: %s failed!", level,
@@ -21709,7 +21709,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_138_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_139: lambda_param_maybe_default
@@ -21749,7 +21749,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_139[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_param_maybe_default");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -21760,15 +21760,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_140: lambda_kwds
-    public SSTNode _tmp_140_rule()
+    public Object _tmp_140_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_140_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_140_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_140_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // lambda_kwds
             debugMessageln("%d> _tmp_140[%d-%d]: %s", level, _mark, mark(), "lambda_kwds");
@@ -21784,7 +21784,7 @@ public final class Parser extends AbstractParser {
                 _res = lambda_kwds_var;
                 cache.putResult(_mark, _TMP_140_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_140[%d-%d]: %s failed!", level,
@@ -21794,7 +21794,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_140_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_141: ('or' conjunction)
@@ -21832,7 +21832,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_141[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "('or' conjunction)");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -21877,7 +21877,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_142[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "('and' inversion)");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -21922,7 +21922,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_143[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "compare_op_bitwise_or_pair");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -21933,15 +21933,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_144: '!='
-    public SSTNode _tmp_144_rule()
+    public Object _tmp_144_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_144_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_144_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_144_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '!='
             debugMessageln("%d> _tmp_144[%d-%d]: %s", level, _mark, mark(), "'!='");
@@ -21956,7 +21956,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'!='");
                 cache.putResult(_mark, _TMP_144_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_144[%d-%d]: %s failed!", level,
@@ -21966,19 +21966,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_144_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_145: arguments
-    public SSTNode _tmp_145_rule()
+    public Object _tmp_145_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_145_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_145_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_145_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // arguments
             debugMessageln("%d> _tmp_145[%d-%d]: %s", level, _mark, mark(), "arguments");
@@ -21992,7 +21992,7 @@ public final class Parser extends AbstractParser {
                 _res = arguments_var;
                 cache.putResult(_mark, _TMP_145_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_145[%d-%d]: %s failed!", level,
@@ -22002,7 +22002,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_145_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_147: ',' slice
@@ -22089,15 +22089,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_148: ','
-    public SSTNode _tmp_148_rule()
+    public Object _tmp_148_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_148_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_148_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_148_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ','
             debugMessageln("%d> _tmp_148[%d-%d]: %s", level, _mark, mark(), "','");
@@ -22111,7 +22111,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_148_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_148[%d-%d]: %s failed!", level,
@@ -22121,19 +22121,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_148_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_149: expression
-    public SSTNode _tmp_149_rule()
+    public Object _tmp_149_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_149_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_149_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_149_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // expression
             debugMessageln("%d> _tmp_149[%d-%d]: %s", level, _mark, mark(), "expression");
@@ -22147,7 +22147,7 @@ public final class Parser extends AbstractParser {
                 _res = expression_var;
                 cache.putResult(_mark, _TMP_149_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_149[%d-%d]: %s failed!", level,
@@ -22157,19 +22157,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_149_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_150: expression
-    public SSTNode _tmp_150_rule()
+    public Object _tmp_150_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_150_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_150_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_150_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // expression
             debugMessageln("%d> _tmp_150[%d-%d]: %s", level, _mark, mark(), "expression");
@@ -22183,7 +22183,7 @@ public final class Parser extends AbstractParser {
                 _res = expression_var;
                 cache.putResult(_mark, _TMP_150_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_150[%d-%d]: %s failed!", level,
@@ -22193,19 +22193,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_150_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_151: ':' expression?
-    public SSTNode _tmp_151_rule()
+    public Object _tmp_151_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_151_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_151_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_151_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ':' expression?
             debugMessageln("%d> _tmp_151[%d-%d]: %s", level, _mark, mark(), "':' expression?");
@@ -22222,7 +22222,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "':' expression?");
                 cache.putResult(_mark, _TMP_151_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_151[%d-%d]: %s failed!", level,
@@ -22232,19 +22232,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_151_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_152: tuple | group | genexp
-    public SSTNode _tmp_152_rule()
+    public Object _tmp_152_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_152_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_152_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_152_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // tuple
             debugMessageln("%d> _tmp_152[%d-%d]: %s", level, _mark, mark(), "tuple");
@@ -22258,7 +22258,7 @@ public final class Parser extends AbstractParser {
                 _res = tuple_var;
                 cache.putResult(_mark, _TMP_152_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_152[%d-%d]: %s failed!", level,
@@ -22276,7 +22276,7 @@ public final class Parser extends AbstractParser {
                 _res = group_var;
                 cache.putResult(_mark, _TMP_152_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_152[%d-%d]: %s failed!", level,
@@ -22294,7 +22294,7 @@ public final class Parser extends AbstractParser {
                 _res = genexp_var;
                 cache.putResult(_mark, _TMP_152_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_152[%d-%d]: %s failed!", level,
@@ -22304,19 +22304,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_152_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_153: list | listcomp
-    public SSTNode _tmp_153_rule()
+    public Object _tmp_153_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_153_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_153_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_153_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // list
             debugMessageln("%d> _tmp_153[%d-%d]: %s", level, _mark, mark(), "list");
@@ -22330,7 +22330,7 @@ public final class Parser extends AbstractParser {
                 _res = list_var;
                 cache.putResult(_mark, _TMP_153_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_153[%d-%d]: %s failed!", level,
@@ -22348,7 +22348,7 @@ public final class Parser extends AbstractParser {
                 _res = listcomp_var;
                 cache.putResult(_mark, _TMP_153_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_153[%d-%d]: %s failed!", level,
@@ -22358,19 +22358,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_153_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_154: dict | set | dictcomp | setcomp
-    public SSTNode _tmp_154_rule()
+    public Object _tmp_154_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_154_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_154_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_154_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // dict
             debugMessageln("%d> _tmp_154[%d-%d]: %s", level, _mark, mark(), "dict");
@@ -22384,7 +22384,7 @@ public final class Parser extends AbstractParser {
                 _res = dict_var;
                 cache.putResult(_mark, _TMP_154_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_154[%d-%d]: %s failed!", level,
@@ -22402,7 +22402,7 @@ public final class Parser extends AbstractParser {
                 _res = set_var;
                 cache.putResult(_mark, _TMP_154_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_154[%d-%d]: %s failed!", level,
@@ -22420,7 +22420,7 @@ public final class Parser extends AbstractParser {
                 _res = dictcomp_var;
                 cache.putResult(_mark, _TMP_154_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_154[%d-%d]: %s failed!", level,
@@ -22438,7 +22438,7 @@ public final class Parser extends AbstractParser {
                 _res = setcomp_var;
                 cache.putResult(_mark, _TMP_154_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_154[%d-%d]: %s failed!", level,
@@ -22448,7 +22448,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_154_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_155: STRING
@@ -22486,7 +22486,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_155[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "STRING");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -22497,15 +22497,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_156: star_named_expressions
-    public SSTNode _tmp_156_rule()
+    public Object _tmp_156_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_156_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_156_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_156_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // star_named_expressions
             debugMessageln("%d> _tmp_156[%d-%d]: %s", level, _mark, mark(), "star_named_expressions");
@@ -22521,7 +22521,7 @@ public final class Parser extends AbstractParser {
                 _res = star_named_expressions_var;
                 cache.putResult(_mark, _TMP_156_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_156[%d-%d]: %s failed!", level,
@@ -22531,19 +22531,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_156_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_157: star_named_expression ',' star_named_expressions?
-    public SSTNode _tmp_157_rule()
+    public Object _tmp_157_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_157_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_157_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_157_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // star_named_expression ',' star_named_expressions?
             debugMessageln("%d> _tmp_157[%d-%d]: %s", level, _mark, mark(), "star_named_expression ',' star_named_expressions?");
@@ -22564,7 +22564,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_named_expression ',' star_named_expressions?");
                 cache.putResult(_mark, _TMP_157_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_157[%d-%d]: %s failed!", level,
@@ -22574,19 +22574,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_157_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_158: yield_expr | named_expression
-    public SSTNode _tmp_158_rule()
+    public Object _tmp_158_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_158_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_158_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_158_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // yield_expr
             debugMessageln("%d> _tmp_158[%d-%d]: %s", level, _mark, mark(), "yield_expr");
@@ -22600,7 +22600,7 @@ public final class Parser extends AbstractParser {
                 _res = yield_expr_var;
                 cache.putResult(_mark, _TMP_158_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_158[%d-%d]: %s failed!", level,
@@ -22618,7 +22618,7 @@ public final class Parser extends AbstractParser {
                 _res = named_expression_var;
                 cache.putResult(_mark, _TMP_158_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_158[%d-%d]: %s failed!", level,
@@ -22628,19 +22628,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_158_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_159: double_starred_kvpairs
-    public SSTNode _tmp_159_rule()
+    public Object _tmp_159_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_159_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_159_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_159_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // double_starred_kvpairs
             debugMessageln("%d> _tmp_159[%d-%d]: %s", level, _mark, mark(), "double_starred_kvpairs");
@@ -22656,7 +22656,7 @@ public final class Parser extends AbstractParser {
                 _res = double_starred_kvpairs_var;
                 cache.putResult(_mark, _TMP_159_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_159[%d-%d]: %s failed!", level,
@@ -22666,7 +22666,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_159_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_161: ',' double_starred_kvpair
@@ -22757,15 +22757,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_162: ','
-    public SSTNode _tmp_162_rule()
+    public Object _tmp_162_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_162_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_162_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_162_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ','
             debugMessageln("%d> _tmp_162[%d-%d]: %s", level, _mark, mark(), "','");
@@ -22779,7 +22779,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_162_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_162[%d-%d]: %s failed!", level,
@@ -22789,7 +22789,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_162_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_163: for_if_clause
@@ -22829,7 +22829,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_163[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "for_if_clause");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -22922,15 +22922,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_166: star_expressions
-    public SSTNode _tmp_166_rule()
+    public Object _tmp_166_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_166_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_166_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_166_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // star_expressions
             debugMessageln("%d> _tmp_166[%d-%d]: %s", level, _mark, mark(), "star_expressions");
@@ -22944,7 +22944,7 @@ public final class Parser extends AbstractParser {
                 _res = star_expressions_var;
                 cache.putResult(_mark, _TMP_166_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_166[%d-%d]: %s failed!", level,
@@ -22954,19 +22954,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_166_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_167: ','
-    public SSTNode _tmp_167_rule()
+    public Object _tmp_167_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_167_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_167_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_167_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ','
             debugMessageln("%d> _tmp_167[%d-%d]: %s", level, _mark, mark(), "','");
@@ -22980,7 +22980,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_167_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_167[%d-%d]: %s failed!", level,
@@ -22990,7 +22990,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_167_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_169: ',' (starred_expression | direct_named_expression !'=')
@@ -23077,15 +23077,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_170: ',' kwargs
-    public SSTNode _tmp_170_rule()
+    public Object _tmp_170_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_170_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_170_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_170_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ',' kwargs
             debugMessageln("%d> _tmp_170[%d-%d]: %s", level, _mark, mark(), "',' kwargs");
@@ -23104,7 +23104,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' kwargs");
                 cache.putResult(_mark, _TMP_170_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_170[%d-%d]: %s failed!", level,
@@ -23114,7 +23114,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_170_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_172: ',' kwarg_or_starred
@@ -23507,15 +23507,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_180: ','
-    public SSTNode _tmp_180_rule()
+    public Object _tmp_180_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_180_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_180_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_180_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ','
             debugMessageln("%d> _tmp_180[%d-%d]: %s", level, _mark, mark(), "','");
@@ -23529,7 +23529,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_180_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_180[%d-%d]: %s failed!", level,
@@ -23539,7 +23539,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_180_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_182: ',' star_target
@@ -23626,15 +23626,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_183: ','
-    public SSTNode _tmp_183_rule()
+    public Object _tmp_183_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_183_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_183_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_183_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ','
             debugMessageln("%d> _tmp_183[%d-%d]: %s", level, _mark, mark(), "','");
@@ -23648,7 +23648,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_183_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_183[%d-%d]: %s failed!", level,
@@ -23658,7 +23658,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_183_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop1_184: (',' star_target)
@@ -23696,7 +23696,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_184[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "(',' star_target)");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -23707,15 +23707,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_185: ','
-    public SSTNode _tmp_185_rule()
+    public Object _tmp_185_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_185_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_185_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_185_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ','
             debugMessageln("%d> _tmp_185[%d-%d]: %s", level, _mark, mark(), "','");
@@ -23729,7 +23729,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_185_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_185[%d-%d]: %s failed!", level,
@@ -23739,19 +23739,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_185_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_186: !'*' star_target
-    public SSTNode _tmp_186_rule()
+    public Object _tmp_186_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_186_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_186_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_186_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // !'*' star_target
             debugMessageln("%d> _tmp_186[%d-%d]: %s", level, _mark, mark(), "!'*' star_target");
@@ -23767,7 +23767,7 @@ public final class Parser extends AbstractParser {
                 _res = star_target_var;
                 cache.putResult(_mark, _TMP_186_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_186[%d-%d]: %s failed!", level,
@@ -23777,19 +23777,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_186_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_187: star_targets_tuple_seq
-    public SSTNode _tmp_187_rule()
+    public Object _tmp_187_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_187_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_187_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_187_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // star_targets_tuple_seq
             debugMessageln("%d> _tmp_187[%d-%d]: %s", level, _mark, mark(), "star_targets_tuple_seq");
@@ -23805,7 +23805,7 @@ public final class Parser extends AbstractParser {
                 _res = star_targets_tuple_seq_var;
                 cache.putResult(_mark, _TMP_187_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_187[%d-%d]: %s failed!", level,
@@ -23815,19 +23815,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_187_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_188: star_targets_list_seq
-    public SSTNode _tmp_188_rule()
+    public Object _tmp_188_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_188_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_188_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_188_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // star_targets_list_seq
             debugMessageln("%d> _tmp_188[%d-%d]: %s", level, _mark, mark(), "star_targets_list_seq");
@@ -23843,7 +23843,7 @@ public final class Parser extends AbstractParser {
                 _res = star_targets_list_seq_var;
                 cache.putResult(_mark, _TMP_188_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_188[%d-%d]: %s failed!", level,
@@ -23853,7 +23853,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_188_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_190: ',' del_target
@@ -23940,15 +23940,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_191: ','
-    public SSTNode _tmp_191_rule()
+    public Object _tmp_191_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_191_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_191_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_191_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ','
             debugMessageln("%d> _tmp_191[%d-%d]: %s", level, _mark, mark(), "','");
@@ -23962,7 +23962,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_191_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_191[%d-%d]: %s failed!", level,
@@ -23972,19 +23972,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_191_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_192: del_targets
-    public SSTNode _tmp_192_rule()
+    public Object _tmp_192_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_192_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_192_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_192_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // del_targets
             debugMessageln("%d> _tmp_192[%d-%d]: %s", level, _mark, mark(), "del_targets");
@@ -24000,7 +24000,7 @@ public final class Parser extends AbstractParser {
                 _res = del_targets_var;
                 cache.putResult(_mark, _TMP_192_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_192[%d-%d]: %s failed!", level,
@@ -24010,19 +24010,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_192_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_193: del_targets
-    public SSTNode _tmp_193_rule()
+    public Object _tmp_193_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_193_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_193_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_193_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // del_targets
             debugMessageln("%d> _tmp_193[%d-%d]: %s", level, _mark, mark(), "del_targets");
@@ -24038,7 +24038,7 @@ public final class Parser extends AbstractParser {
                 _res = del_targets_var;
                 cache.putResult(_mark, _TMP_193_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_193[%d-%d]: %s failed!", level,
@@ -24048,7 +24048,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_193_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_195: ',' target
@@ -24135,15 +24135,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_196: ','
-    public SSTNode _tmp_196_rule()
+    public Object _tmp_196_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_196_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_196_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_196_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ','
             debugMessageln("%d> _tmp_196[%d-%d]: %s", level, _mark, mark(), "','");
@@ -24157,7 +24157,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_196_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_196[%d-%d]: %s failed!", level,
@@ -24167,19 +24167,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_196_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_197: arguments
-    public SSTNode _tmp_197_rule()
+    public Object _tmp_197_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_197_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_197_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_197_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // arguments
             debugMessageln("%d> _tmp_197[%d-%d]: %s", level, _mark, mark(), "arguments");
@@ -24193,7 +24193,7 @@ public final class Parser extends AbstractParser {
                 _res = arguments_var;
                 cache.putResult(_mark, _TMP_197_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_197[%d-%d]: %s failed!", level,
@@ -24203,19 +24203,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_197_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_198: targets
-    public SSTNode _tmp_198_rule()
+    public Object _tmp_198_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_198_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_198_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_198_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // targets
             debugMessageln("%d> _tmp_198[%d-%d]: %s", level, _mark, mark(), "targets");
@@ -24231,7 +24231,7 @@ public final class Parser extends AbstractParser {
                 _res = targets_var;
                 cache.putResult(_mark, _TMP_198_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_198[%d-%d]: %s failed!", level,
@@ -24241,19 +24241,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_198_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_199: targets
-    public SSTNode _tmp_199_rule()
+    public Object _tmp_199_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_199_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_199_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_199_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // targets
             debugMessageln("%d> _tmp_199[%d-%d]: %s", level, _mark, mark(), "targets");
@@ -24269,7 +24269,7 @@ public final class Parser extends AbstractParser {
                 _res = targets_var;
                 cache.putResult(_mark, _TMP_199_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_199[%d-%d]: %s failed!", level,
@@ -24279,19 +24279,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_199_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_200: args | expression for_if_clauses
-    public SSTNode _tmp_200_rule()
+    public Object _tmp_200_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_200_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_200_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_200_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // args
             debugMessageln("%d> _tmp_200[%d-%d]: %s", level, _mark, mark(), "args");
@@ -24305,7 +24305,7 @@ public final class Parser extends AbstractParser {
                 _res = args_var;
                 cache.putResult(_mark, _TMP_200_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_200[%d-%d]: %s failed!", level,
@@ -24328,7 +24328,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(expression_var, for_if_clauses_var);
                 cache.putResult(_mark, _TMP_200_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_200[%d-%d]: %s failed!", level,
@@ -24338,19 +24338,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_200_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_201: NAME STRING | SOFT_KEYWORD
-    public SSTNode _tmp_201_rule()
+    public Object _tmp_201_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_201_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_201_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_201_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // NAME STRING
             debugMessageln("%d> _tmp_201[%d-%d]: %s", level, _mark, mark(), "NAME STRING");
@@ -24367,7 +24367,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(name_var, string_var);
                 cache.putResult(_mark, _TMP_201_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_201[%d-%d]: %s failed!", level,
@@ -24385,7 +24385,7 @@ public final class Parser extends AbstractParser {
                 _res = soft_keyword_var;
                 cache.putResult(_mark, _TMP_201_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_201[%d-%d]: %s failed!", level,
@@ -24395,19 +24395,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_201_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_202: '=' | ':=' | ','
-    public SSTNode _tmp_202_rule()
+    public Object _tmp_202_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_202_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_202_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_202_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '='
             debugMessageln("%d> _tmp_202[%d-%d]: %s", level, _mark, mark(), "'='");
@@ -24421,7 +24421,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_202_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_202[%d-%d]: %s failed!", level,
@@ -24439,7 +24439,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_202_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_202[%d-%d]: %s failed!", level,
@@ -24457,7 +24457,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_202_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_202[%d-%d]: %s failed!", level,
@@ -24467,19 +24467,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_202_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_203: list | tuple | genexp | 'True' | 'None' | 'False'
-    public SSTNode _tmp_203_rule()
+    public Object _tmp_203_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_203_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_203_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_203_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // list
             debugMessageln("%d> _tmp_203[%d-%d]: %s", level, _mark, mark(), "list");
@@ -24493,7 +24493,7 @@ public final class Parser extends AbstractParser {
                 _res = list_var;
                 cache.putResult(_mark, _TMP_203_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_203[%d-%d]: %s failed!", level,
@@ -24511,7 +24511,7 @@ public final class Parser extends AbstractParser {
                 _res = tuple_var;
                 cache.putResult(_mark, _TMP_203_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_203[%d-%d]: %s failed!", level,
@@ -24529,7 +24529,7 @@ public final class Parser extends AbstractParser {
                 _res = genexp_var;
                 cache.putResult(_mark, _TMP_203_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_203[%d-%d]: %s failed!", level,
@@ -24547,7 +24547,7 @@ public final class Parser extends AbstractParser {
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_203_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_203[%d-%d]: %s failed!", level,
@@ -24565,7 +24565,7 @@ public final class Parser extends AbstractParser {
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_203_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_203[%d-%d]: %s failed!", level,
@@ -24583,7 +24583,7 @@ public final class Parser extends AbstractParser {
                 _res = _keyword;
                 cache.putResult(_mark, _TMP_203_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_203[%d-%d]: %s failed!", level,
@@ -24593,19 +24593,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_203_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_204: '=' | ':=' | ','
-    public SSTNode _tmp_204_rule()
+    public Object _tmp_204_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_204_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_204_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_204_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '='
             debugMessageln("%d> _tmp_204[%d-%d]: %s", level, _mark, mark(), "'='");
@@ -24619,7 +24619,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_204_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_204[%d-%d]: %s failed!", level,
@@ -24637,7 +24637,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_204_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_204[%d-%d]: %s failed!", level,
@@ -24655,7 +24655,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_204_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_204[%d-%d]: %s failed!", level,
@@ -24665,7 +24665,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_204_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_205: star_named_expressions
@@ -24794,15 +24794,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_208: yield_expr | star_expressions
-    public SSTNode _tmp_208_rule()
+    public Object _tmp_208_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_208_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_208_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_208_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // yield_expr
             debugMessageln("%d> _tmp_208[%d-%d]: %s", level, _mark, mark(), "yield_expr");
@@ -24816,7 +24816,7 @@ public final class Parser extends AbstractParser {
                 _res = yield_expr_var;
                 cache.putResult(_mark, _TMP_208_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_208[%d-%d]: %s failed!", level,
@@ -24834,7 +24834,7 @@ public final class Parser extends AbstractParser {
                 _res = star_expressions_var;
                 cache.putResult(_mark, _TMP_208_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_208[%d-%d]: %s failed!", level,
@@ -24844,19 +24844,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_208_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_209: '[' | '(' | '{'
-    public SSTNode _tmp_209_rule()
+    public Object _tmp_209_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_209_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_209_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_209_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '['
             debugMessageln("%d> _tmp_209[%d-%d]: %s", level, _mark, mark(), "'['");
@@ -24870,7 +24870,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_209_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_209[%d-%d]: %s failed!", level,
@@ -24888,7 +24888,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_209_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_209[%d-%d]: %s failed!", level,
@@ -24906,7 +24906,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_209_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_209[%d-%d]: %s failed!", level,
@@ -24916,19 +24916,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_209_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_210: '[' | '{'
-    public SSTNode _tmp_210_rule()
+    public Object _tmp_210_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_210_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_210_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_210_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '['
             debugMessageln("%d> _tmp_210[%d-%d]: %s", level, _mark, mark(), "'['");
@@ -24942,7 +24942,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_210_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_210[%d-%d]: %s failed!", level,
@@ -24960,7 +24960,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_210_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_210[%d-%d]: %s failed!", level,
@@ -24970,19 +24970,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_210_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_211: star_named_expressions
-    public SSTNode _tmp_211_rule()
+    public Object _tmp_211_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_211_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_211_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_211_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // star_named_expressions
             debugMessageln("%d> _tmp_211[%d-%d]: %s", level, _mark, mark(), "star_named_expressions");
@@ -24998,7 +24998,7 @@ public final class Parser extends AbstractParser {
                 _res = star_named_expressions_var;
                 cache.putResult(_mark, _TMP_211_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_211[%d-%d]: %s failed!", level,
@@ -25008,7 +25008,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_211_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_212: param_no_default
@@ -25091,7 +25091,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_213[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "param_with_default");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -25181,7 +25181,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop1_215[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "lambda_param_with_default");
         }
-        if (_n == 0) {
+        if (_children.size() == 0) {
             level--;
             return null;
         }
@@ -25192,15 +25192,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_216: ')' | ',' (')' | '**')
-    public SSTNode _tmp_216_rule()
+    public Object _tmp_216_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_216_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_216_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_216_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ')'
             debugMessageln("%d> _tmp_216[%d-%d]: %s", level, _mark, mark(), "')'");
@@ -25214,7 +25214,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_216_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_216[%d-%d]: %s failed!", level,
@@ -25235,7 +25235,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(_literal, _tmp_249_var);
                 cache.putResult(_mark, _TMP_216_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_216[%d-%d]: %s failed!", level,
@@ -25245,19 +25245,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_216_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_217: ':' | ',' (':' | '**')
-    public SSTNode _tmp_217_rule()
+    public Object _tmp_217_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_217_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_217_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_217_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ':'
             debugMessageln("%d> _tmp_217[%d-%d]: %s", level, _mark, mark(), "':'");
@@ -25271,7 +25271,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_217_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_217[%d-%d]: %s failed!", level,
@@ -25292,7 +25292,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(_literal, _tmp_250_var);
                 cache.putResult(_mark, _TMP_217_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_217[%d-%d]: %s failed!", level,
@@ -25302,19 +25302,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_217_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_218: ',' | ')' | ':'
-    public SSTNode _tmp_218_rule()
+    public Object _tmp_218_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_218_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_218_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_218_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ','
             debugMessageln("%d> _tmp_218[%d-%d]: %s", level, _mark, mark(), "','");
@@ -25328,7 +25328,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_218_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_218[%d-%d]: %s failed!", level,
@@ -25346,7 +25346,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_218_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_218[%d-%d]: %s failed!", level,
@@ -25364,7 +25364,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_218_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_218[%d-%d]: %s failed!", level,
@@ -25374,19 +25374,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_218_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_219: ASYNC
-    public SSTNode _tmp_219_rule()
+    public Object _tmp_219_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_219_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_219_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_219_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ASYNC
             debugMessageln("%d> _tmp_219[%d-%d]: %s", level, _mark, mark(), "ASYNC");
@@ -25400,7 +25400,7 @@ public final class Parser extends AbstractParser {
                 _res = async_var;
                 cache.putResult(_mark, _TMP_219_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_219[%d-%d]: %s failed!", level,
@@ -25410,7 +25410,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_219_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_221: ',' (expression ['as' star_target])
@@ -25497,15 +25497,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_222: ASYNC
-    public SSTNode _tmp_222_rule()
+    public Object _tmp_222_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_222_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_222_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_222_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ASYNC
             debugMessageln("%d> _tmp_222[%d-%d]: %s", level, _mark, mark(), "ASYNC");
@@ -25519,7 +25519,7 @@ public final class Parser extends AbstractParser {
                 _res = async_var;
                 cache.putResult(_mark, _TMP_222_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_222[%d-%d]: %s failed!", level,
@@ -25529,7 +25529,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_222_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_224: ',' (expressions ['as' star_target])
@@ -25616,15 +25616,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_225: 'as' NAME
-    public SSTNode _tmp_225_rule()
+    public Object _tmp_225_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_225_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_225_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_225_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'as' NAME
             debugMessageln("%d> _tmp_225[%d-%d]: %s", level, _mark, mark(), "'as' NAME");
@@ -25641,7 +25641,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(_keyword, name_var);
                 cache.putResult(_mark, _TMP_225_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_225[%d-%d]: %s failed!", level,
@@ -25651,19 +25651,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_225_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_226: 'as' NAME
-    public SSTNode _tmp_226_rule()
+    public Object _tmp_226_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_226_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_226_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_226_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'as' NAME
             debugMessageln("%d> _tmp_226[%d-%d]: %s", level, _mark, mark(), "'as' NAME");
@@ -25680,7 +25680,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(_keyword, name_var);
                 cache.putResult(_mark, _TMP_226_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_226[%d-%d]: %s failed!", level,
@@ -25690,7 +25690,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_226_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _loop0_228: ',' double_starred_kvpair
@@ -25781,15 +25781,15 @@ public final class Parser extends AbstractParser {
     }
 
     // _tmp_229: '}' | ','
-    public SSTNode _tmp_229_rule()
+    public Object _tmp_229_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_229_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_229_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_229_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '}'
             debugMessageln("%d> _tmp_229[%d-%d]: %s", level, _mark, mark(), "'}'");
@@ -25803,7 +25803,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_229_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_229[%d-%d]: %s failed!", level,
@@ -25821,7 +25821,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_229_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_229[%d-%d]: %s failed!", level,
@@ -25831,19 +25831,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_229_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_230: ':'
-    public SSTNode _tmp_230_rule()
+    public Object _tmp_230_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_230_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_230_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_230_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ':'
             debugMessageln("%d> _tmp_230[%d-%d]: %s", level, _mark, mark(), "':'");
@@ -25857,7 +25857,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_230_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_230[%d-%d]: %s failed!", level,
@@ -25867,19 +25867,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_230_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_231: star_targets '='
-    public SSTNode _tmp_231_rule()
+    public Object _tmp_231_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_231_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_231_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_231_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // star_targets '='
             debugMessageln("%d> _tmp_231[%d-%d]: %s", level, _mark, mark(), "star_targets '='");
@@ -25896,7 +25896,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_targets '='");
                 cache.putResult(_mark, _TMP_231_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_231[%d-%d]: %s failed!", level,
@@ -25906,19 +25906,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_231_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_232: '.' | '...'
-    public SSTNode _tmp_232_rule()
+    public Object _tmp_232_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_232_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_232_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_232_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '.'
             debugMessageln("%d> _tmp_232[%d-%d]: %s", level, _mark, mark(), "'.'");
@@ -25932,7 +25932,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_232_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_232[%d-%d]: %s failed!", level,
@@ -25950,7 +25950,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_232_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_232[%d-%d]: %s failed!", level,
@@ -25960,19 +25960,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_232_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_233: '.' | '...'
-    public SSTNode _tmp_233_rule()
+    public Object _tmp_233_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_233_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_233_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_233_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '.'
             debugMessageln("%d> _tmp_233[%d-%d]: %s", level, _mark, mark(), "'.'");
@@ -25986,7 +25986,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_233_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_233[%d-%d]: %s failed!", level,
@@ -26004,7 +26004,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_233_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_233[%d-%d]: %s failed!", level,
@@ -26014,19 +26014,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_233_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_234: '@' named_expression NEWLINE
-    public SSTNode _tmp_234_rule()
+    public Object _tmp_234_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_234_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_234_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_234_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // '@' named_expression NEWLINE
             debugMessageln("%d> _tmp_234[%d-%d]: %s", level, _mark, mark(), "'@' named_expression NEWLINE");
@@ -26046,7 +26046,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'@' named_expression NEWLINE");
                 cache.putResult(_mark, _TMP_234_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_234[%d-%d]: %s failed!", level,
@@ -26056,19 +26056,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_234_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_235: arguments
-    public SSTNode _tmp_235_rule()
+    public Object _tmp_235_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_235_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_235_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_235_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // arguments
             debugMessageln("%d> _tmp_235[%d-%d]: %s", level, _mark, mark(), "arguments");
@@ -26082,7 +26082,7 @@ public final class Parser extends AbstractParser {
                 _res = arguments_var;
                 cache.putResult(_mark, _TMP_235_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_235[%d-%d]: %s failed!", level,
@@ -26092,19 +26092,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_235_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_236: ',' star_expression
-    public SSTNode _tmp_236_rule()
+    public Object _tmp_236_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_236_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_236_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_236_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ',' star_expression
             debugMessageln("%d> _tmp_236[%d-%d]: %s", level, _mark, mark(), "',' star_expression");
@@ -26121,7 +26121,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' star_expression");
                 cache.putResult(_mark, _TMP_236_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_236[%d-%d]: %s failed!", level,
@@ -26131,19 +26131,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_236_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_237: ',' expression
-    public SSTNode _tmp_237_rule()
+    public Object _tmp_237_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_237_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_237_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_237_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ',' expression
             debugMessageln("%d> _tmp_237[%d-%d]: %s", level, _mark, mark(), "',' expression");
@@ -26160,7 +26160,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
                 cache.putResult(_mark, _TMP_237_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_237[%d-%d]: %s failed!", level,
@@ -26170,19 +26170,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_237_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_238: 'or' conjunction
-    public SSTNode _tmp_238_rule()
+    public Object _tmp_238_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_238_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_238_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_238_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'or' conjunction
             debugMessageln("%d> _tmp_238[%d-%d]: %s", level, _mark, mark(), "'or' conjunction");
@@ -26199,7 +26199,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'or' conjunction");
                 cache.putResult(_mark, _TMP_238_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_238[%d-%d]: %s failed!", level,
@@ -26209,19 +26209,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_238_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_239: 'and' inversion
-    public SSTNode _tmp_239_rule()
+    public Object _tmp_239_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_239_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_239_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_239_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'and' inversion
             debugMessageln("%d> _tmp_239[%d-%d]: %s", level, _mark, mark(), "'and' inversion");
@@ -26238,7 +26238,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'and' inversion");
                 cache.putResult(_mark, _TMP_239_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_239[%d-%d]: %s failed!", level,
@@ -26248,19 +26248,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_239_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_240: expression
-    public SSTNode _tmp_240_rule()
+    public Object _tmp_240_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_240_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_240_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_240_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // expression
             debugMessageln("%d> _tmp_240[%d-%d]: %s", level, _mark, mark(), "expression");
@@ -26274,7 +26274,7 @@ public final class Parser extends AbstractParser {
                 _res = expression_var;
                 cache.putResult(_mark, _TMP_240_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_240[%d-%d]: %s failed!", level,
@@ -26284,19 +26284,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_240_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_241: star_named_expressions
-    public SSTNode _tmp_241_rule()
+    public Object _tmp_241_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_241_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_241_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_241_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // star_named_expressions
             debugMessageln("%d> _tmp_241[%d-%d]: %s", level, _mark, mark(), "star_named_expressions");
@@ -26312,7 +26312,7 @@ public final class Parser extends AbstractParser {
                 _res = star_named_expressions_var;
                 cache.putResult(_mark, _TMP_241_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_241[%d-%d]: %s failed!", level,
@@ -26322,19 +26322,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_241_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_242: 'if' disjunction
-    public SSTNode _tmp_242_rule()
+    public Object _tmp_242_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_242_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_242_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_242_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'if' disjunction
             debugMessageln("%d> _tmp_242[%d-%d]: %s", level, _mark, mark(), "'if' disjunction");
@@ -26351,7 +26351,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' disjunction");
                 cache.putResult(_mark, _TMP_242_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_242[%d-%d]: %s failed!", level,
@@ -26361,19 +26361,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_242_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_243: 'if' disjunction
-    public SSTNode _tmp_243_rule()
+    public Object _tmp_243_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_243_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_243_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_243_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'if' disjunction
             debugMessageln("%d> _tmp_243[%d-%d]: %s", level, _mark, mark(), "'if' disjunction");
@@ -26390,7 +26390,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' disjunction");
                 cache.putResult(_mark, _TMP_243_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_243[%d-%d]: %s failed!", level,
@@ -26400,19 +26400,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_243_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_244: starred_expression | direct_named_expression !'='
-    public SSTNode _tmp_244_rule()
+    public Object _tmp_244_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_244_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_244_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_244_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // starred_expression
             debugMessageln("%d> _tmp_244[%d-%d]: %s", level, _mark, mark(), "starred_expression");
@@ -26426,7 +26426,7 @@ public final class Parser extends AbstractParser {
                 _res = starred_expression_var;
                 cache.putResult(_mark, _TMP_244_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_244[%d-%d]: %s failed!", level,
@@ -26446,7 +26446,7 @@ public final class Parser extends AbstractParser {
                 _res = direct_named_expression_var;
                 cache.putResult(_mark, _TMP_244_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_244[%d-%d]: %s failed!", level,
@@ -26456,19 +26456,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_244_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_245: ',' star_target
-    public SSTNode _tmp_245_rule()
+    public Object _tmp_245_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_245_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_245_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_245_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ',' star_target
             debugMessageln("%d> _tmp_245[%d-%d]: %s", level, _mark, mark(), "',' star_target");
@@ -26485,7 +26485,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' star_target");
                 cache.putResult(_mark, _TMP_245_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_245[%d-%d]: %s failed!", level,
@@ -26495,19 +26495,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_245_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_246: ',' star_target
-    public SSTNode _tmp_246_rule()
+    public Object _tmp_246_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_246_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_246_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_246_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ',' star_target
             debugMessageln("%d> _tmp_246[%d-%d]: %s", level, _mark, mark(), "',' star_target");
@@ -26524,7 +26524,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' star_target");
                 cache.putResult(_mark, _TMP_246_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_246[%d-%d]: %s failed!", level,
@@ -26534,19 +26534,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_246_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_247: star_targets '='
-    public SSTNode _tmp_247_rule()
+    public Object _tmp_247_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_247_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_247_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_247_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // star_targets '='
             debugMessageln("%d> _tmp_247[%d-%d]: %s", level, _mark, mark(), "star_targets '='");
@@ -26563,7 +26563,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(star_targets_var, _literal);
                 cache.putResult(_mark, _TMP_247_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_247[%d-%d]: %s failed!", level,
@@ -26573,19 +26573,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_247_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_248: star_targets '='
-    public SSTNode _tmp_248_rule()
+    public Object _tmp_248_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_248_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_248_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_248_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // star_targets '='
             debugMessageln("%d> _tmp_248[%d-%d]: %s", level, _mark, mark(), "star_targets '='");
@@ -26602,7 +26602,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(star_targets_var, _literal);
                 cache.putResult(_mark, _TMP_248_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_248[%d-%d]: %s failed!", level,
@@ -26612,19 +26612,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_248_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_249: ')' | '**'
-    public SSTNode _tmp_249_rule()
+    public Object _tmp_249_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_249_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_249_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_249_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ')'
             debugMessageln("%d> _tmp_249[%d-%d]: %s", level, _mark, mark(), "')'");
@@ -26638,7 +26638,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_249_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_249[%d-%d]: %s failed!", level,
@@ -26656,7 +26656,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_249_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_249[%d-%d]: %s failed!", level,
@@ -26666,19 +26666,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_249_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_250: ':' | '**'
-    public SSTNode _tmp_250_rule()
+    public Object _tmp_250_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_250_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_250_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_250_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // ':'
             debugMessageln("%d> _tmp_250[%d-%d]: %s", level, _mark, mark(), "':'");
@@ -26692,7 +26692,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_250_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_250[%d-%d]: %s failed!", level,
@@ -26710,7 +26710,7 @@ public final class Parser extends AbstractParser {
                 _res = _literal;
                 cache.putResult(_mark, _TMP_250_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_250[%d-%d]: %s failed!", level,
@@ -26720,19 +26720,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_250_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_251: expression ['as' star_target]
-    public SSTNode _tmp_251_rule()
+    public Object _tmp_251_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_251_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_251_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_251_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // expression ['as' star_target]
             debugMessageln("%d> _tmp_251[%d-%d]: %s", level, _mark, mark(), "expression ['as' star_target]");
@@ -26749,7 +26749,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(expression_var, _opt_var);
                 cache.putResult(_mark, _TMP_251_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_251[%d-%d]: %s failed!", level,
@@ -26759,19 +26759,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_251_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_252: expressions ['as' star_target]
-    public SSTNode _tmp_252_rule()
+    public Object _tmp_252_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_252_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_252_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_252_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // expressions ['as' star_target]
             debugMessageln("%d> _tmp_252[%d-%d]: %s", level, _mark, mark(), "expressions ['as' star_target]");
@@ -26788,7 +26788,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(expressions_var, _opt_var);
                 cache.putResult(_mark, _TMP_252_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_252[%d-%d]: %s failed!", level,
@@ -26798,19 +26798,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_252_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_253: 'as' star_target
-    public SSTNode _tmp_253_rule()
+    public Object _tmp_253_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_253_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_253_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_253_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'as' star_target
             debugMessageln("%d> _tmp_253[%d-%d]: %s", level, _mark, mark(), "'as' star_target");
@@ -26827,7 +26827,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(_keyword, star_target_var);
                 cache.putResult(_mark, _TMP_253_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_253[%d-%d]: %s failed!", level,
@@ -26837,19 +26837,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_253_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // _tmp_254: 'as' star_target
-    public SSTNode _tmp_254_rule()
+    public Object _tmp_254_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, _TMP_254_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, _TMP_254_ID);
+            _res = (Object)cache.getResult(_mark, _TMP_254_ID);
             level--;
-            return (SSTNode)_res;
+            return (Object)_res;
         }
         { // 'as' star_target
             debugMessageln("%d> _tmp_254[%d-%d]: %s", level, _mark, mark(), "'as' star_target");
@@ -26866,7 +26866,7 @@ public final class Parser extends AbstractParser {
                 _res = dummyName(_keyword, star_target_var);
                 cache.putResult(_mark, _TMP_254_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (Object)_res;
             }
             reset(_mark);
             debugMessageln("%d%s _tmp_254[%d-%d]: %s failed!", level,
@@ -26876,7 +26876,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, _TMP_254_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (Object)_res;
     }
 
     // lookahead methods generated
