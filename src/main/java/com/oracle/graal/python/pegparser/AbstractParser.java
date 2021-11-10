@@ -19,7 +19,8 @@ import java.util.Set;
  * defined in CPython's {@code pegen.c}. This allows us to keep the actions and
  * parser generator very similar to CPython for easier updating in the future.
  */
-abstract class AbstractParser {
+public abstract class AbstractParser {
+    //TODO This should be package protected
     protected static final Set<String> softKeywords = new HashSet<>();
     protected static final Map<String, Integer> reservedKeywords = new LinkedHashMap<>();
 
