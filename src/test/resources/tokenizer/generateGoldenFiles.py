@@ -23,9 +23,9 @@ for file in files:
                 outputFile.write(line + '\n')
                 tokens = generate_tokens(StringIO(line).readline)
                 for token in tokens:
-                    outputFile.write("Token type:%d (%s)" % (token.type, Token.tok_name[token.type]))
+                    outputFile.write("Token type:%d (%d)" % (token.type, token.type))
                     if token.type == Token.OP:
-                        outputFile.write(" exact_type:%d (%s)" % (token.exact_type, Token.tok_name[token.exact_type]))
+                        outputFile.write(" exact_type:%d (%d)" % (token.exact_type, token.exact_type))
                     outputFile.write(" start:[%d, %d] end:[%d, %d]" % (token.start + token.end))
                     outputFile.write(" string:'%s'" % (token.string))
                     outputFile.write('\n')
