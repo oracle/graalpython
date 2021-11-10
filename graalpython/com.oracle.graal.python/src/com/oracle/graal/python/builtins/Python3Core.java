@@ -307,7 +307,6 @@ public abstract class Python3Core extends ParserErrorCallback {
                         "faulthandler",
                         "base_exception",
                         PythonCextBuiltins.PYTHON_CEXT,
-                        "bytes",
                         "bytearray",
                         "unicodedata",
                         "_locale",

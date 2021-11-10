@@ -1046,8 +1046,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = ENCODE, minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
-    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"", useDefaultForNone = true)
-    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"")
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"")
     @GenerateNodeFactory
     public abstract static class EncodeNode extends PythonTernaryClinicBuiltinNode {
 
@@ -1075,10 +1075,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = DECODE, minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
-    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"", useDefaultForNone = true)
-    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"")
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"")
     @GenerateNodeFactory
-    abstract static class DecodeNode extends PythonTernaryClinicBuiltinNode {
+    public abstract static class DecodeNode extends PythonTernaryClinicBuiltinNode {
+
+        public abstract Object executeWithStrings(VirtualFrame frame, Object obj, String encoding, String errors);
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {

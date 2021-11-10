@@ -77,11 +77,15 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
+import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsFactory.LStripNodeFactory;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsFactory.RStripNodeFactory;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -99,7 +103,9 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import static com.oracle.graal.python.nodes.BuiltinNames.DECODE;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import static com.oracle.graal.python.nodes.ErrorMessages.DECODER_RETURNED_P_INSTEAD_OF_BYTES;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -261,6 +267,48 @@ public class BytesBuiltins extends PythonBuiltins {
             StringBuilder sb = PythonUtils.newStringBuilder();
             BytesUtils.reprLoop(sb, bytes, len);
             return PythonUtils.sbToString(sb);
+        }
+    }
+
+    @Builtin(name = DECODE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "encoding", "errors"}, doc = "Decode the bytes using the codec registered for encoding.\n\n" +
+                    "encoding\n" +
+                    "  The encoding with which to decode the bytes.\n" +
+                    "errors\n" +
+                    "  The error handling scheme to use for the handling of decoding errors.\n" +
+                    "  The default is 'strict' meaning that decoding errors raise a\n" +
+                    "  UnicodeDecodeError. Other possible values are 'ignore' and 'replace'\n" +
+                    "  as well as any other name registered with codecs.register_error that\n" +
+                    "  can handle UnicodeDecodeErrors.")
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"")
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"")
+    @GenerateNodeFactory
+    abstract static class DecodeNode extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BytesBuiltinsClinicProviders.DecodeNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        public Object decode(VirtualFrame frame, PBytesLike self, String encoding, String errors,
+                        @Cached CodecsModuleBuiltins.DecodeNode decodeNode,
+                        @Cached IsInstanceNode isInstanceNode) {
+            Object result = decodeNode.executeWithStrings(frame, self, encoding, errors);
+            if (!isInstanceNode.executeWith(frame, result, PythonBuiltinClassType.PString)) {
+                throw raise(TypeError, DECODER_RETURNED_P_INSTEAD_OF_BYTES, encoding, result);
+            }
+            return result;
+        }
+    }
+
+    @Builtin(name = "strip", minNumOfPositionalArgs = 1, parameterNames = {"$self", "what"})
+    @GenerateNodeFactory
+    abstract static class StripNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        public Object strip(VirtualFrame frame, PBytesLike self, Object what,
+                        @Cached LStripNode lstripNode,
+                        @Cached RStripNode rstripNode) {
+            return rstripNode.execute(frame, lstripNode.execute(frame, self, what), what);
         }
     }
 
@@ -2235,6 +2283,10 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LStripNode extends AStripNode {
 
+        static LStripNode create() {
+            return LStripNodeFactory.create();
+        }
+
         @Override
         protected byte[] getResultBytes(byte[] bs, int i) {
             byte[] out;
@@ -2267,6 +2319,10 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = "rstrip", minNumOfPositionalArgs = 1, parameterNames = {"self", "bytes"})
     @GenerateNodeFactory
     abstract static class RStripNode extends AStripNode {
+
+        static RStripNode create() {
+            return RStripNodeFactory.create();
+        }
 
         @Override
         protected byte[] getResultBytes(byte[] bs, int i) {
