@@ -317,8 +317,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         BoolSequenceStorage sequenceStorage,
                         NodeType nodeType) {
             boolean[] internalArray = sequenceStorage.getInternalBoolArray();
+            int seqLength = sequenceStorage.length();
 
-            for (int i = 0; loopConditionProfile.profile(i < sequenceStorage.length()); i++) {
+            loopConditionProfile.profileCounted(seqLength);
+            for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
                 if (nodeType == NodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
                     return false;
                 } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
@@ -335,8 +337,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         IntSequenceStorage sequenceStorage,
                         NodeType nodeType) {
             int[] internalArray = sequenceStorage.getInternalIntArray();
+            int seqLength = sequenceStorage.length();
 
-            for (int i = 0; loopConditionProfile.profile(i < sequenceStorage.length()); i++) {
+            loopConditionProfile.profileCounted(seqLength);
+            for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
                 if (nodeType == NodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
                     return false;
                 } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
@@ -355,7 +359,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object[] internalArray = sequenceStorage.getInternalArray();
             int seqLength = lenNode.execute(sequenceStorage);
 
-            for (int i = 0; loopConditionProfile.profile(i < seqLength); i++) {
+            loopConditionProfile.profileCounted(seqLength);
+            for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
                 if (nodeType == NodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
                     return false;
                 } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
@@ -372,8 +377,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         NodeType nodeType,
                         @CachedLibrary("hashingStorage") HashingStorageLibrary hlib) {
             HashingStorageLibrary.HashingStorageIterator<Object> keysIter = hlib.keys(hashingStorage).iterator();
+            int seqLength = hlib.length(hashingStorage);
 
-            for (int i = 0; loopConditionProfile.profile(i < hlib.length(hashingStorage)); i++) {
+            loopConditionProfile.profileCounted(seqLength);
+            for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
                 Object key = keysIter.next();
                 if (nodeType == NodeType.ALL) {
                     if (!isTrueNode.execute(frame, key)) {
