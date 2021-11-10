@@ -384,14 +384,8 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         return new_var
 
     def call_with_errorcheck_return(self, call_text: str, returnval: str) -> None:
-        # error's in Java via exceptions
-        self.print("try {")
-        with self.indent():
-            self.print(f"{call_text};")
-        self.print("} catch (Exception e) {")
-        with self.indent():
-            self.add_return(returnval)
-        self.print("}")
+        # error's in Java come via exceptions, which we just let propagate
+        self.print(f"{call_text};")
 
     def call_with_errorcheck_goto(self, call_text: str, goto_target: str) -> None:
         "not used in Java"
@@ -508,11 +502,11 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         with self.indent():
             self.add_level()
             self.print("int _mark = mark();")
-            self.print(f"{result_type} _res = null;")
+            self.print(f"Object _res = null;")
             self.print(f"if (cache.hasResult(_mark, {node.name.upper()}_ID)) {{")
             with self.indent():
-                self.print(f"_res = ({result_type})cache.getResult(_mark, {node.name.upper()}_ID);")
-                self.add_return("_res")
+                self.print(f"_res = cache.getResult(_mark, {node.name.upper()}_ID);")
+                self.add_return(f"({result_type})_res")
             self.print("}")
             self.print("int _resmark = mark();")
             self.print("while (true) {")
@@ -521,7 +515,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                     f"cache.putResult(_mark, {node.name.upper()}_ID, _res)", "_res"
                 )
                 self.print("reset(_mark);")
-                self.print(f"Object _raw = {node.name}_raw();")
+                self.print(f"SSTNode _raw = {node.name}_raw();")
                 self.print("if (_raw == null || mark() <= _resmark)")
                 with self.indent():
                     self.print("break;")
@@ -529,12 +523,12 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.print("_res = _raw;")
             self.print("}")
             self.print(f"reset(_resmark);")
-            self.add_return("_res")
+            self.add_return(f"({result_type})_res")
         self.print("}")
         self.print(f"private {result_type} {node.name}_raw()")
 
     def _should_memoize(self, node: Rule) -> bool:
-        return node.memo and not node.left_recursive
+        return not node.left_recursive
 
     def _handle_default_rule_body(self, node: Rule, rhs: Rhs, result_type: str) -> None:
         memoize = self._should_memoize(node)
@@ -543,13 +537,21 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.add_level()
             self._check_for_errors()
             self.print("int _mark = mark();")
-            self.print(f"{result_type} _res = null;")
+            self.print(f"Object _res = null;")
             if memoize:
                 self.print(f"if (cache.hasResult(_mark, {node.name.upper()}_ID)) {{")
                 with self.indent():
                     self.print(f"_res = ({result_type})cache.getResult(_mark, {node.name.upper()}_ID);")
-                    self.add_return("_res")
+                    self.add_return(f"({result_type})_res")
                 self.print("}")
+            # Java change: set up the goto target via a loop and switch construct
+            if rhs.alts:
+                self.print("_goto_label = 0;")
+                self.print("GOTO_LOOP: while (true) {")
+                self.level += 1
+                self.print("switch (_goto_label) {")
+                self.print("case 0:")
+                self.level += 1
             if any(alt.action and "EXTRA" in alt.action for alt in rhs.alts):
                 self._set_up_token_start_metadata_extraction()
             self.visit(
@@ -559,9 +561,18 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.print(f'debugMessageln("Fail at %d: {node.name}", _mark);')
             self.print("_res = null;")
         with self.indent():
+            if rhs.alts:
+                self.level -= 1
+                self.print("case 1:")
+                self.level += 1
             if memoize:
                 self.print(f"cache.putResult(_mark, {node.name.upper()}_ID, _res);")
-            self.add_return("_res")
+            self.add_return(f"({result_type})_res")
+            if rhs.alts:
+                self.level -= 1
+                self.print("}")
+                self.level -= 1
+                self.print("}")
 
     def _handle_loop_rule_body(self, node: Rule, rhs: Rhs) -> None:
         memoize = self._should_memoize(node)
@@ -570,13 +581,13 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         with self.indent():
             self.add_level()
             self._check_for_errors()
-            self.print("SSTNode[] _res = new ArrayList<>();")
+            self.print("Object _res = null;")
             self.print("int _mark = mark();")
             if memoize:
                 self.print(f"if (cache.hasResult(_mark, {node.name.upper()}_ID)) {{")
                 with self.indent():
-                    self.print(f"_res = (SSTNode[])cache.getResult(_mark, {node.name.upper()}_ID);")
-                    self.add_return("_res")
+                    self.print(f"_res = cache.getResult(_mark, {node.name.upper()}_ID);")
+                    self.add_return("(SSTNode[])_res")
                 self.print("}")
             self.print("int _start_mark = mark();")
             self.print("List<SSTNode> _children = new ArrayList<>();")
@@ -608,7 +619,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         elif node.type:
             result_type = _check_type(self, node.type)
         else:
-            result_type = "Object"
+            result_type = "SSTNode"
 
         for line in str(node).splitlines():
             self.print(f"// {line}")
@@ -714,8 +725,9 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.emit_default_action(is_gather, node)
 
             # As the current option has parsed correctly, do not continue with the rest.
-            # Java change: C uses a goto here, we just always memoize and return
-            self.print(f"return cache.putResult(_mark, {rulename.upper()}_ID, _res);")
+            # Java change: C uses a goto here
+            self.print("_goto_label = 1;");
+            self.print("continue GOTO_LOOP;")
         self.print("}")
 
     def handle_alt_loop(self, node: Alt, is_gather: bool, rulename: Optional[str]) -> None:
