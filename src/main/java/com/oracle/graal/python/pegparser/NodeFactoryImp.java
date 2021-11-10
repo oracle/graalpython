@@ -15,6 +15,7 @@ import com.oracle.graal.python.pegparser.sst.BlockSSTNode;
 import com.oracle.graal.python.pegparser.sst.BooleanLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
+import com.oracle.graal.python.pegparser.sst.StringLiteralSSTNode.RawStringLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.UnarySSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
 
@@ -55,6 +56,12 @@ public class NodeFactoryImp implements NodeFactory{
     public SSTNode createNumber(String number, int startOffset, int endOffset) {
         // TODO handle all kind of numbers here.
         return NumberLiteralSSTNode.create(number, 0, 10, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createString(String str, int startOffset, int endOffset) {
+        // TODO...
+        return new RawStringLiteralSSTNode(str, startOffset, endOffset);
     }
 
     @Override

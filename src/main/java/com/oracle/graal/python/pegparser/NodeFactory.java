@@ -17,6 +17,7 @@ public interface NodeFactory {
     public BlockSSTNode createBlock(SSTNode[] statements, int startOffset, int endOffset);
     public BooleanLiteralSSTNode createBooleanLiteral(boolean value, int startOffset, int endOffset);
     public SSTNode createNumber(String number, int startOffset, int endOffset);
+    public SSTNode createString(String number, int startOffset, int endOffset);
     public UnarySSTNode createUnaryOp(UnarySSTNode.Type op, SSTNode value, int startOffset, int endOffset);
     public VarLookupSSTNode createVariable(String name, int startOffset, int endOffset);
 

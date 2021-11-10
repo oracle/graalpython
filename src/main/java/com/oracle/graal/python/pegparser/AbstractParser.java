@@ -173,8 +173,18 @@ abstract class AbstractParser {
         return null;
     }
 
-    public Token string_token() {
-        return expect(Token.Kind.STRING);
+    /**
+     * IMPORTANT! _PyPegen_string_token returns (through void*) a Token*. But
+     * that's actually only used in rules that then create a proper string out
+     * of multiple tokens. So we'll adapt those and return a string constant
+     * node here.
+     */
+    public SSTNode string_token() {
+        Token t = expect(Token.Kind.STRING);
+        if (t == null) {
+            return null;
+        }
+        return factory.createString(getText(t), t.startOffset, t.endOffset);
     }
 
     public SSTNode number_token() {
