@@ -195,6 +195,26 @@ abstract class AbstractParser {
         return t;
     }
 
+    public SSTNode name_from_token(Token t) {
+        if (t == null) {
+            return null;
+        }
+        String id = getText(t);
+        return factory.createVariable(id, t.startOffset, t.endOffset);
+    }
+
+    public SSTNode soft_keyword_token() {
+        Token t = expect(Token.Kind.NAME);
+        if (t == null) {
+            return null;
+        }
+        String txt = getText(t);
+        if (softKeywords.contains(txt)) {
+            return name_from_token(t);
+        }
+        return null;
+    }
+
     public SSTNode dummyName(Object... args) {
         if (cachedDummyName != null) {
             return cachedDummyName;
