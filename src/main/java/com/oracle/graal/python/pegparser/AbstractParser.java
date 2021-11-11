@@ -41,6 +41,7 @@
 package com.oracle.graal.python.pegparser;
 
 import com.oracle.graal.python.pegparser.sst.SSTNode;
+import com.oracle.graal.python.pegparser.sst.UntypedSSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.util.Arrays;
@@ -213,17 +214,17 @@ public abstract class AbstractParser {
     }
 
     /**
-     * IMPORTANT! _PyPegen_string_token returns (through void*) a Token*. But
-     * that's actually only used in rules that then create a proper string out
-     * of multiple tokens. So we'll adapt those and return a string constant
-     * node here.
+     * IMPORTANT! _PyPegen_string_token returns (through void*) a Token*. We are
+     * trying to be type safe, so we create a container.
      */
     public SSTNode string_token() {
         Token t = expect(Token.Kind.STRING);
         if (t == null) {
             return null;
         }
-        return factory.createString(getText(t), t.startOffset, t.endOffset);
+        int pos = mark();
+        assert tokenizer.peekToken(pos) == t;
+        return factory.createUntyped(pos);
     }
 
     public SSTNode number_token() {
@@ -289,6 +290,35 @@ public abstract class AbstractParser {
 
     public Object[] singletonSequence(Object element) {
         return new Object[]{element};
+    }
+
+    public SSTNode concatenateStrings(SSTNode[] tokens) {
+        // TODO: finish
+        StringBuilder sb = null;
+        String result = null;
+        int start = -1;
+        int end = -1;
+        for (SSTNode n : tokens) {
+            Token t = tokenizer.peekToken(((UntypedSSTNode)n).getTokenPosition());
+            String s = getText(t);
+            if (start < 0) {
+                start = t.startOffset;
+            }
+            end = t.endOffset;
+            if (result != null) {
+                if (sb == null) {
+                    sb = new StringBuilder();
+                }
+                sb.append(result);
+            }
+            result = s;
+        }
+        if (sb != null) {
+            sb.append(result);
+            return factory.createString(sb.toString(), start, end);
+        } else {
+            return factory.createString(result, start, end);
+        }
     }
 
     /**

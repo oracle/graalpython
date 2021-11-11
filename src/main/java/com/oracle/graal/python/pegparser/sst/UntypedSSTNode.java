@@ -38,30 +38,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.pegparser;
 
-import com.oracle.graal.python.pegparser.sst.*;
+package com.oracle.graal.python.pegparser.sst;
 
-public interface NodeFactory {
-    public AnnAssignmentSSTNode createAnnAssignment(AnnotationSSTNode annotation, SSTNode rhs, int startOffset, int endOffset);
+/**
+ * A container to keep a token reference around during parsing (via it's
+ * position in the token stream)
+ */
+public final class UntypedSSTNode extends SSTNode {
+    private final int tokenPos;
 
-    public AnnotationSSTNode createAnnotation(SSTNode lhs, SSTNode type, int startOffset, int endOffset);
+    public UntypedSSTNode(int tokenPos) {
+        super(0, 0);
+        this.tokenPos = tokenPos;
+    }
 
-    public AssignmentSSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, int startOffset, int endOffset);
+    public int getTokenPosition() {
+        return tokenPos;
+    }
 
-    public BinaryArithmeticSSTNode createBinaryOp(BinaryArithmeticSSTNode.Type op, SSTNode left, SSTNode right, int startOffset, int endOffset);
-
-    public BlockSSTNode createBlock(SSTNode[] statements, int startOffset, int endOffset);
-
-    public BooleanLiteralSSTNode createBooleanLiteral(boolean value, int startOffset, int endOffset);
-
-    public SSTNode createNumber(String number, int startOffset, int endOffset);
-
-    public SSTNode createString(String number, int startOffset, int endOffset);
-
-    public UnarySSTNode createUnaryOp(UnarySSTNode.Type op, SSTNode value, int startOffset, int endOffset);
-
-    public VarLookupSSTNode createVariable(String name, int startOffset, int endOffset);
-
-    public UntypedSSTNode createUntyped(int tokenPosition);
+    @Override
+    public <T> T accept(SSTreeVisitor<T> visitor) {
+        throw new RuntimeException("UntypedSSTNode is a PEG parser detail and should never be in a tree");
+    }
 }

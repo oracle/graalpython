@@ -30,15 +30,14 @@ public class AtomsTests extends ParserTestBase {
         checkTreeResult("False");
     }
 
-    // @Test
-    // public void atomString() throws Exception {
-    //     checkTreeResult("'a String'");
-    //     checkTreeResult("\"a String\"");
-    //     checkTreeResult("'''a String'''");
-    //     checkTreeResult("\"\"\"a String\"\"\"");
-
-    //     checkTreeResult("'a' ' String'");
-    //     checkTreeResult("'''a''' ' String'");
-    //     checkTreeResult("\"a\" ' String'");
-    // }
+    @Test
+    public void atomString() throws Exception {
+        checkTreeResult("'a String'");
+        checkTreeResult("\"a String\"");
+        checkTreeResult("'''a String'''");
+        checkTreeResult("\"\"\"a String\"\"\"");
+        checkTreeResult("'a' ' String'");
+        checkTreeResult("'''a''' ' String'");
+        checkTreeResult("\"a\" ' String'");
+    }
 }

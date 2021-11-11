@@ -720,7 +720,7 @@ atom[SSTNode]: # originally return type expr_ty
     | &'{' (dict | set | dictcomp | setcomp)
     | '...' { _PyAST_Constant(Py_Ellipsis, NULL, EXTRA) }
 
-strings[SSTNode] (memo): a=STRING+ { _PyPegen_concatenate_strings(p, a) } # originally return type expr_ty
+strings[SSTNode] (memo): a=STRING+ { this.concatenateStrings(a) }
 list[SSTNode]: # originally return type expr_ty
     | '[' a=[star_named_expressions] ']' { _PyAST_List(a, Load, EXTRA) }
 listcomp[SSTNode]: # originally return type expr_ty

@@ -11322,8 +11322,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d strings[%d-%d]: %s succeeded!", level, _mark, mark(), "STRING+");
-                // TODO: node.action: _PyPegen_concatenate_strings ( p , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_concatenate_strings ( p , a ) to Java !!![0m");
+                // TODO: node.action: this . concatenateStrings ( a )
+                debugMessageln("[33;5;7m!!! TODO: Convert this . concatenateStrings ( a ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "STRING+");
                 cache.putResult(_mark, STRINGS_ID, _res);

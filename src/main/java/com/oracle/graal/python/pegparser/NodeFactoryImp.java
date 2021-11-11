@@ -52,6 +52,7 @@ import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StringLiteralSSTNode.RawStringLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.UnarySSTNode;
+import com.oracle.graal.python.pegparser.sst.UntypedSSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
 
 
@@ -109,4 +110,8 @@ public class NodeFactoryImp implements NodeFactory{
         return new VarLookupSSTNode(name, startOffset, endOffset);
     }
 
+    @Override
+    public UntypedSSTNode createUntyped(int tokenPosition) {
+        return new UntypedSSTNode(tokenPosition);
+    }
 }
