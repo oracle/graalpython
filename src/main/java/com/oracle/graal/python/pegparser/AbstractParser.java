@@ -8,6 +8,7 @@ package com.oracle.graal.python.pegparser;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -239,6 +240,16 @@ public abstract class AbstractParser {
         System.arraycopy(seq, 0, result, 1, seq.length);
         result[0] = element;
         return result;
+    }
+
+    public Object[] appendToEnd(Object[] seq, Object element) {
+        Object[] result = Arrays.copyOf(seq, seq.length + 1);
+        result[seq.length] = element;
+        return result;
+    }
+
+    public Object[] singletonSequence(Object element) {
+        return new Object[]{element};
     }
 
     /**
