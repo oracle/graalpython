@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-#encoding: UTF-8
+# encoding: UTF-8
+# Copyright (c) 2021, Oracle and/or its affiliates.
+# Copyright (C) 1996-2021 Python Software Foundation
+#
+# Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 
 """This is heavily based on the C generator, and we try to keep it as similar as
 possible to make updates and maintenance easy. Where we deviate in non obvious
