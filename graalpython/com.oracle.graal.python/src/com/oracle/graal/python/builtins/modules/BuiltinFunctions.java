@@ -123,7 +123,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -308,7 +307,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Child private PyObjectIsTrueNode isTrueNode = PyObjectIsTrueNode.create();
 
-        final private LoopConditionProfile loopConditionProfile = LoopConditionProfile.create();
+        private final LoopConditionProfile loopConditionProfile = LoopConditionProfile.create();
 
         abstract boolean execute(Frame frame, Object storageObj, NodeType nodeType);
 
