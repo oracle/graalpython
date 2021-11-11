@@ -466,6 +466,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("ps1", ">>> ");
         // continue prompt for interactive shell
         builtinConstants.put("ps2", "... ");
+        // CPython builds for distros report empty strings too, because they are built from
+        // tarballs, not git
+        builtinConstants.put("_git", factory.createTuple(new Object[]{"graalpython", "", ""}));
 
         super.initialize(core);
 
@@ -827,6 +830,33 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         public static AuditNode create() {
             return SysModuleBuiltinsFactory.AuditNodeGen.create();
+        }
+    }
+
+    @Builtin(name = "audit", minNumOfPositionalArgs = 1, takesVarArgs = true, doc = "audit(event, *args)\n" +
+                    "\n" +
+                    "Passes the event to any audit hooks that are attached.")
+    @GenerateNodeFactory
+    abstract static class SysAuditNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object doAudit(VirtualFrame frame, Object[] args) {
+            // TODO: Stub audit hooks implementation for PEP 578
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "audithook", minNumOfPositionalArgs = 1, doc = "addaudithook($module, /, hook)\n" +
+                    "--\n" +
+                    "\n" +
+                    "Adds a new audit hook callback.")
+    @GenerateNodeFactory
+    abstract static class SysAuditHookNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object doAudit(VirtualFrame frame, Object hook) {
+            // TODO: Stub audit hooks implementation for PEP 578
+            return PNone.NONE;
         }
     }
 

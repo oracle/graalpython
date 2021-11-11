@@ -38,18 +38,6 @@
 # SOFTWARE.
 
 
-# Stub audit hooks implementation for PEP 578
-def audit(str, *args):
-    pass
-
-def addaudithook(hook):
-    pass
-
-
-# CPython builds for distros report empty strings too, because they are built from tarballs, not git
-_git = ("graalpython", '', '')
-
-
 @__graalpython__.builtin
 def exit(arg=None):
     # see SystemExit_init, tuple of size 1 is unpacked
