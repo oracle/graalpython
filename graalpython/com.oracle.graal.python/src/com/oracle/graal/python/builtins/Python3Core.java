@@ -286,8 +286,8 @@ import com.oracle.truffle.api.source.SourceSection;
  * through an extra field in the context.
  */
 public abstract class Python3Core extends ParserErrorCallback {
-    private static final int REC_LIM = 8000;
-    private static final int NATIVE_REC_LIM = 1000;
+    private static final int REC_LIM = 1000;
+    private static final int NATIVE_REC_LIM = 8000;
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(Python3Core.class);
     private final String[] coreFiles;
 

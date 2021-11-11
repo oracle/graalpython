@@ -1492,7 +1492,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     "Return the current thread switch interval; see sys.setswitchinterval().")
     @GenerateNodeFactory
     abstract static class GetSwitchIntervalNode extends PythonBuiltinNode {
-        private final static double FACTOR = 1.e-6;
+        private static final double FACTOR = 1.e-6;
 
         @Specialization
         Object getCheckInterval(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys) {
@@ -1513,7 +1513,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     "A typical value is 0.005 (5 milliseconds).")
     @GenerateNodeFactory
     abstract static class SetSwitchIntervalNode extends PythonBuiltinNode {
-        private final static double FACTOR = 1.e6;
+        private static final double FACTOR = 1.e6;
 
         @Specialization
         Object setCheckInterval(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object arg,
