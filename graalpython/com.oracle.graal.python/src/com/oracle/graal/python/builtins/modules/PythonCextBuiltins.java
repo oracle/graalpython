@@ -2574,18 +2574,18 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyUnicode_Decode", minNumOfPositionalArgs = 5, declaresExplicitSelf = true)
+    @Builtin(name = "PyUnicode_Decode", minNumOfPositionalArgs = 4, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class PyUnicode_Decode extends NativeUnicodeBuiltin {
 
         @Specialization
-        Object doDecode(VirtualFrame frame, Object module, Object cByteArray, long size, String encoding, String errors,
+        Object doDecode(VirtualFrame frame, Object module, Object cByteArray, String encoding, String errors,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached GetByteArrayNode getByteArrayNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
 
             try {
-                ByteBuffer inputBuffer = wrap(getByteArrayNode.execute(cByteArray, size));
+                ByteBuffer inputBuffer = wrap(getByteArrayNode.execute(cByteArray, -1));
                 int n = remaining(inputBuffer);
                 CharBuffer resultBuffer = allocateCharBuffer(n * 4);
                 decode(resultBuffer, inputBuffer, encoding, errors);
