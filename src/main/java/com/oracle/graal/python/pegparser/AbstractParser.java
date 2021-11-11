@@ -44,6 +44,7 @@ import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -57,8 +58,8 @@ import java.util.Set;
  */
 public abstract class AbstractParser {
     //TODO This should be package protected
-    protected static final Set<String> softKeywords = new HashSet<>();
-    protected static final Map<String, Integer> reservedKeywords = new LinkedHashMap<>();
+    protected static final Set<String> softKeywords = new HashSet<>(4);
+    protected static final Map<String, Integer> reservedKeywords = new HashMap<>(42);
 
     private final ParserTokenizer tokenizer;
     protected final NodeFactory factory;
