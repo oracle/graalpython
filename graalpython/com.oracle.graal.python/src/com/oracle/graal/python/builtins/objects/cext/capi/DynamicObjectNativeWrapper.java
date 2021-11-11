@@ -122,6 +122,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -1028,6 +1029,18 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
             Object enclosingType = object.getEnclosingType();
             return toSulongNode.execute(enclosingType != null ? enclosingType : getNativeNullNode.execute());
+        }
+
+        @Specialization(guards = "eq(D_NAME, key)")
+        static Object doDName(GetSetDescriptor object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(object.getName());
+        }
+
+        @Specialization(guards = "eq(D_TYPE, key)")
+        static Object doDType(GetSetDescriptor object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(object.getType());
         }
 
         @Specialization(guards = "eq(D_METHOD, key)")
