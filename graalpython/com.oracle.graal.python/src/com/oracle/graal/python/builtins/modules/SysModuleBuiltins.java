@@ -840,7 +840,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     abstract static class SysAuditNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object doAudit(VirtualFrame frame, Object[] args) {
+        Object doAudit(VirtualFrame frame, Object event, Object[] args) {
             // TODO: Stub audit hooks implementation for PEP 578
             return PNone.NONE;
         }
@@ -1458,16 +1458,19 @@ public class SysModuleBuiltins extends PythonBuiltins {
                 throw raise(TypeError, S_EXPECTED_GOT_P, "integer", limit);
             }
 
+            int newLimit;
             try {
-                final int newLimit = longAsIntNode.execute(frame, limit);
-                if (newLimit < 1) {
-                    throw raise(ValueError, REC_LIMIT_GREATER_THAN_1);
-                }
-
-                // TODO: check to see if Issue #25274 applies
-                getContext().getSysModuleState().setRecursionLimit(newLimit);
-            } catch (PException ignore) {
+                newLimit = longAsIntNode.execute(frame, limit);
+            } catch (PException pe) {
+                newLimit = -1;
             }
+
+            if (newLimit < 1) {
+                throw raise(ValueError, REC_LIMIT_GREATER_THAN_1);
+            }
+
+            // TODO: check to see if Issue #25274 applies
+            getContext().getSysModuleState().setRecursionLimit(newLimit);
             return PNone.NONE;
         }
     }
@@ -1547,17 +1550,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setCheckInterval(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object arg,
-                        @Cached PyFloatAsDoubleNode floatAsDoubleNode,
-                        @Cached PyFloatCheckExactNode floatCheckExactNode) {
-            try {
-                double interval = floatAsDoubleNode.execute(frame, arg);
-                if (interval <= 0.0) {
-                    throw raise(ValueError, SWITCH_INTERVAL_MUST_BE_POSITIVE);
-                }
-                getContext().getSysModuleState().setSwitchInterval(FACTOR * interval);
-            } catch (PException ignore) {
-
+                        @Cached PyFloatAsDoubleNode floatAsDoubleNode) {
+            double interval = floatAsDoubleNode.execute(frame, arg);
+            if (interval <= 0.0) {
+                throw raise(ValueError, SWITCH_INTERVAL_MUST_BE_POSITIVE);
             }
+            getContext().getSysModuleState().setSwitchInterval(FACTOR * interval);
             return PNone.NONE;
         }
     }
