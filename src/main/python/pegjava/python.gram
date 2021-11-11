@@ -84,15 +84,13 @@ fstring[SSTNode]: star_expressions  # originally return type expr_ty
 type_expressions[asdl_expr_seq*]:
     | a=','.expression+ ',' '*' b=expression ',' '**' c=expression {
         (SSTNode[])this.appendToEnd(
-            p,
             (SSTNode[])this.appendToEnd(a, b),
             c) }
     | a=','.expression+ ',' '*' b=expression { (SSTNode[])this.appendToEnd(a, b) }
     | a=','.expression+ ',' '**' b=expression { (SSTNode[])this.appendToEnd(a, b) }
     | '*' a=expression ',' '**' b=expression {
         (SSTNode[])this.appendToEnd(
-            p,
-            (SSTNode[])this.singletonSequence(a)),
+            (SSTNode[])this.singletonSequence(a),
             b) }
     | '*' a=expression { (asdl_expr_seq*)this.singletonSequence(a) }
     | '**' a=expression { (asdl_expr_seq*)this.singletonSequence(a) }

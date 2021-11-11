@@ -662,7 +662,12 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
     def emit_action(self, node: Alt, cleanup_code: Optional[str] = None) -> None:
         node_action = str(node.action).replace(' ', '').replace ('newSST', 'new SST')
         # TODO this condition filter c action now. Should be removed after the grammar contains only java actions
-        if node_action.startswith('factory') or node_action.startswith('new') or len(node_action) == 1 or node_action.startswith('finish') or node.action == "elem" or node.action.startswith("this."):
+        if (node_action.startswith('factory') or
+            node_action.startswith('new') or
+            len(node_action) == 1
+            or node_action.startswith('finish')
+            or node_action == "elem"
+            or re.match("\\([^()*]+\\)this.", node_action)):
             self.print(f"_res = {node_action};")
         else:
             self.print(f"// TODO: node.action: {node.action}")

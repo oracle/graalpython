@@ -844,9 +844,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d eval[%d-%d]: %s succeeded!", level, _mark, mark(), "expressions NEWLINE* $");
-                // TODO: node.action: _PyAST_Expression ( a , p -> arena )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Expression ( a , p -> arena ) to Java !!![0m");
-                _res = null;
+                _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expressions NEWLINE* $");
                 cache.putResult(_mark, EVAL_ID, _res);
                 level--;
@@ -1000,9 +998,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "','.expression+ ',' '*' expression ',' '**' expression");
-                // TODO: node.action: ( asdl_expr_seq * ) _PyPegen_seq_append_to_end ( p , CHECK ( asdl_seq * , _PyPegen_seq_append_to_end ( p , a , b ) ) , c )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) _PyPegen_seq_append_to_end ( p , CHECK ( asdl_seq * , _PyPegen_seq_append_to_end ( p , a , b ) ) , c ) to Java !!![0m");
-                _res = null;
+                _res = (SSTNode[])this.appendToEnd((SSTNode[])this.appendToEnd(a,b),c);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.expression+ ',' '*' expression ',' '**' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
                 level--;
@@ -1029,9 +1025,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "','.expression+ ',' '*' expression");
-                // TODO: node.action: ( asdl_expr_seq * ) _PyPegen_seq_append_to_end ( p , a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) _PyPegen_seq_append_to_end ( p , a , b ) to Java !!![0m");
-                _res = null;
+                _res = (SSTNode[])this.appendToEnd(a,b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.expression+ ',' '*' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
                 level--;
@@ -1058,9 +1052,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "','.expression+ ',' '**' expression");
-                // TODO: node.action: ( asdl_expr_seq * ) _PyPegen_seq_append_to_end ( p , a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) _PyPegen_seq_append_to_end ( p , a , b ) to Java !!![0m");
-                _res = null;
+                _res = (SSTNode[])this.appendToEnd(a,b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.expression+ ',' '**' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
                 level--;
@@ -1090,9 +1082,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "'*' expression ',' '**' expression");
-                // TODO: node.action: ( asdl_expr_seq * ) _PyPegen_seq_append_to_end ( p , CHECK ( asdl_seq * , _PyPegen_singleton_seq ( p , a ) ) , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) _PyPegen_seq_append_to_end ( p , CHECK ( asdl_seq * , _PyPegen_singleton_seq ( p , a ) ) , b ) to Java !!![0m");
-                _res = null;
+                _res = (SSTNode[])this.appendToEnd((SSTNode[])this.singletonSequence(a),b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' expression ',' '**' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
                 level--;
@@ -1113,8 +1103,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "'*' expression");
-                // TODO: node.action: ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , a ) to Java !!![0m");
+                // TODO: node.action: ( asdl_expr_seq * ) this . singletonSequence ( a )
+                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) this . singletonSequence ( a ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
@@ -1136,8 +1126,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "'**' expression");
-                // TODO: node.action: ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , a ) to Java !!![0m");
+                // TODO: node.action: ( asdl_expr_seq * ) this . singletonSequence ( a )
+                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) this . singletonSequence ( a ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
@@ -1290,8 +1280,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d statement_newline[%d-%d]: %s succeeded!", level, _mark, mark(), "compound_stmt NEWLINE");
-                // TODO: node.action: ( asdl_stmt_seq * ) _PyPegen_singleton_seq ( p , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_stmt_seq * ) _PyPegen_singleton_seq ( p , a ) to Java !!![0m");
+                // TODO: node.action: ( asdl_stmt_seq * ) this . singletonSequence ( a )
+                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_stmt_seq * ) this . singletonSequence ( a ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "compound_stmt NEWLINE");
                 cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
@@ -1328,8 +1318,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d statement_newline[%d-%d]: %s succeeded!", level, _mark, mark(), "NEWLINE");
-                // TODO: node.action: ( asdl_stmt_seq * ) _PyPegen_singleton_seq ( p , CHECK ( stmt_ty , _PyAST_Pass ( EXTRA ) ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_stmt_seq * ) _PyPegen_singleton_seq ( p , CHECK ( stmt_ty , _PyAST_Pass ( EXTRA ) ) ) to Java !!![0m");
+                // TODO: node.action: ( asdl_stmt_seq * ) this . singletonSequence ( CHECK ( stmt_ty , _PyAST_Pass ( EXTRA ) ) )
+                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_stmt_seq * ) this . singletonSequence ( CHECK ( stmt_ty , _PyAST_Pass ( EXTRA ) ) ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NEWLINE");
                 cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
@@ -1393,7 +1383,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmts[%d-%d]: %s succeeded!", level, _mark, mark(), "simple_stmt !';' NEWLINE");
-                _res = new SSTNode[]{a};//(asdl_stmt_seq*)_PyPegen_singleton_seq(p,a);
+                _res = new SSTNode[]{a};//(asdl_stmt_seq*)this.singletonSequence(a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "simple_stmt !';' NEWLINE");
                 cache.putResult(_mark, SIMPLE_STMTS_ID, _res);
                 level--;
@@ -2898,8 +2888,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d import_from_targets[%d-%d]: %s succeeded!", level, _mark, mark(), "'*'");
-                // TODO: node.action: ( asdl_alias_seq * ) _PyPegen_singleton_seq ( p , CHECK ( alias_ty , _PyPegen_alias_for_star ( p , EXTRA ) ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_alias_seq * ) _PyPegen_singleton_seq ( p , CHECK ( alias_ty , _PyPegen_alias_for_star ( p , EXTRA ) ) ) to Java !!![0m");
+                // TODO: node.action: ( asdl_alias_seq * ) this . singletonSequence ( CHECK ( alias_ty , _PyPegen_alias_for_star ( p , EXTRA ) ) )
+                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_alias_seq * ) this . singletonSequence ( CHECK ( alias_ty , _PyPegen_alias_for_star ( p , EXTRA ) ) ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*'");
                 cache.putResult(_mark, IMPORT_FROM_TARGETS_ID, _res);
@@ -3211,8 +3201,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d if_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'if' named_expression ':' block elif_stmt");
-                // TODO: node.action: _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , _PyPegen_singleton_seq ( p , c ) ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , _PyPegen_singleton_seq ( p , c ) ) , EXTRA ) to Java !!![0m");
+                // TODO: node.action: _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , this . singletonSequence ( c ) ) , EXTRA )
+                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , this . singletonSequence ( c ) ) , EXTRA ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'if' named_expression ':' block elif_stmt");
                 cache.putResult(_mark, IF_STMT_ID, _res);
@@ -3317,8 +3307,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d elif_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'elif' named_expression ':' block elif_stmt");
-                // TODO: node.action: _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , _PyPegen_singleton_seq ( p , c ) ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , _PyPegen_singleton_seq ( p , c ) ) , EXTRA ) to Java !!![0m");
+                // TODO: node.action: _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , this . singletonSequence ( c ) ) , EXTRA )
+                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_If ( a , b , CHECK ( asdl_stmt_seq * , this . singletonSequence ( c ) ) , EXTRA ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'elif' named_expression ':' block elif_stmt");
                 cache.putResult(_mark, ELIF_STMT_ID, _res);
@@ -4247,8 +4237,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d subject_expr[%d-%d]: %s succeeded!", level, _mark, mark(), "star_named_expression ',' star_named_expressions?");
-                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , value , values ) ) , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , value , values ) ) , Load , EXTRA ) to Java !!![0m");
+                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( value , values ) ) , Load , EXTRA )
+                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( value , values ) ) , Load , EXTRA ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_named_expression ',' star_named_expressions?");
                 cache.putResult(_mark, SUBJECT_EXPR_ID, _res);
@@ -5367,8 +5357,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d open_sequence_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "maybe_star_pattern ',' maybe_sequence_pattern?");
-                // TODO: node.action: _PyPegen_seq_insert_in_front ( p , value , values )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_seq_insert_in_front ( p , value , values ) to Java !!![0m");
+                // TODO: node.action: this . insertInFront ( value , values )
+                debugMessageln("[33;5;7m!!! TODO: Convert this . insertInFront ( value , values ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "maybe_star_pattern ',' maybe_sequence_pattern?");
                 cache.putResult(_mark, OPEN_SEQUENCE_PATTERN_ID, _res);
@@ -7513,8 +7503,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "star_expression ((',' star_expression))+ ','?");
-                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Load , EXTRA ) to Java !!![0m");
+                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , Load , EXTRA )
+                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , Load , EXTRA ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_expression ((',' star_expression))+ ','?");
                 cache.putResult(_mark, STAR_EXPRESSIONS_ID, _res);
@@ -7536,8 +7526,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "star_expression ','");
-                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_singleton_seq ( p , a ) ) , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_singleton_seq ( p , a ) ) , Load , EXTRA ) to Java !!![0m");
+                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . singletonSequence ( a ) ) , Load , EXTRA )
+                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . singletonSequence ( a ) ) , Load , EXTRA ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_expression ','");
                 cache.putResult(_mark, STAR_EXPRESSIONS_ID, _res);
@@ -7971,8 +7961,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "expression ((',' expression))+ ','?");
-                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Load , EXTRA ) to Java !!![0m");
+                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , Load , EXTRA )
+                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , Load , EXTRA ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ((',' expression))+ ','?");
                 cache.putResult(_mark, EXPRESSIONS_ID, _res);
@@ -7994,8 +7984,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "expression ','");
-                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_singleton_seq ( p , a ) ) , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_singleton_seq ( p , a ) ) , Load , EXTRA ) to Java !!![0m");
+                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . singletonSequence ( a ) ) , Load , EXTRA )
+                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . singletonSequence ( a ) ) , Load , EXTRA ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ','");
                 cache.putResult(_mark, EXPRESSIONS_ID, _res);
@@ -8989,8 +8979,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d disjunction[%d-%d]: %s succeeded!", level, _mark, mark(), "conjunction (('or' conjunction))+");
-                // TODO: node.action: _PyAST_BoolOp ( Or , CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BoolOp ( Or , CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , EXTRA ) to Java !!![0m");
+                // TODO: node.action: _PyAST_BoolOp ( Or , CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , EXTRA )
+                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BoolOp ( Or , CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , EXTRA ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "conjunction (('or' conjunction))+");
                 cache.putResult(_mark, DISJUNCTION_ID, _res);
@@ -9048,8 +9038,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d conjunction[%d-%d]: %s succeeded!", level, _mark, mark(), "inversion (('and' inversion))+");
-                // TODO: node.action: _PyAST_BoolOp ( And , CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BoolOp ( And , CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , EXTRA ) to Java !!![0m");
+                // TODO: node.action: _PyAST_BoolOp ( And , CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , EXTRA )
+                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_BoolOp ( And , CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , EXTRA ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "inversion (('and' inversion))+");
                 cache.putResult(_mark, CONJUNCTION_ID, _res);
@@ -10818,8 +10808,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d primary[%d-%d]: %s succeeded!", level, _mark, mark(), "primary genexp");
-                // TODO: node.action: _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , b ) ) , NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , b ) ) , NULL , EXTRA ) to Java !!![0m");
+                // TODO: node.action: _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( asdl_expr_seq * ) this . singletonSequence ( b ) ) , NULL , EXTRA )
+                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( asdl_expr_seq * ) this . singletonSequence ( b ) ) , NULL , EXTRA ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "primary genexp");
                 level--;
@@ -12664,8 +12654,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_targets[%d-%d]: %s succeeded!", level, _mark, mark(), "star_target ((',' star_target))* ','?");
-                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Store , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Store , EXTRA ) to Java !!![0m");
+                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , Store , EXTRA )
+                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , Store , EXTRA ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_target ((',' star_target))* ','?");
                 cache.putResult(_mark, STAR_TARGETS_ID, _res);
@@ -12750,8 +12740,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_targets_tuple_seq[%d-%d]: %s succeeded!", level, _mark, mark(), "star_target ((',' star_target))+ ','?");
-                // TODO: node.action: ( asdl_expr_seq * ) _PyPegen_seq_insert_in_front ( p , a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) _PyPegen_seq_insert_in_front ( p , a , b ) to Java !!![0m");
+                // TODO: node.action: ( asdl_expr_seq * ) this . insertInFront ( a , b )
+                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) this . insertInFront ( a , b ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_target ((',' star_target))+ ','?");
                 cache.putResult(_mark, STAR_TARGETS_TUPLE_SEQ_ID, _res);
@@ -12773,8 +12763,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_targets_tuple_seq[%d-%d]: %s succeeded!", level, _mark, mark(), "star_target ','");
-                // TODO: node.action: ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , a ) to Java !!![0m");
+                // TODO: node.action: ( asdl_expr_seq * ) this . singletonSequence ( a )
+                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) this . singletonSequence ( a ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_target ','");
                 cache.putResult(_mark, STAR_TARGETS_TUPLE_SEQ_ID, _res);
@@ -13728,8 +13718,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary genexp &t_lookahead");
-                // TODO: node.action: _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , b ) ) , NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( asdl_expr_seq * ) _PyPegen_singleton_seq ( p , b ) ) , NULL , EXTRA ) to Java !!![0m");
+                // TODO: node.action: _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( asdl_expr_seq * ) this . singletonSequence ( b ) ) , NULL , EXTRA )
+                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( asdl_expr_seq * ) this . singletonSequence ( b ) ) , NULL , EXTRA ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary genexp &t_lookahead");
                 level--;
@@ -14916,8 +14906,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d invalid_parameters_helper[%d-%d]: %s succeeded!", level, _mark, mark(), "slash_with_default");
-                // TODO: node.action: _PyPegen_singleton_seq ( p , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_singleton_seq ( p , a ) to Java !!![0m");
+                // TODO: node.action: this . singletonSequence ( a )
+                debugMessageln("[33;5;7m!!! TODO: Convert this . singletonSequence ( a ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "slash_with_default");
                 cache.putResult(_mark, INVALID_PARAMETERS_HELPER_ID, _res);
@@ -15023,8 +15013,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d invalid_lambda_parameters_helper[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_slash_with_default");
-                // TODO: node.action: _PyPegen_singleton_seq ( p , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_singleton_seq ( p , a ) to Java !!![0m");
+                // TODO: node.action: this . singletonSequence ( a )
+                debugMessageln("[33;5;7m!!! TODO: Convert this . singletonSequence ( a ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_slash_with_default");
                 cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID, _res);
@@ -22814,8 +22804,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_157[%d-%d]: %s succeeded!", level, _mark, mark(), "star_named_expression ',' star_named_expressions?");
-                // TODO: node.action: _PyPegen_seq_insert_in_front ( p , y , z )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_seq_insert_in_front ( p , y , z ) to Java !!![0m");
+                // TODO: node.action: this . insertInFront ( y , z )
+                debugMessageln("[33;5;7m!!! TODO: Convert this . insertInFront ( y , z ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_named_expression ',' star_named_expressions?");
                 cache.putResult(_mark, _TMP_157_ID, _res);
