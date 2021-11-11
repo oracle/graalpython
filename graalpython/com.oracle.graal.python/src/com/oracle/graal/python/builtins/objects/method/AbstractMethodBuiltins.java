@@ -178,16 +178,12 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         Object getModule(VirtualFrame frame, PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
                         @Cached PyObjectLookupAttr lookup,
                         @CachedLibrary("self") DynamicObjectLibrary dylib) {
+            // No profiling, performance here is not very important
             Object module = dylib.getOrDefault(self, __MODULE__, PNone.NO_VALUE);
             if (module != PNone.NO_VALUE) {
                 return module;
             }
             if (self.getSelf() instanceof PythonModule) {
-                /*
-                 * 'getThreadStateNode' acts as a branch profile. This indirect call is done to
-                 * easily support calls to this builtin with and without virtual frame, and because
-                 * we don't care much about the performance here anyway
-                 */
                 PythonLanguage language = getLanguage();
                 Object state = IndirectCallContext.enter(frame, language, getContext(), this);
                 try {

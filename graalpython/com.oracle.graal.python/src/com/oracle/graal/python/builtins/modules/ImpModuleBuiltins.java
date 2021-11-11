@@ -388,12 +388,18 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         PBytes run(long magicNumber, Object sourceBuffer,
                         @Cached BytesNodes.HashBufferNode hashBufferNode) {
+            long sourceHash = hashBufferNode.execute(sourceBuffer);
+            return factory().createBytes(computeHash(magicNumber, sourceHash));
+        }
+
+        @TruffleBoundary
+        private static byte[] computeHash(long magicNumber, long sourceHash) {
             byte[] hash = new byte[Long.BYTES];
-            long hashCode = magicNumber ^ hashBufferNode.execute(sourceBuffer);
+            long hashCode = magicNumber ^ sourceHash;
             for (int i = 0; i < hash.length; i++) {
                 hash[i] = (byte) (hashCode << (8 * i));
             }
-            return factory().createBytes(hash);
+            return hash;
         }
 
         @Override

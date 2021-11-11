@@ -869,6 +869,11 @@ public abstract class BytesNodes {
             PythonBufferAccessLibrary.assertIsBuffer(buffer);
             int len = bufferLib.getBufferLength(buffer);
             byte[] array = bufferLib.getInternalByteArray(buffer);
+            return computeHash(len, array);
+        }
+
+        @TruffleBoundary
+        private static int computeHash(int len, byte[] array) {
             int result = 1;
             for (int i = 0; i < len; i++) {
                 result = 31 * result + array[i];

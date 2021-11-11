@@ -93,7 +93,7 @@ static PyObject * _PyUnicode_FromUCS1(const Py_UCS1 *s, Py_ssize_t size);
 static PyObject * _PyUnicode_FromUCS2(const Py_UCS2 *s, Py_ssize_t size);
 static PyObject * _PyUnicode_FromUCS4(const Py_UCS4 *s, Py_ssize_t size);
 
-static inline void* convert_errors(const char *errors) {
+static MUST_INLINE void* convert_errors(const char *errors) {
     return errors != NULL ? polyglot_from_string(errors, SRC_CS) : polyglot_from_string("strict", SRC_CS);
 }
 
