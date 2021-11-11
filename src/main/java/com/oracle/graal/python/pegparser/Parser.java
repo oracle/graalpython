@@ -16204,9 +16204,7 @@ public final class Parser extends AbstractParser {
                 (elem = expression_rule()) != null  // expression
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -16288,9 +16286,7 @@ public final class Parser extends AbstractParser {
                 (elem = expression_rule()) != null  // expression
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -16372,9 +16368,7 @@ public final class Parser extends AbstractParser {
                 (elem = expression_rule()) != null  // expression
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -16456,9 +16450,7 @@ public final class Parser extends AbstractParser {
                 (elem = expression_rule()) != null  // expression
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -16587,9 +16579,7 @@ public final class Parser extends AbstractParser {
                 (elem = simple_stmt_rule()) != null  // simple_stmt
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "';' simple_stmt");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -17324,9 +17314,7 @@ public final class Parser extends AbstractParser {
                 (elem = name_token()) != null  // NAME
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' NAME");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -17408,9 +17396,7 @@ public final class Parser extends AbstractParser {
                 (elem = name_token()) != null  // NAME
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' NAME");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -17709,9 +17695,7 @@ public final class Parser extends AbstractParser {
                 (elem = import_from_as_name_rule()) != null  // import_from_as_name
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' import_from_as_name");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -17836,9 +17820,7 @@ public final class Parser extends AbstractParser {
                 (elem = dotted_as_name_rule()) != null  // dotted_as_name
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' dotted_as_name");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -18215,9 +18197,7 @@ public final class Parser extends AbstractParser {
                 (elem = with_item_rule()) != null  // with_item
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' with_item");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -18303,9 +18283,7 @@ public final class Parser extends AbstractParser {
                 (elem = with_item_rule()) != null  // with_item
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' with_item");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -18427,9 +18405,7 @@ public final class Parser extends AbstractParser {
                 (elem = with_item_rule()) != null  // with_item
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' with_item");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -18515,9 +18491,7 @@ public final class Parser extends AbstractParser {
                 (elem = with_item_rule()) != null  // with_item
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' with_item");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -18914,9 +18888,7 @@ public final class Parser extends AbstractParser {
                 (elem = closed_pattern_rule()) != null  // closed_pattern
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'|' closed_pattern");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -19196,9 +19168,7 @@ public final class Parser extends AbstractParser {
                 (elem = maybe_star_pattern_rule()) != null  // maybe_star_pattern
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' maybe_star_pattern");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -19336,9 +19306,7 @@ public final class Parser extends AbstractParser {
                 (elem = key_value_pattern_rule()) != null  // key_value_pattern
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' key_value_pattern");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -19476,9 +19444,7 @@ public final class Parser extends AbstractParser {
                 (elem = pattern_rule()) != null  // pattern
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' pattern");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -19562,9 +19528,7 @@ public final class Parser extends AbstractParser {
                 (elem = keyword_pattern_rule()) != null  // keyword_pattern
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' keyword_pattern");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -21018,9 +20982,7 @@ public final class Parser extends AbstractParser {
                 (elem = star_named_expression_rule()) != null  // star_named_expression
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' star_named_expression");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -22324,9 +22286,7 @@ public final class Parser extends AbstractParser {
                 (elem = slice_rule()) != null  // slice
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' slice");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -22992,9 +22952,7 @@ public final class Parser extends AbstractParser {
                 (elem = double_starred_kvpair_rule()) != null  // double_starred_kvpair
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' double_starred_kvpair");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -23315,9 +23273,7 @@ public final class Parser extends AbstractParser {
                 (elem = _tmp_244_rule()) != null  // starred_expression | direct_named_expression !'='
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' (starred_expression | direct_named_expression !'=')");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -23442,9 +23398,7 @@ public final class Parser extends AbstractParser {
                 (elem = kwarg_or_starred_rule()) != null  // kwarg_or_starred
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' kwarg_or_starred");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -23530,9 +23484,7 @@ public final class Parser extends AbstractParser {
                 (elem = kwarg_or_double_starred_rule()) != null  // kwarg_or_double_starred
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' kwarg_or_double_starred");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -23618,9 +23570,7 @@ public final class Parser extends AbstractParser {
                 (elem = kwarg_or_starred_rule()) != null  // kwarg_or_starred
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' kwarg_or_starred");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -23706,9 +23656,7 @@ public final class Parser extends AbstractParser {
                 (elem = kwarg_or_double_starred_rule()) != null  // kwarg_or_double_starred
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' kwarg_or_double_starred");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -23869,9 +23817,7 @@ public final class Parser extends AbstractParser {
                 (elem = star_target_rule()) != null  // star_target
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' star_target");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -24184,9 +24130,7 @@ public final class Parser extends AbstractParser {
                 (elem = del_target_rule()) != null  // del_target
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' del_target");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -24380,9 +24324,7 @@ public final class Parser extends AbstractParser {
                 (elem = target_rule()) != null  // target
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' target");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -25743,9 +25685,7 @@ public final class Parser extends AbstractParser {
                 (elem = _tmp_251_rule()) != null  // expression ['as' star_target]
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' (expression ['as' star_target])");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -25863,9 +25803,7 @@ public final class Parser extends AbstractParser {
                 (elem = _tmp_252_rule()) != null  // expressions ['as' star_target]
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' (expressions ['as' star_target])");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
@@ -26027,9 +25965,7 @@ public final class Parser extends AbstractParser {
                 (elem = double_starred_kvpair_rule()) != null  // double_starred_kvpair
             )
             {
-                // TODO: node.action: elem
-                debugMessageln("[33;5;7m!!! TODO: Convert elem to Java !!![0m");
-                _res = null;
+                _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' double_starred_kvpair");
                 if (_res instanceof  SSTNode) {
                     _children.add((SSTNode)_res);
