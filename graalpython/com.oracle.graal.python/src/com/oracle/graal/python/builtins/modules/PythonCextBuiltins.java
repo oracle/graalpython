@@ -140,6 +140,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyCFunctionDecorator;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeCAPIWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyEvalNodes.PyEvalRestoreThread;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyEvalNodes.PyEvalSaveThread;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyGILStateNodes.PyGILStateEnsure;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyGILStateNodes.PyGILStateRelease;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectAlloc;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
@@ -352,6 +354,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         builtinConstants.put(NATIVE_NULL, new PythonNativeNull());
         builtinConstants.put("PyEval_SaveThread", new PyEvalSaveThread());
         builtinConstants.put("PyEval_RestoreThread", new PyEvalRestoreThread());
+        builtinConstants.put("PyGILState_Ensure", new PyGILStateEnsure());
+        builtinConstants.put("PyGILState_Release", new PyGILStateRelease());
     }
 
     @FunctionalInterface
@@ -4456,8 +4460,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object[] pArguments = createAndCheckArgumentsNode.execute(code, userArguments, keywords, signature, null, defaults, kwdefaults, false);
 
             // set custom locals
-            PArguments.setSpecialArgument(pArguments, locals);
-            PArguments.setCustomLocals(pArguments, locals);
+            if (!(locals instanceof PNone)) {
+                PArguments.setSpecialArgument(pArguments, locals);
+                PArguments.setCustomLocals(pArguments, locals);
+            }
             PArguments.setClosure(pArguments, closure);
             // TODO(fa): set builtins in globals
             // PythonModule builtins = getContext().getBuiltins();
@@ -4534,6 +4540,53 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 transformExceptionToNativeNode.execute(e);
                 return -1;
             }
+        }
+    }
+
+    @Builtin(name = "PyTruffle_tss_create")
+    @GenerateNodeFactory
+    abstract static class PyTruffleTssCreate extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        long tssCreate() {
+            return getContext().getCApiContext().nextTssKey();
+        }
+    }
+
+    @Builtin(name = "PyTruffle_tss_get")
+    @GenerateNodeFactory
+    abstract static class PyTruffleTssGet extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object tssGet(Object key,
+                        @Cached CastToJavaLongLossyNode cast,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            Object value = getContext().getCApiContext().tssGet(cast.execute(key));
+            if (value == null) {
+                return getNativeNullNode.execute();
+            }
+            return value;
+        }
+    }
+
+    @Builtin(name = "PyTruffle_tss_set")
+    @GenerateNodeFactory
+    abstract static class PyTruffleTssSet extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object tssSet(Object key, Object value,
+                        @Cached CastToJavaLongLossyNode cast) {
+            getContext().getCApiContext().tssSet(cast.execute(key), value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "PyTruffle_tss_delete")
+    @GenerateNodeFactory
+    abstract static class PyTruffleTssDelete extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object tssDelete(Object key,
+                        @Cached CastToJavaLongLossyNode cast) {
+            getContext().getCApiContext().tssDelete(cast.execute(key));
+            return PNone.NONE;
         }
     }
 }

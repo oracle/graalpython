@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Chec
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -252,7 +253,7 @@ public abstract class ExternalFunctionNodes {
         private final Supplier<CheckFunctionResultNode> checkFunctionResultNodeSupplier;
 
         @TruffleBoundary
-        static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, String name, boolean doArgAndResultConversion) {
+        static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, String name, boolean doArgAndResultConversion, boolean isStatic) {
             Class<?> nodeKlass;
             Function<PythonLanguage, RootNode> rootNodeFunction;
             switch (sig) {
@@ -286,28 +287,28 @@ public abstract class ExternalFunctionNodes {
                 case KEYWORDS:
                 case NEW:
                     nodeKlass = MethKeywordsRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethKeywordsRoot(l, name, sig) : l -> new MethKeywordsRoot(l, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethKeywordsRoot(l, name, isStatic, sig) : l -> new MethKeywordsRoot(l, name, isStatic);
                     break;
                 case VARARGS:
                     nodeKlass = MethVarargsRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethVarargsRoot(l, name, sig) : l -> new MethVarargsRoot(l, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethVarargsRoot(l, name, isStatic, sig) : l -> new MethVarargsRoot(l, name, isStatic);
                     break;
                 case NOARGS:
                 case INQUIRY:
                     nodeKlass = MethNoargsRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethNoargsRoot(l, name, sig) : l -> new MethNoargsRoot(l, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethNoargsRoot(l, name, isStatic, sig) : l -> new MethNoargsRoot(l, name, isStatic);
                     break;
                 case O:
                     nodeKlass = MethORoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethORoot(l, name, sig) : l -> new MethORoot(l, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethORoot(l, name, isStatic, sig) : l -> new MethORoot(l, name, isStatic);
                     break;
                 case FASTCALL:
                     nodeKlass = MethFastcallRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethFastcallRoot(l, name, sig) : l -> new MethFastcallRoot(l, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethFastcallRoot(l, name, isStatic, sig) : l -> new MethFastcallRoot(l, name, isStatic);
                     break;
                 case FASTCALL_WITH_KEYWORDS:
                     nodeKlass = MethFastcallWithKeywordsRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? l -> new MethFastcallWithKeywordsRoot(l, name, sig) : l -> new MethFastcallWithKeywordsRoot(l, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethFastcallWithKeywordsRoot(l, name, isStatic, sig) : l -> new MethFastcallWithKeywordsRoot(l, name, isStatic);
                     break;
                 case GETATTR:
                     nodeKlass = GetAttrFuncRootNode.class;
@@ -413,7 +414,7 @@ public abstract class ExternalFunctionNodes {
                         PythonLanguage language,
                         PythonObjectFactory factory,
                         boolean doArgAndResultConversion) {
-            RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name, doArgAndResultConversion);
+            RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name, doArgAndResultConversion, flags > 0 && CExtContext.isMethStatic(flags));
             if (callTarget == null) {
                 return null;
             }
@@ -725,18 +726,18 @@ public abstract class ExternalFunctionNodes {
         @Child private CalleeContext calleeContext = CalleeContext.create();
         @Child private CallVarargsMethodNode invokeNode;
         @Child private ExternalFunctionInvokeNode externalInvokeNode;
-        @Child ReadIndexedArgumentNode readSelfNode = ReadIndexedArgumentNode.create(0);
+        @Child private ReadIndexedArgumentNode readSelfNode;
         @Child private ReadIndexedArgumentNode readCallableNode;
         @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
         @Child private PRaiseNode raiseNode;
 
         private final String name;
 
-        MethodDescriptorRoot(PythonLanguage language, String name) {
-            this(language, name, null);
+        MethodDescriptorRoot(PythonLanguage language, String name, boolean isStatic) {
+            this(language, name, isStatic, null);
         }
 
-        MethodDescriptorRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
+        MethodDescriptorRoot(PythonLanguage language, String name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language);
             CompilerAsserts.neverPartOfCompilation();
             this.name = name;
@@ -744,6 +745,9 @@ public abstract class ExternalFunctionNodes {
                 this.externalInvokeNode = ExternalFunctionInvokeNode.create(provider);
             } else {
                 this.invokeNode = CallVarargsMethodNode.create();
+            }
+            if (!isStatic) {
+                readSelfNode = ReadIndexedArgumentNode.create(0);
             }
         }
 
@@ -857,6 +861,13 @@ public abstract class ExternalFunctionNodes {
         public boolean isPythonInternal() {
             return true;
         }
+
+        protected Object readSelf(VirtualFrame frame) {
+            if (readSelfNode != null) {
+                return readSelfNode.execute(frame);
+            }
+            return PNone.NO_VALUE;
+        }
     }
 
     public static final class MethKeywordsRoot extends MethodDescriptorRoot {
@@ -866,12 +877,12 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadVarKeywordsNode readKwargsNode;
         @Child private CreateArgsTupleNode createArgsTupleNode;
 
-        public MethKeywordsRoot(PythonLanguage language, String name) {
-            super(language, name);
+        public MethKeywordsRoot(PythonLanguage language, String name, boolean isStatic) {
+            super(language, name, isStatic);
         }
 
-        public MethKeywordsRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
-            super(language, name, provider);
+        public MethKeywordsRoot(PythonLanguage language, String name, boolean isStatic, PExternalFunctionWrapper provider) {
+            super(language, name, isStatic, provider);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(true);
             this.readKwargsNode = ReadVarKeywordsNode.create(PythonUtils.EMPTY_STRING_ARRAY);
@@ -880,7 +891,7 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
+            Object self = readSelf(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
             PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
             return new Object[]{self, createArgsTupleNode.execute(factory, args), factory.createDict(kwargs)};
@@ -906,12 +917,12 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgsTupleNode createArgsTupleNode;
 
-        public MethVarargsRoot(PythonLanguage language, String name) {
-            super(language, name);
+        public MethVarargsRoot(PythonLanguage language, String name, boolean isStatic) {
+            super(language, name, isStatic);
         }
 
-        public MethVarargsRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
-            super(language, name, provider);
+        public MethVarargsRoot(PythonLanguage language, String name, boolean isStatic, PExternalFunctionWrapper provider) {
+            super(language, name, isStatic, provider);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(true);
             this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
@@ -919,7 +930,7 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
+            Object self = readSelf(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
             return new Object[]{self, createArgsTupleNode.execute(factory, args)};
         }
@@ -940,17 +951,17 @@ public abstract class ExternalFunctionNodes {
     public static final class MethNoargsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE, true);
 
-        public MethNoargsRoot(PythonLanguage language, String name) {
-            super(language, name);
+        public MethNoargsRoot(PythonLanguage language, String name, boolean isStatic) {
+            super(language, name, isStatic);
         }
 
-        public MethNoargsRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
-            super(language, name, provider);
+        public MethNoargsRoot(PythonLanguage language, String name, boolean isStatic, PExternalFunctionWrapper provider) {
+            super(language, name, isStatic, provider);
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
+            Object self = readSelf(frame);
             return new Object[]{self, PNone.NONE};
         }
 
@@ -969,18 +980,18 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private ReadIndexedArgumentNode readArgNode;
 
-        public MethORoot(PythonLanguage language, String name) {
-            super(language, name);
+        public MethORoot(PythonLanguage language, String name, boolean isStatic) {
+            super(language, name, isStatic);
         }
 
-        public MethORoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
-            super(language, name, provider);
+        public MethORoot(PythonLanguage language, String name, boolean isStatic, PExternalFunctionWrapper provider) {
+            super(language, name, isStatic, provider);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
+            Object self = readSelf(frame);
             Object arg = readArgNode.execute(frame);
             return new Object[]{self, arg};
         }
@@ -1004,12 +1015,12 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
 
-        public MethFastcallWithKeywordsRoot(PythonLanguage language, String name) {
-            super(language, name);
+        public MethFastcallWithKeywordsRoot(PythonLanguage language, String name, boolean isStatic) {
+            super(language, name, isStatic);
         }
 
-        public MethFastcallWithKeywordsRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
-            super(language, name, provider);
+        public MethFastcallWithKeywordsRoot(PythonLanguage language, String name, boolean isStatic, PExternalFunctionWrapper provider) {
+            super(language, name, isStatic, provider);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(true);
             this.readKwargsNode = ReadVarKeywordsNode.create(PythonUtils.EMPTY_STRING_ARRAY);
@@ -1017,7 +1028,7 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
+            Object self = readSelf(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
             PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
             Object[] fastcallArgs = new Object[args.length + kwargs.length];
@@ -1049,19 +1060,19 @@ public abstract class ExternalFunctionNodes {
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
 
-        public MethFastcallRoot(PythonLanguage language, String name) {
-            super(language, name);
+        public MethFastcallRoot(PythonLanguage language, String name, boolean isStatic) {
+            super(language, name, isStatic);
         }
 
-        public MethFastcallRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
-            super(language, name, provider);
+        public MethFastcallRoot(PythonLanguage language, String name, boolean isStatic, PExternalFunctionWrapper provider) {
+            super(language, name, isStatic, provider);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(true);
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
+            Object self = readSelf(frame);
             Object[] args = readVarargsNode.executeObjectArray(frame);
             return new Object[]{self, factory.createTuple(args), args.length};
         }
@@ -1088,18 +1099,18 @@ public abstract class ExternalFunctionNodes {
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
 
         AllocFuncRootNode(PythonLanguage language, String name) {
-            super(language, name);
+            super(language, name, false);
         }
 
         AllocFuncRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
-            super(language, name, provider);
+            super(language, name, false, provider);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
             this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
+            Object self = readSelf(frame);
             Object arg = readArgNode.execute(frame);
             try {
                 return new Object[]{self, asSsizeTNode.executeLong(arg, 1, Long.BYTES)};
@@ -1129,18 +1140,18 @@ public abstract class ExternalFunctionNodes {
         @Child private PCallCapiFunction callFreeNode;
 
         GetAttrFuncRootNode(PythonLanguage language, String name) {
-            super(language, name);
+            super(language, name, false);
         }
 
         GetAttrFuncRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
-            super(language, name, provider);
+            super(language, name, false, provider);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
             this.asCharPointerNode = CExtNodes.AsCharPointerNode.create();
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
+            Object self = readSelf(frame);
             Object arg = readArgNode.execute(frame);
             // TODO we should use 'CStringWrapper' for 'arg' but it does currently not support
             // PString
@@ -1178,11 +1189,11 @@ public abstract class ExternalFunctionNodes {
         @Child private PCallCapiFunction callFreeNode;
 
         SetAttrFuncRootNode(PythonLanguage language, String name) {
-            super(language, name);
+            super(language, name, false);
         }
 
         SetAttrFuncRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
-            super(language, name, provider);
+            super(language, name, false, provider);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
             this.readArg2Node = ReadIndexedArgumentNode.create(2);
             this.asCharPointerNode = CExtNodes.AsCharPointerNode.create();
@@ -1190,7 +1201,7 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
+            Object self = readSelf(frame);
             Object arg1 = readArg1Node.execute(frame);
             Object arg2 = readArg2Node.execute(frame);
             // TODO we should use 'CStringWrapper' for 'arg1' but it does currently not support
@@ -1230,11 +1241,11 @@ public abstract class ExternalFunctionNodes {
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
 
         RichCmpFuncRootNode(PythonLanguage language, String name) {
-            super(language, name);
+            super(language, name, false);
         }
 
         RichCmpFuncRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
-            super(language, name, provider);
+            super(language, name, false, provider);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
             this.readArg2Node = ReadIndexedArgumentNode.create(2);
             this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
@@ -1243,7 +1254,7 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             try {
-                Object self = readSelfNode.execute(frame);
+                Object self = readSelf(frame);
                 Object arg1 = readArg1Node.execute(frame);
                 Object arg2 = readArg2Node.execute(frame);
                 return new Object[]{self, arg1, asSsizeTNode.executeInt(arg2, 1, Integer.BYTES)};
@@ -1274,18 +1285,18 @@ public abstract class ExternalFunctionNodes {
         @Child private GetIndexNode getIndexNode;
 
         GetItemRootNode(PythonLanguage language, String name) {
-            super(language, name);
+            super(language, name, false);
         }
 
         GetItemRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
-            super(language, name, provider);
+            super(language, name, false, provider);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
             this.getIndexNode = GetIndexNode.create();
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
+            Object self = readSelf(frame);
             Object arg1 = readArg1Node.execute(frame);
             return new Object[]{self, getIndexNode.execute(self, arg1)};
         }
@@ -1311,11 +1322,11 @@ public abstract class ExternalFunctionNodes {
         @Child private GetIndexNode getIndexNode;
 
         SetItemRootNode(PythonLanguage language, String name) {
-            super(language, name);
+            super(language, name, false);
         }
 
         SetItemRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
-            super(language, name, provider);
+            super(language, name, false, provider);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
             this.readArg2Node = ReadIndexedArgumentNode.create(2);
             this.getIndexNode = GetIndexNode.create();
@@ -1323,7 +1334,7 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
+            Object self = readSelf(frame);
             Object arg1 = readArg1Node.execute(frame);
             Object arg2 = readArg2Node.execute(frame);
             return new Object[]{self, getIndexNode.execute(self, arg1), arg2};
@@ -1351,13 +1362,13 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArg1Node;
 
         MethReverseRootNode(PythonLanguage language, String name) {
-            super(language, name);
+            super(language, name, false);
             this.readArg0Node = ReadIndexedArgumentNode.create(0);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
         }
 
         MethReverseRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
-            super(language, name, provider);
+            super(language, name, false, provider);
             this.readArg0Node = ReadIndexedArgumentNode.create(0);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
         }
@@ -1400,19 +1411,19 @@ public abstract class ExternalFunctionNodes {
         private final ConditionProfile profile;
 
         MethPowRootNode(PythonLanguage language, String name) {
-            super(language, name);
+            super(language, name, false);
             this.profile = null;
         }
 
         MethPowRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
-            super(language, name, provider);
+            super(language, name, false, provider);
             this.readVarargsNode = ReadVarArgsNode.create(true);
             this.profile = ConditionProfile.createBinaryProfile();
         }
 
         @Override
         protected final Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
+            Object self = readSelf(frame);
             Object[] varargs = readVarargsNode.executeObjectArray(frame);
             Object arg0 = varargs[0];
             Object arg1 = profile.profile(varargs.length > 1) ? varargs[1] : PNone.NONE;
@@ -1466,27 +1477,27 @@ public abstract class ExternalFunctionNodes {
         private final int op;
 
         MethRichcmpOpRootNode(PythonLanguage language, String name, int op) {
-            super(language, name);
+            super(language, name, false);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
             this.op = op;
         }
 
         MethRichcmpOpRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider, int op) {
-            super(language, name, provider);
+            super(language, name, false, provider);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
             this.op = op;
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
+            Object self = readSelf(frame);
             Object arg = readArgNode.execute(frame);
             return new Object[]{self, arg, op};
         }
 
         @Override
         protected Object[] preparePArguments(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
+            Object self = readSelf(frame);
             Object arg = readArgNode.execute(frame);
             return new Object[]{self, arg, SpecialMethodNames.getCompareOpString(op)};
         }
@@ -1510,16 +1521,16 @@ public abstract class ExternalFunctionNodes {
     static class IterNextFuncRootNode extends MethodDescriptorRoot {
 
         IterNextFuncRootNode(PythonLanguage language, String name) {
-            super(language, name);
+            super(language, name, false);
         }
 
         IterNextFuncRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
-            super(language, name, provider);
+            super(language, name, false, provider);
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            return new Object[]{readSelfNode.execute(frame)};
+            return new Object[]{readSelf(frame)};
         }
 
         @Override
@@ -1539,11 +1550,11 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readClosureNode;
 
         GetSetRootNode(PythonLanguage language, String name) {
-            super(language, name);
+            super(language, name, false);
         }
 
         GetSetRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
-            super(language, name, provider);
+            super(language, name, false, provider);
         }
 
         protected final Object readClosure(VirtualFrame frame) {
@@ -1570,7 +1581,7 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
+            Object self = readSelf(frame);
             return new Object[]{self, readClosure(frame)};
         }
 
@@ -1599,7 +1610,7 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object self = readSelfNode.execute(frame);
+            Object self = readSelf(frame);
             Object arg = ensureReadArgNode().execute(frame);
             return new Object[]{self, arg, readClosure(frame)};
         }
@@ -1626,7 +1637,7 @@ public abstract class ExternalFunctionNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createFunction(PythonLanguage lang, Object owner, String propertyName, Object target, Object closure) {
-            RootCallTarget rootCallTarget = PExternalFunctionWrapper.getOrCreateCallTarget(PExternalFunctionWrapper.SETTER, lang, propertyName, true);
+            RootCallTarget rootCallTarget = PExternalFunctionWrapper.getOrCreateCallTarget(PExternalFunctionWrapper.SETTER, lang, propertyName, true, false);
             if (rootCallTarget == null) {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support");
             }

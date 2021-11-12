@@ -135,7 +135,7 @@ public class ImportFromNode extends AbstractImportNode {
                     Object resolvedFullname = ensureGetItemNode().execute(frame, sysModules, fullname);
                     if (resolvedFullname != null) {
                         writeNode.executeObject(frame, resolvedFullname);
-                        return;
+                        continue;
                     }
                 }
                 if (readFile) {

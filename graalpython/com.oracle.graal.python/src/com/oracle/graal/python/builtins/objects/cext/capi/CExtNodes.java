@@ -3946,14 +3946,15 @@ public abstract class CExtNodes {
 
         @TruffleBoundary
         private static PRootNode createWrapperRootNode(PythonLanguage language, int flags, String name) {
+            boolean isStatic = CExtContext.isMethStatic(flags);
             if (CExtContext.isMethNoArgs(flags)) {
-                return new MethNoargsRoot(language, name, PExternalFunctionWrapper.NOARGS);
+                return new MethNoargsRoot(language, name, isStatic, PExternalFunctionWrapper.NOARGS);
             } else if (CExtContext.isMethO(flags)) {
-                return new MethORoot(language, name, PExternalFunctionWrapper.O);
+                return new MethORoot(language, name, isStatic, PExternalFunctionWrapper.O);
             } else if (CExtContext.isMethKeywords(flags)) {
-                return new MethKeywordsRoot(language, name, PExternalFunctionWrapper.KEYWORDS);
+                return new MethKeywordsRoot(language, name, isStatic, PExternalFunctionWrapper.KEYWORDS);
             } else if (CExtContext.isMethVarargs(flags)) {
-                return new MethVarargsRoot(language, name, PExternalFunctionWrapper.VARARGS);
+                return new MethVarargsRoot(language, name, isStatic, PExternalFunctionWrapper.VARARGS);
             }
             throw new IllegalStateException("illegal method flags");
         }

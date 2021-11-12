@@ -72,7 +72,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     ForeignObject(FOREIGN, Flags.PRIVATE_DERIVED_WODICT),
     Boolean("bool", BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
-    GetSetDescriptor("get_set_desc", Flags.PRIVATE_DERIVED_WODICT),
+    GetSetDescriptor("getset_descriptor", Flags.PRIVATE_DERIVED_WODICT),
     MemberDescriptor(MEMBER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
     WrapperDescriptor(WRAPPER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
     PArray("array", "array"),

@@ -112,11 +112,11 @@ import com.oracle.graal.python.builtins.objects.iterator.PSentinelIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
-import com.oracle.graal.python.builtins.objects.keywrapper.PKeyWrapper;
 import com.oracle.graal.python.builtins.objects.itertools.PChain;
 import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
 import com.oracle.graal.python.builtins.objects.itertools.PTee;
 import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
+import com.oracle.graal.python.builtins.objects.keywrapper.PKeyWrapper;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
@@ -632,7 +632,16 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PDecoratedMethod createStaticmethodFromCallableObj(Object callable) {
-        return trace(new PDecoratedMethod(PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PStaticmethod.getInstanceShape(getLanguage()), callable));
+        Object func = callable;
+        if (func instanceof PBuiltinFunction) {
+            /*
+             * CPython's C static methods contain an object of type `builtin_function_or_method`
+             * (our PBuiltinMethod). Their self points to their type, but when called they get NULL
+             * as the first argument instead.
+             */
+            func = createBuiltinMethod(((PBuiltinFunction) func).getEnclosingType(), (PBuiltinFunction) func);
+        }
+        return trace(new PDecoratedMethod(PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PStaticmethod.getInstanceShape(getLanguage()), func));
     }
 
     /*

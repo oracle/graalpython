@@ -858,4 +858,47 @@ public abstract class BytesNodes {
             return createUTF8String(path);
         }
     }
+
+    @GenerateUncached
+    public abstract static class HashBufferNode extends PNodeWithContext {
+        public abstract long execute(Object buffer);
+
+        @Specialization(guards = "bufferLib.hasInternalByteArray(buffer)", limit = "2")
+        static long hashDirect(Object buffer,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+            PythonBufferAccessLibrary.assertIsBuffer(buffer);
+            int len = bufferLib.getBufferLength(buffer);
+            byte[] array = bufferLib.getInternalByteArray(buffer);
+            return computeHash(len, array);
+        }
+
+        @TruffleBoundary
+        private static int computeHash(int len, byte[] array) {
+            int result = 1;
+            for (int i = 0; i < len; i++) {
+                result = 31 * result + array[i];
+            }
+            return result;
+        }
+
+        @Specialization(guards = "!bufferLib.hasInternalByteArray(buffer)", limit = "2")
+        static long hashIndirect(Object buffer,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+            PythonBufferAccessLibrary.assertIsBuffer(buffer);
+            int len = bufferLib.getBufferLength(buffer);
+            int result = 1;
+            for (int i = 0; i < len; i++) {
+                result = 31 * result + bufferLib.readByte(buffer, i);
+            }
+            return result;
+        }
+
+        public static HashBufferNode create() {
+            return BytesNodesFactory.HashBufferNodeGen.create();
+        }
+
+        public static HashBufferNode getUncached() {
+            return BytesNodesFactory.HashBufferNodeGen.getUncached();
+        }
+    }
 }

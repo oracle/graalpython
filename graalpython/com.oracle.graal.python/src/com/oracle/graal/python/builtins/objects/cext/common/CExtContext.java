@@ -150,6 +150,10 @@ public abstract class CExtContext {
         return (flags & METH_FASTCALL) != 0 && (flags & METH_KEYWORDS) != 0;
     }
 
+    public static boolean isMethStatic(int flags) {
+        return (flags & METH_STATIC) != 0;
+    }
+
     public static boolean isClassOrStaticMethod(int flags) {
         return flags > 0 && (flags & (METH_CLASS | METH_STATIC)) != 0;
     }

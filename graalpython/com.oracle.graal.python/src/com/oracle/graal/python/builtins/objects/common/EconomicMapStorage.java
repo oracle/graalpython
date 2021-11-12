@@ -353,7 +353,7 @@ public class EconomicMapStorage extends HashingStorage {
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (advance(cursor)) {
                 Object otherValue = other.map.get(frame, getDictKey(cursor), findProfile, eqNode);
-                if (otherValue != null && !eqNode.execute(frame, otherValue, getValue(cursor))) {
+                if (otherValue == null || !eqNode.execute(frame, otherValue, getValue(cursor))) {
                     return false;
                 }
             }
@@ -363,7 +363,6 @@ public class EconomicMapStorage extends HashingStorage {
         @TruffleBoundary
         @Specialization
         static boolean equalGeneric(EconomicMapStorage self, HashingStorage other, ThreadState state,
-                        @CachedLibrary("self") HashingStorageLibrary selflib,
                         @Shared("otherHLib") @CachedLibrary(limit = "2") HashingStorageLibrary otherlib,
                         @Shared("gotState") @Cached ConditionProfile gotState,
                         @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode) {
@@ -373,8 +372,8 @@ public class EconomicMapStorage extends HashingStorage {
             VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             while (advance(cursor)) {
-                Object otherValue = selflib.getItemWithState(self, getKey(cursor), state);
-                if (otherValue != null && !eqNode.execute(frame, otherValue, getValue(cursor))) {
+                Object otherValue = otherlib.getItemWithState(other, getKey(cursor), state);
+                if (otherValue == null || !eqNode.execute(frame, otherValue, getValue(cursor))) {
                     return false;
                 }
             }

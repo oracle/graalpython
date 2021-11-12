@@ -31,16 +31,17 @@ def test_import():
 def test_decode():
     import codecs
 
-    # TODO: this does not work yet due to the fact that we do not handle all strings literal types yet
-    # assert codecs.decode(b'\xe4\xf6\xfc', 'latin-1') == '\xe4\xf6\xfc'
-    # assert_raises(TypeError, codecs.decode)
+    assert codecs.decode(b'\xe4\xf6\xfc', 'latin-1') == '\xe4\xf6\xfc'
+    assert_raises(TypeError, codecs.decode)
     assert codecs.decode(b'abc') == 'abc'
-    # assert_raises(UnicodeDecodeError, codecs.decode, b'\xff', 'ascii')
+    assert_raises(UnicodeDecodeError, codecs.decode, b'\xff', 'ascii')
 
     # test keywords
-    # assert codecs.decode(obj=b'\xe4\xf6\xfc', encoding='latin-1') == '\xe4\xf6\xfc'
-    # assert codecs.decode(b'[\xff]', 'ascii', errors='ignore') == '[]'
+    assert codecs.decode(obj=b'\xe4\xf6\xfc', encoding='latin-1') == '\xe4\xf6\xfc'
+    assert codecs.decode(b'[\xff]', 'ascii', errors='ignore') == '[]'
     assert codecs.decode(b'[]', 'ascii') == '[]'
+    assert codecs.decode(memoryview(b'[]'), 'ascii') == '[]'
+    assert_raises(TypeError, codecs.decode, 'asdf', 'ascii')
 
     data0 = b'\xc5'
     data1 = b'\x91'
@@ -52,16 +53,15 @@ def test_decode():
 def test_encode():
     import codecs
 
-    # TODO: this does not work yet due to the fact that we do not handle all strings literal types yet
-    # assert codecs.encode('\xe4\xf6\xfc', 'latin-1') == b'\xe4\xf6\xfc'
-    # assert_raises(TypeError, codecs.encode)
+    assert codecs.encode('\xe4\xf6\xfc', 'latin-1') == b'\xe4\xf6\xfc'
+    assert_raises(TypeError, codecs.encode)
     assert_raises(LookupError, codecs.encode, "foo", "__spam__")
-    # assert codecs.encode('abc') == b'abc'
-    # assert_raises(UnicodeEncodeError, codecs.encode, '\xffff', 'ascii')
+    assert codecs.encode('abc') == b'abc'
+    assert_raises(UnicodeEncodeError, codecs.encode, '\xffff', 'ascii')
 
     # test keywords
-    # assert codecs.encode(obj='\xe4\xf6\xfc', encoding='latin-1') == b'\xe4\xf6\xfc'
-    # assert codecs.encode('[\xff]', 'ascii', errors='ignore') == b'[]'
+    assert codecs.encode(obj='\xe4\xf6\xfc', encoding='latin-1') == b'\xe4\xf6\xfc'
+    assert codecs.encode('[\xff]', 'ascii', errors='ignore') == b'[]'
     assert codecs.encode('[]', 'ascii') == b'[]'
 
 

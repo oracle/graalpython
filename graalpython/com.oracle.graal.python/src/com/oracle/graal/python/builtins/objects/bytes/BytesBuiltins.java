@@ -40,6 +40,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
@@ -484,6 +485,16 @@ public class BytesBuiltins extends PythonBuiltins {
         @Fallback
         public Object mul(@SuppressWarnings("unused") Object self, Object other) {
             throw raise(TypeError, ErrorMessages.CANT_MULTIPLY_SEQ_BY_NON_INT, other);
+        }
+    }
+
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class HashNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        long hash(PBytes bytes,
+                        @Cached BytesNodes.HashBufferNode hashBufferNode) {
+            return hashBufferNode.execute(bytes);
         }
     }
 
@@ -2355,7 +2366,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     // static bytes.maketrans()
     // static bytearray.maketrans()
-    @Builtin(name = "maketrans", minNumOfPositionalArgs = 3, isClassmethod = true)
+    @Builtin(name = "maketrans", minNumOfPositionalArgs = 3, isStaticmethod = true)
     @GenerateNodeFactory
     public abstract static class MakeTransNode extends PythonBuiltinNode {
 

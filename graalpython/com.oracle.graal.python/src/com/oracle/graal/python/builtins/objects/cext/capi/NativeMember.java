@@ -111,6 +111,7 @@ public enum NativeMember {
     // PySequenceMethods
     SQ_ITEM("sq_item"),
     SQ_REPEAT("sq_repeat"),
+    SQ_CONCAT("sq_concat"),
 
     // PyDictObject
     MA_USED("ma_used", PRIMITIVE),
