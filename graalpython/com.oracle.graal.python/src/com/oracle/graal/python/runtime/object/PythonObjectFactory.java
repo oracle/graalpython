@@ -491,6 +491,9 @@ public abstract class PythonObjectFactory extends Node {
      * Classes, methods and functions
      */
 
+    /**
+     * Only to be used during context creation
+     */
     public final PythonModule createPythonModule(String name) {
         return trace(PythonModule.createInternal(name));
     }

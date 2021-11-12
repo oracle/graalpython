@@ -85,7 +85,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -106,9 +105,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 public class ImpModuleBuiltins extends PythonBuiltins {
 
     static final String HPY_SUFFIX = ".hpy.so";
-
-    // the full module name for package imports
-    public String pyPackageContext;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -441,26 +437,27 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "create_dynamic", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"$self", "moduleSpec", "fileName"})
+    @Builtin(name = "create_dynamic", minNumOfPositionalArgs = 1, parameterNames = {"moduleSpec", "fileName"})
     @GenerateNodeFactory
-    public abstract static class CreateDynamicNode extends PythonTernaryBuiltinNode {
+    public abstract static class CreateDynamicNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(fileName)")
-        Object runNoFileName(VirtualFrame frame, PythonModule self, PythonObject moduleSpec, @SuppressWarnings("unused") PNone fileName,
+        Object runNoFileName(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") PNone fileName,
+                        @Cached PyObjectStrAsJavaStringNode asStrignNode,
                         @Cached CreateDynamic createDynamicNode) {
-            return run(frame, self, moduleSpec, PNone.NONE, createDynamicNode);
+            return run(frame, moduleSpec, PNone.NONE, asStrignNode, createDynamicNode);
         }
 
         @Specialization(guards = "!isNoValue(fileName)")
-        Object run(VirtualFrame frame, PythonModule self, PythonObject moduleSpec, Object fileName,
+        Object run(VirtualFrame frame, PythonObject moduleSpec, Object fileName,
+                        @Cached PyObjectStrAsJavaStringNode asStrignNode,
                         @Cached CreateDynamic createDynamicNode) {
-            ImpModuleBuiltins impBuiltins = (ImpModuleBuiltins) self.getBuiltins();
-            String oldPackageContext = impBuiltins.pyPackageContext;
-            impBuiltins.pyPackageContext = PyObjectStrAsJavaStringNode.getUncached().execute(frame,
-                            PyObjectLookupAttr.getUncached().execute(frame, moduleSpec, "name"));
+            PythonContext ctx = getContext();
+            String oldPackageContext = ctx.getPyPackageContext();
+            ctx.setPyPackageContext(asStrignNode.execute(frame, PyObjectLookupAttr.getUncached().execute(frame, moduleSpec, "name")));
             try {
                 return createDynamicNode.execute(frame, moduleSpec, fileName);
             } finally {
-                impBuiltins.pyPackageContext = oldPackageContext;
+                ctx.setPyPackageContext(oldPackageContext);
             }
         }
     }

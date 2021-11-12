@@ -62,110 +62,6 @@ def PySequence_DelItem(o,i):
 def PyModule_GetNameObject(module_obj):
     return module_obj.__name__
 
-
-##################### DICT
-
-@__graalpython__.builtin
-def PyDict_New():
-    return {}
-
-
-@may_raise
-def PyDict_Next(dictObj, pos):
-    if not isinstance(dictObj, dict):
-        return native_null
-    curPos = 0
-    max = len(dictObj)
-    if pos >= max:
-        return native_null
-    for key in dictObj:
-        if curPos == pos:
-            return key, dictObj[key], hash(key)
-        curPos = curPos + 1
-    return native_null
-
-
-@may_raise
-def PyDict_Pop(dictObj, *args):
-    return dictObj.pop(*args)
-
-
-@may_raise(-1)
-def PyDict_Size(dictObj):
-    if not isinstance(dictObj, dict):
-        raise TypeError('expected dict, {!s} found'.format(type(dictObj).__name__))
-    return len(dictObj)
-
-
-@may_raise(None)
-def PyDict_Copy(dictObj):
-    if not isinstance(dictObj, dict):
-        __bad_internal_call(None, None, dictObj)
-    return dictObj.copy()
-
-
-@may_raise
-def PyDict_GetItem(dictObj, key):
-    # PyDict_GetItem suppresses all exceptions for historical reasons
-    try:
-        return dictObj.get(key, native_null)
-    except:
-        return native_null
-
-
-@may_raise
-def PyDict_GetItemWithError(dictObj, key):
-    if not isinstance(dictObj, dict):
-        raise TypeError('expected dict, {!s} found'.format(type(dictObj).__name__))
-    return dictObj.get(key, native_null)
-
-
-@may_raise(-1)
-def PyDict_SetItem(dictObj, key, value):
-    if not isinstance(dictObj, dict):
-        raise TypeError('expected dict, {!s} found'.format(type(dictObj).__name__))
-    dictObj[key] = value
-    return 0
-
-
-@may_raise(-1)
-def PyDict_SetItem_KnownHash(dictObj, key, value, given_hash):
-    if not isinstance(dictObj, dict):
-        raise TypeError('expected dict, {!s} found'.format(type(dictObj).__name__))
-    assert hash(key) == given_hash, "hash mismatch: known hash is different to computed hash"
-    dictObj[key] = value
-    return 0
-
-
-@may_raise(-1)
-def PyDict_DelItem(dictObj, key):
-    if not isinstance(dictObj, dict):
-        raise TypeError('expected dict, {!s} found'.format(type(dictObj).__name__))
-    del dictObj[key]
-    return 0
-
-
-@may_raise(-1)
-def PyDict_Contains(dictObj, key):
-    if not isinstance(dictObj, dict):
-        __bad_internal_call(None, None, dictObj)
-    return key in dictObj
-
-
-@may_raise(-1)
-def PyDict_Merge(a, b, override):
-    if override:
-        a.update(b)
-    else:
-        for k in b:
-            if not k in a:
-                a[k] = b[k]
-    return 0
-
-@may_raise
-def PyDict_Values(d):
-    return list(d.values())
-
 ##################### SET, FROZENSET
 
 
@@ -1164,22 +1060,6 @@ def PyThread_release_lock(lock):
 @may_raise
 def PySlice_New(start, stop, step):
     return slice(start, stop, step)
-
-
-@may_raise
-def PyMapping_Keys(obj):
-    return list(obj.keys())
-
-
-@may_raise
-def PyMapping_Items(obj):
-    return list(obj.items())
-
-
-@may_raise
-def PyMapping_Values(obj):
-    return list(obj.values())
-
 
 @may_raise
 def PyEval_GetBuiltins():

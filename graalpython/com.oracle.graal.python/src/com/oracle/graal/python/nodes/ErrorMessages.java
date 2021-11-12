@@ -297,6 +297,7 @@ public abstract class ErrorMessages {
     public static final String P_HAS_NO_ATTRS_S_TO_DELETE = "'%p' object has no attributes (del .%s)";
     public static final String P_HAS_RO_ATTRS_S_TO_ASSIGN = "'%p' object has only read-only attributes (assign to .%s)";
     public static final String P_HAS_RO_ATTRS_S_TO_DELETE = "'%p' object has only read-only attributes (del .%s)";
+    public static final String HASH_MISMATCH = "hash mismatch: known hash is different to computed hash";
     public static final String HASH_SHOULD_RETURN_INTEGER = "__hash__ method should return an integer";
     public static final String HEX_VALUE_TOO_LARGE_AS_FLOAT = "hexadecimal value too large to represent as a float";
     public static final String HOST_ACCESS_NOT_ALLOWED = "host access is not allowed";
@@ -458,6 +459,7 @@ public abstract class ErrorMessages {
     public static final String NAME_IS_ASSIGNED_BEFORE_NONLOCAL = "name '%s' is assigned to before nonlocal declaration";
     public static final String NAME_NOT_DEFINED = "name '%s' is not defined";
     public static final String NAMELESS_MODULE = "nameless module";
+    public static final String NATIVE_S_SUBTYPES_NOT_IMPLEMENTED = "native %s subtypes not implemented";
     public static final String NEED_BYTELIKE_OBJ = "decoding to str: need a bytes-like object, %p found";
     public static final String DECODING_STR_NOT_SUPPORTED = "decoding str is not supported";
     public static final String NEG_INF_PLUS_INF_IN = "-inf + inf in fsum";
