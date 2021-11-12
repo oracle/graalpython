@@ -155,4 +155,14 @@ public class ToyParser extends AbstractParser {
         return null;
     }
 
+    @Override
+    protected Object[][][] getReservedKeywords() {
+        return null;
+    }
+
+    @Override
+    protected String[] getSoftKeywords() {
+        return null;
+    }
+
 }

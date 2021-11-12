@@ -265,46 +265,66 @@ public final class Parser extends AbstractParser {
         return factory.createBinaryOp(rightOp.getOperation(), left, rightOp.getRight(), left.getStartOffset(), rightOp.getEndOffset());
     }
 
-    static {
-        reservedKeywords.put("if", 510);
-        reservedKeywords.put("in", 518);
-        reservedKeywords.put("as", 520);
-        reservedKeywords.put("is", 530);
-        reservedKeywords.put("or", 531);
-        reservedKeywords.put("del", 503);
-        reservedKeywords.put("try", 511);
-        reservedKeywords.put("for", 517);
-        reservedKeywords.put("def", 526);
-        reservedKeywords.put("not", 529);
-        reservedKeywords.put("and", 532);
-        reservedKeywords.put("pass", 502);
-        reservedKeywords.put("from", 514);
-        reservedKeywords.put("elif", 515);
-        reservedKeywords.put("else", 516);
-        reservedKeywords.put("with", 519);
-        reservedKeywords.put("None", 523);
-        reservedKeywords.put("True", 524);
-        reservedKeywords.put("raise", 501);
-        reservedKeywords.put("yield", 504);
-        reservedKeywords.put("break", 506);
-        reservedKeywords.put("while", 512);
-        reservedKeywords.put("False", 525);
-        reservedKeywords.put("class", 527);
-        reservedKeywords.put("return", 500);
-        reservedKeywords.put("assert", 505);
-        reservedKeywords.put("global", 508);
-        reservedKeywords.put("import", 513);
-        reservedKeywords.put("except", 521);
-        reservedKeywords.put("lambda", 528);
-        reservedKeywords.put("finally", 522);
-        reservedKeywords.put("continue", 507);
-        reservedKeywords.put("nonlocal", 509);
+    private static final Object[][][] reservedKeywords = new Object[][][]{
+        null,
+        null,
+        {
+            {"if", 510},
+            {"in", 518},
+            {"as", 520},
+            {"is", 530},
+            {"or", 531},
+        },
+        {
+            {"del", 503},
+            {"try", 511},
+            {"for", 517},
+            {"def", 526},
+            {"not", 529},
+            {"and", 532},
+        },
+        {
+            {"pass", 502},
+            {"from", 514},
+            {"elif", 515},
+            {"else", 516},
+            {"with", 519},
+            {"None", 523},
+            {"True", 524},
+        },
+        {
+            {"raise", 501},
+            {"yield", 504},
+            {"break", 506},
+            {"while", 512},
+            {"False", 525},
+            {"class", 527},
+        },
+        {
+            {"return", 500},
+            {"assert", 505},
+            {"global", 508},
+            {"import", 513},
+            {"except", 521},
+            {"lambda", 528},
+        },
+        {
+            {"finally", 522},
+        },
+        {
+            {"continue", 507},
+            {"nonlocal", 509},
+        },
     };
-    static {
-        softKeywords.add("_");
-        softKeywords.add("case");
-        softKeywords.add("match");
+    @Override
+    protected Object[][][] getReservedKeywords() { return reservedKeywords; }
+    private static final String[] softKeywords = new String[]{
+        "_",
+        "case",
+        "match",
     };
+    @Override
+    protected String[] getSoftKeywords() { return softKeywords; }
     private static final int FILE_ID = 1000;
     private static final int INTERACTIVE_ID = 1001;
     private static final int EVAL_ID = 1002;

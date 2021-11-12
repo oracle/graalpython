@@ -471,24 +471,31 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             len(max(keyword_cache.keys(), key=len)) + 1 if len(keyword_cache) > 0 else 0
         )
         groups = self._group_keywords_by_length()
-        self.print("static {")
+        self.print("private static final Object[][][] reservedKeywords = new Object[][][]{")
         with self.indent():
             num_groups = max(groups) + 1 if groups else 1
             for keywords_length in range(num_groups):
                 if keywords_length not in groups.keys():
-                    pass
+                    self.print("null,")
                 else:
-                    for keyword_str, keyword_type in groups[keywords_length]:
-                        self.print(f'reservedKeywords.put("{keyword_str}", {keyword_type});')
+                    self.print("{")
+                    with self.indent():
+                        for keyword_str, keyword_type in groups[keywords_length]:
+                            self.print(f'{{"{keyword_str}", {keyword_type}}},')
+                    self.print("},")
         self.print("};")
+        self.print("@Override")
+        self.print("protected Object[][][] getReservedKeywords() { return reservedKeywords; }")
 
     def _setup_soft_keywords(self) -> None:
         soft_keywords = sorted(self.callmakervisitor.soft_keywords)
-        self.print("static {");
+        self.print("private static final String[] softKeywords = new String[]{")
         with self.indent():
             for keyword in soft_keywords:
-                self.print(f'softKeywords.add("{keyword}");')
+                self.print(f'"{keyword}",')
         self.print("};")
+        self.print("@Override")
+        self.print("protected String[] getSoftKeywords() { return softKeywords; }")
 
     def _set_up_token_start_metadata_extraction(self) -> None:
         self.print("// _PyPegen_fill_token is called here in CPython");

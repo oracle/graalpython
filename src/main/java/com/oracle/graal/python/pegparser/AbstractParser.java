@@ -44,11 +44,8 @@ import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * From this class is extended the generated parser. It allow access to the
@@ -57,10 +54,6 @@ import java.util.Set;
  * parser generator very similar to CPython for easier updating in the future.
  */
 public abstract class AbstractParser {
-    //TODO This should be package protected
-    protected static final Set<String> softKeywords = new HashSet<>(4);
-    protected static final Map<String, Integer> reservedKeywords = new HashMap<>(42);
-
     private final ParserTokenizer tokenizer;
     protected final NodeFactory factory;
 
@@ -71,9 +64,17 @@ public abstract class AbstractParser {
     protected final RuleResultCache<Object> cache = new RuleResultCache(this);
     protected final Map<Integer, String> comments = new LinkedHashMap<>();
 
+    private final Object[][][] reservedKeywords;
+    private final String[] softKeywords;
+
+    protected abstract Object[][][] getReservedKeywords();
+    protected abstract String[] getSoftKeywords();
+
     public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory) {
         this.tokenizer = tokenizer;
         this.factory = factory;
+        this.reservedKeywords = getReservedKeywords();
+        this.softKeywords = getSoftKeywords();
     }
 
     /**
@@ -257,8 +258,10 @@ public abstract class AbstractParser {
             return null;
         }
         String txt = getText(t);
-        if (softKeywords.contains(txt)) {
-            return name_from_token(t);
+        for (String s : softKeywords) {
+            if (s.equals(txt)) {
+                return name_from_token(t);
+            }
         }
         return null;
     }
@@ -294,8 +297,14 @@ public abstract class AbstractParser {
     private Token initializeToken(Token token) {
         if (token.type == Token.Kind.NAME) {
             String txt = getText(token);
-            if (reservedKeywords.containsKey(txt)) {
-                token.type = (int)reservedKeywords.get(txt);
+            int l = txt.length();
+            Object[][] kwlist;
+            if (l < reservedKeywords.length && (kwlist = reservedKeywords[l]) != null) {
+                for (Object[] kwAssoc : kwlist) {
+                    if (txt.equals(kwAssoc[0])) {
+                        token.type = (int)kwAssoc[1];
+                    }
+                }
             }
         }
         return token;
