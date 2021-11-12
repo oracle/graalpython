@@ -326,7 +326,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
                     return true;
                 }
-                i++;
             }
 
             return nodeType == NodeType.ALL;
