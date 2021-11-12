@@ -121,6 +121,10 @@ public abstract class PRaiseNode extends Node {
         return execute(this, type, PNone.NO_VALUE, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, new Object[]{result});
     }
 
+    public final PException raiseSystemExit(Object code) {
+        return raise(PythonBuiltinClassType.SystemExit, code);
+    }
+
     public final PException raiseHasNoLength(Object result) {
         return raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_HAS_NO_LEN, result);
     }

@@ -89,6 +89,16 @@ public final class PBaseException extends PythonObject {
     private PBaseException context;
     private PBaseException cause;
     private boolean suppressContext = false;
+    // the data instance is used to store additional information for some of the builtin exceptions not unlike subclassing
+    private BaseExceptionData data;
+
+    public BaseExceptionData getData() {
+        return data;
+    }
+
+    public void setData(BaseExceptionData data) {
+        this.data = data;
+    }
 
     public PBaseException getContext() {
         return context;

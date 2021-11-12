@@ -69,6 +69,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.DISPLAYHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.EXCEPTHOOK;
+import static com.oracle.graal.python.nodes.BuiltinNames.EXIT;
 import static com.oracle.graal.python.nodes.BuiltinNames.PYTHONBREAKPOINT;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDIN;
@@ -1557,6 +1558,29 @@ public class SysModuleBuiltins extends PythonBuiltins {
             }
             getContext().getSysModuleState().setSwitchInterval(FACTOR * interval);
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = EXIT, declaresExplicitSelf = true, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, doc = "exit($module, status=None, /)\n" +
+            "--\n" +
+            "\n" +
+            "Exit the interpreter by raising SystemExit(status).\n" +
+            "\n" +
+            "If the status is omitted or None, it defaults to zero (i.e., success).\n" +
+            "If the status is an integer, it will be used as the system exit status.\n" +
+            "If it is another kind of object, it will be printed and the system\n" +
+            "exit status will be one (i.e., failure).")
+    @GenerateNodeFactory
+    abstract static class ExitNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "!isPNone(status)")
+        Object exit(@SuppressWarnings("unused") PythonModule sys, Object status) {
+            throw raiseSystemExit(status);
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        Object exitNoCode(PythonModule sys, PNone status) {
+            throw raiseSystemExit(0);
         }
     }
 }

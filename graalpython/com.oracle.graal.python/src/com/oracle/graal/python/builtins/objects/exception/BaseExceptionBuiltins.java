@@ -96,7 +96,9 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
-    public abstract static class InitNode extends PythonBuiltinNode {
+    public abstract static class BaseExceptionInitNode extends PythonBuiltinNode {
+        public abstract Object execute(PBaseException self, Object[] args);
+
         @Specialization(guards = "args.length == 0")
         static Object initNoArgs(@SuppressWarnings("unused") PBaseException self, @SuppressWarnings("unused") Object[] args) {
             self.setArgs(null);
@@ -107,6 +109,10 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         Object initArgs(PBaseException self, Object[] args) {
             self.setArgs(factory().createTuple(args));
             return PNone.NONE;
+        }
+
+        public static BaseExceptionInitNode create() {
+            return BaseExceptionBuiltinsFactory.BaseExceptionInitNodeFactory.create(null);
         }
     }
 

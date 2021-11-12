@@ -44,6 +44,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -297,7 +298,6 @@ public abstract class Python3Core extends ParserErrorCallback {
         // Order matters!
         List<String> coreFiles = new ArrayList<>(Arrays.asList(
                         "object",
-                        "sys",
                         "type",
                         "_imp",
                         "function",
@@ -432,6 +432,8 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new WarningsModuleBuiltins(),
+                        // exceptions
+                        new SystemExitBuiltins(),
 
                         // io
                         new IOModuleBuiltins(),

@@ -93,4 +93,8 @@ public class PNodeWithRaise extends PNodeWithContext {
     public final PException raiseOverflow() {
         return getRaiseNode().raiseNumberTooLarge(OverflowError, 0);
     }
+
+    public final PException raiseSystemExit(Object code) {
+        return getRaiseNode().raiseSystemExit(code);
+    }
 }
