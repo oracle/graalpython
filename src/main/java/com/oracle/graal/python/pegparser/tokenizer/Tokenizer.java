@@ -6,8 +6,10 @@
 package com.oracle.graal.python.pegparser.tokenizer;
 
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer.StatusCode;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -155,7 +157,7 @@ public class Tokenizer {
      *
      * Return the coding spec in the current line or {@code null} if none is found
      */
-    static String getCodingSpec(byte[] byteInput, int lineStart) {
+    private static String getCodingSpec(byte[] byteInput, int lineStart) {
         int i = lineStart;
         for (; i < byteInput.length - 6; i++) {
             byte cp = byteInput[i];
@@ -205,7 +207,7 @@ public class Tokenizer {
      * line, since that means there can be no further coding comments in this
      * source.
      */
-    static Charset checkCodingSpec(byte[] byteInput, int lineStart) {
+    private static Charset checkCodingSpec(byte[] byteInput, int lineStart) {
         String spec = getCodingSpec(byteInput, lineStart);
         if (spec == null) {
             for (int i = lineStart; i < byteInput.length; i++) {
@@ -533,7 +535,7 @@ public class Tokenizer {
     private static final int LABEL_IMAGINARY = 5;
 
     /**
-     * tok_get
+     * tok_get, PyTokenizer_Get
      */
     public Token next() {
         int c = 0;
@@ -1130,10 +1132,10 @@ public class Tokenizer {
                 /* Check for two-character token */
                 {
                     int c2 = nextChar();
-                    Token.Kind kind2 = Token.twoChars(c, c2);
+                    int kind2 = Token.twoChars(c, c2);
                     if (kind2 != Token.Kind.OP) {
                         int c3 = nextChar();
-                        Token.Kind kind3 = Token.threeChars(c, c2, c3);
+                        int kind3 = Token.threeChars(c, c2, c3);
                         if (kind3 != Token.Kind.OP) {
                             return createToken(kind3);
                         } else {
@@ -1187,17 +1189,61 @@ public class Tokenizer {
         }
     }
 
+    /**
+     * PyTokenizer_FindEncodingFilename
+     *
+     * Public API to expose how the tokenizer decides on the encoding of a file.
+     *
+     * @param channel - the data stream to read from
+     * @throws {@link IOException} if a read error occurs in the {@code channel}
+     * @return the {@link Charset} the Tokenizer will use for this data.
+     */
+    public static Charset findEncodingForFilename(SeekableByteChannel channel) throws IOException {
+        ByteBuffer buf;
+        int bytesRead;
+        byte[] ary = new byte[0];
+        int bufferSize = 0;
+        int newlines = 0;
+        int totalBytesRead = 0;
+        do {
+            int i = bufferSize;
+            bufferSize += 4096;
+            buf = ByteBuffer.allocate(bufferSize);
+            buf.put(ary);
+            bytesRead = channel.read(buf);
+            if (bytesRead > 0) {
+                totalBytesRead += bytesRead;
+                ary = buf.array();
+                while (i < totalBytesRead) {
+                    if (ary[i] == '\n') {
+                        newlines++;
+                        if (newlines == 2) {
+                            break;
+                        }
+                    }
+                }
+            }
+        } while (bytesRead > 0 && newlines < 2);
+        Tokenizer tokenizer = new Tokenizer(ary, false, false);
+        return tokenizer.fileEncoding;
+    }
+
     // isxdigit
     private boolean isHexDigit(int c) {
         return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
     }
 
-    private Token createToken(Token.Kind kind) {
-        return new Token(kind, tokenStart, nextCharIndex, currentLineNumber, tokenStart - lineStartIndex, currentLineNumber, nextCharIndex - lineStartIndex);
+    private Token createToken(int kind) {
+        return createToken(kind, null);
     }
 
-    private Token createToken(Token.Kind kind, Object extraData) {
-        return new Token(kind, tokenStart, nextCharIndex, currentLineNumber, tokenStart - lineStartIndex, currentLineNumber, nextCharIndex - lineStartIndex, extraData);
+    private Token createToken(int kind, Object extraData) {
+        int lineStart = kind == Token.Kind.STRING ? multiLineStartIndex : lineStartIndex;
+        int lineno = kind == Token.Kind.STRING ? firstLineNumber : currentLineNumber;
+        int endLineno = currentLineNumber;
+        int colOffset = (tokenStart >= lineStart) ? (int)(tokenStart - lineStart) : -1;
+        int endColOffset = (nextCharIndex >= lineStartIndex) ? (int)(nextCharIndex - lineStartIndex) : -1;
+        return new Token(kind, tokenStart, nextCharIndex, lineno, colOffset, endLineno, endColOffset, extraData);
     }
 
     public String getTokenString(Token tok) {
@@ -1213,7 +1259,7 @@ public class Tokenizer {
     public String toString(Token token) {
         StringBuilder sb = new StringBuilder();
         sb.append("Token ");
-        sb.append(token.type.name());
+        sb.append(token.typeName());
         sb.append(" [").append(token.startOffset).append(", ").append(token.endOffset).append("]");
         sb.append(" (").append(token.startLine).append(", ").append(token.startColumn);
         sb.append(") (").append(token.endLine).append(", ").append(token.endColumn).append(") '");

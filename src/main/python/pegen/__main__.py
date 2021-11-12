@@ -69,33 +69,6 @@ def generate_python_code(
         traceback.print_exception(err.__class__, err, None)
         sys.stderr.write("For full traceback, use -v\n")
         sys.exit(1)
-        
-def generate_java_code(
-    args: argparse.Namespace,
-) -> Tuple[Grammar, Parser, Tokenizer, ParserGenerator]:
-    from pegen.build import build_java_parser_and_generator
-
-    verbose = args.verbose
-    verbose_tokenizer = verbose >= 3
-    verbose_parser = verbose == 2 or verbose >= 4
-    try:
-        print("Working on java parser")
-        grammar, parser, tokenizer, gen = build_java_parser_and_generator(
-            args.grammar_filename,
-            args.tokens_filename,
-            args.output,
-            verbose_tokenizer,
-            verbose_parser,
-            skip_actions=args.skip_actions,
-        )
-        return grammar, parser, tokenizer, gen
-    except Exception as err:
-        if args.verbose:
-            raise  # Show traceback
-        traceback.print_exception(err.__class__, err, None)
-        sys.stderr.write("For full traceback, use -v\n")
-        sys.exit(1)
-    print("done")
 
 
 argparser = argparse.ArgumentParser(
@@ -141,21 +114,6 @@ python_parser.add_argument(
     help="Where to write the generated parser",
 )
 python_parser.add_argument(
-    "--skip-actions", action="store_true", help="Suppress code emission for rule actions",
-)
-
-java_parser = subparsers.add_parser("java", help="Generate Java code")
-java_parser.set_defaults(func=generate_java_code)
-java_parser.add_argument("grammar_filename", help="Grammar description")
-java_parser.add_argument("tokens_filename", help="Tokens description")
-java_parser.add_argument(
-    "-o",
-    "--output",
-    metavar="OUT",
-    default="parse.py",
-    help="Where to write the generated parser",
-)
-java_parser.add_argument(
     "--skip-actions", action="store_true", help="Suppress code emission for rule actions",
 )
 

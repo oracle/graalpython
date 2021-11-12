@@ -1,3 +1,8 @@
+# Copyright (c) 2021, Oracle and/or its affiliates.
+# Copyright (C) 1996-2021 Python Software Foundation
+#
+# Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+#
 # PEG grammar for Java
 
 #changes from c gramammar:
@@ -6,8 +11,44 @@
 
 @license '''
 /*
- * This is not ready to use.
- * Here should be the license.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * The Universal Permissive License (UPL), Version 1.0
+ *
+ * Subject to the condition set forth below, permission is hereby granted to any
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
+ *
+ * (a) the Software, and
+ *
+ * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
+ *
+ * without restriction, including without limitation the rights to copy, create
+ * derivative works of, display, perform, and distribute the Software and make,
+ * use, sell, offer for sale, import, export, have made, and have sold the
+ * Software and the Larger Work(s), and to sublicense the foregoing rights on
+ * either these or other terms.
+ *
+ * This license is subject to the following condition:
+ *
+ * The above copyright notice and either this complete permission notice or at a
+ * minimum a reference to the UPL must be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 '''
 
@@ -76,41 +117,39 @@ _PyPegen_parse(Parser *p)
 '''
 file[SSTNode]: a=[statements] ENDMARKER { factory.createBlock((SSTNode[])a, startToken.startOffset, endToken.endOffset); } # TODO create module from the statements instead block
 interactive[SSTNode]: a=statement_newline { _PyAST_Interactive(a, p->arena) }
-eval[SSTNode]: a=expressions NEWLINE* ENDMARKER { _PyAST_Expression(a, p->arena) }
+eval[SSTNode]: a=expressions NEWLINE* ENDMARKER { a }
 func_type[SSTNode]: '(' a=[type_expressions] ')' '->' b=expression NEWLINE* ENDMARKER { _PyAST_FunctionType(a, b, p->arena) }
 fstring[SSTNode]: star_expressions  # originally return type expr_ty
 
 # type_expressions allow */** but ignore them
 type_expressions[asdl_expr_seq*]:
     | a=','.expression+ ',' '*' b=expression ',' '**' c=expression {
-        (asdl_expr_seq*)_PyPegen_seq_append_to_end(
-            p,
-            CHECK(asdl_seq*, _PyPegen_seq_append_to_end(p, a, b)),
+        (SSTNode[])this.appendToEnd(
+            (SSTNode[])this.appendToEnd(a, b),
             c) }
-    | a=','.expression+ ',' '*' b=expression { (asdl_expr_seq*)_PyPegen_seq_append_to_end(p, a, b) }
-    | a=','.expression+ ',' '**' b=expression { (asdl_expr_seq*)_PyPegen_seq_append_to_end(p, a, b) }
+    | a=','.expression+ ',' '*' b=expression { (SSTNode[])this.appendToEnd(a, b) }
+    | a=','.expression+ ',' '**' b=expression { (SSTNode[])this.appendToEnd(a, b) }
     | '*' a=expression ',' '**' b=expression {
-        (asdl_expr_seq*)_PyPegen_seq_append_to_end(
-            p,
-            CHECK(asdl_seq*, _PyPegen_singleton_seq(p, a)),
+        (SSTNode[])this.appendToEnd(
+            (SSTNode[])this.singletonSequence(a),
             b) }
-    | '*' a=expression { (asdl_expr_seq*)_PyPegen_singleton_seq(p, a) }
-    | '**' a=expression { (asdl_expr_seq*)_PyPegen_singleton_seq(p, a) }
+    | '*' a=expression { (asdl_expr_seq*)this.singletonSequence(a) }
+    | '**' a=expression { (asdl_expr_seq*)this.singletonSequence(a) }
     | a[asdl_expr_seq*]=','.expression+ {a}
 
 statements[SSTNode*]: a=statement+ { a }  # originally return type asdl_stmt_seq*
 statement[SSTNode*]: # originally return type asdl_stmt_seq*
-    | a=compound_stmt { a } # it was (asdl_stmt_seq*)_PyPegen_singleton_seq(p, a)
+    | a=compound_stmt { a } # it was (asdl_stmt_seq*)this.singletonSequence(a)
     | a[SSTNode*]=simple_stmts { a }
 statement_newline[SSTNode*]:  # originally return type asdl_stmt_seq*
-    | a=compound_stmt NEWLINE { (asdl_stmt_seq*)_PyPegen_singleton_seq(p, a) }
+    | a=compound_stmt NEWLINE { (asdl_stmt_seq*)this.singletonSequence(a) }
     | simple_stmts
-    | NEWLINE { (asdl_stmt_seq*)_PyPegen_singleton_seq(p, CHECK(stmt_ty, _PyAST_Pass(EXTRA))) }
+    | NEWLINE { (asdl_stmt_seq*)this.singletonSequence(CHECK(stmt_ty, _PyAST_Pass(EXTRA))) }
     | ENDMARKER { _PyPegen_interactive_exit(p) }
 simple_stmts[SSTNode*]: # originally return type asdl_stmt_seq*
     | a=simple_stmt !';' NEWLINE {
             new SSTNode[]{a};
-            // (asdl_stmt_seq*)_PyPegen_singleton_seq(p, a)  # Not needed, there for speedup
+            // (asdl_stmt_seq*)this.singletonSequence(a)  # Not needed, there for speedup
         }
     | a[SSTNode*]=';'.simple_stmt+ [';'] NEWLINE { a }
 # NOTE: assignment MUST precede expression, else parsing a simple assignment
@@ -144,9 +183,9 @@ assignment[SSTNode]:
     | a=NAME ':' b=expression c=['=' d=annotated_rhs { d }] {
         factory.createAnnAssignment(
                     factory.createAnnotation(
-                        factory.createVariable(getText(a), a.startOffset, a.endOffset),
+                        a,
                         b,
-                        a.startOffset, b.getEndOffset()),
+                        a.getStartOffset(), b.getEndOffset()),
                     (SSTNode)c, startToken.startOffset, endToken.endOffset);
 
         //CHECK_VERSION(
@@ -204,7 +243,7 @@ import_from[stmt_ty]:
 import_from_targets[asdl_alias_seq*]:
     | '(' a=import_from_as_names [','] ')' { a }
     | import_from_as_names !','
-    | '*' { (asdl_alias_seq*)_PyPegen_singleton_seq(p, CHECK(alias_ty, _PyPegen_alias_for_star(p, EXTRA))) }
+    | '*' { (asdl_alias_seq*)this.singletonSequence(CHECK(alias_ty, _PyPegen_alias_for_star(p, EXTRA))) }
     | invalid_import_from_targets
 import_from_as_names[asdl_alias_seq*]:
     | a[asdl_alias_seq*]=','.import_from_as_name+ { a }
@@ -224,12 +263,12 @@ dotted_name[SSTNode]: # originally return type expr_ty
 
 if_stmt[stmt_ty]:
     | 'if' a=named_expression ':' b=block c=elif_stmt {
-        _PyAST_If(a, b, CHECK(asdl_stmt_seq*, _PyPegen_singleton_seq(p, c)), EXTRA) }
+        _PyAST_If(a, b, CHECK(asdl_stmt_seq*, this.singletonSequence(c)), EXTRA) }
     | 'if' a=named_expression ':' b=block c=[else_block] { _PyAST_If(a, b, c, EXTRA) }
     | invalid_if_stmt
 elif_stmt[stmt_ty]:
     | 'elif' a=named_expression ':' b=block c=elif_stmt {
-        _PyAST_If(a, b, CHECK(asdl_stmt_seq*, _PyPegen_singleton_seq(p, c)), EXTRA) }
+        _PyAST_If(a, b, CHECK(asdl_stmt_seq*, this.singletonSequence(c)), EXTRA) }
     | 'elif' a=named_expression ':' b=block c=[else_block] { _PyAST_If(a, b, c, EXTRA) }
     | invalid_elif_stmt
 else_block[SSTNode*]: 'else' &&':' b=block { b } # originally return type asdl_stmt_seq*
@@ -277,7 +316,7 @@ match_stmt[stmt_ty]:
     | invalid_match_stmt
 subject_expr[SSTNode]:  # originally return type expr_ty
     | value=star_named_expression ',' values=star_named_expressions? {
-        _PyAST_Tuple(CHECK(asdl_expr_seq*, _PyPegen_seq_insert_in_front(p, value, values)), Load, EXTRA) }
+        _PyAST_Tuple(CHECK(asdl_expr_seq*, this.insertInFront(value, values)), Load, EXTRA) }
     | named_expression
 case_block[match_case_ty]:
     | "case" pattern=patterns guard=guard? ':' body=block {
@@ -344,7 +383,7 @@ sequence_pattern[SSTNode]: # originally return type expr_ty
     | '(' values=open_sequence_pattern? ')' { _PyAST_Tuple(values, Load, EXTRA) }
 open_sequence_pattern[asdl_seq*]:
     | value=maybe_star_pattern ',' values=maybe_sequence_pattern? {
-        _PyPegen_seq_insert_in_front(p, value, values) }
+        this.insertInFront(value, values) }
 maybe_sequence_pattern[asdl_seq*]:
     | values=','.maybe_star_pattern+ ','? { values }
 maybe_star_pattern[SSTNode]: # originally return type expr_ty
@@ -490,8 +529,8 @@ block[SSTNode*] (memo): # originally return type asdl_stmt_seq*
 
 star_expressions[SSTNode]: # originally return type expr_ty
     | a=star_expression b=(',' c=star_expression { c })+ [','] {
-        _PyAST_Tuple(CHECK(asdl_expr_seq*, _PyPegen_seq_insert_in_front(p, a, b)), Load, EXTRA) }
-    | a=star_expression ',' { _PyAST_Tuple(CHECK(asdl_expr_seq*, _PyPegen_singleton_seq(p, a)), Load, EXTRA) }
+        _PyAST_Tuple(CHECK(asdl_expr_seq*, this.insertInFront(a, b)), Load, EXTRA) }
+    | a=star_expression ',' { _PyAST_Tuple(CHECK(asdl_expr_seq*, this.singletonSequence(a)), Load, EXTRA) }
     | star_expression
 star_expression[SSTNode] (memo): # originally return type expr_ty
     | '*' a=bitwise_or { _PyAST_Starred(a, Load, EXTRA) }
@@ -515,8 +554,8 @@ annotated_rhs[SSTNode]: yield_expr | star_expressions # originally return type e
 
 expressions[SSTNode]: # originally return type expr_ty
     | a=expression b=(',' c=expression { c })+ [','] {
-        _PyAST_Tuple(CHECK(asdl_expr_seq*, _PyPegen_seq_insert_in_front(p, a, b)), Load, EXTRA) }
-    | a=expression ',' { _PyAST_Tuple(CHECK(asdl_expr_seq*, _PyPegen_singleton_seq(p, a)), Load, EXTRA) }
+        _PyAST_Tuple(CHECK(asdl_expr_seq*, this.insertInFront(a, b)), Load, EXTRA) }
+    | a=expression ',' { _PyAST_Tuple(CHECK(asdl_expr_seq*, this.singletonSequence(a)), Load, EXTRA) }
     | expression
 expression[SSTNode] (memo): # originally return type expr_ty
     | invalid_expression
@@ -577,13 +616,13 @@ lambda_param[arg_ty]: a=NAME { _PyAST_arg(a->v.Name.id, NULL, NULL, EXTRA) }
 disjunction[SSTNode] (memo): # originally return type expr_ty
     | a=conjunction b=('or' c=conjunction { c })+ { _PyAST_BoolOp(
         Or,
-        CHECK(asdl_expr_seq*, _PyPegen_seq_insert_in_front(p, a, b)),
+        CHECK(asdl_expr_seq*, this.insertInFront(a, b)),
         EXTRA) }
     | conjunction
 conjunction[SSTNode] (memo): # originally return type expr_ty
     | a=inversion b=('and' c=inversion { c })+ { _PyAST_BoolOp(
         And,
-        CHECK(asdl_expr_seq*, _PyPegen_seq_insert_in_front(p, a, b)),
+        CHECK(asdl_expr_seq*, this.insertInFront(a, b)),
         EXTRA) }
     | inversion
 inversion[SSTNode] (memo): # originally return type expr_ty
@@ -654,7 +693,7 @@ await_primary[SSTNode] (memo): # originally return type expr_ty
 primary[SSTNode]: # originally return type expr_ty
     | invalid_primary  # must be before 'primay genexp' because of invalid_genexp
     | a=primary '.' b=NAME { _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA) }
-    | a=primary b=genexp { _PyAST_Call(a, CHECK(asdl_expr_seq*, (asdl_expr_seq*)_PyPegen_singleton_seq(p, b)), NULL, EXTRA) }
+    | a=primary b=genexp { _PyAST_Call(a, CHECK(asdl_expr_seq*, (asdl_expr_seq*)this.singletonSequence(b)), NULL, EXTRA) }
     | a=primary '(' b=[arguments] ')' {
         _PyAST_Call(a,
                  (b) ? ((expr_ty) b)->v.Call.args : NULL,
@@ -670,12 +709,12 @@ slice[SSTNode]: # originally return type expr_ty
     | a=[expression] ':' b=[expression] c=[':' d=[expression] { d }] { _PyAST_Slice(a, b, c, EXTRA) }
     | a=named_expression { a }
 atom[SSTNode]: # originally return type expr_ty
-    | n=NAME { factory.createVariable(getText(n), n.startOffset, n.endOffset) }
+    | NAME
     | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, startToken.endOffset);}
     | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, startToken.endOffset); }
     | 'None' { _PyAST_Constant(Py_None, NULL, EXTRA) }
     | &STRING strings
-    | n=NUMBER { factory.createNumber(getText(n), n.startOffset, n.endOffset) }
+    | NUMBER
     | &'(' (tuple | group | genexp)
     | &'[' (list | listcomp)
     | &'{' (dict | set | dictcomp | setcomp)
@@ -688,7 +727,7 @@ listcomp[SSTNode]: # originally return type expr_ty
     | '[' a=named_expression b=for_if_clauses ']' { _PyAST_ListComp(a, b, EXTRA) }
     | invalid_comprehension
 tuple[SSTNode]: # originally return type expr_ty
-    | '(' a=[y=star_named_expression ',' z=[star_named_expressions] { _PyPegen_seq_insert_in_front(p, y, z) } ] ')' {
+    | '(' a=[y=star_named_expression ',' z=[star_named_expressions] { this.insertInFront(y, z) } ] ')' {
         _PyAST_Tuple(a, Load, EXTRA) }
 group[SSTNode]: # originally return type expr_ty
     | '(' a=(yield_expr | named_expression) ')' { a }
@@ -759,11 +798,11 @@ kwarg_or_double_starred[KeywordOrStarred*]:
 star_targets[SSTNode]: # originally return type expr_ty
     | a=star_target !',' { a }
     | a=star_target b=(',' c=star_target { c })* [','] {
-        _PyAST_Tuple(CHECK(asdl_expr_seq*, _PyPegen_seq_insert_in_front(p, a, b)), Store, EXTRA) }
+        _PyAST_Tuple(CHECK(asdl_expr_seq*, this.insertInFront(a, b)), Store, EXTRA) }
 star_targets_list_seq[asdl_expr_seq*]: a[asdl_expr_seq*]=','.star_target+ [','] { a }
 star_targets_tuple_seq[asdl_expr_seq*]:
-    | a=star_target b=(',' c=star_target { c })+ [','] { (asdl_expr_seq*) _PyPegen_seq_insert_in_front(p, a, b) }
-    | a=star_target ',' { (asdl_expr_seq*) _PyPegen_singleton_seq(p, a) }
+    | a=star_target b=(',' c=star_target { c })+ [','] { (asdl_expr_seq*) this.insertInFront(a, b) }
+    | a=star_target ',' { (asdl_expr_seq*) this.singletonSequence(a) }
 star_target[SSTNode] (memo): # originally return type expr_ty
     | '*' a=(!'*' star_target) {
         _PyAST_Starred(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), Store, EXTRA) }
@@ -806,7 +845,7 @@ t_primary[SSTNode]: # originally return type expr_ty
     | a=t_primary '.' b=NAME &t_lookahead { _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA) }
     | a=t_primary '[' b=slices ']' &t_lookahead { _PyAST_Subscript(a, b, Load, EXTRA) }
     | a=t_primary b=genexp &t_lookahead {
-        _PyAST_Call(a, CHECK(asdl_expr_seq*, (asdl_expr_seq*)_PyPegen_singleton_seq(p, b)), NULL, EXTRA) }
+        _PyAST_Call(a, CHECK(asdl_expr_seq*, (asdl_expr_seq*)this.singletonSequence(b)), NULL, EXTRA) }
     | a=t_primary '(' b=[arguments] ')' &t_lookahead {
         _PyAST_Call(a,
                  (b) ? ((expr_ty) b)->v.Call.args : NULL,
@@ -894,13 +933,13 @@ invalid_parameters:
     | param_no_default* invalid_parameters_helper param_no_default {
         RAISE_SYNTAX_ERROR("non-default argument follows default argument") }
 invalid_parameters_helper: # This is only there to avoid type errors
-    | a=slash_with_default { _PyPegen_singleton_seq(p, a) }
+    | a=slash_with_default { this.singletonSequence(a) }
     | param_with_default+
 invalid_lambda_parameters:
     | lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default {
         RAISE_SYNTAX_ERROR("non-default argument follows default argument") }
 invalid_lambda_parameters_helper:
-    | a=lambda_slash_with_default { _PyPegen_singleton_seq(p, a) }
+    | a=lambda_slash_with_default { this.singletonSequence(a) }
     | lambda_param_with_default+
 invalid_star_etc:
     | '*' (')' | ',' (')' | '**')) { RAISE_SYNTAX_ERROR("named arguments must follow bare *") }

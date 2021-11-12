@@ -100,7 +100,7 @@ public class ParserTestBase {
     public SSTNode parse(String src, String moduleName, int mode) {
 
         ParserTokenizer tokenizer = new ParserTokenizer(src);
-        GenParser parser = new GenParser(tokenizer, new NodeFactoryImp());
+        Parser parser = new Parser(tokenizer, new NodeFactoryImp());
         SSTNode result = parser.file_rule();
 
 //        lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();

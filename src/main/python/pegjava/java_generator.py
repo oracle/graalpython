@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-#encoding: UTF-8
+# encoding: UTF-8
+# Copyright (c) 2021, Oracle and/or its affiliates.
+# Copyright (C) 1996-2021 Python Software Foundation
+#
+# Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+
+"""This is heavily based on the C generator, and we try to keep it as similar as
+possible to make updates and maintenance easy. Where we deviate in non obvious
+ways, we add comments."""
 
 import os
 import ast
@@ -32,6 +40,7 @@ from pegen.grammar import (
 )
 from pegen.parser_generator import ParserGenerator
 
+
 class NodeTypes(Enum):
     NAME_TOKEN = 0
     NUMBER_TOKEN = 1
@@ -40,6 +49,7 @@ class NodeTypes(Enum):
     KEYWORD = 4
     SOFT_KEYWORD = 5
     CUT_OPERATOR = 6
+
 
 BASE_NODETYPES = {
     "NAME": NodeTypes.NAME_TOKEN,
@@ -52,7 +62,7 @@ BASE_NODETYPES = {
 @dataclass
 class FunctionCall:
     function: str
-    arguments: List[Any] = field(default_factory=list)
+    arguments: Optional[List[Any]] = None
     assigned_variable: Optional[str] = None
     assigned_variable_type: Optional[str] = None
     return_type: Optional[str] = None
@@ -63,26 +73,27 @@ class FunctionCall:
     def __str__(self) -> str:
         parts = []
         parts.append(self.function)
-        if self.arguments:
+        if self.arguments is not None:
             parts.append(f"({', '.join(map(str, self.arguments))})")
-        else:
-            parts.append("()")
-
         ft_part_start = ""
-        ft_part_end = ""
+        try:
+            int(self.function)
+            ft_part_end = ") != 0"
+        except:
+            ft_part_end = ") != null"
         if self.force_true:
             ft_part_start= "("
-            ft_part_end = f" || {self.assigned_variable} == null)"
-
+            ft_part_end = f"{ft_part_end} || true)"
         if self.assigned_variable:
             if self.assigned_variable_type:
                 var_type = _check_type(self, self.assigned_variable_type);
-                parts = [ft_part_start, "(", self.assigned_variable, " = ", '(', var_type, ')', *parts, ") != null", ft_part_end]
+                parts = [ft_part_start, "(", self.assigned_variable, " = ", '(', var_type, ')', *parts, ft_part_end]
             else:
-                parts = [ft_part_start, "(", self.assigned_variable, " = ", *parts, ") != null", ft_part_end]
+                parts = [ft_part_start, "(", self.assigned_variable, " = ", *parts, ft_part_end]
         if self.comment:
             parts.append(f"  // {self.comment}")
         return "".join(parts)
+
 
 # TODO this is temporary solution until all types in the grammar will not be java types
 def _check_type(self, ttype: str) -> str:
@@ -95,10 +106,11 @@ def _check_type(self, ttype: str) -> str:
             self.print(f"// TODO replacing {ttype} --> SSTNode")
         return "SSTNode"
     elif "SSTNode*" == ttype:
-        if hasattr(self, "print"):
-            self.print(f"// TODO replacing {ttype} --> SSTNode[]")
         return "SSTNode[]"
+    if ttype and ttype.endswith('*'):
+        ttype = ttype.replace("*", "[]")
     return ttype
+
 
 class JavaCallMakerVisitor(GrammarVisitor):
     def __init__(self, parser_generator: ParserGenerator,
@@ -119,7 +131,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
         return FunctionCall(
             assigned_variable="_keyword",
             function="expect",
-            arguments=[f"KEYWORD_{keyword.upper()}"],
+            arguments=[self.keyword_cache[keyword]],
             return_type="Token",
             nodetype=NodeTypes.KEYWORD,
             comment=f"token='{keyword}'",
@@ -129,36 +141,23 @@ class JavaCallMakerVisitor(GrammarVisitor):
         self.soft_keywords.add(value.replace('"', ""))
         return FunctionCall(
             assigned_variable="_keyword",
-            function="expect",
+            function="expect_SOFT_KEYWORD",
             arguments=[value],
-            return_type="Token",
+            return_type="SSTNode",
             nodetype=NodeTypes.SOFT_KEYWORD,
             comment=f"soft_keyword='{value}'",
         )
 
     def visit_NameLeaf(self, node: NameLeaf) -> FunctionCall:
-        self.print(f"// REMOVE visiting JavaCallMakerVisitor.visit_NameLeaf({node}) - should work")
         name = node.value
-        self.print(f"// name = {name}")
         if name in self.non_exact_tokens:
             if name in BASE_NODETYPES:
-                if name == "SOFT_KEYWORD":
-                    return FunctionCall(
-                        assigned_variable=f"{name.lower()}_var",
-                        function = "softKeywordToken",
-                        arguments=[],
-                        nodetype=BASE_NODETYPES[name],
-                        return_type="Token",  # TODO check the type
-                        comment=name,
-                    )
                 return FunctionCall(
                     assigned_variable=f"{name.lower()}_var",
-                    #function=f"_PyPegen_{name.lower()}_token",
-                    function = "expect",
-                    #arguments=None,
-                    arguments=["Token.Kind." + name],
+                    function = f"{name.lower()}_token",
+                    arguments=[],
                     nodetype=BASE_NODETYPES[name],
-                    return_type="Token",  # TODO check the type
+                    return_type="SSTNode",
                     comment=name,
                 )
             return FunctionCall(
@@ -171,12 +170,8 @@ class JavaCallMakerVisitor(GrammarVisitor):
             )
         type = None
         rule = self.gen.all_rules.get(name.lower())
-        if rule  is not None:
-            type = "SSTNode[]" if rule.is_loop() or rule.is_gather() else rule.type  # TODO check the type
-
-        if type and type.endswith('*'):
-            type = type.replace("*", "[]")
-
+        if rule is not None:
+            type = "SSTNode[]" if rule.is_loop() or rule.is_gather() else rule.type
 
         return FunctionCall(
             assigned_variable=f"{name}_var",
@@ -187,7 +182,6 @@ class JavaCallMakerVisitor(GrammarVisitor):
         )
 
     def visit_StringLeaf(self, node: StringLeaf) -> FunctionCall:
-        self.print(f"// REMOVE visiting JavaCallMakerVisitor.visit_StringLeaf({node})")
         val = ast.literal_eval(node.value)
         if re.match(r"[a-zA-Z_]\w*\Z", val):  # This is a keyword
             if node.value.endswith("'"):
@@ -200,15 +194,13 @@ class JavaCallMakerVisitor(GrammarVisitor):
             return FunctionCall(
                 assigned_variable="_literal",
                 function=f"expect",
-                arguments=["Token.Kind." + self.gen.tokens[type]],
+                arguments=[type],
                 nodetype=NodeTypes.GENERIC_TOKEN,
                 return_type="Token",
                 comment=f"token='{val}'",
             )
 
     def visit_Rhs(self, node: Rhs) -> FunctionCall:
-        self.print(f"// REMOVE visiting JavaCallMakerVisitor.visit_Rhs({node})")
-
         if node in self.cache:
             return self.cache[node]
         # TODO can we inline generated calls?
@@ -222,72 +214,81 @@ class JavaCallMakerVisitor(GrammarVisitor):
         return self.cache[node]
 
     def visit_NamedItem(self, node: NamedItem) -> FunctionCall:
-        self.print(f"// REMOVE visiting JavaCallMakerVisitor.visit_NamedItem({node})")
         call = self.generate_call(node.item)
-        if not call :
-            self.print(f"// TODO call is not created {node} -> creates artificial")
-            call = "true"
-            return call
-        self.print(f"// REMOVE result call {call}")
         if node.name:
             call.assigned_variable = node.name
         if node.type:
             call.assigned_variable_type = node.type
         return call
 
-    def lookahead_call_helper(self, node: Lookahead, positive: bool) -> FunctionCall:
+    def lookahead_call_helper(self, node: Lookahead, positive: str) -> FunctionCall:
+        # The c_generator passes function pointers, something we cannot do in
+        # Java. Instead, we generate helper functions for the function names
+        # passed in. Instead of the C-style overload suffixes
+        # (lookahead_with_name, _with_string, _with_int), we set the
+        # call.argtypes, which are consumed later when we generate the
+        # gen.lookahead_functions
         call = self.generate_call(node.node)
-        self.print(f"// lookahead_call_helper call: {call}")
-        if not call :
-            self.print(f"// TODO call is not created {node} -> creates artificial")
-            call = "true"
-            return call
-        self.print(f"//    call.nodetype: {call.nodetype}")
+        fname = f"genLookahead_{call.function}"
+        if fname not in self.gen.lookahead_functions:
+            self.gen.lookahead_functions[fname] = call
+            call.argtypes = ()
         if call.nodetype == NodeTypes.NAME_TOKEN:
             return FunctionCall(
-                function=f"_PyPegen_lookahead_with_name",
-                arguments=[positive, call.function, *call.arguments],
-                return_type="int",
+                function=fname,
+                arguments=[positive, *call.arguments],
+                return_type="boolean",
             )
         elif call.nodetype == NodeTypes.SOFT_KEYWORD:
+            call.argtypes = ("String",)
             return FunctionCall(
-                function="lookahead" if call.arguments and len(call.arguments) > 0  else "lookaheadSoftKeyword",
-                arguments=[str(positive).lower(), *call.arguments],
+                function=fname,
+                arguments=[positive, *call.arguments],
                 return_type="boolean",
             )
         elif call.nodetype in {NodeTypes.GENERIC_TOKEN, NodeTypes.KEYWORD}:
+            call.argtypes = ("int",)
             return FunctionCall(
-                function=f"lookahead",
-                arguments=[str(positive).lower(), *call.arguments],
+                function=fname,
+                arguments=[positive, *call.arguments],
                 return_type="boolean",
                 comment=f"token={node.node}",
             )
         else:
-            fname = f"lookahed{call.function}"
-            if fname not in self.gen.lookahead_functions:
-                self.gen.lookahead_functions[fname] = call
+            assert len(call.arguments) == 0
             return FunctionCall(
                 function=fname,
-                arguments=[str(positive).lower(), *call.arguments],
+                arguments=[positive, *call.arguments],
                 return_type="boolean",
             )
 
     def visit_PositiveLookahead(self, node: PositiveLookahead) -> FunctionCall:
-        self.print(f"// TODO visiting JavaCallMakerVisitor.visit_PositiveLookahead({node})")
+        return self.lookahead_call_helper(node, "true")
 
     def visit_NegativeLookahead(self, node: NegativeLookahead) -> FunctionCall:
-        self.print(f"// TODO visiting JavaCallMakerVisitor.visit_NegativeLookahead({node})")
-        return self.lookahead_call_helper(node, False)
+        return self.lookahead_call_helper(node, "false")
 
     def visit_Forced(self, node: Forced) -> FunctionCall:
-        self.print(f"// TODO visiting JavaCallMakerVisitor.visit_Forced({node})")
+        call = self.generate_call(node.node)
+        if call.nodetype == NodeTypes.GENERIC_TOKEN:
+            # val = ast.literal_eval(node.node.value)
+            val = eval(node.node.value) # FIXME: this is unsafe
+            assert val in self.exact_tokens, f"{node.value} is not a known literal"
+            type = self.exact_tokens[val]
+            return FunctionCall(
+                assigned_variable="_literal",
+                function=f"expect_forced_token",
+                arguments=[type, f'"{val}"'],
+                nodetype=NodeTypes.GENERIC_TOKEN,
+                return_type="Token",
+                comment=f"forced_token='{val}'",
+            )
+        else:
+            raise NotImplementedError(
+                f"Forced tokens don't work with {call.nodetype} tokens")
 
     def visit_Opt(self, node: Opt) -> FunctionCall:
-        self.print(f"// REMOVE visiting JavaCallMakerVisitor.visit_Opt({node})")
         call = self.generate_call(node.node)
-        self.print(f"    // JavaCallMakerVisitor.visit_Opt.generated call: {call}")
-        if not call:
-            return None
         return FunctionCall(
             assigned_variable="_opt_var",
             function=call.function,
@@ -297,7 +298,6 @@ class JavaCallMakerVisitor(GrammarVisitor):
         )
 
     def visit_Repeat0(self, node: Repeat0) -> FunctionCall:
-        self.print(f"// TODO visiting JavaCallMakerVisitor.visit_Repeat0({node})")
         if node in self.cache:
             return self.cache[node]
         name = self.gen.name_loop(node.node, False)
@@ -305,13 +305,12 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
             arguments=[],
-            return_type="SSTNode[]",   # Check -> asdl_seq *",
+            return_type="SSTNode[]",
             comment=f"{node}",
         )
         return self.cache[node]
 
     def visit_Repeat1(self, node: Repeat1) -> FunctionCall:
-        self.print(f"// TODO visiting JavaCallMakerVisitor.visit_Repeat1({node})")
         if node in self.cache:
             return self.cache[node]
         name = self.gen.name_loop(node.node, True)
@@ -319,13 +318,12 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
             arguments=[],
-            return_type="SSTNode[]",   # Check -> asdl_seq *",
+            return_type="SSTNode[]",
             comment=f"{node}",
         )
         return self.cache[node]
 
     def visit_Gather(self, node: Gather) -> FunctionCall:
-        self.print(f"// REMOVE visiting JavaCallMakerVisitor.visit_Gather({node})")
         if node in self.cache:
             return self.cache[node]
         name = self.gen.name_gather(node)
@@ -333,20 +331,31 @@ class JavaCallMakerVisitor(GrammarVisitor):
             assigned_variable=f"{name}_var",
             function=f"{name}_rule",
             arguments=[],
-            return_type= "SSTNode[]",    # TODO "asdl_seq *",
+            return_type= "SSTNode[]",
             comment=f"{node}",
         )
         return self.cache[node]
 
     def visit_Group(self, node: Group) -> FunctionCall:
-        self.print(f"// TODO visiting JavaCallMakerVisitor.visit_Group({node})")
         return self.generate_call(node.rhs)
 
     def visit_Cut(self, node: Cut) -> FunctionCall:
-        self.print(f"// TODO visiting JavaCallMakerVisitor.visit_Cut({node})")
+        return FunctionCall(
+            assigned_variable="_cut_var",
+            return_type="int",
+            function="1",
+            nodetype=NodeTypes.CUT_OPERATOR,
+        )
 
     def generate_call(self, node: Any) -> FunctionCall:
-        return super().visit(node)
+        call = super().visit(node)
+        # TODO: Remove me
+        if not call:
+            self.print(f"// TODO call is not created {node} -> creates artificial")
+            call = "true"
+            return call
+        return call
+
 
 class JavaParserGenerator(ParserGenerator, GrammarVisitor):
     def __init__(
@@ -357,184 +366,51 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         non_exact_tokens: Set[str],
         file: Optional[IO[Text]],
         debug: bool = True,
+        skip_actions: bool = False,
     ):
         super().__init__(grammar, tokens, file)
         self.callmakervisitor = JavaCallMakerVisitor(self, exact_tokens, non_exact_tokens, self.print)
         self.lookahead_functions: Dict[str, FunctionCall] = {}
         self.debug = debug
+        self.skip_actions = skip_actions
+        self.goto_targets = []
 
-    def _generate_rule_ids(self):
-        with self.indent():
-            self.print("// rule ids ")
-            for id, (rulename, rule) in enumerate(self.todo.items()):
-                if rule.left_recursive:
-                    self.print(f'private static final int {rule.name.upper()}_ID = {id}; // Left-recursive')
-                else:
-                    self.print(f'private static final int {rule.name.upper()}_ID = {id};')
-        self.print()
+    def add_level(self) -> None:
+        if self.debug:
+            self.print("level++;")
 
-    def _group_keywords_by_length(self) -> Dict[int, List[Tuple[str, int]]]:
-        groups: Dict[int, List[Tuple[str, int]]] = {}
-        for keyword_str, keyword_type in self.callmakervisitor.keyword_cache.items():
-            length = len(keyword_str)
-            if length in groups:
-                groups[length].append((keyword_str, keyword_type))
-            else:
-                groups[length] = [(keyword_str, keyword_type)]
-        return groups
-    
-    def _setup_keywords(self) -> None:
-        keyword_cache = self.callmakervisitor.keyword_cache
-        n_keyword_lists = (
-            len(max(keyword_cache.keys(), key=len)) + 1 if len(keyword_cache) > 0 else 0
-        )
-        #self.print(f"static const int n_keyword_lists = {n_keyword_lists};")
-        groups = self._group_keywords_by_length()
-        self.print();
-        self.print("private static final Map<String, Integer>[] reserved_keywords = new Map []{")
-        with self.indent():
-            num_groups = max(groups) + 1 if groups else 1
-            for keywords_length in range(num_groups):
-                if keywords_length not in groups.keys():
-                    self.print("null,")
-                else:
-                    self.print("Stream.of(new Object[][] {")
-                    with self.indent():
-                        for keyword_str, keyword_type in groups[keywords_length]:
-                            self.print(f'{{"{keyword_str}", {keyword_type}}},')
-                    self.print("}).collect(Collectors.toMap(data -> (String) data[0], data -> (Integer) data[1])),")
-        self.print("};")
-        
-    def _generate_keywords(self):
-        with self.indent():
-            self.print("// keywords constants")
-            for key in self.callmakervisitor.keyword_cache.keys():
-                self.print(f'private static final String KEYWORD_{key.upper()} = "{key}";')
-                
-            self._setup_keywords()
+    def remove_level(self) -> None:
+        if self.debug:
+            self.print("level--;")
 
-    # generating helper methods
-    def _generate_methods(self):
-        with self.indent():
-            self.print('''
-    // lookahead methods written in generator
-    private boolean lookahead(boolean match, Token.Kind kind) {
-        int pos = mark();
-        Token token = expect(kind);
-        reset(pos);
-        return (token != null) == match;
-    }
+    def add_return(self, ret_val: str) -> None:
+        self.remove_level()
+        self.print(f"return {ret_val};")
 
-    private boolean lookahead(boolean match, String text) {
-        int pos = mark();
-        Token token = expect(text);
-        reset(pos);
-        return (token != null) == match;
-    }
+    def unique_varname(self, name: str = "tmpvar") -> str:
+        new_var = name + "_" + str(self._varname_counter)
+        self._varname_counter += 1
+        return new_var
 
-    private boolean lookaheadSoftKeyword(boolean match) {
-        int pos = mark();
-        Token token = softKeywordToken();
-        reset(pos);
-        return (token != null) == match;
-    }
+    def call_with_errorcheck_return(self, call_text: str, returnval: str) -> None:
+        # error's in Java come via exceptions, which we just let propagate
+        self.print(f"{call_text};")
 
-    private Token softKeywordToken() {
-        Token t = expect(Token.Kind.NAME);
-        if (t != null) {
-            String text = getText(t);
-            if (softKeywords.contains(text)) {
-                return t;
-            }
-        }
-        return null;
-    }
-    
-    @Override
-    public Token getToken(int pos) {
-        Token token = super.getToken(pos);
-        if (token.type == Token.Kind.NAME) {
-            int len = token.endOffset - token.startColumn;
-            if (len < reserved_keywords.length) {
-                Map<String, Integer> keywords = reserved_keywords[len];
-                if (keywords != null && keywords.containsKey(getText(token))) {
-                    //TODO we should here change the kind to the keyword.
-                }
-            }
-        }
-        return token;
-    }
-    ''')
+    def call_with_errorcheck_goto(self, call_text: str, goto_target: str) -> None:
+        "not used in Java"
+        pass
 
-    #debug message
-    def _generate_debug_methods(self):
-        with self.indent():
-            self.print('''
-    private void indent(StringBuffer sb) {
-        for (int i = 0; i < level; i++) {
-            sb.append("  ");
-        }
-    }
+    def out_of_memory_return(self, expr: str, cleanup_code: Optional[str] = None,) -> None:
+        "not used in Java"
+        pass
 
-    void debugMessage(String text) {
-        debugMessage(text, true);
-    }
-
-    void debugMessage(String text, boolean indent) {
-        StringBuffer sb = new StringBuffer();
-        if(indent) {
-            indent(sb);
-        }
-        sb.append(text);
-        System.out.print(sb.toString());
-    }
-
-    void debugMessageln(String text) {
-        debugMessageln(text, true);
-    }
-
-    void debugMessageln(String text, boolean indent) {
-        StringBuffer sb = new StringBuffer();
-        if (indent) {
-            indent(sb);
-        }
-        sb.append(text);
-        System.out.println(sb.toString());
-    }''')
-
-    def _generate_lookahead_methods(self):
-        with self.indent():
-            self.print()
-            self.print("// lookahead methods generated")
-            for name in self.lookahead_functions:
-                call = self.lookahead_functions[name];
-                if call.arguments and len(call.arguments) > 0:
-                    self.print(f"private boolean {name}(boolean match, {', '.join(map(str, call.arguments))}) {{")
-                else:
-                    self.print(f"private boolean {name}(boolean match){{")
-                with self.indent():
-                    self.print("int tmpPos = mark();")
-                    return_type = "Object"
-                    if call.return_type:
-                        return_type = call.return_type;
-                    else:
-                        return_type = "Object"
-                        self.print("// TODO the return type of this call in not set -> Object is used")
-                    if call.arguments and len(call.arguments) > 0:
-                        self.print(f"{return_type} result = {call.function}({', '.join(map(str, call.arguments))});")
-                    else:
-                        self.print(f"{return_type} result = {call.function}();")
-                    self.print("reset(tmpPos);")
-                    self.print(f"return (result != null) == match;")
-                self.print("}")
-                self.print()
-
-#    def put(self, *args, **kwargs):
-#        print(end = self.indentation, file = self.file)
-#        print(*args, **kwargs,  file = self.file)
+    def out_of_memory_goto(self, expr: str, goto_target: str) -> None:
+        "not used in Java"
+        pass
 
     def generate(self, filename: str) -> None:
-        self.print(f"// @generated by java_generator.py from {filename}")
+        self.collect_todo()
+        # Java specific stuff
         license = self.grammar.metas.get("license")
         if license:
             self.print(license)
@@ -546,241 +422,203 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print(imports)
         className = os.path.splitext(os.path.basename(self.file.name))[0]
         self.print('@SuppressWarnings("all")')
-        self.print("public class %s extends Parser {" % className)
-
-        # parser method generation
-        self.collect_todo();
-
-        self._generate_rule_ids()
-        self._generate_keywords()
-
-        with self.indent():
-            self.print()
-            self.print("// parser fields")
-            self.print("private int level = 0;")
-            self.print("private final RuleResultCache<Object> cache;")
-            self.print("private final Set<String> softKeywords;")
-
-
+        self.print("public final class %s extends AbstractParser {" % className)
+        # Java needs a few fields declarations. Also, we're now in a class
+        self.level += 1
+        self.print()
+        self.print("// parser fields")
         fields = self.grammar.metas.get("parser_fields")
         if fields:
             self.print(fields)
-
-        # TODO do we need the constructor set in grammar?
-        #constructor = self.grammar.metas.get("parser_constructor")
-        #if constructor:
-        #    self.print(constructor % className)
-        #else:
+        # Now back to c generator analogue
+        self._setup_keywords()
+        self._setup_soft_keywords()
+        for i, (rulename, rule) in enumerate(self.todo.items(), 1000):
+            comment = "  // Left-recursive" if rule.left_recursive else ""
+            self.print(f"private static final int {rulename.upper()}_ID = {i};{comment}")
+        self.print()
+        # Java needs a constructor
+        self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory) {" % className)
         with self.indent():
-            self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory) {" % className)
-            with self.indent():
-                self.print("super(tokenizer, factory);")
-                self.print("cache = new RuleResultCache(this);")
-                self.print('softKeywords = new HashSet<>(Arrays.asList("_", "case", "match"));')
-            self.print("}" )
-
-
-        with self.indent():
-            while self.todo:
-                for rulename, rule in list(self.todo.items()):
-                    del self.todo[rulename]
-                    self.print()
-                    self.visit(rule)
-
+            self.print("super(tokenizer, factory);")
+        self.print("}" )
+        # we don't need the C declarations, so straight to the rule functions as in c_generator
+        while self.todo:
+            for rulename, rule in list(self.todo.items()):
+                del self.todo[rulename]
+                self.print()
+                if rule.left_recursive:
+                    self.print("// Left-recursive")
+                self.visit(rule)
+        # we don't need the C trailer, but we have our own final things to generate and close the class
         self._generate_lookahead_methods()
-        self._generate_methods()
-        if self.debug:
-            self._generate_debug_methods()
+        self.level -= 1
         self.print("}")
 
-    def _insert_debug_rule_enter (self, message):
-        if self.debug:
-            self.print(f'debugMessageln({message});')
-            self.print("this.level++;")
+    def _group_keywords_by_length(self) -> Dict[int, List[Tuple[str, int]]]:
+        groups: Dict[int, List[Tuple[str, int]]] = {}
+        for keyword_str, keyword_type in self.callmakervisitor.keyword_cache.items():
+            length = len(keyword_str)
+            if length in groups:
+                groups[length].append((keyword_str, keyword_type))
+            else:
+                groups[length] = [(keyword_str, keyword_type)]
+        return groups
 
-    def _insert_debug_rule_leave (self, message):
-        if self.debug:
-            self.print("this.level--;")
-            self.print(f'debugMessageln({message});')
+    def _setup_keywords(self) -> None:
+        keyword_cache = self.callmakervisitor.keyword_cache
+        n_keyword_lists = (
+            len(max(keyword_cache.keys(), key=len)) + 1 if len(keyword_cache) > 0 else 0
+        )
+        groups = self._group_keywords_by_length()
+        self.print("private static final Object[][][] reservedKeywords = new Object[][][]{")
+        with self.indent():
+            num_groups = max(groups) + 1 if groups else 1
+            for keywords_length in range(num_groups):
+                if keywords_length not in groups.keys():
+                    self.print("null,")
+                else:
+                    self.print("{")
+                    with self.indent():
+                        for keyword_str, keyword_type in groups[keywords_length]:
+                            self.print(f'{{"{keyword_str}", {keyword_type}}},')
+                    self.print("},")
+        self.print("};")
+        self.print("@Override")
+        self.print("protected Object[][][] getReservedKeywords() { return reservedKeywords; }")
+
+    def _setup_soft_keywords(self) -> None:
+        soft_keywords = sorted(self.callmakervisitor.soft_keywords)
+        self.print("private static final String[] softKeywords = new String[]{")
+        with self.indent():
+            for keyword in soft_keywords:
+                self.print(f'"{keyword}",')
+        self.print("};")
+        self.print("@Override")
+        self.print("protected String[] getSoftKeywords() { return softKeywords; }")
 
     def _set_up_token_start_metadata_extraction(self) -> None:
-        #self.print("if (p->mark == p->fill && _PyPegen_fill_token(p) < 0) {")
-        #with self.indent():
-        #    self.print("p->error_indicator = 1;")
-        #    self.add_return("NULL")
-        #self.print("}")
-        self.print("Token startToken = getToken(pos);")
-        #self.print("UNUSED(_start_lineno); // Only used by EXTRA macro")
-        #self.print("int _start_col_offset = p->tokens[_mark]->col_offset;")
-        #self.print("UNUSED(_start_col_offset); // Only used by EXTRA macro")
+        self.print("// _PyPegen_fill_token is called here in CPython");
+        self.print("Token startToken = getAndInitializeToken();");
 
     def _set_up_token_end_metadata_extraction(self) -> None:
-        #self.print("Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);")
-        #self.print("if (_token == NULL) {")
-        #with self.indent():
-        #    self.add_return("NULL")
-        #self.print("}")
-        self.print("Token endToken = getToken(mark());")
-        #self.print("UNUSED(_end_lineno); // Only used by EXTRA macro")
-        #self.print("int _end_col_offset = _token->end_col_offset;")
-        #self.print("UNUSED(_end_col_offset); // Only used by EXTRA macro")
+        self.print("// _PyPegen_get_last_nonwhitespace_token is called here in CPython");
+        self.print("Token endToken = getLastNonWhitespaceToken();")
+        self.print("if (endToken == null) {")
+        with self.indent():
+            self.add_return("null")
+        self.print("}")
 
-    def emit_action(self, is_loop:bool, node: Alt) -> None:
-        # TODO this is ugly hack. We need to find out why the node.action contains so space that are not written in grammar file
-        self.print(f"// node.action: {node.action}")
-        node_action = (str(node.action).replace(' ', '').replace ('newSST', 'new SST'))
-        # TODO this condition filter c action now. Should be removed after the grammar contains only java actions
-        if node_action.startswith('factory') or node_action.startswith('new') or len(node_action) == 1 or node_action.startswith('finish'):
-            if is_loop:
-                self.print(f"result.add({node_action});")
-            else:
-                self.print(f"result = {node_action};")
-
-        #self.print("if (_res == NULL && PyErr_Occurred()) {")
-        #with self.indent():
-        #    self.print("p->error_indicator = 1;")
-        #    if cleanup_code:
-        #        self.print(cleanup_code)
-        #    self.add_return("NULL")
-        #self.print("}")
-
-        #if self.debug:
-        #    self.print(
-        #        f'D(fprintf(stderr, "Hit with action [%d-%d]: %s\\n", _mark, p->mark, "{node}"));'
-        #    )
-
-    def emit_default_action(self, is_loop: bool, is_gather: bool, node: Alt) -> None:
-        self.print(f"// self.local_variable_names: {self.local_variable_names}")
-        if len(self.local_variable_names) > 1:
-            self.print("// TODO handle default action if there is more variables")
-        #    if is_gather:
-        #        assert len(self.local_variable_names) == 2
-        #        self.print(
-        #            f"_res = _PyPegen_seq_insert_in_front(p, "
-        #            f"{self.local_variable_names[0]}, {self.local_variable_names[1]});"
-        #        )
-        #    else:
-        #        if self.debug:
-        #            self.print(
-        #                f'D(fprintf(stderr, "Hit without action [%d:%d]: %s\\n", _mark, p->mark, "{node}"));'
-        #            )
-        #        self.print(
-        #            f"_res = _PyPegen_dummy_name(p, {', '.join(self.local_variable_names)});"
-        #        )
-        else:
-            if is_loop:
-                self.print(f"if ({self.local_variable_names[0]} instanceof SSTNode) {{")
-                with self.indent():
-                    self.print(f"children.add((SSTNode){self.local_variable_names[0]});")
-                self.print(f"}} else if ({self.local_variable_names[0]} instanceof SSTNode[]) {{")
-                with self.indent():
-                    self.print(f"for (SSTNode node: (SSTNode[]){self.local_variable_names[0]}) {{")
-                    with self.indent():
-                        self.print("children.add(node);")
-                    self.print("}")
-                self.print("}")
-            else:
-                self.print(f"result = {self.local_variable_names[0]};")
+    def _check_for_errors(self) -> None:
+        "not used in Java"
         pass
 
-    def _insert_debug_message(self, message: str , indent: bool = True):
-        if self.debug:
-            self.print(f'debugMessageln("{message}", {str(indent).lower()});')
-
-    def _handle_cache_result(self, rule):
-        self.print(f'if (cache.hasResult(pos, {rule.name.upper()}_ID)) {{')
+    def _set_up_rule_memoization(self, node: Rule, result_type: str) -> None:
+        self.print("{")
         with self.indent():
-            self._insert_debug_rule_leave('"Taken from cache, level: " + level')
-            self.print(f'return ({self.rule_return_type})cache.getResult(pos, {rule.name.upper()}_ID);')
-        self.print("}")
-
-    def _handle_left_recursion(self, rule, result_type):
-        with self.indent():
-            self.print("// left recursion--")
-            self.print("int pos = mark();")
-
-            self._insert_debug_rule_enter(f'"Left Recursion Rule: {rule.name}, pos: " + pos + ", level: " + level')
-
-            self._handle_cache_result(rule)
-            self.print("int lastPos = pos;")
-            self.print("int endPos;")
-            self.print(f"{result_type} lastResult = null;")
-            self.print(f"cache.putResult(pos, {rule.name.upper()}_ID, null);")
-            self.print("while(true) {")
+            self.add_level()
+            self.print("int _mark = mark();")
+            self.print(f"Object _res = null;")
+            self.print(f"if (cache.hasResult(_mark, {node.name.upper()}_ID)) {{")
             with self.indent():
-                self.print("reset(pos);")
-                self.print(f"SSTNode result = {rule.name}_rule_body();")
-                self.print("endPos = mark();")
-                self.print("if (endPos <= lastPos) {")
+                self.print(f"_res = cache.getResult(_mark, {node.name.upper()}_ID);")
+                self.add_return(f"({result_type})_res")
+            self.print("}")
+            self.print("int _resmark = mark();")
+            self.print("while (true) {")
+            with self.indent():
+                self.call_with_errorcheck_return(
+                    f"cache.putResult(_mark, {node.name.upper()}_ID, _res)", "_res"
+                )
+                self.print("reset(_mark);")
+                self.print(f"SSTNode _raw = {node.name}_raw();")
+                self.print("if (_raw == null || mark() <= _resmark)")
                 with self.indent():
                     self.print("break;")
-                self.print("}")
-                self.print("lastResult = result;")
-                self.print("lastPos = endPos;")
-                self.print(f"cache.putResult(pos, {rule.name.upper()}_ID, result);")
+                self.print(f"_resmark = mark();")
+                self.print("_res = _raw;")
             self.print("}")
-            self.print("reset(lastPos);");
-
-            self._insert_debug_rule_leave('"Result: " + lastResult + ", level: " + level')
-
-            self.print("return lastResult;");
+            self.print(f"reset(_resmark);")
+            self.add_return(f"({result_type})_res")
         self.print("}")
+        self.print(f"private {result_type} {node.name}_raw()")
 
-        self.print()
-        self.print("// left-rersive rule body")
-        self.print(f"public SSTNode {rule.name}_rule_body() {{")
+    def _should_memoize(self, node: Rule) -> bool:
+        return not node.left_recursive
 
     def _handle_default_rule_body(self, node: Rule, rhs: Rhs, result_type: str) -> None:
-        isRecursive = node.left_recursive and node.leader
-        if isRecursive:
-            self._handle_left_recursion(node, result_type)
+        memoize = self._should_memoize(node)
 
         with self.indent():
-            self.print("// default rule body")
-            self.print("int pos = mark();")
-            #TODO here we should use the result_type, currently jsut Object
-            #self.print(f"{result_type} result = null;")
-            self.print("Object result = null;")
-            self._insert_debug_rule_enter(f'"Rule: {node.name}, pos: " + pos+ ", level: " + level')
-
-            if not isRecursive:
-                self._handle_cache_result(node)
-
-            #if any(alt.action and "EXTRA" in alt.action for alt in rhs.alts):
-            if any(alt.action for alt in rhs.alts):
+            self.add_level()
+            self._check_for_errors()
+            self.print("int _mark = mark();")
+            self.print(f"Object _res = null;")
+            if memoize:
+                self.print(f"if (cache.hasResult(_mark, {node.name.upper()}_ID)) {{")
+                with self.indent():
+                    self.print(f"_res = ({result_type})cache.getResult(_mark, {node.name.upper()}_ID);")
+                    self.add_return(f"({result_type})_res")
+                self.print("}")
+            # Java change: set up the goto target via a lambda
+            def _goto_target():
+                if memoize:
+                    self.print(f"cache.putResult(_mark, {node.name.upper()}_ID, _res);")
+                self.add_return(f"({result_type})_res")
+            self.goto_targets.append(_goto_target)
+            # End goto target setup
+            if any(alt.action and "startToken" in alt.action for alt in rhs.alts):
                 self._set_up_token_start_metadata_extraction()
-
-            self.visit(rhs, is_loop=False, is_gather=node.is_gather(), rulename = node.name)
-        #    for alts in node.rhs:
-                #self.print(f"// here should be generated code for {alt}")
-        #        self._generate_alts(alts, node, rule_vars)
-
-            self._insert_debug_rule_leave('"Result: null, level: " + level')
-            self.print(f'return ({self.rule_return_type})cache.putResult(pos, {node.name.upper()}_ID, null);')
+            self.visit(
+                rhs, is_loop=False, is_gather=node.is_gather(), rulename=node.name,
+            )
+            if self.debug:
+                self.print(f'debugMessageln("Fail at %d: {node.name}", _mark);')
+            self.print("_res = null;")
+        with self.indent():
+            # insert and pop the goto target
+            self.goto_targets.pop()()
 
     def _handle_loop_rule_body(self, node: Rule, rhs: Rhs) -> None:
+        memoize = self._should_memoize(node)
+        is_repeat1 = node.name.startswith("_loop1")
+
         with self.indent():
-            self.print("// loop rule body")
-            self.print("int pos = mark();")
-            self.print("List<SSTNode> children = new ArrayList();")
-            self._insert_debug_rule_enter(f'"Rule: {node.name}, pos: " + pos + ", level: " + level')
-
-            self.visit(rhs, is_loop=True, is_gather=node.is_gather(), rulename=node.name)
-
-            self._insert_debug_rule_leave('"Result: null, level: " + level')
-            self.print(f'return ({self.rule_return_type})cache.putResult(pos, {node.name.upper()}_ID, null);')
+            self.add_level()
+            self._check_for_errors()
+            self.print("Object _res = null;")
+            self.print("int _mark = mark();")
+            if memoize:
+                self.print(f"if (cache.hasResult(_mark, {node.name.upper()}_ID)) {{")
+                with self.indent():
+                    self.print(f"_res = cache.getResult(_mark, {node.name.upper()}_ID);")
+                    self.add_return("(SSTNode[])_res")
+                self.print("}")
+            self.print("int _start_mark = mark();")
+            self.print("List<SSTNode> _children = new ArrayList<>();")
+            self.out_of_memory_return(f"!_children")
+            self.print("int _children_capacity = 1;")
+            self.print("int _n = 0;")
+            if any(alt.action and "startToken" in alt.action for alt in rhs.alts):
+                self._set_up_token_start_metadata_extraction()
+            self.visit(
+                rhs, is_loop=True, is_gather=node.is_gather(), rulename=node.name,
+            )
+            if is_repeat1:
+                self.print("if (_children.size() == 0) {")
+                with self.indent():
+                    self.add_return("null")
+                self.print("}")
+            self.print("SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);")
+            self.out_of_memory_return(f"!_seq", cleanup_code="PyMem_Free(_children);")
+            if node.name:
+                self.print(f"cache.putResult(_start_mark, {node.name.upper()}_ID, _seq);")
+            self.add_return("_seq")
 
     def visit_Rule(self, node: Rule) -> None:
         is_loop = node.is_loop()
         is_gather = node.is_gather()
         rhs = node.flatten()
-
-        if node.left_recursive:
-            self.print("// Left-recursive")
-
-        for line in str(node).splitlines():
-            self.print(f"// {line}")
-
         if is_loop or is_gather:
             result_type = "SSTNode[]"
         elif node.type:
@@ -788,34 +626,37 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         else:
             result_type = "Object"
 
-        self.print(f"public {result_type} {node.name}_rule() {{")
-        self.print(f"// isLoop: {is_loop}, isGather: {is_gather}, type: {node.type})")
-#        with self.local_variable_context():
+        for line in str(node).splitlines():
+            self.print(f"// {line}")
+        if node.left_recursive and node.leader:
+            # No need to declare in Java
+            pass
 
-        self.rule_return_type = result_type
+        self.print(f"public {result_type} {node.name}_rule()")
 
+        if node.left_recursive and node.leader:
+            self._set_up_rule_memoization(node, result_type)
+
+        self.print("{")
         if is_loop:
             self._handle_loop_rule_body(node, rhs)
         else:
             self._handle_default_rule_body(node, rhs, result_type)
         self.print("}")
 
-    def visit_Rhs(self, node: Rhs, is_loop: bool, is_gather: bool, rulename: Optional[str]) -> None:
+    def visit_NamedItem(self, node: NamedItem) -> None:
+        call = self.callmakervisitor.generate_call(node)
+        if call.assigned_variable:
+            call.assigned_variable = self.dedupe(call.assigned_variable)
+        self.print(call)
+
+    def visit_Rhs(
+        self, node: Rhs, is_loop: bool, is_gather: bool, rulename: Optional[str]
+    ) -> None:
         if is_loop:
             assert len(node.alts) == 1
         for alt in node.alts:
-            self.print(f"// the result should be constructed through action: {alt.action}")
             self.visit(alt, is_loop=is_loop, is_gather=is_gather, rulename=rulename)
-
-    def visit_NamedItem(self, node: NamedItem) -> None:
-        self.print(f"// TODO visiting JavaParserGeneratorNamedItem: {node}")
-        call = self.callmakervisitor.generate_call(node)
-        if not call:
-            self.print(f"// TODO call is not created {node}")
-            return
-        if hasattr(call, "assigned_variable") and call.assigned_variable:    # TODO remove check for the attr. Should not be needed.
-            call.assigned_variable = self.dedupe(call.assigned_variable)
-        self.print(call)
 
     def join_conditions(self, keyword: str, node: Any) -> None:
         self.print(f"{keyword} (")
@@ -827,104 +668,129 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 else:
                     self.print("&&")
                 self.visit(item)
-        self.print(") {")
+        self.print(")")
+
+    def emit_action(self, node: Alt, cleanup_code: Optional[str] = None) -> None:
+        node_action = str(node.action).replace(' ', '').replace ('newSST', 'new SST')
+        # TODO this condition filter c action now. Should be removed after the grammar contains only java actions
+        if (node_action.startswith('factory') or
+            node_action.startswith('new') or
+            len(node_action) == 1
+            or node_action.startswith('finish')
+            or node_action == "elem"
+            or re.match("\\([^()*]+\\)this.", node_action)):
+            self.print(f"_res = {node_action};")
+        else:
+            self.print(f"// TODO: node.action: {node.action}")
+            self.print(
+                f'''debugMessageln("\033[33;5;7m!!! TODO: Convert {node.action.replace('"', "'")} to Java !!!\033[0m");'''
+            )
+            self.print(f"_res = null;")
+
+        if self.debug:
+            self.print(
+                f'''debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "{str(node).replace('"', "'")}");'''
+            )
+
+    def emit_default_action(self, is_gather: bool, node: Alt) -> None:
+        if len(self.local_variable_names) > 1:
+            if is_gather:
+                assert len(self.local_variable_names) == 2
+                self.print(
+                    f"_res = insertInFront("
+                    f"{self.local_variable_names[0]}, {self.local_variable_names[1]});"
+                )
+            else:
+                if self.debug:
+                    self.print(
+                        f'debugMessageln("Hit without action [%d:%d]: %s", _mark, mark(), "{node}");'
+                    )
+                self.print(
+                    f"_res = dummyName({', '.join(self.local_variable_names)});"
+                )
+        else:
+            if self.debug:
+                self.print(
+                    f'debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "{node}");'
+                )
+            self.print(f"_res = {self.local_variable_names[0]};")
+
+    def emit_dummy_action(self) -> None:
+        self.print("_res = dummyName();")
 
     def handle_alt_normal(self, node: Alt, is_gather: bool, rulename: Optional[str]) -> None:
         self.join_conditions(keyword="if", node=node)
-
+        self.print("{")
+        # We have parsed successfully all the conditions for the option.
         with self.indent():
-            # Prepare to emmit the rule action and do so
             node_str = str(node).replace('"', '\\"')
-            self._insert_debug_rule_leave(f'"{rulename}[" + pos + ", " + mark() +" ](level: " + level + ") {node_str} succeeded!"');
-            #if node.action and "EXTRA" in node.action:
-            self.print(f"// alt action: {node.action}")
-            if node.action:
+            self.print(
+                f'debugMessageln("%d {rulename}[%d-%d]: %s succeeded!", level, _mark, mark(), "{node_str}");'
+            )
+            # Prepare to emmit the rule action and do so
+            if node.action and "endToken" in node.action:
                 self._set_up_token_end_metadata_extraction()
-            #if self.skip_actions:
-            #    self.emit_dummy_action()
-            #elif node.action:
-            if node.action:
-                self.emit_action(False, node)
+            if self.skip_actions:
+                self.emit_dummy_action()
+            elif node.action:
+                self.emit_action(node)
             else:
-                self.emit_default_action(False, is_gather, node)
+                self.emit_default_action(is_gather, node)
 
-            self.print(f'return ({self.rule_return_type})cache.putResult(pos, {rulename.upper()}_ID, result);')
+            # As the current option has parsed correctly, do not continue with the rest.
+            # Java change: C uses a goto here, we have the goto target code in a lambda
+            self.goto_targets[-1]()
         self.print("}")
-        self.print("reset(pos);")
 
     def handle_alt_loop(self, node: Alt, is_gather: bool, rulename: Optional[str]) -> None:
         # Condition of the main body of the alternative
         self.join_conditions(keyword="while", node=node)
-        with self.indent():
-            if self.debug:
-                self.print('debugMessageln("Succeeded - adding one result to collection!");');
-
-            self.print(f"// alt action: {node.action}")
-            if node.action:
-                self._set_up_token_end_metadata_extraction()
-            if node.action:
-                self.emit_action(True, node)
-            else:
-                self.emit_default_action(True, is_gather, node)
-
-            self.print ("pos = mark();")
-        self.print("}")
-        self.print("reset(pos);")
-        self.print("if (children.size() > 0) {")
-        with self.indent():
-            self.print(f'return ({self.rule_return_type})cache.putResult(pos, {rulename.upper()}_ID, children.toArray(new SSTNode[children.size()]));')
-        self.print("}")
-
-        # We have parsed successfully one item!
-#        with self.indent():
-#            # Prepare to emit the rule action and do so
-#            if node.action and "EXTRA" in node.action:
-#                self._set_up_token_end_metadata_extraction()
-#            if self.skip_actions:
-#                self.emit_dummy_action()
-#            elif node.action:
-#                self.emit_action(node, cleanup_code="PyMem_Free(_children);")
-#            else:
-#                self.emit_default_action(is_gather, node)
-#
-#            # Add the result of rule to the temporary buffer of children. This buffer
-#            # will populate later an asdl_seq with all elements to return.
-#            self.print("if (_n == _children_capacity) {")
-#            with self.indent():
-#                self.print("_children_capacity *= 2;")
-#                self.print(
-#                    "void **_new_children = PyMem_Realloc(_children, _children_capacity*sizeof(void *));"
-#                )
-#                self.out_of_memory_return(f"!_new_children")
-#                self.print("_children = _new_children;")
-#            self.print("}")
-#            self.print("_children[_n++] = _res;")
-#            self.print("_mark = p->mark;")
-#        self.print("}")
-
-    def visit_Alt( self, node: Alt, is_loop: bool, is_gather: bool, rulename: Optional[str]) -> None:
         self.print("{")
+        # We have parsed successfully one item!
         with self.indent():
-            self.print(f"// visiting Alt: {node}")
-            # TODO check if we can call invalid rules
+            # Prepare to emit the rule action and do so
+            if node.action and "endToken" in node.action:
+                self._set_up_token_end_metadata_extraction()
+            if self.skip_actions:
+                self.emit_dummy_action()
+            elif node.action:
+                self.emit_action(node)
+            else:
+                self.emit_default_action(is_gather, node)
 
-            # collection variables for the alt
+            # Add the result of rule to the temporary buffer of children. This buffer
+            # will populate later an asdl_seq with all elements to return.
+            self.print("if (_res instanceof  SSTNode) {")
+            self.print("    _children.add((SSTNode)_res);")
+            self.print("} else {")
+            self.print("    _children.addAll(Arrays.asList((SSTNode[])_res));")
+            self.print("}")
+            self.print("_mark = mark();")
+        self.print("}")
+
+    def visit_Alt(
+        self, node: Alt, is_loop: bool, is_gather: bool, rulename: Optional[str]
+    ) -> None:
+        if len(node.items) == 1 and str(node.items[0]).startswith('invalid_'):
+            self.print(f"if (callInvalidRules) {{ // {node}")
+        else:
+            self.print(f"{{ // {node}")
+        with self.indent():
+            self._check_for_errors()
+            node_str = str(node).replace('"', '\\"')
+            self.print(
+                f'debugMessageln("%d> {rulename}[%d-%d]: %s", level, _mark, mark(), "{node_str}");'
+            )
+            # Prepare variable declarations for the alternative
             vars = self.collect_vars(node)
-            self.print(f"//    vars: {vars}")
             for v, var_type in sorted(item for item in vars.items() if item[0] is not None):
-
-
                 if not var_type:
-                    var_type = "Object"
+                    var_type = "Object "
                 else:
-                    var_type = _check_type(self, var_type);
+                    var_type += " "
                 if v == "_cut_var":
                     v += " = 0"  # cut_var must be initialized
-                if not is_loop:
-                    self.print(f"{var_type} {v};")
-                else:
-                    self.print("// TODO tmp solution, we need to know how to handle tokens here")
-                    self.print(f"Object {v};")
+                self.print(f"{var_type}{v};")
 
             with self.local_variable_context():
                 if is_loop:
@@ -932,7 +798,17 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 else:
                     self.handle_alt_normal(node, is_gather, rulename)
 
-
+            self.print("reset(_mark);")
+            node_str = str(node).replace('"', '\\"')
+            self.print(
+                f"debugMessageln(\"%d%s {rulename}[%d-%d]: %s failed!\", level,\n"
+                f'                  "-", _mark, mark(), "{node_str}");'
+            )
+            if "_cut_var" in vars:
+                self.print("if (_cut_var != 0) {")
+                with self.indent():
+                    self.add_return("null")
+                self.print("}")
         self.print("}")
 
     def collect_vars(self, node: Alt) -> Dict[Optional[str], Optional[str]]:
@@ -940,20 +816,44 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         with self.local_variable_context():
             for item in node.items:
                 name, type = self.add_var(item)
-                self.print(f"// collecting vars: {type} {name}")
                 types[name] = type
         return types
 
     def add_var(self, node: NamedItem) -> Tuple[Optional[str], Optional[str]]:
         call = self.callmakervisitor.generate_call(node.item)
-        self.print(f"    // generated call: {call}")
-        if not call:
-            return None, None
-
         name = node.name if node.name else call.assigned_variable
         if name is not None:
             name = self.dedupe(name)
-        return_type = call.return_type if node.type is None else node.type
-
-        node.name = name
+        return_type = call.return_type if node.type is None else _check_type(self, node.type)
         return name, return_type
+
+    # Java generator additions
+    def _generate_lookahead_methods(self):
+        self.print()
+        self.print("// lookahead methods generated")
+        for name in self.lookahead_functions:
+            call = self.lookahead_functions[name];
+            if call.argtypes:
+                args = ", ".join(map(lambda e: f"{e[1]} arg{e[0]}", enumerate(call.argtypes)))
+                assert len(call.arguments) == len(call.argtypes)
+                self.print(f"private boolean {name}(boolean match, {args}) {{")
+            else:
+                assert not call.arguments
+                self.print(f"private boolean {name}(boolean match) {{")
+
+            with self.indent():
+                self.print("int tmpPos = mark();")
+                return_type = "Object"
+                if call.return_type:
+                    return_type = call.return_type;
+                else:
+                    return_type = "Object"
+                if call.arguments:
+                    args = ", ".join(map(lambda e: f"arg{e[0]}", enumerate(call.argtypes)))
+                    self.print(f"{return_type} result = {call.function}({args});")
+                else:
+                    self.print(f"{return_type} result = {call.function}();")
+                self.print("reset(tmpPos);")
+                self.print(f"return (result != null) == match;")
+            self.print("}")
+            self.print()

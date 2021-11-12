@@ -27,7 +27,7 @@ public class TokenizerTest {
 
     public TestInfo testInfo;
     
-    private static HashSet<Token.Kind> opTypes = new HashSet();
+    private static HashSet<Integer> opTypes = new HashSet();
 
     {
         opTypes.add(Token.Kind.PERCENT);
@@ -93,7 +93,7 @@ public class TokenizerTest {
 
     }
 
-    private static void assertToken(String code, Token.Kind kind) {
+    private static void assertToken(String code, int kind) {
         assertEquals(kind, new ParserTokenizer(code).getToken().type);
     }
     
@@ -270,127 +270,127 @@ public class TokenizerTest {
 
     }
 
-    private static int getCPythonValueOfTokenType(Token.Kind kind) {
+    private static int getCPythonValueOfTokenType(int kind) {
         switch (kind) {
-            case ENDMARKER:
+            case Token.Kind.ENDMARKER:
                 return 0;
-            case NAME:
+            case Token.Kind.NAME:
                 return 1;
-            case NUMBER:
+            case Token.Kind.NUMBER:
                 return 2;
-            case STRING:
+            case Token.Kind.STRING:
                 return 3;
-            case NEWLINE:
+            case Token.Kind.NEWLINE:
                 return 4;
-            case INDENT:
+            case Token.Kind.INDENT:
                 return 5;
-            case DEDENT:
+            case Token.Kind.DEDENT:
                 return 6;
-            case LPAR:
+            case Token.Kind.LPAR:
                 return 7;
-            case RPAR:
+            case Token.Kind.RPAR:
                 return 8;
-            case LSQB:
+            case Token.Kind.LSQB:
                 return 9;
-            case RSQB:
+            case Token.Kind.RSQB:
                 return 10;
-            case COLON:
+            case Token.Kind.COLON:
                 return 11;
-            case COMMA:
+            case Token.Kind.COMMA:
                 return 12;
-            case SEMI:
+            case Token.Kind.SEMI:
                 return 13;
-            case PLUS:
+            case Token.Kind.PLUS:
                 return 14;
-            case MINUS:
+            case Token.Kind.MINUS:
                 return 15;
-            case STAR:
+            case Token.Kind.STAR:
                 return 16;
-            case SLASH:
+            case Token.Kind.SLASH:
                 return 17;
-            case VBAR:
+            case Token.Kind.VBAR:
                 return 18;
-            case AMPER:
+            case Token.Kind.AMPER:
                 return 19;
-            case LESS:
+            case Token.Kind.LESS:
                 return 20;
-            case GREATER:
+            case Token.Kind.GREATER:
                 return 21;
-            case EQUAL:
+            case Token.Kind.EQUAL:
                 return 22;
-            case DOT:
+            case Token.Kind.DOT:
                 return 23;
-            case PERCENT:
+            case Token.Kind.PERCENT:
                 return 24;
-            case LBRACE:
+            case Token.Kind.LBRACE:
                 return 25;
-            case RBRACE:
+            case Token.Kind.RBRACE:
                 return 26;
-            case EQEQUAL:
+            case Token.Kind.EQEQUAL:
                 return 27;
-            case NOTEQUAL:
+            case Token.Kind.NOTEQUAL:
                 return 28;
-            case LESSEQUAL:
+            case Token.Kind.LESSEQUAL:
                 return 29;
-            case GREATEREQUAL:
+            case Token.Kind.GREATEREQUAL:
                 return 30;
-            case TILDE:
+            case Token.Kind.TILDE:
                 return 31;
-            case CIRCUMFLEX:
+            case Token.Kind.CIRCUMFLEX:
                 return 32;
-            case LEFTSHIFT:
+            case Token.Kind.LEFTSHIFT:
                 return 33;
-            case RIGHTSHIFT:
+            case Token.Kind.RIGHTSHIFT:
                 return 34;
-            case DOUBLESTAR:
+            case Token.Kind.DOUBLESTAR:
                 return 35;
-            case PLUSEQUAL:
+            case Token.Kind.PLUSEQUAL:
                 return 36;
-            case MINEQUAL:
+            case Token.Kind.MINEQUAL:
                 return 37;
-            case STAREQUAL:
+            case Token.Kind.STAREQUAL:
                 return 38;
-            case SLASHEQUAL:
+            case Token.Kind.SLASHEQUAL:
                 return 39;
-            case PERCENTEQUAL:
+            case Token.Kind.PERCENTEQUAL:
                 return 40;
-            case AMPEREQUAL:
+            case Token.Kind.AMPEREQUAL:
                 return 41;
-            case VBAREQUAL:
+            case Token.Kind.VBAREQUAL:
                 return 42;
-            case CIRCUMFLEXEQUAL:
+            case Token.Kind.CIRCUMFLEXEQUAL:
                 return 43;
-            case LEFTSHIFTEQUAL:
+            case Token.Kind.LEFTSHIFTEQUAL:
                 return 44;
-            case RIGHTSHIFTEQUAL:
+            case Token.Kind.RIGHTSHIFTEQUAL:
                 return 45;
-            case DOUBLESTAREQUAL:
+            case Token.Kind.DOUBLESTAREQUAL:
                 return 46;
-            case DOUBLESLASH:
+            case Token.Kind.DOUBLESLASH:
                 return 47;
-            case DOUBLESLASHEQUAL:
+            case Token.Kind.DOUBLESLASHEQUAL:
                 return 48;
-            case AT:
+            case Token.Kind.AT:
                 return 49;
-            case ATEQUAL:
+            case Token.Kind.ATEQUAL:
                 return 50;
-            case RARROW:
+            case Token.Kind.RARROW:
                 return 51;
-            case ELLIPSIS:
+            case Token.Kind.ELLIPSIS:
                 return 52;
-            case COLONEQUAL:
+            case Token.Kind.COLONEQUAL:
                 return 53;
-            case OP:
+            case Token.Kind.OP:
                 return 54;
-            case AWAIT:
+            case Token.Kind.AWAIT:
                 return 55;
-            case ASYNC:
+            case Token.Kind.ASYNC:
                 return 56;
-            case TYPE_IGNORE:
+            case Token.Kind.TYPE_IGNORE:
                 return 57;
-            case TYPE_COMMENT:
+            case Token.Kind.TYPE_COMMENT:
                 return 58;
-            case ERRORTOKEN:
+            case Token.Kind.ERRORTOKEN:
                 return 60;
         }
         return -1;
@@ -437,10 +437,10 @@ public class TokenizerTest {
                 boolean isOP = opTypes.contains(token.type);
                 StringBuffer sb = new StringBuffer();
                 sb.append("Token type:").append(isOP ? getCPythonValueOfTokenType(Token.Kind.OP) : getCPythonValueOfTokenType(token.type));
-                sb.append(" (").append(isOP ? "OP" : token.type.name()).append(") ");
+                sb.append(" (").append(isOP ? "OP" : token.typeName()).append(") ");
                 if (isOP) {
                     sb.append("exact_type:").append(getCPythonValueOfTokenType(token.type));
-                    sb.append(" (").append(token.type.name()).append(") ");
+                    sb.append(" (").append(token.typeName()).append(") ");
                 }
                 sb.append("start:[").append(token.startLine).append(", ").append(token.startColumn).append("] ");
                 sb.append("end:[").append(token.endLine).append(", ").append(token.endColumn).append("] ");

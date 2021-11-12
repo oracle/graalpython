@@ -7,7 +7,7 @@ package toyparser;
 
 import com.oracle.graal.python.pegparser.NodeFactory;
 import java.util.Arrays;
-import com.oracle.graal.python.pegparser.Parser;
+import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.pegparser.ParserTokenizer;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 
@@ -15,7 +15,7 @@ import com.oracle.graal.python.pegparser.tokenizer.Token;
  *
  * @author petr
  */
-public class ToyParser extends Parser {
+public class ToyParser extends AbstractParser {
 
 
 
@@ -59,7 +59,7 @@ public class ToyParser extends Parser {
         if ((term = term()) != null) {
             pos = mark();
             Token token = expect(Token.Kind.PLUS);
-            if (Token.Kind.PLUS != null) {
+            if (token != null) {
                 Node expr;
                 if ((expr = expr()) != null) {
                     return new Node("add", Arrays.asList(new Node[]{term, expr}));
@@ -67,7 +67,7 @@ public class ToyParser extends Parser {
             }
             reset(pos);
             token = expect(Token.Kind.MINUS);
-            if (Token.Kind.PLUS != null) {
+            if (token != null) {
                 Node expr;
                 if ((expr = expr()) != null) {
                     return new Node("sub", Arrays.asList(new Node[]{term, expr}));
@@ -152,6 +152,16 @@ public class ToyParser extends Parser {
         if (token != null) {
             return new Node("target", null);
         }
+        return null;
+    }
+
+    @Override
+    protected Object[][][] getReservedKeywords() {
+        return null;
+    }
+
+    @Override
+    protected String[] getSoftKeywords() {
         return null;
     }
 
