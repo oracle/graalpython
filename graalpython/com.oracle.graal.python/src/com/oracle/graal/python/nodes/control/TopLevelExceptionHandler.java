@@ -47,7 +47,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.BaseExceptionData;
 import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
@@ -250,7 +249,7 @@ public final class TopLevelExceptionHandler extends RootNode {
     }
 
     private static int getExitCode(PBaseException pythonException) throws CannotCastException {
-        final BaseExceptionData data = pythonException.getData();
+        final Object data = pythonException.getData();
         int exitcode = 0;
         if (data instanceof SystemExitBuiltins.SystemExitData) {
             final Object code = ((SystemExitBuiltins.SystemExitData) data).getCode();

@@ -51,15 +51,15 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.SystemExit)
-public class SystemExitBuiltins extends PythonBuiltins {
+public final class SystemExitBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -67,8 +67,12 @@ public class SystemExitBuiltins extends PythonBuiltins {
     }
 
     @CompilerDirectives.ValueType
-    public static class SystemExitData extends BaseExceptionData {
+    public static final class SystemExitData {
         private Object code;
+
+        private SystemExitData() {
+
+        }
 
         public Object getCode() {
             return code;
@@ -77,6 +81,22 @@ public class SystemExitBuiltins extends PythonBuiltins {
         public void setCode(Object code) {
             this.code = code;
         }
+
+        public static SystemExitData create(Object code) {
+            final SystemExitData data = new SystemExitData();
+            data.setCode(code);
+            return data;
+        }
+
+        public static SystemExitData create(PythonObjectFactory factory, Object[] args) {
+            final SystemExitData data = new SystemExitData();
+            if (args.length == 1) {
+                data.setCode(args[0]);
+            } else {
+                data.setCode(factory.createTuple(args));
+            }
+            return data;
+        }
     }
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
@@ -84,14 +104,8 @@ public class SystemExitBuiltins extends PythonBuiltins {
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization
         Object initNoArgs(PBaseException self, Object[] args,
-                                 @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
-            final SystemExitData data = new SystemExitData();
-            if (args.length == 1) {
-                data.setCode(args[0]);
-            } else {
-                data.setCode(factory().createTuple(args));
-            }
-            self.setData(data);
+                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
+            self.setData(SystemExitData.create(factory(), args));
             baseExceptionInitNode.execute(self, args);
             return PNone.NONE;
         }
@@ -102,17 +116,16 @@ public class SystemExitBuiltins extends PythonBuiltins {
     public abstract static class CodeNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
         public Object code(PBaseException self, @SuppressWarnings("unused") PNone none) {
-            return ((SystemExitData)self.getData()).getCode();
+            final Object data = self.getData();
+            assert data instanceof SystemExitData;
+            return ((SystemExitData) data).getCode();
         }
 
         @Specialization(guards = "!isNoValue(value)")
         public Object code(PBaseException self, Object value) {
-            SystemExitData data = (SystemExitData) self.getData();
-            if (data == null) {
-                data = new SystemExitData();
-                self.setData(data);
-            }
-            data.setCode(value);
+            final Object data = self.getData();
+            assert data instanceof SystemExitData;
+            ((SystemExitData) data).setCode(value);
             return PNone.NONE;
         }
     }

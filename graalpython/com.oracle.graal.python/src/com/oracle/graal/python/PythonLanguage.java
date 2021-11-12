@@ -125,6 +125,7 @@ import com.oracle.truffle.api.source.Source.SourceBuilder;
                 DebuggerTags.AlwaysHalt.class
 })
 public final class PythonLanguage extends TruffleLanguage<PythonContext> {
+    public static final String GRAALPYTHON_ID = "graalpython";
     public static final String ID = "python";
     public static final String NAME = "Python";
     public static final String IMPLEMENTATION_NAME = "GraalVM Python";

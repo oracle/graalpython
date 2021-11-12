@@ -89,14 +89,42 @@ public final class PBaseException extends PythonObject {
     private PBaseException context;
     private PBaseException cause;
     private boolean suppressContext = false;
-    // the data instance is used to store additional information for some of the builtin exceptions not unlike subclassing
-    private BaseExceptionData data;
+    // the data instance is used to store additional information for some of the builtin exceptions
+    // not unlike subclassing
+    private Object data;
 
-    public BaseExceptionData getData() {
+    public PBaseException(Object cls, Shape instanceShape, Object data, PTuple args) {
+        super(cls, instanceShape);
+        this.data = data;
+        this.args = args;
+        this.hasMessageFormat = false;
+        this.messageFormat = null;
+        this.messageArgs = null;
+    }
+
+    public PBaseException(Object cls, Shape instanceShape, Object data) {
+        super(cls, instanceShape);
+        this.data = data;
+        this.args = null;
+        this.hasMessageFormat = false;
+        this.messageFormat = null;
+        this.messageArgs = null;
+    }
+
+    public PBaseException(Object cls, Shape instanceShape, Object data, String format, Object[] args) {
+        super(cls, instanceShape);
+        this.data = data;
+        this.args = null;
+        this.hasMessageFormat = true;
+        this.messageFormat = format;
+        this.messageArgs = args;
+    }
+
+    public Object getData() {
         return data;
     }
 
-    public void setData(BaseExceptionData data) {
+    public void setData(Object data) {
         this.data = data;
     }
 
@@ -123,30 +151,6 @@ public final class PBaseException extends PythonObject {
 
     public void setSuppressContext(boolean suppressContext) {
         this.suppressContext = suppressContext;
-    }
-
-    public PBaseException(Object cls, Shape instanceShape, PTuple args) {
-        super(cls, instanceShape);
-        this.args = args;
-        this.hasMessageFormat = false;
-        this.messageFormat = null;
-        this.messageArgs = null;
-    }
-
-    public PBaseException(Object cls, Shape instanceShape) {
-        super(cls, instanceShape);
-        this.args = null;
-        this.hasMessageFormat = false;
-        this.messageFormat = null;
-        this.messageArgs = null;
-    }
-
-    public PBaseException(Object cls, Shape instanceShape, String format, Object[] args) {
-        super(cls, instanceShape);
-        this.args = null;
-        this.hasMessageFormat = true;
-        this.messageFormat = format;
-        this.messageArgs = args;
     }
 
     public PException getException() {

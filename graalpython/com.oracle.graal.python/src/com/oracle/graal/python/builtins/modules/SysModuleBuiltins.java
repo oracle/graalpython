@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.PythonLanguage.GRAALPYTHON_ID;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ImportError;
@@ -105,9 +106,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
-import com.oracle.graal.python.lib.PyFloatCheckExactNode;
-import com.oracle.graal.python.lib.PyLongAsIntNode;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -147,6 +145,9 @@ import com.oracle.graal.python.builtins.objects.traceback.TracebackNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyFloatCheckExactNode;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -370,7 +371,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     protected static PSimpleNamespace makeImplementation(PythonObjectFactory factory, PTuple versionInfo, String gmultiarch) {
         final PSimpleNamespace ns = factory.createSimpleNamespace();
-        ns.setAttribute("name", "graalpython");
+        ns.setAttribute("name", GRAALPYTHON_ID);
         ns.setAttribute("cache_tag", "graalpython-" + PythonLanguage.MAJOR + PythonLanguage.MINOR);
         ns.setAttribute("version", versionInfo);
         ns.setAttribute("_multiarch", gmultiarch);
@@ -469,7 +470,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("ps2", "... ");
         // CPython builds for distros report empty strings too, because they are built from
         // tarballs, not git
-        builtinConstants.put("_git", factory.createTuple(new Object[]{"graalpython", "", ""}));
+        builtinConstants.put("_git", factory.createTuple(new Object[]{GRAALPYTHON_ID, "", ""}));
 
         super.initialize(core);
 
@@ -1562,14 +1563,14 @@ public class SysModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = EXIT, declaresExplicitSelf = true, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, doc = "exit($module, status=None, /)\n" +
-            "--\n" +
-            "\n" +
-            "Exit the interpreter by raising SystemExit(status).\n" +
-            "\n" +
-            "If the status is omitted or None, it defaults to zero (i.e., success).\n" +
-            "If the status is an integer, it will be used as the system exit status.\n" +
-            "If it is another kind of object, it will be printed and the system\n" +
-            "exit status will be one (i.e., failure).")
+                    "--\n" +
+                    "\n" +
+                    "Exit the interpreter by raising SystemExit(status).\n" +
+                    "\n" +
+                    "If the status is omitted or None, it defaults to zero (i.e., success).\n" +
+                    "If the status is an integer, it will be used as the system exit status.\n" +
+                    "If it is another kind of object, it will be printed and the system\n" +
+                    "exit status will be one (i.e., failure).")
     @GenerateNodeFactory
     abstract static class ExitNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "!isPNone(status)")
