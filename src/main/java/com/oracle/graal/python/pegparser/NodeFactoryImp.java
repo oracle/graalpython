@@ -51,7 +51,6 @@ import com.oracle.graal.python.pegparser.sst.BooleanLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StringLiteralSSTNode;
-import com.oracle.graal.python.pegparser.sst.StringLiteralSSTNode.RawStringLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.UnarySSTNode;
 import com.oracle.graal.python.pegparser.sst.UntypedSSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
