@@ -37,6 +37,8 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.nio.file.LinkOption;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -418,6 +420,9 @@ public final class PythonContext extends Python3Core {
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
     private final IDUtils idUtils = new IDUtils();
+
+    // Equivalent of _Py_HashSecret
+    @CompilationFinal(dimensions = 1) private byte[] hashSecret = new byte[24];
 
     // ctypes' used native libraries/functions.
     private final ConcurrentHashMap<Long, Object> ptrAdrMap = new ConcurrentHashMap<>();
@@ -1074,6 +1079,11 @@ public final class PythonContext extends Python3Core {
         return perfCounterStart;
     }
 
+    public byte[] getHashSecret() {
+        assert !ImageInfo.inImageBuildtimeCode();
+        return hashSecret;
+    }
+
     public boolean isInitialized() {
         if (PythonUtils.ASSERTIONS_ENABLED && isInitializedNonCompilationFinal != isInitialized) {
             // We cannot use normal assertion, because those are removed in compilation
@@ -1229,6 +1239,9 @@ public final class PythonContext extends Python3Core {
     }
 
     private void setupRuntimeInformation(boolean isPatching) {
+        if (!ImageInfo.inImageBuildtimeCode()) {
+            initializeHashSecret();
+        }
         nativeZlib = NFIZlibSupport.createNative(this, "");
         nativeBz2lib = NFIBz2Support.createNative(this, "");
         nativeLZMA = NFILZMASupport.createNative(this, "");
@@ -1253,6 +1266,38 @@ public final class PythonContext extends Python3Core {
         applyToAllThreadStates(ts -> ts.currentException = null);
         isInitialized = true;
         isInitializedNonCompilationFinal = true;
+    }
+
+    private void initializeHashSecret() {
+        String hashSeed = getOption(PythonOptions.HashSeed);
+        if (hashSeed.equals("random")) {
+            try {
+                SecureRandom.getInstance("NativePRNGNonBlocking").nextBytes(hashSecret);
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException("Unable to obtain entropy source for hash randomization (NativePRNGNonBlocking)");
+            }
+        } else {
+            try {
+                long hashSeedValue = Long.parseLong(hashSeed);
+                if (hashSeedValue < 0 || hashSeedValue > 4294967295L) {
+                    throw new NumberFormatException();
+                }
+                // 0 disables the option, leaving the secret at 0
+                if (hashSeedValue != 0) {
+                    // Generate the whole secret from the seed number the same way as CPython
+                    // Taken from bootstrap_hash.c:lcg_urandom
+                    int x = (int) hashSeedValue;
+                    for (int i = 0; i < hashSecret.length; i++) {
+                        x *= 214013;
+                        x += 2531011;
+                        /* modulo 2 ^ (8 * sizeof(int)) */
+                        hashSecret[i] = (byte) ((x >>> 16) & 0xff);
+                    }
+                }
+            } catch (NumberFormatException e) {
+                throw new RuntimeException("PYTHONHASHSEED must be \"random\" or an integer in range [0; 4294967295]");
+            }
+        }
     }
 
     private void initializePosixSupport() {

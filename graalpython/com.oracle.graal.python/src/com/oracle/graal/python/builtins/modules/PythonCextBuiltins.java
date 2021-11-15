@@ -1453,6 +1453,26 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyTruffleHash_InitSecret", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffleHashGetSecret extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object get(Object secretPtr) {
+            try {
+                InteropLibrary lib = InteropLibrary.getUncached(secretPtr);
+                byte[] secret = getContext().getHashSecret();
+                int len = (int) lib.getArraySize(secretPtr);
+                for (int i = 0; i < len; i++) {
+                    lib.writeArrayElement(secretPtr, i, secret[i]);
+                }
+                return 0;
+            } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+    }
+
     @Builtin(name = "PyTruffleFrame_New", minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class PyTruffleFrameNewNode extends PythonBuiltinNode {

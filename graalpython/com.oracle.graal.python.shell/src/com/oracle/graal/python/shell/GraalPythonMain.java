@@ -532,6 +532,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             unbufferedIO = unbufferedIO || System.getenv("PYTHONUNBUFFERED") != null;
             dontWriteBytecode = dontWriteBytecode || System.getenv("PYTHONDONTWRITEBYTECODE") != null;
 
+            String hashSeed = System.getenv("PYTHONHASHSEED");
+            if (hashSeed != null) {
+                contextBuilder.option("python.HashSeed", hashSeed);
+            }
+
             String envWarnOptions = System.getenv("PYTHONWARNINGS");
             if (envWarnOptions != null && !envWarnOptions.isEmpty()) {
                 if (warnOptions == null) {
