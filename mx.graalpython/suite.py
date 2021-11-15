@@ -123,8 +123,7 @@ suite = {
         },
         "EXPAT": {
             "urls": [
-                # TODO upload
-                "https://github.com/libexpat/libexpat/releases/download/R_2_2_8/expat-2.2.8.tar.gz",
+                "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/graalpython/expat-2.2.8.tar.gz",
             ],
             "packedResource": True,
             "sha1": "2097c111a23d0583cc8ea42f99ebfe7e29aeba92",
