@@ -80,6 +80,7 @@
 *graalpython.lib-python.3.test.test_csv.TestUnicode.test_unicode_read
 *graalpython.lib-python.3.test.test_csv.TestUnicode.test_unicode_write
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_bigfield
+*graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_eof
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_eol
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_escape
 *graalpython.lib-python.3.test.test_csv.Test_Csv.test_read_linenum

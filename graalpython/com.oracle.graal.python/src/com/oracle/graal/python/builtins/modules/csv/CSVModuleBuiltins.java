@@ -13,6 +13,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -20,6 +21,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -27,6 +29,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -73,12 +76,12 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             try {
                 name = nameNode.execute(nameObj);
             } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.MUST_BE_STRING, "dialect name");
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_STRING, "dialect name");
             }
 
-            PythonModule module = getCore().lookupBuiltinModule("_csv");
             Object result = callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, keywords);
 
+            PythonModule module = getCore().lookupBuiltinModule("_csv");
             Object dialects = readNode.execute(module, "_dialects");
 
             // TODO: Write PyDictSetItem Node?
@@ -157,6 +160,29 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "reader", doc = READER_DOC, parameterNames = {"csvfile", "dialect"}, minNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class CSVReaderNode extends PythonBuiltinNode {
+        @Specialization
+        Object createReader(VirtualFrame frame, Object csvfile, Object dialectObj, PKeyword[] kwargs,
+                            @Cached PythonObjectFactory pythonObjectFactory,
+                            @Cached PyObjectGetIter getIter,
+                            @Cached CSVModuleBuiltins.CSVCallDialectNode callDialect) {
+
+            CSVReader reader = pythonObjectFactory.createCSVReader(PythonBuiltinClassType.CSVReader);
+
+            reader.fieldSize = 0;
+            reader.lineNum = 0;
+
+            reader.parseReset();
+
+            reader.inputIter = getIter.execute(frame, csvfile);
+            reader.dialect = (CSVDialect) callDialect.execute(frame, dialectObj, kwargs);
+
+            return reader;
+        }
+    }
+
     @Builtin(name = "field_size_limit", parameterNames = {"limit"}, doc = "Sets an upper limit on parsed fields.\n" +
             "csv.field_size_limit([limit])\n\n" +
             "Returns old limit. If limit is not given, no new limit is set and\n" +
@@ -179,6 +205,22 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             }
 
             return oldLimit;
+        }
+    }
+
+    @Builtin(name = "_call_dialect", isPublic = false, parameterNames = {"dialect_inst", "kwargs"}, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class CSVCallDialectNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object callDialectWithKeywordsPDict(VirtualFrame frame, Object dialectObj, PDict keywords,
+                           @Cached CallNode callNode) {
+            return callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, ((KeywordsStorage) keywords.getDictStorage()).getStore());
+        }
+
+        @Specialization
+        Object callDialectWithKeywordsArray(VirtualFrame frame, Object dialectObj, PKeyword[] keywords,
+                           @Cached CallNode callNode) {
+            return callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, keywords);
         }
     }
 
@@ -238,5 +280,20 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         "        True, two consecutive quotes are interpreted as one during read,\n" +
         "        and when writing, each quote character embedded in the data is\n" +
         "        written as two quotes\n";
+
+    private static final String READER_DOC = "\n" +
+            "csv_reader = reader(iterable [, dialect='excel']\n" +
+            "                    [optional keyword args])\n" +
+            "for row in csv_reader:\n" +
+            "process(row)\n" +
+            "\n" +
+            "The \"iterable\" argument can be any object that returns a line\n" +
+            "of input for each iteration, such as a file object or a list.  The\n" +
+            "optional \"dialect\" parameter is discussed below.  The function\n" +
+            "also accepts optional keyword arguments which override settings\n" +
+            "provided by the dialect.\n" +
+            "\n" +
+            "The returned object is an iterator.  Each iteration returns a row\n" +
+            "of the CSV file (which can span multiple input lines)";
 
 }

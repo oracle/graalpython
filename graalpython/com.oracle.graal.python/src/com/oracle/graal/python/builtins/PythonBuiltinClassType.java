@@ -224,6 +224,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     // csv
     CSVDialect("Dialect", "_csv", Flags.PUBLIC_BASE_WODICT),
+    CSVReader("Reader", "_csv", Flags.PUBLIC_BASE_WODICT),
 
     // _ast (rest of the classes are not builtin, they are generated in AstModuleBuiltins)
     AST("AST", "_ast", Flags.PUBLIC_BASE_WDICT),

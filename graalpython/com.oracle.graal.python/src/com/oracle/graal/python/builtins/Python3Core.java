@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins;
@@ -537,6 +538,7 @@ public final class Python3Core implements ParserErrorCallback {
 
                         // csv
                         new CSVDialectBuiltins(),
+                        new CSVReaderBuiltins(),
 
                         // _ast
                         new AstBuiltins(),

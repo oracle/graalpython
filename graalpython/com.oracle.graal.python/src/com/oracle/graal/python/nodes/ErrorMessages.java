@@ -978,6 +978,13 @@ public abstract class ErrorMessages {
     public static final String QUOTECHAR_MUST_BE_SET_IF_QUOTING_ENABLED = "quotechar must be set if quoting enabled";
     public static final String LINETERMINATOR_MUST_BE_SET = "lineterminator must be set";
     public static final String BAD_QUOTING_VALUE = "bad \"quoting\" value";
+    public static final String S_EXPECTED_AFTER_S = "'%s' expected after '%s'";
+    public static final String NEWLINE_IN_UNQOUTED_FIELD = "new-line character seen in unquoted field - do you need to open the file in universal-newline mode?";
+    public static final String LARGER_THAN_FIELD_SIZE_LIMIT = "field larger than field limit (%d)";
+    public static final String UNEXPECTED_END_OF_DATA = "unexpected end of data";
+    public static final String WRONG_ITERATOR_RETURN_TYPE = "iterator should return strings, not %.200s (the file should be opened in text mode)";
+    public static final String LINE_CONTAINS_NULL_BYTE = "line contains NUL";
+
 
     // warnings
     public static final String WARN_P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +

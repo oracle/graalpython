@@ -40,10 +40,6 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -64,6 +60,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
+
 /**
  * Equivalent of CPython's {@code PyNumber_Float}. Converts the argument to a Java {@code double}
  * using its {@code __float__} special method. If not available, falls back to {@code __index__}
@@ -75,6 +75,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyNumberFloatNode extends PNodeWithContext {
     public abstract double execute(Frame frame, Object object);
+
+    public final double execute(Object object) {
+        return execute(null, object);
+    }
 
     @Specialization
     static double doDouble(double object) {
@@ -134,4 +138,9 @@ public abstract class PyNumberFloatNode extends PNodeWithContext {
     public static PyNumberFloatNode create() {
         return PyNumberFloatNodeGen.create();
     }
+
+    public static PyNumberFloatNode getUncached() {
+        return PyNumberFloatNodeGen.getUncached();
+    }
+
 }
