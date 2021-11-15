@@ -36,8 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-
+import glob
 import sys
 import os
 import shutil
@@ -348,6 +347,9 @@ class ExpatDependency(CAPIDependency):
         ]
         system(' '.join(cmake_args), msg="Could not configure expat")
         system(f"make -C '{src_path}' install", msg="Could not build expat")
+        # Touch the headers to avoid mx thinking it has to rebuild the C API every time
+        for f in glob.glob(f"{os.path.abspath(self.include_install_dir)}/expat*.h"):
+            os.utime(f)
         return self.lib_install_dir
 
     def install(self, build_dir=None):
