@@ -544,7 +544,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @TruffleBoundary
     public void initStd(Python3Core core) {
         TextIOWrapperInitNode textIOWrapperInitNode = TextIOWrapperInitNodeGen.getUncached();
-        PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        PythonObjectFactory factory = core.factory();
 
         // wrap std in/out/err
         GraalPythonModuleBuiltins gp = (GraalPythonModuleBuiltins) core.lookupBuiltinModule("__graalpython__").getBuiltins();
@@ -557,17 +557,17 @@ public class SysModuleBuiltins extends PythonBuiltins {
         PBuffered reader = factory.createBufferedReader(PythonBuiltinClassType.PBufferedReader);
         BufferedReaderBuiltins.BufferedReaderInit.internalInit(reader, (PFileIO) get(builtinConstants, "stdin"), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
                         posixLib);
-        setWrapper("stdin", "__stdin__", "r", stdioEncoding, stdioError, reader, sysModule, textIOWrapperInitNode, core.factory());
+        setWrapper("stdin", "__stdin__", "r", stdioEncoding, stdioError, reader, sysModule, textIOWrapperInitNode, factory);
 
         PBuffered writer = factory.createBufferedWriter(PythonBuiltinClassType.PBufferedWriter);
         BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, (PFileIO) get(builtinConstants, "stdout"), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
                         posixLib);
-        PTextIO stdout = setWrapper("stdout", "__stdout__", "w", stdioEncoding, stdioError, writer, sysModule, textIOWrapperInitNode, core.factory());
+        PTextIO stdout = setWrapper("stdout", "__stdout__", "w", stdioEncoding, stdioError, writer, sysModule, textIOWrapperInitNode, factory);
 
         writer = factory.createBufferedWriter(PythonBuiltinClassType.PBufferedWriter);
         BufferedWriterBuiltins.BufferedWriterInit.internalInit(writer, (PFileIO) get(builtinConstants, "stderr"), BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, factory, posixSupport,
                         posixLib);
-        PTextIO stderr = setWrapper("stderr", "__stderr__", "w", stdioEncoding, "backslashreplace", writer, sysModule, textIOWrapperInitNode, core.factory());
+        PTextIO stderr = setWrapper("stderr", "__stderr__", "w", stdioEncoding, "backslashreplace", writer, sysModule, textIOWrapperInitNode, factory);
 
         // register atexit close std out/err
         core.getContext().registerAtexitHook((ctx) -> {

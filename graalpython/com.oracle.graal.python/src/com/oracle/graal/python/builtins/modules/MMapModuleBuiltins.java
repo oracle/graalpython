@@ -55,14 +55,19 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MMapModuleBuiltinsClinicProviders.MMapNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -87,6 +92,8 @@ public class MMapModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("ACCESS_WRITE", PMMap.ACCESS_WRITE);
         builtinConstants.put("ACCESS_COPY", PMMap.ACCESS_COPY);
 
+        builtinConstants.put("PAGESIZE", 4096);
+
         for (PosixConstants.IntConstant c : PosixConstants.mmapFlags) {
             if (c.defined) {
                 builtinConstants.put(c.name, c.getValueIfDefined());
@@ -98,6 +105,16 @@ public class MMapModuleBuiltins extends PythonBuiltins {
                 builtinConstants.put(c.name, c.getValueIfDefined());
             }
         }
+    }
+
+    @Override
+    public void postInitialize(Python3Core core) {
+        super.postInitialize(core);
+        core.getContext().registerCApiHook(() -> {
+            PythonModule mmap = (PythonModule) AbstractImportNode.importModule("_mmap");
+            Object innitBufferCallable = PyObjectLookupAttr.getUncached().execute(null, mmap, "init_bufferprotocol");
+            CallUnaryMethodNode.getUncached().executeObject(innitBufferCallable, PythonBuiltinClassType.PMMap);
+        });
     }
 
     @Builtin(name = "mmap", minNumOfPositionalArgs = 3, parameterNames = {"cls", "fd", "length", "flags", "prot", "access", "offset"}, constructsClass = PythonBuiltinClassType.PMMap)

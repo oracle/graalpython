@@ -63,6 +63,7 @@ import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -95,6 +96,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
@@ -138,6 +140,8 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.llvm.api.Toolchain;
 
 public final class PythonContext extends Python3Core {
+    private static final String INITIALIZE_DATETIME_CAPI = "initialize_datetime_capi";
+
     private static final Source IMPORT_WARNINGS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import warnings\n", "<internal>").internal(true).build();
     private static final Source FORCE_IMPORTS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import site\n", "<internal>").internal(true).build();
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
@@ -410,6 +414,7 @@ public final class PythonContext extends Python3Core {
     private PythonModule mainModule;
     private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
     private final List<AtExitHook> atExitHooks = new ArrayList<>();
+    private final List<Runnable> capiHooks = new ArrayList<>();
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
     private final IDUtils idUtils = new IDUtils();
@@ -1488,6 +1493,14 @@ public final class PythonContext extends Python3Core {
         atExitHooks.clear();
     }
 
+    public void registerCApiHook(Runnable hook) {
+        if (hasCApiContext()) {
+            hook.run();
+        } else {
+            capiHooks.add(hook);
+        }
+    }
+
     @TruffleBoundary
     @SuppressWarnings("try")
     public void finalizeContext() {
@@ -1977,6 +1990,16 @@ public final class PythonContext extends Python3Core {
     public void setCapiWasLoaded(CApiContext capiContext) {
         assert this.cApiContext == null : "tried to create new C API context but it was already created";
         this.cApiContext = capiContext;
+
+        ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
+        PythonModule builtinModule = lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
+        CallUnaryMethodNode callNode = CallUnaryMethodNode.getUncached();
+        callNode.executeObject(null, readNode.execute(builtinModule, INITIALIZE_DATETIME_CAPI), capiContext.getLLVMLibrary());
+
+        for (Runnable capiHook : capiHooks) {
+            capiHook.run();
+        }
+        capiHooks.clear();
     }
 
     public boolean hasHPyContext() {
