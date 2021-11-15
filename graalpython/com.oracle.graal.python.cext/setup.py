@@ -339,17 +339,22 @@ class ExpatDependency(CAPIDependency):
         src_path = os.path.join(extracted_dir, self.package_name + "-" + self.version)
 
         cmake_args = [
-            f"cmake -S '{src_path}' -B '{src_path}'",
+            "cmake",
+            "--log-level=ERROR",
             f"-DCMAKE_C_COMPILER='{get_config_var('CC')}'",
-            f"-DCMAKE_INSTALL_PREFIX='{src_path}/install'",
-            f"-DCMAKE_INSTALL_LIBDIR='{os.path.abspath(self.lib_install_dir)}'",
-            f"-DCMAKE_INSTALL_INCLUDEDIR='{os.path.abspath(self.include_install_dir)}'",
+            "-DEXPAT_BUILD_TOOLS=OFF",
+            "-DEXPAT_BUILD_EXAMPLES=OFF",
+            "-DEXPAT_BUILD_TESTS=OFF",
+            f"-S '{src_path}'",
+            f"-B '{src_path}'",
         ]
         system(' '.join(cmake_args), msg="Could not configure expat")
-        system(f"make -C '{src_path}' install", msg="Could not build expat")
-        # Touch the headers to avoid mx thinking it has to rebuild the C API every time
-        for f in glob.glob(f"{os.path.abspath(self.include_install_dir)}/expat*.h"):
-            os.utime(f)
+        system(f"make -C '{src_path}'", msg="Could not build expat")
+        # Install manually to avoid pulling in unnecessary files
+        for f in glob.glob(f"{src_path}/*.so*"):
+            shutil.copy(f, self.lib_install_dir, follow_symlinks=False)
+        for f in [f"{src_path}/lib/expat.h", f"{src_path}/lib/expat_external.h"]:
+            shutil.copy(f, self.include_install_dir)
         return self.lib_install_dir
 
     def install(self, build_dir=None):
