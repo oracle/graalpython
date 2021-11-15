@@ -5413,7 +5413,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d open_sequence_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "maybe_star_pattern ',' maybe_sequence_pattern?");
-                _res = this.insertInFront(value,values);
+                _res = this.insertInFront(value,(SSTNode[])values);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "maybe_star_pattern ',' maybe_sequence_pattern?");
                 cache.putResult(_mark, OPEN_SEQUENCE_PATTERN_ID, _res);
                 level--;
@@ -22852,7 +22852,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_157[%d-%d]: %s succeeded!", level, _mark, mark(), "star_named_expression ',' star_named_expressions?");
-                _res = this.insertInFront(y,z);
+                _res = this.insertInFront(y,(SSTNode[])z);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_named_expression ',' star_named_expressions?");
                 cache.putResult(_mark, _TMP_157_ID, _res);
                 level--;
