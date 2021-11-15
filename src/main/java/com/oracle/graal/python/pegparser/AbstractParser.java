@@ -54,7 +54,7 @@ import java.util.Map;
  * defined in CPython's {@code pegen.c}. This allows us to keep the actions and
  * parser generator very similar to CPython for easier updating in the future.
  */
-public abstract class AbstractParser {
+abstract class AbstractParser {
     private final ParserTokenizer tokenizer;
     private final ParserErrorCallback errorCb;
     private final FExprParser fexprParser;
