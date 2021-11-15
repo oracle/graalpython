@@ -44,6 +44,7 @@ import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.UntypedSSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -279,16 +280,30 @@ abstract class AbstractParser {
         return cachedDummyName;
     }
 
-    public Object[] insertInFront(Object element, Object[] seq) {
-        Object[] result = new Object[seq.length + 1];
-        System.arraycopy(seq, 0, result, 1, seq.length);
+    @SuppressWarnings("unchecked")
+    public <T> T[] insertInFront(T element, T[] seq) {
+        T[] result;
+        if (seq == null) {
+            result = (T[])Array.newInstance(element.getClass(), 1);
+        } else {
+            result = (T[])Array.newInstance(element.getClass(), seq.length + 1);
+            System.arraycopy(seq, 0, result, 1, seq.length);
+        }
         result[0] = element;
         return result;
     }
 
-    public Object[] appendToEnd(Object[] seq, Object element) {
-        Object[] result = Arrays.copyOf(seq, seq.length + 1);
-        result[seq.length] = element;
+    @SuppressWarnings("unchecked")
+    public <T> T[] appendToEnd(T[] seq, T element) {
+        T[] result;
+        if (seq == null) {
+            result = (T[])Array.newInstance(element.getClass(), 1);
+            result[0] = element;
+        } else {
+            result = Arrays.copyOf(seq, seq.length + 1);
+            System.arraycopy(seq, 0, result, 1, seq.length);
+            result[seq.length] = element;
+        }
         return result;
     }
 
