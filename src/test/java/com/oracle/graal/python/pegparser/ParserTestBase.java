@@ -42,6 +42,7 @@ package com.oracle.graal.python.pegparser;
 
 import com.oracle.graal.python.pegparser.sst.SSTTreePrinterVisitor;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 import java.io.File;
@@ -54,7 +55,9 @@ import java.util.List;
 
 
 import com.oracle.graal.python.pegparser.sst.SSTNode;
+import java.util.ArrayList;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 
@@ -100,7 +103,21 @@ public class ParserTestBase {
     public SSTNode parse(String src, String moduleName, int mode) {
 
         ParserTokenizer tokenizer = new ParserTokenizer(src);
-        Parser parser = new Parser(tokenizer, new NodeFactoryImp());
+        NodeFactory factory = new NodeFactoryImp();
+        ParserErrorCallback errorCb = new ParserErrorCallback() {
+            @Override
+            public void onError(ParserErrorCallback.ErrorType type, int start, int end, String message) {
+                System.err.println(String.format("TODO: %s[%d:%d]: %s", type.name(), start, end, message));
+            }
+        };
+        FExprParser fexpParser = new FExprParser() {
+            @Override
+            public SSTNode parse(String code) {
+                ParserTokenizer tok = new ParserTokenizer(code);
+                return new Parser(tok, factory, this, errorCb).fstring_rule();
+            }
+        };
+        Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
         SSTNode result = parser.file_rule();
 
 //        lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();
@@ -251,6 +268,28 @@ public class ParserTestBase {
 
         }
         assertDescriptionMatches(tree, goldenFile);
+    }
+
+    public void checkError(String source, String... expectedErrors) {
+        ParserTokenizer tokenizer = new ParserTokenizer(source);
+        NodeFactory factory = new NodeFactoryImp();
+        ArrayList<String> errors = new ArrayList<>();
+        ParserErrorCallback errorCb = new ParserErrorCallback() {
+            @Override
+            public void onError(ParserErrorCallback.ErrorType type, int start, int end, String message) {
+                errors.add(String.format("%s[%d:%d]:%s", type.name(), start, end, message));
+            }
+        };
+        FExprParser fexpParser = new FExprParser() {
+            @Override
+            public SSTNode parse(String code) {
+                ParserTokenizer tok = new ParserTokenizer(code);
+                return new Parser(tok, factory, this, errorCb).fstring_rule();
+            }
+        };
+        Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
+        parser.file_rule();
+        assertEquals(Arrays.asList(expectedErrors), errors);
     }
 
 //    public void checkTreeResult(String source, PythonParser.ParserMode mode) throws Exception {

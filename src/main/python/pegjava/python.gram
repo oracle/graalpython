@@ -80,13 +80,6 @@ import java.util.stream.Stream;
     }
 '''
 
-@parser_constructor '''
-    public %s(ParserTokenizer tokenizer, NodeFactory factory) {
-        super(tokenizer, factory);
-        cache = new RuleResultCache(this);
-    }
-'''
-
 @trailer '''
 void *
 _PyPegen_parse(Parser *p)
@@ -383,7 +376,7 @@ sequence_pattern[SSTNode]: # originally return type expr_ty
     | '(' values=open_sequence_pattern? ')' { _PyAST_Tuple(values, Load, EXTRA) }
 open_sequence_pattern[asdl_seq*]:
     | value=maybe_star_pattern ',' values=maybe_sequence_pattern? {
-        this.insertInFront(value, values) }
+        this.insertInFront(value, (SSTNode[])values) }
 maybe_sequence_pattern[asdl_seq*]:
     | values=','.maybe_star_pattern+ ','? { values }
 maybe_star_pattern[SSTNode]: # originally return type expr_ty
@@ -720,14 +713,14 @@ atom[SSTNode]: # originally return type expr_ty
     | &'{' (dict | set | dictcomp | setcomp)
     | '...' { _PyAST_Constant(Py_Ellipsis, NULL, EXTRA) }
 
-strings[SSTNode] (memo): a=STRING+ { _PyPegen_concatenate_strings(p, a) } # originally return type expr_ty
+strings[SSTNode] (memo): a=STRING+ { this.concatenateStrings(a) }
 list[SSTNode]: # originally return type expr_ty
     | '[' a=[star_named_expressions] ']' { _PyAST_List(a, Load, EXTRA) }
 listcomp[SSTNode]: # originally return type expr_ty
     | '[' a=named_expression b=for_if_clauses ']' { _PyAST_ListComp(a, b, EXTRA) }
     | invalid_comprehension
 tuple[SSTNode]: # originally return type expr_ty
-    | '(' a=[y=star_named_expression ',' z=[star_named_expressions] { this.insertInFront(y, z) } ] ')' {
+    | '(' a=[y=star_named_expression ',' z=[star_named_expressions] { this.insertInFront(y, (SSTNode[])z) } ] ')' {
         _PyAST_Tuple(a, Load, EXTRA) }
 group[SSTNode]: # originally return type expr_ty
     | '(' a=(yield_expr | named_expression) ')' { a }

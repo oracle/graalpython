@@ -786,8 +786,8 @@ public final class Parser extends AbstractParser {
     private static final int _TMP_253_ID = 1458;
     private static final int _TMP_254_ID = 1459;
 
-    public Parser(ParserTokenizer tokenizer, NodeFactory factory) {
-        super(tokenizer, factory);
+    public Parser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ParserErrorCallback errorCb) {
+        super(tokenizer, factory, fexprParser, errorCb);
     }
 
     // file: statements? $
@@ -5413,9 +5413,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d open_sequence_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "maybe_star_pattern ',' maybe_sequence_pattern?");
-                // TODO: node.action: this . insertInFront ( value , values )
-                debugMessageln("[33;5;7m!!! TODO: Convert this . insertInFront ( value , values ) to Java !!![0m");
-                _res = null;
+                _res = this.insertInFront(value,(SSTNode[])values);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "maybe_star_pattern ',' maybe_sequence_pattern?");
                 cache.putResult(_mark, OPEN_SEQUENCE_PATTERN_ID, _res);
                 level--;
@@ -11322,9 +11320,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d strings[%d-%d]: %s succeeded!", level, _mark, mark(), "STRING+");
-                // TODO: node.action: _PyPegen_concatenate_strings ( p , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_concatenate_strings ( p , a ) to Java !!![0m");
-                _res = null;
+                _res = this.concatenateStrings(a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "STRING+");
                 cache.putResult(_mark, STRINGS_ID, _res);
                 level--;
@@ -14962,9 +14958,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d invalid_parameters_helper[%d-%d]: %s succeeded!", level, _mark, mark(), "slash_with_default");
-                // TODO: node.action: this . singletonSequence ( a )
-                debugMessageln("[33;5;7m!!! TODO: Convert this . singletonSequence ( a ) to Java !!![0m");
-                _res = null;
+                _res = this.singletonSequence(a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "slash_with_default");
                 cache.putResult(_mark, INVALID_PARAMETERS_HELPER_ID, _res);
                 level--;
@@ -15069,9 +15063,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d invalid_lambda_parameters_helper[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_slash_with_default");
-                // TODO: node.action: this . singletonSequence ( a )
-                debugMessageln("[33;5;7m!!! TODO: Convert this . singletonSequence ( a ) to Java !!![0m");
-                _res = null;
+                _res = this.singletonSequence(a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_slash_with_default");
                 cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID, _res);
                 level--;
@@ -22860,9 +22852,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_157[%d-%d]: %s succeeded!", level, _mark, mark(), "star_named_expression ',' star_named_expressions?");
-                // TODO: node.action: this . insertInFront ( y , z )
-                debugMessageln("[33;5;7m!!! TODO: Convert this . insertInFront ( y , z ) to Java !!![0m");
-                _res = null;
+                _res = this.insertInFront(y,(SSTNode[])z);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_named_expression ',' star_named_expressions?");
                 cache.putResult(_mark, _TMP_157_ID, _res);
                 level--;

@@ -41,6 +41,7 @@
 package com.oracle.graal.python.pegparser;
 
 import com.oracle.graal.python.pegparser.sst.SSTNode;
+import com.oracle.graal.python.pegparser.sst.UntypedSSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import java.util.Arrays;
@@ -53,8 +54,10 @@ import java.util.Map;
  * defined in CPython's {@code pegen.c}. This allows us to keep the actions and
  * parser generator very similar to CPython for easier updating in the future.
  */
-public abstract class AbstractParser {
+abstract class AbstractParser {
     private final ParserTokenizer tokenizer;
+    private final ParserErrorCallback errorCb;
+    private final FExprParser fexprParser;
     protected final NodeFactory factory;
 
     protected int level = 0;
@@ -70,9 +73,11 @@ public abstract class AbstractParser {
     protected abstract Object[][][] getReservedKeywords();
     protected abstract String[] getSoftKeywords();
 
-    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory) {
+    public AbstractParser(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ParserErrorCallback errorCb) {
         this.tokenizer = tokenizer;
         this.factory = factory;
+        this.fexprParser = fexprParser;
+        this.errorCb = errorCb;
         this.reservedKeywords = getReservedKeywords();
         this.softKeywords = getSoftKeywords();
     }
@@ -213,17 +218,17 @@ public abstract class AbstractParser {
     }
 
     /**
-     * IMPORTANT! _PyPegen_string_token returns (through void*) a Token*. But
-     * that's actually only used in rules that then create a proper string out
-     * of multiple tokens. So we'll adapt those and return a string constant
-     * node here.
+     * IMPORTANT! _PyPegen_string_token returns (through void*) a Token*. We are
+     * trying to be type safe, so we create a container.
      */
     public SSTNode string_token() {
+        int pos = mark();
         Token t = expect(Token.Kind.STRING);
         if (t == null) {
             return null;
         }
-        return factory.createString(getText(t), t.startOffset, t.endOffset);
+        assert tokenizer.peekToken(pos) == t : ("token at " + pos + " is not equal to " + t);
+        return factory.createUntyped(pos);
     }
 
     public SSTNode number_token() {
@@ -289,6 +294,20 @@ public abstract class AbstractParser {
 
     public Object[] singletonSequence(Object element) {
         return new Object[]{element};
+    }
+
+    public SSTNode concatenateStrings(SSTNode[] tokens) {
+        int n = tokens.length;
+        String[] values = new String[n];
+        Token t = tokenizer.peekToken(((UntypedSSTNode)tokens[0]).getTokenPosition());
+        int startOffset = t.startOffset;
+        values[0] = getText(t);
+        for (int i = 1; i < n; i++) {
+            t = tokenizer.peekToken(((UntypedSSTNode)tokens[i]).getTokenPosition());
+            values[i] = getText(t);
+        }
+        int endOffset = t.endOffset;
+        return factory.createString(values, startOffset, endOffset, fexprParser, errorCb);
     }
 
     /**
