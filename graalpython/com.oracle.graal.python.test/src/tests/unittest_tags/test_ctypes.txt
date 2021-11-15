@@ -1,6 +1,7 @@
 *ctypes.test.test_anon.AnonTest.test_anon_nonmember
 *ctypes.test.test_anon.AnonTest.test_anon_nonseq
 *ctypes.test.test_anon.AnonTest.test_issue31490
+*ctypes.test.test_array_in_pointer.Test.test_2
 *ctypes.test.test_arrays.ArrayTestCase.test_bpo36504_signed_int_overflow
 *ctypes.test.test_arrays.ArrayTestCase.test_cache
 *ctypes.test.test_arrays.ArrayTestCase.test_classcache
@@ -24,6 +25,7 @@
 *ctypes.test.test_bitfields.BitFieldTest.test_single_bitfield_size
 *ctypes.test.test_bitfields.BitFieldTest.test_uint32
 *ctypes.test.test_buffers.StringBufferTestCase.test_buffer
+*ctypes.test.test_buffers.StringBufferTestCase.test_buffer_interface
 *ctypes.test.test_buffers.StringBufferTestCase.test_create_unicode_buffer_non_bmp
 *ctypes.test.test_bytes.BytesTest.test_BSTR
 *ctypes.test.test_bytes.BytesTest.test_c_char_p
@@ -34,6 +36,9 @@
 *ctypes.test.test_byteswap.Test.test_endian_other
 *ctypes.test.test_byteswap.Test.test_slots
 *ctypes.test.test_byteswap.Test.test_struct_fields_1
+*ctypes.test.test_byteswap.Test.test_struct_fields_2
+*ctypes.test.test_byteswap.Test.test_unaligned_native_struct_fields
+*ctypes.test.test_byteswap.Test.test_unaligned_nonnative_struct_fields
 *ctypes.test.test_callbacks.Callbacks.test_char_p
 *ctypes.test.test_callbacks.SampleCallbacksTestCase.test_issue_8959_b
 *ctypes.test.test_callbacks.StdcallCallbacks.test_byte
@@ -110,6 +115,7 @@
 *ctypes.test.test_functions.FunctionTestCase.test_stringresult
 *ctypes.test.test_functions.FunctionTestCase.test_struct_return_2H_stdcall
 *ctypes.test.test_functions.FunctionTestCase.test_struct_return_8H_stdcall
+*ctypes.test.test_functions.FunctionTestCase.test_wchar_parm
 *ctypes.test.test_functions.FunctionTestCase.test_wchar_result
 *ctypes.test.test_internals.ObjectsTestCase.test_embedded_structs
 *ctypes.test.test_internals.ObjectsTestCase.test_ptr_struct
