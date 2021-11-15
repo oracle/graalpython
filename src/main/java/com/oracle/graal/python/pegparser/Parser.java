@@ -1138,7 +1138,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "'*' expression ',' '**' expression");
-                _res = new SSTNode[]{a,b};
+                _res = (SSTNode[])this.appendToEnd((SSTNode[])this.singletonSequence(a),b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' expression ',' '**' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
                 level--;
@@ -1159,7 +1159,9 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "'*' expression");
-                _res = new SSTNode[]{a};
+                // TODO: node.action: ( asdl_expr_seq * ) this . singletonSequence ( a )
+                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) this . singletonSequence ( a ) to Java !!![0m");
+                _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
                 level--;
@@ -1180,7 +1182,9 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "'**' expression");
-                _res = new SSTNode[]{a};
+                // TODO: node.action: ( asdl_expr_seq * ) this . singletonSequence ( a )
+                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) this . singletonSequence ( a ) to Java !!![0m");
+                _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
                 level--;
@@ -1273,7 +1277,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d statement[%d-%d]: %s succeeded!", level, _mark, mark(), "compound_stmt");
-                _res = new SSTNode[]{a};
+                _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "compound_stmt");
                 cache.putResult(_mark, STATEMENT_ID, _res);
                 level--;
@@ -1332,7 +1336,9 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d statement_newline[%d-%d]: %s succeeded!", level, _mark, mark(), "compound_stmt NEWLINE");
-                _res = new SSTNode[]{a};
+                // TODO: node.action: ( asdl_stmt_seq * ) this . singletonSequence ( a )
+                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_stmt_seq * ) this . singletonSequence ( a ) to Java !!![0m");
+                _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "compound_stmt NEWLINE");
                 cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
                 level--;
@@ -1433,7 +1439,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmts[%d-%d]: %s succeeded!", level, _mark, mark(), "simple_stmt !';' NEWLINE");
-                _res = new SSTNode[]{a};;
+                _res = new SSTNode[]{a};//(asdl_stmt_seq*)this.singletonSequence(a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "simple_stmt !';' NEWLINE");
                 cache.putResult(_mark, SIMPLE_STMTS_ID, _res);
                 level--;
@@ -5407,9 +5413,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d open_sequence_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "maybe_star_pattern ',' maybe_sequence_pattern?");
-                // TODO: node.action: this . insertInFront ( value , values )
-                debugMessageln("[33;5;7m!!! TODO: Convert this . insertInFront ( value , values ) to Java !!![0m");
-                _res = null;
+                _res = this.insertInFront(value,values);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "maybe_star_pattern ',' maybe_sequence_pattern?");
                 cache.putResult(_mark, OPEN_SEQUENCE_PATTERN_ID, _res);
                 level--;
@@ -11316,9 +11320,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d strings[%d-%d]: %s succeeded!", level, _mark, mark(), "STRING+");
-                // TODO: node.action: this . concatenateStrings ( a )
-                debugMessageln("[33;5;7m!!! TODO: Convert this . concatenateStrings ( a ) to Java !!![0m");
-                _res = null;
+                _res = this.concatenateStrings(a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "STRING+");
                 cache.putResult(_mark, STRINGS_ID, _res);
                 level--;
@@ -12813,7 +12815,9 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_targets_tuple_seq[%d-%d]: %s succeeded!", level, _mark, mark(), "star_target ','");
-                _res = new SSTNode[]{a};
+                // TODO: node.action: ( asdl_expr_seq * ) this . singletonSequence ( a )
+                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) this . singletonSequence ( a ) to Java !!![0m");
+                _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_target ','");
                 cache.putResult(_mark, STAR_TARGETS_TUPLE_SEQ_ID, _res);
                 level--;
@@ -13766,8 +13770,8 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d t_primary[%d-%d]: %s succeeded!", level, _mark, mark(), "t_primary genexp &t_lookahead");
-                // TODO: node.action: _PyAST_Call ( a , new SSTNode [ ] {b} , NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( a , new SSTNode [ ] {b} , NULL , EXTRA ) to Java !!![0m");
+                // TODO: node.action: _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( asdl_expr_seq * ) this . singletonSequence ( b ) ) , NULL , EXTRA )
+                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Call ( a , CHECK ( asdl_expr_seq * , ( asdl_expr_seq * ) this . singletonSequence ( b ) ) , NULL , EXTRA ) to Java !!![0m");
                 _res = null;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "t_primary genexp &t_lookahead");
                 level--;
@@ -14954,7 +14958,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d invalid_parameters_helper[%d-%d]: %s succeeded!", level, _mark, mark(), "slash_with_default");
-                _res = new SSTNode[]{a};
+                _res = this.singletonSequence(a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "slash_with_default");
                 cache.putResult(_mark, INVALID_PARAMETERS_HELPER_ID, _res);
                 level--;
@@ -15059,7 +15063,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d invalid_lambda_parameters_helper[%d-%d]: %s succeeded!", level, _mark, mark(), "lambda_slash_with_default");
-                _res = new SSTNode[]{a};
+                _res = this.singletonSequence(a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "lambda_slash_with_default");
                 cache.putResult(_mark, INVALID_LAMBDA_PARAMETERS_HELPER_ID, _res);
                 level--;
@@ -22848,9 +22852,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d _tmp_157[%d-%d]: %s succeeded!", level, _mark, mark(), "star_named_expression ',' star_named_expressions?");
-                // TODO: node.action: this . insertInFront ( y , z )
-                debugMessageln("[33;5;7m!!! TODO: Convert this . insertInFront ( y , z ) to Java !!![0m");
-                _res = null;
+                _res = this.insertInFront(y,z);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_named_expression ',' star_named_expressions?");
                 cache.putResult(_mark, _TMP_157_ID, _res);
                 level--;

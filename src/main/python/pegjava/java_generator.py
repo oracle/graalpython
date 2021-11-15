@@ -678,7 +678,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             len(node_action) == 1
             or node_action.startswith('finish')
             or node_action == "elem"
-            or re.match("\\([^()*]+\\)this.", node_action)):
+            or re.match("(\\([^()*]+\\))?this.", node_action)):
             self.print(f"_res = {node_action};")
         else:
             self.print(f"// TODO: node.action: {node.action}")
