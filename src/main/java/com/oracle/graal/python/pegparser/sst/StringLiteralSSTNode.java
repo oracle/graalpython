@@ -421,7 +421,9 @@ public abstract class StringLiteralSSTNode extends SSTNode {
 
             // create tokens
             ArrayList<Token> tokens = new ArrayList<>(estimatedTokensCount);
-            createTokens(tokens, errorCallback, 0, text, isRawString, 0);
+            if (createTokens(tokens, errorCallback, 0, text, isRawString, 0) < 0) {
+                return;
+            }
 
             // create nodes from the tokens
             int tokenIndex = 0;
@@ -740,6 +742,9 @@ public abstract class StringLiteralSSTNode extends SSTNode {
                     assert currentExpression != null;
                     int tokensSizeBefore = tokens.size();
                     index = createTokens(tokens, errorCallback, index, text, isRawString, recursionLevel + 1);
+                    if (index < 0) {
+                        return -1;
+                    }
                     currentExpression.formatTokensCount = tokens.size() - tokensSizeBefore;
                     if (index >= len || text.charAt(index) != '}') {
                         errorCallback.onError(startIndex, index, ERROR_MESSAGE_EXPECTING_CLOSING_BRACE);
