@@ -2595,34 +2595,20 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyUnicode_Decode", minNumOfPositionalArgs = 4, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    abstract static class PyUnicode_Decode extends NativeUnicodeBuiltin {
+    abstract static class PyUnicode_Decode extends NativeBuiltin {
 
         @Specialization
-        Object doDecode(VirtualFrame frame, Object module, Object cByteArray, String encoding, String errors,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached GetByteArrayNode getByteArrayNode,
+        Object doDecode(VirtualFrame frame, Object module, PMemoryView mv, String encoding, String errors,
+                        @Cached CodecsModuleBuiltins.DecodeNode decodeNode,
+                        @Cached CExtNodes.ToNewRefNode toSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
-
             try {
-                ByteBuffer inputBuffer = wrap(getByteArrayNode.execute(cByteArray, -1));
-                int n = remaining(inputBuffer);
-                CharBuffer resultBuffer = allocateCharBuffer(n * 4);
-                decode(resultBuffer, inputBuffer, encoding, errors);
-                return toSulongNode.execute(factory().createTuple(new Object[]{toString(resultBuffer), n - remaining(inputBuffer)}));
-            } catch (IllegalArgumentException e) {
-                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
-            } catch (InteropException e) {
-                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
-            } catch (OverflowException e) {
-                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.SystemError, ErrorMessages.INPUT_TOO_LONG);
+                return toSulongNode.execute(decodeNode.executeWithStrings(frame, mv, encoding, errors));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return toSulongNode.execute(getNativeNullNode.execute(module));
             }
-        }
-
-        @TruffleBoundary
-        private void decode(CharBuffer resultBuffer, ByteBuffer inputBuffer, String encoding, String errors) {
-            CharsetDecoder decoder = Charset.forName(encoding).newDecoder();
-            CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
-            decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
         }
     }
 

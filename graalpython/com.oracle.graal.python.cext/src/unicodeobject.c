@@ -568,13 +568,16 @@ PyObject * PyUnicode_AsUnicodeEscapeString(PyObject *unicode) {
 	return UPCALL_CEXT_O(_jls_PyUnicode_AsUnicodeEscapeString, native_to_java(unicode));
 }
 
-typedef PyObject* (*unicode_PyUnicode_Decode_fun_t)(void *data, const char *encoding, const char *errors);
-UPCALL_TYPED_ID(PyUnicode_Decode, unicode_PyUnicode_Decode_fun_t);
+UPCALL_ID(PyUnicode_Decode);
 PyObject * PyUnicode_Decode(const char *s, Py_ssize_t size, const char *encoding, const char *errors) {
     if (encoding == NULL) {
         return PyUnicode_DecodeUTF8Stateful(s, size, errors, NULL);
     }
-	return _jls_PyUnicode_Decode(polyglot_from_i8_array(s, size), polyglot_from_string(encoding, SRC_CS), convert_errors(errors));
+    PyObject *mv = PyMemoryView_FromMemory(s, size, PyBUF_READ);
+    if (!mv) {
+        return NULL;
+    }
+	return UPCALL_CEXT_O(_jls_PyUnicode_Decode, mv, polyglot_from_string(encoding, SRC_CS), convert_errors(errors));
 }
 
 PyObject * PyUnicode_DecodeASCII(const char *s, Py_ssize_t size, const char *errors) {
