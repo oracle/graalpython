@@ -438,9 +438,9 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print(f"private static final int {rulename.upper()}_ID = {i};{comment}")
         self.print()
         # Java needs a constructor
-        self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory) {" % className)
+        self.print("public %s(ParserTokenizer tokenizer, NodeFactory factory, FExprParser fexprParser, ParserErrorCallback errorCb) {" % className)
         with self.indent():
-            self.print("super(tokenizer, factory);")
+            self.print("super(tokenizer, factory, fexprParser, errorCb);")
         self.print("}" )
         # we don't need the C declarations, so straight to the rule functions as in c_generator
         while self.todo:

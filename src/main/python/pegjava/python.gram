@@ -80,13 +80,6 @@ import java.util.stream.Stream;
     }
 '''
 
-@parser_constructor '''
-    public %s(ParserTokenizer tokenizer, NodeFactory factory) {
-        super(tokenizer, factory);
-        cache = new RuleResultCache(this);
-    }
-'''
-
 @trailer '''
 void *
 _PyPegen_parse(Parser *p)

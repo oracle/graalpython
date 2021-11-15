@@ -50,6 +50,7 @@ import com.oracle.graal.python.pegparser.sst.BlockSSTNode;
 import com.oracle.graal.python.pegparser.sst.BooleanLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
+import com.oracle.graal.python.pegparser.sst.StringLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.StringLiteralSSTNode.RawStringLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.UnarySSTNode;
 import com.oracle.graal.python.pegparser.sst.UntypedSSTNode;
@@ -95,9 +96,8 @@ public class NodeFactoryImp implements NodeFactory{
     }
 
     @Override
-    public SSTNode createString(String str, int startOffset, int endOffset) {
-        // TODO...
-        return new RawStringLiteralSSTNode(str, startOffset, endOffset);
+    public SSTNode createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb) {
+        return StringLiteralSSTNode.create(values, startOffset, endOffset, this, exprParser, errorCb);
     }
 
     @Override

@@ -100,7 +100,21 @@ public class ParserTestBase {
     public SSTNode parse(String src, String moduleName, int mode) {
 
         ParserTokenizer tokenizer = new ParserTokenizer(src);
-        Parser parser = new Parser(tokenizer, new NodeFactoryImp());
+        NodeFactory factory = new NodeFactoryImp();
+        ParserErrorCallback errorCb = new ParserErrorCallback() {
+            @Override
+            public void onError(ParserErrorCallback.ErrorType type, int start, int end, String message) {
+                System.err.println(String.format("TODO: %s[%d:%d]: %s", type.name(), start, end, message));
+            }
+        };
+        FExprParser fexpParser = new FExprParser() {
+            @Override
+            public SSTNode parse(String code) {
+                ParserTokenizer tok = new ParserTokenizer(code);
+                return new Parser(tok, factory, this, errorCb).fstring_rule();
+            }
+        };
+        Parser parser = new Parser(tokenizer, factory, fexpParser, errorCb);
         SSTNode result = parser.file_rule();
 
 //        lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();

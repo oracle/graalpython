@@ -40,28 +40,44 @@
  */
 package com.oracle.graal.python.pegparser;
 
-import com.oracle.graal.python.pegparser.sst.*;
+import com.oracle.graal.python.pegparser.ParserErrorCallback.ErrorType;
+import com.oracle.graal.python.pegparser.sst.SSTNode;
 
-public interface NodeFactory {
-    public AnnAssignmentSSTNode createAnnAssignment(AnnotationSSTNode annotation, SSTNode rhs, int startOffset, int endOffset);
+@FunctionalInterface
+public interface ParserErrorCallback {
+    public enum ErrorType {
+        Generic,
+        Indentation,
+        Tab,
+        Print,
+        Exec,
+        Encoding,
+        Warning
+    }
 
-    public AnnotationSSTNode createAnnotation(SSTNode lhs, SSTNode type, int startOffset, int endOffset);
+    public abstract void onError(ErrorType errorType, int startOffset, int endOffset, String message);
 
-    public AssignmentSSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, int startOffset, int endOffset);
+    default void onError(ErrorType errorType, int startOffset, int endOffset, String message, Object... arguments) {
+        onError(errorType, startOffset, endOffset, String.format(message, arguments));
+    }
 
-    public BinaryArithmeticSSTNode createBinaryOp(BinaryArithmeticSSTNode.Type op, SSTNode left, SSTNode right, int startOffset, int endOffset);
+    default void onError(int startOffset, int endOffset, String message, Object... arguments) {
+        onError(ErrorType.Generic, startOffset, endOffset, String.format(message, arguments));
+    }
 
-    public BlockSSTNode createBlock(SSTNode[] statements, int startOffset, int endOffset);
+    default void onError(SSTNode node, String message, Object... arguments) {
+        onError(node.getStartOffset(), node.getEndOffset(), message, arguments);
+    }
 
-    public BooleanLiteralSSTNode createBooleanLiteral(boolean value, int startOffset, int endOffset);
+    default void onError(ErrorType type, SSTNode node, String message, Object... arguments) {
+        onError(type, node.getStartOffset(), node.getEndOffset(), message, arguments);
+    }
 
-    public SSTNode createNumber(String number, int startOffset, int endOffset);
+    default void onError(int startOffset, int endOffset) {
+        onError(startOffset, endOffset, "invalid syntax");
+    }
 
-    public SSTNode createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb);
-
-    public UnarySSTNode createUnaryOp(UnarySSTNode.Type op, SSTNode value, int startOffset, int endOffset);
-
-    public VarLookupSSTNode createVariable(String name, int startOffset, int endOffset);
-
-    public UntypedSSTNode createUntyped(int tokenPosition);
+    default void warn(int startOffset, int endOffset, String message, Object... arguments) {
+        onError(ErrorType.Warning, startOffset, endOffset, message, arguments);
+    }
 }
