@@ -3,5 +3,3 @@ BlockSSTNode[0, 6]
         Values:
             VarLookupSSTNode[1, 2] Value: "a"
             IntegerLiteralSSTNode[4, 5] Value: "2"
-
-

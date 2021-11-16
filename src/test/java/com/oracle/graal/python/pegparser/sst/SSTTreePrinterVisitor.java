@@ -36,7 +36,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node)).append("\n");
         level++;
-        sb.append(indent()).append("Annotation: ").append(node.annotation.accept(this));
+        sb.append(indent()).append("Annotation: ").append(node.annotation.accept(this)).append('\n');
         sb.append(indent()).append("RHS: ").append(node.rhs.accept(this));
         level--;
         return sb.toString();
