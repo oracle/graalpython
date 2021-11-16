@@ -41,16 +41,18 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-//import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-
-import com.oracle.graal.python.pegparser.tokenizer.Token;
-
-
 public class CollectionSSTNode extends SSTNode {
     protected final SSTNode[] values;
-    protected final Token type;
+    protected final Type type;
 
-    public CollectionSSTNode(SSTNode[] values, Token type, int startOffset, int endOffset) {
+    public static enum Type {
+        Tuple,
+        List,
+        Dict,
+        Set
+    }
+
+    private CollectionSSTNode(SSTNode[] values, Type type, int startOffset, int endOffset) {
         super(startOffset, endOffset);
         this.values = values;
         this.type = type;
@@ -65,8 +67,11 @@ public class CollectionSSTNode extends SSTNode {
         return values;
     }
 
-    public Token getType() {
+    public Type getType() {
         return type;
     }
 
+    public static CollectionSSTNode createTuple(SSTNode[] values, int startOffset, int endOffset) {
+        return new CollectionSSTNode(values, Type.Tuple, startOffset, endOffset);
+    }
 }

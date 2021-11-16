@@ -48,6 +48,7 @@ import com.oracle.graal.python.pegparser.sst.AssignmentSSTNode;
 import com.oracle.graal.python.pegparser.sst.BinaryArithmeticSSTNode;
 import com.oracle.graal.python.pegparser.sst.BlockSSTNode;
 import com.oracle.graal.python.pegparser.sst.BooleanLiteralSSTNode;
+import com.oracle.graal.python.pegparser.sst.CollectionSSTNode;
 import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StringLiteralSSTNode;
@@ -112,5 +113,10 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public UntypedSSTNode createUntyped(int tokenPosition) {
         return new UntypedSSTNode(tokenPosition);
+    }
+
+    @Override
+    public SSTNode createTuple(SSTNode[] values, int startOffset, int endOffset) {
+        return CollectionSSTNode.createTuple(values, startOffset, endOffset);
     }
 }

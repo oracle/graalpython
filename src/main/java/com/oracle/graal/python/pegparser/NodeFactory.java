@@ -63,5 +63,7 @@ public interface NodeFactory {
 
     public VarLookupSSTNode createVariable(String name, int startOffset, int endOffset);
 
+    public SSTNode createTuple(SSTNode[] values, int startOffset, int endOffset);
+
     public UntypedSSTNode createUntyped(int tokenPosition);
 }

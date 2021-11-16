@@ -97,13 +97,13 @@ class FunctionCall:
 
 # TODO this is temporary solution until all types in the grammar will not be java types
 def _check_type(self, ttype: str) -> str:
+    self._type_conversions = getattr(self, "_type_conversions", set())
     if ttype and type(ttype) == str and "Token" != ttype and not "SSTNode" in ttype:
         if "[]" in ttype or "*" in ttype:
-            if hasattr(self, "print"):
-                self.print(f"// TODO replacing {ttype} --> SSTNode[]")
+            self._type_conversions.add(f"// TODO replacing {ttype} --> SSTNode[]")
             return "SSTNode[]"
         if hasattr(self, "print"):
-            self.print(f"// TODO replacing {ttype} --> SSTNode")
+            self._type_conversions.add(f"// TODO replacing {ttype} --> SSTNode[]")
         return "SSTNode"
     elif "SSTNode*" == ttype:
         return "SSTNode[]"
@@ -348,13 +348,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
         )
 
     def generate_call(self, node: Any) -> FunctionCall:
-        call = super().visit(node)
-        # TODO: Remove me
-        if not call:
-            self.print(f"// TODO call is not created {node} -> creates artificial")
-            call = "true"
-            return call
-        return call
+        return super().visit(node)
 
 
 class JavaParserGenerator(ParserGenerator, GrammarVisitor):
@@ -452,6 +446,8 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.visit(rule)
         # we don't need the C trailer, but we have our own final things to generate and close the class
         self._generate_lookahead_methods()
+        for todo in getattr(self, "_type_conversions", set()):
+            self.print(todo)
         self.level -= 1
         self.print("}")
 
@@ -498,11 +494,9 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.print("protected String[] getSoftKeywords() { return softKeywords; }")
 
     def _set_up_token_start_metadata_extraction(self) -> None:
-        self.print("// _PyPegen_fill_token is called here in CPython");
         self.print("Token startToken = getAndInitializeToken();");
 
     def _set_up_token_end_metadata_extraction(self) -> None:
-        self.print("// _PyPegen_get_last_nonwhitespace_token is called here in CPython");
         self.print("Token endToken = getLastNonWhitespaceToken();")
         self.print("if (endToken == null) {")
         with self.indent():

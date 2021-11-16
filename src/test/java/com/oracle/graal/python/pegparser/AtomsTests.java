@@ -80,4 +80,9 @@ public class AtomsTests extends ParserTestBase {
     public void atomMixedBytesString() throws Exception {
         checkError("b\"a\" f'aa'", "Generic[0:10]:cannot mix bytes and nonbytes literals");
     }
+
+    @Test
+    public void atomTuple() throws Exception {
+        checkTreeResult("(a,)");
+    }
 }

@@ -703,8 +703,8 @@ slice[SSTNode]: # originally return type expr_ty
     | a=named_expression { a }
 atom[SSTNode]: # originally return type expr_ty
     | NAME
-    | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, startToken.endOffset);}
-    | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, startToken.endOffset); }
+    | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, endToken.endOffset);}
+    | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, endToken.endOffset); }
     | 'None' { _PyAST_Constant(Py_None, NULL, EXTRA) }
     | &STRING strings
     | NUMBER
@@ -721,7 +721,7 @@ listcomp[SSTNode]: # originally return type expr_ty
     | invalid_comprehension
 tuple[SSTNode]: # originally return type expr_ty
     | '(' a=[y=star_named_expression ',' z=[star_named_expressions] { this.insertInFront(y, (SSTNode[])z) } ] ')' {
-        _PyAST_Tuple(a, Load, EXTRA) }
+        factory.createTuple((SSTNode[])a, startToken.startOffset, endToken.endOffset) }
 group[SSTNode]: # originally return type expr_ty
     | '(' a=(yield_expr | named_expression) ')' { a }
     | invalid_group

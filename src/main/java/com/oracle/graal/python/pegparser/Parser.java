@@ -1,201 +1,3 @@
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing AugOperator* --> SSTNode[]
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing asdl_alias_seq* --> SSTNode[]
-// TODO replacing asdl_alias_seq* --> SSTNode[]
-// TODO replacing asdl_alias_seq* --> SSTNode[]
-// TODO replacing asdl_alias_seq* --> SSTNode[]
-// TODO replacing asdl_alias_seq* --> SSTNode[]
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing asdl_seq* --> SSTNode[]
-// TODO replacing asdl_seq* --> SSTNode[]
-// TODO replacing asdl_seq* --> SSTNode[]
-// TODO replacing asdl_seq* --> SSTNode[]
-// TODO replacing asdl_seq* --> SSTNode[]
-// TODO replacing KeyValuePair* --> SSTNode[]
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing asdl_keyword_seq* --> SSTNode[]
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing asdl_keyword_seq* --> SSTNode[]
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing arguments_ty --> SSTNode
-// TODO replacing asdl_arg_seq* --> SSTNode[]
-// TODO replacing SlashWithDefault* --> SSTNode[]
-// TODO replacing StarEtc* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing arguments_ty --> SSTNode
-// TODO replacing asdl_arg_seq* --> SSTNode[]
-// TODO replacing SlashWithDefault* --> SSTNode[]
-// TODO replacing StarEtc* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing CmpopExprPair* --> SSTNode[]
-// TODO replacing CmpopExprPair* --> SSTNode[]
-// TODO replacing CmpopExprPair* --> SSTNode[]
-// TODO replacing CmpopExprPair* --> SSTNode[]
-// TODO replacing CmpopExprPair* --> SSTNode[]
-// TODO replacing CmpopExprPair* --> SSTNode[]
-// TODO replacing CmpopExprPair* --> SSTNode[]
-// TODO replacing CmpopExprPair* --> SSTNode[]
-// TODO replacing CmpopExprPair* --> SSTNode[]
-// TODO replacing asdl_comprehension_seq* --> SSTNode[]
-// TODO replacing asdl_comprehension_seq* --> SSTNode[]
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing asdl_comprehension_seq* --> SSTNode[]
-// TODO replacing KeyValuePair* --> SSTNode[]
-// TODO replacing asdl_comprehension_seq* --> SSTNode[]
-// TODO replacing KeyValuePair* --> SSTNode[]
-// TODO replacing asdl_seq* --> SSTNode[]
-// TODO replacing asdl_comprehension_seq* --> SSTNode[]
-// TODO replacing asdl_comprehension_seq* --> SSTNode[]
-// TODO replacing asdl_comprehension_seq* --> SSTNode[]
-// TODO replacing AugOperator* --> SSTNode[]
-// TODO replacing asdl_comprehension_seq* --> SSTNode[]
-// TODO replacing asdl_comprehension_seq* --> SSTNode[]
-// TODO replacing asdl_comprehension_seq* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing SlashWithDefault* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing SlashWithDefault* --> SSTNode[]
-// TODO replacing asdl_alias_seq* --> SSTNode[]
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing stmt_ty --> SSTNode
-// TODO replacing alias_ty --> SSTNode
-// TODO replacing alias_ty --> SSTNode
-// TODO replacing alias_ty --> SSTNode
-// TODO replacing alias_ty --> SSTNode
-// TODO replacing withitem_ty --> SSTNode
-// TODO replacing withitem_ty --> SSTNode
-// TODO replacing withitem_ty --> SSTNode
-// TODO replacing withitem_ty --> SSTNode
-// TODO replacing withitem_ty --> SSTNode
-// TODO replacing withitem_ty --> SSTNode
-// TODO replacing withitem_ty --> SSTNode
-// TODO replacing withitem_ty --> SSTNode
-// TODO replacing excepthandler_ty --> SSTNode
-// TODO replacing match_case_ty --> SSTNode
-// TODO replacing KeyValuePair* --> SSTNode[]
-// TODO replacing KeyValuePair* --> SSTNode[]
-// TODO replacing keyword_ty --> SSTNode
-// TODO replacing keyword_ty --> SSTNode
-// TODO replacing arguments_ty --> SSTNode
-// TODO replacing Token* --> SSTNode[]
-// TODO replacing arguments_ty --> SSTNode
-// TODO replacing Token* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing StarEtc* --> SSTNode[]
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing StarEtc* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing StarEtc* --> SSTNode[]
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing StarEtc* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arguments_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing StarEtc* --> SSTNode[]
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing StarEtc* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing StarEtc* --> SSTNode[]
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing StarEtc* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing asdl_seq* --> SSTNode[]
-// TODO replacing KeyValuePair* --> SSTNode[]
-// TODO replacing KeyValuePair* --> SSTNode[]
-// TODO replacing comprehension_ty --> SSTNode
-// TODO replacing asdl_seq* --> SSTNode[]
-// TODO replacing KeywordOrStarred* --> SSTNode[]
-// TODO replacing KeywordOrStarred* --> SSTNode[]
-// TODO replacing KeywordOrStarred* --> SSTNode[]
-// TODO replacing KeywordOrStarred* --> SSTNode[]
-// TODO replacing KeywordOrStarred* --> SSTNode[]
-// TODO replacing KeywordOrStarred* --> SSTNode[]
-// TODO replacing KeywordOrStarred* --> SSTNode[]
-// TODO replacing KeywordOrStarred* --> SSTNode[]
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing asdl_comprehension_seq* --> SSTNode[]
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing asdl_expr_seq* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing arg_ty --> SSTNode
-// TODO replacing NameDefaultPair* --> SSTNode[]
-// TODO replacing KeyValuePair* --> SSTNode[]
-// TODO replacing KeyValuePair* --> SSTNode[]
-// TODO replacing asdl_expr_seq* --> SSTNode[]
 
 /*
  * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
@@ -801,7 +603,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
         Token startToken = getAndInitializeToken();
         { // statements? $
             debugMessageln("%d> file[%d-%d]: %s", level, _mark, mark(), "statements? $");
@@ -814,7 +615,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d file[%d-%d]: %s succeeded!", level, _mark, mark(), "statements? $");
-                // _PyPegen_get_last_nonwhitespace_token is called here in CPython
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
                     level--;
@@ -1009,7 +809,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing asdl_expr_seq* --> SSTNode[]
     // type_expressions:
     //     | ','.expression+ ',' '*' expression ',' '**' expression
     //     | ','.expression+ ',' '*' expression
@@ -1196,7 +995,6 @@ public final class Parser extends AbstractParser {
         }
         { // ','.expression+
             debugMessageln("%d> type_expressions[%d-%d]: %s", level, _mark, mark(), "','.expression+");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] a;
             if (
                 (a = (SSTNode[])_gather_11_rule()) != null  // ','.expression+
@@ -1269,10 +1067,8 @@ public final class Parser extends AbstractParser {
         }
         { // compound_stmt
             debugMessageln("%d> statement[%d-%d]: %s", level, _mark, mark(), "compound_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode a;
             if (
-                // TODO replacing stmt_ty --> SSTNode
                 (a = compound_stmt_rule()) != null  // compound_stmt
             )
             {
@@ -1325,11 +1121,9 @@ public final class Parser extends AbstractParser {
         }
         { // compound_stmt NEWLINE
             debugMessageln("%d> statement_newline[%d-%d]: %s", level, _mark, mark(), "compound_stmt NEWLINE");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode a;
             Token newline_var;
             if (
-                // TODO replacing stmt_ty --> SSTNode
                 (a = compound_stmt_rule()) != null  // compound_stmt
                 &&
                 (newline_var = expect(Token.Kind.NEWLINE)) != null  // token='NEWLINE'
@@ -1426,11 +1220,9 @@ public final class Parser extends AbstractParser {
         }
         { // simple_stmt !';' NEWLINE
             debugMessageln("%d> simple_stmts[%d-%d]: %s", level, _mark, mark(), "simple_stmt !';' NEWLINE");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode a;
             Token newline_var;
             if (
-                // TODO replacing stmt_ty --> SSTNode
                 (a = simple_stmt_rule()) != null  // simple_stmt
                 &&
                 genLookahead_expect(false, 13)  // token=';'
@@ -1480,7 +1272,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // simple_stmt:
     //     | assignment
     //     | star_expressions
@@ -1543,12 +1334,10 @@ public final class Parser extends AbstractParser {
         }
         { // &'return' return_stmt
             debugMessageln("%d> simple_stmt[%d-%d]: %s", level, _mark, mark(), "&'return' return_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode return_stmt_var;
             if (
                 genLookahead_expect(true, 500)  // token='return'
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (return_stmt_var = return_stmt_rule()) != null  // return_stmt
             )
             {
@@ -1565,12 +1354,10 @@ public final class Parser extends AbstractParser {
         }
         { // &('import' | 'from') import_stmt
             debugMessageln("%d> simple_stmt[%d-%d]: %s", level, _mark, mark(), "&('import' | 'from') import_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode import_stmt_var;
             if (
                 genLookahead__tmp_17_rule(true)
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (import_stmt_var = import_stmt_rule()) != null  // import_stmt
             )
             {
@@ -1587,12 +1374,10 @@ public final class Parser extends AbstractParser {
         }
         { // &'raise' raise_stmt
             debugMessageln("%d> simple_stmt[%d-%d]: %s", level, _mark, mark(), "&'raise' raise_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode raise_stmt_var;
             if (
                 genLookahead_expect(true, 501)  // token='raise'
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (raise_stmt_var = raise_stmt_rule()) != null  // raise_stmt
             )
             {
@@ -1629,12 +1414,10 @@ public final class Parser extends AbstractParser {
         }
         { // &'del' del_stmt
             debugMessageln("%d> simple_stmt[%d-%d]: %s", level, _mark, mark(), "&'del' del_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode del_stmt_var;
             if (
                 genLookahead_expect(true, 503)  // token='del'
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (del_stmt_var = del_stmt_rule()) != null  // del_stmt
             )
             {
@@ -1651,12 +1434,10 @@ public final class Parser extends AbstractParser {
         }
         { // &'yield' yield_stmt
             debugMessageln("%d> simple_stmt[%d-%d]: %s", level, _mark, mark(), "&'yield' yield_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode yield_stmt_var;
             if (
                 genLookahead_expect(true, 504)  // token='yield'
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (yield_stmt_var = yield_stmt_rule()) != null  // yield_stmt
             )
             {
@@ -1673,12 +1454,10 @@ public final class Parser extends AbstractParser {
         }
         { // &'assert' assert_stmt
             debugMessageln("%d> simple_stmt[%d-%d]: %s", level, _mark, mark(), "&'assert' assert_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode assert_stmt_var;
             if (
                 genLookahead_expect(true, 505)  // token='assert'
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (assert_stmt_var = assert_stmt_rule()) != null  // assert_stmt
             )
             {
@@ -1735,12 +1514,10 @@ public final class Parser extends AbstractParser {
         }
         { // &'global' global_stmt
             debugMessageln("%d> simple_stmt[%d-%d]: %s", level, _mark, mark(), "&'global' global_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode global_stmt_var;
             if (
                 genLookahead_expect(true, 508)  // token='global'
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (global_stmt_var = global_stmt_rule()) != null  // global_stmt
             )
             {
@@ -1757,12 +1534,10 @@ public final class Parser extends AbstractParser {
         }
         { // &'nonlocal' nonlocal_stmt
             debugMessageln("%d> simple_stmt[%d-%d]: %s", level, _mark, mark(), "&'nonlocal' nonlocal_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode nonlocal_stmt_var;
             if (
                 genLookahead_expect(true, 509)  // token='nonlocal'
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (nonlocal_stmt_var = nonlocal_stmt_rule()) != null  // nonlocal_stmt
             )
             {
@@ -1784,7 +1559,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // compound_stmt:
     //     | &('def' | '@' | ASYNC) function_def
     //     | &'if' if_stmt
@@ -1806,12 +1580,10 @@ public final class Parser extends AbstractParser {
         }
         { // &('def' | '@' | ASYNC) function_def
             debugMessageln("%d> compound_stmt[%d-%d]: %s", level, _mark, mark(), "&('def' | '@' | ASYNC) function_def");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode function_def_var;
             if (
                 genLookahead__tmp_18_rule(true)
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (function_def_var = function_def_rule()) != null  // function_def
             )
             {
@@ -1828,12 +1600,10 @@ public final class Parser extends AbstractParser {
         }
         { // &'if' if_stmt
             debugMessageln("%d> compound_stmt[%d-%d]: %s", level, _mark, mark(), "&'if' if_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode if_stmt_var;
             if (
                 genLookahead_expect(true, 510)  // token='if'
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (if_stmt_var = if_stmt_rule()) != null  // if_stmt
             )
             {
@@ -1850,12 +1620,10 @@ public final class Parser extends AbstractParser {
         }
         { // &('class' | '@') class_def
             debugMessageln("%d> compound_stmt[%d-%d]: %s", level, _mark, mark(), "&('class' | '@') class_def");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode class_def_var;
             if (
                 genLookahead__tmp_19_rule(true)
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (class_def_var = class_def_rule()) != null  // class_def
             )
             {
@@ -1872,12 +1640,10 @@ public final class Parser extends AbstractParser {
         }
         { // &('with' | ASYNC) with_stmt
             debugMessageln("%d> compound_stmt[%d-%d]: %s", level, _mark, mark(), "&('with' | ASYNC) with_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode with_stmt_var;
             if (
                 genLookahead__tmp_20_rule(true)
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (with_stmt_var = with_stmt_rule()) != null  // with_stmt
             )
             {
@@ -1894,12 +1660,10 @@ public final class Parser extends AbstractParser {
         }
         { // &('for' | ASYNC) for_stmt
             debugMessageln("%d> compound_stmt[%d-%d]: %s", level, _mark, mark(), "&('for' | ASYNC) for_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode for_stmt_var;
             if (
                 genLookahead__tmp_21_rule(true)
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (for_stmt_var = for_stmt_rule()) != null  // for_stmt
             )
             {
@@ -1916,12 +1680,10 @@ public final class Parser extends AbstractParser {
         }
         { // &'try' try_stmt
             debugMessageln("%d> compound_stmt[%d-%d]: %s", level, _mark, mark(), "&'try' try_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode try_stmt_var;
             if (
                 genLookahead_expect(true, 511)  // token='try'
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (try_stmt_var = try_stmt_rule()) != null  // try_stmt
             )
             {
@@ -1938,12 +1700,10 @@ public final class Parser extends AbstractParser {
         }
         { // &'while' while_stmt
             debugMessageln("%d> compound_stmt[%d-%d]: %s", level, _mark, mark(), "&'while' while_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode while_stmt_var;
             if (
                 genLookahead_expect(true, 512)  // token='while'
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (while_stmt_var = while_stmt_rule()) != null  // while_stmt
             )
             {
@@ -1960,10 +1720,8 @@ public final class Parser extends AbstractParser {
         }
         { // match_stmt
             debugMessageln("%d> compound_stmt[%d-%d]: %s", level, _mark, mark(), "match_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode match_stmt_var;
             if (
-                // TODO replacing stmt_ty --> SSTNode
                 (match_stmt_var = match_stmt_rule()) != null  // match_stmt
             )
             {
@@ -2001,7 +1759,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
         Token startToken = getAndInitializeToken();
         { // NAME ':' expression ['=' annotated_rhs]
             debugMessageln("%d> assignment[%d-%d]: %s", level, _mark, mark(), "NAME ':' expression ['=' annotated_rhs]");
@@ -2020,7 +1777,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d assignment[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME ':' expression ['=' annotated_rhs]");
-                // _PyPegen_get_last_nonwhitespace_token is called here in CPython
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
                     level--;
@@ -2067,7 +1823,6 @@ public final class Parser extends AbstractParser {
         }
         { // ((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?
             debugMessageln("%d> assignment[%d-%d]: %s", level, _mark, mark(), "((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] a;
             Object b;
             Object tc;
@@ -2096,7 +1851,6 @@ public final class Parser extends AbstractParser {
         }
         { // single_target augassign ~ (yield_expr | star_expressions)
             debugMessageln("%d> assignment[%d-%d]: %s", level, _mark, mark(), "single_target augassign ~ (yield_expr | star_expressions)");
-            // TODO replacing AugOperator* --> SSTNode[]
             int _cut_var = 0;
             SSTNode a;
             SSTNode[] b;
@@ -2104,7 +1858,6 @@ public final class Parser extends AbstractParser {
             if (
                 (a = single_target_rule()) != null  // single_target
                 &&
-                // TODO replacing AugOperator* --> SSTNode[]
                 (b = augassign_rule()) != null  // augassign
                 &&
                 (_cut_var = 1) != 0
@@ -2154,7 +1907,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing AugOperator* --> SSTNode[]
     // augassign:
     //     | '+='
     //     | '-='
@@ -2446,7 +2198,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // global_stmt: 'global' ','.NAME+
     public SSTNode global_stmt_rule()
     {
@@ -2460,7 +2211,6 @@ public final class Parser extends AbstractParser {
         }
         { // 'global' ','.NAME+
             debugMessageln("%d> global_stmt[%d-%d]: %s", level, _mark, mark(), "'global' ','.NAME+");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             Token _keyword;
             SSTNode[] a;
             if (
@@ -2489,7 +2239,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // nonlocal_stmt: 'nonlocal' ','.NAME+
     public SSTNode nonlocal_stmt_rule()
     {
@@ -2503,7 +2252,6 @@ public final class Parser extends AbstractParser {
         }
         { // 'nonlocal' ','.NAME+
             debugMessageln("%d> nonlocal_stmt[%d-%d]: %s", level, _mark, mark(), "'nonlocal' ','.NAME+");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             Token _keyword;
             SSTNode[] a;
             if (
@@ -2532,7 +2280,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // yield_stmt: yield_expr
     public SSTNode yield_stmt_rule()
     {
@@ -2571,7 +2318,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // assert_stmt: 'assert' expression [',' expression]
     public SSTNode assert_stmt_rule()
     {
@@ -2616,7 +2362,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // del_stmt: 'del' del_targets &(';' | NEWLINE) | invalid_del_stmt
     public SSTNode del_stmt_rule()
     {
@@ -2630,13 +2375,11 @@ public final class Parser extends AbstractParser {
         }
         { // 'del' del_targets &(';' | NEWLINE)
             debugMessageln("%d> del_stmt[%d-%d]: %s", level, _mark, mark(), "'del' del_targets &(';' | NEWLINE)");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             Token _keyword;
             SSTNode[] a;
             if (
                 (_keyword = expect(503)) != null  // token='del'
                 &&
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (a = del_targets_rule()) != null  // del_targets
                 &&
                 genLookahead__tmp_34_rule(true)
@@ -2680,7 +2423,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // import_stmt: import_name | import_from
     public SSTNode import_stmt_rule()
     {
@@ -2694,10 +2436,8 @@ public final class Parser extends AbstractParser {
         }
         { // import_name
             debugMessageln("%d> import_stmt[%d-%d]: %s", level, _mark, mark(), "import_name");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode import_name_var;
             if (
-                // TODO replacing stmt_ty --> SSTNode
                 (import_name_var = import_name_rule()) != null  // import_name
             )
             {
@@ -2714,10 +2454,8 @@ public final class Parser extends AbstractParser {
         }
         { // import_from
             debugMessageln("%d> import_stmt[%d-%d]: %s", level, _mark, mark(), "import_from");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode import_from_var;
             if (
-                // TODO replacing stmt_ty --> SSTNode
                 (import_from_var = import_from_rule()) != null  // import_from
             )
             {
@@ -2739,7 +2477,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // import_name: 'import' dotted_as_names
     public SSTNode import_name_rule()
     {
@@ -2753,13 +2490,11 @@ public final class Parser extends AbstractParser {
         }
         { // 'import' dotted_as_names
             debugMessageln("%d> import_name[%d-%d]: %s", level, _mark, mark(), "'import' dotted_as_names");
-            // TODO replacing asdl_alias_seq* --> SSTNode[]
             Token _keyword;
             SSTNode[] a;
             if (
                 (_keyword = expect(513)) != null  // token='import'
                 &&
-                // TODO replacing asdl_alias_seq* --> SSTNode[]
                 (a = dotted_as_names_rule()) != null  // dotted_as_names
             )
             {
@@ -2783,7 +2518,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // import_from:
     //     | 'from' (('.' | '...'))* dotted_name 'import' import_from_targets
     //     | 'from' (('.' | '...'))+ 'import' import_from_targets
@@ -2799,7 +2533,6 @@ public final class Parser extends AbstractParser {
         }
         { // 'from' (('.' | '...'))* dotted_name 'import' import_from_targets
             debugMessageln("%d> import_from[%d-%d]: %s", level, _mark, mark(), "'from' (('.' | '...'))* dotted_name 'import' import_from_targets");
-            // TODO replacing asdl_alias_seq* --> SSTNode[]
             Token _keyword;
             Token _keyword_1;
             SSTNode[] a;
@@ -2814,7 +2547,6 @@ public final class Parser extends AbstractParser {
                 &&
                 (_keyword_1 = expect(513)) != null  // token='import'
                 &&
-                // TODO replacing asdl_alias_seq* --> SSTNode[]
                 (c = import_from_targets_rule()) != null  // import_from_targets
             )
             {
@@ -2833,7 +2565,6 @@ public final class Parser extends AbstractParser {
         }
         { // 'from' (('.' | '...'))+ 'import' import_from_targets
             debugMessageln("%d> import_from[%d-%d]: %s", level, _mark, mark(), "'from' (('.' | '...'))+ 'import' import_from_targets");
-            // TODO replacing asdl_alias_seq* --> SSTNode[]
             Token _keyword;
             Token _keyword_1;
             SSTNode[] a;
@@ -2845,7 +2576,6 @@ public final class Parser extends AbstractParser {
                 &&
                 (_keyword_1 = expect(513)) != null  // token='import'
                 &&
-                // TODO replacing asdl_alias_seq* --> SSTNode[]
                 (b = import_from_targets_rule()) != null  // import_from_targets
             )
             {
@@ -2869,7 +2599,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing asdl_alias_seq* --> SSTNode[]
     // import_from_targets:
     //     | '(' import_from_as_names ','? ')'
     //     | import_from_as_names !','
@@ -2887,7 +2616,6 @@ public final class Parser extends AbstractParser {
         }
         { // '(' import_from_as_names ','? ')'
             debugMessageln("%d> import_from_targets[%d-%d]: %s", level, _mark, mark(), "'(' import_from_as_names ','? ')'");
-            // TODO replacing asdl_alias_seq* --> SSTNode[]
             Token _literal;
             Token _literal_1;
             Object _opt_var;
@@ -2895,7 +2623,6 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                // TODO replacing asdl_alias_seq* --> SSTNode[]
                 (a = import_from_as_names_rule()) != null  // import_from_as_names
                 &&
                 ((_opt_var = _tmp_37_rule()) != null || true)  // ','?
@@ -2916,10 +2643,8 @@ public final class Parser extends AbstractParser {
         }
         { // import_from_as_names !','
             debugMessageln("%d> import_from_targets[%d-%d]: %s", level, _mark, mark(), "import_from_as_names !','");
-            // TODO replacing asdl_alias_seq* --> SSTNode[]
             SSTNode[] import_from_as_names_var;
             if (
-                // TODO replacing asdl_alias_seq* --> SSTNode[]
                 (import_from_as_names_var = import_from_as_names_rule()) != null  // import_from_as_names
                 &&
                 genLookahead_expect(false, 12)  // token=','
@@ -2981,7 +2706,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing asdl_alias_seq* --> SSTNode[]
     // import_from_as_names: ','.import_from_as_name+
     public SSTNode[] import_from_as_names_rule()
     {
@@ -2995,7 +2719,6 @@ public final class Parser extends AbstractParser {
         }
         { // ','.import_from_as_name+
             debugMessageln("%d> import_from_as_names[%d-%d]: %s", level, _mark, mark(), "','.import_from_as_name+");
-            // TODO replacing asdl_alias_seq* --> SSTNode[]
             SSTNode[] a;
             if (
                 (a = (SSTNode[])_gather_38_rule()) != null  // ','.import_from_as_name+
@@ -3019,7 +2742,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing alias_ty --> SSTNode
     // import_from_as_name: NAME ['as' NAME]
     public SSTNode import_from_as_name_rule()
     {
@@ -3061,7 +2783,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing asdl_alias_seq* --> SSTNode[]
     // dotted_as_names: ','.dotted_as_name+
     public SSTNode[] dotted_as_names_rule()
     {
@@ -3075,7 +2796,6 @@ public final class Parser extends AbstractParser {
         }
         { // ','.dotted_as_name+
             debugMessageln("%d> dotted_as_names[%d-%d]: %s", level, _mark, mark(), "','.dotted_as_name+");
-            // TODO replacing asdl_alias_seq* --> SSTNode[]
             SSTNode[] a;
             if (
                 (a = (SSTNode[])_gather_41_rule()) != null  // ','.dotted_as_name+
@@ -3099,7 +2819,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing alias_ty --> SSTNode
     // dotted_as_name: dotted_name ['as' NAME]
     public SSTNode dotted_as_name_rule()
     {
@@ -3220,7 +2939,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // if_stmt:
     //     | 'if' named_expression ':' block elif_stmt
     //     | 'if' named_expression ':' block else_block?
@@ -3237,7 +2955,6 @@ public final class Parser extends AbstractParser {
         }
         { // 'if' named_expression ':' block elif_stmt
             debugMessageln("%d> if_stmt[%d-%d]: %s", level, _mark, mark(), "'if' named_expression ':' block elif_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             Token _keyword;
             Token _literal;
             SSTNode a;
@@ -3252,7 +2969,6 @@ public final class Parser extends AbstractParser {
                 &&
                 (b = block_rule()) != null  // block
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (c = elif_stmt_rule()) != null  // elif_stmt
             )
             {
@@ -3326,7 +3042,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // elif_stmt:
     //     | 'elif' named_expression ':' block elif_stmt
     //     | 'elif' named_expression ':' block else_block?
@@ -3343,7 +3058,6 @@ public final class Parser extends AbstractParser {
         }
         { // 'elif' named_expression ':' block elif_stmt
             debugMessageln("%d> elif_stmt[%d-%d]: %s", level, _mark, mark(), "'elif' named_expression ':' block elif_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             Token _keyword;
             Token _literal;
             SSTNode a;
@@ -3358,7 +3072,6 @@ public final class Parser extends AbstractParser {
                 &&
                 (b = block_rule()) != null  // block
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (c = elif_stmt_rule()) != null  // elif_stmt
             )
             {
@@ -3474,7 +3187,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // while_stmt: 'while' named_expression ':' block else_block? | invalid_while_stmt
     public SSTNode while_stmt_rule()
     {
@@ -3543,7 +3255,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // for_stmt:
     //     | 'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?
     //     | ASYNC 'for' star_targets 'in' ~ star_expressions &&':' TYPE_COMMENT? block else_block?
@@ -3682,7 +3393,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // with_stmt:
     //     | 'with' '(' ','.with_item+ ','? ')' ':' block
     //     | 'with' ','.with_item+ ':' TYPE_COMMENT? block
@@ -3701,7 +3411,6 @@ public final class Parser extends AbstractParser {
         }
         { // 'with' '(' ','.with_item+ ','? ')' ':' block
             debugMessageln("%d> with_stmt[%d-%d]: %s", level, _mark, mark(), "'with' '(' ','.with_item+ ','? ')' ':' block");
-            // TODO replacing asdl_withitem_seq* --> SSTNode[]
             Token _keyword;
             Token _literal;
             Token _literal_1;
@@ -3740,7 +3449,6 @@ public final class Parser extends AbstractParser {
         }
         { // 'with' ','.with_item+ ':' TYPE_COMMENT? block
             debugMessageln("%d> with_stmt[%d-%d]: %s", level, _mark, mark(), "'with' ','.with_item+ ':' TYPE_COMMENT? block");
-            // TODO replacing asdl_withitem_seq* --> SSTNode[]
             Token _keyword;
             Token _literal;
             SSTNode[] a;
@@ -3773,7 +3481,6 @@ public final class Parser extends AbstractParser {
         }
         { // ASYNC 'with' '(' ','.with_item+ ','? ')' ':' block
             debugMessageln("%d> with_stmt[%d-%d]: %s", level, _mark, mark(), "ASYNC 'with' '(' ','.with_item+ ','? ')' ':' block");
-            // TODO replacing asdl_withitem_seq* --> SSTNode[]
             Token _keyword;
             Token _literal;
             Token _literal_1;
@@ -3815,7 +3522,6 @@ public final class Parser extends AbstractParser {
         }
         { // ASYNC 'with' ','.with_item+ ':' TYPE_COMMENT? block
             debugMessageln("%d> with_stmt[%d-%d]: %s", level, _mark, mark(), "ASYNC 'with' ','.with_item+ ':' TYPE_COMMENT? block");
-            // TODO replacing asdl_withitem_seq* --> SSTNode[]
             Token _keyword;
             Token _literal;
             SSTNode[] a;
@@ -3874,7 +3580,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing withitem_ty --> SSTNode
     // with_item:
     //     | expression 'as' star_target &(',' | ')' | ':')
     //     | invalid_with_item
@@ -3962,7 +3667,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // try_stmt:
     //     | 'try' &&':' block finally_block
     //     | 'try' &&':' block except_block+ else_block? finally_block?
@@ -4007,7 +3711,6 @@ public final class Parser extends AbstractParser {
         }
         { // 'try' &&':' block except_block+ else_block? finally_block?
             debugMessageln("%d> try_stmt[%d-%d]: %s", level, _mark, mark(), "'try' &&':' block except_block+ else_block? finally_block?");
-            // TODO replacing asdl_excepthandler_seq* --> SSTNode[]
             Token _keyword;
             Token _literal;
             SSTNode[] b;
@@ -4048,7 +3751,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing excepthandler_ty --> SSTNode
     // except_block:
     //     | 'except' expression ['as' NAME] ':' block
     //     | 'except' ':' block
@@ -4188,7 +3890,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // match_stmt:
     //     | "match" subject_expr ':' NEWLINE INDENT case_block+ DEDENT
     //     | invalid_match_stmt
@@ -4204,7 +3905,6 @@ public final class Parser extends AbstractParser {
         }
         { // "match" subject_expr ':' NEWLINE INDENT case_block+ DEDENT
             debugMessageln("%d> match_stmt[%d-%d]: %s", level, _mark, mark(), "\"match\" subject_expr ':' NEWLINE INDENT case_block+ DEDENT");
-            // TODO replacing asdl_match_case_seq* --> SSTNode[]
             SSTNode _keyword;
             Token _literal;
             SSTNode[] cases;
@@ -4279,7 +3979,6 @@ public final class Parser extends AbstractParser {
         }
         { // star_named_expression ',' star_named_expressions?
             debugMessageln("%d> subject_expr[%d-%d]: %s", level, _mark, mark(), "star_named_expression ',' star_named_expressions?");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             Token _literal;
             SSTNode value;
             Object values;
@@ -4288,7 +3987,6 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 ((values = star_named_expressions_rule()) != null || true)  // star_named_expressions?
             )
             {
@@ -4330,7 +4028,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing match_case_ty --> SSTNode
     // case_block: "case" patterns guard? ':' block | invalid_case_block
     public SSTNode case_block_rule()
     {
@@ -4453,11 +4150,8 @@ public final class Parser extends AbstractParser {
         }
         { // open_sequence_pattern
             debugMessageln("%d> patterns[%d-%d]: %s", level, _mark, mark(), "open_sequence_pattern");
-            // TODO replacing asdl_seq* --> SSTNode[]
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] values;
             if (
-                // TODO replacing asdl_seq* --> SSTNode[]
                 (values = (SSTNode[])open_sequence_pattern_rule()) != null  // open_sequence_pattern
             )
             {
@@ -4610,7 +4304,6 @@ public final class Parser extends AbstractParser {
         }
         { // '|'.closed_pattern+
             debugMessageln("%d> or_pattern[%d-%d]: %s", level, _mark, mark(), "'|'.closed_pattern+");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] patterns;
             if (
                 (patterns = (SSTNode[])_gather_67_rule()) != null  // '|'.closed_pattern+
@@ -4824,7 +4517,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
         Token startToken = getAndInitializeToken();
         { // signed_number !('+' | '-')
             debugMessageln("%d> literal_pattern[%d-%d]: %s", level, _mark, mark(), "signed_number !('+' | '-')");
@@ -5324,14 +5016,12 @@ public final class Parser extends AbstractParser {
         }
         { // '[' maybe_sequence_pattern? ']'
             debugMessageln("%d> sequence_pattern[%d-%d]: %s", level, _mark, mark(), "'[' maybe_sequence_pattern? ']'");
-            // TODO replacing asdl_seq* --> SSTNode[]
             Token _literal;
             Token _literal_1;
             Object values;
             if (
                 (_literal = expect(9)) != null  // token='['
                 &&
-                // TODO replacing asdl_seq* --> SSTNode[]
                 ((values = maybe_sequence_pattern_rule()) != null || true)  // maybe_sequence_pattern?
                 &&
                 (_literal_1 = expect(10)) != null  // token=']'
@@ -5352,14 +5042,12 @@ public final class Parser extends AbstractParser {
         }
         { // '(' open_sequence_pattern? ')'
             debugMessageln("%d> sequence_pattern[%d-%d]: %s", level, _mark, mark(), "'(' open_sequence_pattern? ')'");
-            // TODO replacing asdl_seq* --> SSTNode[]
             Token _literal;
             Token _literal_1;
             Object values;
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
-                // TODO replacing asdl_seq* --> SSTNode[]
                 ((values = open_sequence_pattern_rule()) != null || true)  // open_sequence_pattern?
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
@@ -5385,7 +5073,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing asdl_seq* --> SSTNode[]
     // open_sequence_pattern: maybe_star_pattern ',' maybe_sequence_pattern?
     public SSTNode[] open_sequence_pattern_rule()
     {
@@ -5399,7 +5086,6 @@ public final class Parser extends AbstractParser {
         }
         { // maybe_star_pattern ',' maybe_sequence_pattern?
             debugMessageln("%d> open_sequence_pattern[%d-%d]: %s", level, _mark, mark(), "maybe_star_pattern ',' maybe_sequence_pattern?");
-            // TODO replacing asdl_seq* --> SSTNode[]
             Token _literal;
             SSTNode value;
             Object values;
@@ -5408,7 +5094,6 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing asdl_seq* --> SSTNode[]
                 ((values = maybe_sequence_pattern_rule()) != null || true)  // maybe_sequence_pattern?
             )
             {
@@ -5430,7 +5115,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing asdl_seq* --> SSTNode[]
     // maybe_sequence_pattern: ','.maybe_star_pattern+ ','?
     public SSTNode[] maybe_sequence_pattern_rule()
     {
@@ -5580,14 +5264,12 @@ public final class Parser extends AbstractParser {
         }
         { // '{' items_pattern? '}'
             debugMessageln("%d> mapping_pattern[%d-%d]: %s", level, _mark, mark(), "'{' items_pattern? '}'");
-            // TODO replacing asdl_seq* --> SSTNode[]
             Token _literal;
             Token _literal_1;
             Object items;
             if (
                 (_literal = expect(25)) != null  // token='{'
                 &&
-                // TODO replacing asdl_seq* --> SSTNode[]
                 ((items = items_pattern_rule()) != null || true)  // items_pattern?
                 &&
                 (_literal_1 = expect(26)) != null  // token='}'
@@ -5613,7 +5295,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing asdl_seq* --> SSTNode[]
     // items_pattern: ','.key_value_pattern+ ','?
     public SSTNode[] items_pattern_rule()
     {
@@ -5655,7 +5336,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing KeyValuePair* --> SSTNode[]
     // key_value_pattern: (literal_pattern | value_pattern) ':' pattern | double_star_pattern
     public SSTNode[] key_value_pattern_rule()
     {
@@ -5695,10 +5375,8 @@ public final class Parser extends AbstractParser {
         }
         { // double_star_pattern
             debugMessageln("%d> key_value_pattern[%d-%d]: %s", level, _mark, mark(), "double_star_pattern");
-            // TODO replacing KeyValuePair* --> SSTNode[]
             SSTNode[] double_star_pattern_var;
             if (
-                // TODO replacing KeyValuePair* --> SSTNode[]
                 (double_star_pattern_var = double_star_pattern_rule()) != null  // double_star_pattern
             )
             {
@@ -5720,7 +5398,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing KeyValuePair* --> SSTNode[]
     // double_star_pattern: '**' capture_pattern
     public SSTNode[] double_star_pattern_rule()
     {
@@ -5805,7 +5482,6 @@ public final class Parser extends AbstractParser {
         }
         { // name_or_attr '(' positional_patterns ','? ')'
             debugMessageln("%d> class_pattern[%d-%d]: %s", level, _mark, mark(), "name_or_attr '(' positional_patterns ','? ')'");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             Token _literal;
             Token _literal_1;
             Object _opt_var;
@@ -5816,7 +5492,6 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (args = positional_patterns_rule()) != null  // positional_patterns
                 &&
                 ((_opt_var = expect(12)) != null || true)  // ','?
@@ -5839,7 +5514,6 @@ public final class Parser extends AbstractParser {
         }
         { // name_or_attr '(' keyword_patterns ','? ')'
             debugMessageln("%d> class_pattern[%d-%d]: %s", level, _mark, mark(), "name_or_attr '(' keyword_patterns ','? ')'");
-            // TODO replacing asdl_keyword_seq* --> SSTNode[]
             Token _literal;
             Token _literal_1;
             Object _opt_var;
@@ -5850,7 +5524,6 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
-                // TODO replacing asdl_keyword_seq* --> SSTNode[]
                 (keywords = keyword_patterns_rule()) != null  // keyword_patterns
                 &&
                 ((_opt_var = expect(12)) != null || true)  // ','?
@@ -5873,8 +5546,6 @@ public final class Parser extends AbstractParser {
         }
         { // name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')'
             debugMessageln("%d> class_pattern[%d-%d]: %s", level, _mark, mark(), "name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')'");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
-            // TODO replacing asdl_keyword_seq* --> SSTNode[]
             Token _literal;
             Token _literal_1;
             Token _literal_2;
@@ -5887,12 +5558,10 @@ public final class Parser extends AbstractParser {
                 &&
                 (_literal = expect(7)) != null  // token='('
                 &&
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (args = positional_patterns_rule()) != null  // positional_patterns
                 &&
                 (_literal_1 = expect(12)) != null  // token=','
                 &&
-                // TODO replacing asdl_keyword_seq* --> SSTNode[]
                 (keywords = keyword_patterns_rule()) != null  // keyword_patterns
                 &&
                 ((_opt_var = expect(12)) != null || true)  // ','?
@@ -5920,7 +5589,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing asdl_expr_seq* --> SSTNode[]
     // positional_patterns: ','.pattern+
     public SSTNode[] positional_patterns_rule()
     {
@@ -5934,7 +5602,6 @@ public final class Parser extends AbstractParser {
         }
         { // ','.pattern+
             debugMessageln("%d> positional_patterns[%d-%d]: %s", level, _mark, mark(), "','.pattern+");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] args;
             if (
                 (args = (SSTNode[])_gather_78_rule()) != null  // ','.pattern+
@@ -5960,7 +5627,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing asdl_keyword_seq* --> SSTNode[]
     // keyword_patterns: ','.keyword_pattern+
     public SSTNode[] keyword_patterns_rule()
     {
@@ -5974,7 +5640,6 @@ public final class Parser extends AbstractParser {
         }
         { // ','.keyword_pattern+
             debugMessageln("%d> keyword_patterns[%d-%d]: %s", level, _mark, mark(), "','.keyword_pattern+");
-            // TODO replacing asdl_keyword_seq* --> SSTNode[]
             SSTNode[] keywords;
             if (
                 (keywords = (SSTNode[])_gather_80_rule()) != null  // ','.keyword_pattern+
@@ -6000,7 +5665,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing keyword_ty --> SSTNode
     // keyword_pattern: NAME '=' pattern
     public SSTNode keyword_pattern_rule()
     {
@@ -6045,7 +5709,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // return_stmt: 'return' star_expressions?
     public SSTNode return_stmt_rule()
     {
@@ -6087,7 +5750,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // raise_stmt: 'raise' expression ['from' expression] | 'raise'
     public SSTNode raise_stmt_rule()
     {
@@ -6152,7 +5814,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // function_def: decorators function_def_raw | function_def_raw
     public SSTNode function_def_rule()
     {
@@ -6166,15 +5827,11 @@ public final class Parser extends AbstractParser {
         }
         { // decorators function_def_raw
             debugMessageln("%d> function_def[%d-%d]: %s", level, _mark, mark(), "decorators function_def_raw");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode[] d;
             SSTNode f;
             if (
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (d = decorators_rule()) != null  // decorators
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (f = function_def_raw_rule()) != null  // function_def_raw
             )
             {
@@ -6193,10 +5850,8 @@ public final class Parser extends AbstractParser {
         }
         { // function_def_raw
             debugMessageln("%d> function_def[%d-%d]: %s", level, _mark, mark(), "function_def_raw");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode function_def_raw_var;
             if (
-                // TODO replacing stmt_ty --> SSTNode
                 (function_def_raw_var = function_def_raw_rule()) != null  // function_def_raw
             )
             {
@@ -6218,7 +5873,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // function_def_raw:
     //     | 'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block
     //     | ASYNC 'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block
@@ -6330,7 +5984,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing Token* --> SSTNode[]
     // func_type_comment:
     //     | NEWLINE TYPE_COMMENT &(NEWLINE INDENT)
     //     | invalid_double_type_comments
@@ -6411,7 +6064,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing arguments_ty --> SSTNode
     // params: invalid_parameters | parameters
     public SSTNode params_rule()
     {
@@ -6443,10 +6095,8 @@ public final class Parser extends AbstractParser {
         }
         { // parameters
             debugMessageln("%d> params[%d-%d]: %s", level, _mark, mark(), "parameters");
-            // TODO replacing arguments_ty --> SSTNode
             SSTNode parameters_var;
             if (
-                // TODO replacing arguments_ty --> SSTNode
                 (parameters_var = parameters_rule()) != null  // parameters
             )
             {
@@ -6468,7 +6118,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing arguments_ty --> SSTNode
     // parameters:
     //     | slash_no_default param_no_default* param_with_default* star_etc?
     //     | slash_with_default param_with_default* star_etc?
@@ -6487,14 +6136,11 @@ public final class Parser extends AbstractParser {
         }
         { // slash_no_default param_no_default* param_with_default* star_etc?
             debugMessageln("%d> parameters[%d-%d]: %s", level, _mark, mark(), "slash_no_default param_no_default* param_with_default* star_etc?");
-            // TODO replacing asdl_arg_seq* --> SSTNode[]
-            // TODO replacing asdl_arg_seq* --> SSTNode[]
             SSTNode[] a;
             SSTNode[] b;
             SSTNode[] c;
             Object d;
             if (
-                // TODO replacing asdl_arg_seq* --> SSTNode[]
                 (a = slash_no_default_rule()) != null  // slash_no_default
                 &&
                 (b = (SSTNode[])_loop0_91_rule()) != null  // param_no_default*
@@ -6519,12 +6165,10 @@ public final class Parser extends AbstractParser {
         }
         { // slash_with_default param_with_default* star_etc?
             debugMessageln("%d> parameters[%d-%d]: %s", level, _mark, mark(), "slash_with_default param_with_default* star_etc?");
-            // TODO replacing SlashWithDefault* --> SSTNode[]
             SSTNode[] a;
             SSTNode[] b;
             Object c;
             if (
-                // TODO replacing SlashWithDefault* --> SSTNode[]
                 (a = slash_with_default_rule()) != null  // slash_with_default
                 &&
                 (b = _loop0_94_rule()) != null  // param_with_default*
@@ -6547,7 +6191,6 @@ public final class Parser extends AbstractParser {
         }
         { // param_no_default+ param_with_default* star_etc?
             debugMessageln("%d> parameters[%d-%d]: %s", level, _mark, mark(), "param_no_default+ param_with_default* star_etc?");
-            // TODO replacing asdl_arg_seq* --> SSTNode[]
             SSTNode[] a;
             SSTNode[] b;
             Object c;
@@ -6597,10 +6240,8 @@ public final class Parser extends AbstractParser {
         }
         { // star_etc
             debugMessageln("%d> parameters[%d-%d]: %s", level, _mark, mark(), "star_etc");
-            // TODO replacing StarEtc* --> SSTNode[]
             SSTNode[] a;
             if (
-                // TODO replacing StarEtc* --> SSTNode[]
                 (a = star_etc_rule()) != null  // star_etc
             )
             {
@@ -6624,7 +6265,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing asdl_arg_seq* --> SSTNode[]
     // slash_no_default: param_no_default+ '/' ',' | param_no_default+ '/' &')'
     public SSTNode[] slash_no_default_rule()
     {
@@ -6638,7 +6278,6 @@ public final class Parser extends AbstractParser {
         }
         { // param_no_default+ '/' ','
             debugMessageln("%d> slash_no_default[%d-%d]: %s", level, _mark, mark(), "param_no_default+ '/' ','");
-            // TODO replacing asdl_arg_seq* --> SSTNode[]
             Token _literal;
             Token _literal_1;
             SSTNode[] a;
@@ -6663,7 +6302,6 @@ public final class Parser extends AbstractParser {
         }
         { // param_no_default+ '/' &')'
             debugMessageln("%d> slash_no_default[%d-%d]: %s", level, _mark, mark(), "param_no_default+ '/' &')'");
-            // TODO replacing asdl_arg_seq* --> SSTNode[]
             Token _literal;
             SSTNode[] a;
             if (
@@ -6692,7 +6330,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing SlashWithDefault* --> SSTNode[]
     // slash_with_default:
     //     | param_no_default* param_with_default+ '/' ','
     //     | param_no_default* param_with_default+ '/' &')'
@@ -6770,7 +6407,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing StarEtc* --> SSTNode[]
     // star_etc:
     //     | '*' param_no_default param_maybe_default* kwds?
     //     | '*' ',' param_maybe_default+ kwds?
@@ -6788,7 +6424,6 @@ public final class Parser extends AbstractParser {
         }
         { // '*' param_no_default param_maybe_default* kwds?
             debugMessageln("%d> star_etc[%d-%d]: %s", level, _mark, mark(), "'*' param_no_default param_maybe_default* kwds?");
-            // TODO replacing arg_ty --> SSTNode
             Token _literal;
             SSTNode a;
             SSTNode[] b;
@@ -6796,7 +6431,6 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(16)) != null  // token='*'
                 &&
-                // TODO replacing arg_ty --> SSTNode
                 (a = param_no_default_rule()) != null  // param_no_default
                 &&
                 (b = _loop0_107_rule()) != null  // param_maybe_default*
@@ -6848,10 +6482,8 @@ public final class Parser extends AbstractParser {
         }
         { // kwds
             debugMessageln("%d> star_etc[%d-%d]: %s", level, _mark, mark(), "kwds");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode a;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (a = kwds_rule()) != null  // kwds
             )
             {
@@ -6893,7 +6525,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing arg_ty --> SSTNode
     // kwds: '**' param_no_default
     public SSTNode kwds_rule()
     {
@@ -6907,13 +6538,11 @@ public final class Parser extends AbstractParser {
         }
         { // '**' param_no_default
             debugMessageln("%d> kwds[%d-%d]: %s", level, _mark, mark(), "'**' param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             Token _literal;
             SSTNode a;
             if (
                 (_literal = expect(35)) != null  // token='**'
                 &&
-                // TODO replacing arg_ty --> SSTNode
                 (a = param_no_default_rule()) != null  // param_no_default
             )
             {
@@ -6935,7 +6564,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing arg_ty --> SSTNode
     // param_no_default: param ',' TYPE_COMMENT? | param TYPE_COMMENT? &')'
     public SSTNode param_no_default_rule()
     {
@@ -6949,12 +6577,10 @@ public final class Parser extends AbstractParser {
         }
         { // param ',' TYPE_COMMENT?
             debugMessageln("%d> param_no_default[%d-%d]: %s", level, _mark, mark(), "param ',' TYPE_COMMENT?");
-            // TODO replacing arg_ty --> SSTNode
             Token _literal;
             SSTNode a;
             Object tc;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (a = param_rule()) != null  // param
                 &&
                 (_literal = expect(12)) != null  // token=','
@@ -6977,11 +6603,9 @@ public final class Parser extends AbstractParser {
         }
         { // param TYPE_COMMENT? &')'
             debugMessageln("%d> param_no_default[%d-%d]: %s", level, _mark, mark(), "param TYPE_COMMENT? &')'");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode a;
             Object tc;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (a = param_rule()) != null  // param
                 &&
                 ((tc = expect(Token.Kind.TYPE_COMMENT)) != null || true)  // TYPE_COMMENT?
@@ -7009,7 +6633,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing NameDefaultPair* --> SSTNode[]
     // param_with_default:
     //     | param default_param ',' TYPE_COMMENT?
     //     | param default_param TYPE_COMMENT? &')'
@@ -7025,13 +6648,11 @@ public final class Parser extends AbstractParser {
         }
         { // param default_param ',' TYPE_COMMENT?
             debugMessageln("%d> param_with_default[%d-%d]: %s", level, _mark, mark(), "param default_param ',' TYPE_COMMENT?");
-            // TODO replacing arg_ty --> SSTNode
             Token _literal;
             SSTNode a;
             SSTNode c;
             Object tc;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (a = param_rule()) != null  // param
                 &&
                 (c = default_param_rule()) != null  // default_param
@@ -7056,12 +6677,10 @@ public final class Parser extends AbstractParser {
         }
         { // param default_param TYPE_COMMENT? &')'
             debugMessageln("%d> param_with_default[%d-%d]: %s", level, _mark, mark(), "param default_param TYPE_COMMENT? &')'");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode a;
             SSTNode c;
             Object tc;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (a = param_rule()) != null  // param
                 &&
                 (c = default_param_rule()) != null  // default_param
@@ -7091,7 +6710,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing NameDefaultPair* --> SSTNode[]
     // param_maybe_default:
     //     | param default_param? ',' TYPE_COMMENT?
     //     | param default_param? TYPE_COMMENT? &')'
@@ -7107,13 +6725,11 @@ public final class Parser extends AbstractParser {
         }
         { // param default_param? ',' TYPE_COMMENT?
             debugMessageln("%d> param_maybe_default[%d-%d]: %s", level, _mark, mark(), "param default_param? ',' TYPE_COMMENT?");
-            // TODO replacing arg_ty --> SSTNode
             Token _literal;
             SSTNode a;
             Object c;
             Object tc;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (a = param_rule()) != null  // param
                 &&
                 ((c = default_param_rule()) != null || true)  // default_param?
@@ -7138,12 +6754,10 @@ public final class Parser extends AbstractParser {
         }
         { // param default_param? TYPE_COMMENT? &')'
             debugMessageln("%d> param_maybe_default[%d-%d]: %s", level, _mark, mark(), "param default_param? TYPE_COMMENT? &')'");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode a;
             Object c;
             Object tc;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (a = param_rule()) != null  // param
                 &&
                 ((c = default_param_rule()) != null || true)  // default_param?
@@ -7173,7 +6787,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing arg_ty --> SSTNode
     // param: NAME annotation?
     public SSTNode param_rule()
     {
@@ -7293,7 +6906,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing asdl_expr_seq* --> SSTNode[]
     // decorators: (('@' named_expression NEWLINE))+
     public SSTNode[] decorators_rule()
     {
@@ -7307,7 +6919,6 @@ public final class Parser extends AbstractParser {
         }
         { // (('@' named_expression NEWLINE))+
             debugMessageln("%d> decorators[%d-%d]: %s", level, _mark, mark(), "(('@' named_expression NEWLINE))+");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] a;
             if (
                 (a = (SSTNode[])_loop1_111_rule()) != null  // (('@' named_expression NEWLINE))+
@@ -7331,7 +6942,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // class_def: decorators class_def_raw | class_def_raw
     public SSTNode class_def_rule()
     {
@@ -7345,15 +6955,11 @@ public final class Parser extends AbstractParser {
         }
         { // decorators class_def_raw
             debugMessageln("%d> class_def[%d-%d]: %s", level, _mark, mark(), "decorators class_def_raw");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode[] a;
             SSTNode b;
             if (
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (a = decorators_rule()) != null  // decorators
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (b = class_def_raw_rule()) != null  // class_def_raw
             )
             {
@@ -7372,10 +6978,8 @@ public final class Parser extends AbstractParser {
         }
         { // class_def_raw
             debugMessageln("%d> class_def[%d-%d]: %s", level, _mark, mark(), "class_def_raw");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode class_def_raw_var;
             if (
-                // TODO replacing stmt_ty --> SSTNode
                 (class_def_raw_var = class_def_raw_rule()) != null  // class_def_raw
             )
             {
@@ -7397,7 +7001,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing stmt_ty --> SSTNode
     // class_def_raw: 'class' NAME ['(' arguments? ')'] &&':' block
     public SSTNode class_def_raw_rule()
     {
@@ -7676,7 +7279,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing asdl_expr_seq* --> SSTNode[]
     // star_named_expressions: ','.star_named_expression+ ','?
     public SSTNode[] star_named_expressions_rule()
     {
@@ -7690,7 +7292,6 @@ public final class Parser extends AbstractParser {
         }
         { // ','.star_named_expression+ ','?
             debugMessageln("%d> star_named_expressions[%d-%d]: %s", level, _mark, mark(), "','.star_named_expression+ ','?");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             Object _opt_var;
             SSTNode[] a;
             if (
@@ -8230,7 +7831,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing arguments_ty --> SSTNode
     // lambda_params: invalid_lambda_parameters | lambda_parameters
     public SSTNode lambda_params_rule()
     {
@@ -8262,10 +7862,8 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_parameters
             debugMessageln("%d> lambda_params[%d-%d]: %s", level, _mark, mark(), "lambda_parameters");
-            // TODO replacing arguments_ty --> SSTNode
             SSTNode lambda_parameters_var;
             if (
-                // TODO replacing arguments_ty --> SSTNode
                 (lambda_parameters_var = lambda_parameters_rule()) != null  // lambda_parameters
             )
             {
@@ -8287,7 +7885,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing arguments_ty --> SSTNode
     // lambda_parameters:
     //     | lambda_slash_no_default lambda_param_no_default* lambda_param_with_default* lambda_star_etc?
     //     | lambda_slash_with_default lambda_param_with_default* lambda_star_etc?
@@ -8306,14 +7903,11 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_slash_no_default lambda_param_no_default* lambda_param_with_default* lambda_star_etc?
             debugMessageln("%d> lambda_parameters[%d-%d]: %s", level, _mark, mark(), "lambda_slash_no_default lambda_param_no_default* lambda_param_with_default* lambda_star_etc?");
-            // TODO replacing asdl_arg_seq* --> SSTNode[]
-            // TODO replacing asdl_arg_seq* --> SSTNode[]
             SSTNode[] a;
             SSTNode[] b;
             SSTNode[] c;
             Object d;
             if (
-                // TODO replacing asdl_arg_seq* --> SSTNode[]
                 (a = lambda_slash_no_default_rule()) != null  // lambda_slash_no_default
                 &&
                 (b = (SSTNode[])_loop0_121_rule()) != null  // lambda_param_no_default*
@@ -8338,12 +7932,10 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_slash_with_default lambda_param_with_default* lambda_star_etc?
             debugMessageln("%d> lambda_parameters[%d-%d]: %s", level, _mark, mark(), "lambda_slash_with_default lambda_param_with_default* lambda_star_etc?");
-            // TODO replacing SlashWithDefault* --> SSTNode[]
             SSTNode[] a;
             SSTNode[] b;
             Object c;
             if (
-                // TODO replacing SlashWithDefault* --> SSTNode[]
                 (a = lambda_slash_with_default_rule()) != null  // lambda_slash_with_default
                 &&
                 (b = _loop0_124_rule()) != null  // lambda_param_with_default*
@@ -8366,7 +7958,6 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_param_no_default+ lambda_param_with_default* lambda_star_etc?
             debugMessageln("%d> lambda_parameters[%d-%d]: %s", level, _mark, mark(), "lambda_param_no_default+ lambda_param_with_default* lambda_star_etc?");
-            // TODO replacing asdl_arg_seq* --> SSTNode[]
             SSTNode[] a;
             SSTNode[] b;
             Object c;
@@ -8416,10 +8007,8 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_star_etc
             debugMessageln("%d> lambda_parameters[%d-%d]: %s", level, _mark, mark(), "lambda_star_etc");
-            // TODO replacing StarEtc* --> SSTNode[]
             SSTNode[] a;
             if (
-                // TODO replacing StarEtc* --> SSTNode[]
                 (a = lambda_star_etc_rule()) != null  // lambda_star_etc
             )
             {
@@ -8443,7 +8032,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing asdl_arg_seq* --> SSTNode[]
     // lambda_slash_no_default:
     //     | lambda_param_no_default+ '/' ','
     //     | lambda_param_no_default+ '/' &':'
@@ -8459,7 +8047,6 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_param_no_default+ '/' ','
             debugMessageln("%d> lambda_slash_no_default[%d-%d]: %s", level, _mark, mark(), "lambda_param_no_default+ '/' ','");
-            // TODO replacing asdl_arg_seq* --> SSTNode[]
             Token _literal;
             Token _literal_1;
             SSTNode[] a;
@@ -8484,7 +8071,6 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_param_no_default+ '/' &':'
             debugMessageln("%d> lambda_slash_no_default[%d-%d]: %s", level, _mark, mark(), "lambda_param_no_default+ '/' &':'");
-            // TODO replacing asdl_arg_seq* --> SSTNode[]
             Token _literal;
             SSTNode[] a;
             if (
@@ -8513,7 +8099,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing SlashWithDefault* --> SSTNode[]
     // lambda_slash_with_default:
     //     | lambda_param_no_default* lambda_param_with_default+ '/' ','
     //     | lambda_param_no_default* lambda_param_with_default+ '/' &':'
@@ -8591,7 +8176,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing StarEtc* --> SSTNode[]
     // lambda_star_etc:
     //     | '*' lambda_param_no_default lambda_param_maybe_default* lambda_kwds?
     //     | '*' ',' lambda_param_maybe_default+ lambda_kwds?
@@ -8609,7 +8193,6 @@ public final class Parser extends AbstractParser {
         }
         { // '*' lambda_param_no_default lambda_param_maybe_default* lambda_kwds?
             debugMessageln("%d> lambda_star_etc[%d-%d]: %s", level, _mark, mark(), "'*' lambda_param_no_default lambda_param_maybe_default* lambda_kwds?");
-            // TODO replacing arg_ty --> SSTNode
             Token _literal;
             SSTNode a;
             SSTNode[] b;
@@ -8617,7 +8200,6 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(16)) != null  // token='*'
                 &&
-                // TODO replacing arg_ty --> SSTNode
                 (a = lambda_param_no_default_rule()) != null  // lambda_param_no_default
                 &&
                 (b = _loop0_137_rule()) != null  // lambda_param_maybe_default*
@@ -8669,10 +8251,8 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_kwds
             debugMessageln("%d> lambda_star_etc[%d-%d]: %s", level, _mark, mark(), "lambda_kwds");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode a;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (a = lambda_kwds_rule()) != null  // lambda_kwds
             )
             {
@@ -8714,7 +8294,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing arg_ty --> SSTNode
     // lambda_kwds: '**' lambda_param_no_default
     public SSTNode lambda_kwds_rule()
     {
@@ -8728,13 +8307,11 @@ public final class Parser extends AbstractParser {
         }
         { // '**' lambda_param_no_default
             debugMessageln("%d> lambda_kwds[%d-%d]: %s", level, _mark, mark(), "'**' lambda_param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             Token _literal;
             SSTNode a;
             if (
                 (_literal = expect(35)) != null  // token='**'
                 &&
-                // TODO replacing arg_ty --> SSTNode
                 (a = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
@@ -8756,7 +8333,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing arg_ty --> SSTNode
     // lambda_param_no_default: lambda_param ',' | lambda_param &':'
     public SSTNode lambda_param_no_default_rule()
     {
@@ -8770,11 +8346,9 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_param ','
             debugMessageln("%d> lambda_param_no_default[%d-%d]: %s", level, _mark, mark(), "lambda_param ','");
-            // TODO replacing arg_ty --> SSTNode
             Token _literal;
             SSTNode a;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (a = lambda_param_rule()) != null  // lambda_param
                 &&
                 (_literal = expect(12)) != null  // token=','
@@ -8793,10 +8367,8 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_param &':'
             debugMessageln("%d> lambda_param_no_default[%d-%d]: %s", level, _mark, mark(), "lambda_param &':'");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode a;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (a = lambda_param_rule()) != null  // lambda_param
                 &&
                 genLookahead_expect(true, 11)  // token=':'
@@ -8820,7 +8392,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing NameDefaultPair* --> SSTNode[]
     // lambda_param_with_default:
     //     | lambda_param default_param ','
     //     | lambda_param default_param &':'
@@ -8836,12 +8407,10 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_param default_param ','
             debugMessageln("%d> lambda_param_with_default[%d-%d]: %s", level, _mark, mark(), "lambda_param default_param ','");
-            // TODO replacing arg_ty --> SSTNode
             Token _literal;
             SSTNode a;
             SSTNode c;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (a = lambda_param_rule()) != null  // lambda_param
                 &&
                 (c = default_param_rule()) != null  // default_param
@@ -8864,11 +8433,9 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_param default_param &':'
             debugMessageln("%d> lambda_param_with_default[%d-%d]: %s", level, _mark, mark(), "lambda_param default_param &':'");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode a;
             SSTNode c;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (a = lambda_param_rule()) != null  // lambda_param
                 &&
                 (c = default_param_rule()) != null  // default_param
@@ -8896,7 +8463,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing NameDefaultPair* --> SSTNode[]
     // lambda_param_maybe_default:
     //     | lambda_param default_param? ','
     //     | lambda_param default_param? &':'
@@ -8912,12 +8478,10 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_param default_param? ','
             debugMessageln("%d> lambda_param_maybe_default[%d-%d]: %s", level, _mark, mark(), "lambda_param default_param? ','");
-            // TODO replacing arg_ty --> SSTNode
             Token _literal;
             SSTNode a;
             Object c;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (a = lambda_param_rule()) != null  // lambda_param
                 &&
                 ((c = default_param_rule()) != null || true)  // default_param?
@@ -8940,11 +8504,9 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_param default_param? &':'
             debugMessageln("%d> lambda_param_maybe_default[%d-%d]: %s", level, _mark, mark(), "lambda_param default_param? &':'");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode a;
             Object c;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (a = lambda_param_rule()) != null  // lambda_param
                 &&
                 ((c = default_param_rule()) != null || true)  // default_param?
@@ -8972,7 +8534,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing arg_ty --> SSTNode
     // lambda_param: NAME
     public SSTNode lambda_param_rule()
     {
@@ -9286,10 +8847,8 @@ public final class Parser extends AbstractParser {
         }
         { // noteq_bitwise_or
             debugMessageln("%d> compare_op_bitwise_or_pair[%d-%d]: %s", level, _mark, mark(), "noteq_bitwise_or");
-            // TODO replacing CmpopExprPair* --> SSTNode[]
             SSTNode[] noteq_bitwise_or_var;
             if (
-                // TODO replacing CmpopExprPair* --> SSTNode[]
                 (noteq_bitwise_or_var = noteq_bitwise_or_rule()) != null  // noteq_bitwise_or
             )
             {
@@ -9306,10 +8865,8 @@ public final class Parser extends AbstractParser {
         }
         { // lte_bitwise_or
             debugMessageln("%d> compare_op_bitwise_or_pair[%d-%d]: %s", level, _mark, mark(), "lte_bitwise_or");
-            // TODO replacing CmpopExprPair* --> SSTNode[]
             SSTNode[] lte_bitwise_or_var;
             if (
-                // TODO replacing CmpopExprPair* --> SSTNode[]
                 (lte_bitwise_or_var = lte_bitwise_or_rule()) != null  // lte_bitwise_or
             )
             {
@@ -9326,10 +8883,8 @@ public final class Parser extends AbstractParser {
         }
         { // lt_bitwise_or
             debugMessageln("%d> compare_op_bitwise_or_pair[%d-%d]: %s", level, _mark, mark(), "lt_bitwise_or");
-            // TODO replacing CmpopExprPair* --> SSTNode[]
             SSTNode[] lt_bitwise_or_var;
             if (
-                // TODO replacing CmpopExprPair* --> SSTNode[]
                 (lt_bitwise_or_var = lt_bitwise_or_rule()) != null  // lt_bitwise_or
             )
             {
@@ -9346,10 +8901,8 @@ public final class Parser extends AbstractParser {
         }
         { // gte_bitwise_or
             debugMessageln("%d> compare_op_bitwise_or_pair[%d-%d]: %s", level, _mark, mark(), "gte_bitwise_or");
-            // TODO replacing CmpopExprPair* --> SSTNode[]
             SSTNode[] gte_bitwise_or_var;
             if (
-                // TODO replacing CmpopExprPair* --> SSTNode[]
                 (gte_bitwise_or_var = gte_bitwise_or_rule()) != null  // gte_bitwise_or
             )
             {
@@ -9366,10 +8919,8 @@ public final class Parser extends AbstractParser {
         }
         { // gt_bitwise_or
             debugMessageln("%d> compare_op_bitwise_or_pair[%d-%d]: %s", level, _mark, mark(), "gt_bitwise_or");
-            // TODO replacing CmpopExprPair* --> SSTNode[]
             SSTNode[] gt_bitwise_or_var;
             if (
-                // TODO replacing CmpopExprPair* --> SSTNode[]
                 (gt_bitwise_or_var = gt_bitwise_or_rule()) != null  // gt_bitwise_or
             )
             {
@@ -9386,10 +8937,8 @@ public final class Parser extends AbstractParser {
         }
         { // notin_bitwise_or
             debugMessageln("%d> compare_op_bitwise_or_pair[%d-%d]: %s", level, _mark, mark(), "notin_bitwise_or");
-            // TODO replacing CmpopExprPair* --> SSTNode[]
             SSTNode[] notin_bitwise_or_var;
             if (
-                // TODO replacing CmpopExprPair* --> SSTNode[]
                 (notin_bitwise_or_var = notin_bitwise_or_rule()) != null  // notin_bitwise_or
             )
             {
@@ -9406,10 +8955,8 @@ public final class Parser extends AbstractParser {
         }
         { // in_bitwise_or
             debugMessageln("%d> compare_op_bitwise_or_pair[%d-%d]: %s", level, _mark, mark(), "in_bitwise_or");
-            // TODO replacing CmpopExprPair* --> SSTNode[]
             SSTNode[] in_bitwise_or_var;
             if (
-                // TODO replacing CmpopExprPair* --> SSTNode[]
                 (in_bitwise_or_var = in_bitwise_or_rule()) != null  // in_bitwise_or
             )
             {
@@ -9426,10 +8973,8 @@ public final class Parser extends AbstractParser {
         }
         { // isnot_bitwise_or
             debugMessageln("%d> compare_op_bitwise_or_pair[%d-%d]: %s", level, _mark, mark(), "isnot_bitwise_or");
-            // TODO replacing CmpopExprPair* --> SSTNode[]
             SSTNode[] isnot_bitwise_or_var;
             if (
-                // TODO replacing CmpopExprPair* --> SSTNode[]
                 (isnot_bitwise_or_var = isnot_bitwise_or_rule()) != null  // isnot_bitwise_or
             )
             {
@@ -9446,10 +8991,8 @@ public final class Parser extends AbstractParser {
         }
         { // is_bitwise_or
             debugMessageln("%d> compare_op_bitwise_or_pair[%d-%d]: %s", level, _mark, mark(), "is_bitwise_or");
-            // TODO replacing CmpopExprPair* --> SSTNode[]
             SSTNode[] is_bitwise_or_var;
             if (
-                // TODO replacing CmpopExprPair* --> SSTNode[]
                 (is_bitwise_or_var = is_bitwise_or_rule()) != null  // is_bitwise_or
             )
             {
@@ -9482,7 +9025,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (BinaryArithmeticSSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
         Token startToken = getAndInitializeToken();
         { // '==' bitwise_or
             debugMessageln("%d> eq_bitwise_or[%d-%d]: %s", level, _mark, mark(), "'==' bitwise_or");
@@ -9495,7 +9037,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d eq_bitwise_or[%d-%d]: %s succeeded!", level, _mark, mark(), "'==' bitwise_or");
-                // _PyPegen_get_last_nonwhitespace_token is called here in CPython
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
                     level--;
@@ -9518,7 +9059,6 @@ public final class Parser extends AbstractParser {
         return (BinaryArithmeticSSTNode)_res;
     }
 
-    // TODO replacing CmpopExprPair* --> SSTNode[]
     // noteq_bitwise_or: ('!=') bitwise_or
     public SSTNode[] noteq_bitwise_or_rule()
     {
@@ -9560,7 +9100,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing CmpopExprPair* --> SSTNode[]
     // lte_bitwise_or: '<=' bitwise_or
     public SSTNode[] lte_bitwise_or_rule()
     {
@@ -9602,7 +9141,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing CmpopExprPair* --> SSTNode[]
     // lt_bitwise_or: '<' bitwise_or
     public SSTNode[] lt_bitwise_or_rule()
     {
@@ -9644,7 +9182,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing CmpopExprPair* --> SSTNode[]
     // gte_bitwise_or: '>=' bitwise_or
     public SSTNode[] gte_bitwise_or_rule()
     {
@@ -9686,7 +9223,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing CmpopExprPair* --> SSTNode[]
     // gt_bitwise_or: '>' bitwise_or
     public SSTNode[] gt_bitwise_or_rule()
     {
@@ -9728,7 +9264,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing CmpopExprPair* --> SSTNode[]
     // notin_bitwise_or: 'not' 'in' bitwise_or
     public SSTNode[] notin_bitwise_or_rule()
     {
@@ -9773,7 +9308,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing CmpopExprPair* --> SSTNode[]
     // in_bitwise_or: 'in' bitwise_or
     public SSTNode[] in_bitwise_or_rule()
     {
@@ -9815,7 +9349,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing CmpopExprPair* --> SSTNode[]
     // isnot_bitwise_or: 'is' 'not' bitwise_or
     public SSTNode[] isnot_bitwise_or_rule()
     {
@@ -9860,7 +9393,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing CmpopExprPair* --> SSTNode[]
     // is_bitwise_or: 'is' bitwise_or
     public SSTNode[] is_bitwise_or_rule()
     {
@@ -10543,7 +10075,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
         Token startToken = getAndInitializeToken();
         { // '+' factor
             debugMessageln("%d> factor[%d-%d]: %s", level, _mark, mark(), "'+' factor");
@@ -10556,7 +10087,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d factor[%d-%d]: %s succeeded!", level, _mark, mark(), "'+' factor");
-                // _PyPegen_get_last_nonwhitespace_token is called here in CPython
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
                     level--;
@@ -10583,7 +10113,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d factor[%d-%d]: %s succeeded!", level, _mark, mark(), "'-' factor");
-                // _PyPegen_get_last_nonwhitespace_token is called here in CPython
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
                     level--;
@@ -10610,7 +10139,6 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d factor[%d-%d]: %s succeeded!", level, _mark, mark(), "'~' factor");
-                // _PyPegen_get_last_nonwhitespace_token is called here in CPython
                 Token endToken = getLastNonWhitespaceToken();
                 if (endToken == null) {
                     level--;
@@ -10985,7 +10513,6 @@ public final class Parser extends AbstractParser {
         }
         { // ','.slice+ ','?
             debugMessageln("%d> slices[%d-%d]: %s", level, _mark, mark(), "','.slice+ ','?");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             Object _opt_var;
             SSTNode[] a;
             if (
@@ -11100,7 +10627,6 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
-        // _PyPegen_fill_token is called here in CPython
         Token startToken = getAndInitializeToken();
         { // NAME
             debugMessageln("%d> atom[%d-%d]: %s", level, _mark, mark(), "NAME");
@@ -11128,7 +10654,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, _mark, mark(), "'True'");
-                _res = factory.createBooleanLiteral(true,startToken.startOffset,startToken.endOffset);;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBooleanLiteral(true,startToken.startOffset,endToken.endOffset);;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'True'");
                 cache.putResult(_mark, ATOM_ID, _res);
                 level--;
@@ -11146,7 +10677,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, _mark, mark(), "'False'");
-                _res = factory.createBooleanLiteral(false,startToken.startOffset,startToken.endOffset);;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBooleanLiteral(false,startToken.startOffset,endToken.endOffset);;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'False'");
                 cache.putResult(_mark, ATOM_ID, _res);
                 level--;
@@ -11394,7 +10930,6 @@ public final class Parser extends AbstractParser {
         }
         { // '[' named_expression for_if_clauses ']'
             debugMessageln("%d> listcomp[%d-%d]: %s", level, _mark, mark(), "'[' named_expression for_if_clauses ']'");
-            // TODO replacing asdl_comprehension_seq* --> SSTNode[]
             Token _literal;
             Token _literal_1;
             SSTNode a;
@@ -11404,7 +10939,6 @@ public final class Parser extends AbstractParser {
                 &&
                 (a = named_expression_rule()) != null  // named_expression
                 &&
-                // TODO replacing asdl_comprehension_seq* --> SSTNode[]
                 (b = for_if_clauses_rule()) != null  // for_if_clauses
                 &&
                 (_literal_1 = expect(10)) != null  // token=']'
@@ -11459,6 +10993,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '(' [star_named_expression ',' star_named_expressions?] ')'
             debugMessageln("%d> tuple[%d-%d]: %s", level, _mark, mark(), "'(' [star_named_expression ',' star_named_expressions?] ')'");
             Token _literal;
@@ -11473,9 +11008,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d tuple[%d-%d]: %s succeeded!", level, _mark, mark(), "'(' [star_named_expression ',' star_named_expressions?] ')'");
-                // TODO: node.action: _PyAST_Tuple ( a , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( a , Load , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createTuple((SSTNode[])a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' [star_named_expression ',' star_named_expressions?] ')'");
                 cache.putResult(_mark, TUPLE_ID, _res);
                 level--;
@@ -11565,7 +11103,6 @@ public final class Parser extends AbstractParser {
         }
         { // '(' direct_named_expression for_if_clauses ')'
             debugMessageln("%d> genexp[%d-%d]: %s", level, _mark, mark(), "'(' direct_named_expression for_if_clauses ')'");
-            // TODO replacing asdl_comprehension_seq* --> SSTNode[]
             Token _literal;
             Token _literal_1;
             SSTNode a;
@@ -11575,7 +11112,6 @@ public final class Parser extends AbstractParser {
                 &&
                 (a = direct_named_expression_rule()) != null  // direct_named_expression
                 &&
-                // TODO replacing asdl_comprehension_seq* --> SSTNode[]
                 (b = for_if_clauses_rule()) != null  // for_if_clauses
                 &&
                 (_literal_1 = expect(8)) != null  // token=')'
@@ -11632,14 +11168,12 @@ public final class Parser extends AbstractParser {
         }
         { // '{' star_named_expressions '}'
             debugMessageln("%d> set[%d-%d]: %s", level, _mark, mark(), "'{' star_named_expressions '}'");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             Token _literal;
             Token _literal_1;
             SSTNode[] a;
             if (
                 (_literal = expect(25)) != null  // token='{'
                 &&
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (a = star_named_expressions_rule()) != null  // star_named_expressions
                 &&
                 (_literal_1 = expect(26)) != null  // token='}'
@@ -11678,7 +11212,6 @@ public final class Parser extends AbstractParser {
         }
         { // '{' named_expression for_if_clauses '}'
             debugMessageln("%d> setcomp[%d-%d]: %s", level, _mark, mark(), "'{' named_expression for_if_clauses '}'");
-            // TODO replacing asdl_comprehension_seq* --> SSTNode[]
             Token _literal;
             Token _literal_1;
             SSTNode a;
@@ -11688,7 +11221,6 @@ public final class Parser extends AbstractParser {
                 &&
                 (a = named_expression_rule()) != null  // named_expression
                 &&
-                // TODO replacing asdl_comprehension_seq* --> SSTNode[]
                 (b = for_if_clauses_rule()) != null  // for_if_clauses
                 &&
                 (_literal_1 = expect(26)) != null  // token='}'
@@ -11813,8 +11345,6 @@ public final class Parser extends AbstractParser {
         }
         { // '{' kvpair for_if_clauses '}'
             debugMessageln("%d> dictcomp[%d-%d]: %s", level, _mark, mark(), "'{' kvpair for_if_clauses '}'");
-            // TODO replacing KeyValuePair* --> SSTNode[]
-            // TODO replacing asdl_comprehension_seq* --> SSTNode[]
             Token _literal;
             Token _literal_1;
             SSTNode[] a;
@@ -11822,10 +11352,8 @@ public final class Parser extends AbstractParser {
             if (
                 (_literal = expect(25)) != null  // token='{'
                 &&
-                // TODO replacing KeyValuePair* --> SSTNode[]
                 (a = kvpair_rule()) != null  // kvpair
                 &&
-                // TODO replacing asdl_comprehension_seq* --> SSTNode[]
                 (b = for_if_clauses_rule()) != null  // for_if_clauses
                 &&
                 (_literal_1 = expect(26)) != null  // token='}'
@@ -11869,7 +11397,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing asdl_seq* --> SSTNode[]
     // double_starred_kvpairs: ','.double_starred_kvpair+ ','?
     public SSTNode[] double_starred_kvpairs_rule()
     {
@@ -11909,7 +11436,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing KeyValuePair* --> SSTNode[]
     // double_starred_kvpair: '**' bitwise_or | kvpair
     public SSTNode[] double_starred_kvpair_rule()
     {
@@ -11946,10 +11472,8 @@ public final class Parser extends AbstractParser {
         }
         { // kvpair
             debugMessageln("%d> double_starred_kvpair[%d-%d]: %s", level, _mark, mark(), "kvpair");
-            // TODO replacing KeyValuePair* --> SSTNode[]
             SSTNode[] kvpair_var;
             if (
-                // TODO replacing KeyValuePair* --> SSTNode[]
                 (kvpair_var = kvpair_rule()) != null  // kvpair
             )
             {
@@ -11971,7 +11495,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing KeyValuePair* --> SSTNode[]
     // kvpair: expression ':' expression
     public SSTNode[] kvpair_rule()
     {
@@ -12016,7 +11539,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing asdl_comprehension_seq* --> SSTNode[]
     // for_if_clauses: for_if_clause+
     public SSTNode[] for_if_clauses_rule()
     {
@@ -12030,7 +11552,6 @@ public final class Parser extends AbstractParser {
         }
         { // for_if_clause+
             debugMessageln("%d> for_if_clauses[%d-%d]: %s", level, _mark, mark(), "for_if_clause+");
-            // TODO replacing asdl_comprehension_seq* --> SSTNode[]
             SSTNode[] a;
             if (
                 (a = (SSTNode[])_loop1_163_rule()) != null  // for_if_clause+
@@ -12054,7 +11575,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing comprehension_ty --> SSTNode
     // for_if_clause:
     //     | ASYNC 'for' star_targets 'in' ~ disjunction (('if' disjunction))*
     //     | 'for' star_targets 'in' ~ disjunction (('if' disjunction))*
@@ -12071,7 +11591,6 @@ public final class Parser extends AbstractParser {
         }
         { // ASYNC 'for' star_targets 'in' ~ disjunction (('if' disjunction))*
             debugMessageln("%d> for_if_clause[%d-%d]: %s", level, _mark, mark(), "ASYNC 'for' star_targets 'in' ~ disjunction (('if' disjunction))*");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             int _cut_var = 0;
             Token _keyword;
             Token _keyword_1;
@@ -12114,7 +11633,6 @@ public final class Parser extends AbstractParser {
         }
         { // 'for' star_targets 'in' ~ disjunction (('if' disjunction))*
             debugMessageln("%d> for_if_clause[%d-%d]: %s", level, _mark, mark(), "'for' star_targets 'in' ~ disjunction (('if' disjunction))*");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             int _cut_var = 0;
             Token _keyword;
             Token _keyword_1;
@@ -12316,7 +11834,6 @@ public final class Parser extends AbstractParser {
         }
         { // ','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]
             debugMessageln("%d> args[%d-%d]: %s", level, _mark, mark(), "','.(starred_expression | direct_named_expression !'=')+ [',' kwargs]");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] a;
             Object b;
             if (
@@ -12340,10 +11857,8 @@ public final class Parser extends AbstractParser {
         }
         { // kwargs
             debugMessageln("%d> args[%d-%d]: %s", level, _mark, mark(), "kwargs");
-            // TODO replacing asdl_seq* --> SSTNode[]
             SSTNode[] a;
             if (
-                // TODO replacing asdl_seq* --> SSTNode[]
                 (a = kwargs_rule()) != null  // kwargs
             )
             {
@@ -12367,7 +11882,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing asdl_seq* --> SSTNode[]
     // kwargs:
     //     | ','.kwarg_or_starred+ ',' ','.kwarg_or_double_starred+
     //     | ','.kwarg_or_starred+
@@ -12492,7 +12006,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing KeywordOrStarred* --> SSTNode[]
     // kwarg_or_starred: NAME '=' expression | starred_expression | invalid_kwarg
     public SSTNode[] kwarg_or_starred_rule()
     {
@@ -12575,7 +12088,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing KeywordOrStarred* --> SSTNode[]
     // kwarg_or_double_starred: NAME '=' expression | '**' expression | invalid_kwarg
     public SSTNode[] kwarg_or_double_starred_rule()
     {
@@ -12725,7 +12237,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing asdl_expr_seq* --> SSTNode[]
     // star_targets_list_seq: ','.star_target+ ','?
     public SSTNode[] star_targets_list_seq_rule()
     {
@@ -12739,7 +12250,6 @@ public final class Parser extends AbstractParser {
         }
         { // ','.star_target+ ','?
             debugMessageln("%d> star_targets_list_seq[%d-%d]: %s", level, _mark, mark(), "','.star_target+ ','?");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             Object _opt_var;
             SSTNode[] a;
             if (
@@ -12766,7 +12276,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode[])_res;
     }
 
-    // TODO replacing asdl_expr_seq* --> SSTNode[]
     // star_targets_tuple_seq: star_target ((',' star_target))+ ','? | star_target ','
     public SSTNode[] star_targets_tuple_seq_rule()
     {
@@ -13270,7 +12779,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing asdl_expr_seq* --> SSTNode[]
     // del_targets: ','.del_target+ ','?
     public SSTNode[] del_targets_rule()
     {
@@ -13284,7 +12792,6 @@ public final class Parser extends AbstractParser {
         }
         { // ','.del_target+ ','?
             debugMessageln("%d> del_targets[%d-%d]: %s", level, _mark, mark(), "','.del_target+ ','?");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             Object _opt_var;
             SSTNode[] a;
             if (
@@ -13525,7 +13032,6 @@ public final class Parser extends AbstractParser {
         return (SSTNode)_res;
     }
 
-    // TODO replacing asdl_expr_seq* --> SSTNode[]
     // targets: ','.target+ ','?
     public SSTNode[] targets_rule()
     {
@@ -13539,7 +13045,6 @@ public final class Parser extends AbstractParser {
         }
         { // ','.target+ ','?
             debugMessageln("%d> targets[%d-%d]: %s", level, _mark, mark(), "','.target+ ','?");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             Object _opt_var;
             SSTNode[] a;
             if (
@@ -14068,7 +13573,6 @@ public final class Parser extends AbstractParser {
         }
         { // expression for_if_clauses ',' [args | expression for_if_clauses]
             debugMessageln("%d> invalid_arguments[%d-%d]: %s", level, _mark, mark(), "expression for_if_clauses ',' [args | expression for_if_clauses]");
-            // TODO replacing asdl_comprehension_seq* --> SSTNode[]
             Token _literal;
             Object _opt_var;
             SSTNode a;
@@ -14076,7 +13580,6 @@ public final class Parser extends AbstractParser {
             if (
                 (a = expression_rule()) != null  // expression
                 &&
-                // TODO replacing asdl_comprehension_seq* --> SSTNode[]
                 (for_if_clauses_var = for_if_clauses_rule()) != null  // for_if_clauses
                 &&
                 (_literal = expect(12)) != null  // token=','
@@ -14099,13 +13602,11 @@ public final class Parser extends AbstractParser {
         }
         { // args for_if_clauses
             debugMessageln("%d> invalid_arguments[%d-%d]: %s", level, _mark, mark(), "args for_if_clauses");
-            // TODO replacing asdl_comprehension_seq* --> SSTNode[]
             SSTNode a;
             SSTNode[] for_if_clauses_var;
             if (
                 (a = args_rule()) != null  // args
                 &&
-                // TODO replacing asdl_comprehension_seq* --> SSTNode[]
                 (for_if_clauses_var = for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
@@ -14124,7 +13625,6 @@ public final class Parser extends AbstractParser {
         }
         { // args ',' expression for_if_clauses
             debugMessageln("%d> invalid_arguments[%d-%d]: %s", level, _mark, mark(), "args ',' expression for_if_clauses");
-            // TODO replacing asdl_comprehension_seq* --> SSTNode[]
             Token _literal;
             SSTNode a;
             SSTNode args_var;
@@ -14136,7 +13636,6 @@ public final class Parser extends AbstractParser {
                 &&
                 (a = expression_rule()) != null  // expression
                 &&
-                // TODO replacing asdl_comprehension_seq* --> SSTNode[]
                 (for_if_clauses_var = for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
@@ -14530,14 +14029,12 @@ public final class Parser extends AbstractParser {
         }
         { // star_expressions augassign (yield_expr | star_expressions)
             debugMessageln("%d> invalid_assignment[%d-%d]: %s", level, _mark, mark(), "star_expressions augassign (yield_expr | star_expressions)");
-            // TODO replacing AugOperator* --> SSTNode[]
             Object _tmp_208_var;
             SSTNode a;
             SSTNode[] augassign_var;
             if (
                 (a = star_expressions_rule()) != null  // star_expressions
                 &&
-                // TODO replacing AugOperator* --> SSTNode[]
                 (augassign_var = augassign_rule()) != null  // augassign
                 &&
                 (_tmp_208_var = _tmp_208_rule()) != null  // yield_expr | star_expressions
@@ -14772,7 +14269,6 @@ public final class Parser extends AbstractParser {
         }
         { // ('[' | '(' | '{') starred_expression for_if_clauses
             debugMessageln("%d> invalid_comprehension[%d-%d]: %s", level, _mark, mark(), "('[' | '(' | '{') starred_expression for_if_clauses");
-            // TODO replacing asdl_comprehension_seq* --> SSTNode[]
             Object _tmp_209_var;
             SSTNode a;
             SSTNode[] for_if_clauses_var;
@@ -14781,7 +14277,6 @@ public final class Parser extends AbstractParser {
                 &&
                 (a = starred_expression_rule()) != null  // starred_expression
                 &&
-                // TODO replacing asdl_comprehension_seq* --> SSTNode[]
                 (for_if_clauses_var = for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
@@ -14800,7 +14295,6 @@ public final class Parser extends AbstractParser {
         }
         { // ('[' | '{') star_named_expression ',' star_named_expressions? for_if_clauses
             debugMessageln("%d> invalid_comprehension[%d-%d]: %s", level, _mark, mark(), "('[' | '{') star_named_expression ',' star_named_expressions? for_if_clauses");
-            // TODO replacing asdl_comprehension_seq* --> SSTNode[]
             Token _literal;
             Object _opt_var;
             Object _tmp_210_var;
@@ -14815,7 +14309,6 @@ public final class Parser extends AbstractParser {
                 &&
                 ((_opt_var = _tmp_211_rule()) != null || true)  // star_named_expressions?
                 &&
-                // TODO replacing asdl_comprehension_seq* --> SSTNode[]
                 (for_if_clauses_var = for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
@@ -14852,7 +14345,6 @@ public final class Parser extends AbstractParser {
         }
         { // '{' '**' bitwise_or for_if_clauses '}'
             debugMessageln("%d> invalid_dict_comprehension[%d-%d]: %s", level, _mark, mark(), "'{' '**' bitwise_or for_if_clauses '}'");
-            // TODO replacing asdl_comprehension_seq* --> SSTNode[]
             Token _literal;
             Token _literal_1;
             Token a;
@@ -14865,7 +14357,6 @@ public final class Parser extends AbstractParser {
                 &&
                 (bitwise_or_var = bitwise_or_rule()) != null  // bitwise_or
                 &&
-                // TODO replacing asdl_comprehension_seq* --> SSTNode[]
                 (for_if_clauses_var = for_if_clauses_rule()) != null  // for_if_clauses
                 &&
                 (_literal_1 = expect(26)) != null  // token='}'
@@ -14904,7 +14395,6 @@ public final class Parser extends AbstractParser {
         }
         { // param_no_default* invalid_parameters_helper param_no_default
             debugMessageln("%d> invalid_parameters[%d-%d]: %s", level, _mark, mark(), "param_no_default* invalid_parameters_helper param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode[] _loop0_212_var;
             Object invalid_parameters_helper_var;
             SSTNode param_no_default_var;
@@ -14913,7 +14403,6 @@ public final class Parser extends AbstractParser {
                 &&
                 (invalid_parameters_helper_var = invalid_parameters_helper_rule()) != null  // invalid_parameters_helper
                 &&
-                // TODO replacing arg_ty --> SSTNode
                 (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
@@ -14950,10 +14439,8 @@ public final class Parser extends AbstractParser {
         }
         { // slash_with_default
             debugMessageln("%d> invalid_parameters_helper[%d-%d]: %s", level, _mark, mark(), "slash_with_default");
-            // TODO replacing SlashWithDefault* --> SSTNode[]
             SSTNode[] a;
             if (
-                // TODO replacing SlashWithDefault* --> SSTNode[]
                 (a = slash_with_default_rule()) != null  // slash_with_default
             )
             {
@@ -15007,7 +14494,6 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default
             debugMessageln("%d> invalid_lambda_parameters[%d-%d]: %s", level, _mark, mark(), "lambda_param_no_default* invalid_lambda_parameters_helper lambda_param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode[] _loop0_214_var;
             Object invalid_lambda_parameters_helper_var;
             SSTNode lambda_param_no_default_var;
@@ -15016,7 +14502,6 @@ public final class Parser extends AbstractParser {
                 &&
                 (invalid_lambda_parameters_helper_var = invalid_lambda_parameters_helper_rule()) != null  // invalid_lambda_parameters_helper
                 &&
-                // TODO replacing arg_ty --> SSTNode
                 (lambda_param_no_default_var = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
@@ -15055,10 +14540,8 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_slash_with_default
             debugMessageln("%d> invalid_lambda_parameters_helper[%d-%d]: %s", level, _mark, mark(), "lambda_slash_with_default");
-            // TODO replacing SlashWithDefault* --> SSTNode[]
             SSTNode[] a;
             if (
-                // TODO replacing SlashWithDefault* --> SSTNode[]
                 (a = lambda_slash_with_default_rule()) != null  // lambda_slash_with_default
             )
             {
@@ -15432,11 +14915,9 @@ public final class Parser extends AbstractParser {
         }
         { // import_from_as_names ','
             debugMessageln("%d> invalid_import_from_targets[%d-%d]: %s", level, _mark, mark(), "import_from_as_names ','");
-            // TODO replacing asdl_alias_seq* --> SSTNode[]
             Token _literal;
             SSTNode[] import_from_as_names_var;
             if (
-                // TODO replacing asdl_alias_seq* --> SSTNode[]
                 (import_from_as_names_var = import_from_as_names_rule()) != null  // import_from_as_names
                 &&
                 (_literal = expect(12)) != null  // token=','
@@ -16151,10 +15632,8 @@ public final class Parser extends AbstractParser {
         }
         { // type_expressions
             debugMessageln("%d> _tmp_3[%d-%d]: %s", level, _mark, mark(), "type_expressions");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] type_expressions_var;
             if (
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (type_expressions_var = type_expressions_rule()) != null  // type_expressions
             )
             {
@@ -16607,13 +16086,11 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // ';' simple_stmt
             debugMessageln("%d> _loop0_15[%d-%d]: %s", level, _mark, mark(), "';' simple_stmt");
-            // TODO replacing stmt_ty --> SSTNode
             Token _literal;
             SSTNode elem;
             while (
                 (_literal = expect(13)) != null  // token=';'
                 &&
-                // TODO replacing stmt_ty --> SSTNode
                 (elem = simple_stmt_rule()) != null  // simple_stmt
             )
             {
@@ -16649,11 +16126,9 @@ public final class Parser extends AbstractParser {
         }
         { // simple_stmt _loop0_15
             debugMessageln("%d> _gather_14[%d-%d]: %s", level, _mark, mark(), "simple_stmt _loop0_15");
-            // TODO replacing stmt_ty --> SSTNode
             SSTNode elem;
             SSTNode[] seq;
             if (
-                // TODO replacing stmt_ty --> SSTNode
                 (elem = simple_stmt_rule()) != null  // simple_stmt
                 &&
                 (seq = _loop0_15_rule()) != null  // _loop0_15
@@ -17723,13 +17198,11 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // ',' import_from_as_name
             debugMessageln("%d> _loop0_39[%d-%d]: %s", level, _mark, mark(), "',' import_from_as_name");
-            // TODO replacing alias_ty --> SSTNode
             Token _literal;
             SSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing alias_ty --> SSTNode
                 (elem = import_from_as_name_rule()) != null  // import_from_as_name
             )
             {
@@ -17765,11 +17238,9 @@ public final class Parser extends AbstractParser {
         }
         { // import_from_as_name _loop0_39
             debugMessageln("%d> _gather_38[%d-%d]: %s", level, _mark, mark(), "import_from_as_name _loop0_39");
-            // TODO replacing alias_ty --> SSTNode
             SSTNode elem;
             SSTNode[] seq;
             if (
-                // TODO replacing alias_ty --> SSTNode
                 (elem = import_from_as_name_rule()) != null  // import_from_as_name
                 &&
                 (seq = _loop0_39_rule()) != null  // _loop0_39
@@ -17848,13 +17319,11 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // ',' dotted_as_name
             debugMessageln("%d> _loop0_42[%d-%d]: %s", level, _mark, mark(), "',' dotted_as_name");
-            // TODO replacing alias_ty --> SSTNode
             Token _literal;
             SSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing alias_ty --> SSTNode
                 (elem = dotted_as_name_rule()) != null  // dotted_as_name
             )
             {
@@ -17890,11 +17359,9 @@ public final class Parser extends AbstractParser {
         }
         { // dotted_as_name _loop0_42
             debugMessageln("%d> _gather_41[%d-%d]: %s", level, _mark, mark(), "dotted_as_name _loop0_42");
-            // TODO replacing alias_ty --> SSTNode
             SSTNode elem;
             SSTNode[] seq;
             if (
-                // TODO replacing alias_ty --> SSTNode
                 (elem = dotted_as_name_rule()) != null  // dotted_as_name
                 &&
                 (seq = _loop0_42_rule()) != null  // _loop0_42
@@ -18225,13 +17692,11 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // ',' with_item
             debugMessageln("%d> _loop0_52[%d-%d]: %s", level, _mark, mark(), "',' with_item");
-            // TODO replacing withitem_ty --> SSTNode
             Token _literal;
             SSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing withitem_ty --> SSTNode
                 (elem = with_item_rule()) != null  // with_item
             )
             {
@@ -18267,11 +17732,9 @@ public final class Parser extends AbstractParser {
         }
         { // with_item _loop0_52
             debugMessageln("%d> _gather_51[%d-%d]: %s", level, _mark, mark(), "with_item _loop0_52");
-            // TODO replacing withitem_ty --> SSTNode
             SSTNode elem;
             SSTNode[] seq;
             if (
-                // TODO replacing withitem_ty --> SSTNode
                 (elem = with_item_rule()) != null  // with_item
                 &&
                 (seq = _loop0_52_rule()) != null  // _loop0_52
@@ -18311,13 +17774,11 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // ',' with_item
             debugMessageln("%d> _loop0_54[%d-%d]: %s", level, _mark, mark(), "',' with_item");
-            // TODO replacing withitem_ty --> SSTNode
             Token _literal;
             SSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing withitem_ty --> SSTNode
                 (elem = with_item_rule()) != null  // with_item
             )
             {
@@ -18353,11 +17814,9 @@ public final class Parser extends AbstractParser {
         }
         { // with_item _loop0_54
             debugMessageln("%d> _gather_53[%d-%d]: %s", level, _mark, mark(), "with_item _loop0_54");
-            // TODO replacing withitem_ty --> SSTNode
             SSTNode elem;
             SSTNode[] seq;
             if (
-                // TODO replacing withitem_ty --> SSTNode
                 (elem = with_item_rule()) != null  // with_item
                 &&
                 (seq = _loop0_54_rule()) != null  // _loop0_54
@@ -18433,13 +17892,11 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // ',' with_item
             debugMessageln("%d> _loop0_57[%d-%d]: %s", level, _mark, mark(), "',' with_item");
-            // TODO replacing withitem_ty --> SSTNode
             Token _literal;
             SSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing withitem_ty --> SSTNode
                 (elem = with_item_rule()) != null  // with_item
             )
             {
@@ -18475,11 +17932,9 @@ public final class Parser extends AbstractParser {
         }
         { // with_item _loop0_57
             debugMessageln("%d> _gather_56[%d-%d]: %s", level, _mark, mark(), "with_item _loop0_57");
-            // TODO replacing withitem_ty --> SSTNode
             SSTNode elem;
             SSTNode[] seq;
             if (
-                // TODO replacing withitem_ty --> SSTNode
                 (elem = with_item_rule()) != null  // with_item
                 &&
                 (seq = _loop0_57_rule()) != null  // _loop0_57
@@ -18519,13 +17974,11 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // ',' with_item
             debugMessageln("%d> _loop0_59[%d-%d]: %s", level, _mark, mark(), "',' with_item");
-            // TODO replacing withitem_ty --> SSTNode
             Token _literal;
             SSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing withitem_ty --> SSTNode
                 (elem = with_item_rule()) != null  // with_item
             )
             {
@@ -18561,11 +18014,9 @@ public final class Parser extends AbstractParser {
         }
         { // with_item _loop0_59
             debugMessageln("%d> _gather_58[%d-%d]: %s", level, _mark, mark(), "with_item _loop0_59");
-            // TODO replacing withitem_ty --> SSTNode
             SSTNode elem;
             SSTNode[] seq;
             if (
-                // TODO replacing withitem_ty --> SSTNode
                 (elem = with_item_rule()) != null  // with_item
                 &&
                 (seq = _loop0_59_rule()) != null  // _loop0_59
@@ -18713,10 +18164,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // except_block
             debugMessageln("%d> _loop1_62[%d-%d]: %s", level, _mark, mark(), "except_block");
-            // TODO replacing excepthandler_ty --> SSTNode
             SSTNode except_block_var;
             while (
-                // TODO replacing excepthandler_ty --> SSTNode
                 (except_block_var = except_block_rule()) != null  // except_block
             )
             {
@@ -18871,10 +18320,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // case_block
             debugMessageln("%d> _loop1_66[%d-%d]: %s", level, _mark, mark(), "case_block");
-            // TODO replacing match_case_ty --> SSTNode
             SSTNode case_block_var;
             while (
-                // TODO replacing match_case_ty --> SSTNode
                 (case_block_var = case_block_rule()) != null  // case_block
             )
             {
@@ -19334,13 +18781,11 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // ',' key_value_pattern
             debugMessageln("%d> _loop0_76[%d-%d]: %s", level, _mark, mark(), "',' key_value_pattern");
-            // TODO replacing KeyValuePair* --> SSTNode[]
             Token _literal;
             SSTNode[] elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing KeyValuePair* --> SSTNode[]
                 (elem = key_value_pattern_rule()) != null  // key_value_pattern
             )
             {
@@ -19376,11 +18821,9 @@ public final class Parser extends AbstractParser {
         }
         { // key_value_pattern _loop0_76
             debugMessageln("%d> _gather_75[%d-%d]: %s", level, _mark, mark(), "key_value_pattern _loop0_76");
-            // TODO replacing KeyValuePair* --> SSTNode[]
             SSTNode[] elem;
             SSTNode[] seq;
             if (
-                // TODO replacing KeyValuePair* --> SSTNode[]
                 (elem = key_value_pattern_rule()) != null  // key_value_pattern
                 &&
                 (seq = _loop0_76_rule()) != null  // _loop0_76
@@ -19556,13 +18999,11 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // ',' keyword_pattern
             debugMessageln("%d> _loop0_81[%d-%d]: %s", level, _mark, mark(), "',' keyword_pattern");
-            // TODO replacing keyword_ty --> SSTNode
             Token _literal;
             SSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing keyword_ty --> SSTNode
                 (elem = keyword_pattern_rule()) != null  // keyword_pattern
             )
             {
@@ -19598,11 +19039,9 @@ public final class Parser extends AbstractParser {
         }
         { // keyword_pattern _loop0_81
             debugMessageln("%d> _gather_80[%d-%d]: %s", level, _mark, mark(), "keyword_pattern _loop0_81");
-            // TODO replacing keyword_ty --> SSTNode
             SSTNode elem;
             SSTNode[] seq;
             if (
-                // TODO replacing keyword_ty --> SSTNode
                 (elem = keyword_pattern_rule()) != null  // keyword_pattern
                 &&
                 (seq = _loop0_81_rule()) != null  // _loop0_81
@@ -19713,10 +19152,8 @@ public final class Parser extends AbstractParser {
         }
         { // params
             debugMessageln("%d> _tmp_84[%d-%d]: %s", level, _mark, mark(), "params");
-            // TODO replacing arguments_ty --> SSTNode
             SSTNode params_var;
             if (
-                // TODO replacing arguments_ty --> SSTNode
                 (params_var = params_rule()) != null  // params
             )
             {
@@ -19790,10 +19227,8 @@ public final class Parser extends AbstractParser {
         }
         { // func_type_comment
             debugMessageln("%d> _tmp_86[%d-%d]: %s", level, _mark, mark(), "func_type_comment");
-            // TODO replacing Token* --> SSTNode[]
             SSTNode[] func_type_comment_var;
             if (
-                // TODO replacing Token* --> SSTNode[]
                 (func_type_comment_var = func_type_comment_rule()) != null  // func_type_comment
             )
             {
@@ -19828,10 +19263,8 @@ public final class Parser extends AbstractParser {
         }
         { // params
             debugMessageln("%d> _tmp_87[%d-%d]: %s", level, _mark, mark(), "params");
-            // TODO replacing arguments_ty --> SSTNode
             SSTNode params_var;
             if (
-                // TODO replacing arguments_ty --> SSTNode
                 (params_var = params_rule()) != null  // params
             )
             {
@@ -19905,10 +19338,8 @@ public final class Parser extends AbstractParser {
         }
         { // func_type_comment
             debugMessageln("%d> _tmp_89[%d-%d]: %s", level, _mark, mark(), "func_type_comment");
-            // TODO replacing Token* --> SSTNode[]
             SSTNode[] func_type_comment_var;
             if (
-                // TODO replacing Token* --> SSTNode[]
                 (func_type_comment_var = func_type_comment_rule()) != null  // func_type_comment
             )
             {
@@ -19986,10 +19417,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // param_no_default
             debugMessageln("%d> _loop0_91[%d-%d]: %s", level, _mark, mark(), "param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode param_no_default_var;
             while (
-                // TODO replacing arg_ty --> SSTNode
                 (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
@@ -20029,10 +19458,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // param_with_default
             debugMessageln("%d> _loop0_92[%d-%d]: %s", level, _mark, mark(), "param_with_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] param_with_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
@@ -20068,10 +19495,8 @@ public final class Parser extends AbstractParser {
         }
         { // star_etc
             debugMessageln("%d> _tmp_93[%d-%d]: %s", level, _mark, mark(), "star_etc");
-            // TODO replacing StarEtc* --> SSTNode[]
             SSTNode[] star_etc_var;
             if (
-                // TODO replacing StarEtc* --> SSTNode[]
                 (star_etc_var = star_etc_rule()) != null  // star_etc
             )
             {
@@ -20110,10 +19535,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // param_with_default
             debugMessageln("%d> _loop0_94[%d-%d]: %s", level, _mark, mark(), "param_with_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] param_with_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
@@ -20149,10 +19572,8 @@ public final class Parser extends AbstractParser {
         }
         { // star_etc
             debugMessageln("%d> _tmp_95[%d-%d]: %s", level, _mark, mark(), "star_etc");
-            // TODO replacing StarEtc* --> SSTNode[]
             SSTNode[] star_etc_var;
             if (
-                // TODO replacing StarEtc* --> SSTNode[]
                 (star_etc_var = star_etc_rule()) != null  // star_etc
             )
             {
@@ -20191,10 +19612,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // param_no_default
             debugMessageln("%d> _loop1_96[%d-%d]: %s", level, _mark, mark(), "param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode param_no_default_var;
             while (
-                // TODO replacing arg_ty --> SSTNode
                 (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
@@ -20238,10 +19657,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // param_with_default
             debugMessageln("%d> _loop0_97[%d-%d]: %s", level, _mark, mark(), "param_with_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] param_with_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
@@ -20277,10 +19694,8 @@ public final class Parser extends AbstractParser {
         }
         { // star_etc
             debugMessageln("%d> _tmp_98[%d-%d]: %s", level, _mark, mark(), "star_etc");
-            // TODO replacing StarEtc* --> SSTNode[]
             SSTNode[] star_etc_var;
             if (
-                // TODO replacing StarEtc* --> SSTNode[]
                 (star_etc_var = star_etc_rule()) != null  // star_etc
             )
             {
@@ -20319,10 +19734,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // param_with_default
             debugMessageln("%d> _loop1_99[%d-%d]: %s", level, _mark, mark(), "param_with_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] param_with_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
@@ -20362,10 +19775,8 @@ public final class Parser extends AbstractParser {
         }
         { // star_etc
             debugMessageln("%d> _tmp_100[%d-%d]: %s", level, _mark, mark(), "star_etc");
-            // TODO replacing StarEtc* --> SSTNode[]
             SSTNode[] star_etc_var;
             if (
-                // TODO replacing StarEtc* --> SSTNode[]
                 (star_etc_var = star_etc_rule()) != null  // star_etc
             )
             {
@@ -20404,10 +19815,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // param_no_default
             debugMessageln("%d> _loop1_101[%d-%d]: %s", level, _mark, mark(), "param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode param_no_default_var;
             while (
-                // TODO replacing arg_ty --> SSTNode
                 (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
@@ -20451,10 +19860,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // param_no_default
             debugMessageln("%d> _loop1_102[%d-%d]: %s", level, _mark, mark(), "param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode param_no_default_var;
             while (
-                // TODO replacing arg_ty --> SSTNode
                 (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
@@ -20498,10 +19905,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // param_no_default
             debugMessageln("%d> _loop0_103[%d-%d]: %s", level, _mark, mark(), "param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode param_no_default_var;
             while (
-                // TODO replacing arg_ty --> SSTNode
                 (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
@@ -20541,10 +19946,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // param_with_default
             debugMessageln("%d> _loop1_104[%d-%d]: %s", level, _mark, mark(), "param_with_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] param_with_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
@@ -20588,10 +19991,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // param_no_default
             debugMessageln("%d> _loop0_105[%d-%d]: %s", level, _mark, mark(), "param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode param_no_default_var;
             while (
-                // TODO replacing arg_ty --> SSTNode
                 (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
@@ -20631,10 +20032,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // param_with_default
             debugMessageln("%d> _loop1_106[%d-%d]: %s", level, _mark, mark(), "param_with_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] param_with_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
@@ -20678,10 +20077,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // param_maybe_default
             debugMessageln("%d> _loop0_107[%d-%d]: %s", level, _mark, mark(), "param_maybe_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] param_maybe_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (param_maybe_default_var = param_maybe_default_rule()) != null  // param_maybe_default
             )
             {
@@ -20717,10 +20114,8 @@ public final class Parser extends AbstractParser {
         }
         { // kwds
             debugMessageln("%d> _tmp_108[%d-%d]: %s", level, _mark, mark(), "kwds");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode kwds_var;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (kwds_var = kwds_rule()) != null  // kwds
             )
             {
@@ -20759,10 +20154,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // param_maybe_default
             debugMessageln("%d> _loop1_109[%d-%d]: %s", level, _mark, mark(), "param_maybe_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] param_maybe_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (param_maybe_default_var = param_maybe_default_rule()) != null  // param_maybe_default
             )
             {
@@ -20802,10 +20195,8 @@ public final class Parser extends AbstractParser {
         }
         { // kwds
             debugMessageln("%d> _tmp_110[%d-%d]: %s", level, _mark, mark(), "kwds");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode kwds_var;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (kwds_var = kwds_rule()) != null  // kwds
             )
             {
@@ -21207,10 +20598,8 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_params
             debugMessageln("%d> _tmp_120[%d-%d]: %s", level, _mark, mark(), "lambda_params");
-            // TODO replacing arguments_ty --> SSTNode
             SSTNode lambda_params_var;
             if (
-                // TODO replacing arguments_ty --> SSTNode
                 (lambda_params_var = lambda_params_rule()) != null  // lambda_params
             )
             {
@@ -21249,10 +20638,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // lambda_param_no_default
             debugMessageln("%d> _loop0_121[%d-%d]: %s", level, _mark, mark(), "lambda_param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode lambda_param_no_default_var;
             while (
-                // TODO replacing arg_ty --> SSTNode
                 (lambda_param_no_default_var = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
@@ -21292,10 +20679,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // lambda_param_with_default
             debugMessageln("%d> _loop0_122[%d-%d]: %s", level, _mark, mark(), "lambda_param_with_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] lambda_param_with_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (lambda_param_with_default_var = lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
@@ -21331,10 +20716,8 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_star_etc
             debugMessageln("%d> _tmp_123[%d-%d]: %s", level, _mark, mark(), "lambda_star_etc");
-            // TODO replacing StarEtc* --> SSTNode[]
             SSTNode[] lambda_star_etc_var;
             if (
-                // TODO replacing StarEtc* --> SSTNode[]
                 (lambda_star_etc_var = lambda_star_etc_rule()) != null  // lambda_star_etc
             )
             {
@@ -21373,10 +20756,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // lambda_param_with_default
             debugMessageln("%d> _loop0_124[%d-%d]: %s", level, _mark, mark(), "lambda_param_with_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] lambda_param_with_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (lambda_param_with_default_var = lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
@@ -21412,10 +20793,8 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_star_etc
             debugMessageln("%d> _tmp_125[%d-%d]: %s", level, _mark, mark(), "lambda_star_etc");
-            // TODO replacing StarEtc* --> SSTNode[]
             SSTNode[] lambda_star_etc_var;
             if (
-                // TODO replacing StarEtc* --> SSTNode[]
                 (lambda_star_etc_var = lambda_star_etc_rule()) != null  // lambda_star_etc
             )
             {
@@ -21454,10 +20833,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // lambda_param_no_default
             debugMessageln("%d> _loop1_126[%d-%d]: %s", level, _mark, mark(), "lambda_param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode lambda_param_no_default_var;
             while (
-                // TODO replacing arg_ty --> SSTNode
                 (lambda_param_no_default_var = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
@@ -21501,10 +20878,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // lambda_param_with_default
             debugMessageln("%d> _loop0_127[%d-%d]: %s", level, _mark, mark(), "lambda_param_with_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] lambda_param_with_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (lambda_param_with_default_var = lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
@@ -21540,10 +20915,8 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_star_etc
             debugMessageln("%d> _tmp_128[%d-%d]: %s", level, _mark, mark(), "lambda_star_etc");
-            // TODO replacing StarEtc* --> SSTNode[]
             SSTNode[] lambda_star_etc_var;
             if (
-                // TODO replacing StarEtc* --> SSTNode[]
                 (lambda_star_etc_var = lambda_star_etc_rule()) != null  // lambda_star_etc
             )
             {
@@ -21582,10 +20955,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // lambda_param_with_default
             debugMessageln("%d> _loop1_129[%d-%d]: %s", level, _mark, mark(), "lambda_param_with_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] lambda_param_with_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (lambda_param_with_default_var = lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
@@ -21625,10 +20996,8 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_star_etc
             debugMessageln("%d> _tmp_130[%d-%d]: %s", level, _mark, mark(), "lambda_star_etc");
-            // TODO replacing StarEtc* --> SSTNode[]
             SSTNode[] lambda_star_etc_var;
             if (
-                // TODO replacing StarEtc* --> SSTNode[]
                 (lambda_star_etc_var = lambda_star_etc_rule()) != null  // lambda_star_etc
             )
             {
@@ -21667,10 +21036,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // lambda_param_no_default
             debugMessageln("%d> _loop1_131[%d-%d]: %s", level, _mark, mark(), "lambda_param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode lambda_param_no_default_var;
             while (
-                // TODO replacing arg_ty --> SSTNode
                 (lambda_param_no_default_var = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
@@ -21714,10 +21081,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // lambda_param_no_default
             debugMessageln("%d> _loop1_132[%d-%d]: %s", level, _mark, mark(), "lambda_param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode lambda_param_no_default_var;
             while (
-                // TODO replacing arg_ty --> SSTNode
                 (lambda_param_no_default_var = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
@@ -21761,10 +21126,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // lambda_param_no_default
             debugMessageln("%d> _loop0_133[%d-%d]: %s", level, _mark, mark(), "lambda_param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode lambda_param_no_default_var;
             while (
-                // TODO replacing arg_ty --> SSTNode
                 (lambda_param_no_default_var = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
@@ -21804,10 +21167,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // lambda_param_with_default
             debugMessageln("%d> _loop1_134[%d-%d]: %s", level, _mark, mark(), "lambda_param_with_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] lambda_param_with_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (lambda_param_with_default_var = lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
@@ -21851,10 +21212,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // lambda_param_no_default
             debugMessageln("%d> _loop0_135[%d-%d]: %s", level, _mark, mark(), "lambda_param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode lambda_param_no_default_var;
             while (
-                // TODO replacing arg_ty --> SSTNode
                 (lambda_param_no_default_var = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
@@ -21894,10 +21253,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // lambda_param_with_default
             debugMessageln("%d> _loop1_136[%d-%d]: %s", level, _mark, mark(), "lambda_param_with_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] lambda_param_with_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (lambda_param_with_default_var = lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
@@ -21941,10 +21298,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // lambda_param_maybe_default
             debugMessageln("%d> _loop0_137[%d-%d]: %s", level, _mark, mark(), "lambda_param_maybe_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] lambda_param_maybe_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (lambda_param_maybe_default_var = lambda_param_maybe_default_rule()) != null  // lambda_param_maybe_default
             )
             {
@@ -21980,10 +21335,8 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_kwds
             debugMessageln("%d> _tmp_138[%d-%d]: %s", level, _mark, mark(), "lambda_kwds");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode lambda_kwds_var;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (lambda_kwds_var = lambda_kwds_rule()) != null  // lambda_kwds
             )
             {
@@ -22022,10 +21375,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // lambda_param_maybe_default
             debugMessageln("%d> _loop1_139[%d-%d]: %s", level, _mark, mark(), "lambda_param_maybe_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] lambda_param_maybe_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (lambda_param_maybe_default_var = lambda_param_maybe_default_rule()) != null  // lambda_param_maybe_default
             )
             {
@@ -22065,10 +21416,8 @@ public final class Parser extends AbstractParser {
         }
         { // lambda_kwds
             debugMessageln("%d> _tmp_140[%d-%d]: %s", level, _mark, mark(), "lambda_kwds");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode lambda_kwds_var;
             if (
-                // TODO replacing arg_ty --> SSTNode
                 (lambda_kwds_var = lambda_kwds_rule()) != null  // lambda_kwds
             )
             {
@@ -22802,10 +22151,8 @@ public final class Parser extends AbstractParser {
         }
         { // star_named_expressions
             debugMessageln("%d> _tmp_156[%d-%d]: %s", level, _mark, mark(), "star_named_expressions");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] star_named_expressions_var;
             if (
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (star_named_expressions_var = star_named_expressions_rule()) != null  // star_named_expressions
             )
             {
@@ -22936,10 +22283,8 @@ public final class Parser extends AbstractParser {
         }
         { // double_starred_kvpairs
             debugMessageln("%d> _tmp_159[%d-%d]: %s", level, _mark, mark(), "double_starred_kvpairs");
-            // TODO replacing asdl_seq* --> SSTNode[]
             SSTNode[] double_starred_kvpairs_var;
             if (
-                // TODO replacing asdl_seq* --> SSTNode[]
                 (double_starred_kvpairs_var = double_starred_kvpairs_rule()) != null  // double_starred_kvpairs
             )
             {
@@ -22978,13 +22323,11 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // ',' double_starred_kvpair
             debugMessageln("%d> _loop0_161[%d-%d]: %s", level, _mark, mark(), "',' double_starred_kvpair");
-            // TODO replacing KeyValuePair* --> SSTNode[]
             Token _literal;
             SSTNode[] elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing KeyValuePair* --> SSTNode[]
                 (elem = double_starred_kvpair_rule()) != null  // double_starred_kvpair
             )
             {
@@ -23020,11 +22363,9 @@ public final class Parser extends AbstractParser {
         }
         { // double_starred_kvpair _loop0_161
             debugMessageln("%d> _gather_160[%d-%d]: %s", level, _mark, mark(), "double_starred_kvpair _loop0_161");
-            // TODO replacing KeyValuePair* --> SSTNode[]
             SSTNode[] elem;
             SSTNode[] seq;
             if (
-                // TODO replacing KeyValuePair* --> SSTNode[]
                 (elem = double_starred_kvpair_rule()) != null  // double_starred_kvpair
                 &&
                 (seq = _loop0_161_rule()) != null  // _loop0_161
@@ -23100,10 +22441,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // for_if_clause
             debugMessageln("%d> _loop1_163[%d-%d]: %s", level, _mark, mark(), "for_if_clause");
-            // TODO replacing comprehension_ty --> SSTNode
             SSTNode for_if_clause_var;
             while (
-                // TODO replacing comprehension_ty --> SSTNode
                 (for_if_clause_var = for_if_clause_rule()) != null  // for_if_clause
             )
             {
@@ -23379,13 +22718,11 @@ public final class Parser extends AbstractParser {
         }
         { // ',' kwargs
             debugMessageln("%d> _tmp_170[%d-%d]: %s", level, _mark, mark(), "',' kwargs");
-            // TODO replacing asdl_seq* --> SSTNode[]
             Token _literal;
             SSTNode[] k;
             if (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing asdl_seq* --> SSTNode[]
                 (k = kwargs_rule()) != null  // kwargs
             )
             {
@@ -23424,13 +22761,11 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // ',' kwarg_or_starred
             debugMessageln("%d> _loop0_172[%d-%d]: %s", level, _mark, mark(), "',' kwarg_or_starred");
-            // TODO replacing KeywordOrStarred* --> SSTNode[]
             Token _literal;
             SSTNode[] elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing KeywordOrStarred* --> SSTNode[]
                 (elem = kwarg_or_starred_rule()) != null  // kwarg_or_starred
             )
             {
@@ -23466,11 +22801,9 @@ public final class Parser extends AbstractParser {
         }
         { // kwarg_or_starred _loop0_172
             debugMessageln("%d> _gather_171[%d-%d]: %s", level, _mark, mark(), "kwarg_or_starred _loop0_172");
-            // TODO replacing KeywordOrStarred* --> SSTNode[]
             SSTNode[] elem;
             SSTNode[] seq;
             if (
-                // TODO replacing KeywordOrStarred* --> SSTNode[]
                 (elem = kwarg_or_starred_rule()) != null  // kwarg_or_starred
                 &&
                 (seq = _loop0_172_rule()) != null  // _loop0_172
@@ -23510,13 +22843,11 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // ',' kwarg_or_double_starred
             debugMessageln("%d> _loop0_174[%d-%d]: %s", level, _mark, mark(), "',' kwarg_or_double_starred");
-            // TODO replacing KeywordOrStarred* --> SSTNode[]
             Token _literal;
             SSTNode[] elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing KeywordOrStarred* --> SSTNode[]
                 (elem = kwarg_or_double_starred_rule()) != null  // kwarg_or_double_starred
             )
             {
@@ -23552,11 +22883,9 @@ public final class Parser extends AbstractParser {
         }
         { // kwarg_or_double_starred _loop0_174
             debugMessageln("%d> _gather_173[%d-%d]: %s", level, _mark, mark(), "kwarg_or_double_starred _loop0_174");
-            // TODO replacing KeywordOrStarred* --> SSTNode[]
             SSTNode[] elem;
             SSTNode[] seq;
             if (
-                // TODO replacing KeywordOrStarred* --> SSTNode[]
                 (elem = kwarg_or_double_starred_rule()) != null  // kwarg_or_double_starred
                 &&
                 (seq = _loop0_174_rule()) != null  // _loop0_174
@@ -23596,13 +22925,11 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // ',' kwarg_or_starred
             debugMessageln("%d> _loop0_176[%d-%d]: %s", level, _mark, mark(), "',' kwarg_or_starred");
-            // TODO replacing KeywordOrStarred* --> SSTNode[]
             Token _literal;
             SSTNode[] elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing KeywordOrStarred* --> SSTNode[]
                 (elem = kwarg_or_starred_rule()) != null  // kwarg_or_starred
             )
             {
@@ -23638,11 +22965,9 @@ public final class Parser extends AbstractParser {
         }
         { // kwarg_or_starred _loop0_176
             debugMessageln("%d> _gather_175[%d-%d]: %s", level, _mark, mark(), "kwarg_or_starred _loop0_176");
-            // TODO replacing KeywordOrStarred* --> SSTNode[]
             SSTNode[] elem;
             SSTNode[] seq;
             if (
-                // TODO replacing KeywordOrStarred* --> SSTNode[]
                 (elem = kwarg_or_starred_rule()) != null  // kwarg_or_starred
                 &&
                 (seq = _loop0_176_rule()) != null  // _loop0_176
@@ -23682,13 +23007,11 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // ',' kwarg_or_double_starred
             debugMessageln("%d> _loop0_178[%d-%d]: %s", level, _mark, mark(), "',' kwarg_or_double_starred");
-            // TODO replacing KeywordOrStarred* --> SSTNode[]
             Token _literal;
             SSTNode[] elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing KeywordOrStarred* --> SSTNode[]
                 (elem = kwarg_or_double_starred_rule()) != null  // kwarg_or_double_starred
             )
             {
@@ -23724,11 +23047,9 @@ public final class Parser extends AbstractParser {
         }
         { // kwarg_or_double_starred _loop0_178
             debugMessageln("%d> _gather_177[%d-%d]: %s", level, _mark, mark(), "kwarg_or_double_starred _loop0_178");
-            // TODO replacing KeywordOrStarred* --> SSTNode[]
             SSTNode[] elem;
             SSTNode[] seq;
             if (
-                // TODO replacing KeywordOrStarred* --> SSTNode[]
                 (elem = kwarg_or_double_starred_rule()) != null  // kwarg_or_double_starred
                 &&
                 (seq = _loop0_178_rule()) != null  // _loop0_178
@@ -24078,10 +23399,8 @@ public final class Parser extends AbstractParser {
         }
         { // star_targets_tuple_seq
             debugMessageln("%d> _tmp_187[%d-%d]: %s", level, _mark, mark(), "star_targets_tuple_seq");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] star_targets_tuple_seq_var;
             if (
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (star_targets_tuple_seq_var = star_targets_tuple_seq_rule()) != null  // star_targets_tuple_seq
             )
             {
@@ -24116,10 +23435,8 @@ public final class Parser extends AbstractParser {
         }
         { // star_targets_list_seq
             debugMessageln("%d> _tmp_188[%d-%d]: %s", level, _mark, mark(), "star_targets_list_seq");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] star_targets_list_seq_var;
             if (
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (star_targets_list_seq_var = star_targets_list_seq_rule()) != null  // star_targets_list_seq
             )
             {
@@ -24272,10 +23589,8 @@ public final class Parser extends AbstractParser {
         }
         { // del_targets
             debugMessageln("%d> _tmp_192[%d-%d]: %s", level, _mark, mark(), "del_targets");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] del_targets_var;
             if (
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (del_targets_var = del_targets_rule()) != null  // del_targets
             )
             {
@@ -24310,10 +23625,8 @@ public final class Parser extends AbstractParser {
         }
         { // del_targets
             debugMessageln("%d> _tmp_193[%d-%d]: %s", level, _mark, mark(), "del_targets");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] del_targets_var;
             if (
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (del_targets_var = del_targets_rule()) != null  // del_targets
             )
             {
@@ -24502,10 +23815,8 @@ public final class Parser extends AbstractParser {
         }
         { // targets
             debugMessageln("%d> _tmp_198[%d-%d]: %s", level, _mark, mark(), "targets");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] targets_var;
             if (
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (targets_var = targets_rule()) != null  // targets
             )
             {
@@ -24540,10 +23851,8 @@ public final class Parser extends AbstractParser {
         }
         { // targets
             debugMessageln("%d> _tmp_199[%d-%d]: %s", level, _mark, mark(), "targets");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] targets_var;
             if (
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (targets_var = targets_rule()) != null  // targets
             )
             {
@@ -24596,13 +23905,11 @@ public final class Parser extends AbstractParser {
         }
         { // expression for_if_clauses
             debugMessageln("%d> _tmp_200[%d-%d]: %s", level, _mark, mark(), "expression for_if_clauses");
-            // TODO replacing asdl_comprehension_seq* --> SSTNode[]
             SSTNode expression_var;
             SSTNode[] for_if_clauses_var;
             if (
                 (expression_var = expression_rule()) != null  // expression
                 &&
-                // TODO replacing asdl_comprehension_seq* --> SSTNode[]
                 (for_if_clauses_var = for_if_clauses_rule()) != null  // for_if_clauses
             )
             {
@@ -24968,10 +24275,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // star_named_expressions
             debugMessageln("%d> _loop0_205[%d-%d]: %s", level, _mark, mark(), "star_named_expressions");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] star_named_expressions_var;
             while (
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (star_named_expressions_var = star_named_expressions_rule()) != null  // star_named_expressions
             )
             {
@@ -25269,10 +24574,8 @@ public final class Parser extends AbstractParser {
         }
         { // star_named_expressions
             debugMessageln("%d> _tmp_211[%d-%d]: %s", level, _mark, mark(), "star_named_expressions");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] star_named_expressions_var;
             if (
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (star_named_expressions_var = star_named_expressions_rule()) != null  // star_named_expressions
             )
             {
@@ -25311,10 +24614,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // param_no_default
             debugMessageln("%d> _loop0_212[%d-%d]: %s", level, _mark, mark(), "param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode param_no_default_var;
             while (
-                // TODO replacing arg_ty --> SSTNode
                 (param_no_default_var = param_no_default_rule()) != null  // param_no_default
             )
             {
@@ -25354,10 +24655,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // param_with_default
             debugMessageln("%d> _loop1_213[%d-%d]: %s", level, _mark, mark(), "param_with_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] param_with_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (param_with_default_var = param_with_default_rule()) != null  // param_with_default
             )
             {
@@ -25401,10 +24700,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // lambda_param_no_default
             debugMessageln("%d> _loop0_214[%d-%d]: %s", level, _mark, mark(), "lambda_param_no_default");
-            // TODO replacing arg_ty --> SSTNode
             SSTNode lambda_param_no_default_var;
             while (
-                // TODO replacing arg_ty --> SSTNode
                 (lambda_param_no_default_var = lambda_param_no_default_rule()) != null  // lambda_param_no_default
             )
             {
@@ -25444,10 +24741,8 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // lambda_param_with_default
             debugMessageln("%d> _loop1_215[%d-%d]: %s", level, _mark, mark(), "lambda_param_with_default");
-            // TODO replacing NameDefaultPair* --> SSTNode[]
             SSTNode[] lambda_param_with_default_var;
             while (
-                // TODO replacing NameDefaultPair* --> SSTNode[]
                 (lambda_param_with_default_var = lambda_param_with_default_rule()) != null  // lambda_param_with_default
             )
             {
@@ -25991,13 +25286,11 @@ public final class Parser extends AbstractParser {
         int _n = 0;
         { // ',' double_starred_kvpair
             debugMessageln("%d> _loop0_228[%d-%d]: %s", level, _mark, mark(), "',' double_starred_kvpair");
-            // TODO replacing KeyValuePair* --> SSTNode[]
             Token _literal;
             SSTNode[] elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
-                // TODO replacing KeyValuePair* --> SSTNode[]
                 (elem = double_starred_kvpair_rule()) != null  // double_starred_kvpair
             )
             {
@@ -26033,11 +25326,9 @@ public final class Parser extends AbstractParser {
         }
         { // double_starred_kvpair _loop0_228
             debugMessageln("%d> _gather_227[%d-%d]: %s", level, _mark, mark(), "double_starred_kvpair _loop0_228");
-            // TODO replacing KeyValuePair* --> SSTNode[]
             SSTNode[] elem;
             SSTNode[] seq;
             if (
-                // TODO replacing KeyValuePair* --> SSTNode[]
                 (elem = double_starred_kvpair_rule()) != null  // double_starred_kvpair
                 &&
                 (seq = _loop0_228_rule()) != null  // _loop0_228
@@ -26580,10 +25871,8 @@ public final class Parser extends AbstractParser {
         }
         { // star_named_expressions
             debugMessageln("%d> _tmp_241[%d-%d]: %s", level, _mark, mark(), "star_named_expressions");
-            // TODO replacing asdl_expr_seq* --> SSTNode[]
             SSTNode[] star_named_expressions_var;
             if (
-                // TODO replacing asdl_expr_seq* --> SSTNode[]
                 (star_named_expressions_var = star_named_expressions_rule()) != null  // star_named_expressions
             )
             {
@@ -27314,4 +26603,30 @@ public final class Parser extends AbstractParser {
         return (result != null) == match;
     }
 
+    // TODO replacing keyword_ty --> SSTNode[]
+    // TODO replacing asdl_match_case_seq* --> SSTNode[]
+    // TODO replacing arguments_ty --> SSTNode[]
+    // TODO replacing asdl_arg_seq* --> SSTNode[]
+    // TODO replacing excepthandler_ty --> SSTNode[]
+    // TODO replacing asdl_comprehension_seq* --> SSTNode[]
+    // TODO replacing asdl_withitem_seq* --> SSTNode[]
+    // TODO replacing comprehension_ty --> SSTNode[]
+    // TODO replacing asdl_excepthandler_seq* --> SSTNode[]
+    // TODO replacing asdl_alias_seq* --> SSTNode[]
+    // TODO replacing Token* --> SSTNode[]
+    // TODO replacing CmpopExprPair* --> SSTNode[]
+    // TODO replacing NameDefaultPair* --> SSTNode[]
+    // TODO replacing match_case_ty --> SSTNode[]
+    // TODO replacing StarEtc* --> SSTNode[]
+    // TODO replacing stmt_ty --> SSTNode[]
+    // TODO replacing alias_ty --> SSTNode[]
+    // TODO replacing asdl_keyword_seq* --> SSTNode[]
+    // TODO replacing AugOperator* --> SSTNode[]
+    // TODO replacing asdl_seq* --> SSTNode[]
+    // TODO replacing withitem_ty --> SSTNode[]
+    // TODO replacing KeywordOrStarred* --> SSTNode[]
+    // TODO replacing arg_ty --> SSTNode[]
+    // TODO replacing KeyValuePair* --> SSTNode[]
+    // TODO replacing asdl_expr_seq* --> SSTNode[]
+    // TODO replacing SlashWithDefault* --> SSTNode[]
 }
