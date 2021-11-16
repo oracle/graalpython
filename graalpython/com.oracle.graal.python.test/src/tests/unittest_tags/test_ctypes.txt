@@ -116,7 +116,6 @@
 *ctypes.test.test_functions.FunctionTestCase.test_struct_return_2H_stdcall
 *ctypes.test.test_functions.FunctionTestCase.test_struct_return_8H_stdcall
 *ctypes.test.test_functions.FunctionTestCase.test_wchar_parm
-*ctypes.test.test_functions.FunctionTestCase.test_wchar_result
 *ctypes.test.test_internals.ObjectsTestCase.test_embedded_structs
 *ctypes.test.test_internals.ObjectsTestCase.test_ptr_struct
 *ctypes.test.test_internals.ObjectsTestCase.test_simple_struct
