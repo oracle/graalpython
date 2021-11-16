@@ -714,7 +714,7 @@ atom[SSTNode]: # originally return type expr_ty
 
 strings[SSTNode] (memo): a=STRING+ { this.concatenateStrings(a) }
 list[SSTNode]: # originally return type expr_ty
-    | '[' a=[star_named_expressions] ']' { _PyAST_List(a, Load, EXTRA) }
+    | '[' a=[star_named_expressions] ']' { factory.createList((SSTNode[])a, startToken.startOffset, endToken.endOffset) }
 listcomp[SSTNode]: # originally return type expr_ty
     | '[' a=named_expression b=for_if_clauses ']' { _PyAST_ListComp(a, b, EXTRA) }
     | invalid_comprehension
@@ -727,26 +727,23 @@ group[SSTNode]: # originally return type expr_ty
 genexp[SSTNode]: # originally return type expr_ty
     | '(' a=direct_named_expression b=for_if_clauses ')' { _PyAST_GeneratorExp(a, b, EXTRA) }
     | invalid_comprehension
-set[SSTNode]: '{' a=star_named_expressions '}' { _PyAST_Set(a, EXTRA) } # originally return type expr_ty
+set[SSTNode]: '{' a=star_named_expressions '}' { factory.createSet((SSTNode[])a,startToken.startOffset,endToken.endOffset) }
 setcomp[SSTNode]: # originally return type expr_ty
     | '{' a=named_expression b=for_if_clauses '}' { _PyAST_SetComp(a, b, EXTRA) }
     | invalid_comprehension
 dict[SSTNode]: # originally return type expr_ty
     | '{' a=[double_starred_kvpairs] '}' {
-        _PyAST_Dict(
-            CHECK(asdl_expr_seq*, _PyPegen_get_keys(p, a)),
-            CHECK(asdl_expr_seq*, _PyPegen_get_values(p, a)),
-            EXTRA) }
+        factory.createDict((SSTNode[])a,startToken.startOffset,endToken.endOffset) }
     | '{' invalid_double_starred_kvpairs '}'
 
 dictcomp[SSTNode]: # originally return type expr_ty
     | '{' a=kvpair b=for_if_clauses '}' { _PyAST_DictComp(a->key, a->value, b, EXTRA) }
     | invalid_dict_comprehension
-double_starred_kvpairs[asdl_seq*]: a=','.double_starred_kvpair+ [','] { a }
-double_starred_kvpair[KeyValuePair*]:
-    | '**' a=bitwise_or { _PyPegen_key_value_pair(p, NULL, a) }
+double_starred_kvpairs[SSTNode*]: a=','.double_starred_kvpair+ [','] { a }
+double_starred_kvpair[SSTNode]:
+    | '**' a=bitwise_or { factory.createKeyValuePair(null, a) }
     | kvpair
-kvpair[KeyValuePair*]: a=expression ':' b=expression { _PyPegen_key_value_pair(p, a, b) }
+kvpair[SSTNode]: a=expression ':' b=expression { factory.createKeyValuePair(a, b) }
 for_if_clauses[asdl_comprehension_seq*]:
     | a[asdl_comprehension_seq*]=for_if_clause+ { a }
 for_if_clause[comprehension_ty]:

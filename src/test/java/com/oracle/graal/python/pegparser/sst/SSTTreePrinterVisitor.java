@@ -48,7 +48,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         sb.append(addHeader(node)).append("\n");
         level++;
         sb.append(indent()).append("LHS: ").append(node.lhs.accept(this)).append("\n");
-        sb.append(indent()).append("Type: ").append(node.type.accept(this)).append("\n");
+        sb.append(indent()).append("Type: ").append(node.type.accept(this));
         level--;
         return sb.toString();
     }
@@ -124,7 +124,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         level++;
         sb.append(indent()).append("Op: ").append(binOp(node.operation)).append("\n");
         sb.append(indent()).append("LHS: ").append(node.left.accept(this)).append("\n");
-        sb.append(indent()).append("RHS: ").append(node.right.accept(this)).append("\n");
+        sb.append(indent()).append("RHS: ").append(node.right.accept(this));
         level--;
         return sb.toString();
     }
@@ -132,10 +132,10 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
     @Override
     public String visit(BlockSSTNode node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node)).append("\n");
+        sb.append(addHeader(node));
         level++;
         for(SSTNode child: node.getStatements()) {
-            sb.append(indent()).append(child.accept(this)).append("\n");
+            sb.append('\n').append(indent()).append(child.accept(this));
         }
         level--;
         return sb.toString();
@@ -158,7 +158,17 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
 
     @Override
     public String visit(CollectionSSTNode node) {
-        return addHeader(node);
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node)).append("\n");
+        level++;
+        sb.append(indent()).append("Values:");
+        level++;
+        for (SSTNode value : node.values) {
+            sb.append('\n').append(indent()).append(value.accept(this));
+        }
+        level--;
+        level--;
+        return sb.toString();
     }
 
     @Override
@@ -244,14 +254,14 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
     @Override
     public String visit(NumberLiteralSSTNode.IntegerLiteralSSTNode node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node)).append(" Value: \"").append(node.value).append("\"\n");
+        sb.append(addHeader(node)).append(" Value: \"").append(node.value).append("\"");
         return sb.toString();
     }
 
     @Override
     public String visit(NumberLiteralSSTNode.BigIntegerLiteralSSTNode node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node)).append(" Value: \"").append(node.value).append("\"\n");
+        sb.append(addHeader(node)).append(" Value: \"").append(node.value).append("\"");
         return sb.toString();
     }
 
@@ -335,7 +345,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         sb.append(addHeader(node)).append("\n");
         level++;
         sb.append(indent()).append("Op: ").append(unaryOp(node.arithmetic)).append("\n");
-        sb.append(indent()).append("Value: ").append(node.value.accept(this)).append("\n");
+        sb.append(indent()).append("Value: ").append(node.value.accept(this));
         level--;
         return sb.toString();
     }
@@ -343,7 +353,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
     @Override
     public String visit(VarLookupSSTNode node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node)).append(" Value: \"").append(node.name);
+        sb.append(addHeader(node)).append(" Value: \"").append(node.name).append('"');
         return sb.toString();
     }
 
@@ -360,6 +370,17 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
     @Override
     public String visit(YieldExpressionSSTNode node) {
         return addHeader(node);
+    }
+
+    @Override
+    public String visit(KeyValueSSTNode node) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node)).append('\n');
+        level++;
+        sb.append(indent()).append("Key: ").append(node.key.accept(this)).append('\n');
+        sb.append(indent()).append("Val: ").append(node.value.accept(this));
+        level--;
+        return sb.toString();
     }
 
 }

@@ -10883,6 +10883,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '[' star_named_expressions? ']'
             debugMessageln("%d> list[%d-%d]: %s", level, _mark, mark(), "'[' star_named_expressions? ']'");
             Token _literal;
@@ -10897,9 +10898,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d list[%d-%d]: %s succeeded!", level, _mark, mark(), "'[' star_named_expressions? ']'");
-                // TODO: node.action: _PyAST_List ( a , Load , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_List ( a , Load , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createList((SSTNode[])a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' star_named_expressions? ']'");
                 cache.putResult(_mark, LIST_ID, _res);
                 level--;
@@ -11165,6 +11169,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '{' star_named_expressions '}'
             debugMessageln("%d> set[%d-%d]: %s", level, _mark, mark(), "'{' star_named_expressions '}'");
             Token _literal;
@@ -11179,9 +11184,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d set[%d-%d]: %s succeeded!", level, _mark, mark(), "'{' star_named_expressions '}'");
-                // TODO: node.action: _PyAST_Set ( a , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Set ( a , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createSet((SSTNode[])a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' star_named_expressions '}'");
                 cache.putResult(_mark, SET_ID, _res);
                 level--;
@@ -11274,6 +11282,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '{' double_starred_kvpairs? '}'
             debugMessageln("%d> dict[%d-%d]: %s", level, _mark, mark(), "'{' double_starred_kvpairs? '}'");
             Token _literal;
@@ -11288,9 +11297,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d dict[%d-%d]: %s succeeded!", level, _mark, mark(), "'{' double_starred_kvpairs? '}'");
-                // TODO: node.action: _PyAST_Dict ( CHECK ( asdl_expr_seq * , _PyPegen_get_keys ( p , a ) ) , CHECK ( asdl_expr_seq * , _PyPegen_get_values ( p , a ) ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Dict ( CHECK ( asdl_expr_seq * , _PyPegen_get_keys ( p , a ) ) , CHECK ( asdl_expr_seq * , _PyPegen_get_values ( p , a ) ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createDict((SSTNode[])a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' double_starred_kvpairs? '}'");
                 cache.putResult(_mark, DICT_ID, _res);
                 level--;
@@ -11346,7 +11358,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> dictcomp[%d-%d]: %s", level, _mark, mark(), "'{' kvpair for_if_clauses '}'");
             Token _literal;
             Token _literal_1;
-            SSTNode[] a;
+            SSTNode a;
             SSTNode[] b;
             if (
                 (_literal = expect(25)) != null  // token='{'
@@ -11436,15 +11448,15 @@ public final class Parser extends AbstractParser {
     }
 
     // double_starred_kvpair: '**' bitwise_or | kvpair
-    public SSTNode[] double_starred_kvpair_rule()
+    public SSTNode double_starred_kvpair_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DOUBLE_STARRED_KVPAIR_ID)) {
-            _res = (SSTNode[])cache.getResult(_mark, DOUBLE_STARRED_KVPAIR_ID);
+            _res = (SSTNode)cache.getResult(_mark, DOUBLE_STARRED_KVPAIR_ID);
             level--;
-            return (SSTNode[])_res;
+            return (SSTNode)_res;
         }
         { // '**' bitwise_or
             debugMessageln("%d> double_starred_kvpair[%d-%d]: %s", level, _mark, mark(), "'**' bitwise_or");
@@ -11457,13 +11469,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d double_starred_kvpair[%d-%d]: %s succeeded!", level, _mark, mark(), "'**' bitwise_or");
-                // TODO: node.action: _PyPegen_key_value_pair ( p , NULL , a )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_key_value_pair ( p , NULL , a ) to Java !!![0m");
-                _res = null;
+                _res = factory.createKeyValuePair(null,a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' bitwise_or");
                 cache.putResult(_mark, DOUBLE_STARRED_KVPAIR_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (SSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s double_starred_kvpair[%d-%d]: %s failed!", level,
@@ -11471,7 +11481,7 @@ public final class Parser extends AbstractParser {
         }
         { // kvpair
             debugMessageln("%d> double_starred_kvpair[%d-%d]: %s", level, _mark, mark(), "kvpair");
-            SSTNode[] kvpair_var;
+            SSTNode kvpair_var;
             if (
                 (kvpair_var = kvpair_rule()) != null  // kvpair
             )
@@ -11481,7 +11491,7 @@ public final class Parser extends AbstractParser {
                 _res = kvpair_var;
                 cache.putResult(_mark, DOUBLE_STARRED_KVPAIR_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (SSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s double_starred_kvpair[%d-%d]: %s failed!", level,
@@ -11491,19 +11501,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, DOUBLE_STARRED_KVPAIR_ID, _res);
         level--;
-        return (SSTNode[])_res;
+        return (SSTNode)_res;
     }
 
     // kvpair: expression ':' expression
-    public SSTNode[] kvpair_rule()
+    public SSTNode kvpair_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KVPAIR_ID)) {
-            _res = (SSTNode[])cache.getResult(_mark, KVPAIR_ID);
+            _res = (SSTNode)cache.getResult(_mark, KVPAIR_ID);
             level--;
-            return (SSTNode[])_res;
+            return (SSTNode)_res;
         }
         { // expression ':' expression
             debugMessageln("%d> kvpair[%d-%d]: %s", level, _mark, mark(), "expression ':' expression");
@@ -11519,13 +11529,11 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d kvpair[%d-%d]: %s succeeded!", level, _mark, mark(), "expression ':' expression");
-                // TODO: node.action: _PyPegen_key_value_pair ( p , a , b )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_key_value_pair ( p , a , b ) to Java !!![0m");
-                _res = null;
+                _res = factory.createKeyValuePair(a,b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':' expression");
                 cache.putResult(_mark, KVPAIR_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (SSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s kvpair[%d-%d]: %s failed!", level,
@@ -11535,7 +11543,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, KVPAIR_ID, _res);
         level--;
-        return (SSTNode[])_res;
+        return (SSTNode)_res;
     }
 
     // for_if_clauses: for_if_clause+
@@ -22323,7 +22331,7 @@ public final class Parser extends AbstractParser {
         { // ',' double_starred_kvpair
             debugMessageln("%d> _loop0_161[%d-%d]: %s", level, _mark, mark(), "',' double_starred_kvpair");
             Token _literal;
-            SSTNode[] elem;
+            SSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
@@ -22362,7 +22370,7 @@ public final class Parser extends AbstractParser {
         }
         { // double_starred_kvpair _loop0_161
             debugMessageln("%d> _gather_160[%d-%d]: %s", level, _mark, mark(), "double_starred_kvpair _loop0_161");
-            SSTNode[] elem;
+            SSTNode elem;
             SSTNode[] seq;
             if (
                 (elem = double_starred_kvpair_rule()) != null  // double_starred_kvpair
@@ -25286,7 +25294,7 @@ public final class Parser extends AbstractParser {
         { // ',' double_starred_kvpair
             debugMessageln("%d> _loop0_228[%d-%d]: %s", level, _mark, mark(), "',' double_starred_kvpair");
             Token _literal;
-            SSTNode[] elem;
+            SSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
@@ -25325,7 +25333,7 @@ public final class Parser extends AbstractParser {
         }
         { // double_starred_kvpair _loop0_228
             debugMessageln("%d> _gather_227[%d-%d]: %s", level, _mark, mark(), "double_starred_kvpair _loop0_228");
-            SSTNode[] elem;
+            SSTNode elem;
             SSTNode[] seq;
             if (
                 (elem = double_starred_kvpair_rule()) != null  // double_starred_kvpair

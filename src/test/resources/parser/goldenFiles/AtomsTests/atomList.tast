@@ -1,0 +1,6 @@
+BlockSSTNode[0, 3]
+    CollectionSSTNode[0, 3]
+        Values:
+            IntegerLiteralSSTNode[1, 2] Value: "2"
+
+

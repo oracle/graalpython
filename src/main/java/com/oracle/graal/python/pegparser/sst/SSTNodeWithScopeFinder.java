@@ -616,6 +616,20 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
         return null;
     }
 
+    @Override
+    public SSTNodeWithScope visit(KeyValueSSTNode node) {
+        if (isSubNode(node)) {
+            SSTNodeWithScope result;
+            if (node.key != null && (result = node.key.accept(this)) != null) {
+                return result;
+            }
+            if ((result = node.value.accept(this)) != null) {
+                return result;
+            }
+        }
+        return null;
+    }
+
     private SSTNodeWithScope checkParametersWithDefaultValue(ArgDefListBuilder.ParameterWithDefValue[] parametersWithDefautValue) {
         if (parametersWithDefautValue != null) {
             SSTNodeWithScope result;

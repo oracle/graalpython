@@ -1,0 +1,5 @@
+BlockSSTNode[0, 4]
+    CollectionSSTNode[0, 4]
+        Values:
+            VarLookupSSTNode[1, 2] Value: "a"
+

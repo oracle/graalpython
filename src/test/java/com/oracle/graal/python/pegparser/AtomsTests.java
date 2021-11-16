@@ -85,4 +85,39 @@ public class AtomsTests extends ParserTestBase {
     public void atomTuple() throws Exception {
         checkTreeResult("(a,)");
     }
+
+    @Test
+    public void atomGroup() throws Exception {
+        checkTreeResult("(a)");
+    }
+
+    @Test
+    public void atomList() throws Exception {
+        checkTreeResult("[2]");
+    }
+
+    @Test
+    public void atomListcomp() throws Exception {
+        checkTreeResult("[i for i in a]");
+    }
+
+    @Test
+    public void atomDict() throws Exception {
+        checkTreeResult("{1: 2}");
+    }
+
+    @Test
+    public void atomSet() throws Exception {
+        checkTreeResult("{a, 2}");
+    }
+
+    @Test
+    public void atomDictcomp() throws Exception {
+        checkTreeResult("{a:b for a,b in y}");
+    }
+
+    @Test
+    public void atomSetcomp() throws Exception {
+        checkTreeResult("{a for a in b}");
+    }
 }

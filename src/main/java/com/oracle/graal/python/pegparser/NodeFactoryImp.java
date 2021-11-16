@@ -49,6 +49,7 @@ import com.oracle.graal.python.pegparser.sst.BinaryArithmeticSSTNode;
 import com.oracle.graal.python.pegparser.sst.BlockSSTNode;
 import com.oracle.graal.python.pegparser.sst.BooleanLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.CollectionSSTNode;
+import com.oracle.graal.python.pegparser.sst.KeyValueSSTNode;
 import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.StringLiteralSSTNode;
@@ -118,5 +119,25 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public SSTNode createTuple(SSTNode[] values, int startOffset, int endOffset) {
         return CollectionSSTNode.createTuple(values, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createList(SSTNode[] values, int startOffset, int endOffset) {
+        return CollectionSSTNode.createList(values, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createKeyValuePair(SSTNode key, SSTNode value) {
+        return KeyValueSSTNode.create(key, value);
+    }
+
+    @Override
+    public SSTNode createDict(SSTNode[] keyValuePairs, int startOffset, int endOffset) {
+        return CollectionSSTNode.createDict(keyValuePairs, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createSet(SSTNode[] values, int startOffset, int endOffset) {
+        return CollectionSSTNode.createSet(values, startOffset, endOffset);
     }
 }

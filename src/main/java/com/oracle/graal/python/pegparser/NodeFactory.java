@@ -65,5 +65,13 @@ public interface NodeFactory {
 
     public SSTNode createTuple(SSTNode[] values, int startOffset, int endOffset);
 
+    public SSTNode createList(SSTNode[] values, int startOffset, int endOffset);
+
+    public SSTNode createKeyValuePair(SSTNode key, SSTNode value);
+
+    public SSTNode createDict(SSTNode[] keyValuePairs, int startOffset, int endOffset);
+
+    public SSTNode createSet(SSTNode[] values, int startOffset, int endOffset);
+
     public UntypedSSTNode createUntyped(int tokenPosition);
 }
