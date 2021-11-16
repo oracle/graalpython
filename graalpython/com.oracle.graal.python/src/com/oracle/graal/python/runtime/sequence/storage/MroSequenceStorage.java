@@ -143,7 +143,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public SequenceStorage copy() {
-        return new MroSequenceStorage(getClassName(), Arrays.copyOf(values, length));
+        return new MroSequenceStorage(getClassName(), PythonUtils.arrayCopyOf(values, length));
     }
 
     @Override

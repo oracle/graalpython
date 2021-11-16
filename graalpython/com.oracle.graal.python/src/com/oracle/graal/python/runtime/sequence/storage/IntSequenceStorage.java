@@ -69,7 +69,7 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public SequenceStorage copy() {
-        return new IntSequenceStorage(Arrays.copyOf(values, length));
+        return new IntSequenceStorage(PythonUtils.arrayCopyOf(values, length));
     }
 
     @Override

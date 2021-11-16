@@ -75,7 +75,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public SequenceStorage copy() {
-        return new ByteSequenceStorage(Arrays.copyOf(values, length));
+        return new ByteSequenceStorage(PythonUtils.arrayCopyOf(values, length));
     }
 
     @Override

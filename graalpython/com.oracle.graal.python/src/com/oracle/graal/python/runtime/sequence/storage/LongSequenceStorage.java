@@ -71,7 +71,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public SequenceStorage copy() {
-        return new LongSequenceStorage(Arrays.copyOf(values, length));
+        return new LongSequenceStorage(PythonUtils.arrayCopyOf(values, length));
     }
 
     @Override
