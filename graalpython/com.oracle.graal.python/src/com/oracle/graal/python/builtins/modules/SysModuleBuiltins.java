@@ -52,20 +52,20 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.BACKSLASHREPLACE;
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.STRICT;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
-import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.castToString;
-import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.classNameNoDot;
-import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.fileFlush;
-import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.fileWriteString;
-import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.getExceptionTraceback;
-import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.getObjectClass;
-import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.getTypeName;
-import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.longAsInt;
-import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.objectHasAttr;
-import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.objectLookupAttr;
-import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.objectLookupAttrAsString;
-import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.objectRepr;
-import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.objectStr;
-import static com.oracle.graal.python.builtins.objects.traceback.TracebackNodes.tryCastToString;
+import static com.oracle.graal.python.lib.PyTraceBackPrintNode.castToString;
+import static com.oracle.graal.python.lib.PyTraceBackPrintNode.classNameNoDot;
+import static com.oracle.graal.python.lib.PyTraceBackPrintNode.fileFlush;
+import static com.oracle.graal.python.lib.PyTraceBackPrintNode.fileWriteString;
+import static com.oracle.graal.python.lib.PyTraceBackPrintNode.getExceptionTraceback;
+import static com.oracle.graal.python.lib.PyTraceBackPrintNode.getObjectClass;
+import static com.oracle.graal.python.lib.PyTraceBackPrintNode.getTypeName;
+import static com.oracle.graal.python.lib.PyTraceBackPrintNode.longAsInt;
+import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectHasAttr;
+import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectLookupAttr;
+import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectLookupAttrAsString;
+import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectRepr;
+import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectStr;
+import static com.oracle.graal.python.lib.PyTraceBackPrintNode.tryCastToString;
 import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.DISPLAYHOOK;
@@ -106,6 +106,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.oracle.graal.python.lib.PyTraceBackPrintNode;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -141,7 +142,6 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.builtins.objects.traceback.TracebackNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
@@ -894,32 +894,32 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     "* object: Object causing the exception, can be None.")
     @GenerateNodeFactory
     abstract static class UnraisableHookNode extends PythonBuiltinNode {
-        @Child private TracebackNodes.PrintTracebackNode printTracebackNode;
+        @Child private PyTraceBackPrintNode pyTraceBackPrintNode;
 
         private void printTraceBack(VirtualFrame frame, PythonModule sys, Object out, Object tb) {
-            if (printTracebackNode == null) {
+            if (pyTraceBackPrintNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                printTracebackNode = insert(TracebackNodes.PrintTracebackNode.create());
+                pyTraceBackPrintNode = insert(PyTraceBackPrintNode.create());
             }
-            printTracebackNode.execute(frame, sys, out, tb);
+            pyTraceBackPrintNode.execute(frame, sys, out, tb);
         }
 
         private void writeUnraisableExc(MaterializedFrame frame, PythonModule sys, Object out,
                         Object excType, Object excValue, Object excTb, Object errMsg, Object obj) {
             if (obj != PNone.NONE) {
                 if (errMsg != PNone.NONE) {
-                    TracebackNodes.fileWriteObject(frame, out, errMsg, true);
+                    PyTraceBackPrintNode.fileWriteObject(frame, out, errMsg, true);
                     fileWriteString(frame, out, ": ");
                 } else {
                     fileWriteString(frame, out, "Exception ignored in: ");
                 }
 
-                if (!TracebackNodes.fileWriteObject(frame, out, obj, false)) {
+                if (!PyTraceBackPrintNode.fileWriteObject(frame, out, obj, false)) {
                     fileWriteString(frame, out, "<object repr() failed>");
                 }
                 fileWriteString(frame, out, NEW_LINE);
             } else if (errMsg != PNone.NONE) {
-                TracebackNodes.fileWriteObject(frame, out, errMsg, true);
+                PyTraceBackPrintNode.fileWriteObject(frame, out, errMsg, true);
                 fileWriteString(frame, out, ":\n");
             }
 
@@ -958,7 +958,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             if (excValue != PNone.NONE) {
                 // only print colon if the str() of the object is not the empty string
                 fileWriteString(frame, out, ": ");
-                if (!TracebackNodes.fileWriteObject(frame, out, excValue, true)) {
+                if (!PyTraceBackPrintNode.fileWriteObject(frame, out, excValue, true)) {
                     fileWriteString(frame, out, "<exception str() failed>");
                 }
             }
@@ -1002,14 +1002,14 @@ public class SysModuleBuiltins extends PythonBuiltins {
         static final String ATTR_OFFSET = "offset";
         static final String ATTR_TEXT = "text";
 
-        @Child private TracebackNodes.PrintTracebackNode printTracebackNode;
+        @Child private PyTraceBackPrintNode pyTraceBackPrintNode;
 
         private void printTraceBack(VirtualFrame frame, PythonModule sys, Object out, Object tb) {
-            if (printTracebackNode == null) {
+            if (pyTraceBackPrintNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                printTracebackNode = insert(TracebackNodes.PrintTracebackNode.create());
+                pyTraceBackPrintNode = insert(PyTraceBackPrintNode.create());
             }
-            printTracebackNode.execute(frame, sys, out, tb);
+            pyTraceBackPrintNode.execute(frame, sys, out, tb);
         }
 
         @CompilerDirectives.ValueType
