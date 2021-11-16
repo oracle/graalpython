@@ -48,6 +48,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -1287,30 +1288,26 @@ public final class PythonContext extends Python3Core {
     }
 
     private void initializeHashSecret() {
-        String hashSeed = getOption(PythonOptions.HashSeed);
-        if (hashSeed.equals("random")) {
-            getSecureRandom().nextBytes(hashSecret);
-        } else {
-            try {
-                long hashSeedValue = Long.parseLong(hashSeed);
-                if (hashSeedValue < 0 || hashSeedValue > 4294967295L) {
-                    throw new NumberFormatException();
+        assert !ImageInfo.inImageBuildtimeCode();
+        Optional<Integer> hashSeed = getOption(PythonOptions.HashSeed);
+        if (hashSeed.isPresent()) {
+            int hashSeedValue = hashSeed.get();
+            // 0 disables the option, leaving the secret at 0
+            if (hashSeedValue != 0) {
+                // Generate the whole secret from the seed number the same way as CPython
+                // Taken from bootstrap_hash.c:lcg_urandom
+                // hashSeedValue was parsed as unsigned integer
+                int x = hashSeedValue;
+                for (int i = 0; i < hashSecret.length; i++) {
+                    x *= 214013;
+                    x += 2531011;
+                    /* modulo 2 ^ (8 * sizeof(int)) */
+                    hashSecret[i] = (byte) ((x >>> 16) & 0xff);
                 }
-                // 0 disables the option, leaving the secret at 0
-                if (hashSeedValue != 0) {
-                    // Generate the whole secret from the seed number the same way as CPython
-                    // Taken from bootstrap_hash.c:lcg_urandom
-                    int x = (int) hashSeedValue;
-                    for (int i = 0; i < hashSecret.length; i++) {
-                        x *= 214013;
-                        x += 2531011;
-                        /* modulo 2 ^ (8 * sizeof(int)) */
-                        hashSecret[i] = (byte) ((x >>> 16) & 0xff);
-                    }
-                }
-            } catch (NumberFormatException e) {
-                throw new RuntimeException("PYTHONHASHSEED must be \"random\" or an integer in range [0; 4294967295]");
             }
+        } else {
+            // Generate random seed
+            getSecureRandom().nextBytes(hashSecret);
         }
     }
 

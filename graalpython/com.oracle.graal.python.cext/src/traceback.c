@@ -50,5 +50,5 @@ int PyTraceBack_Here(PyFrameObject *frame) {
 
 UPCALL_ID(_PyTraceback_Add)
 void _PyTraceback_Add(const char *funcname, const char *filename, int lineno) {
-    return UPCALL_CEXT_VOID(_jls__PyTraceback_Add, polyglot_from_string(funcname, SRC_CS), polyglot_from_string(filename, SRC_CS), lineno);
+    UPCALL_CEXT_VOID(_jls__PyTraceback_Add, polyglot_from_string(funcname, SRC_CS), polyglot_from_string(filename, SRC_CS), lineno);
 }
