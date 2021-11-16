@@ -421,6 +421,8 @@ public final class PythonContext extends Python3Core {
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
     private final IDUtils idUtils = new IDUtils();
 
+    @CompilationFinal private SecureRandom secureRandom;
+
     // Equivalent of _Py_HashSecret
     @CompilationFinal(dimensions = 1) private byte[] hashSecret = new byte[24];
 
@@ -1079,6 +1081,22 @@ public final class PythonContext extends Python3Core {
         return perfCounterStart;
     }
 
+    /**
+     * Get a SecureRandom instance using a non-blocking source.
+     */
+    public SecureRandom getSecureRandom() {
+        assert !ImageInfo.inImageBuildtimeCode();
+        if (secureRandom == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            try {
+                secureRandom = SecureRandom.getInstance("NativePRNGNonBlocking");
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException("Unable to obtain entropy source for random number generation (NativePRNGNonBlocking)", e);
+            }
+        }
+        return secureRandom;
+    }
+
     public byte[] getHashSecret() {
         assert !ImageInfo.inImageBuildtimeCode();
         return hashSecret;
@@ -1271,11 +1289,7 @@ public final class PythonContext extends Python3Core {
     private void initializeHashSecret() {
         String hashSeed = getOption(PythonOptions.HashSeed);
         if (hashSeed.equals("random")) {
-            try {
-                SecureRandom.getInstance("NativePRNGNonBlocking").nextBytes(hashSecret);
-            } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException("Unable to obtain entropy source for hash randomization (NativePRNGNonBlocking)");
-            }
+            getSecureRandom().nextBytes(hashSecret);
         } else {
             try {
                 long hashSeedValue = Long.parseLong(hashSeed);
