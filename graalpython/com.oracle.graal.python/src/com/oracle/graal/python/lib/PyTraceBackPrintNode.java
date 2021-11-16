@@ -81,8 +81,8 @@ import static com.oracle.graal.python.nodes.BuiltinNames.TRACEBACKLIMIT;
 import static com.oracle.graal.python.util.PythonUtils.NEW_LINE;
 
 /**
- * Equivalent of {@code PyTraceBack_Print} from CPython.
- * the node contains also a number of utility static methods
+ * Equivalent of {@code PyTraceBack_Print} from CPython. the node contains also a number of utility
+ * static methods
  */
 public abstract class PyTraceBackPrintNode extends PNodeWithContext {
     static final int TRACEBACK_LIMIT = 1000;

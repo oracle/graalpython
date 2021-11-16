@@ -74,6 +74,10 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PBaseException extends PythonObject {
+    public static class Data {
+
+    }
+
     private static final ErrorMessageFormatter FORMATTER = new ErrorMessageFormatter();
 
     private PTuple args; // can be null for lazily generated message
@@ -91,9 +95,9 @@ public final class PBaseException extends PythonObject {
     private boolean suppressContext = false;
     // the data instance is used to store additional information for some of the builtin exceptions
     // not unlike subclassing
-    private Object data;
+    private Data data;
 
-    public PBaseException(Object cls, Shape instanceShape, Object data, PTuple args) {
+    public PBaseException(Object cls, Shape instanceShape, Data data, PTuple args) {
         super(cls, instanceShape);
         this.data = data;
         this.args = args;
@@ -102,7 +106,7 @@ public final class PBaseException extends PythonObject {
         this.messageArgs = null;
     }
 
-    public PBaseException(Object cls, Shape instanceShape, Object data) {
+    public PBaseException(Object cls, Shape instanceShape, Data data) {
         super(cls, instanceShape);
         this.data = data;
         this.args = null;
@@ -111,7 +115,7 @@ public final class PBaseException extends PythonObject {
         this.messageArgs = null;
     }
 
-    public PBaseException(Object cls, Shape instanceShape, Object data, String format, Object[] args) {
+    public PBaseException(Object cls, Shape instanceShape, Data data, String format, Object[] args) {
         super(cls, instanceShape);
         this.data = data;
         this.args = null;
@@ -120,11 +124,11 @@ public final class PBaseException extends PythonObject {
         this.messageArgs = args;
     }
 
-    public Object getData() {
+    public Data getData() {
         return data;
     }
 
-    public void setData(Object data) {
+    public void setData(Data data) {
         this.data = data;
     }
 

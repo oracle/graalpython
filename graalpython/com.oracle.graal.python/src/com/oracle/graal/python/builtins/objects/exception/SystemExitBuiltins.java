@@ -67,7 +67,7 @@ public final class SystemExitBuiltins extends PythonBuiltins {
     }
 
     @CompilerDirectives.ValueType
-    public static final class SystemExitData {
+    public static final class SystemExitData extends PBaseException.Data {
         private Object code;
 
         private SystemExitData() {
