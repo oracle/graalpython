@@ -9,8 +9,7 @@
 #   added java specific meta data @package, @parser_fields,
 #   default rule is renamed to default_param
 
-@license '''
-/*
+@license '''/*
  * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *

@@ -97,13 +97,13 @@ class FunctionCall:
 
 # TODO this is temporary solution until all types in the grammar will not be java types
 def _check_type(self, ttype: str) -> str:
-    self._type_conversions = getattr(self, "_type_conversions", set())
+    self._type_conversions = getattr(self, "_type_conversions", {})
     if ttype and type(ttype) == str and "Token" != ttype and not "SSTNode" in ttype:
         if "[]" in ttype or "*" in ttype:
-            self._type_conversions.add(f"// TODO replacing {ttype} --> SSTNode[]")
+            self._type_conversions.setdefault(f"// TODO replacing {ttype} --> SSTNode[]")
             return "SSTNode[]"
         if hasattr(self, "print"):
-            self._type_conversions.add(f"// TODO replacing {ttype} --> SSTNode[]")
+            self._type_conversions.setdefault(f"// TODO replacing {ttype} --> SSTNode[]")
         return "SSTNode"
     elif "SSTNode*" == ttype:
         return "SSTNode[]"
@@ -446,7 +446,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.visit(rule)
         # we don't need the C trailer, but we have our own final things to generate and close the class
         self._generate_lookahead_methods()
-        for todo in getattr(self, "_type_conversions", set()):
+        for todo in getattr(self, "_type_conversions", {}).keys():
             self.print(todo)
         self.level -= 1
         self.print("}")
