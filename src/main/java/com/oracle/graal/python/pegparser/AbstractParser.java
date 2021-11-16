@@ -107,7 +107,7 @@ abstract class AbstractParser {
      * the expected one.
      */
     public Token expect(int tokenKind) {
-        Token token = tokenizer.peekToken();
+        Token token = getAndInitializeToken();
         if (token.type == tokenKind) {
             return tokenizer.getToken();
         }
@@ -160,32 +160,21 @@ abstract class AbstractParser {
         return tokenizer.getText(token);
     }
 
-
-    public Token getToken(int pos) {
-        if (pos > tokenizer.mark()) {
-            throw new RuntimeException("getToken(pos) can be used only for position that is already scanned!");
-        }
-        int helpPos = mark();
-        Token token =  tokenizer.peekToken();
-        
-        tokenizer.reset(pos);
-        return token;
-    }
-
     /**
-     * equivalent to PyPegen_fill_token in that it modifies the token
+     * equivalent to _PyPegen_fill_token in that it modifies the token, and does not advance
      */
     public Token getAndInitializeToken() {
         int pos = mark();
-        Token token = getToken(pos);
+        Token token = tokenizer.getToken();
         while (token.type == Token.Kind.TYPE_IGNORE) {
             String tag = getText(token);
             comments.put(token.startLine, tag);
-            token = getToken(pos);
+            pos++;
+            token = tokenizer.getToken();
         }
+        reset(pos);
 
         // TODO: handle reaching end in single_input mode
-        
         return initializeToken(token);
     }
 
