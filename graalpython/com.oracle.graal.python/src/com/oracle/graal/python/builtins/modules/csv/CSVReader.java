@@ -24,10 +24,6 @@ public final class CSVReader extends PythonBuiltinObject {
 
     private static final String EOL = "EOL"; //TODO: How to share across package? Constants Class
 
-    private static final String NEW_LINE = "\n";
-    private static final String CARRIAGE_RETURN = "\r";
-    private static final String SPACE = " ";
-
     public enum ReaderState {
         START_RECORD,
         START_FIELD,
@@ -120,7 +116,7 @@ public final class CSVReader extends PythonBuiltinObject {
                     /* possible escaped character */
                     this.state = ESCAPED_CHAR;
                 }
-                else if (c == SPACE && dialect.skipinitialspace)
+                else if (c.equals(" ") && dialect.skipinitialspace)
                     /* ignore space at start of field */
                     ;
                 else if (c.equals(dialect.delimiter)) {
@@ -262,8 +258,6 @@ public final class CSVReader extends PythonBuiltinObject {
 
         this.fieldLen++;
         this.field = this.field.concat(c);
-
-        // TODO: We can't do a growing buffer like CPython. Use => StringBuilder
 
     }
 }

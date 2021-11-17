@@ -984,6 +984,10 @@ public abstract class ErrorMessages {
     public static final String UNEXPECTED_END_OF_DATA = "unexpected end of data";
     public static final String WRONG_ITERATOR_RETURN_TYPE = "iterator should return strings, not %.200s (the file should be opened in text mode)";
     public static final String LINE_CONTAINS_NULL_BYTE = "line contains NUL";
+    public static final String EXPECTED_ITERABLE_NOT_S = "iterable expected, not %.200s";
+    public static final String EMPTY_FIELD_RECORD_MUST_BE_QUOTED = "single empty field record must be quoted";
+    public static final String ESCAPE_WITHOUT_ESCAPECHAR = "need to escape, but no escapechar set";
+    public static final String S_MUST_HAVE_WRITE_METHOD = "%s must have \"write\" method";
 
 
     // warnings

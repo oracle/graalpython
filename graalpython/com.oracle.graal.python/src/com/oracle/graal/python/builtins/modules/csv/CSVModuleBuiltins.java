@@ -18,10 +18,12 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -46,6 +48,7 @@ import java.util.List;
 public class CSVModuleBuiltins extends PythonBuiltins {
 
     static long fieldLimit = 128 * 1024; // max parsed field size
+    public static final String WRITE = "write";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -183,6 +186,34 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "writer", doc = WRITER_DOC , parameterNames = {"outputfile", "dialect"}, minNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class CSVWriterNode extends PythonBuiltinNode {
+        @Specialization
+        Object createReader(VirtualFrame frame, Object outputFile, Object dialectObj, PKeyword[] kwargs,
+                            @Cached PythonObjectFactory pythonObjectFactory,
+                            @Cached CSVModuleBuiltins.CSVCallDialectNode callDialect,
+                            @Cached PyObjectLookupAttr lookupAttr,
+                            @Cached PyCallableCheckNode checkCallable) {
+
+            CSVWriter writer = pythonObjectFactory.createCSVWriter(PythonBuiltinClassType.CSVWriter);
+
+            writer.rec = "";
+            writer.recSize = 0;
+            writer.joinReset();
+
+            writer.write = lookupAttr.execute(frame, outputFile, WRITE);
+
+            if (writer.write == PNone.NO_VALUE || !checkCallable.execute(writer.write)) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_MUST_HAVE_WRITE_METHOD, "argument 1");
+            }
+
+            writer.dialect = (CSVDialect) callDialect.execute(frame, dialectObj, kwargs);
+
+            return writer;
+        }
+    }
+
     @Builtin(name = "field_size_limit", parameterNames = {"limit"}, doc = "Sets an upper limit on parsed fields.\n" +
             "csv.field_size_limit([limit])\n\n" +
             "Returns old limit. If limit is not given, no new limit is set and\n" +
@@ -295,5 +326,19 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             "\n" +
             "The returned object is an iterator.  Each iteration returns a row\n" +
             "of the CSV file (which can span multiple input lines)";
+
+    private static final String WRITER_DOC =
+        "    csv_writer = csv.writer(fileobj [, dialect='excel']\n" +
+        "                            [optional keyword args])\n" +
+        "    for row in sequence:\n" +
+        "        csv_writer.writerow(row)\n" +
+        "\n" +
+        "    [or]\n" +
+        "\n" +
+        "    csv_writer = csv.writer(fileobj [, dialect='excel']\n" +
+        "                            [optional keyword args])\n" +
+        "    csv_writer.writerows(rows)\n" +
+        "\n" +
+        "The \"fileobj\" argument can be any object that supports the file API.\n";
 
 }

@@ -31,6 +31,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHan
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
 import com.oracle.graal.python.builtins.modules.csv.CSVDialect;
 import com.oracle.graal.python.builtins.modules.csv.CSVReader;
+import com.oracle.graal.python.builtins.modules.csv.CSVWriter;
 import com.oracle.graal.python.builtins.modules.ctypes.CDataObject;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldObject;
 import com.oracle.graal.python.builtins.modules.ctypes.CThunkObject;
@@ -1091,6 +1092,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final CSVReader createCSVReader(Object clazz) {
         return trace(new CSVReader(clazz, getShape(clazz)));
+    }
+
+    public final CSVWriter createCSVWriter(Object clazz) {
+        return trace(new CSVWriter(clazz, getShape(clazz)));
     }
 
     public final CSVDialect createCSVDialect(Object clazz) {

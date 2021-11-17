@@ -412,115 +412,115 @@ QUOTE_MINIMAL, QUOTE_ALL, QUOTE_NONNUMERIC, QUOTE_NONE = range(4)
 #         if len(self.field) + len(c) > _field_limit:
 #             raise Error("field larger than field limit (%d)" % (_field_limit))
 #         self.field += c
-        
-
-class Writer(object):
-    """CSV writer
-
-    Writer objects are responsible for generating tabular data
-    in CSV format from sequence input."""
-
-    def __init__(self, file, dialect=None, **kwargs):
-        if not (hasattr(file, 'write') and callable(file.write)):
-            raise TypeError("argument 1 must have a 'write' method")
-        self.writeline = file.write
-        self.dialect = _call_dialect(dialect, kwargs)
-
-    def _join_reset(self):
-        self.rec = []
-        self.num_fields = 0
-
-    def _join_append(self, field, quoted, quote_empty):
-        dialect = self.dialect
-        # If this is not the first field we need a field separator
-        if self.num_fields > 0:
-            self.rec.append(dialect.delimiter)
-
-        if dialect.quoting == QUOTE_NONE:
-            need_escape = tuple(dialect.lineterminator) + (
-                dialect.escapechar,  # escapechar always first
-                dialect.delimiter, dialect.quotechar)
-                
-        else:
-            for c in tuple(dialect.lineterminator) + (
-                dialect.delimiter, dialect.escapechar):
-                if c and c in field:
-                    quoted = True
-
-            need_escape = ()
-            if dialect.quotechar in field:
-                if dialect.doublequote:
-                    field = field.replace(dialect.quotechar,
-                                          dialect.quotechar * 2)
-                    quoted = True
-                else:
-                    need_escape = (dialect.quotechar,)
 
 
-        for c in need_escape:
-            if c and c in field:
-                if not dialect.escapechar:
-                    raise Error("need to escape, but no escapechar set")
-                field = field.replace(c, dialect.escapechar + c)
+# class Writer(object):
+#     """CSV writer
+#
+#     Writer objects are responsible for generating tabular data
+#     in CSV format from sequence input."""
+#
+#     def __init__(self, file, dialect=None, **kwargs):
+#         if not (hasattr(file, 'write') and callable(file.write)):
+#             raise TypeError("argument 1 must have a 'write' method")
+#         self.writeline = file.write
+#         self.dialect = _call_dialect(dialect, kwargs)
+#
+#     def _join_reset(self):
+#         self.rec = []
+#         self.num_fields = 0
+#
+#     def _join_append(self, field, quoted, quote_empty):
+#         dialect = self.dialect
+#         # If this is not the first field we need a field separator
+#         if self.num_fields > 0:
+#             self.rec.append(dialect.delimiter)
+#
+#         if dialect.quoting == QUOTE_NONE:
+#             need_escape = tuple(dialect.lineterminator) + (
+#                 dialect.escapechar,  # escapechar always first
+#                 dialect.delimiter, dialect.quotechar)
+#
+#         else:
+#             for c in tuple(dialect.lineterminator) + (
+#                 dialect.delimiter, dialect.escapechar):
+#                 if c and c in field:
+#                     quoted = True
+#
+#             need_escape = ()
+#             if dialect.quotechar in field:
+#                 if dialect.doublequote:
+#                     field = field.replace(dialect.quotechar,
+#                                           dialect.quotechar * 2)
+#                     quoted = True
+#                 else:
+#                     need_escape = (dialect.quotechar,)
+#
+#
+#         for c in need_escape:
+#             if c and c in field:
+#                 if not dialect.escapechar:
+#                     raise Error("need to escape, but no escapechar set")
+#                 field = field.replace(c, dialect.escapechar + c)
+#
+#         # If field is empty check if it needs to be quoted
+#         if field == '' and quote_empty:
+#             if dialect.quoting == QUOTE_NONE:
+#                 raise Error("single empty field record must be quoted")
+#             quoted = 1
+#
+#         if quoted:
+#             field = dialect.quotechar + field + dialect.quotechar
+#
+#         self.rec.append(field)
+#         self.num_fields += 1
+#
 
-        # If field is empty check if it needs to be quoted
-        if field == '' and quote_empty:
-            if dialect.quoting == QUOTE_NONE:
-                raise Error("single empty field record must be quoted")
-            quoted = 1
 
-        if quoted:
-            field = dialect.quotechar + field + dialect.quotechar
+#     def writerow(self, row):
+#         if row is None:
+#             raise Error
+#
+#         dialect = self.dialect
+#
+#         # join all fields in internal buffer
+#         self._join_reset()
+#
+#         fields = []
+#         for field in row:
+#             fields.append(field)
+#
+#         rowlen = len(fields)
+#         for field in fields:
+#             quoted = False
+#             if dialect.quoting == QUOTE_NONNUMERIC:
+#                 try:
+#                     float(field)
+#                 except:
+#                     quoted = True
+#                 # This changed since 2.5:
+#                 # quoted = not isinstance(field, (int, long, float))
+#             elif dialect.quoting == QUOTE_ALL:
+#                 quoted = True
+#
+#             if field is None:
+#                 if dialect.quoting == QUOTE_NONE:
+#                     raise Error
+#                 value = ""
+#             elif isinstance(field, float):
+#                 value = repr(field)
+#             else:
+#                 value = str(field)
+#             self._join_append(value, quoted, rowlen == 1)
+#
+#         # add line terminator
+#         self.rec.append(dialect.lineterminator)
+#
+#         self.writeline(''.join(self.rec))
 
-        self.rec.append(field)
-        self.num_fields += 1
-
-
-
-    def writerow(self, row):
-        if row is None:
-            raise Error
-        
-        dialect = self.dialect
-
-        # join all fields in internal buffer
-        self._join_reset()
-        
-        fields = []
-        for field in row:
-            fields.append(field)
-            
-        rowlen = len(fields)    
-        for field in fields:
-            quoted = False
-            if dialect.quoting == QUOTE_NONNUMERIC:
-                try:
-                    float(field)
-                except:
-                    quoted = True
-                # This changed since 2.5:
-                # quoted = not isinstance(field, (int, long, float))
-            elif dialect.quoting == QUOTE_ALL:
-                quoted = True
-
-            if field is None:
-                if dialect.quoting == QUOTE_NONE:
-                    raise Error
-                value = ""
-            elif isinstance(field, float):
-                value = repr(field)
-            else:
-                value = str(field)
-            self._join_append(value, quoted, rowlen == 1)
-
-        # add line terminator
-        self.rec.append(dialect.lineterminator)
-
-        self.writeline(''.join(self.rec))
-
-    def writerows(self, rows):
-        for row in rows:
-            self.writerow(row)
+#     def writerows(self, rows):
+#         for row in rows:
+#             self.writerow(row)
 
 # def reader(*args, **kwargs):
 #     """
@@ -540,21 +540,21 @@ class Writer(object):
 #
 #     return Reader(*args, **kwargs)
 
-def writer(*args, **kwargs):
-    """
-    csv_writer = csv.writer(fileobj [, dialect='excel']
-                            [optional keyword args])
-    for row in sequence:
-        csv_writer.writerow(row)
-
-    [or]
-
-    csv_writer = csv.writer(fileobj [, dialect='excel']
-                            [optional keyword args])
-    csv_writer.writerows(rows)
-
-    The \"fileobj\" argument can be any object that supports the file API."""
-    return Writer(*args, **kwargs)
+# def writer(*args, **kwargs):
+#     """
+#     csv_writer = csv.writer(fileobj [, dialect='excel']
+#                             [optional keyword args])
+#     for row in sequence:
+#         csv_writer.writerow(row)
+#
+#     [or]
+#
+#     csv_writer = csv.writer(fileobj [, dialect='excel']
+#                             [optional keyword args])
+#     csv_writer.writerows(rows)
+#
+#     The \"fileobj\" argument can be any object that supports the file API."""
+#     return Writer(*args, **kwargs)
 
 
 # undefined = object()

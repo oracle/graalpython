@@ -40,53 +40,29 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Equivalent of CPython's {@code PyObject_Str}. Converts object to a string using its
- * {@code __str__} special method.
- * <p>
- * The output is always coerced to a Java {@link String}
- *
- * @see PyObjectStrAsObjectNode
+ * Equivalent of CPython's {@code PyComplex_Check}.
  */
 @GenerateUncached
-public abstract class PyObjectStrAsJavaStringNode extends PNodeWithContext {
-    public abstract String execute(Frame frame, Object object);
-
-    public final String execute(Object object) {
-        return execute(null, object);
-    }
+public abstract class PyComplexCheckNode extends Node {
+    public abstract boolean execute(Object object);
 
     @Specialization
-    static String doStr(String obj) {
-        return obj;
-    }
-
-    @Specialization
-    static String doGeneric(VirtualFrame frame, Object obj,
-                    @Cached PyObjectStrAsObjectNode strNode,
-                    @Cached CastToJavaStringNode cast) {
-        try {
-            return cast.execute(strNode.execute(frame, obj));
-        } catch (CannotCastException e) {
-            throw CompilerDirectives.shouldNotReachHere("PyObjectStrAsObjectNode result not convertible to string");
-        }
-    }
-
-    public static PyObjectStrAsJavaStringNode create() {
-        return PyObjectStrAsJavaStringNodeGen.create();
-    }
-
-    public static PyObjectStrAsJavaStringNode getUncached() {
-        return PyObjectStrAsJavaStringNodeGen.getUncached();
+    static boolean doGeneric(Object object,
+                             @Cached GetClassNode getClassNode,
+                             @Cached IsSubtypeNode isSubtypeNode,
+                             @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
+        Object type = getClassNode.execute(object);
+        return isSubtypeNode.execute(type, PythonBuiltinClassType.PComplex);
     }
 }

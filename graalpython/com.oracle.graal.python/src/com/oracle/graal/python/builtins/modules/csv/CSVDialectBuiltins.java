@@ -12,7 +12,6 @@ import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -40,7 +39,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
     public static final int QUOTE_NONNUMERIC = 2;
     public static final int QUOTE_NONE = 3;
 
-    private static final String NOT_SET = "NOT_SET";
+    static final String NOT_SET = "NOT_SET";
     private static final String EOL = "EOL";
 
     @Override
@@ -79,11 +78,10 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                               @Cached CastToJavaStringNode castToJavaStringNode,
                               @Cached PyObjectIsTrueNode isTrueNode,
                               @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                              @Cached PyLongAsIntNode pyLongAsIntNode,
-                              @Cached PyUnicodeCheckExactNode pyUnicodeCheckExactNode) {
+                              @Cached PyLongAsIntNode pyLongAsIntNode) {
 
             return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj, quotecharObj, quotingObj, skipinitialspaceObj, strictObj,
-                    getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode, pyUnicodeCheckExactNode);
+                    getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
         @Specialization
@@ -96,7 +94,6 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                                     @Cached CastToJavaStringNode castToJavaStringNode,
                                     @Cached PyObjectIsTrueNode isTrueNode,
                                     @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                                    @Cached PyUnicodeCheckExactNode pyUnicodeCheckExactNode,
                                     @Cached PyLongAsIntNode pyLongAsIntNode) {
 
             CSVDialect dialectObj = getDialect.get(frame, dialectName, getItemNode, readNode);
@@ -111,7 +108,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
             if (strictObj == PNone.NO_VALUE) strictObj = dialectObj.strict;
 
             return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj, quotecharObj, quotingObj, skipinitialspaceObj, strictObj,
-                    getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode, pyUnicodeCheckExactNode);
+                    getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
         @Specialization
@@ -125,8 +122,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                               @Cached CastToJavaStringNode castToJavaStringNode,
                               @Cached PyObjectIsTrueNode isTrueNode,
                               @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                              @Cached PyLongAsIntNode pyLongAsIntNode,
-                              @Cached PyUnicodeCheckExactNode pyUnicodeCheckExactNode) {
+                              @Cached PyLongAsIntNode pyLongAsIntNode) {
 
             // We use multiple AttributeNodes to be able to cache all attributes as current CACHE_SIZE is 3.
             delimiterObj = getAttributeValue(frame, dialectObj, delimiterObj, "delimiter", getFirstAttributesNode);
@@ -139,7 +135,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
             strictObj = getAttributeValue(frame, dialectObj, strictObj, "strict", getThirdAttributesNode);
 
             return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj, quotecharObj, quotingObj, skipinitialspaceObj, strictObj,
-                    getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode, pyUnicodeCheckExactNode);
+                    getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
         @Specialization(guards = {"!isCSVDialect(dialectObj)", "!isPythonClass(dialectObj)", "!isString(dialectObj)", "!isPNone(dialectObj)"})
@@ -151,9 +147,9 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                          @Cached CastToJavaStringNode castToJavaStringNode,
                          @Cached PyObjectIsTrueNode isTrueNode,
                          @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                         @Cached PyLongAsIntNode pyLongAsIntNode,
-                         @Cached PyUnicodeCheckExactNode pyUnicodeCheckExactNode) {
+                         @Cached PyLongAsIntNode pyLongAsIntNode) {
 
+            //TODO: Do we need to handle PString here?
             delimiterObj = getAttributeValue(frame, dialectObj, delimiterObj, "delimiter", getAttributeNode);
             doublequoteObj = getAttributeValue(frame, dialectObj, doublequoteObj, "doublequote", getAttributeNode);
             escapecharObj = getAttributeValue(frame, dialectObj, escapecharObj, "escapechar", getAttributeNode);
@@ -164,7 +160,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
             strictObj = getAttributeValue(frame, dialectObj, strictObj, "strict", getAttributeNode);
 
             return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj, quotecharObj, quotingObj, skipinitialspaceObj, strictObj,
-                    getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode, pyUnicodeCheckExactNode);
+                    getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
         protected boolean isCSVDialect(Object dialect) {
@@ -176,14 +172,13 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                                         @Cached CastToJavaStringNode castToJavaStringNode,
                                         @Cached PyObjectIsTrueNode isTrueNode,
                                         @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                                        @Cached PyLongAsIntNode pyLongAsIntNode,
-                                        @Cached PyUnicodeCheckExactNode pyUnicodeCheckExactNode) {
+                                        @Cached PyLongAsIntNode pyLongAsIntNode) {
 
-            String delimiter = getChar("delimiter", delimiterObj, ",", pyUnicodeCheckExactNode, getClassNode, castToJavaStringNode);
+            String delimiter = getChar("delimiter", delimiterObj, ",", getClassNode, castToJavaStringNode);
             boolean doublequote = getBoolean(frame, "doublequote", doublequoteObj, true, isTrueNode);
-            String escapechar = getCharOrNone("escapechar", escapecharObj, NOT_SET, pyUnicodeCheckExactNode, getClassNode, castToJavaStringNode);
+            String escapechar = getCharOrNone("escapechar", escapecharObj, NOT_SET, getClassNode, castToJavaStringNode);
             String lineterminator = getString("lineterminator", lineterminatorObj, "\r\n", castToJavaStringNode);
-            String quotechar = getCharOrNone("quotechar", quotecharObj, "\"", pyUnicodeCheckExactNode, getClassNode, castToJavaStringNode);
+            String quotechar = getCharOrNone("quotechar", quotecharObj, "\"", getClassNode, castToJavaStringNode);
             int quoting = getQuotingValue(frame, "quoting", quotingObj, QUOTE_MINIMAL, pyLongCheckExactNode, pyLongAsIntNode);
             boolean skipinitialspace = getBoolean(frame, "skipinitalspace", skipinitialspaceObj, false, isTrueNode);
             boolean strict = getBoolean(frame, "strict", strictObj, false, isTrueNode);
@@ -219,14 +214,11 @@ public class CSVDialectBuiltins extends PythonBuiltins {
         }
 
         private String getChar(String name, Object valueObj, String defaultValue,
-                               PyUnicodeCheckExactNode pyUnicodeCheckExactNode,
                                GetClassNode getType,
                                CastToJavaStringNode castToJavaStringNode) {
             if (valueObj == PNone.NO_VALUE) return defaultValue;
 
             String charValue;
-
-            // TODO: Implement PyUnicodeCheck Node instead? Currently only PyUnicodeCheckExact is implemented as Node.
 
             try {
                 charValue = castToJavaStringNode.execute(valueObj);
@@ -242,13 +234,12 @@ public class CSVDialectBuiltins extends PythonBuiltins {
         }
 
         private String getCharOrNone(String attribute, Object valueObj, String defaultValue,
-                                     PyUnicodeCheckExactNode pyUnicodeCheckExactNode,
                                      GetClassNode getType,
                                      CastToJavaStringNode castToJavaStringNode) {
             if (valueObj == PNone.NO_VALUE) return defaultValue;
             if (valueObj == PNone.NONE || valueObj == NOT_SET) return NOT_SET;
 
-            return getChar(attribute, valueObj, defaultValue, pyUnicodeCheckExactNode, getType, castToJavaStringNode);
+            return getChar(attribute, valueObj, defaultValue, getType, castToJavaStringNode);
         }
 
         private boolean getBoolean(VirtualFrame frame, String attributeName, Object valueObj, boolean defaultValue, PyObjectIsTrueNode isTrueNode) {
@@ -263,7 +254,6 @@ public class CSVDialectBuiltins extends PythonBuiltins {
 
             String value;
 
-            // TODO: Implement PyUnicodeCheck Node instead? Currently only PyUnicodeCheckExact is implemented as Node.
             try {
                 value = castToJavaStringNode.execute(valueObj);
             } catch (CannotCastException e) {
