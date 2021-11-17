@@ -1581,7 +1581,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         Object exitNoCode(PythonModule sys, PNone status) {
-            throw raiseSystemExit(0);
+            throw raiseSystemExit(PNone.NONE);
         }
     }
 }

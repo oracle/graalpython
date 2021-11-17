@@ -105,8 +105,8 @@ public final class SystemExitBuiltins extends PythonBuiltins {
         @Specialization
         Object initNoArgs(PBaseException self, Object[] args,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode) {
-            self.setData(SystemExitData.create(factory(), args));
             baseExceptionInitNode.execute(self, args);
+            self.setData(SystemExitData.create(factory(), args));
             return PNone.NONE;
         }
     }

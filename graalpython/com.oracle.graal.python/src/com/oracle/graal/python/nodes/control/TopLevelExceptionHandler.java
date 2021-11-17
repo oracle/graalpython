@@ -253,7 +253,9 @@ public final class TopLevelExceptionHandler extends RootNode {
         int exitcode = 0;
         if (data instanceof SystemExitBuiltins.SystemExitData) {
             final Object code = ((SystemExitBuiltins.SystemExitData) data).getCode();
-            exitcode = (int) CastToJavaLongLossyNode.getUncached().execute(code);
+            if (code != PNone.NONE) {
+                exitcode = (int) CastToJavaLongLossyNode.getUncached().execute(code);
+            }
         }
         return exitcode;
     }
