@@ -368,6 +368,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.debug = debug
         self.skip_actions = skip_actions
         self.goto_targets = []
+        self._collected_type = []
 
     def add_level(self) -> None:
         if self.debug:
@@ -586,10 +587,10 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.print(f"if (cache.hasResult(_mark, {node.name.upper()}_ID)) {{")
                 with self.indent():
                     self.print(f"_res = cache.getResult(_mark, {node.name.upper()}_ID);")
-                    self.add_return("(SSTNode[])_res")
+                    self.add_return(f"({self._collected_type[-1]}[])_res")
                 self.print("}")
             self.print("int _start_mark = mark();")
-            self.print("List<SSTNode> _children = new ArrayList<>();")
+            self.print(f"List<{self._collected_type[-1]}> _children = new ArrayList<>();")
             self.out_of_memory_return(f"!_children")
             self.print("int _children_capacity = 1;")
             self.print("int _n = 0;")
@@ -603,7 +604,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 with self.indent():
                     self.add_return("null")
                 self.print("}")
-            self.print("SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);")
+            self.print(f"{self._collected_type[-1]}[] _seq = _children.toArray(new {self._collected_type[-1]}[_children.size()]);")
             self.out_of_memory_return(f"!_seq", cleanup_code="PyMem_Free(_children);")
             if node.name:
                 self.print(f"cache.putResult(_start_mark, {node.name.upper()}_ID, _seq);")
@@ -614,7 +615,13 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         is_gather = node.is_gather()
         rhs = node.flatten()
         if is_loop or is_gather:
-            result_type = "SSTNode[]"
+            collected_type = "SSTNode"
+            if len(node.rhs.initial_names()) == 1:
+                parent_rule = self.all_rules.get(next(iter(node.rhs.initial_names())))
+                if parent_rule:
+                    collected_type = _check_type(self, parent_rule.type).replace("[]", "")
+            self._collected_type.append(collected_type)
+            result_type = f"{collected_type}[]"
         elif node.type:
             result_type = _check_type(self, node.type)
         else:
@@ -636,6 +643,9 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self._handle_loop_rule_body(node, rhs)
         else:
             self._handle_default_rule_body(node, rhs, result_type)
+        # Java type stack pop
+        if is_loop or is_gather:
+            self._collected_type.pop()
         self.print("}")
 
     def visit_NamedItem(self, node: NamedItem) -> None:
@@ -754,10 +764,10 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
 
             # Add the result of rule to the temporary buffer of children. This buffer
             # will populate later an asdl_seq with all elements to return.
-            self.print("if (_res instanceof  SSTNode) {")
-            self.print("    _children.add((SSTNode)_res);")
+            self.print(f"if (_res instanceof {self._collected_type[-1]}) {{")
+            self.print(f"    _children.add(({self._collected_type[-1]})_res);")
             self.print("} else {")
-            self.print("    _children.addAll(Arrays.asList((SSTNode[])_res));")
+            self.print(f"    _children.addAll(Arrays.asList(({self._collected_type[-1]}[])_res));")
             self.print("}")
             self.print("_mark = mark();")
         self.print("}")

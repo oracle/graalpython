@@ -10931,12 +10931,13 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '[' named_expression for_if_clauses ']'
             debugMessageln("%d> listcomp[%d-%d]: %s", level, _mark, mark(), "'[' named_expression for_if_clauses ']'");
             Token _literal;
             Token _literal_1;
             SSTNode a;
-            SSTNode[] b;
+            ForComprehensionSSTNode[] b;
             if (
                 (_literal = expect(9)) != null  // token='['
                 &&
@@ -10948,9 +10949,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d listcomp[%d-%d]: %s succeeded!", level, _mark, mark(), "'[' named_expression for_if_clauses ']'");
-                // TODO: node.action: _PyAST_ListComp ( a , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_ListComp ( a , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createListComprehension(a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' named_expression for_if_clauses ']'");
                 cache.putResult(_mark, LISTCOMP_ID, _res);
                 level--;
@@ -11109,7 +11113,7 @@ public final class Parser extends AbstractParser {
             Token _literal;
             Token _literal_1;
             SSTNode a;
-            SSTNode[] b;
+            ForComprehensionSSTNode[] b;
             if (
                 (_literal = expect(7)) != null  // token='('
                 &&
@@ -11222,7 +11226,7 @@ public final class Parser extends AbstractParser {
             Token _literal;
             Token _literal_1;
             SSTNode a;
-            SSTNode[] b;
+            ForComprehensionSSTNode[] b;
             if (
                 (_literal = expect(25)) != null  // token='{'
                 &&
@@ -11359,7 +11363,7 @@ public final class Parser extends AbstractParser {
             Token _literal;
             Token _literal_1;
             SSTNode a;
-            SSTNode[] b;
+            ForComprehensionSSTNode[] b;
             if (
                 (_literal = expect(25)) != null  // token='{'
                 &&
@@ -11547,21 +11551,21 @@ public final class Parser extends AbstractParser {
     }
 
     // for_if_clauses: for_if_clause+
-    public SSTNode[] for_if_clauses_rule()
+    public ForComprehensionSSTNode[] for_if_clauses_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FOR_IF_CLAUSES_ID)) {
-            _res = (SSTNode[])cache.getResult(_mark, FOR_IF_CLAUSES_ID);
+            _res = (ForComprehensionSSTNode[])cache.getResult(_mark, FOR_IF_CLAUSES_ID);
             level--;
-            return (SSTNode[])_res;
+            return (ForComprehensionSSTNode[])_res;
         }
         { // for_if_clause+
             debugMessageln("%d> for_if_clauses[%d-%d]: %s", level, _mark, mark(), "for_if_clause+");
-            SSTNode[] a;
+            ForComprehensionSSTNode[] a;
             if (
-                (a = (SSTNode[])_loop1_163_rule()) != null  // for_if_clause+
+                (a = (ForComprehensionSSTNode[])_loop1_163_rule()) != null  // for_if_clause+
             )
             {
                 debugMessageln("%d for_if_clauses[%d-%d]: %s succeeded!", level, _mark, mark(), "for_if_clause+");
@@ -11569,7 +11573,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "for_if_clause+");
                 cache.putResult(_mark, FOR_IF_CLAUSES_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (ForComprehensionSSTNode[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s for_if_clauses[%d-%d]: %s failed!", level,
@@ -11579,23 +11583,24 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, FOR_IF_CLAUSES_ID, _res);
         level--;
-        return (SSTNode[])_res;
+        return (ForComprehensionSSTNode[])_res;
     }
 
     // for_if_clause:
     //     | ASYNC 'for' star_targets 'in' ~ disjunction (('if' disjunction))*
     //     | 'for' star_targets 'in' ~ disjunction (('if' disjunction))*
     //     | invalid_for_target
-    public SSTNode for_if_clause_rule()
+    public ForComprehensionSSTNode for_if_clause_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FOR_IF_CLAUSE_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, FOR_IF_CLAUSE_ID);
+            _res = (ForComprehensionSSTNode)cache.getResult(_mark, FOR_IF_CLAUSE_ID);
             level--;
-            return (SSTNode)_res;
+            return (ForComprehensionSSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // ASYNC 'for' star_targets 'in' ~ disjunction (('if' disjunction))*
             debugMessageln("%d> for_if_clause[%d-%d]: %s", level, _mark, mark(), "ASYNC 'for' star_targets 'in' ~ disjunction (('if' disjunction))*");
             int _cut_var = 0;
@@ -11628,7 +11633,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "ASYNC 'for' star_targets 'in' ~ disjunction (('if' disjunction))*");
                 cache.putResult(_mark, FOR_IF_CLAUSE_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ForComprehensionSSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s for_if_clause[%d-%d]: %s failed!", level,
@@ -11661,13 +11666,16 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d for_if_clause[%d-%d]: %s succeeded!", level, _mark, mark(), "'for' star_targets 'in' ~ disjunction (('if' disjunction))*");
-                // TODO: node.action: _PyAST_comprehension ( a , b , c , 0 , p -> arena )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_comprehension ( a , b , c , 0 , p -> arena ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createComprehension(a,b,c,false,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'for' star_targets 'in' ~ disjunction (('if' disjunction))*");
                 cache.putResult(_mark, FOR_IF_CLAUSE_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ForComprehensionSSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s for_if_clause[%d-%d]: %s failed!", level,
@@ -11689,7 +11697,7 @@ public final class Parser extends AbstractParser {
                 _res = invalid_for_target_var;
                 cache.putResult(_mark, FOR_IF_CLAUSE_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (ForComprehensionSSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s for_if_clause[%d-%d]: %s failed!", level,
@@ -11699,7 +11707,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, FOR_IF_CLAUSE_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (ForComprehensionSSTNode)_res;
     }
 
     // yield_expr: 'yield' 'from' expression | 'yield' star_expressions?
@@ -12522,6 +12530,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // NAME
             debugMessageln("%d> star_atom[%d-%d]: %s", level, _mark, mark(), "NAME");
             SSTNode a;
@@ -12530,9 +12539,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "NAME");
-                // TODO: node.action: _PyPegen_set_expr_context ( p , a , Store )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_set_expr_context ( p , a , Store ) to Java !!![0m");
-                _res = null;
+                _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NAME");
                 cache.putResult(_mark, STAR_ATOM_ID, _res);
                 level--;
@@ -12556,9 +12563,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "'(' target_with_star_atom ')'");
-                // TODO: node.action: _PyPegen_set_expr_context ( p , a , Store )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyPegen_set_expr_context ( p , a , Store ) to Java !!![0m");
-                _res = null;
+                _res = a;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' target_with_star_atom ')'");
                 cache.putResult(_mark, STAR_ATOM_ID, _res);
                 level--;
@@ -12582,9 +12587,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "'(' star_targets_tuple_seq? ')'");
-                // TODO: node.action: _PyAST_Tuple ( a , Store , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( a , Store , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createTuple((SSTNode[])a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' star_targets_tuple_seq? ')'");
                 cache.putResult(_mark, STAR_ATOM_ID, _res);
                 level--;
@@ -12608,9 +12616,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_atom[%d-%d]: %s succeeded!", level, _mark, mark(), "'[' star_targets_list_seq? ']'");
-                // TODO: node.action: _PyAST_List ( a , Store , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_List ( a , Store , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createList((SSTNode[])a,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'[' star_targets_list_seq? ']'");
                 cache.putResult(_mark, STAR_ATOM_ID, _res);
                 level--;
@@ -13583,7 +13594,7 @@ public final class Parser extends AbstractParser {
             Token _literal;
             Object _opt_var;
             SSTNode a;
-            SSTNode[] for_if_clauses_var;
+            ForComprehensionSSTNode[] for_if_clauses_var;
             if (
                 (a = expression_rule()) != null  // expression
                 &&
@@ -13610,7 +13621,7 @@ public final class Parser extends AbstractParser {
         { // args for_if_clauses
             debugMessageln("%d> invalid_arguments[%d-%d]: %s", level, _mark, mark(), "args for_if_clauses");
             SSTNode a;
-            SSTNode[] for_if_clauses_var;
+            ForComprehensionSSTNode[] for_if_clauses_var;
             if (
                 (a = args_rule()) != null  // args
                 &&
@@ -13635,7 +13646,7 @@ public final class Parser extends AbstractParser {
             Token _literal;
             SSTNode a;
             SSTNode args_var;
-            SSTNode[] for_if_clauses_var;
+            ForComprehensionSSTNode[] for_if_clauses_var;
             if (
                 (args_var = args_rule()) != null  // args
                 &&
@@ -14278,7 +14289,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d> invalid_comprehension[%d-%d]: %s", level, _mark, mark(), "('[' | '(' | '{') starred_expression for_if_clauses");
             Object _tmp_209_var;
             SSTNode a;
-            SSTNode[] for_if_clauses_var;
+            ForComprehensionSSTNode[] for_if_clauses_var;
             if (
                 (_tmp_209_var = _tmp_209_rule()) != null  // '[' | '(' | '{'
                 &&
@@ -14306,7 +14317,7 @@ public final class Parser extends AbstractParser {
             Object _opt_var;
             Object _tmp_210_var;
             SSTNode a;
-            SSTNode[] for_if_clauses_var;
+            ForComprehensionSSTNode[] for_if_clauses_var;
             if (
                 (_tmp_210_var = _tmp_210_rule()) != null  // '[' | '{'
                 &&
@@ -14356,7 +14367,7 @@ public final class Parser extends AbstractParser {
             Token _literal_1;
             Token a;
             SSTNode bitwise_or_var;
-            SSTNode[] for_if_clauses_var;
+            ForComprehensionSSTNode[] for_if_clauses_var;
             if (
                 (_literal = expect(25)) != null  // token='{'
                 &&
@@ -15609,7 +15620,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NEWLINE");
                 _res = newline_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -15686,7 +15697,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "NEWLINE");
                 _res = newline_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -15730,7 +15741,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -15812,7 +15823,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -15894,7 +15905,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -15976,7 +15987,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' expression");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -16055,7 +16066,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "statement");
                 _res = statement_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -16103,7 +16114,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "';' simple_stmt");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -16644,7 +16655,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(star_targets '=')");
                 _res = _tmp_231_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -16836,7 +16847,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' NAME");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -16918,7 +16929,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' NAME");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -17090,7 +17101,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('.' | '...')");
                 _res = _tmp_232_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -17131,7 +17142,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('.' | '...')");
                 _res = _tmp_233_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -17215,7 +17226,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' import_from_as_name");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -17336,7 +17347,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' dotted_as_name");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -17709,7 +17720,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' with_item");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -17791,7 +17802,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' with_item");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -17909,7 +17920,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' with_item");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -17991,7 +18002,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' with_item");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -18178,7 +18189,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "except_block");
                 _res = except_block_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -18334,7 +18345,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "case_block");
                 _res = case_block_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -18382,7 +18393,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'|' closed_pattern");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -18662,7 +18673,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' maybe_star_pattern");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -18798,7 +18809,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' key_value_pattern");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -18934,7 +18945,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' pattern");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -19016,7 +19027,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' keyword_pattern");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -19431,7 +19442,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -19472,7 +19483,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -19549,7 +19560,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -19626,7 +19637,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -19671,7 +19682,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -19748,7 +19759,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -19829,7 +19840,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -19874,7 +19885,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -19919,7 +19930,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -19960,7 +19971,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -20005,7 +20016,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -20046,7 +20057,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -20091,7 +20102,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_maybe_default");
                 _res = param_maybe_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -20168,7 +20179,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_maybe_default");
                 _res = param_maybe_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -20249,7 +20260,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('@' named_expression NEWLINE)");
                 _res = _tmp_234_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -20336,7 +20347,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(',' star_expression)");
                 _res = _tmp_236_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -20420,7 +20431,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' star_named_expression");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -20535,7 +20546,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(',' expression)");
                 _res = _tmp_237_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -20652,7 +20663,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
                 _res = lambda_param_no_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -20693,7 +20704,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
                 _res = lambda_param_with_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -20770,7 +20781,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
                 _res = lambda_param_with_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -20847,7 +20858,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
                 _res = lambda_param_no_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -20892,7 +20903,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
                 _res = lambda_param_with_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -20969,7 +20980,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
                 _res = lambda_param_with_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -21050,7 +21061,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
                 _res = lambda_param_no_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -21095,7 +21106,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
                 _res = lambda_param_no_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -21140,7 +21151,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
                 _res = lambda_param_no_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -21181,7 +21192,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
                 _res = lambda_param_with_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -21226,7 +21237,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
                 _res = lambda_param_no_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -21267,7 +21278,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
                 _res = lambda_param_with_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -21312,7 +21323,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_maybe_default");
                 _res = lambda_param_maybe_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -21389,7 +21400,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_maybe_default");
                 _res = lambda_param_maybe_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -21470,7 +21481,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('or' conjunction)");
                 _res = _tmp_238_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -21515,7 +21526,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('and' inversion)");
                 _res = _tmp_239_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -21537,7 +21548,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_143: compare_op_bitwise_or_pair
-    public SSTNode[] _loop1_143_rule()
+    public BinaryArithmeticSSTNode[] _loop1_143_rule()
     {
         level++;
         Object _res = null;
@@ -21545,10 +21556,10 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP1_143_ID)) {
             _res = cache.getResult(_mark, _LOOP1_143_ID);
             level--;
-            return (SSTNode[])_res;
+            return (BinaryArithmeticSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<BinaryArithmeticSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // compare_op_bitwise_or_pair
@@ -21560,10 +21571,10 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "compare_op_bitwise_or_pair");
                 _res = compare_op_bitwise_or_pair_var;
-                if (_res instanceof  SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof BinaryArithmeticSSTNode) {
+                    _children.add((BinaryArithmeticSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((BinaryArithmeticSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -21575,7 +21586,7 @@ public final class Parser extends AbstractParser {
             level--;
             return null;
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        BinaryArithmeticSSTNode[] _seq = _children.toArray(new BinaryArithmeticSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_143_ID, _seq);
         level--;
         return _seq;
@@ -21682,7 +21693,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' slice");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -22124,7 +22135,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "STRING");
                 _res = string_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -22340,7 +22351,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' double_starred_kvpair");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -22432,7 +22443,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop1_163: for_if_clause
-    public SSTNode[] _loop1_163_rule()
+    public ForComprehensionSSTNode[] _loop1_163_rule()
     {
         level++;
         Object _res = null;
@@ -22440,25 +22451,25 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP1_163_ID)) {
             _res = cache.getResult(_mark, _LOOP1_163_ID);
             level--;
-            return (SSTNode[])_res;
+            return (ForComprehensionSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<ForComprehensionSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // for_if_clause
             debugMessageln("%d> _loop1_163[%d-%d]: %s", level, _mark, mark(), "for_if_clause");
-            SSTNode for_if_clause_var;
+            ForComprehensionSSTNode for_if_clause_var;
             while (
                 (for_if_clause_var = for_if_clause_rule()) != null  // for_if_clause
             )
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "for_if_clause");
                 _res = for_if_clause_var;
-                if (_res instanceof  SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof ForComprehensionSSTNode) {
+                    _children.add((ForComprehensionSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((ForComprehensionSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -22470,7 +22481,7 @@ public final class Parser extends AbstractParser {
             level--;
             return null;
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        ForComprehensionSSTNode[] _seq = _children.toArray(new ForComprehensionSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP1_163_ID, _seq);
         level--;
         return _seq;
@@ -22500,7 +22511,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('if' disjunction)");
                 _res = _tmp_242_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -22541,7 +22552,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "('if' disjunction)");
                 _res = _tmp_243_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -22657,7 +22668,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' (starred_expression | direct_named_expression !'=')");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -22778,7 +22789,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' kwarg_or_starred");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -22860,7 +22871,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' kwarg_or_double_starred");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -22942,7 +22953,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' kwarg_or_starred");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -23024,7 +23035,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' kwarg_or_double_starred");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -23103,7 +23114,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(',' star_target)");
                 _res = _tmp_245_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -23183,7 +23194,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' star_target");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -23298,7 +23309,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(',' star_target)");
                 _res = _tmp_246_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -23492,7 +23503,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' del_target");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -23682,7 +23693,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' target");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -23913,7 +23924,7 @@ public final class Parser extends AbstractParser {
         { // expression for_if_clauses
             debugMessageln("%d> _tmp_200[%d-%d]: %s", level, _mark, mark(), "expression for_if_clauses");
             SSTNode expression_var;
-            SSTNode[] for_if_clauses_var;
+            ForComprehensionSSTNode[] for_if_clauses_var;
             if (
                 (expression_var = expression_rule()) != null  // expression
                 &&
@@ -24289,7 +24300,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "star_named_expressions");
                 _res = star_named_expressions_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -24330,7 +24341,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(star_targets '=')");
                 _res = _tmp_247_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -24371,7 +24382,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "(star_targets '=')");
                 _res = _tmp_248_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -24628,7 +24639,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_no_default");
                 _res = param_no_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -24669,7 +24680,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "param_with_default");
                 _res = param_with_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -24714,7 +24725,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_no_default");
                 _res = lambda_param_no_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -24755,7 +24766,7 @@ public final class Parser extends AbstractParser {
             {
                 debugMessageln("Hit with default action [%d:%d]: %s", _mark, mark(), "lambda_param_with_default");
                 _res = lambda_param_with_default_var;
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -25025,7 +25036,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' (expression ['as' star_target])");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -25143,7 +25154,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' (expressions ['as' star_target])");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -25303,7 +25314,7 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' double_starred_kvpair");
-                if (_res instanceof  SSTNode) {
+                if (_res instanceof SSTNode) {
                     _children.add((SSTNode)_res);
                 } else {
                     _children.addAll(Arrays.asList((SSTNode[])_res));
@@ -26633,7 +26644,5 @@ public final class Parser extends AbstractParser {
     // TODO replacing arg_ty --> SSTNode[]
     // TODO replacing NameDefaultPair* --> SSTNode[]
     // TODO replacing CmpopExprPair* --> SSTNode[]
-    // TODO replacing asdl_comprehension_seq* --> SSTNode[]
-    // TODO replacing comprehension_ty --> SSTNode[]
     // TODO replacing KeywordOrStarred* --> SSTNode[]
 }

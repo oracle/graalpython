@@ -716,7 +716,7 @@ strings[SSTNode] (memo): a=STRING+ { this.concatenateStrings(a) }
 list[SSTNode]: # originally return type expr_ty
     | '[' a=[star_named_expressions] ']' { factory.createList((SSTNode[])a, startToken.startOffset, endToken.endOffset) }
 listcomp[SSTNode]: # originally return type expr_ty
-    | '[' a=named_expression b=for_if_clauses ']' { _PyAST_ListComp(a, b, EXTRA) }
+    | '[' a=named_expression b=for_if_clauses ']' { factory.createListComprehension(a, b, startToken.startOffset, endToken.endOffset) }
     | invalid_comprehension
 tuple[SSTNode]: # originally return type expr_ty
     | '(' a=[y=star_named_expression ',' z=[star_named_expressions] { this.insertInFront(y, (SSTNode[])z) } ] ')' {
@@ -744,13 +744,13 @@ double_starred_kvpair[SSTNode]:
     | '**' a=bitwise_or { factory.createKeyValuePair(null, a) }
     | kvpair
 kvpair[SSTNode]: a=expression ':' b=expression { factory.createKeyValuePair(a, b) }
-for_if_clauses[asdl_comprehension_seq*]:
-    | a[asdl_comprehension_seq*]=for_if_clause+ { a }
-for_if_clause[comprehension_ty]:
+for_if_clauses[ForComprehensionSSTNode*]:
+    | a[ForComprehensionSSTNode*]=for_if_clause+ { a }
+for_if_clause[ForComprehensionSSTNode]:
     | ASYNC 'for' a=star_targets 'in' ~ b=disjunction c[asdl_expr_seq*]=('if' z=disjunction { z })* {
         CHECK_VERSION(comprehension_ty, 6, "Async comprehensions are", _PyAST_comprehension(a, b, c, 1, p->arena)) }
-    | 'for' a=star_targets 'in' ~ b=disjunction c[asdl_expr_seq*]=('if' z=disjunction { z })* {
-        _PyAST_comprehension(a, b, c, 0, p->arena) }
+    | 'for' a=star_targets 'in' ~ b=disjunction c[SSTNode*]=('if' z=disjunction { z })* {
+        factory.createComprehension(a, b, c, false, startToken.startOffset, endToken.endOffset) }
     | invalid_for_target
 
 yield_expr[SSTNode]: # originally return type expr_ty
@@ -801,10 +801,10 @@ target_with_star_atom[SSTNode] (memo): # originally return type expr_ty
     | a=t_primary '[' b=slices ']' !t_lookahead { _PyAST_Subscript(a, b, Store, EXTRA) }
     | star_atom
 star_atom[SSTNode]: # originally return type expr_ty
-    | a=NAME { _PyPegen_set_expr_context(p, a, Store) }
-    | '(' a=target_with_star_atom ')' { _PyPegen_set_expr_context(p, a, Store) }
-    | '(' a=[star_targets_tuple_seq] ')' { _PyAST_Tuple(a, Store, EXTRA) }
-    | '[' a=[star_targets_list_seq] ']' { _PyAST_List(a, Store, EXTRA) }
+    | a=NAME { a }
+    | '(' a=target_with_star_atom ')' { a }
+    | '(' a=[star_targets_tuple_seq] ')' { factory.createTuple((SSTNode[])a, startToken.startOffset, endToken.endOffset) }
+    | '[' a=[star_targets_list_seq] ']' { factory.createList((SSTNode[])a, startToken.startOffset, endToken.endOffset) }
 
 single_target[SSTNode]: # originally return type expr_ty
     | single_subscript_attribute_target
