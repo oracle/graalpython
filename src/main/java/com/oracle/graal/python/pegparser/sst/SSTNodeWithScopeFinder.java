@@ -305,19 +305,27 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
     public SSTNodeWithScope visit(ForComprehensionSSTNode node) {
         if (isSubNode(node)) {
             SSTNodeWithScope result;
-            if ((result = node.iterator.accept(this)) != null) {
-                return result;
-            }
-            if (node.name != null && (result = node.name.accept(this)) != null) {
-                return result;
-            }
             if (node.target != null && (result = node.target.accept(this)) != null) {
                 return result;
             }
-            if (node.variables != null && (result = visitNodes(node.variables)) != null) {
+            if ((result = node.iterator.accept(this)) != null) {
                 return result;
             }
-            if (node.conditions != null && (result = visitNodes(node.conditions)) != null) {
+            if (node.ifs != null && (result = visitNodes(node.ifs)) != null) {
+                return result;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public SSTNodeWithScope visit(ComprehensionSSTNode node) {
+        if (isSubNode(node)) {
+            SSTNodeWithScope result;
+            if (node.name != null && (result = node.name.accept(this)) != null) {
+                return result;
+            }
+            if (node.generators != null && (result = visitNodes(node.generators)) != null) {
                 return result;
             }
         }

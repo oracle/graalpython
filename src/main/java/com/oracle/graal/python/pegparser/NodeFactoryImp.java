@@ -49,6 +49,8 @@ import com.oracle.graal.python.pegparser.sst.BinaryArithmeticSSTNode;
 import com.oracle.graal.python.pegparser.sst.BlockSSTNode;
 import com.oracle.graal.python.pegparser.sst.BooleanLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.CollectionSSTNode;
+import com.oracle.graal.python.pegparser.sst.ComprehensionSSTNode;
+import com.oracle.graal.python.pegparser.sst.ForComprehensionSSTNode;
 import com.oracle.graal.python.pegparser.sst.KeyValueSSTNode;
 import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
@@ -139,5 +141,15 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public SSTNode createSet(SSTNode[] values, int startOffset, int endOffset) {
         return CollectionSSTNode.createSet(values, startOffset, endOffset);
+    }
+
+    @Override
+    public ForComprehensionSSTNode createComprehension(SSTNode target, SSTNode iter, SSTNode[] ifs, boolean isAsync, int startOffset, int endOffset) {
+        return ForComprehensionSSTNode.create(target, iter, ifs, isAsync, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createListComprehension(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
+        return ComprehensionSSTNode.createList(name, generators, startOffset, endOffset);
     }
 }

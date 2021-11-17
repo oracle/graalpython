@@ -102,6 +102,11 @@ public class AtomsTests extends ParserTestBase {
     }
 
     @Test
+    public void atomListcomp2() throws Exception {
+        checkTreeResult("[i for i in a for j in b if 12]");
+    }
+
+    @Test
     public void atomDict() throws Exception {
         checkTreeResult("{1: 2}");
     }

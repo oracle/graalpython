@@ -208,7 +208,32 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
 
     @Override
     public String visit(ForComprehensionSSTNode node) {
-        return addHeader(node);
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node)).append('\n');
+        level++;
+        sb.append(indent()).append("Target: ").append(node.target.accept(this)).append('\n');
+        sb.append(indent()).append("Iterator: ").append(node.iterator.accept(this)).append('\n');
+        sb.append(indent()).append("Ifs:");
+        level++;
+        for (SSTNode i : node.ifs) {
+            sb.append('\n').append(indent()).append(i.accept(this));
+        }
+        level--;
+        level--;
+        return sb.toString();
+    }
+
+    @Override
+    public String visit(ComprehensionSSTNode node) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node)).append(' ').append(node.resultType.name()).append('\n');
+        level++;
+        sb.append(indent()).append("Name: ").append(node.name.accept(this));
+        for (SSTNode n : node.generators) {
+            sb.append('\n').append(indent()).append(n.accept(this));
+        }
+        level--;
+        return sb.toString();
     }
 
     @Override

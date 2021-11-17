@@ -41,104 +41,36 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-public interface SSTreeVisitor<T> {
-    T visit(AndSSTNode node);
+public class ComprehensionSSTNode extends SSTNode {
+    protected final SSTNode name;
+    protected final SSTNode[] generators;
+    protected final CollectionSSTNode.Type resultType;
 
-    T visit(AnnAssignmentSSTNode node);
+    private ComprehensionSSTNode(SSTNode name, ForComprehensionSSTNode[] generators, CollectionSSTNode.Type resultType, int startOffset, int endOffset) {
+        super(startOffset, endOffset);
+        this.name = name;
+        this.generators = generators;
+        this.resultType = resultType;
+    }
 
-    T visit(AnnotationSSTNode node);
+    @Override
+    public <T> T accept(SSTreeVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 
-    T visit(AssertSSTNode node);
+    public static ComprehensionSSTNode createList(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
+        return new ComprehensionSSTNode(name, generators, CollectionSSTNode.Type.List, startOffset, endOffset);
+    }
 
-    T visit(AssignmentSSTNode node);
+    public static ComprehensionSSTNode createGenerator(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
+        return new ComprehensionSSTNode(name, generators, CollectionSSTNode.Type.Tuple, startOffset, endOffset);
+    }
 
-    T visit(AugAssignmentSSTNode node);
+    public static ComprehensionSSTNode createDict(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
+        return new ComprehensionSSTNode(name, generators, CollectionSSTNode.Type.Dict, startOffset, endOffset);
+    }
 
-    T visit(BinaryArithmeticSSTNode node);
-
-    T visit(BlockSSTNode node);
-
-    T visit(BooleanLiteralSSTNode node);
-
-    T visit(CallSSTNode node);
-
-    T visit(ClassSSTNode node);
-
-    T visit(CollectionSSTNode node);
-
-    T visit(ComparisonSSTNode node);
-
-    T visit(DecoratedSSTNode node);
-
-    T visit(DecoratorSSTNode node);
-
-    T visit(DelSSTNode node);
-
-    T visit(ExceptSSTNode node);
-
-    T visit(ExpressionStatementSSTNode node);
-
-    T visit(FloatLiteralSSTNode node);
-
-    T visit(ForComprehensionSSTNode node);
-
-    T visit(ComprehensionSSTNode node);
-
-    T visit(ForSSTNode node);
-
-    T visit(FunctionDefSSTNode node);
-
-    T visit(GetAttributeSSTNode node);
-
-    T visit(IfSSTNode node);
-
-    T visit(ImportFromSSTNode node);
-
-    T visit(ImportSSTNode node);
-
-    T visit(LambdaSSTNode node);
-
-    T visit(NotSSTNode node);
-
-    T visit(NumberLiteralSSTNode.IntegerLiteralSSTNode node);
-
-    T visit(NumberLiteralSSTNode.BigIntegerLiteralSSTNode node);
-
-    T visit(OrSSTNode node);
-
-    T visit(RaiseSSTNode node);
-
-    T visit(ReturnSSTNode node);
-
-    T visit(SimpleSSTNode node);
-
-    T visit(SliceSSTNode node);
-
-    T visit(StarSSTNode node);
-
-    T visit(StringLiteralSSTNode.RawStringLiteralSSTNode node);
-
-    T visit(StringLiteralSSTNode.BytesLiteralSSTNode node);
-
-    T visit(StringLiteralSSTNode.FormatExpressionSSTNode node);
-
-    T visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node);
-
-    T visit(SubscriptSSTNode node);
-
-    T visit(TernaryIfSSTNode node);
-
-    T visit(TrySSTNode node);
-
-    T visit(UnarySSTNode node);
-
-    T visit(VarLookupSSTNode node);
-
-    T visit(WhileSSTNode node);
-
-    T visit(WithSSTNode node);
-
-    T visit(YieldExpressionSSTNode node);
-
-    T visit(KeyValueSSTNode node);
+    public static ComprehensionSSTNode createSet(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
+        return new ComprehensionSSTNode(name, generators, CollectionSSTNode.Type.Set, startOffset, endOffset);
+    }
 }

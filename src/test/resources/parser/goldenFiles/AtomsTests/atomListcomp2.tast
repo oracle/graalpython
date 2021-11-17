@@ -1,0 +1,12 @@
+BlockSSTNode[0, 31]
+    ComprehensionSSTNode[0, 31] List
+        Name: VarLookupSSTNode[1, 2] Value: "i"
+        ForComprehensionSSTNode[3, 13]
+            Target: VarLookupSSTNode[7, 8] Value: "i"
+            Iterator: VarLookupSSTNode[12, 13] Value: "a"
+            Ifs:
+        ForComprehensionSSTNode[14, 30]
+            Target: VarLookupSSTNode[18, 19] Value: "j"
+            Iterator: VarLookupSSTNode[23, 24] Value: "b"
+            Ifs:
+                IntegerLiteralSSTNode[28, 30] Value: "12"

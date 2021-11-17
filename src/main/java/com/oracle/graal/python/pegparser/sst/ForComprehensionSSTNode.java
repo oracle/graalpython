@@ -41,40 +41,18 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-//import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.pegparser.ScopeInfo;
-
 public class ForComprehensionSSTNode extends SSTNode {
-    protected final boolean async;
     protected final SSTNode target;
-    protected final SSTNode name;
-    protected final SSTNode[] variables;
     protected final SSTNode iterator;
-    protected final SSTNode[] conditions;
-    protected final ForComprehensionSSTNode innerFor;
-    protected final String resultType;
-    protected final ScopeInfo scope;
-    protected final int line;
-    /**
-     * Level of inner comp_for expressions. The top expression has level 0.
-     */
-    protected final int level;
+    protected final SSTNode[] ifs;
+    protected final boolean async;
 
-    public ForComprehensionSSTNode(ScopeInfo scope, boolean async, SSTNode target, SSTNode name, SSTNode[] variables, SSTNode iterator, SSTNode[] conditions, ForComprehensionSSTNode innerFor,
-                    String resultType,
-                    int line, int level, int startOffset, int endOffset) {
+    private ForComprehensionSSTNode(SSTNode target, SSTNode iterator, SSTNode[] ifs, boolean async, int startOffset, int endOffset) {
         super(startOffset, endOffset);
         this.async = async;
         this.target = target;
-        this.name = name;
-        this.variables = variables;
         this.iterator = iterator;
-        this.conditions = conditions;
-        this.innerFor = innerFor;
-        this.resultType = resultType;
-        this.scope = scope;
-        this.line = line;
-        this.level = level;
+        this.ifs = ifs;
     }
 
     @Override
@@ -82,8 +60,7 @@ public class ForComprehensionSSTNode extends SSTNode {
         return visitor.visit(this);
     }
 
-    public String getResultType() {
-        return resultType;
+    public static ForComprehensionSSTNode create(SSTNode target, SSTNode iterator, SSTNode[] conditions, boolean async, int startOffset, int endOffset) {
+        return new ForComprehensionSSTNode(target, iterator, conditions, async, startOffset, endOffset);
     }
-
 }

@@ -74,4 +74,8 @@ public interface NodeFactory {
     public SSTNode createSet(SSTNode[] values, int startOffset, int endOffset);
 
     public UntypedSSTNode createUntyped(int tokenPosition);
+
+    public ForComprehensionSSTNode createComprehension(SSTNode target, SSTNode iter, SSTNode[] ifs, boolean isAsync, int startOffset, int endOffset);
+
+    public SSTNode createListComprehension(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset);
 }
