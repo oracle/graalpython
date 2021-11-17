@@ -90,10 +90,15 @@ public final class SystemExitBuiltins extends PythonBuiltins {
 
         public static SystemExitData create(PythonObjectFactory factory, Object[] args) {
             final SystemExitData data = new SystemExitData();
-            if (args.length == 1) {
-                data.setCode(args[0]);
-            } else {
-                data.setCode(factory.createTuple(args));
+            switch (args.length) {
+                case 0:
+                    data.setCode(PNone.NONE);
+                    break;
+                case 1:
+                    data.setCode(args[0]);
+                    break;
+                default:
+                    data.setCode(factory.createTuple(args));
             }
             return data;
         }
