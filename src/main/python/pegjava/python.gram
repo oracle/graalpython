@@ -729,7 +729,7 @@ genexp[SSTNode]: # originally return type expr_ty
     | invalid_comprehension
 set[SSTNode]: '{' a=star_named_expressions '}' { factory.createSet((SSTNode[])a,startToken.startOffset,endToken.endOffset) }
 setcomp[SSTNode]: # originally return type expr_ty
-    | '{' a=named_expression b=for_if_clauses '}' { _PyAST_SetComp(a, b, EXTRA) }
+    | '{' a=named_expression b=for_if_clauses '}' { factory.createSetComprehension(a, b, startToken.startOffset, endToken.endOffset) }
     | invalid_comprehension
 dict[SSTNode]: # originally return type expr_ty
     | '{' a=[double_starred_kvpairs] '}' {
@@ -737,13 +737,13 @@ dict[SSTNode]: # originally return type expr_ty
     | '{' invalid_double_starred_kvpairs '}'
 
 dictcomp[SSTNode]: # originally return type expr_ty
-    | '{' a=kvpair b=for_if_clauses '}' { _PyAST_DictComp(a->key, a->value, b, EXTRA) }
+    | '{' a=kvpair b=for_if_clauses '}' { factory.createDictComprehension(a, b, startToken.startOffset, endToken.endOffset) }
     | invalid_dict_comprehension
-double_starred_kvpairs[SSTNode*]: a=','.double_starred_kvpair+ [','] { a }
-double_starred_kvpair[SSTNode]:
+double_starred_kvpairs[KeyValueSSTNode*]: a=','.double_starred_kvpair+ [','] { a }
+double_starred_kvpair[KeyValueSSTNode]:
     | '**' a=bitwise_or { factory.createKeyValuePair(null, a) }
     | kvpair
-kvpair[SSTNode]: a=expression ':' b=expression { factory.createKeyValuePair(a, b) }
+kvpair[KeyValueSSTNode]: a=expression ':' b=expression { factory.createKeyValuePair(a, b) }
 for_if_clauses[ForComprehensionSSTNode*]:
     | a[ForComprehensionSSTNode*]=for_if_clause+ { a }
 for_if_clause[ForComprehensionSSTNode]:
@@ -787,7 +787,7 @@ kwarg_or_double_starred[KeywordOrStarred*]:
 star_targets[SSTNode]: # originally return type expr_ty
     | a=star_target !',' { a }
     | a=star_target b=(',' c=star_target { c })* [','] {
-        _PyAST_Tuple(CHECK(asdl_expr_seq*, this.insertInFront(a, b)), Store, EXTRA) }
+        factory.createTuple(this.insertInFront(a,b),startToken.startOffset,endToken.endOffset); // Store }
 star_targets_list_seq[asdl_expr_seq*]: a[asdl_expr_seq*]=','.star_target+ [','] { a }
 star_targets_tuple_seq[asdl_expr_seq*]:
     | a=star_target b=(',' c=star_target { c })+ [','] { (asdl_expr_seq*) this.insertInFront(a, b) }

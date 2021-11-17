@@ -42,13 +42,13 @@
 package com.oracle.graal.python.pegparser.sst;
 
 public class ComprehensionSSTNode extends SSTNode {
-    protected final SSTNode name;
+    protected final SSTNode element;
     protected final SSTNode[] generators;
     protected final CollectionSSTNode.Type resultType;
 
     private ComprehensionSSTNode(SSTNode name, ForComprehensionSSTNode[] generators, CollectionSSTNode.Type resultType, int startOffset, int endOffset) {
         super(startOffset, endOffset);
-        this.name = name;
+        this.element = name;
         this.generators = generators;
         this.resultType = resultType;
     }
@@ -66,7 +66,7 @@ public class ComprehensionSSTNode extends SSTNode {
         return new ComprehensionSSTNode(name, generators, CollectionSSTNode.Type.Tuple, startOffset, endOffset);
     }
 
-    public static ComprehensionSSTNode createDict(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
+    public static ComprehensionSSTNode createDict(KeyValueSSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
         return new ComprehensionSSTNode(name, generators, CollectionSSTNode.Type.Dict, startOffset, endOffset);
     }
 

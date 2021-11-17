@@ -98,12 +98,12 @@ public class AtomsTests extends ParserTestBase {
 
     @Test
     public void atomListcomp() throws Exception {
-        checkTreeResult("[i for i in a]");
+        checkTreeResult("[[i] for i in a]");
     }
 
     @Test
     public void atomListcomp2() throws Exception {
-        checkTreeResult("[i for i in a for j in b if 12]");
+        checkTreeResult("[[i] for i in a for [j] in b if 12]");
     }
 
     @Test
@@ -118,11 +118,11 @@ public class AtomsTests extends ParserTestBase {
 
     @Test
     public void atomDictcomp() throws Exception {
-        checkTreeResult("{a:b for a,b in y}");
+        checkTreeResult("{(a,):(b) for a,b in y}");
     }
 
     @Test
     public void atomSetcomp() throws Exception {
-        checkTreeResult("{a for a in b}");
+        checkTreeResult("{(a,) for a in b}");
     }
 }

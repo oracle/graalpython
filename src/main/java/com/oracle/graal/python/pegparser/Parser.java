@@ -11221,6 +11221,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '{' named_expression for_if_clauses '}'
             debugMessageln("%d> setcomp[%d-%d]: %s", level, _mark, mark(), "'{' named_expression for_if_clauses '}'");
             Token _literal;
@@ -11238,9 +11239,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d setcomp[%d-%d]: %s succeeded!", level, _mark, mark(), "'{' named_expression for_if_clauses '}'");
-                // TODO: node.action: _PyAST_SetComp ( a , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_SetComp ( a , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createSetComprehension(a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' named_expression for_if_clauses '}'");
                 cache.putResult(_mark, SETCOMP_ID, _res);
                 level--;
@@ -11358,11 +11362,12 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '{' kvpair for_if_clauses '}'
             debugMessageln("%d> dictcomp[%d-%d]: %s", level, _mark, mark(), "'{' kvpair for_if_clauses '}'");
             Token _literal;
             Token _literal_1;
-            SSTNode a;
+            KeyValueSSTNode a;
             ForComprehensionSSTNode[] b;
             if (
                 (_literal = expect(25)) != null  // token='{'
@@ -11375,9 +11380,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d dictcomp[%d-%d]: %s succeeded!", level, _mark, mark(), "'{' kvpair for_if_clauses '}'");
-                // TODO: node.action: _PyAST_DictComp ( a -> key , a -> value , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_DictComp ( a -> key , a -> value , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createDictComprehension(a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'{' kvpair for_if_clauses '}'");
                 cache.putResult(_mark, DICTCOMP_ID, _res);
                 level--;
@@ -11413,15 +11421,15 @@ public final class Parser extends AbstractParser {
     }
 
     // double_starred_kvpairs: ','.double_starred_kvpair+ ','?
-    public SSTNode[] double_starred_kvpairs_rule()
+    public KeyValueSSTNode[] double_starred_kvpairs_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DOUBLE_STARRED_KVPAIRS_ID)) {
-            _res = (SSTNode[])cache.getResult(_mark, DOUBLE_STARRED_KVPAIRS_ID);
+            _res = (KeyValueSSTNode[])cache.getResult(_mark, DOUBLE_STARRED_KVPAIRS_ID);
             level--;
-            return (SSTNode[])_res;
+            return (KeyValueSSTNode[])_res;
         }
         { // ','.double_starred_kvpair+ ','?
             debugMessageln("%d> double_starred_kvpairs[%d-%d]: %s", level, _mark, mark(), "','.double_starred_kvpair+ ','?");
@@ -11438,7 +11446,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.double_starred_kvpair+ ','?");
                 cache.putResult(_mark, DOUBLE_STARRED_KVPAIRS_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (KeyValueSSTNode[])_res;
             }
             reset(_mark);
             debugMessageln("%d%s double_starred_kvpairs[%d-%d]: %s failed!", level,
@@ -11448,19 +11456,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, DOUBLE_STARRED_KVPAIRS_ID, _res);
         level--;
-        return (SSTNode[])_res;
+        return (KeyValueSSTNode[])_res;
     }
 
     // double_starred_kvpair: '**' bitwise_or | kvpair
-    public SSTNode double_starred_kvpair_rule()
+    public KeyValueSSTNode double_starred_kvpair_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, DOUBLE_STARRED_KVPAIR_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, DOUBLE_STARRED_KVPAIR_ID);
+            _res = (KeyValueSSTNode)cache.getResult(_mark, DOUBLE_STARRED_KVPAIR_ID);
             level--;
-            return (SSTNode)_res;
+            return (KeyValueSSTNode)_res;
         }
         { // '**' bitwise_or
             debugMessageln("%d> double_starred_kvpair[%d-%d]: %s", level, _mark, mark(), "'**' bitwise_or");
@@ -11477,7 +11485,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' bitwise_or");
                 cache.putResult(_mark, DOUBLE_STARRED_KVPAIR_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (KeyValueSSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s double_starred_kvpair[%d-%d]: %s failed!", level,
@@ -11485,7 +11493,7 @@ public final class Parser extends AbstractParser {
         }
         { // kvpair
             debugMessageln("%d> double_starred_kvpair[%d-%d]: %s", level, _mark, mark(), "kvpair");
-            SSTNode kvpair_var;
+            KeyValueSSTNode kvpair_var;
             if (
                 (kvpair_var = kvpair_rule()) != null  // kvpair
             )
@@ -11495,7 +11503,7 @@ public final class Parser extends AbstractParser {
                 _res = kvpair_var;
                 cache.putResult(_mark, DOUBLE_STARRED_KVPAIR_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (KeyValueSSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s double_starred_kvpair[%d-%d]: %s failed!", level,
@@ -11505,19 +11513,19 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, DOUBLE_STARRED_KVPAIR_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (KeyValueSSTNode)_res;
     }
 
     // kvpair: expression ':' expression
-    public SSTNode kvpair_rule()
+    public KeyValueSSTNode kvpair_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, KVPAIR_ID)) {
-            _res = (SSTNode)cache.getResult(_mark, KVPAIR_ID);
+            _res = (KeyValueSSTNode)cache.getResult(_mark, KVPAIR_ID);
             level--;
-            return (SSTNode)_res;
+            return (KeyValueSSTNode)_res;
         }
         { // expression ':' expression
             debugMessageln("%d> kvpair[%d-%d]: %s", level, _mark, mark(), "expression ':' expression");
@@ -11537,7 +11545,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "expression ':' expression");
                 cache.putResult(_mark, KVPAIR_ID, _res);
                 level--;
-                return (SSTNode)_res;
+                return (KeyValueSSTNode)_res;
             }
             reset(_mark);
             debugMessageln("%d%s kvpair[%d-%d]: %s failed!", level,
@@ -11547,7 +11555,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, KVPAIR_ID, _res);
         level--;
-        return (SSTNode)_res;
+        return (KeyValueSSTNode)_res;
     }
 
     // for_if_clauses: for_if_clause+
@@ -12199,6 +12207,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // star_target !','
             debugMessageln("%d> star_targets[%d-%d]: %s", level, _mark, mark(), "star_target !','");
             SSTNode a;
@@ -12233,9 +12242,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d star_targets[%d-%d]: %s succeeded!", level, _mark, mark(), "star_target ((',' star_target))* ','?");
-                // TODO: node.action: _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , Store , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Tuple ( CHECK ( asdl_expr_seq * , this . insertInFront ( a , b ) ) , Store , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createTuple(this.insertInFront(a,b),startToken.startOffset,endToken.endOffset);//Store;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "star_target ((',' star_target))* ','?");
                 cache.putResult(_mark, STAR_TARGETS_ID, _res);
                 level--;
@@ -22301,7 +22313,7 @@ public final class Parser extends AbstractParser {
         }
         { // double_starred_kvpairs
             debugMessageln("%d> _tmp_159[%d-%d]: %s", level, _mark, mark(), "double_starred_kvpairs");
-            SSTNode[] double_starred_kvpairs_var;
+            KeyValueSSTNode[] double_starred_kvpairs_var;
             if (
                 (double_starred_kvpairs_var = double_starred_kvpairs_rule()) != null  // double_starred_kvpairs
             )
@@ -22325,7 +22337,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_161: ',' double_starred_kvpair
-    public SSTNode[] _loop0_161_rule()
+    public KeyValueSSTNode[] _loop0_161_rule()
     {
         level++;
         Object _res = null;
@@ -22333,16 +22345,16 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP0_161_ID)) {
             _res = cache.getResult(_mark, _LOOP0_161_ID);
             level--;
-            return (SSTNode[])_res;
+            return (KeyValueSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<KeyValueSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // ',' double_starred_kvpair
             debugMessageln("%d> _loop0_161[%d-%d]: %s", level, _mark, mark(), "',' double_starred_kvpair");
             Token _literal;
-            SSTNode elem;
+            KeyValueSSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
@@ -22351,10 +22363,10 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' double_starred_kvpair");
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof KeyValueSSTNode) {
+                    _children.add((KeyValueSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((KeyValueSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -22362,7 +22374,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop0_161[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "',' double_starred_kvpair");
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        KeyValueSSTNode[] _seq = _children.toArray(new KeyValueSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_161_ID, _seq);
         level--;
         return _seq;
@@ -22381,7 +22393,7 @@ public final class Parser extends AbstractParser {
         }
         { // double_starred_kvpair _loop0_161
             debugMessageln("%d> _gather_160[%d-%d]: %s", level, _mark, mark(), "double_starred_kvpair _loop0_161");
-            SSTNode elem;
+            KeyValueSSTNode elem;
             SSTNode[] seq;
             if (
                 (elem = double_starred_kvpair_rule()) != null  // double_starred_kvpair
@@ -25288,7 +25300,7 @@ public final class Parser extends AbstractParser {
     }
 
     // _loop0_228: ',' double_starred_kvpair
-    public SSTNode[] _loop0_228_rule()
+    public KeyValueSSTNode[] _loop0_228_rule()
     {
         level++;
         Object _res = null;
@@ -25296,16 +25308,16 @@ public final class Parser extends AbstractParser {
         if (cache.hasResult(_mark, _LOOP0_228_ID)) {
             _res = cache.getResult(_mark, _LOOP0_228_ID);
             level--;
-            return (SSTNode[])_res;
+            return (KeyValueSSTNode[])_res;
         }
         int _start_mark = mark();
-        List<SSTNode> _children = new ArrayList<>();
+        List<KeyValueSSTNode> _children = new ArrayList<>();
         int _children_capacity = 1;
         int _n = 0;
         { // ',' double_starred_kvpair
             debugMessageln("%d> _loop0_228[%d-%d]: %s", level, _mark, mark(), "',' double_starred_kvpair");
             Token _literal;
-            SSTNode elem;
+            KeyValueSSTNode elem;
             while (
                 (_literal = expect(12)) != null  // token=','
                 &&
@@ -25314,10 +25326,10 @@ public final class Parser extends AbstractParser {
             {
                 _res = elem;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "',' double_starred_kvpair");
-                if (_res instanceof SSTNode) {
-                    _children.add((SSTNode)_res);
+                if (_res instanceof KeyValueSSTNode) {
+                    _children.add((KeyValueSSTNode)_res);
                 } else {
-                    _children.addAll(Arrays.asList((SSTNode[])_res));
+                    _children.addAll(Arrays.asList((KeyValueSSTNode[])_res));
                 }
                 _mark = mark();
             }
@@ -25325,7 +25337,7 @@ public final class Parser extends AbstractParser {
             debugMessageln("%d%s _loop0_228[%d-%d]: %s failed!", level,
                   "-", _mark, mark(), "',' double_starred_kvpair");
         }
-        SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);
+        KeyValueSSTNode[] _seq = _children.toArray(new KeyValueSSTNode[_children.size()]);
         cache.putResult(_start_mark, _LOOP0_228_ID, _seq);
         level--;
         return _seq;
@@ -25344,7 +25356,7 @@ public final class Parser extends AbstractParser {
         }
         { // double_starred_kvpair _loop0_228
             debugMessageln("%d> _gather_227[%d-%d]: %s", level, _mark, mark(), "double_starred_kvpair _loop0_228");
-            SSTNode elem;
+            KeyValueSSTNode elem;
             SSTNode[] seq;
             if (
                 (elem = double_starred_kvpair_rule()) != null  // double_starred_kvpair

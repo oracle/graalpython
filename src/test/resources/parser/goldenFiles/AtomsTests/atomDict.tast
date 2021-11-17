@@ -1,5 +1,5 @@
 BlockSSTNode[0, 6]
-    CollectionSSTNode[0, 6]
+    CollectionSSTNode[0, 6] Dict
         Values:
             KeyValueSSTNode[1, 5]
                 Key: IntegerLiteralSSTNode[1, 2] Value: "1"

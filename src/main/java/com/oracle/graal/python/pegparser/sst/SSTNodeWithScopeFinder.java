@@ -322,7 +322,7 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
     public SSTNodeWithScope visit(ComprehensionSSTNode node) {
         if (isSubNode(node)) {
             SSTNodeWithScope result;
-            if (node.name != null && (result = node.name.accept(this)) != null) {
+            if (node.element != null && (result = node.element.accept(this)) != null) {
                 return result;
             }
             if (node.generators != null && (result = visitNodes(node.generators)) != null) {

@@ -152,4 +152,14 @@ public class NodeFactoryImp implements NodeFactory{
     public SSTNode createListComprehension(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
         return ComprehensionSSTNode.createList(name, generators, startOffset, endOffset);
     }
+
+    @Override
+    public SSTNode createDictComprehension(KeyValueSSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
+        return ComprehensionSSTNode.createDict(name, generators, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createSetComprehension(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
+        return ComprehensionSSTNode.createSet(name, generators, startOffset, endOffset);
+    }
 }

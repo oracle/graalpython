@@ -1,4 +1,4 @@
 BlockSSTNode[0, 4]
-    CollectionSSTNode[0, 4]
+    CollectionSSTNode[0, 4] Tuple
         Values:
             VarLookupSSTNode[1, 2] Value: "a"

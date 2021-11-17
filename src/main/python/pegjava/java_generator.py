@@ -615,12 +615,16 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         is_gather = node.is_gather()
         rhs = node.flatten()
         if is_loop or is_gather:
+            # Hacky way to get more specific Java type
             collected_type = "SSTNode"
-            if len(node.rhs.initial_names()) == 1:
-                parent_rule = self.all_rules.get(next(iter(node.rhs.initial_names())))
-                if parent_rule:
-                    collected_type = _check_type(self, parent_rule.type).replace("[]", "")
+            if len(node.rhs.alts) == 1:
+                items = [i.item for i in node.rhs.alts[0].items if isinstance(i.item, NameLeaf)]
+                if len(items) == 1:
+                    parent_rule = self.all_rules.get(items[0].value)
+                    if parent_rule and parent_rule.type:
+                        collected_type = _check_type(self, parent_rule.type).replace("[]", "")
             self._collected_type.append(collected_type)
+            # end of hacky way to get better Java type
             result_type = f"{collected_type}[]"
         elif node.type:
             result_type = _check_type(self, node.type)

@@ -159,7 +159,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
     @Override
     public String visit(CollectionSSTNode node) {
         StringBuilder sb = new StringBuilder();
-        sb.append(addHeader(node)).append("\n");
+        sb.append(addHeader(node)).append(' ').append(node.type.name()).append("\n");
         level++;
         sb.append(indent()).append("Values:");
         level++;
@@ -228,7 +228,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node)).append(' ').append(node.resultType.name()).append('\n');
         level++;
-        sb.append(indent()).append("Name: ").append(node.name.accept(this));
+        sb.append(indent()).append("Element: ").append(node.element.accept(this));
         for (SSTNode n : node.generators) {
             sb.append('\n').append(indent()).append(n.accept(this));
         }
