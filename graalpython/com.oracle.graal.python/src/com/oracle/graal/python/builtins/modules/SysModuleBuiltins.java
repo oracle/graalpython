@@ -107,6 +107,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.oracle.graal.python.lib.PyTraceBackPrintNode;
+import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -1353,7 +1354,10 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class BreakpointHookNode extends PythonBuiltinNode {
         static final String VAL_PDB_SETTRACE = "pdb.set_trace";
+        static final String MOD_OS = "os";
+        static final String ATTR_ENVIRON = "environ";
 
+        @Child private ImportNode.ImportExpression importOsNode;
         @Child private ImportNode.ImportExpression importNode;
 
         private ImportNode.ImportExpression ensureImportNode(String name) {
@@ -1364,22 +1368,32 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return importNode;
         }
 
-        @TruffleBoundary
-        private static Object getEnv(String name) {
-            return System.getenv(name);
+        private Object importOs(VirtualFrame frame) {
+            if (importOsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                importOsNode = insert(ImportNode.createAsExpression(MOD_OS));
+            }
+            return importOsNode.execute(frame);
+        }
+
+        private Object getEnv(VirtualFrame frame, PyObjectGetAttr getAttr, GetItemNode getItemNode, String name) {
+            Object os = importOs(frame);
+            final Object environ = getAttr.execute(frame, os, ATTR_ENVIRON);
+            return getItemNode.execute(frame, environ, name);
         }
 
         @Specialization
         Object doHook(VirtualFrame frame, Object[] args, PKeyword[] keywords,
                         @Cached CallNode callNode,
                         @Cached PyObjectGetAttr getAttr,
+                        @Cached GetItemNode getItemNode,
                         @Cached IsBuiltinClassProfile importErrorProfile,
                         @Cached IsBuiltinClassProfile attrErrorProfile,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode) {
-            Object v = getEnv(PYTHONBREAKPOINT);
+            Object v = getEnv(frame, getAttr, getItemNode, PYTHONBREAKPOINT);
             final String hookName;
-            if (v == null) {
+            if (v == PNone.NO_VALUE) {
                 warnNode.warnFormat(frame, RuntimeWarning, WARN_CANNOT_RUN_PDB_YET);
                 hookName = VAL_PDB_SETTRACE;
             } else {
