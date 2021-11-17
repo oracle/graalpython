@@ -63,7 +63,7 @@ public class ComprehensionSSTNode extends SSTNode {
     }
 
     public static ComprehensionSSTNode createGenerator(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
-        return new ComprehensionSSTNode(name, generators, CollectionSSTNode.Type.Tuple, startOffset, endOffset);
+        return new ComprehensionSSTNode(name, generators, CollectionSSTNode.Type.Generator, startOffset, endOffset);
     }
 
     public static ComprehensionSSTNode createDict(KeyValueSSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {

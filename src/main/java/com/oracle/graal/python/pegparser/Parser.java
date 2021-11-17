@@ -4615,9 +4615,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d literal_pattern[%d-%d]: %s succeeded!", level, _mark, mark(), "'None'");
-                // TODO: node.action: _PyAST_Constant ( Py_None , NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Constant ( Py_None , NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createNone(startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'None'");
                 cache.putResult(_mark, LITERAL_PATTERN_ID, _res);
                 level--;
@@ -10699,9 +10697,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, _mark, mark(), "'None'");
-                // TODO: node.action: _PyAST_Constant ( Py_None , NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Constant ( Py_None , NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createNone(startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'None'");
                 cache.putResult(_mark, ATOM_ID, _res);
                 level--;
@@ -10817,9 +10813,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d atom[%d-%d]: %s succeeded!", level, _mark, mark(), "'...'");
-                // TODO: node.action: _PyAST_Constant ( Py_Ellipsis , NULL , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Constant ( Py_Ellipsis , NULL , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = factory.createEllipsis(startToken.startOffset,startToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'...'");
                 cache.putResult(_mark, ATOM_ID, _res);
                 level--;
@@ -11108,6 +11102,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // '(' direct_named_expression for_if_clauses ')'
             debugMessageln("%d> genexp[%d-%d]: %s", level, _mark, mark(), "'(' direct_named_expression for_if_clauses ')'");
             Token _literal;
@@ -11125,9 +11120,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d genexp[%d-%d]: %s succeeded!", level, _mark, mark(), "'(' direct_named_expression for_if_clauses ')'");
-                // TODO: node.action: _PyAST_GeneratorExp ( a , b , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_GeneratorExp ( a , b , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createGenerator(a,b,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'(' direct_named_expression for_if_clauses ')'");
                 cache.putResult(_mark, GENEXP_ID, _res);
                 level--;

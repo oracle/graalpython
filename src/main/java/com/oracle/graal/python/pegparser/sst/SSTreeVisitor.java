@@ -141,4 +141,6 @@ public interface SSTreeVisitor<T> {
     T visit(YieldExpressionSSTNode node);
 
     T visit(KeyValueSSTNode node);
+
+    T visit(SpecialLiteralSSTNode node);
 }

@@ -1,2 +1,2 @@
-BlockSSTNode[0, 5]
-    BooleanLiteralSSTNode[0, 5] Value: False
+BlockSSTNode[0, 4]
+    SpecialLiteralSSTNode[0, 4] Value: None

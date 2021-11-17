@@ -344,9 +344,9 @@ literal_pattern[SSTNode]: # originally return type expr_ty
     | real=signed_number '+' imag=NUMBER { _PyAST_BinOp(real, Add, imag, EXTRA) }
     | real=signed_number '-' imag=NUMBER  { _PyAST_BinOp(real, Sub, imag, EXTRA) }
     | strings
-    | 'None' { _PyAST_Constant(Py_None, NULL, EXTRA) }
-    | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, startToken.endOffset); } #{ _PyAST_Constant(Py_True, NULL, EXTRA) }
-    | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, startToken.endOffset); } #{ _PyAST_Constant(Py_False, NULL, EXTRA) }
+    | 'None' { factory.createNone(startToken.startOffset, startToken.endOffset) }
+    | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, startToken.endOffset); }
+    | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, startToken.endOffset); }
 signed_number[SSTNode]: # originally return type expr_ty
     | NUMBER
     | '-' number=NUMBER { _PyAST_UnaryOp(USub, number, EXTRA) }
@@ -704,13 +704,13 @@ atom[SSTNode]: # originally return type expr_ty
     | NAME
     | 'True' { factory.createBooleanLiteral(true, startToken.startOffset, endToken.endOffset);}
     | 'False' { factory.createBooleanLiteral(false, startToken.startOffset, endToken.endOffset); }
-    | 'None' { _PyAST_Constant(Py_None, NULL, EXTRA) }
+    | 'None' { factory.createNone(startToken.startOffset, startToken.endOffset) }
     | &STRING strings
     | NUMBER
     | &'(' (tuple | group | genexp)
     | &'[' (list | listcomp)
     | &'{' (dict | set | dictcomp | setcomp)
-    | '...' { _PyAST_Constant(Py_Ellipsis, NULL, EXTRA) }
+    | '...' { factory.createEllipsis(startToken.startOffset, startToken.endOffset) }
 
 strings[SSTNode] (memo): a=STRING+ { this.concatenateStrings(a) }
 list[SSTNode]: # originally return type expr_ty
@@ -725,7 +725,7 @@ group[SSTNode]: # originally return type expr_ty
     | '(' a=(yield_expr | named_expression) ')' { a }
     | invalid_group
 genexp[SSTNode]: # originally return type expr_ty
-    | '(' a=direct_named_expression b=for_if_clauses ')' { _PyAST_GeneratorExp(a, b, EXTRA) }
+    | '(' a=direct_named_expression b=for_if_clauses ')' { factory.createGenerator(a, b, startToken.startOffset, endToken.endOffset) }
     | invalid_comprehension
 set[SSTNode]: '{' a=star_named_expressions '}' { factory.createSet((SSTNode[])a,startToken.startOffset,endToken.endOffset) }
 setcomp[SSTNode]: # originally return type expr_ty

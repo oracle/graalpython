@@ -27,7 +27,7 @@ public class AtomsTests extends ParserTestBase {
 
     @Test
     public void atomNone() throws Exception {
-        checkTreeResult("False");
+        checkTreeResult("None");
     }
 
     @Test
@@ -124,5 +124,15 @@ public class AtomsTests extends ParserTestBase {
     @Test
     public void atomSetcomp() throws Exception {
         checkTreeResult("{(a,) for a in b}");
+    }
+
+    @Test
+    public void atomGenerator() throws Exception {
+        checkTreeResult("((a,) for a in b)");
+    }
+
+    @Test
+    public void atomEllipsis() throws Exception {
+        checkTreeResult("...");
     }
 }

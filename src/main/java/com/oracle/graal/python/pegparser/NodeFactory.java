@@ -55,6 +55,10 @@ public interface NodeFactory {
 
     public BooleanLiteralSSTNode createBooleanLiteral(boolean value, int startOffset, int endOffset);
 
+    public SSTNode createNone(int startOffset, int endOffset);
+
+    public SSTNode createEllipsis(int startOffset, int endOffset);
+
     public SSTNode createNumber(String number, int startOffset, int endOffset);
 
     public SSTNode createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb);
@@ -82,4 +86,6 @@ public interface NodeFactory {
     public SSTNode createDictComprehension(KeyValueSSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset);
 
     public SSTNode createSetComprehension(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset);
+
+    public SSTNode createGenerator(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset);
 }
