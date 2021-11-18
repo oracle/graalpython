@@ -42,8 +42,10 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.get;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.dict.DictBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory;
@@ -57,6 +59,8 @@ public abstract class BuiltinMethodDescriptors {
     public static final BuiltinMethodDescriptor OBJ_GET_ATTRIBUTE = get(__GETATTRIBUTE__, ObjectBuiltinsFactory.GetAttributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonObject);
     public static final BuiltinMethodDescriptor MODULE_GET_ATTRIBUTE = get(__GETATTRIBUTE__, ModuleBuiltinsFactory.ModuleGetattritbuteNodeFactory.getInstance(), PythonBuiltinClassType.PythonModule);
     public static final BuiltinMethodDescriptor TYPE_GET_ATTRIBUTE = get(__GETATTRIBUTE__, TypeBuiltinsFactory.GetattributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonClass);
+
+    public static final BuiltinMethodDescriptor DICT_ITER = get(__ITER__, DictBuiltinsFactory.IterNodeFactory.getInstance(), PythonBuiltinClassType.PDict);
 
     private BuiltinMethodDescriptors() {
     }

@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptors;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.PGuards;
@@ -165,11 +166,9 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
             }
         }
 
-        protected static final BuiltinMethodDescriptor builtinDictIter = BuiltinMethodDescriptor.get(DictBuiltinsFactory.IterNodeFactory.getInstance(), PythonBuiltinClassType.PDict);
-
         /* CPython tests that tp_iter is dict_iter */
         protected static boolean hasBuiltinIter(PDict dict, GetClassNode getClassNode, LookupCallableSlotInMRONode lookupIter) {
-            return PGuards.isBuiltinDict(dict) || lookupIter.execute(getClassNode.execute(dict)) == builtinDictIter;
+            return PGuards.isBuiltinDict(dict) || lookupIter.execute(getClassNode.execute(dict)) == BuiltinMethodDescriptors.DICT_ITER;
         }
     }
 }
