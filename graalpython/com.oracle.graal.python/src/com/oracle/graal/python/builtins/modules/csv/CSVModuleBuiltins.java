@@ -47,6 +47,11 @@ import java.util.List;
 @CoreFunctions(defineModule = "_csv")
 public class CSVModuleBuiltins extends PythonBuiltins {
 
+    public static final int QUOTE_MINIMAL = 0;
+    public static final int QUOTE_ALL = 1;
+    public static final int QUOTE_NONNUMERIC = 2;
+    public static final int QUOTE_NONE = 3;
+
     static long fieldLimit = 128 * 1024; // max parsed field size
     public static final String WRITE = "write";
 
@@ -58,6 +63,11 @@ public class CSVModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         builtinConstants.put(SpecialAttributeNames.__DOC__, CSV_DOC);
+        builtinConstants.put("__version__", "1.0");
+        builtinConstants.put("QUOTE_MINIMAL", QUOTE_MINIMAL);
+        builtinConstants.put("QUOTE_ALL", QUOTE_ALL);
+        builtinConstants.put("QUOTE_NONNUMERIC", QUOTE_NONNUMERIC);
+        builtinConstants.put("QUOTE_NONE", QUOTE_NONE);
         builtinConstants.put("_dialects", PythonObjectFactory.getUncached().createDict());
         super.initialize(core);
     }
