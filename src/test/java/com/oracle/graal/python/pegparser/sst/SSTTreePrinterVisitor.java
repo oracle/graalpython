@@ -147,11 +147,6 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
     }
 
     @Override
-    public String visit(SpecialLiteralSSTNode node) {
-        return addHeader(node) + " Value: " + (node.value.name());
-    }
-
-    @Override
     public String visit(CallSSTNode node) {
         return addHeader(node);
     }
@@ -312,7 +307,7 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
 
     @Override
     public String visit(SimpleSSTNode node) {
-        return addHeader(node);
+        return addHeader(node) + " Type: " + (node.type.name());
     }
 
     @Override

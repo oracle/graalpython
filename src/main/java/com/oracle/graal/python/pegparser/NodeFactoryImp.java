@@ -54,7 +54,7 @@ import com.oracle.graal.python.pegparser.sst.ForComprehensionSSTNode;
 import com.oracle.graal.python.pegparser.sst.KeyValueSSTNode;
 import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
-import com.oracle.graal.python.pegparser.sst.SpecialLiteralSSTNode;
+import com.oracle.graal.python.pegparser.sst.SimpleSSTNode;
 import com.oracle.graal.python.pegparser.sst.StringLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.UnarySSTNode;
 import com.oracle.graal.python.pegparser.sst.UntypedSSTNode;
@@ -95,12 +95,17 @@ public class NodeFactoryImp implements NodeFactory{
 
     @Override
     public SSTNode createNone(int startOffset, int endOffset) {
-        return SpecialLiteralSSTNode.createNone(startOffset, endOffset);
+        return new SimpleSSTNode(SimpleSSTNode.Type.NONE, startOffset, endOffset);
     }
 
     @Override
     public SSTNode createEllipsis(int startOffset, int endOffset) {
-        return SpecialLiteralSSTNode.createEllipsis(startOffset, endOffset);
+        return new SimpleSSTNode(SimpleSSTNode.Type.ELLIPSIS, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createPass(int startOffset, int endOffset) {
+        return new SimpleSSTNode(SimpleSSTNode.Type.PASS, startOffset, endOffset);
     }
 
     @Override

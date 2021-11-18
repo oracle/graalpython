@@ -59,6 +59,8 @@ public interface NodeFactory {
 
     public SSTNode createEllipsis(int startOffset, int endOffset);
 
+    public SSTNode createPass(int startOffset, int endOffset);
+
     public SSTNode createNumber(String number, int startOffset, int endOffset);
 
     public SSTNode createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb);

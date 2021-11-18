@@ -169,11 +169,6 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
     }
 
     @Override
-    public SSTNodeWithScope visit(SpecialLiteralSSTNode node) {
-        return null;
-    }
-
-    @Override
     public SSTNodeWithScope visit(CallSSTNode node) {
         if (isSubNode(node)) {
             SSTNodeWithScope result;
