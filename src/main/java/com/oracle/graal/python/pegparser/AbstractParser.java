@@ -326,8 +326,11 @@ abstract class AbstractParser {
     /**
      * _PyPegen_singleton_seq
      */
-    public Object[] singletonSequence(Object element) {
-        return new Object[]{element};
+    @SuppressWarnings("unchecked")
+    public <T> T[] singletonSequence(T element) {
+        T[] result = (T[])Array.newInstance(element.getClass(), 1);
+        result[0] = element;
+        return result;
     }
 
     /**

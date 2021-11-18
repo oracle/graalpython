@@ -852,7 +852,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "','.expression+ ',' '*' expression ',' '**' expression");
-                _res = (SSTNode[])this.appendToEnd((SSTNode[])this.appendToEnd(a,b),c);
+                _res = this.appendToEnd(this.appendToEnd(a,b),c);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.expression+ ',' '*' expression ',' '**' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
                 level--;
@@ -879,7 +879,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "','.expression+ ',' '*' expression");
-                _res = (SSTNode[])this.appendToEnd(a,b);
+                _res = this.appendToEnd(a,b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.expression+ ',' '*' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
                 level--;
@@ -906,7 +906,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "','.expression+ ',' '**' expression");
-                _res = (SSTNode[])this.appendToEnd(a,b);
+                _res = this.appendToEnd(a,b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "','.expression+ ',' '**' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
                 level--;
@@ -936,7 +936,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "'*' expression ',' '**' expression");
-                _res = (SSTNode[])this.appendToEnd((SSTNode[])this.singletonSequence(a),b);
+                _res = this.appendToEnd(this.singletonSequence(a),b);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' expression ',' '**' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
                 level--;
@@ -957,9 +957,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "'*' expression");
-                // TODO: node.action: ( asdl_expr_seq * ) this . singletonSequence ( a )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) this . singletonSequence ( a ) to Java !!![0m");
-                _res = null;
+                _res = this.singletonSequence(a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'*' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
                 level--;
@@ -980,9 +978,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d type_expressions[%d-%d]: %s succeeded!", level, _mark, mark(), "'**' expression");
-                // TODO: node.action: ( asdl_expr_seq * ) this . singletonSequence ( a )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_expr_seq * ) this . singletonSequence ( a ) to Java !!![0m");
-                _res = null;
+                _res = this.singletonSequence(a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'**' expression");
                 cache.putResult(_mark, TYPE_EXPRESSIONS_ID, _res);
                 level--;
@@ -1118,6 +1114,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode[])_res;
         }
+        Token startToken = getAndInitializeToken();
         { // compound_stmt NEWLINE
             debugMessageln("%d> statement_newline[%d-%d]: %s", level, _mark, mark(), "compound_stmt NEWLINE");
             SSTNode a;
@@ -1129,9 +1126,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d statement_newline[%d-%d]: %s succeeded!", level, _mark, mark(), "compound_stmt NEWLINE");
-                // TODO: node.action: ( asdl_stmt_seq * ) this . singletonSequence ( a )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_stmt_seq * ) this . singletonSequence ( a ) to Java !!![0m");
-                _res = null;
+                _res = this.singletonSequence(a);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "compound_stmt NEWLINE");
                 cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
                 level--;
@@ -1167,9 +1162,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d statement_newline[%d-%d]: %s succeeded!", level, _mark, mark(), "NEWLINE");
-                // TODO: node.action: ( asdl_stmt_seq * ) this . singletonSequence ( CHECK ( stmt_ty , _PyAST_Pass ( EXTRA ) ) )
-                debugMessageln("[33;5;7m!!! TODO: Convert ( asdl_stmt_seq * ) this . singletonSequence ( CHECK ( stmt_ty , _PyAST_Pass ( EXTRA ) ) ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = this.singletonSequence(factory.createPass(startToken.startOffset,endToken.endOffset));
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NEWLINE");
                 cache.putResult(_mark, STATEMENT_NEWLINE_ID, _res);
                 level--;
@@ -1230,7 +1228,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmts[%d-%d]: %s succeeded!", level, _mark, mark(), "simple_stmt !';' NEWLINE");
-                _res = new SSTNode[]{a};//(asdl_stmt_seq*)this.singletonSequence(a);
+                _res = this.singletonSequence(a);;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "simple_stmt !';' NEWLINE");
                 cache.putResult(_mark, SIMPLE_STMTS_ID, _res);
                 level--;
@@ -1295,6 +1293,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // assignment
             debugMessageln("%d> simple_stmt[%d-%d]: %s", level, _mark, mark(), "assignment");
             SSTNode assignment_var;
@@ -1399,9 +1398,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'pass'");
-                // TODO: node.action: _PyAST_Pass ( EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Pass ( EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createPass(startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'pass'");
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
                 level--;
@@ -1479,9 +1481,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'break'");
-                // TODO: node.action: _PyAST_Break ( EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Break ( EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createBreak(startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'break'");
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
                 level--;
@@ -1499,9 +1504,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d simple_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "'continue'");
-                // TODO: node.action: _PyAST_Continue ( EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Continue ( EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createContinue(startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'continue'");
                 cache.putResult(_mark, SIMPLE_STMT_ID, _res);
                 level--;

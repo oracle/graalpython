@@ -61,6 +61,10 @@ public interface NodeFactory {
 
     public SSTNode createPass(int startOffset, int endOffset);
 
+    public SSTNode createBreak(int startOffset, int endOffset);
+
+    public SSTNode createContinue(int startOffset, int endOffset);
+
     public SSTNode createNumber(String number, int startOffset, int endOffset);
 
     public SSTNode createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb);

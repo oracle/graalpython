@@ -111,56 +111,55 @@ file[SSTNode]: a=[statements] ENDMARKER { factory.createBlock((SSTNode[])a, star
 interactive[SSTNode]: a=statement_newline { _PyAST_Interactive(a, p->arena) }
 eval[SSTNode]: a=expressions NEWLINE* ENDMARKER { a }
 func_type[SSTNode]: '(' a=[type_expressions] ')' '->' b=expression NEWLINE* ENDMARKER { _PyAST_FunctionType(a, b, p->arena) }
-fstring[SSTNode]: star_expressions  # originally return type expr_ty
+fstring[SSTNode]: star_expressions
 
 # type_expressions allow */** but ignore them
 type_expressions[asdl_expr_seq*]:
     | a=','.expression+ ',' '*' b=expression ',' '**' c=expression {
-        (SSTNode[])this.appendToEnd(
-            (SSTNode[])this.appendToEnd(a, b),
+        this.appendToEnd(
+            this.appendToEnd(a, b),
             c) }
-    | a=','.expression+ ',' '*' b=expression { (SSTNode[])this.appendToEnd(a, b) }
-    | a=','.expression+ ',' '**' b=expression { (SSTNode[])this.appendToEnd(a, b) }
+    | a=','.expression+ ',' '*' b=expression { this.appendToEnd(a, b) }
+    | a=','.expression+ ',' '**' b=expression { this.appendToEnd(a, b) }
     | '*' a=expression ',' '**' b=expression {
-        (SSTNode[])this.appendToEnd(
-            (SSTNode[])this.singletonSequence(a),
+        this.appendToEnd(
+            this.singletonSequence(a),
             b) }
-    | '*' a=expression { (asdl_expr_seq*)this.singletonSequence(a) }
-    | '**' a=expression { (asdl_expr_seq*)this.singletonSequence(a) }
-    | a[asdl_expr_seq*]=','.expression+ {a}
+    | '*' a=expression { this.singletonSequence(a) }
+    | '**' a=expression { this.singletonSequence(a) }
+    | a[SSTNode*]=','.expression+ {a}
 
-statements[SSTNode*]: a=statement+ { a }  # originally return type asdl_stmt_seq*
-statement[SSTNode*]: # originally return type asdl_stmt_seq*
-    | a=compound_stmt { a } # it was (asdl_stmt_seq*)this.singletonSequence(a)
+statements[SSTNode*]: a=statement+ { a }
+statement[SSTNode*]:
+    | a=compound_stmt { a }
     | a[SSTNode*]=simple_stmts { a }
-statement_newline[SSTNode*]:  # originally return type asdl_stmt_seq*
-    | a=compound_stmt NEWLINE { (asdl_stmt_seq*)this.singletonSequence(a) }
+statement_newline[SSTNode*]:
+    | a=compound_stmt NEWLINE { this.singletonSequence(a) }
     | simple_stmts
-    | NEWLINE { (asdl_stmt_seq*)this.singletonSequence(CHECK(stmt_ty, _PyAST_Pass(EXTRA))) }
+    | NEWLINE { this.singletonSequence(factory.createPass(startToken.startOffset, endToken.endOffset)) }
     | ENDMARKER { _PyPegen_interactive_exit(p) }
 simple_stmts[SSTNode*]: # originally return type asdl_stmt_seq*
     | a=simple_stmt !';' NEWLINE {
-            new SSTNode[]{a};
-            // (asdl_stmt_seq*)this.singletonSequence(a)  # Not needed, there for speedup
+            this.singletonSequence(a); # Not needed, there for speedup
         }
     | a[SSTNode*]=';'.simple_stmt+ [';'] NEWLINE { a }
 # NOTE: assignment MUST precede expression, else parsing a simple assignment
 # will throw a SyntaxError.
-simple_stmt[stmt_ty] (memo):
+simple_stmt[SSTNode] (memo):
     | assignment
-    | e=star_expressions   { e }#{ _PyAST_Expr(e, EXTRA) }
+    | e=star_expressions   { e }
     | &'return' return_stmt
     | &('import' | 'from') import_stmt
     | &'raise' raise_stmt
-    | 'pass' { _PyAST_Pass(EXTRA) }
+    | 'pass' { factory.createPass(startToken.startOffset, endToken.endOffset) }
     | &'del' del_stmt
     | &'yield' yield_stmt
     | &'assert' assert_stmt
-    | 'break' { _PyAST_Break(EXTRA) }
-    | 'continue' { _PyAST_Continue(EXTRA) }
+    | 'break' { factory.createBreak(startToken.startOffset, endToken.endOffset) }
+    | 'continue' { factory.createContinue(startToken.startOffset, endToken.endOffset) }
     | &'global' global_stmt
     | &'nonlocal' nonlocal_stmt
-compound_stmt[stmt_ty]:
+compound_stmt[SSTNode]:
     | &('def' | '@' | ASYNC) function_def
     | &'if' if_stmt
     | &('class' | '@') class_def

@@ -109,6 +109,16 @@ public class NodeFactoryImp implements NodeFactory{
     }
 
     @Override
+    public SSTNode createBreak(int startOffset, int endOffset) {
+        return new SimpleSSTNode(SimpleSSTNode.Type.BREAK, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createContinue(int startOffset, int endOffset) {
+        return new SimpleSSTNode(SimpleSSTNode.Type.CONTINUE, startOffset, endOffset);
+    }
+
+    @Override
     public SSTNode createNumber(String number, int startOffset, int endOffset) {
         // TODO handle all kind of numbers here.
         return NumberLiteralSSTNode.create(number, 0, 10, startOffset, endOffset);
