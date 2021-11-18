@@ -2306,9 +2306,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d yield_stmt[%d-%d]: %s succeeded!", level, _mark, mark(), "yield_expr");
-                // TODO: node.action: _PyAST_Expr ( y , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Expr ( y , EXTRA ) to Java !!![0m");
-                _res = null;
+                _res = y;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "yield_expr");
                 cache.putResult(_mark, YIELD_STMT_ID, _res);
                 level--;
@@ -11735,6 +11733,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'yield' 'from' expression
             debugMessageln("%d> yield_expr[%d-%d]: %s", level, _mark, mark(), "'yield' 'from' expression");
             Token _keyword;
@@ -11749,9 +11748,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d yield_expr[%d-%d]: %s succeeded!", level, _mark, mark(), "'yield' 'from' expression");
-                // TODO: node.action: _PyAST_YieldFrom ( a , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_YieldFrom ( a , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createYield((SSTNode)a,true,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'yield' 'from' expression");
                 cache.putResult(_mark, YIELD_EXPR_ID, _res);
                 level--;
@@ -11772,9 +11774,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d yield_expr[%d-%d]: %s succeeded!", level, _mark, mark(), "'yield' star_expressions?");
-                // TODO: node.action: _PyAST_Yield ( a , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Yield ( a , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createYield((SSTNode)a,false,startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'yield' star_expressions?");
                 cache.putResult(_mark, YIELD_EXPR_ID, _res);
                 level--;
@@ -26640,8 +26645,8 @@ public final class Parser extends AbstractParser {
     }
 
     // TODO replacing asdl_expr_seq* --> SSTNode[]
-    // TODO replacing stmt_ty --> SSTNode[]
     // TODO replacing AugOperator* --> SSTNode[]
+    // TODO replacing stmt_ty --> SSTNode[]
     // TODO replacing asdl_alias_seq* --> SSTNode[]
     // TODO replacing alias_ty --> SSTNode[]
     // TODO replacing asdl_withitem_seq* --> SSTNode[]

@@ -59,6 +59,7 @@ import com.oracle.graal.python.pegparser.sst.StringLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.UnarySSTNode;
 import com.oracle.graal.python.pegparser.sst.UntypedSSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
+import com.oracle.graal.python.pegparser.sst.YieldExpressionSSTNode;
 
 
 public class NodeFactoryImp implements NodeFactory{
@@ -116,6 +117,11 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public SSTNode createContinue(int startOffset, int endOffset) {
         return new SimpleSSTNode(SimpleSSTNode.Type.CONTINUE, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createYield(SSTNode value, boolean isFrom, int startOffset, int endOffset) {
+        return new YieldExpressionSSTNode(value, isFrom, startOffset, endOffset);
     }
 
     @Override

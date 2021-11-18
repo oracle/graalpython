@@ -1,0 +1,3 @@
+BlockSSTNode[0, 12]
+    YieldExpressionSSTNode[0, 12] from
+        VarLookupSSTNode[11, 12] Value: "f"

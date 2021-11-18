@@ -215,7 +215,7 @@ global_stmt[stmt_ty]: 'global' a[asdl_expr_seq*]=','.NAME+ {
 nonlocal_stmt[stmt_ty]: 'nonlocal' a[asdl_expr_seq*]=','.NAME+ {
     _PyAST_Nonlocal(CHECK(asdl_identifier_seq*, _PyPegen_map_names_to_ids(p, a)), EXTRA) }
 
-yield_stmt[stmt_ty]: y=yield_expr { _PyAST_Expr(y, EXTRA) }
+yield_stmt[SSTNode]: y=yield_expr { y }
 
 assert_stmt[stmt_ty]: 'assert' a=expression b=[',' z=expression { z }] { _PyAST_Assert(a, b, EXTRA) }
 
@@ -753,8 +753,8 @@ for_if_clause[ForComprehensionSSTNode]:
     | invalid_for_target
 
 yield_expr[SSTNode]: # originally return type expr_ty
-    | 'yield' 'from' a=expression { _PyAST_YieldFrom(a, EXTRA) }
-    | 'yield' a=[star_expressions] { _PyAST_Yield(a, EXTRA) }
+    | 'yield' 'from' a=expression { factory.createYield((SSTNode)a, true, startToken.startOffset, endToken.endOffset) }
+    | 'yield' a=[star_expressions] { factory.createYield((SSTNode)a, false, startToken.startOffset, endToken.endOffset) }
 
 arguments[SSTNode] (memo): # originally return type expr_ty
     | a=args [','] &')' { a }

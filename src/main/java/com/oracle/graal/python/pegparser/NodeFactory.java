@@ -65,6 +65,8 @@ public interface NodeFactory {
 
     public SSTNode createContinue(int startOffset, int endOffset);
 
+    public SSTNode createYield(SSTNode value, boolean isFrom, int startOffset, int endOffset);
+
     public SSTNode createNumber(String number, int startOffset, int endOffset);
 
     public SSTNode createString(String[] values, int startOffset, int endOffset, FExprParser exprParser, ParserErrorCallback errorCb);

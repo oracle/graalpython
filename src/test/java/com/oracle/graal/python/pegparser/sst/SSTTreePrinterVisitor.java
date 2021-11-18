@@ -394,7 +394,17 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
 
     @Override
     public String visit(YieldExpressionSSTNode node) {
-        return addHeader(node);
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        if (node.isFrom) {
+            sb.append(" from");
+        }
+        if (node.value != null) {
+            level++;
+            sb.append('\n').append(indent()).append(node.value.accept(this));
+            level--;
+        }
+        return sb.toString();
     }
 
     @Override
