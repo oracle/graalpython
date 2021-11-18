@@ -171,9 +171,21 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private ByteSequenceStorage b64decode(byte[] data, int dataLen) {
             try {
+                // Remove superfluous padding, Java refuses it but CPython ignores it
+                int end;
+                for (end = dataLen - 1; end >= 0; end--) {
+                    if (data[end] != '=') {
+                        break;
+                    }
+                }
+                // The length without the padding
+                int unpaddedLen = end + 1;
+                // Round up to a multiple of 4 to get correct minimal padding. Clamp to dataLen in
+                // case the data is not padded correctly
+                int decodeLen = Math.min((unpaddedLen + 3) & ~3, dataLen);
                 // Using MIME decoder because that one skips over anything that is not the alphabet,
                 // just like CPython does
-                ByteBuffer result = Base64.getMimeDecoder().decode(ByteBuffer.wrap(data, 0, dataLen));
+                ByteBuffer result = Base64.getMimeDecoder().decode(ByteBuffer.wrap(data, 0, decodeLen));
                 return new ByteSequenceStorage(result.array(), result.limit());
             } catch (IllegalArgumentException e) {
                 throw PRaiseNode.raiseUncached(this, BinasciiError, e);

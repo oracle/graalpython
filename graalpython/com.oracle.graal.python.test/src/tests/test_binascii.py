@@ -70,6 +70,10 @@ class BinASCIITest(unittest.TestCase):
         b = self.type2test(b'helloo')
         self.assertEqual(binascii.hexlify(b), b'68656c6c6f6f')
 
+    def test_b2a_base64_padding(self):
+        b = self.type2test(b'cDXriAy/7i02kBeDkN0m2RIDz85w6pwuHkt2PZ4VmT2PQc1TZs8Ebvf6eKDFcD/S====')
+        self.assertEqual(binascii.a2b_base64(b), b'p5\xeb\x88\x0c\xbf\xee-6\x90\x17\x83\x90\xdd&\xd9\x12\x03\xcf\xcep\xea\x9c.\x1eKv=\x9e\x15\x99=\x8fA\xcdSf\xcf\x04n\xf7\xfax\xa0\xc5p?\xd2')
+
 class ArrayBinASCIITest(BinASCIITest):
     def type2test(self, s):
         return array.array('b', list(s))
