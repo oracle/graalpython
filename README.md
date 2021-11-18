@@ -42,7 +42,7 @@ merge grammar-import`. Resolve any conflicts. Now regenerate the Java parser.
 
 ##### To see what we changed in the grammar
 
-    git diff grammar-import -- src/main/python/pegjava/python.gram
+    git diff --word-diff grammar-import -- src/main/python/pegjava/python.gram
 
 ##### To update the grammar
 
