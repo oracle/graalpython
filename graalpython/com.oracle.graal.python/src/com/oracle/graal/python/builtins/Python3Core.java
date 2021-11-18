@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndentationError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TabError;
+import static com.oracle.graal.python.nodes.BuiltinNames.MODULES;
 import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
@@ -877,7 +878,7 @@ public abstract class Python3Core extends ParserErrorCallback {
 
         // core machinery
         sysModule = builtinModules.get("sys");
-        sysModules = (PDict) sysModule.getAttribute("modules");
+        sysModules = (PDict) sysModule.getAttribute(MODULES);
 
         PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
         bootstrapExternal.setAttribute(__PACKAGE__, "importlib");

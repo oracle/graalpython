@@ -71,6 +71,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.DISPLAYHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.EXCEPTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.EXIT;
+import static com.oracle.graal.python.nodes.BuiltinNames.MODULES;
 import static com.oracle.graal.python.nodes.BuiltinNames.PYTHONBREAKPOINT;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.STDIN;
@@ -106,8 +107,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.oracle.graal.python.lib.PyTraceBackPrintNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -148,6 +148,7 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
+import com.oracle.graal.python.lib.PyImportImport;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -156,6 +157,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PyTraceBackPrintNode;
 import com.oracle.graal.python.lib.PyUnicodeAsEncodedString;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -171,7 +173,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -394,7 +395,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("byteorder", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "little" : "big");
         builtinConstants.put("copyright", LICENSE);
         final PythonObjectFactory factory = PythonObjectFactory.getUncached();
-        builtinConstants.put("modules", factory.createDict());
+        builtinConstants.put(MODULES, factory.createDict());
         builtinConstants.put("path", factory.createList());
         builtinConstants.put("builtin_module_names", factory.createTuple(core.builtinModuleNames()));
         builtinConstants.put("maxsize", MAXSIZE);
@@ -1356,48 +1357,34 @@ public class SysModuleBuiltins extends PythonBuiltins {
         static final String VAL_PDB_SETTRACE = "pdb.set_trace";
         static final String MOD_OS = "os";
         static final String ATTR_ENVIRON = "environ";
+        static final String METH_GET = "get";
 
-        @Child private ImportNode.ImportExpression importOsNode;
-        @Child private ImportNode.ImportExpression importNode;
-
-        private ImportNode.ImportExpression ensureImportNode(String name) {
-            if (importNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                importNode = insert(ImportNode.createAsExpression(name));
-            }
-            return importNode;
-        }
-
-        private Object importOs(VirtualFrame frame) {
-            if (importOsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                importOsNode = insert(ImportNode.createAsExpression(MOD_OS));
-            }
-            return importOsNode.execute(frame);
-        }
-
-        private Object getEnv(VirtualFrame frame, PyObjectGetAttr getAttr, GetItemNode getItemNode, String name) {
-            Object os = importOs(frame);
+        private String getEnvVar(VirtualFrame frame, PyImportImport importNode, PyObjectGetAttr getAttr, PyObjectCallMethodObjArgs callMethodObjArgs,
+                                 CastToJavaStringNode castToJavaStringNode) {
+            Object os = importNode.execute(frame, MOD_OS);
             final Object environ = getAttr.execute(frame, os, ATTR_ENVIRON);
-            return getItemNode.execute(frame, environ, name);
+            Object var = callMethodObjArgs.execute(frame, environ, METH_GET, PYTHONBREAKPOINT);
+            try {
+                return castToString(var, castToJavaStringNode);
+            } catch (CannotCastException cce) {
+                return null;
+            }
         }
 
         @Specialization
         Object doHook(VirtualFrame frame, Object[] args, PKeyword[] keywords,
                         @Cached CallNode callNode,
                         @Cached PyObjectGetAttr getAttr,
-                        @Cached GetItemNode getItemNode,
-                        @Cached IsBuiltinClassProfile importErrorProfile,
+                        @Cached PyImportImport importNode,
+                        @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached IsBuiltinClassProfile attrErrorProfile,
                         @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode) {
-            Object v = getEnv(frame, getAttr, getItemNode, PYTHONBREAKPOINT);
-            final String hookName;
-            if (v == PNone.NO_VALUE) {
+            String hookName = getEnvVar(frame, importNode, getAttr, callMethodObjArgs, castToJavaStringNode);
+            if (hookName == null || hookName.length() == 0) {
                 warnNode.warnFormat(frame, RuntimeWarning, WARN_CANNOT_RUN_PDB_YET);
                 hookName = VAL_PDB_SETTRACE;
-            } else {
-                hookName = castToString(v, castToJavaStringNode);
             }
 
             if (hookName.length() == 1 && hookName.charAt(0) == '0') {
@@ -1406,24 +1393,28 @@ public class SysModuleBuiltins extends PythonBuiltins {
             }
 
             final int lastDot = PythonUtils.lastIndexOf(hookName, '.');
-            final String modName;
+            final String modPath;
             final String attrName;
             if (lastDot == -1) {
                 // The breakpoint is a built-in, e.g. PYTHONBREAKPOINT=int
-                modName = BUILTINS;
+                modPath = BUILTINS;
                 attrName = hookName;
-            } else {
+            } else if (lastDot != 0) {
                 // Split on the last dot
-                modName = PythonUtils.substring(hookName, 0, lastDot);
+                modPath = PythonUtils.substring(hookName, 0, lastDot);
                 attrName = PythonUtils.substring(hookName, lastDot + 1);
+            } else {
+                warnNode.warnFormat(frame, RuntimeWarning, WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S, hookName);
+                return PNone.NONE;
             }
 
             final Object module;
             try {
-                module = ensureImportNode(modName).execute(frame);
+                module = importNode.execute(frame, modPath);
             } catch (PException pe) {
-                pe.expect(ImportError, importErrorProfile);
-                warnNode.warnFormat(frame, RuntimeWarning, WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S, hookName);
+                if (isInstanceNode.executeWith(frame, pe.getUnreifiedException(), ImportError)) {
+                    warnNode.warnFormat(frame, RuntimeWarning, WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S, hookName);
+                }
                 return PNone.NONE;
             }
 
@@ -1431,8 +1422,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
             try {
                 hook = getAttr.execute(frame, module, attrName);
             } catch (PException pe) {
-                pe.expect(AttributeError, attrErrorProfile);
-                warnNode.warnFormat(frame, RuntimeWarning, WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S, hookName);
+                if (attrErrorProfile.profileException(pe, AttributeError)) {
+                    warnNode.warnFormat(frame, RuntimeWarning, WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S, hookName);
+                }
                 return PNone.NONE;
             }
 

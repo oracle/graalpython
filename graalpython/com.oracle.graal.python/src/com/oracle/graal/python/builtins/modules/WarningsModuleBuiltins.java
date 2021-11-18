@@ -121,6 +121,8 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.MODULES;
+
 @CoreFunctions(defineModule = "_warnings")
 public class WarningsModuleBuiltins extends PythonBuiltins {
     private static final HiddenKey FILTERS_VERSION = new HiddenKey("filters_version");
@@ -469,7 +471,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 }
             } else {
                 Object sys = context.lookupBuiltinModule("sys");
-                Object modules = lookup.execute(frame, sys, "modules");
+                Object modules = lookup.execute(frame, sys, MODULES);
                 try {
                     warningsModule = callMethod.execute(frame, modules, "get", WARNINGS, PNone.NONE);
                 } catch (PException e) {

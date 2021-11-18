@@ -76,6 +76,7 @@ public abstract class BuiltinNames {
     public static final String STDOUT = "stdout";
     public static final String PYTHONBREAKPOINT = "PYTHONBREAKPOINT";
     public static final String EXIT = "exit";
+    public static final String MODULES = "modules";
 
     // builtin functions
     public static final String ABS = "abs";
