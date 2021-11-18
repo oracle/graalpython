@@ -104,7 +104,6 @@ public class CSVReaderBuiltins extends PythonBuiltins {
                         throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.LINE_CONTAINS_NULL_BYTE);
                     }
 
-
                     self.lineNum++;
                     self.parseLine(line);
 

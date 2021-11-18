@@ -40,7 +40,7 @@ public final class CSVReader extends PythonBuiltinObject {
     CSVDialect dialect;  /* parsing dialect */
     ArrayList<Object> fields; /* field list for current record */
     ReaderState state;  /* current CSV parse state */
-    String field; /* temporary buffer */
+    StringBuilder field; /* temporary buffer */
     int fieldSize; /* size of allocated buffer */
     int fieldLen;  /* length of current field */
     boolean numericField; /* treat field as numeric */
@@ -50,17 +50,16 @@ public final class CSVReader extends PythonBuiltinObject {
         super(cls, instanceShape);
     }
 
-
      void parseReset() {
-        this.field = "";
+        this.field = new StringBuilder();
         this.fields = new ArrayList<>();
         this.state = START_RECORD;
         this.numericField = false;
     }
 
     void parseSaveField() {
-        Object field = this.field;
-        this.field = "";
+        Object field = this.field.toString();
+        this.field = new StringBuilder();
         this.fieldLen = 0;
 
         if (this.numericField) {
@@ -257,7 +256,6 @@ public final class CSVReader extends PythonBuiltinObject {
         }
 
         this.fieldLen++;
-        this.field = this.field.concat(c);
-
+        this.field.append(c);
     }
 }

@@ -13,7 +13,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -31,7 +30,6 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -180,7 +178,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         Object createReader(VirtualFrame frame, Object csvfile, Object dialectObj, PKeyword[] kwargs,
                             @Cached PythonObjectFactory pythonObjectFactory,
                             @Cached PyObjectGetIter getIter,
-                            @Cached CSVModuleBuiltins.CSVCallDialectNode callDialect) {
+                            @Cached CallNode callNode) {
 
             CSVReader reader = pythonObjectFactory.createCSVReader(PythonBuiltinClassType.CSVReader);
 
@@ -190,7 +188,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             reader.parseReset();
 
             reader.inputIter = getIter.execute(frame, csvfile);
-            reader.dialect = (CSVDialect) callDialect.execute(frame, dialectObj, kwargs);
+            reader.dialect = (CSVDialect) callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, kwargs);
 
             return reader;
         }
@@ -202,13 +200,12 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object createReader(VirtualFrame frame, Object outputFile, Object dialectObj, PKeyword[] kwargs,
                             @Cached PythonObjectFactory pythonObjectFactory,
-                            @Cached CSVModuleBuiltins.CSVCallDialectNode callDialect,
+                            @Cached CallNode callNode,
                             @Cached PyObjectLookupAttr lookupAttr,
                             @Cached PyCallableCheckNode checkCallable) {
 
             CSVWriter writer = pythonObjectFactory.createCSVWriter(PythonBuiltinClassType.CSVWriter);
 
-            writer.rec = "";
             writer.recSize = 0;
             writer.joinReset();
 
@@ -218,7 +215,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_MUST_HAVE_WRITE_METHOD, "argument 1");
             }
 
-            writer.dialect = (CSVDialect) callDialect.execute(frame, dialectObj, kwargs);
+            writer.dialect = (CSVDialect) callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, kwargs);;
 
             return writer;
         }
@@ -246,22 +243,6 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             }
 
             return oldLimit;
-        }
-    }
-
-    @Builtin(name = "_call_dialect", isPublic = false, parameterNames = {"dialect_inst", "kwargs"}, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class CSVCallDialectNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object callDialectWithKeywordsPDict(VirtualFrame frame, Object dialectObj, PDict keywords,
-                           @Cached CallNode callNode) {
-            return callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, ((KeywordsStorage) keywords.getDictStorage()).getStore());
-        }
-
-        @Specialization
-        Object callDialectWithKeywordsArray(VirtualFrame frame, Object dialectObj, PKeyword[] keywords,
-                           @Cached CallNode callNode) {
-            return callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, keywords);
         }
     }
 

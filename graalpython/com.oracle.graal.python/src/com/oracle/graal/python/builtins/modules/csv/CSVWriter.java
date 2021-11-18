@@ -16,19 +16,19 @@ import static com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins.QU
 
 public final class CSVWriter extends PythonBuiltinObject {
 
-    Object write; /* write output lines to this file */
+    Object write;        /* write output lines to this file */
     CSVDialect dialect;  /* parsing dialect */
-    String rec;            /* buffer for parser.join */
-    int recSize;        /* size of allocated record */
-    int recLen;         /* length of record */
-    int numFields; /* number of fields in record */
+    StringBuilder rec;   /* buffer for parser.join */
+    int recSize;         /* size of allocated record */
+    int recLen;          /* length of record */
+    int numFields;       /* number of fields in record */
 
     public CSVWriter(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
     }
 
     void joinReset() {
-        this.rec = "";
+        this.rec = new StringBuilder();
         this.recLen = 0;
         this.numFields = 0;
     }
@@ -70,19 +70,15 @@ public final class CSVWriter extends PythonBuiltinObject {
                         c.equals(dialect.quotechar) ||
                         dialect.lineterminator.contains(c)) {
 
-                    if (dialect.quoting == QUOTE_NONE) {
-                        wantEscape = true;
-                    } else {
-                        if (c.equals(dialect.quotechar)) {
-                            if (!dialect.doublequote) {
-                                wantEscape = true;
-                            }
-                        } else if (c.equals(dialect.escapechar)) {
+                    if (c.equals(dialect.quotechar)) {
+                        if (!dialect.doublequote) {
                             wantEscape = true;
                         }
-                        if (!wantEscape) {
-                            needsQuotes = true;
-                        }
+                    } else if (c.equals(dialect.escapechar)) {
+                        wantEscape = true;
+                    }
+                    if (!wantEscape) {
+                        needsQuotes = true;
                     }
                 }
             }
@@ -103,15 +99,15 @@ public final class CSVWriter extends PythonBuiltinObject {
 
         /* If this is not the first field we need a field separator */
         if (this.numFields > 0) {
-            this.rec = this.rec.concat(dialect.delimiter);
+            this.rec.append(dialect.delimiter);
         }
 
         /* Handle preceding quote */
         if (quoted) {
-            this.rec = this.rec.concat(dialect.quotechar);
+            this.rec.append(dialect.quotechar);
         }
 
-        /* Copy field data */
+        /* Copy field data and add escape chars as needed */
         /* If field is null just pass over */
         if (field != null) {
             String fieldStr = field.toString();
@@ -131,7 +127,7 @@ public final class CSVWriter extends PythonBuiltinObject {
                     } else {
                         if (c.equals(dialect.quotechar)) {
                             if (dialect.doublequote) {
-                                this.rec = this.rec.concat(dialect.quotechar);
+                                this.rec.append(dialect.quotechar);
                             } else {
                                 wantEscape = true;
                             }
@@ -146,23 +142,21 @@ public final class CSVWriter extends PythonBuiltinObject {
                         if (dialect.escapechar == NOT_SET) {
                             throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.ESCAPE_WITHOUT_ESCAPECHAR);
                         }
-                        this.rec = this.rec.concat(dialect.escapechar);
+                        this.rec.append(dialect.escapechar);
                     }
                 }
-                this.rec = this.rec.concat(c);
+                this.rec.append(c);
             }
         }
         if (quoted) {
-            this.rec = this.rec.concat(dialect.quotechar);
+            this.rec.append(dialect.quotechar);
         }
         this.numFields++;
     }
 
     void joinAppendLineterminator() {
-        // TODO: Implement Buffer logic.
-
         int terminatorLen = this.dialect.lineterminator.length();
-        this.rec = this.rec.concat(this.dialect.lineterminator);
+        this.rec.append(this.dialect.lineterminator);
 
         this.recLen += terminatorLen;
     }

@@ -6,6 +6,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
@@ -138,6 +139,34 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                     getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
+        @Specialization
+        Object doPStringWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, PString dialectName, Object delimiterObj, Object
+                doublequoteObj, Object escapecharObj, Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
+                                     @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
+                                     @Cached ReadAttributeFromObjectNode readNode,
+                                     @Cached GetClassNode getClassNode,
+                                     @Cached PyDictGetItem getItemNode,
+                                     @Cached CastToJavaStringNode castToJavaStringNode,
+                                     @Cached PyObjectIsTrueNode isTrueNode,
+                                     @Cached PyLongCheckExactNode pyLongCheckExactNode,
+                                     @Cached PyLongAsIntNode pyLongAsIntNode) {
+
+            String dialectNameStr = castToJavaStringNode.execute(dialectName);
+            CSVDialect dialectObj = getDialect.get(frame, dialectNameStr, getItemNode, readNode);
+
+            if (delimiterObj == PNone.NO_VALUE) delimiterObj = dialectObj.delimiter;
+            if (doublequoteObj == PNone.NO_VALUE) doublequoteObj = dialectObj.doublequote;
+            if (escapecharObj == PNone.NO_VALUE) escapecharObj = dialectObj.escapechar;
+            if (lineterminatorObj == PNone.NO_VALUE) lineterminatorObj = dialectObj.lineterminator;
+            if (quotingObj == PNone.NO_VALUE) quotingObj = dialectObj.quoting;
+            if (quotecharObj == PNone.NO_VALUE) quotecharObj = dialectObj.quotechar;
+            if (skipinitialspaceObj == PNone.NO_VALUE) skipinitialspaceObj = dialectObj.skipinitialspace;
+            if (strictObj == PNone.NO_VALUE) strictObj = dialectObj.strict;
+
+            return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj, quotecharObj, quotingObj, skipinitialspaceObj, strictObj,
+                    getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
+        }
+
         @Specialization(guards = {"!isCSVDialect(dialectObj)", "!isPythonClass(dialectObj)", "!isString(dialectObj)", "!isPNone(dialectObj)"})
         Object doGeneric(VirtualFrame frame, PythonBuiltinClassType cls, Object dialectObj, Object delimiterObj, Object doublequoteObj, Object
                 escapecharObj, Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj,
@@ -149,7 +178,6 @@ public class CSVDialectBuiltins extends PythonBuiltins {
                          @Cached PyLongCheckExactNode pyLongCheckExactNode,
                          @Cached PyLongAsIntNode pyLongAsIntNode) {
 
-            //TODO: Do we need to handle PString here?
             delimiterObj = getAttributeValue(frame, dialectObj, delimiterObj, "delimiter", getAttributeNode);
             doublequoteObj = getAttributeValue(frame, dialectObj, doublequoteObj, "doublequote", getAttributeNode);
             escapecharObj = getAttributeValue(frame, dialectObj, escapecharObj, "escapechar", getAttributeNode);

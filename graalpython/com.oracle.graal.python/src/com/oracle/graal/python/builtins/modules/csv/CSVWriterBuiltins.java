@@ -53,7 +53,7 @@ public class CSVWriterBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.EXPECTED_ITERABLE_NOT_S, getClass.execute(seq));
             }
 
-            // Join all fields in internal buffer.
+            // Join all fields of passed in sequence in internal buffer.
             self.joinReset();
 
             PythonLanguage language = PythonLanguage.get(this);
@@ -82,7 +82,7 @@ public class CSVWriterBuiltins extends PythonBuiltins {
 
             self.joinAppendLineterminator();
 
-            return callNode.executeObject(frame, self.write, self.rec);
+            return callNode.executeObject(frame, self.write, self.rec.toString());
         }
     }
 

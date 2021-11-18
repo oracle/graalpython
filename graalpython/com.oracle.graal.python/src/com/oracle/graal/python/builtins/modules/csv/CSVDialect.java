@@ -4,14 +4,14 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
 public final class CSVDialect extends PythonBuiltinObject {
-    String delimiter;
-    boolean doublequote;
-    String escapechar;
-    String lineterminator;
-    int quoting;
-    String quotechar;
-    boolean skipinitialspace;
-    boolean strict;
+    String delimiter;           /* field separator */
+    boolean doublequote;        /* is " represented by ""? */
+    String escapechar;          /* escape character */
+    String lineterminator;      /* string to write between records */
+    int quoting;                /* style of quoting to write */
+    String quotechar;           /* quote character */
+    boolean skipinitialspace;   /* ignore spaces following delimiter? */
+    boolean strict;             /* raise exception on bad CSV */
 
     public CSVDialect(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
