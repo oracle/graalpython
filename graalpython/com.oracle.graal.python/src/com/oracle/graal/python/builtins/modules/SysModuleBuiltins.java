@@ -107,6 +107,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -850,7 +851,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "audithook", minNumOfPositionalArgs = 1, doc = "addaudithook($module, /, hook)\n" +
+    @Builtin(name = "addaudithook", minNumOfPositionalArgs = 1, doc = "addaudithook($module, /, hook)\n" +
                     "--\n" +
                     "\n" +
                     "Adds a new audit hook callback.")
@@ -1360,7 +1361,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         static final String METH_GET = "get";
 
         private String getEnvVar(VirtualFrame frame, PyImportImport importNode, PyObjectGetAttr getAttr, PyObjectCallMethodObjArgs callMethodObjArgs,
-                                 CastToJavaStringNode castToJavaStringNode) {
+                        CastToJavaStringNode castToJavaStringNode) {
             Object os = importNode.execute(frame, MOD_OS);
             final Object environ = getAttr.execute(frame, os, ATTR_ENVIRON);
             Object var = callMethodObjArgs.execute(frame, environ, METH_GET, PYTHONBREAKPOINT);
@@ -1579,15 +1580,23 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     "exit status will be one (i.e., failure).")
     @GenerateNodeFactory
     abstract static class ExitNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "!isPNone(status)")
-        Object exit(@SuppressWarnings("unused") PythonModule sys, Object status) {
-            throw raiseSystemExit(status);
-        }
-
         @Specialization
         @SuppressWarnings("unused")
         Object exitNoCode(PythonModule sys, PNone status) {
             throw raiseSystemExit(PNone.NONE);
+        }
+
+        @Specialization(guards = "!isPNone(status)")
+        Object exit(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object status,
+                        @Cached TupleBuiltins.GetItemNode getItemNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
+            Object code = status;
+            if (status instanceof PTuple) {
+                if (lenNode.execute(((PTuple) status).getSequenceStorage()) == 1) {
+                    code = getItemNode.execute(frame, status, 0);
+                }
+            }
+            throw raiseSystemExit(code);
         }
     }
 }
