@@ -37,12 +37,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import glob
-import sys
+import logging
 import os
 import shutil
-import logging
+import sys
 from distutils.core import setup, Extension
 from distutils.sysconfig import get_config_var, get_config_vars
+
 import _sysconfig
 
 __dir__ = __file__.rpartition("/")[0]
@@ -390,39 +391,32 @@ def _build_deps(deps):
 
 
 class NativeBuiltinModule:
-    def __init__(self, name, subdir="modules", files=None, deps=[], **kwargs):
+    def __init__(self, name, deps=(), **kwargs):
         self.name = name
-        self.subdir = subdir
         self.deps = deps
-        # common case: just a single file which is the module's name plus the file extension
-        if not files:
-            self.files = [name + ".c"]
-        else:
-            self.files = files
         self.kwargs = kwargs
 
     def __call__(self):
-        kwargs = self.kwargs
+        kwargs = dict(self.kwargs)
+        # common case: just a single file which is the module's name plus the file extension
+        sources = kwargs.pop("sources", [os.path.join("modules", self.name + ".c")])
 
         libs, library_dirs, include_dirs = _build_deps(self.deps)
-        runtime_library_dirs = []
-        extra_link_args = []
 
-        libs += kwargs.get("libs", [])
-        library_dirs += kwargs.get("library_dirs", [])
-        runtime_library_dirs += kwargs.get("runtime_library_dirs", [])
-        include_dirs += kwargs.get("include_dirs", [])
-        extra_link_args += kwargs.get("extra_link_args", [])
+        libs += kwargs.pop("libs", [])
+        library_dirs += kwargs.pop("library_dirs", [])
+        include_dirs += kwargs.pop("include_dirs", [])
+        extra_compile_args = cflags_warnings + kwargs.pop("extra_compile_args", [])
 
-        return Extension(self.name,
-                         sources=[os.path.join(__dir__, self.subdir, f) for f in self.files],
-                         libraries=libs,
-                         library_dirs=library_dirs,
-                         extra_compile_args=cflags_warnings + kwargs.get("cflags_warnings", []),
-                         runtime_library_dirs=runtime_library_dirs,
-                         include_dirs=include_dirs,
-                         extra_link_args=extra_link_args,
-                         )
+        return Extension(
+            self.name,
+            sources=[os.path.join(__dir__, f) for f in sources],
+            libraries=libs,
+            library_dirs=library_dirs,
+            extra_compile_args=extra_compile_args,
+            include_dirs=include_dirs,
+            **kwargs,
+        )
 
 
 builtin_exts = (
@@ -434,8 +428,27 @@ builtin_exts = (
     NativeBuiltinModule("_testmultiphase"),
     NativeBuiltinModule("_ctypes_test"),
     # the above modules are more core, we need them first to deal with later, more complex modules with dependencies
-    NativeBuiltinModule("_bz2", deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")], extra_link_args=["-Wl,-rpath,%s/../lib/%s/" % (relative_rpath, SOABI)]),
-    NativeBuiltinModule("pyexpat", deps=[ExpatDependency("expat", "expat==2.2.8", "EXPAT")], extra_link_args=["-Wl,-rpath,%s/../lib/%s/" % (relative_rpath, SOABI)]),
+    NativeBuiltinModule(
+        "_bz2",
+        deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")],
+        extra_link_args=["-Wl,-rpath,%s/../lib/%s/" % (relative_rpath, SOABI)],
+    ),
+    NativeBuiltinModule(
+        'pyexpat',
+        define_macros=[
+            ('HAVE_EXPAT_CONFIG_H', '1'),
+            # bpo-30947: Python uses best available entropy sources to
+            # call XML_SetHashSalt(), expat entropy sources are not needed
+            ('XML_POOR_ENTROPY', '1'),
+        ],
+        include_dirs=[os.path.join(__dir__, 'expat')],
+        sources=['modules/pyexpat.c', 'expat/xmlparse.c', 'expat/xmlrole.c', 'expat/xmltok.c'],
+        depends=[
+            'expat/ascii.h', 'expat/asciitab.h', 'expat/expat.h', 'expat/expat_config.h', 'expat/expat_external.h',
+            'expat/internal.h', 'expat/latin1tab.h', 'expat/utf8tab.h', 'expat/xmlrole.h', 'expat/xmltok.h',
+            'expat/xmltok_impl.h',
+        ],
+    ),
 )
 
 

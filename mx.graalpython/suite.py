@@ -121,13 +121,6 @@ suite = {
             "packedResource": True,
             "sha1": "bf7badf7e248e0ecf465d33c2f5aeec774209227",
         },
-        "EXPAT": {
-            "urls": [
-                "https://lafo.ssw.uni-linz.ac.at/pub/graal-external-deps/graalpython/expat-2.2.8.tar.gz",
-            ],
-            "packedResource": True,
-            "sha1": "2097c111a23d0583cc8ea42f99ebfe7e29aeba92",
-        },
         "ICU4J-69.1" : {
             "moduleName" : "com.ibm.icu",
             "sha1" : "ff666ac55986650893aacb9e2e0003538e9799c0",
@@ -360,7 +353,6 @@ suite = {
                 "sulong:SULONG_BOOTSTRAP_TOOLCHAIN",
                 "XZ-5.2.5",
                 "BZIP2",
-                "EXPAT"
             ],
             "buildEnv": {
                 "TRUFFLE_H_INC": "<path:SULONG_LEGACY>/include",
@@ -368,7 +360,6 @@ suite = {
                 "OS": "<os>",
                 "XZ-5.2.5": "<path:XZ-5.2.5>",
                 "BZIP2": "<path:BZIP2>",
-                "EXPAT": "<path:EXPAT>",
             },
         },
 
