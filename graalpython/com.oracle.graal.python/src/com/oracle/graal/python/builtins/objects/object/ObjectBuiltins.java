@@ -260,7 +260,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 NodeFactory<? extends PythonBuiltinBaseNode> factory = factoryProfile.profile(((PBuiltinFunction) method).getBuiltinNodeFactory());
                 return !builtinNodeFactoryClass.isInstance(factory);
             } else if (method instanceof BuiltinMethodDescriptor) {
-                return !builtinNodeFactoryClass.isInstance(((BuiltinMethodDescriptor) method).getFactory());
+                return !((BuiltinMethodDescriptor) method).isSameFactory(builtinNodeFactoryClass);
             }
             return true;
         }

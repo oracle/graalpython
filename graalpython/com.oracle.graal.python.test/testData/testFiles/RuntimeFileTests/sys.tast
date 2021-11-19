@@ -261,7 +261,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                                     GetAttributeNode SourceSection: [2635,2650]`e.__traceback__`
                                       GetFixedAttributeNodeGen SourceSection: None
                                         Key: __traceback__
-                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                       ReadLocalVariableNodeGen SourceSection: [2635,2636]`e`
                                         Frame: [0,e,Illegal]
@@ -283,41 +283,41 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                                                   GetAttributeNode SourceSection: [2749,2779]`tb.tb_frame.f_code.c...`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: co_filename
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                     GetAttributeNode SourceSection: [2749,2767]`tb.tb_frame.f_code`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: f_code
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                       GetAttributeNode SourceSection: [2749,2760]`tb.tb_frame`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: tb_frame
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                         ReadLocalVariableNodeGen SourceSection: [2749,2751]`tb`
                                                           Frame: [1,tb,Illegal]
                                                   GetAttributeNode SourceSection: [2797,2809]`tb.tb_lineno`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: tb_lineno
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                     ReadLocalVariableNodeGen SourceSection: [2797,2799]`tb`
                                                       Frame: [1,tb,Illegal]
                                                   GetAttributeNode SourceSection: [2827,2853]`tb.tb_frame.f_code.c...`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: co_name
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                     GetAttributeNode SourceSection: [2827,2845]`tb.tb_frame.f_code`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: f_code
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                       GetAttributeNode SourceSection: [2827,2838]`tb.tb_frame`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: tb_frame
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                         ReadLocalVariableNodeGen SourceSection: [2827,2829]`tb`
                                                           Frame: [1,tb,Illegal]
@@ -336,7 +336,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                                             GetAttributeNode SourceSection: [2899,2909]`tb.tb_next`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: tb_next
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [2899,2901]`tb`
                                                 Frame: [1,tb,Illegal]
@@ -363,7 +363,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                                             GetAttributeNode SourceSection: [2977,2997]`type(e).__qualname__...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __qualname__
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               PythonCallUnary SourceSection: [2977,2984]`type(e)`
                                                 CallUnaryMethodNodeGen SourceSection: None
@@ -388,7 +388,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                                         GetAttributeNode SourceSection: [3050,3070]`type(e).__qualname__...`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __qualname__
-                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                           PythonCallUnary SourceSection: [3050,3057]`type(e)`
                                             CallUnaryMethodNodeGen SourceSection: None
@@ -472,7 +472,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                                           GetAttributeNode SourceSection: [3278,3298]`type(value).__name__...`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __name__
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             PythonCallUnary SourceSection: [3278,3289]`type(value)`
                                               CallUnaryMethodNodeGen SourceSection: None
@@ -563,7 +563,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                                                     GetAttributeNode SourceSection: [4092,4103]`sys.maxsize`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: maxsize
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                                        LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                       ReadLocalVariableNodeGen SourceSection: [4092,4095]`sys`
                                                         Frame: [4,sys,Illegal]
@@ -573,7 +573,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                                                   GetAttributeNode SourceSection: [4137,4148]`sys.maxsize`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: maxsize
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                     ReadLocalVariableNodeGen SourceSection: [4137,4140]`sys`
                                                       Frame: [4,sys,Illegal]
@@ -807,7 +807,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                                           GetAttributeNode SourceSection: [5472,5489]`unraisable.object`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: object
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadLocalVariableNodeGen SourceSection: [5472,5482]`unraisable`
                                               Frame: [0,unraisable,Illegal]
@@ -824,7 +824,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                                                   GetAttributeNode SourceSection: [5541,5558]`unraisable.object`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: object
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                     ReadLocalVariableNodeGen SourceSection: [5541,5551]`unraisable`
                                                       Frame: [0,unraisable,Illegal]
@@ -841,7 +841,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                                               GetAttributeNode SourceSection: [5662,5680]`unraisable.err_msg`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: err_msg
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                 ReadLocalVariableNodeGen SourceSection: [5662,5672]`unraisable`
                                                   Frame: [0,unraisable,Illegal]
@@ -876,7 +876,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                                             GetAttributeNode SourceSection: [5859,5877]`unraisable.err_msg`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: err_msg
-                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                               ReadLocalVariableNodeGen SourceSection: [5859,5869]`unraisable`
                                                 Frame: [0,unraisable,Illegal]
@@ -908,21 +908,21 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                                       GetAttributeNode SourceSection: [6069,6088]`unraisable.exc_type`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: exc_type
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadLocalVariableNodeGen SourceSection: [6069,6079]`unraisable`
                                           Frame: [0,unraisable,Illegal]
                                       GetAttributeNode SourceSection: [6090,6110]`unraisable.exc_value...`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: exc_value
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadLocalVariableNodeGen SourceSection: [6090,6100]`unraisable`
                                           Frame: [0,unraisable,Illegal]
                                       GetAttributeNode SourceSection: [6112,6136]`unraisable.exc_trace...`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: exc_traceback
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadLocalVariableNodeGen SourceSection: [6112,6122]`unraisable`
                                           Frame: [0,unraisable,Illegal]
@@ -1201,12 +1201,12 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                         GetAttributeNode SourceSection: [7167,7207]`__graalpython__.sys_...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: recursionlimit
-                            LookupAndCallBinaryNodeGen SourceSection: None
+                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           GetAttributeNode SourceSection: [7167,7192]`__graalpython__.sys_...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: sys_state
-                              LookupAndCallBinaryNodeGen SourceSection: None
+                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7167,7182]`__graalpython__`
                               Identifier: __graalpython__
@@ -1288,7 +1288,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                         GetAttributeNode SourceSection: [7448,7473]`__graalpython__.sys_...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: sys_state
-                            LookupAndCallBinaryNodeGen SourceSection: None
+                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7448,7463]`__graalpython__`
                             Identifier: __graalpython__
@@ -1332,12 +1332,12 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                         GetAttributeNode SourceSection: [7558,7597]`__graalpython__.sys_...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: checkinterval
-                            LookupAndCallBinaryNodeGen SourceSection: None
+                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           GetAttributeNode SourceSection: [7558,7583]`__graalpython__.sys_...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: sys_state
-                              LookupAndCallBinaryNodeGen SourceSection: None
+                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7558,7573]`__graalpython__`
                               Identifier: __graalpython__
@@ -1419,7 +1419,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                         GetAttributeNode SourceSection: [7906,7931]`__graalpython__.sys_...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: sys_state
-                            LookupAndCallBinaryNodeGen SourceSection: None
+                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7906,7921]`__graalpython__`
                             Identifier: __graalpython__
@@ -1463,12 +1463,12 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                         GetAttributeNode SourceSection: [8016,8056]`__graalpython__.sys_...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: switchinterval
-                            LookupAndCallBinaryNodeGen SourceSection: None
+                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           GetAttributeNode SourceSection: [8016,8041]`__graalpython__.sys_...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: sys_state
-                              LookupAndCallBinaryNodeGen SourceSection: None
+                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8016,8031]`__graalpython__`
                               Identifier: __graalpython__
@@ -1554,7 +1554,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                         GetAttributeNode SourceSection: [8306,8331]`__graalpython__.sys_...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: sys_state
-                            LookupAndCallBinaryNodeGen SourceSection: None
+                            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                           ReadGlobalOrBuiltinNodeGen SourceSection: [8306,8321]`__graalpython__`
                             Identifier: __graalpython__
@@ -1674,7 +1674,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                                   GetAttributeNode SourceSection: [8783,8804]`local_stdout.encodin...`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: encoding
-                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                      LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                     ReadLocalVariableNodeGen SourceSection: [8783,8795]`local_stdout`
                                       Frame: [3,local_stdout,Illegal]
@@ -1695,7 +1695,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                                       GetAttributeNode SourceSection: [8882,8901]`local_stdout.buffer`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: buffer
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadLocalVariableNodeGen SourceSection: [8882,8894]`local_stdout`
                                           Frame: [3,local_stdout,Illegal]
@@ -1713,7 +1713,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,9115]`# Copyright (c) 2017
                                       GetAttributeNode SourceSection: [8961,8982]`local_stdout.encodin...`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: encoding
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadLocalVariableNodeGen SourceSection: [8961,8973]`local_stdout`
                                           Frame: [3,local_stdout,Illegal]

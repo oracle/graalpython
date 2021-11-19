@@ -43,13 +43,11 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsFactory;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptors;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -85,10 +83,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @ImportStatic({SpecialMethodSlot.class, SpecialMethodNames.class, PGuards.class})
 
 public abstract class PyObjectLookupAttr extends Node {
-    private static final BuiltinMethodDescriptor OBJ_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ObjectBuiltinsFactory.GetAttributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonObject);
-    private static final BuiltinMethodDescriptor MODULE_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ModuleBuiltinsFactory.ModuleGetattritbuteNodeFactory.getInstance(),
-                    PythonBuiltinClassType.PythonModule);
-    private static final BuiltinMethodDescriptor TYPE_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(TypeBuiltinsFactory.GetattributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonClass);
 
     public abstract Object execute(Frame frame, Object receiver, Object name);
 
@@ -113,15 +107,15 @@ public abstract class PyObjectLookupAttr extends Node {
     }
 
     protected static boolean isObjectGetAttribute(Object lazyClass) {
-        return getAttributeIs(lazyClass, OBJ_GET_ATTRIBUTE);
+        return getAttributeIs(lazyClass, BuiltinMethodDescriptors.OBJ_GET_ATTRIBUTE);
     }
 
     protected static boolean isModuleGetAttribute(Object lazyClass) {
-        return getAttributeIs(lazyClass, MODULE_GET_ATTRIBUTE);
+        return getAttributeIs(lazyClass, BuiltinMethodDescriptors.MODULE_GET_ATTRIBUTE);
     }
 
     protected static boolean isTypeGetAttribute(Object lazyClass) {
-        return getAttributeIs(lazyClass, TYPE_GET_ATTRIBUTE);
+        return getAttributeIs(lazyClass, BuiltinMethodDescriptors.TYPE_GET_ATTRIBUTE);
     }
 
     // simple version that needs no calls and only reads from the object directly
@@ -266,7 +260,7 @@ public abstract class PyObjectLookupAttr extends Node {
      */
     static final Object readAttributeQuickly(Object type, Object getattribute, Object receiver, Object name) {
         if (name instanceof String) {
-            if (getattribute == OBJ_GET_ATTRIBUTE && type instanceof PythonManagedClass) {
+            if (getattribute == BuiltinMethodDescriptors.OBJ_GET_ATTRIBUTE && type instanceof PythonManagedClass) {
                 String stringName = (String) name;
                 PythonAbstractClass[] bases = ((PythonManagedClass) type).getBaseClasses();
                 if (bases.length == 1) {
@@ -285,7 +279,7 @@ public abstract class PyObjectLookupAttr extends Node {
                         }
                     }
                 }
-            } else if (getattribute == MODULE_GET_ATTRIBUTE && type == PythonBuiltinClassType.PythonModule) {
+            } else if (getattribute == BuiltinMethodDescriptors.MODULE_GET_ATTRIBUTE && type == PythonBuiltinClassType.PythonModule) {
                 // this is slightly simpler than the previous case, since we don't need to check
                 // the type. There may be a module-level __getattr__, however. Since that would be
                 // a call anyway, we return to the generic code in that case

@@ -15,7 +15,7 @@ ModuleRootNode Name: <module 'annotationType03'> SourceSection: [0,39]`j = 1↵a
               GetAttributeNode SourceSection: None
                 GetFixedAttributeNodeGen SourceSection: None
                   Key: __annotations__
-                  LookupAndCallBinaryNodeGen SourceSection: None
+                  LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                 ReadNameNodeGen SourceSection: [6,10]`ahoj`
                   Identifier: ahoj
