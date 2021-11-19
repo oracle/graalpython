@@ -351,8 +351,14 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
             ExceptSSTNode exceptNode = node.exceptNodes[i];
             ExpressionNode exceptTest = exceptNode.test != null ? (ExpressionNode) exceptNode.test.accept(this) : null;
             StatementNode exceptBody = (StatementNode) exceptNode.body.accept(this);
-            WriteNode exceptName = exceptNode.asName != null ? (WriteNode) scopeEnvironment.findVariable(exceptNode.asName).makeWriteNode(null) : null;
-            exceptNodes[i] = new ExceptNode(exceptBody, exceptTest, exceptName);
+            WriteNode exceptName = null;
+            StatementNode exceptNameDelete = null;
+            if (exceptNode.asName != null) {
+                ReadNode readAsNode = scopeEnvironment.findVariable(exceptNode.asName);
+                exceptName = (WriteNode) readAsNode.makeWriteNode(null);
+                exceptNameDelete = unbindVariable(readAsNode);
+            }
+            exceptNodes[i] = new ExceptNode(exceptBody, exceptTest, exceptName, exceptNameDelete);
         }
 
         StatementNode result;
