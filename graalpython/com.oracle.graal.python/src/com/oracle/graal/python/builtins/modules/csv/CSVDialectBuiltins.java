@@ -100,12 +100,12 @@ public class CSVDialectBuiltins extends PythonBuiltins {
             CSVDialect dialectObj = getDialect.get(frame, dialectName, getItemNode, readNode);
 
             if (delimiterObj == PNone.NO_VALUE) delimiterObj = dialectObj.delimiter;
-            if (doublequoteObj == PNone.NO_VALUE) doublequoteObj = dialectObj.doublequote;
-            if (escapecharObj == PNone.NO_VALUE) escapecharObj = dialectObj.escapechar;
-            if (lineterminatorObj == PNone.NO_VALUE) lineterminatorObj = dialectObj.lineterminator;
+            if (doublequoteObj == PNone.NO_VALUE) doublequoteObj = dialectObj.doubleQuote;
+            if (escapecharObj == PNone.NO_VALUE) escapecharObj = dialectObj.escapeChar;
+            if (lineterminatorObj == PNone.NO_VALUE) lineterminatorObj = dialectObj.lineTerminator;
             if (quotingObj == PNone.NO_VALUE) quotingObj = dialectObj.quoting;
-            if (quotecharObj == PNone.NO_VALUE) quotecharObj = dialectObj.quotechar;
-            if (skipinitialspaceObj == PNone.NO_VALUE) skipinitialspaceObj = dialectObj.skipinitialspace;
+            if (quotecharObj == PNone.NO_VALUE) quotecharObj = dialectObj.quoteChar;
+            if (skipinitialspaceObj == PNone.NO_VALUE) skipinitialspaceObj = dialectObj.skipInitialSpace;
             if (strictObj == PNone.NO_VALUE) strictObj = dialectObj.strict;
 
             return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj, quotecharObj, quotingObj, skipinitialspaceObj, strictObj,
@@ -155,12 +155,12 @@ public class CSVDialectBuiltins extends PythonBuiltins {
             CSVDialect dialectObj = getDialect.get(frame, dialectNameStr, getItemNode, readNode);
 
             if (delimiterObj == PNone.NO_VALUE) delimiterObj = dialectObj.delimiter;
-            if (doublequoteObj == PNone.NO_VALUE) doublequoteObj = dialectObj.doublequote;
-            if (escapecharObj == PNone.NO_VALUE) escapecharObj = dialectObj.escapechar;
-            if (lineterminatorObj == PNone.NO_VALUE) lineterminatorObj = dialectObj.lineterminator;
+            if (doublequoteObj == PNone.NO_VALUE) doublequoteObj = dialectObj.doubleQuote;
+            if (escapecharObj == PNone.NO_VALUE) escapecharObj = dialectObj.escapeChar;
+            if (lineterminatorObj == PNone.NO_VALUE) lineterminatorObj = dialectObj.lineTerminator;
             if (quotingObj == PNone.NO_VALUE) quotingObj = dialectObj.quoting;
-            if (quotecharObj == PNone.NO_VALUE) quotecharObj = dialectObj.quotechar;
-            if (skipinitialspaceObj == PNone.NO_VALUE) skipinitialspaceObj = dialectObj.skipinitialspace;
+            if (quotecharObj == PNone.NO_VALUE) quotecharObj = dialectObj.quoteChar;
+            if (skipinitialspaceObj == PNone.NO_VALUE) skipinitialspaceObj = dialectObj.skipInitialSpace;
             if (strictObj == PNone.NO_VALUE) strictObj = dialectObj.strict;
 
             return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj, quotecharObj, quotingObj, skipinitialspaceObj, strictObj,
@@ -326,7 +326,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
     abstract static class DoublequoteNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean doIt(CSVDialect self) {
-            return self.doublequote;
+            return self.doubleQuote;
         }
     }
 
@@ -335,7 +335,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
     abstract static class EscapecharNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doIt(CSVDialect self) {
-            return self.escapechar == NOT_SET ? PNone.NONE : self.escapechar;
+            return self.escapeChar == NOT_SET ? PNone.NONE : self.escapeChar;
         }
     }
 
@@ -344,7 +344,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
     abstract static class LineterminatorNode extends PythonUnaryBuiltinNode {
         @Specialization
         static String doIt(CSVDialect self) {
-            return self.lineterminator;
+            return self.lineTerminator;
         }
     }
 
@@ -353,7 +353,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
     abstract static class QuotecharNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doIt(CSVDialect self) {
-            return self.quotechar == NOT_SET ? PNone.NONE : self.quotechar;
+            return self.quoteChar == NOT_SET ? PNone.NONE : self.quoteChar;
         }
     }
 
@@ -371,7 +371,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
     abstract static class SkipinitialspaceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean doIt(CSVDialect self) {
-            return self.skipinitialspace;
+            return self.skipInitialSpace;
         }
     }
 

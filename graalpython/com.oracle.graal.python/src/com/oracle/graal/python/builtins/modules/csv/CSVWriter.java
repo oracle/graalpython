@@ -66,15 +66,15 @@ public final class CSVWriter extends PythonBuiltinObject {
 
                 String c = fieldStr.substring(i, i + 1);
                 if (c.equals(dialect.delimiter) ||
-                        c.equals(dialect.escapechar) ||
-                        c.equals(dialect.quotechar) ||
-                        dialect.lineterminator.contains(c)) {
+                        c.equals(dialect.escapeChar) ||
+                        c.equals(dialect.quoteChar) ||
+                        dialect.lineTerminator.contains(c)) {
 
-                    if (c.equals(dialect.quotechar)) {
-                        if (!dialect.doublequote) {
+                    if (c.equals(dialect.quoteChar)) {
+                        if (!dialect.doubleQuote) {
                             wantEscape = true;
                         }
-                    } else if (c.equals(dialect.escapechar)) {
+                    } else if (c.equals(dialect.escapeChar)) {
                         wantEscape = true;
                     }
                     if (!wantEscape) {
@@ -104,7 +104,7 @@ public final class CSVWriter extends PythonBuiltinObject {
 
         /* Handle preceding quote */
         if (quoted) {
-            this.rec.append(dialect.quotechar);
+            this.rec.append(dialect.quoteChar);
         }
 
         /* Copy field data and add escape chars as needed */
@@ -118,20 +118,20 @@ public final class CSVWriter extends PythonBuiltinObject {
 
                 String c = fieldStr.substring(i, i + 1);
                 if (c.equals(dialect.delimiter) ||
-                        c.equals(dialect.escapechar) ||
-                        c.equals(dialect.quotechar) ||
-                        dialect.lineterminator.contains(c)) {
+                        c.equals(dialect.escapeChar) ||
+                        c.equals(dialect.quoteChar) ||
+                        dialect.lineTerminator.contains(c)) {
 
                     if (dialect.quoting == QUOTE_NONE) {
                         wantEscape = true;
                     } else {
-                        if (c.equals(dialect.quotechar)) {
-                            if (dialect.doublequote) {
-                                this.rec.append(dialect.quotechar);
+                        if (c.equals(dialect.quoteChar)) {
+                            if (dialect.doubleQuote) {
+                                this.rec.append(dialect.quoteChar);
                             } else {
                                 wantEscape = true;
                             }
-                        } else if (c.equals(dialect.escapechar)) {
+                        } else if (c.equals(dialect.escapeChar)) {
                             wantEscape = true;
                         }
                         if (!wantEscape) {
@@ -139,24 +139,24 @@ public final class CSVWriter extends PythonBuiltinObject {
                         }
                     }
                     if (wantEscape) {
-                        if (dialect.escapechar == NOT_SET) {
+                        if (dialect.escapeChar == NOT_SET) {
                             throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.ESCAPE_WITHOUT_ESCAPECHAR);
                         }
-                        this.rec.append(dialect.escapechar);
+                        this.rec.append(dialect.escapeChar);
                     }
                 }
                 this.rec.append(c);
             }
         }
         if (quoted) {
-            this.rec.append(dialect.quotechar);
+            this.rec.append(dialect.quoteChar);
         }
         this.numFields++;
     }
 
     void joinAppendLineterminator() {
-        int terminatorLen = this.dialect.lineterminator.length();
-        this.rec.append(this.dialect.lineterminator);
+        int terminatorLen = this.dialect.lineTerminator.length();
+        this.rec.append(this.dialect.lineTerminator);
 
         this.recLen += terminatorLen;
     }

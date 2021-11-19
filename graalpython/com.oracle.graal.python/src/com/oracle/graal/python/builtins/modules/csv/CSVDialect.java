@@ -5,29 +5,29 @@ import com.oracle.truffle.api.object.Shape;
 
 public final class CSVDialect extends PythonBuiltinObject {
     String delimiter;           /* field separator */
-    boolean doublequote;        /* is " represented by ""? */
-    String escapechar;          /* escape character */
-    String lineterminator;      /* string to write between records */
+    boolean doubleQuote;        /* is " represented by ""? */
+    String escapeChar;          /* escape character */
+    String lineTerminator;      /* string to write between records */
     int quoting;                /* style of quoting to write */
-    String quotechar;           /* quote character */
-    boolean skipinitialspace;   /* ignore spaces following delimiter? */
+    String quoteChar;           /* quote character */
+    boolean skipInitialSpace;   /* ignore spaces following delimiter? */
     boolean strict;             /* raise exception on bad CSV */
 
     public CSVDialect(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
     }
 
-    public CSVDialect(Object cls, Shape instanceShape, String delimiter, boolean doublequote, String escapechar,
-                      String lineterminator, String quotechar, int quoting, boolean skipinitialspace,
+    public CSVDialect(Object cls, Shape instanceShape, String delimiter, boolean doubleQuote, String escapeChar,
+                      String lineTerminator, String quoteChar, int quoting, boolean skipInitialSpace,
                       boolean strict) {
         super(cls, instanceShape);
         this.delimiter = delimiter;
-        this.doublequote = doublequote;
-        this.escapechar = escapechar;
-        this.lineterminator = lineterminator;
-        this.quotechar = quotechar;
+        this.doubleQuote = doubleQuote;
+        this.escapeChar = escapeChar;
+        this.lineTerminator = lineTerminator;
+        this.quoteChar = quoteChar;
         this.quoting = quoting;
-        this.skipinitialspace = skipinitialspace;
+        this.skipInitialSpace = skipInitialSpace;
         this.strict = strict;
     }
 }

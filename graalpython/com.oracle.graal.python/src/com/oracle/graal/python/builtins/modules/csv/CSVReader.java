@@ -22,7 +22,7 @@ import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState
 
 public final class CSVReader extends PythonBuiltinObject {
 
-    private static final String EOL = "EOL"; //TODO: How to share across package? Constants Class
+    private static final String EOL = "EOL";
 
     public enum ReaderState {
         START_RECORD,
@@ -106,16 +106,16 @@ public final class CSVReader extends PythonBuiltinObject {
                     parseSaveField();
                     this.state = (c == EOL) ? START_RECORD : EAT_CRNL;
                 }
-                else if (c.equals(dialect.quotechar) &&
+                else if (c.equals(dialect.quoteChar) &&
                         dialect.quoting != QUOTE_NONE) {
                     /* start quoted field */
                     this.state = IN_QUOTED_FIELD;
                 }
-                else if (c.equals(dialect.escapechar)) {
+                else if (c.equals(dialect.escapeChar)) {
                     /* possible escaped character */
                     this.state = ESCAPED_CHAR;
                 }
-                else if (c.equals(" ") && dialect.skipinitialspace)
+                else if (c.equals(" ") && dialect.skipInitialSpace)
                     /* ignore space at start of field */
                     ;
                 else if (c.equals(dialect.delimiter)) {
@@ -158,7 +158,7 @@ public final class CSVReader extends PythonBuiltinObject {
 
                     this.state = (c == EOL) ? START_RECORD : EAT_CRNL;
                 }
-                else if (c.equals(dialect.escapechar)) {
+                else if (c.equals(dialect.escapeChar)) {
                     /* possible escaped character */
                     this.state = ESCAPED_CHAR;
                 }
@@ -177,13 +177,13 @@ public final class CSVReader extends PythonBuiltinObject {
                 /* in quoted field */
                 if (c == EOL)
                     ;
-                else if (c.equals(dialect.escapechar)) {
+                else if (c.equals(dialect.escapeChar)) {
                     /* Possible escape character */
                     this.state = ESCAPE_IN_QUOTED_FIELD;
                 }
-                else if (c.equals(dialect.quotechar) &&
+                else if (c.equals(dialect.quoteChar) &&
                         dialect.quoting != QUOTE_NONE) {
-                    if (dialect.doublequote) {
+                    if (dialect.doubleQuote) {
                         /* doublequote; " represented by "" */
                         this.state = ReaderState.QUOTE_IN_QUOTED_FIELD;
                     }
@@ -208,7 +208,7 @@ public final class CSVReader extends PythonBuiltinObject {
             case QUOTE_IN_QUOTED_FIELD:
                 /* doublequote - seen a quote in a quoted field */
                 if (dialect.quoting != QUOTE_NONE &&
-                        c.equals(dialect.quotechar)) {
+                        c.equals(dialect.quoteChar)) {
                     /* save "" as " */
                     parseAddChar(c);
                     this.state = IN_QUOTED_FIELD;
@@ -231,7 +231,7 @@ public final class CSVReader extends PythonBuiltinObject {
                     /* illegal */
                     throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.S_EXPECTED_AFTER_S,
                             dialect.delimiter,
-                            dialect.quotechar);
+                            dialect.quoteChar);
                 }
                 break;
 
