@@ -18,7 +18,6 @@ public final class CSVWriter extends PythonBuiltinObject {
     CSVDialect dialect;  /* parsing dialect */
     StringBuilder rec;   /* buffer for parser.join */
     int recSize;         /* size of allocated record */
-    int recLen;          /* length of record */
     int numFields;       /* number of fields in record */
 
     public CSVWriter(Object cls, Shape instanceShape) {
@@ -27,7 +26,6 @@ public final class CSVWriter extends PythonBuiltinObject {
 
     void joinReset() {
         this.rec = new StringBuilder();
-        this.recLen = 0;
         this.numFields = 0;
     }
 
@@ -154,8 +152,6 @@ public final class CSVWriter extends PythonBuiltinObject {
     void joinAppendLineterminator() {
         int terminatorLen = this.dialect.lineTerminator.length();
         this.rec.append(this.dialect.lineTerminator);
-
-        this.recLen += terminatorLen;
     }
 
 }

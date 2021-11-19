@@ -42,7 +42,6 @@ public final class CSVReader extends PythonBuiltinObject {
     ReaderState state;  /* current CSV parse state */
     StringBuilder field; /* temporary buffer */
     int fieldSize; /* size of allocated buffer */
-    int fieldLen;  /* length of current field */
     boolean numericField; /* treat field as numeric */
     int lineNum; /* Source-file line number */
 
@@ -60,7 +59,6 @@ public final class CSVReader extends PythonBuiltinObject {
     void parseSaveField() {
         Object field = this.field.toString();
         this.field = new StringBuilder();
-        this.fieldLen = 0;
 
         if (this.numericField) {
             this.numericField = false;
@@ -256,7 +254,6 @@ public final class CSVReader extends PythonBuiltinObject {
                     CSVModuleBuiltins.fieldLimit);
         }
 
-        this.fieldLen++;
         this.field.append(c);
     }
 }

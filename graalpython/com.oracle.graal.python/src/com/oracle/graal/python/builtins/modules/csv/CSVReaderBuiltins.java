@@ -73,7 +73,7 @@ public class CSVReaderBuiltins extends PythonBuiltins {
                     } catch (PException e) {
                         e.expectStopIteration(IsBuiltinClassProfile.getUncached());
 
-                        if ( self.fieldLen != 0 || self.state == IN_QUOTED_FIELD) {
+                        if ( self.field.length() != 0 || self.state == IN_QUOTED_FIELD) {
                             if (self.dialect.strict) {
                                 throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.UNEXPECTED_END_OF_DATA);
                             } else {
