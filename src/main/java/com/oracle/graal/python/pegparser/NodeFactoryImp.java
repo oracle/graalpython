@@ -48,12 +48,18 @@ import com.oracle.graal.python.pegparser.sst.AssignmentSSTNode;
 import com.oracle.graal.python.pegparser.sst.BinaryArithmeticSSTNode;
 import com.oracle.graal.python.pegparser.sst.BlockSSTNode;
 import com.oracle.graal.python.pegparser.sst.BooleanLiteralSSTNode;
+import com.oracle.graal.python.pegparser.sst.CollectionSSTNode;
+import com.oracle.graal.python.pegparser.sst.ComprehensionSSTNode;
+import com.oracle.graal.python.pegparser.sst.ForComprehensionSSTNode;
+import com.oracle.graal.python.pegparser.sst.KeyValueSSTNode;
 import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
+import com.oracle.graal.python.pegparser.sst.SimpleSSTNode;
 import com.oracle.graal.python.pegparser.sst.StringLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.UnarySSTNode;
 import com.oracle.graal.python.pegparser.sst.UntypedSSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
+import com.oracle.graal.python.pegparser.sst.YieldExpressionSSTNode;
 
 
 public class NodeFactoryImp implements NodeFactory{
@@ -89,6 +95,36 @@ public class NodeFactoryImp implements NodeFactory{
     }
 
     @Override
+    public SSTNode createNone(int startOffset, int endOffset) {
+        return new SimpleSSTNode(SimpleSSTNode.Type.NONE, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createEllipsis(int startOffset, int endOffset) {
+        return new SimpleSSTNode(SimpleSSTNode.Type.ELLIPSIS, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createPass(int startOffset, int endOffset) {
+        return new SimpleSSTNode(SimpleSSTNode.Type.PASS, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createBreak(int startOffset, int endOffset) {
+        return new SimpleSSTNode(SimpleSSTNode.Type.BREAK, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createContinue(int startOffset, int endOffset) {
+        return new SimpleSSTNode(SimpleSSTNode.Type.CONTINUE, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createYield(SSTNode value, boolean isFrom, int startOffset, int endOffset) {
+        return new YieldExpressionSSTNode(value, isFrom, startOffset, endOffset);
+    }
+
+    @Override
     public SSTNode createNumber(String number, int startOffset, int endOffset) {
         // TODO handle all kind of numbers here.
         return NumberLiteralSSTNode.create(number, 0, 10, startOffset, endOffset);
@@ -112,5 +148,55 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public UntypedSSTNode createUntyped(int tokenPosition) {
         return new UntypedSSTNode(tokenPosition);
+    }
+
+    @Override
+    public SSTNode createTuple(SSTNode[] values, int startOffset, int endOffset) {
+        return CollectionSSTNode.createTuple(values, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createList(SSTNode[] values, int startOffset, int endOffset) {
+        return CollectionSSTNode.createList(values, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createKeyValuePair(SSTNode key, SSTNode value) {
+        return KeyValueSSTNode.create(key, value);
+    }
+
+    @Override
+    public SSTNode createDict(SSTNode[] keyValuePairs, int startOffset, int endOffset) {
+        return CollectionSSTNode.createDict(keyValuePairs, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createSet(SSTNode[] values, int startOffset, int endOffset) {
+        return CollectionSSTNode.createSet(values, startOffset, endOffset);
+    }
+
+    @Override
+    public ForComprehensionSSTNode createComprehension(SSTNode target, SSTNode iter, SSTNode[] ifs, boolean isAsync, int startOffset, int endOffset) {
+        return ForComprehensionSSTNode.create(target, iter, ifs, isAsync, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createListComprehension(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
+        return ComprehensionSSTNode.createList(name, generators, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createDictComprehension(KeyValueSSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
+        return ComprehensionSSTNode.createDict(name, generators, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createSetComprehension(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
+        return ComprehensionSSTNode.createSet(name, generators, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createGenerator(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
+        return ComprehensionSSTNode.createGenerator(name, generators, startOffset, endOffset);
     }
 }

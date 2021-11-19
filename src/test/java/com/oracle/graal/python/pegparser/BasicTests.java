@@ -14,7 +14,37 @@ public class BasicTests extends ParserTestBase {
     public void assignment01() throws Exception {
         checkTreeResult("a: int = 2");
     }
-    
+
+    @Test
+    public void pass() throws Exception {
+        checkTreeResult("pass");
+    }
+
+    @Test
+    public void testBreak() throws Exception {
+        checkTreeResult("break");
+    }
+
+    @Test
+    public void testContinue() throws Exception {
+        checkTreeResult("continue");
+    }
+
+    @Test
+    public void testYield1() throws Exception {
+        checkTreeResult("yield");
+    }
+
+    @Test
+    public void testYield2() throws Exception {
+        checkTreeResult("yield 12");
+    }
+
+    @Test
+    public void testYieldFrom() throws Exception {
+        checkTreeResult("yield from f");
+    }
+
 //    @Test
 //    public void booelan01() throws Exception {
 //        checkTreeResult("True");

@@ -97,13 +97,13 @@ class FunctionCall:
 
 # TODO this is temporary solution until all types in the grammar will not be java types
 def _check_type(self, ttype: str) -> str:
-    if ttype and type(ttype) == str and "Token" != ttype and not "SSTNode" in ttype:
+    self._type_conversions = getattr(self, "_type_conversions", {})
+    if ttype and type(ttype) == str and "Token" != ttype and not "SSTNode" in ttype and not "Object" in ttype:
         if "[]" in ttype or "*" in ttype:
-            if hasattr(self, "print"):
-                self.print(f"// TODO replacing {ttype} --> SSTNode[]")
+            self._type_conversions.setdefault(f"// TODO replacing {ttype} --> SSTNode[]")
             return "SSTNode[]"
         if hasattr(self, "print"):
-            self.print(f"// TODO replacing {ttype} --> SSTNode")
+            self._type_conversions.setdefault(f"// TODO replacing {ttype} --> SSTNode[]")
         return "SSTNode"
     elif "SSTNode*" == ttype:
         return "SSTNode[]"
@@ -348,13 +348,7 @@ class JavaCallMakerVisitor(GrammarVisitor):
         )
 
     def generate_call(self, node: Any) -> FunctionCall:
-        call = super().visit(node)
-        # TODO: Remove me
-        if not call:
-            self.print(f"// TODO call is not created {node} -> creates artificial")
-            call = "true"
-            return call
-        return call
+        return super().visit(node)
 
 
 class JavaParserGenerator(ParserGenerator, GrammarVisitor):
@@ -374,6 +368,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.debug = debug
         self.skip_actions = skip_actions
         self.goto_targets = []
+        self._collected_type = []
 
     def add_level(self) -> None:
         if self.debug:
@@ -452,6 +447,8 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.visit(rule)
         # we don't need the C trailer, but we have our own final things to generate and close the class
         self._generate_lookahead_methods()
+        for todo in getattr(self, "_type_conversions", {}).keys():
+            self.print(todo)
         self.level -= 1
         self.print("}")
 
@@ -498,11 +495,9 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.print("protected String[] getSoftKeywords() { return softKeywords; }")
 
     def _set_up_token_start_metadata_extraction(self) -> None:
-        self.print("// _PyPegen_fill_token is called here in CPython");
         self.print("Token startToken = getAndInitializeToken();");
 
     def _set_up_token_end_metadata_extraction(self) -> None:
-        self.print("// _PyPegen_get_last_nonwhitespace_token is called here in CPython");
         self.print("Token endToken = getLastNonWhitespaceToken();")
         self.print("if (endToken == null) {")
         with self.indent():
@@ -592,10 +587,10 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 self.print(f"if (cache.hasResult(_mark, {node.name.upper()}_ID)) {{")
                 with self.indent():
                     self.print(f"_res = cache.getResult(_mark, {node.name.upper()}_ID);")
-                    self.add_return("(SSTNode[])_res")
+                    self.add_return(f"({self._collected_type[-1]}[])_res")
                 self.print("}")
             self.print("int _start_mark = mark();")
-            self.print("List<SSTNode> _children = new ArrayList<>();")
+            self.print(f"List<{self._collected_type[-1]}> _children = new ArrayList<>();")
             self.out_of_memory_return(f"!_children")
             self.print("int _children_capacity = 1;")
             self.print("int _n = 0;")
@@ -609,7 +604,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
                 with self.indent():
                     self.add_return("null")
                 self.print("}")
-            self.print("SSTNode[] _seq = _children.toArray(new SSTNode[_children.size()]);")
+            self.print(f"{self._collected_type[-1]}[] _seq = _children.toArray(new {self._collected_type[-1]}[_children.size()]);")
             self.out_of_memory_return(f"!_seq", cleanup_code="PyMem_Free(_children);")
             if node.name:
                 self.print(f"cache.putResult(_start_mark, {node.name.upper()}_ID, _seq);")
@@ -620,7 +615,17 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         is_gather = node.is_gather()
         rhs = node.flatten()
         if is_loop or is_gather:
-            result_type = "SSTNode[]"
+            # Hacky way to get more specific Java type
+            collected_type = "SSTNode"
+            if len(node.rhs.alts) == 1:
+                items = [i.item for i in node.rhs.alts[0].items if isinstance(i.item, NameLeaf)]
+                if len(items) == 1:
+                    parent_rule = self.all_rules.get(items[0].value)
+                    if parent_rule and parent_rule.type:
+                        collected_type = _check_type(self, parent_rule.type).replace("[]", "")
+            self._collected_type.append(collected_type)
+            # end of hacky way to get better Java type
+            result_type = f"{collected_type}[]"
         elif node.type:
             result_type = _check_type(self, node.type)
         else:
@@ -642,6 +647,9 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self._handle_loop_rule_body(node, rhs)
         else:
             self._handle_default_rule_body(node, rhs, result_type)
+        # Java type stack pop
+        if is_loop or is_gather:
+            self._collected_type.pop()
         self.print("}")
 
     def visit_NamedItem(self, node: NamedItem) -> None:
@@ -760,10 +768,10 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
 
             # Add the result of rule to the temporary buffer of children. This buffer
             # will populate later an asdl_seq with all elements to return.
-            self.print("if (_res instanceof  SSTNode) {")
-            self.print("    _children.add((SSTNode)_res);")
+            self.print(f"if (_res instanceof {self._collected_type[-1]}) {{")
+            self.print(f"    _children.add(({self._collected_type[-1]})_res);")
             self.print("} else {")
-            self.print("    _children.addAll(Arrays.asList((SSTNode[])_res));")
+            self.print(f"    _children.addAll(Arrays.asList(({self._collected_type[-1]}[])_res));")
             self.print("}")
             self.print("_mark = mark();")
         self.print("}")

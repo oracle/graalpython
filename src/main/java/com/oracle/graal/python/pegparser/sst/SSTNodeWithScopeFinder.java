@@ -305,19 +305,27 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
     public SSTNodeWithScope visit(ForComprehensionSSTNode node) {
         if (isSubNode(node)) {
             SSTNodeWithScope result;
-            if ((result = node.iterator.accept(this)) != null) {
-                return result;
-            }
-            if (node.name != null && (result = node.name.accept(this)) != null) {
-                return result;
-            }
             if (node.target != null && (result = node.target.accept(this)) != null) {
                 return result;
             }
-            if (node.variables != null && (result = visitNodes(node.variables)) != null) {
+            if ((result = node.iterator.accept(this)) != null) {
                 return result;
             }
-            if (node.conditions != null && (result = visitNodes(node.conditions)) != null) {
+            if (node.ifs != null && (result = visitNodes(node.ifs)) != null) {
+                return result;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public SSTNodeWithScope visit(ComprehensionSSTNode node) {
+        if (isSubNode(node)) {
+            SSTNodeWithScope result;
+            if (node.element != null && (result = node.element.accept(this)) != null) {
+                return result;
+            }
+            if (node.generators != null && (result = visitNodes(node.generators)) != null) {
                 return result;
             }
         }
@@ -612,6 +620,20 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
     public SSTNodeWithScope visit(YieldExpressionSSTNode node) {
         if (node.value != null && isSubNode(node)) {
             return node.value.accept(this);
+        }
+        return null;
+    }
+
+    @Override
+    public SSTNodeWithScope visit(KeyValueSSTNode node) {
+        if (isSubNode(node)) {
+            SSTNodeWithScope result;
+            if (node.key != null && (result = node.key.accept(this)) != null) {
+                return result;
+            }
+            if ((result = node.value.accept(this)) != null) {
+                return result;
+            }
         }
         return null;
     }

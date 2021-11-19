@@ -6,7 +6,3 @@ BlockSSTNode[0, 4]
             Value: UnarySSTNode[2, 4]
                 Op: -
                 Value: IntegerLiteralSSTNode[3, 4] Value: "2"
-
-
-
-

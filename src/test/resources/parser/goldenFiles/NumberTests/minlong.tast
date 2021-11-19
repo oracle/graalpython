@@ -2,5 +2,3 @@ BlockSSTNode[0, 20]
     UnarySSTNode[0, 20]
         Op: -
         Value: BigIntegerLiteralSSTNode[1, 20] Value: "9223372036854775808"
-
-

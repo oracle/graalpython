@@ -41,24 +41,14 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-import java.util.Arrays;
+public class KeyValueSSTNode extends SSTNode {
+    protected final SSTNode key;
+    protected final SSTNode value;
 
-public class CollectionSSTNode extends SSTNode {
-    protected final SSTNode[] values;
-    protected final Type type;
-
-    public static enum Type {
-        Tuple,
-        List,
-        Dict,
-        Generator,
-        Set
-    }
-
-    private CollectionSSTNode(SSTNode[] values, Type type, int startOffset, int endOffset) {
-        super(startOffset, endOffset);
-        this.values = values;
-        this.type = type;
+    private KeyValueSSTNode(SSTNode key, SSTNode value) {
+        super(key != null ? key.startOffset : value.startOffset, value.endOffset);
+        this.key = key;
+        this.value = value;
     }
 
     @Override
@@ -66,28 +56,7 @@ public class CollectionSSTNode extends SSTNode {
         return visitor.visit(this);
     }
 
-    public SSTNode[] getValues() {
-        return values;
-    }
-
-    public Type getType() {
-        return type;
-    }
-
-    public static CollectionSSTNode createTuple(SSTNode[] values, int startOffset, int endOffset) {
-        return new CollectionSSTNode(values, Type.Tuple, startOffset, endOffset);
-    }
-
-    public static CollectionSSTNode createList(SSTNode[] values, int startOffset, int endOffset) {
-        return new CollectionSSTNode(values, Type.List, startOffset, endOffset);
-    }
-
-    public static CollectionSSTNode createDict(SSTNode[] keyValuePairs, int startOffset, int endOffset) {
-        assert Arrays.stream(keyValuePairs).allMatch(n -> n == null ? true : n instanceof KeyValueSSTNode);
-        return new CollectionSSTNode(keyValuePairs, Type.Dict, startOffset, endOffset);
-    }
-
-    public static CollectionSSTNode createSet(SSTNode[] values, int startOffset, int endOffset) {
-        return new CollectionSSTNode(values, Type.Set, startOffset, endOffset);
+    public static KeyValueSSTNode create(SSTNode key, SSTNode value) {
+        return new KeyValueSSTNode(key, value);
     }
 }

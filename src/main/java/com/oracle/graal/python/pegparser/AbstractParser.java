@@ -44,6 +44,7 @@ import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.UntypedSSTNode;
 import com.oracle.graal.python.pegparser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -106,7 +107,7 @@ abstract class AbstractParser {
      * the expected one.
      */
     public Token expect(int tokenKind) {
-        Token token = tokenizer.peekToken();
+        Token token = getAndInitializeToken();
         if (token.type == tokenKind) {
             return tokenizer.getToken();
         }
@@ -159,35 +160,27 @@ abstract class AbstractParser {
         return tokenizer.getText(token);
     }
 
-
-    public Token getToken(int pos) {
-        if (pos > tokenizer.mark()) {
-            throw new RuntimeException("getToken(pos) can be used only for position that is already scanned!");
-        }
-        int helpPos = mark();
-        Token token =  tokenizer.peekToken();
-        
-        tokenizer.reset(pos);
-        return token;
-    }
-
     /**
-     * equivalent to PyPegen_fill_token in that it modifies the token
+     * equivalent to _PyPegen_fill_token in that it modifies the token, and does not advance
      */
     public Token getAndInitializeToken() {
         int pos = mark();
-        Token token = getToken(pos);
+        Token token = tokenizer.getToken();
         while (token.type == Token.Kind.TYPE_IGNORE) {
             String tag = getText(token);
             comments.put(token.startLine, tag);
-            token = getToken(pos);
+            pos++;
+            token = tokenizer.getToken();
         }
+        reset(pos);
 
         // TODO: handle reaching end in single_input mode
-        
         return initializeToken(token);
     }
 
+    /**
+     * _PyPegen_get_last_nonnwhitespace_token
+     */
     public Token getLastNonWhitespaceToken() {
         Token t = null;
         for (int i = mark() - 1; i >= 0; i--) {
@@ -199,6 +192,9 @@ abstract class AbstractParser {
         return t;
     }
 
+    /**
+     * _PyPegen_name_token
+     */
     public SSTNode name_token() {
         Token t = expect(Token.Kind.NAME);
         if (t != null) {            
@@ -208,6 +204,9 @@ abstract class AbstractParser {
         }
     }
 
+    /**
+     * _PyPegen_expect_soft_keyword
+     */
     protected SSTNode expect_SOFT_KEYWORD(String keyword) {
         Token t = tokenizer.peekToken();
         if (t.type == Token.Kind.NAME && getText(t).equals(keyword)) {
@@ -231,6 +230,9 @@ abstract class AbstractParser {
         return factory.createUntyped(pos);
     }
 
+    /**
+     * _PyPegen_number_token
+     */
     public SSTNode number_token() {
         Token t = expect(Token.Kind.NUMBER);
         if (t != null) {            
@@ -240,6 +242,9 @@ abstract class AbstractParser {
         }
     }
 
+    /**
+     * _PyPegen_expect_forced_token
+     */
     public Token expect_forced_token(int kind, String msg) {
         Token t = getAndInitializeToken();
         if (t.type != kind) {
@@ -257,6 +262,9 @@ abstract class AbstractParser {
         return factory.createVariable(id, t.startOffset, t.endOffset);
     }
 
+    /**
+     * _PyPegen_soft_keyword_token
+     */
     public SSTNode soft_keyword_token() {
         Token t = expect(Token.Kind.NAME);
         if (t == null) {
@@ -271,6 +279,9 @@ abstract class AbstractParser {
         return null;
     }
 
+    /**
+     * _PyPegen_dummy_name
+     */
     public SSTNode dummyName(Object... args) {
         if (cachedDummyName != null) {
             return cachedDummyName;
@@ -279,23 +290,52 @@ abstract class AbstractParser {
         return cachedDummyName;
     }
 
-    public Object[] insertInFront(Object element, Object[] seq) {
-        Object[] result = new Object[seq.length + 1];
-        System.arraycopy(seq, 0, result, 1, seq.length);
+    /**
+     * _PyPegen_seq_insert_in_front
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T[] insertInFront(T element, T[] seq) {
+        T[] result;
+        if (seq == null) {
+            result = (T[])Array.newInstance(element.getClass(), 1);
+        } else {
+            result = Arrays.copyOf(seq, seq.length + 1);
+            System.arraycopy(seq, 0, result, 1, seq.length);
+        }
         result[0] = element;
         return result;
     }
 
-    public Object[] appendToEnd(Object[] seq, Object element) {
-        Object[] result = Arrays.copyOf(seq, seq.length + 1);
-        result[seq.length] = element;
+    /**
+     * _PyPegen_seq_append_to_end
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T[] appendToEnd(T[] seq, T element) {
+        T[] result;
+        if (seq == null) {
+            result = (T[])Array.newInstance(element.getClass(), 1);
+            result[0] = element;
+        } else {
+            result = Arrays.copyOf(seq, seq.length + 1);
+            System.arraycopy(seq, 0, result, 1, seq.length);
+            result[seq.length] = element;
+        }
         return result;
     }
 
-    public Object[] singletonSequence(Object element) {
-        return new Object[]{element};
+    /**
+     * _PyPegen_singleton_seq
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T[] singletonSequence(T element) {
+        T[] result = (T[])Array.newInstance(element.getClass(), 1);
+        result[0] = element;
+        return result;
     }
 
+    /**
+     * _PyPegen_concatenate_strings
+     */
     public SSTNode concatenateStrings(SSTNode[] tokens) {
         int n = tokens.length;
         String[] values = new String[n];

@@ -41,24 +41,16 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-import java.util.Arrays;
+public class ComprehensionSSTNode extends SSTNode {
+    protected final SSTNode element;
+    protected final SSTNode[] generators;
+    protected final CollectionSSTNode.Type resultType;
 
-public class CollectionSSTNode extends SSTNode {
-    protected final SSTNode[] values;
-    protected final Type type;
-
-    public static enum Type {
-        Tuple,
-        List,
-        Dict,
-        Generator,
-        Set
-    }
-
-    private CollectionSSTNode(SSTNode[] values, Type type, int startOffset, int endOffset) {
+    private ComprehensionSSTNode(SSTNode name, ForComprehensionSSTNode[] generators, CollectionSSTNode.Type resultType, int startOffset, int endOffset) {
         super(startOffset, endOffset);
-        this.values = values;
-        this.type = type;
+        this.element = name;
+        this.generators = generators;
+        this.resultType = resultType;
     }
 
     @Override
@@ -66,28 +58,19 @@ public class CollectionSSTNode extends SSTNode {
         return visitor.visit(this);
     }
 
-    public SSTNode[] getValues() {
-        return values;
+    public static ComprehensionSSTNode createList(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
+        return new ComprehensionSSTNode(name, generators, CollectionSSTNode.Type.List, startOffset, endOffset);
     }
 
-    public Type getType() {
-        return type;
+    public static ComprehensionSSTNode createGenerator(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
+        return new ComprehensionSSTNode(name, generators, CollectionSSTNode.Type.Generator, startOffset, endOffset);
     }
 
-    public static CollectionSSTNode createTuple(SSTNode[] values, int startOffset, int endOffset) {
-        return new CollectionSSTNode(values, Type.Tuple, startOffset, endOffset);
+    public static ComprehensionSSTNode createDict(KeyValueSSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
+        return new ComprehensionSSTNode(name, generators, CollectionSSTNode.Type.Dict, startOffset, endOffset);
     }
 
-    public static CollectionSSTNode createList(SSTNode[] values, int startOffset, int endOffset) {
-        return new CollectionSSTNode(values, Type.List, startOffset, endOffset);
-    }
-
-    public static CollectionSSTNode createDict(SSTNode[] keyValuePairs, int startOffset, int endOffset) {
-        assert Arrays.stream(keyValuePairs).allMatch(n -> n == null ? true : n instanceof KeyValueSSTNode);
-        return new CollectionSSTNode(keyValuePairs, Type.Dict, startOffset, endOffset);
-    }
-
-    public static CollectionSSTNode createSet(SSTNode[] values, int startOffset, int endOffset) {
-        return new CollectionSSTNode(values, Type.Set, startOffset, endOffset);
+    public static ComprehensionSSTNode createSet(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
+        return new ComprehensionSSTNode(name, generators, CollectionSSTNode.Type.Set, startOffset, endOffset);
     }
 }

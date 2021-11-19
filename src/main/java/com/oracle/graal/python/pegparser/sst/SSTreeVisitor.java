@@ -82,6 +82,8 @@ public interface SSTreeVisitor<T> {
 
     T visit(ForComprehensionSSTNode node);
 
+    T visit(ComprehensionSSTNode node);
+
     T visit(ForSSTNode node);
 
     T visit(FunctionDefSSTNode node);
@@ -137,4 +139,6 @@ public interface SSTreeVisitor<T> {
     T visit(WithSSTNode node);
 
     T visit(YieldExpressionSSTNode node);
+
+    T visit(KeyValueSSTNode node);
 }
