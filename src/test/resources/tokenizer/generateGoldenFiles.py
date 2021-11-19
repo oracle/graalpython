@@ -28,11 +28,8 @@ for file in files:
                     text = token.string
                     if token.type == Token.COMMENT and token.string.startswith("# type: "):
                         # TODO this is hack. The python tokenizer doesn't recognize the TYPE_COMMENTs
-                        print("pofiderni commment")
                         outputFile.write("Token type:58 (TYPE_COMMENT)")
                         text = text.strip()[len("# type: "): len(text)]
-                        print(text)
-                        print(start, token.string.find(text))
                         start = list(start)
                         start[1] = start[1] + int(token.string.find(text))
                         start = tuple(start)
