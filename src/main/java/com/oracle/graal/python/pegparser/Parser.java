@@ -1068,7 +1068,7 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d statement[%d-%d]: %s succeeded!", level, _mark, mark(), "compound_stmt");
-                _res = a;
+                _res = new SSTNode[]{a};
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "compound_stmt");
                 cache.putResult(_mark, STATEMENT_ID, _res);
                 level--;
@@ -5889,6 +5889,7 @@ public final class Parser extends AbstractParser {
             level--;
             return (SSTNode)_res;
         }
+        Token startToken = getAndInitializeToken();
         { // 'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block
             debugMessageln("%d> function_def_raw[%d-%d]: %s", level, _mark, mark(), "'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
             Token _keyword;
@@ -5921,9 +5922,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d function_def_raw[%d-%d]: %s succeeded!", level, _mark, mark(), "'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
-                // TODO: node.action: _PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createFunctionDef(((VarLookupSSTNode)n).getName(),(ArgDefListBuilder)params,b,null,(SSTNode)a,this.newTypeComment((Token)tc),startToken.startOffset,endToken.endOffset);
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "'def' NAME '(' params? ')' ['->' expression] &&':' func_type_comment? block");
                 cache.putResult(_mark, FUNCTION_DEF_RAW_ID, _res);
                 level--;
@@ -5991,15 +5995,15 @@ public final class Parser extends AbstractParser {
     //     | NEWLINE TYPE_COMMENT &(NEWLINE INDENT)
     //     | invalid_double_type_comments
     //     | TYPE_COMMENT
-    public SSTNode[] func_type_comment_rule()
+    public Token func_type_comment_rule()
     {
         level++;
         int _mark = mark();
         Object _res = null;
         if (cache.hasResult(_mark, FUNC_TYPE_COMMENT_ID)) {
-            _res = (SSTNode[])cache.getResult(_mark, FUNC_TYPE_COMMENT_ID);
+            _res = (Token)cache.getResult(_mark, FUNC_TYPE_COMMENT_ID);
             level--;
-            return (SSTNode[])_res;
+            return (Token)_res;
         }
         { // NEWLINE TYPE_COMMENT &(NEWLINE INDENT)
             debugMessageln("%d> func_type_comment[%d-%d]: %s", level, _mark, mark(), "NEWLINE TYPE_COMMENT &(NEWLINE INDENT)");
@@ -6018,7 +6022,7 @@ public final class Parser extends AbstractParser {
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "NEWLINE TYPE_COMMENT &(NEWLINE INDENT)");
                 cache.putResult(_mark, FUNC_TYPE_COMMENT_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s func_type_comment[%d-%d]: %s failed!", level,
@@ -6036,7 +6040,7 @@ public final class Parser extends AbstractParser {
                 _res = invalid_double_type_comments_var;
                 cache.putResult(_mark, FUNC_TYPE_COMMENT_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s func_type_comment[%d-%d]: %s failed!", level,
@@ -6054,7 +6058,7 @@ public final class Parser extends AbstractParser {
                 _res = type_comment_var;
                 cache.putResult(_mark, FUNC_TYPE_COMMENT_ID, _res);
                 level--;
-                return (SSTNode[])_res;
+                return (Token)_res;
             }
             reset(_mark);
             debugMessageln("%d%s func_type_comment[%d-%d]: %s failed!", level,
@@ -6064,7 +6068,7 @@ public final class Parser extends AbstractParser {
         _res = null;
         cache.putResult(_mark, FUNC_TYPE_COMMENT_ID, _res);
         level--;
-        return (SSTNode[])_res;
+        return (Token)_res;
     }
 
     // params: invalid_parameters | parameters
@@ -19268,7 +19272,7 @@ public final class Parser extends AbstractParser {
         }
         { // func_type_comment
             debugMessageln("%d> _tmp_86[%d-%d]: %s", level, _mark, mark(), "func_type_comment");
-            SSTNode[] func_type_comment_var;
+            Token func_type_comment_var;
             if (
                 (func_type_comment_var = func_type_comment_rule()) != null  // func_type_comment
             )
@@ -19379,7 +19383,7 @@ public final class Parser extends AbstractParser {
         }
         { // func_type_comment
             debugMessageln("%d> _tmp_89[%d-%d]: %s", level, _mark, mark(), "func_type_comment");
-            SSTNode[] func_type_comment_var;
+            Token func_type_comment_var;
             if (
                 (func_type_comment_var = func_type_comment_rule()) != null  // func_type_comment
             )
@@ -26659,7 +26663,6 @@ public final class Parser extends AbstractParser {
     // TODO replacing KeyValuePair* --> SSTNode[]
     // TODO replacing asdl_keyword_seq* --> SSTNode[]
     // TODO replacing keyword_ty --> SSTNode[]
-    // TODO replacing Token* --> SSTNode[]
     // TODO replacing arguments_ty --> SSTNode[]
     // TODO replacing asdl_arg_seq* --> SSTNode[]
     // TODO replacing SlashWithDefault* --> SSTNode[]

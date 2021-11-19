@@ -374,7 +374,7 @@ abstract class AbstractParser {
      * _PyPegen_new_type_comment
      */
     protected String newTypeComment(Token token) {
-        return getText(token);
+        return token != null ? getText(token) : null;
     }
 
     // debug methods
