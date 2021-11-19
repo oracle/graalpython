@@ -424,9 +424,10 @@ function_def[stmt_ty]:
 
 function_def_raw[stmt_ty]:
     | 'def' n=NAME '(' params=[params] ')' a=['->' z=expression { z }] &&':' tc=[func_type_comment] b=block {
-        _PyAST_FunctionDef(n->v.Name.id,
-                        (params) ? params : CHECK(arguments_ty, _PyPegen_empty_arguments(p)),
-                        b, NULL, a, NEW_TYPE_COMMENT(p, tc), EXTRA) }
+        factory.createFunctionDef(((VarLookupSSTNode)n).getName(),
+                        params,
+                        b, null, a, this.newTypeComment(tc),
+                        startToken.startOffset, endToken.endOffset) }
     | ASYNC 'def' n=NAME '(' params=[params] ')' a=['->' z=expression { z }] &&':' tc=[func_type_comment] b=block {
         CHECK_VERSION(
             stmt_ty,
