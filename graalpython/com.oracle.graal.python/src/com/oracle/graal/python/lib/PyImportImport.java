@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * Equivalent of CPython's {@code PyImport_Import}.
@@ -61,6 +62,8 @@ public abstract class PyImportImport extends PNodeWithState {
 
     @Specialization
     Object doGeneric(VirtualFrame frame, Object moduleName,
+                    @Cached ConditionProfile noGlobalsProfile,
+                    @Cached ConditionProfile dictBuiltinsProfile,
                     @Cached PyImportGetModule importGetModule,
                     @Cached PyObjectGetItem getItemNode,
                     @Cached PyObjectGetAttr getAttrNode,
@@ -70,7 +73,7 @@ public abstract class PyImportImport extends PNodeWithState {
         // Get the builtins from current globals
         Object globals = getGlobals.execute(frame);
         Object builtins;
-        if (globals != null) {
+        if (noGlobalsProfile.profile(globals != null)) {
             builtins = getItemNode.execute(frame, globals, __BUILTINS__);
         } else {
             // No globals -- use standard builtins, and fake globals
@@ -80,7 +83,7 @@ public abstract class PyImportImport extends PNodeWithState {
 
         // Get the __import__ function from the builtins
         Object importFunc;
-        if (builtins instanceof PDict) {
+        if (dictBuiltinsProfile.profile(builtins instanceof PDict)) {
             importFunc = getItemNode.execute(frame, builtins, __IMPORT__);
         } else {
             importFunc = getAttrNode.execute(frame, builtins, __IMPORT__);

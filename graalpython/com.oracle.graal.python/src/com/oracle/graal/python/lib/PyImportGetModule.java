@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * Equivalent of CPython's {@code PyImport_GetModule}.
@@ -58,9 +59,10 @@ public abstract class PyImportGetModule extends PNodeWithState {
 
     @Specialization
     Object doGeneric(VirtualFrame frame, Object name,
+                    @Cached ConditionProfile noSysModulesProfile,
                     @Cached DictBuiltins.GetItemNode getDictItemNode) {
         final PDict sysModules = getContext().getSysModules();
-        if (sysModules == null) {
+        if (noSysModulesProfile.profile(sysModules == null)) {
             throw raise(PythonBuiltinClassType.RuntimeError, UNABLE_TO_GET_S, "sys.modules");
         }
         return getDictItemNode.execute(frame, sysModules, name);
