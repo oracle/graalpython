@@ -70,13 +70,12 @@ public final class CSVWriter extends PythonBuiltinObject {
                         c.equals(dialect.quoteChar) ||
                         dialect.lineTerminator.contains(c)) {
 
-                    if (c.equals(dialect.quoteChar)) {
-                        if (!dialect.doubleQuote) {
-                            wantEscape = true;
-                        }
-                    } else if (c.equals(dialect.escapeChar)) {
+                    if (dialect.quoting == QUOTE_NONE ||
+                            (c.equals(dialect.quoteChar) && !dialect.doubleQuote) ||
+                            c.equals(dialect.escapeChar)) {
                         wantEscape = true;
                     }
+
                     if (!wantEscape) {
                         needsQuotes = true;
                     }
