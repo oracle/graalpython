@@ -13,6 +13,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.EnumSet;
 
 /**
  * This class is intentionally kept very close to CPython's tokenizer.c and
@@ -49,6 +50,12 @@ public class Tokenizer {
 
     private static final int TABSIZE = 8;
 
+    public static enum Flag {
+        EXECT_INPUT,
+        INTERACTIVE,
+        TYPE_COMMENT
+    }
+    
     /**
      * type_comment_prefix
      *
@@ -125,7 +132,7 @@ public class Tokenizer {
     /** {@code tok_state->multi_line_start} */
     private int multiLineStartIndex = 0;
     /** {@code tok_state->type_comments} */
-    private final boolean lookForTypeComments = false;
+    private final boolean lookForTypeComments;
     /** {@code tok_state->async_def} */
     private boolean insideAsyncDef = false;
     /** {@code tok_state->async_def_indent} */
@@ -260,10 +267,10 @@ public class Tokenizer {
     /**
      * decode_str
      */
-    private Tokenizer(byte[] code, boolean execInput, boolean interactive) {
+    private Tokenizer(byte[] code, EnumSet<Flag> flags) {
         // we do not translate newlines or add a missing final newline. we deal
         // with those in the call to get the next character
-        this.execInput = execInput;
+        this.execInput = flags.contains(Flag.EXECT_INPUT);
 
         // check_bom
         int sourceStart = 0;
@@ -308,28 +315,26 @@ public class Tokenizer {
             .decode(ByteBuffer.wrap(code, sourceStart, code.length))
             .codePoints()
             .toArray();
-        this.interactive = interactive;
+        this.interactive = flags.contains(Flag.INTERACTIVE);
+        this.lookForTypeComments = flags.contains(Flag.TYPE_COMMENT);
     }
 
     /**
      * PyTokenizer_FromString
      */
     public Tokenizer(byte[] code, boolean execInput) {
-        this(code, execInput, false);
+        this(code, execInput ? EnumSet.of(Flag.EXECT_INPUT) : EnumSet.noneOf(Flag.class));
     }
 
     /**
      * PyTokenizer_FromUTF8
      */
-    public Tokenizer(String code, boolean execInput) {
+    public Tokenizer(String code, EnumSet<Flag> flags) {
         this.codePointsInput = code.codePoints().toArray();
         this.fileEncoding = StandardCharsets.UTF_8;
-        this.execInput = execInput;
-        this.interactive = false;
-    }
-
-    public Tokenizer(String code) {
-        this(code, true);
+        this.execInput = flags.contains(Flag.EXECT_INPUT);
+        this.interactive = flags.contains(Flag.INTERACTIVE);
+        this.lookForTypeComments = flags.contains(Flag.TYPE_COMMENT);
     }
 
     // PyTokenizer_FromFile
@@ -681,7 +686,8 @@ public class Tokenizer {
 
                     if (lookForTypeComments) {
                         int prefixIdx = 0;
-                        int chIdx = nextCharIndex;
+                        //int chIdx = nextCharIndex;
+                        int chIdx = tokenStart;
                         while (chIdx < codePointsInput.length && prefixIdx < TYPE_COMMENT_PREFIX.length) {
                             if (TYPE_COMMENT_PREFIX[prefixIdx] == ' ') {
                                 while (chIdx < codePointsInput.length &&
@@ -1224,7 +1230,7 @@ public class Tokenizer {
                 }
             }
         } while (bytesRead > 0 && newlines < 2);
-        Tokenizer tokenizer = new Tokenizer(ary, false, false);
+        Tokenizer tokenizer = new Tokenizer(ary, EnumSet.noneOf(Flag.class));
         return tokenizer.fileEncoding;
     }
 

@@ -16,7 +16,8 @@ public class GenParserTest {
     @Test
     public void testSimple01() {
 //        String text = "a:int=1";
-        String text = "True";
+//        String text = "a = 1 # type: int";
+        String text = "a = 1";
         ParserTokenizer tokenizer = new ParserTokenizer(text);
         Parser parser = new Parser(tokenizer, new NodeFactoryImp(), null, null);
         Object result = parser.file_rule();
