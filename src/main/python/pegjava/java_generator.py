@@ -98,7 +98,7 @@ class FunctionCall:
 # TODO this is temporary solution until all types in the grammar will not be java types
 def _check_type(self, ttype: str) -> str:
     self._type_conversions = getattr(self, "_type_conversions", {})
-    if ttype and type(ttype) == str and "Token" != ttype and not "SSTNode" in ttype and not "Object" in ttype:
+    if ttype and type(ttype) == str and "Token" not in ttype and "SSTNode" not in ttype and not "Object" in ttype:
         if "[]" in ttype or "*" in ttype:
             self._type_conversions.setdefault(f"// TODO replacing {ttype} --> SSTNode[]")
             return "SSTNode[]"

@@ -370,6 +370,13 @@ abstract class AbstractParser {
         return token;
     }
 
+    /**
+     * _PyPegen_new_type_comment
+     */
+    protected String newTypeComment(Token token) {
+        return getText(token);
+    }
+
     // debug methods
     private void indent(StringBuffer sb) {
         for (int i = 0; i < level; i++) {
