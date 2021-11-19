@@ -209,6 +209,14 @@ public class Token {
         this.extraData = extraData;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Token ").append(Token.Kind.TOKEN_NAMES[this.type]);
+        sb.append(" [").append(this.startOffset).append(", ").append(this.endOffset).append(']');
+        return sb.toString();
+    }
+    
     static int oneChar(int c) {
         switch (c) {
             case '%':
