@@ -1,4 +1,2 @@
 DISABLE_INSTALLABLES=true
-DYNAMIC_IMPORTS=/substratevm
-NATIVE_IMAGES=lib:jvmcicompiler
 NO_LICENSES=true
