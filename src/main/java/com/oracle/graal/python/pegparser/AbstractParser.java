@@ -251,6 +251,7 @@ abstract class AbstractParser {
             // TODO: raise error
             return null;
         }
+        tokenizer.getToken(); // advance
         return t;
     }
 
