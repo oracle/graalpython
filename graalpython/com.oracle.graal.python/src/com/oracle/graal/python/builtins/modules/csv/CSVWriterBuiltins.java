@@ -25,7 +25,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 import java.util.List;
 
-import static com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins.QUOTE_NONE;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONE;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CSVWriter)
 public class CSVWriterBuiltins extends PythonBuiltins {

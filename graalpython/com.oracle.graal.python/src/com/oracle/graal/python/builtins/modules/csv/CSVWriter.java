@@ -10,9 +10,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.object.Shape;
 
 import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.NOT_SET;
-import static com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins.QUOTE_ALL;
-import static com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins.QUOTE_NONE;
-import static com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins.QUOTE_NONNUMERIC;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONE;
 
 public final class CSVWriter extends PythonBuiltinObject {
 

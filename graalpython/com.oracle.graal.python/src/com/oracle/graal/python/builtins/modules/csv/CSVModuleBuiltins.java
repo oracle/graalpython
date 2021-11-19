@@ -47,18 +47,14 @@ import com.oracle.truffle.api.library.CachedLibrary;
 
 import java.util.List;
 
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.*;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 @CoreFunctions(defineModule = "_csv")
 public class CSVModuleBuiltins extends PythonBuiltins {
 
-    public static final int QUOTE_MINIMAL = 0;
-    public static final int QUOTE_ALL = 1;
-    public static final int QUOTE_NONNUMERIC = 2;
-    public static final int QUOTE_NONE = 3;
-
     static long fieldLimit = 128 * 1024; // max parsed field size
-    public static final String WRITE = "write";
+    static final String WRITE = "write";
     static final String NOT_SET = "NOT_SET";
 
     @Override
@@ -70,10 +66,10 @@ public class CSVModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         builtinConstants.put(SpecialAttributeNames.__DOC__, CSV_DOC);
         builtinConstants.put("__version__", "1.0");
-        builtinConstants.put("QUOTE_MINIMAL", QUOTE_MINIMAL);
-        builtinConstants.put("QUOTE_ALL", QUOTE_ALL);
-        builtinConstants.put("QUOTE_NONNUMERIC", QUOTE_NONNUMERIC);
-        builtinConstants.put("QUOTE_NONE", QUOTE_NONE);
+        builtinConstants.put("QUOTE_MINIMAL", QUOTE_MINIMAL.ordinal());
+        builtinConstants.put("QUOTE_ALL", QUOTE_ALL.ordinal());
+        builtinConstants.put("QUOTE_NONNUMERIC", QUOTE_NONNUMERIC.ordinal());
+        builtinConstants.put("QUOTE_NONE", QUOTE_NONE.ordinal());
         builtinConstants.put("_dialects", PythonObjectFactory.getUncached().createDict());
         super.initialize(core);
     }
@@ -413,7 +409,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             String escapechar = getCharOrNone("escapechar", escapecharObj, NOT_SET, getClassNode, castToJavaStringNode);
             String lineterminator = getString("lineterminator", lineterminatorObj, "\r\n", castToJavaStringNode);
             String quotechar = getCharOrNone("quotechar", quotecharObj, "\"", getClassNode, castToJavaStringNode);
-            int quoting = getQuotingValue(frame, "quoting", quotingObj, QUOTE_MINIMAL, pyLongCheckExactNode, pyLongAsIntNode);
+            QuoteStyle quoting = getQuotingValue(frame, "quoting", quotingObj, QUOTE_MINIMAL, pyLongCheckExactNode, pyLongAsIntNode);
             boolean skipinitialspace = getBoolean(frame, "skipinitalspace", skipinitialspaceObj, false, isTrueNode);
             boolean strict = getBoolean(frame, "strict", strictObj, false, isTrueNode);
 
@@ -497,11 +493,13 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             return value;
         }
 
-        private int getQuotingValue(VirtualFrame frame, String name, Object valueObj, int defaultValue,
+        private QuoteStyle getQuotingValue(VirtualFrame frame, String name, Object valueObj, QuoteStyle defaultValue,
                                     PyLongCheckExactNode pyLongCheckExactNode,
                                     PyLongAsIntNode pyLongAsIntNode) {
 
             if (valueObj == PNone.NO_VALUE) return defaultValue;
+
+            if (valueObj instanceof QuoteStyle) return (QuoteStyle) valueObj;
 
             if (!pyLongCheckExactNode.execute(valueObj)) {
                 throw raise(TypeError, ErrorMessages.MUST_BE_INTEGER, name);
@@ -509,11 +507,11 @@ public class CSVModuleBuiltins extends PythonBuiltins {
 
             int value = pyLongAsIntNode.execute(frame, valueObj);
 
-            if (value < 0 || value > 3) {
+            if (!QuoteStyle.containsOrdinalValue(value)) {
                 throw raise(TypeError, ErrorMessages.BAD_QUOTING_VALUE);
             }
 
-            return value;
+            return QuoteStyle.getQuoteStyle(value);
         }
 
     }

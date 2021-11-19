@@ -19,12 +19,6 @@ import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.NOT
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CSVDialect)
 public class CSVDialectBuiltins extends PythonBuiltins {
 
-    // TODO: Implement as enum? => Checks for getQuotingValue?
-    public static final int QUOTE_MINIMAL = 0;
-    public static final int QUOTE_ALL = 1;
-    public static final int QUOTE_NONNUMERIC = 2;
-    public static final int QUOTE_NONE = 3;
-
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CSVDialectBuiltinsFactory.getFactories();
@@ -41,7 +35,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
 
     @Builtin(name = "doublequote", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    abstract static class DoublequoteNode extends PythonUnaryBuiltinNode {
+    abstract static class DoubleQuoteNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean doIt(CSVDialect self) {
             return self.doubleQuote;
@@ -50,7 +44,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
 
     @Builtin(name = "escapechar", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    abstract static class EscapecharNode extends PythonUnaryBuiltinNode {
+    abstract static class EscapeCharNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doIt(CSVDialect self) {
             return self.escapeChar == NOT_SET ? PNone.NONE : self.escapeChar;
@@ -59,7 +53,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
 
     @Builtin(name = "lineterminator", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    abstract static class LineterminatorNode extends PythonUnaryBuiltinNode {
+    abstract static class LineTerminatorNode extends PythonUnaryBuiltinNode {
         @Specialization
         static String doIt(CSVDialect self) {
             return self.lineTerminator;
@@ -68,7 +62,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
 
     @Builtin(name = "quotechar", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    abstract static class QuotecharNode extends PythonUnaryBuiltinNode {
+    abstract static class QuoteCharNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doIt(CSVDialect self) {
             return self.quoteChar == NOT_SET ? PNone.NONE : self.quoteChar;
@@ -80,13 +74,13 @@ public class CSVDialectBuiltins extends PythonBuiltins {
     abstract static class QuotingNode extends PythonUnaryBuiltinNode {
         @Specialization
         static int doIt(CSVDialect self) {
-            return self.quoting;
+            return self.quoting.ordinal();
         }
     }
 
     @Builtin(name = "skipinitialspace", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    abstract static class SkipinitialspaceNode extends PythonUnaryBuiltinNode {
+    abstract static class SkipInitialSpaceNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean doIt(CSVDialect self) {
             return self.skipInitialSpace;

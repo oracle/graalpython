@@ -137,10 +137,4 @@ public class CSVReaderBuiltins extends PythonBuiltins {
             return self.lineNum;
         }
     }
-
-    private static final String READER_DOC = "CSV reader\n" +
-            "\n" +
-            "Reader objects are responsible for reading and parsing tabular data\n" +
-            "in CSV format.";
-
 }

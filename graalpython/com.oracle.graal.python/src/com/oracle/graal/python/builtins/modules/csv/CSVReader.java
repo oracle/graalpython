@@ -9,8 +9,6 @@ import com.oracle.truffle.api.object.Shape;
 
 import java.util.ArrayList;
 
-import static com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins.QUOTE_NONE;
-import static com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins.QUOTE_NONNUMERIC;
 import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.AFTER_ESCAPED_CRNL;
 import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.EAT_CRNL;
 import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.ESCAPED_CHAR;
@@ -19,6 +17,8 @@ import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState
 import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.IN_QUOTED_FIELD;
 import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.START_FIELD;
 import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.START_RECORD;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONE;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONNUMERIC;
 
 public final class CSVReader extends PythonBuiltinObject {
 
@@ -81,6 +81,7 @@ public final class CSVReader extends PythonBuiltinObject {
         parseProcessChar(EOL);
     }
 
+    @SuppressWarnings("fallthrough")
     void parseProcessChar(String c) {
         CSVDialect dialect = this.dialect;
 

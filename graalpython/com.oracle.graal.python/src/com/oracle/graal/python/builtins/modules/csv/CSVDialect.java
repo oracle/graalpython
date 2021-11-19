@@ -8,7 +8,7 @@ public final class CSVDialect extends PythonBuiltinObject {
     boolean doubleQuote;        /* is " represented by ""? */
     String escapeChar;          /* escape character */
     String lineTerminator;      /* string to write between records */
-    int quoting;                /* style of quoting to write */
+    QuoteStyle quoting;         /* style of quoting to write */
     String quoteChar;           /* quote character */
     boolean skipInitialSpace;   /* ignore spaces following delimiter? */
     boolean strict;             /* raise exception on bad CSV */
@@ -18,7 +18,7 @@ public final class CSVDialect extends PythonBuiltinObject {
     }
 
     public CSVDialect(Object cls, Shape instanceShape, String delimiter, boolean doubleQuote, String escapeChar,
-                      String lineTerminator, String quoteChar, int quoting, boolean skipInitialSpace,
+                      String lineTerminator, String quoteChar, QuoteStyle quoting, boolean skipInitialSpace,
                       boolean strict) {
         super(cls, instanceShape);
         this.delimiter = delimiter;
