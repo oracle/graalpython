@@ -47,8 +47,8 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -56,7 +56,6 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter.ModuleCodeData;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter.ModuleInfo;
@@ -68,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltinsC
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltinsClinicProviders.GetSourceNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltinsClinicProviders.IsPackageNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltinsClinicProviders.LoadModuleNodeClinicProviderGen;
+import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -89,7 +89,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PZipImporter)
@@ -364,10 +363,10 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(limit = "1")
-        public PNone init(PZipImporter self, Object path,
-                        @CachedLibrary("path") PythonObjectLibrary lib) {
-            initZipImporter(self, lib.asPath(path));
+        @Specialization
+        public PNone init(VirtualFrame frame, PZipImporter self, Object path,
+                        @Cached PyUnicodeFSDecoderNode asPath) {
+            initZipImporter(self, asPath.execute(frame, path));
             return PNone.NONE;
         }
 

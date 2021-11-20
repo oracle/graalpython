@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,35 +38,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function.builtins.clinic;
 
-import com.oracle.graal.python.annotations.ClinicConverterFactory;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
+#include "capi.h"
 
-public abstract class BufferConversionNode extends ArgumentCastNodeWithRaise {
+PyTypeObject PyStaticMethod_Type = PY_TRUFFLE_TYPE("staticmethod", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, sizeof(PyType_Type));
 
-    @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-    byte[] doObject(Object value,
-                    @CachedLibrary("value") PythonObjectLibrary lib) {
-        if (lib.isBuffer(value)) {
-            try {
-                return lib.getBufferBytes(value);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere("Buffer-like object does not support getBufferBytes()");
-            }
-        }
-        throw raise(PythonErrorType.TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, value);
-    }
-
-    @ClinicConverterFactory
-    public static BufferConversionNode create() {
-        return BufferConversionNodeGen.create();
-    }
+UPCALL_ID(PyStaticMethod_New)
+PyObject* PyStaticMethod_New(PyObject *callable) {
+    return UPCALL_CEXT_O(_jls_PyStaticMethod_New, callable);
 }

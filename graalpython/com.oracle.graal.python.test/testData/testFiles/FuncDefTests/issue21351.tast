@@ -95,7 +95,7 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
         GetAttributeNode SourceSection: [130,142]`fnc.__code__`
           GetFixedAttributeNodeGen SourceSection: None
             Key: __code__
-            LookupAndCallBinaryNodeGen SourceSection: None
+            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
               Op: __getattribute__
           ReadNameNodeGen SourceSection: [130,133]`fnc`
             Identifier: fnc
@@ -112,7 +112,7 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
           GetAttributeNode SourceSection: [161,174]`c.co_freevars`
             GetFixedAttributeNodeGen SourceSection: None
               Key: co_freevars
-              LookupAndCallBinaryNodeGen SourceSection: None
+              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                 Op: __getattribute__
             ReadNameNodeGen SourceSection: [161,162]`c`
               Identifier: c
@@ -128,7 +128,7 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
         GetAttributeNode SourceSection: [193,206]`c.co_cellvars`
           GetFixedAttributeNodeGen SourceSection: None
             Key: co_cellvars
-            LookupAndCallBinaryNodeGen SourceSection: None
+            LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
               Op: __getattribute__
           ReadNameNodeGen SourceSection: [193,194]`c`
             Identifier: c

@@ -65,13 +65,13 @@ import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterato
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProviders.IndexNodeClinicProviderGen;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -98,7 +98,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -159,16 +158,15 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CountNode extends PythonBuiltinNode {
 
-        @Specialization(limit = "5")
+        @Specialization
         long count(VirtualFrame frame, PTuple self, Object value,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @CachedLibrary("value") PythonObjectLibrary valueLib,
-                        @CachedLibrary(limit = "16") PythonObjectLibrary otherLib) {
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
             long count = 0;
             SequenceStorage tupleStore = self.getSequenceStorage();
             for (int i = 0; i < tupleStore.length(); i++) {
                 Object object = getItemNode.execute(frame, tupleStore, i);
-                if (valueLib.equals(value, object, otherLib)) {
+                if (eqNode.execute(frame, value, object)) {
                     count++;
                 }
             }
@@ -196,7 +194,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         public static String toString(VirtualFrame frame, Object item, PyObjectReprAsJavaStringNode reprNode) {
             if (item != null) {

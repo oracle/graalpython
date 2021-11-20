@@ -66,15 +66,6 @@ typedef struct {
     PyObject *md_name;  /* for logging purposes after md_dict is cleared */
 } PyModuleObject;
 
-// taken from CPython "Objects/capsule.c"
-typedef struct {
-    PyObject_HEAD
-    void *pointer;
-    const char *name;
-    void *context;
-    PyCapsule_Destructor destructor;
-} PyCapsule;
-
 typedef struct {
     PyObject_VAR_HEAD
     int readonly;

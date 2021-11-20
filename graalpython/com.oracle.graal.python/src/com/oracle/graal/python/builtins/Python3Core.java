@@ -178,6 +178,11 @@ import com.oracle.graal.python.builtins.objects.iterator.ForeignIteratorBuiltins
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.ChainBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.RepeatBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.keywrapper.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
@@ -194,8 +199,10 @@ import com.oracle.graal.python.builtins.objects.method.StaticmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.namespace.SimpleNamespaceBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.partial.PartialBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.DirEntryBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.property.PropertyBuiltins;
@@ -228,11 +235,9 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
-import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -242,7 +247,7 @@ import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.interop.PythonMapScope;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
@@ -280,9 +285,10 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxEr
 
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most
- * types.
+ * types. The core is embedded, using inheritance, into {@link PythonContext} to avoid indirection
+ * through an extra field in the context.
  */
-public final class Python3Core implements ParserErrorCallback {
+public abstract class Python3Core extends ParserErrorCallback {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(Python3Core.class);
     private final String[] coreFiles;
 
@@ -291,26 +297,20 @@ public final class Python3Core implements ParserErrorCallback {
     private static String[] initializeCoreFiles() {
         // Order matters!
         List<String> coreFiles = new ArrayList<>(Arrays.asList(
-                        "_descriptor",
                         "object",
                         "sys",
                         "type",
                         "_imp",
                         "_csv",
                         "function",
-                        "_functools",
                         "method",
-                        "code",
                         "_frozen_importlib",
                         "__graalpython__",
                         "_weakref",
                         "itertools",
                         "faulthandler",
-                        "base_exception",
                         PythonCextBuiltins.PYTHON_CEXT,
-                        "bytes",
                         "bytearray",
-                        "time",
                         "unicodedata",
                         "_locale",
                         "_sre",
@@ -318,16 +318,10 @@ public final class Python3Core implements ParserErrorCallback {
                         "_sysconfig",
                         "termios",
                         "zipimport",
-                        "mmap",
                         "java",
-                        // TODO: see the encodings initialization before sys_post_init.py is
-                        // loaded in initializePython3Core;
-                        // once sys_post_init.py is gone, it should not be necessary
-                        "sys_post_init",
                         "_contextvars",
                         "pip_hook",
                         "_struct",
-                        "bool",
                         "_posixshmem"));
         // add service loader defined python file extensions
         if (!ImageInfo.inImageRuntimeCode()) {
@@ -371,6 +365,7 @@ public final class Python3Core implements ParserErrorCallback {
                         new DecoratedMethodBuiltins(),
                         new ClassmethodBuiltins(),
                         new StaticmethodBuiltins(),
+                        new SimpleNamespaceBuiltins(),
                         new PolyglotModuleBuiltins(),
                         new ObjectBuiltins(),
                         new CellBuiltins(),
@@ -382,6 +377,8 @@ public final class Python3Core implements ParserErrorCallback {
                         new TypeBuiltins(),
                         new IntBuiltins(),
                         new ForeignObjectBuiltins(),
+                        new KeyWrapperBuiltins(),
+                        new PartialBuiltins(),
                         new ListBuiltins(),
                         new DictBuiltins(),
                         new DictReprBuiltin(),
@@ -504,6 +501,12 @@ public final class Python3Core implements ParserErrorCallback {
                         new ZipImporterBuiltins(),
                         new ZipImportModuleBuiltins(),
 
+                        // itertools
+                        new ChainBuiltins(),
+                        new RepeatBuiltins(),
+                        new TeeBuiltins(),
+                        new TeeDataObjectBuiltins(),
+
                         // zlib
                         new ZLibModuleBuiltins(),
                         new ZlibCompressBuiltins(),
@@ -609,7 +612,6 @@ public final class Python3Core implements ParserErrorCallback {
 
     private final PythonParser parser;
 
-    @CompilationFinal private PythonContext singletonContext;
     @CompilationFinal private Object globalScopeObject;
 
     /*
@@ -618,43 +620,47 @@ public final class Python3Core implements ParserErrorCallback {
      */
     private volatile boolean initialized;
 
-    private final PythonObjectFactory objectFactory = PythonObjectFactory.getUncached();
+    private final PythonLanguage language;
+    @CompilationFinal private PythonObjectSlowPathFactory objectFactory;
 
-    public Python3Core(PythonParser parser, boolean isNativeSupportAllowed) {
+    public Python3Core(PythonLanguage language, PythonParser parser, boolean isNativeSupportAllowed) {
+        this.language = language;
         this.parser = parser;
         this.builtins = initializeBuiltins(isNativeSupportAllowed);
         this.coreFiles = initializeCoreFiles();
     }
 
-    public PythonLanguage getLanguage() {
-        return singletonContext.getLanguage();
-    }
-
     @Override
-    public PythonContext getContext() {
-        return singletonContext;
+    public final PythonContext getContext() {
+        // Small hack: we know that this is the only implementation of Python3Core, this should be
+        // removed once and if Python3Core is fully merged into PythonContext
+        return (PythonContext) this;
     }
 
-    public PythonParser getParser() {
+    public final PythonLanguage getLanguage() {
+        return language;
+    }
+
+    public final PythonParser getParser() {
         return parser;
     }
 
-    public PythonCodeSerializer getSerializer() {
+    public final PythonCodeSerializer getSerializer() {
         return (PythonCodeSerializer) parser;
     }
 
     /**
      * Checks whether the core is initialized.
      */
-    public boolean isInitialized() {
+    public final boolean isCoreInitialized() {
         return initialized;
     }
 
     /**
      * Load the core library and prepare all builtin classes and modules.
      */
-    public void initialize(PythonContext context) {
-        singletonContext = context;
+    public final void initialize(PythonContext context) {
+        objectFactory = new PythonObjectSlowPathFactory(context.getAllocationReporter());
         initializeJavaCore();
         initializePython3Core(context.getCoreHomeOrFail());
         assert SpecialMethodSlot.checkSlotOverrides(this);
@@ -672,24 +678,9 @@ public final class Python3Core implements ParserErrorCallback {
     private void initializePython3Core(String coreHome) {
         loadFile(BuiltinNames.BUILTINS, coreHome);
         for (String s : coreFiles) {
-            // TODO: once sys_post_init.py is gone, this should not be necessary
-            if (s.equals("sys_post_init")) {
-                importEncoding();
-            }
             loadFile(s, coreHome);
         }
         initialized = true;
-    }
-
-    private void importEncoding() {
-        PythonModule sys = lookupBuiltinModule("sys");
-        Object sysPath = sys.getAttribute("path");
-        PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, "insert", 0, getContext().getStdlibHome());
-        try {
-            AbstractImportNode.importModule("encodings");
-        } finally {
-            PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, "pop");
-        }
     }
 
     /**
@@ -697,7 +688,7 @@ public final class Python3Core implements ParserErrorCallback {
      * eagerly when the context is initialized on the JVM or a new context is created on SVM, but is
      * omitted when the native image is generated.
      */
-    public void postInitialize() {
+    public final void postInitialize() {
         if (!ImageInfo.inImageBuildtimeCode() || ImageInfo.inImageRuntimeCode()) {
             initialized = false;
 
@@ -715,48 +706,48 @@ public final class Python3Core implements ParserErrorCallback {
     }
 
     @TruffleBoundary
-    public PythonModule lookupBuiltinModule(String name) {
+    public final PythonModule lookupBuiltinModule(String name) {
         return builtinModules.get(name);
     }
 
-    public PythonBuiltinClass lookupType(PythonBuiltinClassType type) {
+    public final PythonBuiltinClass lookupType(PythonBuiltinClassType type) {
         assert builtinTypes[type.ordinal()] != null;
         return builtinTypes[type.ordinal()];
     }
 
     @TruffleBoundary
-    public String[] builtinModuleNames() {
+    public final String[] builtinModuleNames() {
         return builtinModules.keySet().toArray(PythonUtils.EMPTY_STRING_ARRAY);
     }
 
-    public PythonModule getBuiltins() {
+    public final PythonModule getBuiltins() {
         return builtinsModule;
     }
 
-    public PythonModule getSysModule() {
+    public final PythonModule getSysModule() {
         return sysModule;
     }
 
-    public PDict getSysModules() {
+    public final PDict getSysModules() {
         return sysModules;
     }
 
-    public PythonModule getImportlib() {
+    public final PythonModule getImportlib() {
         return importlib;
     }
 
-    public void registerImportlib(PythonModule mod) {
+    public final void registerImportlib(PythonModule mod) {
         if (importlib != null) {
             throw new IllegalStateException("importlib cannot be registered more than once");
         }
         importlib = mod;
     }
 
-    public PMethod getImportFunc() {
+    public final PMethod getImportFunc() {
         return importFunc;
     }
 
-    public void registerImportFunc(PMethod func) {
+    public final void registerImportFunc(PMethod func) {
         if (importFunc != null) {
             throw new IllegalStateException("__import__ func cannot be registered more than once");
         }
@@ -765,14 +756,14 @@ public final class Python3Core implements ParserErrorCallback {
 
     @Override
     @TruffleBoundary
-    public void warn(PythonBuiltinClassType type, String format, Object... args) {
+    public final void warn(PythonBuiltinClassType type, String format, Object... args) {
         WarningsModuleBuiltins.WarnNode.getUncached().warnFormat(null, null, type, 1, format, args);
     }
 
     /**
      * Returns the stderr object or signals error when stderr is "lost".
      */
-    public Object getStderr() {
+    public final Object getStderr() {
         try {
             return PyObjectLookupAttr.getUncached().execute(null, sysModule, "stderr");
         } catch (PException e) {
@@ -837,9 +828,9 @@ public final class Python3Core implements ParserErrorCallback {
             }
         }
         // now initialize well-known objects
-        pyTrue = PythonObjectFactory.getUncached().createInt(PythonBuiltinClassType.Boolean, BigInteger.ONE);
-        pyFalse = PythonObjectFactory.getUncached().createInt(PythonBuiltinClassType.Boolean, BigInteger.ZERO);
-        pyNaN = PythonObjectFactory.getUncached().createFloat(Double.NaN);
+        pyTrue = factory().createInt(PythonBuiltinClassType.Boolean, BigInteger.ONE);
+        pyFalse = factory().createInt(PythonBuiltinClassType.Boolean, BigInteger.ZERO);
+        pyNaN = factory().createFloat(Double.NaN);
     }
 
     private void populateBuiltins() {
@@ -858,7 +849,6 @@ public final class Python3Core implements ParserErrorCallback {
         sysModule = builtinModules.get("sys");
         sysModules = (PDict) sysModule.getAttribute("modules");
 
-        createModule("_descriptor");
         PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
         bootstrapExternal.setAttribute(__PACKAGE__, "importlib");
         addBuiltinModule("_frozen_importlib_external", bootstrapExternal);
@@ -953,29 +943,24 @@ public final class Python3Core implements ParserErrorCallback {
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(mod));
     }
 
-    public PythonObjectFactory factory() {
+    public final PythonObjectSlowPathFactory factory() {
         return objectFactory;
     }
 
-    public void setContext(PythonContext context) {
-        assert singletonContext == null;
-        singletonContext = context;
-    }
-
-    public PInt getTrue() {
+    public final PInt getTrue() {
         return pyTrue;
     }
 
-    public PInt getFalse() {
+    public final PInt getFalse() {
         return pyFalse;
     }
 
-    public PFloat getNaN() {
+    public final PFloat getNaN() {
         return pyNaN;
     }
 
     @Override
-    public RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Source source, SourceSection section, String message, Object... arguments) {
+    public final RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Source source, SourceSection section, String message, Object... arguments) {
         CompilerDirectives.transferToInterpreter();
         Node location = new Node() {
             @Override
@@ -988,7 +973,7 @@ public final class Python3Core implements ParserErrorCallback {
 
     @Override
     @TruffleBoundary
-    public RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Node location, String message, Object... arguments) {
+    public final RuntimeException raiseInvalidSyntax(PythonParser.ErrorType type, Node location, String message, Object... arguments) {
         PBaseException instance;
         Object cls;
         switch (type) {
@@ -1037,15 +1022,15 @@ public final class Python3Core implements ParserErrorCallback {
         throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
     }
 
-    public Object getTopScopeObject() {
+    public final Object getTopScopeObject() {
         return globalScopeObject;
     }
 
-    public static final void writeInfo(String message) {
+    public static void writeInfo(String message) {
         PythonLanguage.getLogger(Python3Core.class).fine(message);
     }
 
-    public static final void writeInfo(Supplier<String> messageSupplier) {
+    public static void writeInfo(Supplier<String> messageSupplier) {
         PythonLanguage.getLogger(Python3Core.class).fine(messageSupplier);
     }
 }

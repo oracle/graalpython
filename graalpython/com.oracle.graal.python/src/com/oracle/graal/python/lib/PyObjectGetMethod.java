@@ -45,8 +45,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Attribut
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptors;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -79,7 +78,6 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectGetMethod extends Node {
-    private static final BuiltinMethodDescriptor OBJ_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ObjectBuiltinsFactory.GetAttributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonObject);
 
     public abstract Object execute(Frame frame, Object receiver, String name);
 
@@ -90,7 +88,7 @@ public abstract class PyObjectGetMethod extends Node {
         } else if (lazyClass instanceof PythonManagedClass) {
             slotValue = SpecialMethodSlot.GetAttribute.getValue((PythonManagedClass) lazyClass);
         }
-        return slotValue == OBJ_GET_ATTRIBUTE;
+        return slotValue == BuiltinMethodDescriptors.OBJ_GET_ATTRIBUTE;
     }
 
     @Specialization(guards = "!isObjectGetAttribute(lazyClass)", limit = "1")

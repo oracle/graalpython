@@ -98,7 +98,7 @@ PyTypeObject PyType_Type = {
     0,                                          /* tp_is_gc */
 };
 
-PyTypeObject PyBaseObject_Type = PY_TRUFFLE_TYPE_WITH_ALLOC("object", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyObject), 0, object_dealloc, PyObject_Del);
+PyTypeObject PyBaseObject_Type = PY_TRUFFLE_TYPE_WITH_ALLOC("object", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyObject), PyType_GenericAlloc, object_dealloc, PyObject_Del);
 PyTypeObject PySuper_Type = PY_TRUFFLE_TYPE("super", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(superobject));
 
 typedef int (*type_issubtype_fun_t)(PyTypeObject*, PyTypeObject*);

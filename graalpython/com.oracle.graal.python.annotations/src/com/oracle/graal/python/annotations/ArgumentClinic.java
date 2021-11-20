@@ -89,6 +89,10 @@ public @interface ArgumentClinic {
      */
     String[] args() default {};
 
+    public static final String VALUE_EMPTY_STRING = "\"\"";
+    public static final String VALUE_NONE = "PNone.NONE";
+    public static final String VALUE_NO_VALUE = "PNone.NO_VALUE";
+
     enum PrimitiveType {
         Boolean,
         Int,
@@ -148,9 +152,9 @@ public @interface ArgumentClinic {
          */
         CodePoint,
         /**
-         * Deprecated. Legacy converter for PythonObjectLibrary buffers.
+         * Corresponds to CPython's {@code object(subclass_of="&PyTuple_Type"))} converter.
          */
-        Buffer,
+        Tuple,
         /**
          * Corresponds to CPython's {@code Py_buffer} converter for a readonly contiguous buffer.
          * Returns an opaque buffer object that is accessed using {@code PythonBufferAccessLibrary}.

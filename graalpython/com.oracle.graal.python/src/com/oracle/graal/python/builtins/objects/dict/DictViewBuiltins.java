@@ -74,14 +74,13 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -182,7 +181,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         static boolean contains(VirtualFrame frame, PDictItemsView self, PTuple key,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary hlib,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached ConditionProfile hasFrame,
                         @Cached ConditionProfile tupleLenProfile,
                         @Cached SequenceStorageNodes.LenNode lenNode,
@@ -194,14 +193,14 @@ public final class DictViewBuiltins extends PythonBuiltins {
             HashingStorage dictStorage = self.getWrappedDict().getDictStorage();
             Object value = hlib.getItemWithFrame(dictStorage, getTupleItemNode.execute(frame, tupleStorage, 0), hasFrame, frame);
             if (value != null) {
-                return lib.equalsWithFrame(value, getTupleItemNode.execute(frame, tupleStorage, 1), lib, frame);
+                return eqNode.execute(frame, value, getTupleItemNode.execute(frame, tupleStorage, 1));
             } else {
                 return false;
             }
         }
 
         protected static boolean isFallback(Object self, Object key) {
-            return !(self instanceof PDictView || self instanceof PDictKeysView || self instanceof PDictItemsView) || (self instanceof PDictItemsView && !(key instanceof PTuple));
+            return !(self instanceof PDictView) || self instanceof PDictItemsView && !(key instanceof PTuple);
         }
 
         @SuppressWarnings("unused")
@@ -249,18 +248,10 @@ public final class DictViewBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"lib.isIterable(other)", "!isAnySet(other)", "!isDictView(other)"}, limit = "1")
+        @Specialization(guards = {"!isAnySet(other)", "!isDictView(other)"})
         static boolean disjoint(VirtualFrame frame, PDictView self, Object other,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary lib,
                         @Cached("create(false)") ContainedInNode contained) {
             return !contained.execute(frame, other, self);
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!lib.isIterable(other)", limit = "1")
-        boolean disjoint(PDictView self, Object other,
-                        @CachedLibrary("other") PythonObjectLibrary lib) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, other);
         }
     }
 
@@ -440,10 +431,9 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return factory().createSet(storage);
         }
 
-        @Specialization(guards = "libOther.isIterable(other)", limit = "1")
+        @Specialization(limit = "1")
         PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, Object other,
                         @Cached ConditionProfile hasFrame,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary libOther,
                         @Cached SetNodes.ConstructSetNode constructSetNode,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage left = self.getWrappedDict().getDictStorage();
@@ -473,23 +463,15 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return factory().createSet(storage);
         }
 
-        @Specialization(guards = "libOther.isIterable(other)", limit = "1")
+        @Specialization
         PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, Object other,
                         @Cached ConditionProfile hasFrame,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary libOther,
                         @Cached SetNodes.ConstructSetNode constructSetNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             HashingStorage left = constructSetNode.executeWith(frame, self).getDictStorage();
             HashingStorage right = constructSetNode.executeWith(frame, other).getDictStorage();
             HashingStorage storage = lib.diffWithFrame(left, right, hasFrame, frame);
             return factory().createSet(storage);
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isDictKeysView(other)", "!isDictItemsView(other)", "!lib.isIterable(other)"}, limit = "1")
-        PBaseSet doNotIterable(VirtualFrame frame, PDictView self, Object other,
-                        @CachedLibrary("other") PythonObjectLibrary lib) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, other);
         }
     }
 
@@ -518,10 +500,9 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return factory().createSet(intersectedStorage);
         }
 
-        @Specialization(guards = "libOther.isIterable(other)", limit = "1")
+        @Specialization(limit = "1")
         PBaseSet doKeysView(VirtualFrame frame, PDictKeysView self, Object other,
                         @Cached ConditionProfile hasFrame,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary libOther,
                         @Cached SetNodes.ConstructSetNode constructSetNode,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage left = self.getWrappedDict().getDictStorage();
@@ -555,24 +536,15 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return factory().createSet(intersectedStorage);
         }
 
-        @Specialization(guards = "libOther.isIterable(other)", limit = "1")
+        @Specialization
         PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, Object other,
                         @Cached ConditionProfile hasFrame,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary libOther,
                         @Cached SetNodes.ConstructSetNode constructSetNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             HashingStorage left = constructSetNode.executeWith(frame, self).getDictStorage();
             HashingStorage right = constructSetNode.executeWith(frame, other).getDictStorage();
             HashingStorage intersectedStorage = lib.intersectWithFrame(left, right, hasFrame, frame);
             return factory().createSet(intersectedStorage);
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isDictKeysView(other)", "!isDictItemsView(other)",
-                        "!lib.isIterable(other)"}, limit = "1")
-        PBaseSet doNotIterable(VirtualFrame frame, PDictView self, Object other,
-                        @CachedLibrary("other") PythonObjectLibrary lib) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, other);
         }
     }
 
@@ -597,10 +569,9 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return factory().createSet(union(lib, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage()));
         }
 
-        @Specialization(guards = "libOther.isIterable(other)", limit = "1")
+        @Specialization(limit = "1")
         PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, Object other,
                         @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary libOther,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
             return factory().createSet(union(lib, self.getWrappedDict().getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
         }
@@ -622,18 +593,11 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return factory().createSet(union(lib, selfSet.getDictStorage(), otherSet.getDictStorage()));
         }
 
-        @Specialization(guards = "libOther.isIterable(other)", limit = "1")
+        @Specialization
         PBaseSet doItemsView(VirtualFrame frame, PDictItemsView self, Object other,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary libOther,
                         @Cached SetNodes.ConstructSetNode constructSetNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             return factory().createSet(union(lib, constructSetNode.executeWith(frame, self).getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
-        }
-
-        @Specialization(guards = {"!isDictKeysView(other)", "!isDictItemsView(other)", "!lib.isIterable(other)"}, limit = "1")
-        PBaseSet doNotIterable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PDictView self, Object other,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary lib) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, other);
         }
     }
 
@@ -658,10 +622,9 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return factory().createSet(xor(lib, self.getWrappedDict().getDictStorage(), other.getWrappedDict().getDictStorage()));
         }
 
-        @Specialization(guards = "libOther.isIterable(other)", limit = "1")
+        @Specialization(limit = "1")
         PBaseSet doKeysView(@SuppressWarnings("unused") VirtualFrame frame, PDictKeysView self, Object other,
                         @Cached SetNodes.ConstructSetNode constructSetNode,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary libOther,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
             return factory().createSet(xor(lib, self.getWrappedDict().getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
         }
@@ -683,18 +646,11 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return factory().createSet(xor(lib, selfSet.getDictStorage(), otherSet.getDictStorage()));
         }
 
-        @Specialization(guards = "libOther.isIterable(other)", limit = "1")
+        @Specialization
         PBaseSet doItemsView(@SuppressWarnings("unused") VirtualFrame frame, PDictItemsView self, Object other,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary libOther,
                         @Cached SetNodes.ConstructSetNode constructSetNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             return factory().createSet(xor(lib, constructSetNode.executeWith(frame, self).getDictStorage(), constructSetNode.executeWith(frame, other).getDictStorage()));
-        }
-
-        @Specialization(guards = {"!isDictKeysView(other)", "!isDictItemsView(other)", "!lib.isIterable(other)"}, limit = "1")
-        PBaseSet doNotIterable(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") PDictView self, Object other,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary lib) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, other);
         }
     }
 

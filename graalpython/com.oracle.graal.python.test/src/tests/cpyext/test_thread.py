@@ -37,30 +37,49 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def a_function(): pass
-codetype = type(a_function.__code__)
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+
+__dir__ = __file__.rpartition("/")[0]
 
 
-def co_replace(self, **kwargs):
-    import types
-    return types.CodeType(
-        kwargs.get('co_argcount', self.co_argcount),
-        kwargs.get('co_posonlyargcount', self.co_posonlyargcount),
-        kwargs.get('co_kwonlyargcount', self.co_kwonlyargcount),
-        kwargs.get('co_nlocals', self.co_nlocals),
-        kwargs.get('co_stacksize', self.co_stacksize),
-        kwargs.get('co_flags', self.co_flags),
-        kwargs.get('co_code', self.co_code),
-        kwargs.get('co_consts', self.co_consts),
-        kwargs.get('co_names', self.co_names),
-        kwargs.get('co_varnames', self.co_varnames),
-        kwargs.get('co_filename', self.co_filename),
-        kwargs.get('co_name', self.co_name),
-        kwargs.get('co_firstlineno', self.co_firstlineno),
-        kwargs.get('co_lnotab', self.co_lnotab),
-        kwargs.get('co_freevars', self.co_freevars),
-        kwargs.get('co_cellvars', self.co_cellvars),
+class TestPyThread(CPyExtTestCase):
+
+    def compile_module(self, name):
+        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
+        super(TestPyThread, self).compile_module(name)
+
+    # TODO test that it's really thread-local
+    test_PyThread_tss = CPyExtFunction(
+        lambda args: args[0],
+        lambda: (
+            ('asdf',),
+        ),
+        code='''
+        PyObject* test_PyThread_tss_functions(PyObject *object) {
+            PyObject *res = NULL;
+            Py_tss_t *local = PyThread_tss_alloc();
+            if (!local) {
+                return NULL;
+            }
+            if (PyThread_tss_create(local)) {
+                goto end;
+            }
+            if (!PyThread_tss_is_created(local)) {
+                PyErr_SetString(PyExc_AssertionError, "PyThread_tss_is_created returned false");
+                goto end;
+            }
+            if (PyThread_tss_set(local, object)) {
+                goto end;
+            }
+            res = PyThread_tss_get(local);
+        end:
+            PyThread_tss_free(local);
+            return res;
+        }
+        ''',
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* object"],
+        callfunction="test_PyThread_tss_functions",
+        cmpfunc=unhandled_error_compare
     )
-
-
-codetype.replace = co_replace

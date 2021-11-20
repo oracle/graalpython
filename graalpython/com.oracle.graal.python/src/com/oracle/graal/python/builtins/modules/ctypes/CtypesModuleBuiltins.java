@@ -205,7 +205,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put("_pointer_type_cache", PythonObjectFactory.getUncached().createDict());
+        builtinConstants.put("_pointer_type_cache", core.factory().createDict());
         builtinConstants.put("FUNCFLAG_CDECL", FUNCFLAG_CDECL);
         builtinConstants.put("FUNCFLAG_USE_ERRNO", FUNCFLAG_USE_ERRNO);
         builtinConstants.put("FUNCFLAG_USE_LASTERROR", FUNCFLAG_USE_LASTERROR);
@@ -218,7 +218,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        PythonObjectFactory factory = core.factory();
         PythonModule ctypesModule = core.lookupBuiltinModule("_ctypes");
         ctypesModule.setAttribute("_string_at_addr", factory.createNativeVoidPtr(StringAtFunction.create()));
         ctypesModule.setAttribute("_cast_addr", factory.createNativeVoidPtr(CastFunction.create()));

@@ -33,6 +33,7 @@ import java.util.List;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.HiddenAttributes;
@@ -40,24 +41,27 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonObjectLibrary.class)
 public class PythonObject extends PythonAbstractObject {
     public static final HiddenKey DICT = HiddenAttributes.DICT;
-    public static final byte CLASS_CHANGED_FLAG = 1;
-    public static final byte HAS_SLOTS_BUT_NO_DICT_FLAG = 2;
+    public static final byte CLASS_CHANGED_FLAG = 0b1;
+    /**
+     * Indicates that the object doesn't allow {@code __dict__}, but may have slots
+     */
+    public static final byte HAS_SLOTS_BUT_NO_DICT_FLAG = 0b10;
     /**
      * Indicates that the shape has some properties that may contain {@link PNone#NO_VALUE} and
      * therefore the shape itself is not enough to resolve any lookups.
      */
-    public static final byte HAS_NO_VALUE_PROPERTIES = 4;
+    public static final byte HAS_NO_VALUE_PROPERTIES = 0b100;
+    /**
+     * Indicates that the object has a dict in the form of an actual dictionary
+     */
+    public static final byte HAS_MATERIALIZED_DICT = 0b1000;
 
     private final Object initialPythonClass;
 
@@ -80,15 +84,18 @@ public class PythonObject extends PythonAbstractObject {
         return constantClass == (pythonClass instanceof PythonBuiltinClass ? ((PythonBuiltinClass) pythonClass).getType() : pythonClass);
     }
 
-    @ExportMessage
-    public void setLazyPythonClass(Object cls,
-                    @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
+    public void setPythonClass(Object cls, DynamicObjectLibrary dylib) {
         // n.b.: the CLASS property is usually a constant property that is stored in the shape
         // in
         // single-context-mode. If we change it for the first time, there's an implicit shape
         // transition
         dylib.setShapeFlags(this, dylib.getShapeFlags(this) | CLASS_CHANGED_FLAG);
         dylib.put(this, CLASS, cls);
+    }
+
+    public void setDict(DynamicObjectLibrary dylib, PDict dict) {
+        dylib.setShapeFlags(this, dylib.getShapeFlags(this) | HAS_MATERIALIZED_DICT);
+        dylib.put(this, DICT, dict);
     }
 
     public Object getInitialPythonClass() {

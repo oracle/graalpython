@@ -5,7 +5,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "5.303.0",
+    "mxversion": "5.311.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "6a8914b68f1709e90c98f9dbd2134d854b2efbf5",
+                "version": "e9bddb1c7bd93b0435e08199f21cf7d1d04b497e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "6a8914b68f1709e90c98f9dbd2134d854b2efbf5",
+                "version": "e9bddb1c7bd93b0435e08199f21cf7d1d04b497e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "6a8914b68f1709e90c98f9dbd2134d854b2efbf5",
+                "version": "e9bddb1c7bd93b0435e08199f21cf7d1d04b497e",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -466,7 +466,6 @@ suite = {
             "javaProperties": {
                 "python.jni.library": "<lib:pythonjni>"
             },
-            "sourcesPath": "graalpython.src.zip",
             "description": "GraalPython engine",
         },
 
@@ -474,7 +473,6 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.processor",
             ],
-            "sourcesPath": "graalpython-processor.src.zip",
             "description": "GraalPython Java annotations processor",
             "overlaps": ["GRAALPYTHON"], # sharing the annotations
         },
@@ -496,7 +494,6 @@ suite = {
                 "GRAALPYTHON-LAUNCHER",
                 "truffle:TRUFFLE_TCK",
             ],
-            "sourcesPath": "graalpython.tests.src.zip",
             "testDistribution": True,
         },
 
@@ -509,7 +506,6 @@ suite = {
                 "GRAALPYTHON-LAUNCHER",
                 "sdk:GRAAL_SDK",
             ],
-            "sourcesPath": "graalpython.bench.src.zip",
             "testDistribution" : True,
             "maven": False,
         },
@@ -523,7 +519,6 @@ suite = {
             "distDependencies": [
                 "sdk:POLYGLOT_TCK",
             ],
-            "sourcesPath": "graalpython.tests.src.zip",
             "testDistribution": True,
         },
 

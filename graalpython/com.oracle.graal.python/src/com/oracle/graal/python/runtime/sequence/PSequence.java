@@ -29,7 +29,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -43,7 +42,6 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(InteropLibrary.class)
 public abstract class PSequence extends PythonBuiltinObject {
 
@@ -59,11 +57,6 @@ public abstract class PSequence extends PythonBuiltinObject {
      * objects (like {@code _PyTuple_Resize}).
      */
     public abstract void setSequenceStorage(SequenceStorage newStorage);
-
-    @ExportMessage
-    public boolean isIterable() {
-        return true;
-    }
 
     @ExportMessage
     @SuppressWarnings("static-method")

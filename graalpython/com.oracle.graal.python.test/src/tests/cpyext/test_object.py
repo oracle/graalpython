@@ -694,6 +694,8 @@ class TestObjectFunctions(CPyExtTestCase):
         lambda: (
             (0, 0),
             (1, 1),
+            (False, 0),
+            (True, 1),
             (-1, -1),
             (1, 1),
             (1<<29, 1),

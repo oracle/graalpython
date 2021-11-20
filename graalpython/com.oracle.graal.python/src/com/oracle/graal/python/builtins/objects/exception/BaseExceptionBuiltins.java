@@ -47,9 +47,16 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
+import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -61,8 +68,10 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -316,6 +325,94 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             Object args = argsNode.executeObject(frame, self, PNone.NO_VALUE);
             Object dict = dictNode.execute(frame, self, PNone.NO_VALUE);
             return factory().createTuple(new Object[]{clazz, args, dict});
+        }
+    }
+
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 0")
+        Object reprNoArgs(@SuppressWarnings("unused") VirtualFrame frame, PBaseException self,
+                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @SuppressWarnings("unused") @Cached ArgsNode argsNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PyObjectGetAttr getAttrNode,
+                        @Cached CastToJavaStringNode castStringNode) {
+            Object type = getClassNode.execute(self);
+            StringBuilder sb = new StringBuilder();
+            PythonUtils.append(sb, castStringNode.execute(getAttrNode.execute(frame, type, __NAME__)));
+            PythonUtils.append(sb, "()");
+            return PythonUtils.sbToString(sb);
+        }
+
+        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 1")
+        Object reprArgs1(VirtualFrame frame, PBaseException self,
+                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @SuppressWarnings("unused") @Cached ArgsNode argsNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PyObjectGetAttr getAttrNode,
+                        @Cached GetItemNode getItemNode,
+                        @Cached PyObjectReprAsObjectNode reprNode,
+                        @Cached CastToJavaStringNode castStringNode) {
+            Object type = getClassNode.execute(self);
+            StringBuilder sb = new StringBuilder();
+            PythonUtils.append(sb, castStringNode.execute(getAttrNode.execute(frame, type, __NAME__)));
+            PythonUtils.append(sb, "(");
+            PythonUtils.append(sb, (String) reprNode.execute(frame, getItemNode.execute(frame, self.getArgs(), 0)));
+            PythonUtils.append(sb, ")");
+            return PythonUtils.sbToString(sb);
+        }
+
+        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) > 1")
+        Object reprArgs(VirtualFrame frame, PBaseException self,
+                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @SuppressWarnings("unused") @Cached ArgsNode argsNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PyObjectGetAttr getAttrNode,
+                        @Cached com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.ReprNode reprNode,
+                        @Cached CastToJavaStringNode castStringNode) {
+            Object type = getClassNode.execute(self);
+            StringBuilder sb = new StringBuilder();
+            PythonUtils.append(sb, castStringNode.execute(getAttrNode.execute(frame, type, __NAME__)));
+            PythonUtils.append(sb, (String) reprNode.execute(frame, self.getArgs()));
+            return PythonUtils.sbToString(sb);
+        }
+
+        protected int argsLen(VirtualFrame frame, PBaseException self, SequenceStorageNodes.LenNode lenNode, ArgsNode argsNode) {
+            return lenNode.execute(((PTuple) argsNode.executeObject(frame, self, PNone.NO_VALUE)).getSequenceStorage());
+        }
+    }
+
+    @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class StrNode extends PythonUnaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 0")
+        Object strNoArgs(VirtualFrame frame, PBaseException self,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached ArgsNode argsNode) {
+            return PythonUtils.EMPTY_STRING;
+        }
+
+        @Specialization(guards = "argsLen(frame, self, lenNode, argsNode) == 1")
+        Object strArgs1(VirtualFrame frame, PBaseException self,
+                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @SuppressWarnings("unused") @Cached ArgsNode argsNode,
+                        @Cached GetItemNode getItemNode,
+                        @Cached PyObjectStrAsObjectNode strNode) {
+            return strNode.execute(frame, getItemNode.execute(frame, self.getArgs(), 0));
+        }
+
+        @Specialization(guards = {"argsLen(frame, self, lenNode, argsNode) > 1"})
+        Object strArgs(VirtualFrame frame, PBaseException self,
+                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @SuppressWarnings("unused") @Cached ArgsNode argsNode,
+                        @Cached PyObjectStrAsObjectNode strNode) {
+            return strNode.execute(frame, self.getArgs());
+        }
+
+        protected int argsLen(VirtualFrame frame, PBaseException self, SequenceStorageNodes.LenNode lenNode, ArgsNode argsNode) {
+            return lenNode.execute(((PTuple) argsNode.executeObject(frame, self, PNone.NO_VALUE)).getSequenceStorage());
         }
     }
 }

@@ -27,16 +27,10 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -44,10 +38,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 public final class PBytes extends PBytesLike {
@@ -73,40 +65,6 @@ public final class PBytes extends PBytesLike {
         } else {
             return store.toString();
         }
-    }
-
-    @Ignore
-    @Override
-    public final boolean equals(Object other) {
-        // TODO(fa) really required ?
-        if (!(other instanceof PSequence)) {
-            return false;
-        } else {
-            return equals((PSequence) other);
-        }
-    }
-
-    @Ignore
-    public final boolean equals(PSequence other) {
-        CompilerAsserts.neverPartOfCompilation();
-        PSequence otherSeq = other;
-        SequenceStorage otherStore = otherSeq.getSequenceStorage();
-        return store.equals(otherStore);
-    }
-
-    @Override
-    public final int hashCode() {
-        // TODO(fa) really required ?
-        if (store instanceof ByteSequenceStorage) {
-            return Arrays.hashCode(((ByteSequenceStorage) store).getInternalByteArray());
-        }
-        return store.hashCode();
-    }
-
-    @ExportMessage
-    public String asPathWithState(@SuppressWarnings("unused") ThreadState state,
-                    @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
-        return BytesUtils.createASCIIString(toBytes.execute(getSequenceStorage()));
     }
 
     @ExportMessage

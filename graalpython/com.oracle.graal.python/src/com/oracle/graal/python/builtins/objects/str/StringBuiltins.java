@@ -1054,7 +1054,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.maketrans()
-    @Builtin(name = "maketrans", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, isClassmethod = true)
+    @Builtin(name = "maketrans", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, isStaticmethod = true)
     @GenerateNodeFactory
     public abstract static class MakeTransNode extends PythonQuaternaryBuiltinNode {
 
@@ -1943,9 +1943,9 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("getTupleItemNode") @Cached TupleBuiltins.GetItemNode getTupleItemNode) {
             PythonContext context = getContext();
             PythonLanguage language = getLanguage();
-            Object state = IndirectCallContext.enter(frame, language, context, this);
+            Object state = IndirectCallContext.enter(frame, this);
             try {
-                return new StringFormatProcessor(context.getCore(), getRaiseNode(), getItemNode, getTupleItemNode, self).format(right);
+                return new StringFormatProcessor(context, getRaiseNode(), getItemNode, getTupleItemNode, self).format(right);
             } finally {
                 IndirectCallContext.exit(frame, language, context, state);
             }

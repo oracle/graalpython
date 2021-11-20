@@ -50,6 +50,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__COPY__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
@@ -89,13 +90,13 @@ import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProvide
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeRotateNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeSetItemNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -126,11 +127,11 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -267,7 +268,7 @@ public class DequeBuiltins extends PythonBuiltins {
     }
 
     // deque.copy()
-    @Builtin(name = "__copy__", minNumOfPositionalArgs = 1)
+    @Builtin(name = __COPY__, minNumOfPositionalArgs = 1)
     @Builtin(name = "copy", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DequeCopyNode extends PythonUnaryBuiltinNode {
@@ -292,10 +293,8 @@ public class DequeBuiltins extends PythonBuiltins {
         int doGeneric(PDeque self, Object value) {
             int n = 0;
             int startState = self.getState();
-            PythonObjectLibrary valueLib = PythonObjectLibrary.getFactory().getUncached(value);
-            PythonObjectLibrary itemLib = PythonObjectLibrary.getUncached();
             for (Object item : self.data) {
-                if (itemLib.equals(item, value, valueLib)) {
+                if (PyObjectRichCompareBool.EqNode.getUncached().execute(null, item, value)) {
                     n++;
                 }
                 if (startState != self.getState()) {
@@ -378,15 +377,15 @@ public class DequeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DequeIndexNode extends PythonQuaternaryBuiltinNode {
 
-        @Child private PythonObjectLibrary itemLib;
-
         @Specialization(guards = {"isNoValue(start)", "isNoValue(stop)"})
-        int doWithoutSlice(PDeque self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone stop) {
-            return doWithIntSlice(self, value, 0, self.getSize());
+        int doWithoutSlice(VirtualFrame frame, PDeque self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone stop,
+                        @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode) {
+            return doWithIntSlice(frame, self, value, 0, self.getSize(), eqNode);
         }
 
         @Specialization
-        int doWithIntSlice(PDeque self, Object value, int start, int stop) {
+        int doWithIntSlice(VirtualFrame frame, PDeque self, Object value, int start, int stop,
+                        @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode) {
             int size = self.getSize();
             int normStart = normalize(start, size);
             int normStop = normalize(stop, size);
@@ -405,7 +404,7 @@ public class DequeBuiltins extends PythonBuiltins {
                  */
                 Object item = next(iterator);
                 if (normStart <= idx) {
-                    if (ensureItemLib().equals(item, value, ensureItemLib())) {
+                    if (eqNode.execute(frame, item, value)) {
                         return idx;
                     }
                     if (startState != self.getState()) {
@@ -418,6 +417,7 @@ public class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         int doGeneric(VirtualFrame frame, PDeque self, Object value, Object start, Object stop,
+                        @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached PyNumberAsSizeNode startIndexNode,
                         @Cached PyNumberAsSizeNode stopIndexNode) {
@@ -433,15 +433,7 @@ public class DequeBuiltins extends PythonBuiltins {
             } else {
                 istop = self.getSize();
             }
-            return doWithIntSlice(self, value, istart, istop);
-        }
-
-        private PythonObjectLibrary ensureItemLib() {
-            if (itemLib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                itemLib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
-            }
-            return itemLib;
+            return doWithIntSlice(frame, self, value, istart, istop, eqNode);
         }
 
         private static int normalize(int i, int size) {
@@ -533,14 +525,12 @@ public class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object doGeneric(PDeque self, Object value,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary itemLib) {
-            PythonObjectLibrary valueLib = PythonObjectLibrary.getFactory().getUncached(value);
+        Object doGeneric(PDeque self, Object value) {
             // CPython captures the size before iteration
             int n = self.getSize();
             for (int i = 0; i < n; i++) {
                 try {
-                    boolean result = itemLib.equals(self.peekLeft(), value, valueLib);
+                    boolean result = PyObjectRichCompareBool.EqNode.getUncached().execute(null, self.peekLeft(), value);
                     if (n != self.getSize()) {
                         throw PRaiseNode.raiseUncached(this, IndexError, "deque mutated during remove().");
                     }
@@ -800,11 +790,9 @@ public class DequeBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         boolean doGeneric(PDeque self, Object value) {
-            PythonObjectLibrary valueLib = PythonObjectLibrary.getFactory().getUncached(value);
-            PythonObjectLibrary itemLib = PythonObjectLibrary.getUncached();
             int startState = self.getState();
             for (Object item : self.data) {
-                if (itemLib.equals(item, value, valueLib)) {
+                if (PyObjectRichCompareBool.EqNode.getUncached().execute(null, item, value)) {
                     return true;
                 }
                 if (startState != self.getState()) {
@@ -976,8 +964,7 @@ public class DequeBuiltins extends PythonBuiltins {
 
     public abstract static class DequeCompareNode extends PythonBinaryBuiltinNode {
 
-        @Child private PythonObjectLibrary selfItemLib;
-        @Child private PythonObjectLibrary otherItemLib;
+        @Child PyObjectRichCompareBool.EqNode eqNode;
 
         @Specialization(guards = "shortcutIdentityCheck(self, other)")
         @SuppressWarnings("unused")
@@ -1041,23 +1028,12 @@ public class DequeBuiltins extends PythonBuiltins {
             return true;
         }
 
-        /**
-         * Compares two items using
-         * {@link PythonObjectLibrary#equals(Object, Object, PythonObjectLibrary)}. Unfortunately,
-         * we cannot use
-         * {@link com.oracle.graal.python.nodes.expression.BinaryComparisonNode.EqNode} because
-         * CPython uses {@code PyObject_RichCompareBool} which has a special case for identity.
-         */
         final boolean compareEq(VirtualFrame frame, Object selfItem, Object otherItem) {
-            if (selfItemLib == null) {
+            if (eqNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                selfItemLib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
+                eqNode = insert(PyObjectRichCompareBool.EqNode.create());
             }
-            if (otherItemLib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                otherItemLib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
-            }
-            return selfItemLib.equalsWithFrame(selfItem, otherItem, otherItemLib, frame);
+            return eqNode.execute(frame, selfItem, otherItem);
         }
 
         @SuppressWarnings("unused")

@@ -96,6 +96,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
@@ -617,7 +618,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 errorProfile.enter();
                 throw raiseOSErrorFromPosixException(frame, e);
             } finally {
-                bufferLib.release(dataBuffer);
+                bufferLib.release(dataBuffer, frame, this);
             }
         }
 
@@ -2142,6 +2143,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "register_at_fork", keywordOnlyNames = {"before", "after_in_child", "after_in_parent"})
+    @GenerateNodeFactory
+    abstract static class RegisterAtForkNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object register(Object before, Object afterInChild, Object afterInParent) {
+            // TODO should we at least call multiprocessing.util.register_after_fork?
+            return PNone.NONE;
+        }
+    }
+
     // ------------------
     // Helpers
 
@@ -2462,7 +2474,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
      * Equivalent of CPython's {@code path_converter()}. Always returns an instance of
      * {@link PosixFileHandle}.
      */
-    public abstract static class PathConversionNode extends ArgumentCastNodeWithRaise {
+    public abstract static class PathConversionNode extends ArgumentCastNodeWithRaiseAndIndirectCall {
 
         private final String functionNameWithColon;
         private final String argumentName;
@@ -2530,13 +2542,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached WarningsModuleBuiltins.WarnNode warningNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(value);
+            Object buffer = bufferAcquireLib.acquireReadonly(value, frame, getContext(), getLanguage(), this);
             try {
                 warningNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
                                 ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName, getAllowedTypes(), value);
                 return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), bufferLib.getCopiedByteArray(value))), true);
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, getContext(), getLanguage(), this);
             }
         }
 

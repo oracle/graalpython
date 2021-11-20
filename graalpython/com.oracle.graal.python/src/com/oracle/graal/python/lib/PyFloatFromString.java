@@ -43,8 +43,8 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
+import com.oracle.graal.python.builtins.objects.buffer.BufferAcquireGenerateUncachedNode;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -59,7 +59,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 /**
  * Equivalent of CPython's {@code PyFloat_FromString}. Converts a string to a python float (Java
@@ -79,9 +78,8 @@ public abstract class PyFloatFromString extends PNodeWithContext {
     }
 
     @Specialization
-    static double doGeneric(VirtualFrame frame, Object object,
-                    @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
-                    @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+    double doGeneric(VirtualFrame frame, Object object,
+                    @Cached(parameters = "3") BufferAcquireGenerateUncachedNode acquireNode,
                     @Cached CastToJavaStringNode cast,
                     @Shared("repr") @Cached PyObjectReprAsJavaStringNode reprNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
@@ -91,17 +89,18 @@ public abstract class PyFloatFromString extends PNodeWithContext {
         } catch (CannotCastException e) {
             Object buffer = null;
             try {
-                buffer = bufferAcquireLib.acquireReadonly(object);
+                buffer = acquireNode.acquireReadonly(frame, object);
             } catch (PException e1) {
                 // fallthrough
             }
             if (buffer != null) {
                 try {
-                    byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
-                    int len = bufferLib.getBufferLength(buffer);
+                    PythonBufferAccessLibrary accessLib = acquireNode.getAccessLib();
+                    byte[] bytes = accessLib.getInternalOrCopiedByteArray(buffer);
+                    int len = accessLib.getBufferLength(buffer);
                     string = PythonUtils.newString(bytes, 0, len);
                 } finally {
-                    bufferLib.release(buffer);
+                    acquireNode.release(frame, buffer);
                 }
             }
         }

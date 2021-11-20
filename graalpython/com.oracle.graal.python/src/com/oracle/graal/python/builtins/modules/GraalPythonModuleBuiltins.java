@@ -217,6 +217,16 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @TruffleBoundary
+    String getStdIOEncoding() {
+        return (String) builtinConstants.get("stdio_encoding");
+    }
+
+    @TruffleBoundary
+    String getStdIOError() {
+        return (String) builtinConstants.get("stdio_error");
+    }
+
     /**
      * Entry point for executing a path using the launcher, e.g. {@code python foo.py}
      */
@@ -807,7 +817,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class RegisterImportFunc extends PythonUnaryBuiltinNode {
         @Specialization
         Object doit(PMethod func) {
-            getContext().getCore().registerImportFunc(func);
+            getContext().registerImportFunc(func);
             return PNone.NONE;
         }
     }
@@ -817,7 +827,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class RegisterImportlib extends PythonUnaryBuiltinNode {
         @Specialization
         Object doit(PythonModule lib) {
-            getContext().getCore().registerImportlib(lib);
+            getContext().registerImportlib(lib);
             return PNone.NONE;
         }
     }

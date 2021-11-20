@@ -192,7 +192,7 @@ public class SocketBuiltins extends PythonBuiltins {
             auditNode.audit("socket.__new__", self, familyIn, typeIn, protoIn);
 
             if (fileno instanceof Double || fileno instanceof PFloat) {
-                throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
+                throw raise(TypeError, ErrorMessages.S_EXPECTED_GOT_P, "integer", "float");
             }
             int fd = asIntNode.execute(frame, fileno);
             if (fd < 0) {
@@ -235,7 +235,7 @@ public class SocketBuiltins extends PythonBuiltins {
             // TODO remove SOCK_CLOEXEC and SOCK_NONBLOCK
             self.setType(type);
             self.setProto(proto);
-            long defaultTimeout = (long) readNode.execute(getContext().getCore().lookupBuiltinModule("_socket"), SocketModuleBuiltins.DEFAULT_TIMEOUT_KEY);
+            long defaultTimeout = (long) readNode.execute(getContext().lookupBuiltinModule("_socket"), SocketModuleBuiltins.DEFAULT_TIMEOUT_KEY);
             self.setTimeoutNs(defaultTimeout);
             if (defaultTimeout >= 0) {
                 posixLib.setBlocking(getPosixSupport(), fd, false);
@@ -643,7 +643,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil) {
-            Object buffer = bufferAcquireLib.acquireWritable(bufferObj);
+            Object buffer = bufferAcquireLib.acquireWritable(bufferObj, frame, this);
             try {
                 if (recvlenIn < 0) {
                     throw raise(ValueError, "negative buffersize in recv_into");
@@ -684,7 +684,7 @@ public class SocketBuiltins extends PythonBuiltins {
                     throw raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(bufferObj);
+                bufferLib.release(bufferObj, frame, this);
             }
         }
 
@@ -707,7 +707,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode) {
-            Object buffer = bufferAcquireLib.acquireWritable(bufferObj);
+            Object buffer = bufferAcquireLib.acquireWritable(bufferObj, frame, this);
             try {
                 if (recvlenIn < 0) {
                     throw raise(ValueError, "negative buffersize in recvfrom_into");
@@ -747,7 +747,7 @@ public class SocketBuiltins extends PythonBuiltins {
                     throw raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -768,7 +768,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil) {
-            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj);
+            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, this);
             try {
                 checkSelectable(this, socket);
 
@@ -783,7 +783,7 @@ public class SocketBuiltins extends PythonBuiltins {
                     throw raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -804,7 +804,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil) {
-            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj);
+            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, this);
             try {
                 checkSelectable(this, socket);
 
@@ -837,7 +837,7 @@ public class SocketBuiltins extends PythonBuiltins {
                     }
                 }
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -872,7 +872,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 flags = asIntNode.execute(frame, flagsOrAddress);
             }
 
-            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj);
+            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj, frame, this);
             try {
                 checkSelectable(this, socket);
 
@@ -890,7 +890,7 @@ public class SocketBuiltins extends PythonBuiltins {
                     throw raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
     }
@@ -1029,13 +1029,14 @@ public class SocketBuiltins extends PythonBuiltins {
                 len = bytes.length;
                 PythonUtils.arrayAccessor.putInt(bytes, 0, flag);
             } catch (PException e) {
-                Object buffer = bufferAcquireLib.acquireReadonly(value);
+                Object buffer = bufferAcquireLib.acquireReadonly(value, frame, this);
                 try {
                     len = bufferLib.getBufferLength(buffer);
                     bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 } finally {
-                    bufferLib.release(buffer);
+                    bufferLib.release(buffer, frame, this);
                 }
+
             }
             try {
                 posixLib.setsockopt(getPosixSupport(), socket.getFd(), level, option, bytes, len);

@@ -49,6 +49,8 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
 final class PtrValue implements TruffleObject {
     private static final NullStorage NULL_STORAGE = new NullStorage();
@@ -404,6 +406,7 @@ final class PtrValue implements TruffleObject {
         abstract ArrayStorage copy();
     }
 
+    @ExportLibrary(PythonBufferAccessLibrary.class)
     static class ByteArrayStorage extends ArrayStorage {
         byte[] value;
 
@@ -474,10 +477,49 @@ final class PtrValue implements TruffleObject {
         ArrayStorage copy() {
             return new ByteArrayStorage(type, PythonUtils.arrayCopyOf(value, value.length));
         }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        boolean isBuffer() {
+            return true;
+        }
+
+        @ExportMessage
+        int getBufferLength() {
+            return value.length;
+        }
+
+        @ExportMessage
+        byte readByte(int byteIndex) {
+            return value[byteIndex];
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        boolean isReadonly() {
+            return false;
+        }
+
+        @ExportMessage
+        void writeByte(int byteIndex, byte byteValue) {
+            value[byteIndex] = byteValue;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        boolean hasInternalByteArray() {
+            return true;
+        }
+
+        @ExportMessage
+        byte[] getInternalByteArray() {
+            return value;
+        }
     }
 
+    @ExportLibrary(value = PythonBufferAccessLibrary.class, delegateTo = "value")
     static class MemoryViewStorage extends ArrayStorage {
-        PMemoryView value;
+        final PMemoryView value;
         final int length;
 
         @TruffleBoundary

@@ -37,30 +37,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
-
-# This should be part of sys module post initialization once codecs is fully intrinsified.
-import _io
-sys.stdin = _io.TextIOWrapper(_io.BufferedReader(sys.stdin), encoding=__graalpython__.stdio_encoding, errors=__graalpython__.stdio_error, line_buffering=True)
-sys.stdin.mode = "r"
-sys.__stdin__ = sys.stdin
-sys.stdout = _io.TextIOWrapper(_io.BufferedWriter(sys.stdout), encoding=__graalpython__.stdio_encoding, errors=__graalpython__.stdio_error, line_buffering=True)
-sys.stdout.mode = "w"
-sys.__stdout__ = sys.stdout
-sys.stderr = _io.TextIOWrapper(_io.BufferedWriter(sys.stderr), encoding=__graalpython__.stdio_encoding, errors="backslashreplace", line_buffering=True)
-sys.stderr.mode = "w"
-sys.__stderr__ = sys.stderr
+startvalue = 1
 
 
-# Try to close the std streams when we exit.
-import atexit
-def close_stdouts(so=sys.stdout, se=sys.stderr):
-    try:
-        so.close()
-    except:
-        pass
-    try:
-        se.close()
-    except:
-        pass
-atexit.register(close_stdouts)
+def getvalue():
+    return mod1.value + mod2.value
+
+
+from circularimport_valid import mod1, mod2

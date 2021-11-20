@@ -28,9 +28,9 @@ package com.oracle.graal.python.nodes.statement;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -173,10 +173,10 @@ abstract class ValidExceptionNode extends Node {
         return isExceptionType;
     }
 
-    @Specialization(guards = "lib.isLazyPythonClass(type)", replaces = {"isPythonExceptionTypeCached", "isPythonExceptionClassCached"})
+    @Specialization(guards = "isTypeNode.execute(type)", limit = "1", replaces = {"isPythonExceptionTypeCached", "isPythonExceptionClassCached"})
     boolean isPythonException(VirtualFrame frame, Object type,
-                    @Cached IsSubtypeNode isSubtype,
-                    @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                    @SuppressWarnings("unused") @Cached TypeNodes.IsTypeNode isTypeNode,
+                    @Cached IsSubtypeNode isSubtype) {
         return isSubtype.execute(frame, type, PythonBuiltinClassType.PBaseException);
     }
 

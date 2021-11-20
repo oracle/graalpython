@@ -528,7 +528,7 @@ public class MMapBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             } finally {
-                bufferLib.release(dataBuffer);
+                bufferLib.release(dataBuffer, frame, this);
             }
         }
     }
@@ -641,7 +641,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 }
                 return -1;
             } finally {
-                bufferLib.release(subBuffer);
+                bufferLib.release(subBuffer, frame, this);
             }
         }
 

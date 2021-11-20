@@ -52,6 +52,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 
 import org.graalvm.collections.EconomicMap;
@@ -59,7 +61,6 @@ import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
@@ -86,9 +87,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
@@ -124,7 +123,6 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 
 public final class CApiContext extends CExtContext {
-    protected static final String INITIALIZE_CAPI = "initialize_capi";
     protected static final String RUN_CAPI_LOADED_HOOKS = "run_capi_loaded_hooks";
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CApiContext.class);
 
@@ -178,6 +176,15 @@ public final class CApiContext extends CExtContext {
     private final HashMap<Pair<String, String>, Object> extensions = new HashMap<>(4);
 
     private final ArrayList<Object> modulesByIndex = new ArrayList<>(0);
+
+    /**
+     * Thread local storage for PyThread_tss_* APIs
+     */
+    private final ConcurrentHashMap<Long, ThreadLocal<Object>> tssStorage = new ConcurrentHashMap<>();
+    /**
+     * Next key that will be allocated byt PyThread_tss_create
+     */
+    private AtomicLong nextTssKey = new AtomicLong();
 
     /**
      * Private dummy constructor just for {@link #LAZY_CONTEXT}.
@@ -309,6 +316,29 @@ public final class CApiContext extends CExtContext {
         }
         traceMallocDomains[oldLength] = new TraceMallocDomain(id);
         return oldLength;
+    }
+
+    public long nextTssKey() {
+        return nextTssKey.incrementAndGet();
+    }
+
+    @TruffleBoundary
+    public Object tssGet(long key) {
+        ThreadLocal<Object> local = tssStorage.get(key);
+        if (local != null) {
+            return local.get();
+        }
+        return null;
+    }
+
+    @TruffleBoundary
+    public void tssSet(long key, Object object) {
+        tssStorage.computeIfAbsent(key, (k) -> new ThreadLocal<>()).set(object);
+    }
+
+    @TruffleBoundary
+    public void tssDelete(long key) {
+        tssStorage.remove(key);
     }
 
     public PrimitiveNativeWrapper getCachedPrimitiveNativeWrapper(int i) {
@@ -923,15 +953,8 @@ public final class CApiContext extends CExtContext {
                 context.getLanguage().capiLibraryCallTarget = capiLibraryCallTarget;
                 capiLibrary = capiLibraryCallTarget.call();
 
-                // call into Python to initialize python_cext module globals
-                ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
-                PythonModule builtinModule = context.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
-
-                CallUnaryMethodNode callNode = CallUnaryMethodNode.getUncached();
-                callNode.executeObject(null, readNode.execute(builtinModule, INITIALIZE_CAPI), capiLibrary);
                 CApiContext cApiContext = new CApiContext(context, capiLibrary);
                 context.setCapiWasLoaded(cApiContext);
-                callNode.executeObject(null, readNode.execute(builtinModule, RUN_CAPI_LOADED_HOOKS), capiLibrary);
                 return cApiContext;
             } catch (PException e) {
                 /*

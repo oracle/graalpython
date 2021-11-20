@@ -91,6 +91,6 @@ public abstract class WriteAttributeToBuiltinTypeNode extends ObjectAttributeNod
     @Specialization
     static void doPBCT(PythonBuiltinClassType object, String key, Object value,
                     @Cached WriteAttributeToBuiltinTypeNode recursive) {
-        recursive.execute(PythonContext.get(recursive).getCore().lookupType(object), key, value);
+        recursive.execute(PythonContext.get(recursive).lookupType(object), key, value);
     }
 }

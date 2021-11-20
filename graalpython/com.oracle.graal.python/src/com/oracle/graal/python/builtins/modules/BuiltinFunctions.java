@@ -30,6 +30,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeErr
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.ABS;
+import static com.oracle.graal.python.nodes.BuiltinNames.ALL;
+import static com.oracle.graal.python.nodes.BuiltinNames.ANY;
 import static com.oracle.graal.python.nodes.BuiltinNames.ASCII;
 import static com.oracle.graal.python.nodes.BuiltinNames.BIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.BREAKPOINT;
@@ -102,7 +104,9 @@ import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -119,7 +123,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -135,15 +138,18 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -204,6 +210,8 @@ import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.PythonUtils;
@@ -232,11 +240,13 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.TriState;
 
@@ -283,6 +293,217 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.BAD_OPERAND_FOR, "", "abs()", object);
             }
             return result;
+        }
+    }
+
+    /**
+     * Common class for all() and any() operations, as their logic and behaviors are very similar.
+     */
+    abstract static class AllOrAnyNode extends PNodeWithContext {
+        enum NodeType {
+            ALL,
+            ANY
+        }
+
+        @Child private PyObjectIsTrueNode isTrueNode = PyObjectIsTrueNode.create();
+
+        private final LoopConditionProfile loopConditionProfile = LoopConditionProfile.create();
+
+        abstract boolean execute(Frame frame, Object storageObj, NodeType nodeType);
+
+        @Specialization
+        boolean doBoolSequence(VirtualFrame frame,
+                        BoolSequenceStorage sequenceStorage,
+                        NodeType nodeType) {
+            boolean[] internalArray = sequenceStorage.getInternalBoolArray();
+            int seqLength = sequenceStorage.length();
+
+            loopConditionProfile.profileCounted(seqLength);
+            for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
+                if (nodeType == NodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
+                    return false;
+                } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
+                    return true;
+                }
+            }
+
+            return nodeType == NodeType.ALL;
+        }
+
+        @Specialization
+        boolean doIntSequence(VirtualFrame frame,
+                        IntSequenceStorage sequenceStorage,
+                        NodeType nodeType) {
+            int[] internalArray = sequenceStorage.getInternalIntArray();
+            int seqLength = sequenceStorage.length();
+
+            loopConditionProfile.profileCounted(seqLength);
+            for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
+                if (nodeType == NodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
+                    return false;
+                } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
+                    return true;
+                }
+            }
+
+            return nodeType == NodeType.ALL;
+        }
+
+        @Specialization
+        boolean doGenericSequence(VirtualFrame frame,
+                        SequenceStorage sequenceStorage,
+                        NodeType nodeType,
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
+            Object[] internalArray = sequenceStorage.getInternalArray();
+            int seqLength = lenNode.execute(sequenceStorage);
+
+            loopConditionProfile.profileCounted(seqLength);
+            for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
+                if (nodeType == NodeType.ALL && !isTrueNode.execute(frame, internalArray[i])) {
+                    return false;
+                } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, internalArray[i])) {
+                    return true;
+                }
+            }
+
+            return nodeType == NodeType.ALL;
+        }
+
+        @Specialization(limit = "3")
+        protected boolean doHashStorage(VirtualFrame frame,
+                        HashingStorage hashingStorage,
+                        NodeType nodeType,
+                        @CachedLibrary("hashingStorage") HashingStorageLibrary hlib) {
+            HashingStorageLibrary.HashingStorageIterator<Object> keysIter = hlib.keys(hashingStorage).iterator();
+            int seqLength = hlib.length(hashingStorage);
+
+            loopConditionProfile.profileCounted(seqLength);
+            for (int i = 0; loopConditionProfile.inject(i < seqLength); i++) {
+                Object key = keysIter.next();
+                if (nodeType == NodeType.ALL) {
+                    if (!isTrueNode.execute(frame, key)) {
+                        return false;
+                    }
+                } else if (nodeType == NodeType.ANY && isTrueNode.execute(frame, key)) {
+                    return true;
+                }
+            }
+
+            return nodeType == NodeType.ALL;
+        }
+    }
+
+    @Builtin(name = ALL, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class AllNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+        static boolean doList(VirtualFrame frame,
+                        PList object,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
+            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AllOrAnyNode.NodeType.ALL);
+        }
+
+        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+        static boolean doTuple(VirtualFrame frame,
+                        PTuple object,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
+            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AllOrAnyNode.NodeType.ALL);
+        }
+
+        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+        static boolean doHashColl(VirtualFrame frame,
+                        PHashingCollection object,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
+            return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ALL);
+        }
+
+        @Specialization
+        boolean doObject(VirtualFrame frame,
+                        Object object,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached GetNextNode nextNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            Object iterator = getIter.execute(frame, object);
+            int nbrIter = 0;
+
+            while (true) {
+                try {
+                    Object next = nextNode.execute(frame, iterator);
+                    nbrIter++;
+                    if (!isTrueNode.execute(frame, next)) {
+                        return false;
+                    }
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    break;
+                } finally {
+                    LoopNode.reportLoopCount(this, nbrIter);
+                }
+            }
+
+            return true;
+        }
+    }
+
+    @Builtin(name = ANY, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class AnyNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+        static boolean doList(VirtualFrame frame,
+                        PList object,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
+            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AllOrAnyNode.NodeType.ANY);
+        }
+
+        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+        static boolean doTuple(VirtualFrame frame,
+                        PTuple object,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
+            return allOrAnyNode.execute(frame, object.getSequenceStorage(), AllOrAnyNode.NodeType.ANY);
+        }
+
+        @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+        static boolean doHashColl(VirtualFrame frame,
+                        PHashingCollection object,
+                        @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                        @Shared("allOrAnyNode") @Cached AllOrAnyNode allOrAnyNode) {
+            return allOrAnyNode.execute(frame, object.getDictStorage(), AllOrAnyNode.NodeType.ANY);
+        }
+
+        @Specialization
+        boolean doObject(VirtualFrame frame,
+                        Object object,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached GetNextNode nextNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            Object iterator = getIter.execute(frame, object);
+            int nbrIter = 0;
+
+            while (true) {
+                try {
+                    Object next = nextNode.execute(frame, iterator);
+                    nbrIter++;
+                    if (isTrueNode.execute(frame, next)) {
+                        return true;
+                    }
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    break;
+                } finally {
+                    LoopNode.reportLoopCount(this, nbrIter);
+                }
+            }
+
+            return false;
         }
     }
 
@@ -818,7 +1039,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return PythonUtils.getOrCreateCallTarget((RootNode) getCore().getParser().parse(pm, kwOptimize, getCore(), source, null, null));
                 }
             };
-            if (getCore().isInitialized()) {
+            if (getCore().isCoreInitialized()) {
                 ct = createCode.get();
             } else {
                 ct = getCore().getLanguage().cacheCode(filename, createCode);
@@ -839,7 +1060,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode,
                         @Cached PyObjectStrAsJavaStringNode asStrNode,
                         @CachedLibrary("wSource") InteropLibrary interopLib,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @Cached PyUnicodeFSDecoderNode asPath,
                         @Cached WarnNode warnNode) {
             if (wSource instanceof PCode) {
                 return (PCode) wSource;
@@ -847,17 +1068,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
             String filename;
             // TODO use PyUnicode_FSDecode
             if (acquireLib.hasBuffer(wFilename)) {
-                Object filenameBuffer = acquireLib.acquireReadonly(wFilename);
+                Object filenameBuffer = acquireLib.acquireReadonly(wFilename, frame, this);
                 try {
                     filename = PythonUtils.newString(bufferLib.getCopiedByteArray(filenameBuffer));
                     if (!(wFilename instanceof PBytes)) {
                         warnNode.warnFormat(frame, null, DeprecationWarning, 1, ErrorMessages.PATH_SHOULD_BE_STR_BYTES_PATHLIKE_NOT_P, wFilename);
                     }
                 } finally {
-                    bufferLib.release(filenameBuffer);
+                    bufferLib.release(filenameBuffer, frame, this);
                 }
             } else {
-                filename = lib.asPathWithState(wFilename, PArguments.getThreadState(frame));
+                filename = asPath.execute(frame, wFilename);
             }
             String mode;
             try {
@@ -920,7 +1141,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 // buffers, since that's fast for us anyway
                 Object buffer;
                 try {
-                    buffer = acquireLib.acquireReadonly(source);
+                    buffer = acquireLib.acquireReadonly(source, frame, this);
                 } catch (PException e) {
                     throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S, "compile()", 1, "string, bytes or AST object");
                 }
@@ -942,8 +1163,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 } catch (PythonFileDetector.InvalidEncodingException e) {
                     throw raiseInvalidSyntax(filename, "encoding problem: %s", e.getEncodingName());
                 } finally {
-                    bufferLib.release(buffer);
-
+                    bufferLib.release(buffer, frame, this);
                 }
             }
         }
@@ -1622,7 +1842,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (singleContextAssumption.isValid()) {
                 if (cachedSys == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    cachedSys = getContext().getCore().lookupBuiltinModule("sys");
+                    cachedSys = getContext().lookupBuiltinModule("sys");
                 }
                 sys = cachedSys;
             } else {
@@ -1630,7 +1850,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     cachedSys = null;
                 }
-                sys = getContext().getCore().lookupBuiltinModule("sys");
+                sys = getContext().lookupBuiltinModule("sys");
             }
             if (readStdout == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2096,7 +2316,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         private static Object buildJavaClass(Object namespace, String name, Object base) {
             // uncached PythonContext get, since this code path is slow in any case
-            Object module = PythonContext.get(null).getCore().lookupBuiltinModule(BuiltinNames.__GRAALPYTHON__);
+            Object module = PythonContext.get(null).lookupBuiltinModule(BuiltinNames.__GRAALPYTHON__);
             Object buildFunction = PyObjectLookupAttr.getUncached().execute(null, module, "build_java_class");
             return CallNode.getUncached().execute(buildFunction, namespace, name, base);
         }
@@ -2172,7 +2392,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     if (meta == null) {
                         // if there are no bases, use type:
                         if (bases.getSequenceStorage().length() == 0) {
-                            meta = PythonContext.get(update).getCore().lookupType(PythonBuiltinClassType.PythonClass);
+                            meta = PythonContext.get(update).lookupType(PythonBuiltinClassType.PythonClass);
                         } else {
                             // else get the type of the first base
                             meta = getClass.execute(bases.getSequenceStorage().getItemNormalized(0));

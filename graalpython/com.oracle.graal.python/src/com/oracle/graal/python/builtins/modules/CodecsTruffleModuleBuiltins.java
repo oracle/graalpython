@@ -59,13 +59,13 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.CodecsDecodeNode;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.CodecsEncodeNode;
-import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltinsFactory.CallApplyNodeFactory;
-import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltinsFactory.CodecDecodeNodeFactory;
-import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltinsFactory.CodecInitNodeFactory;
-import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltinsFactory.EncodeNodeFactory;
-import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltinsFactory.IncrementalDecodeNodeFactory;
-import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltinsFactory.IncrementalEncodeNodeFactory;
-import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltinsFactory.StreamDecodeNodeFactory;
+import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltinsFactory.CallApplyNodeGen;
+import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltinsFactory.CodecDecodeNodeGen;
+import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltinsFactory.CodecInitNodeGen;
+import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltinsFactory.EncodeNodeGen;
+import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltinsFactory.IncrementalDecodeNodeGen;
+import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltinsFactory.IncrementalEncodeNodeGen;
+import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltinsFactory.StreamDecodeNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -79,8 +79,8 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
@@ -94,14 +94,17 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import java.util.ArrayList;
 
 @CoreFunctions(defineModule = _CODECS_TRUFFLE)
 public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
@@ -135,7 +138,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return CodecsTruffleModuleBuiltinsFactory.getFactories();
+        return new ArrayList<>();
     }
 
     private static PythonClass initClass(String className, String superClassName, BuiltinDescr[] descrs, PythonModule codecsTruffleModule, PythonModule codecsModule, PythonLanguage language,
@@ -148,7 +151,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
                     PythonObjectFactory factory) {
         PythonClass clazz = factory.createPythonClassAndFixupSlots(language, PythonBuiltinClassType.PythonClass, className, new PythonAbstractClass[]{superClass});
         for (BuiltinDescr d : descrs) {
-            PythonUtils.createMethod(language, clazz, d.nodeFactory.getNodeClass(), d.enclosingType ? clazz : null, 1, () -> d.nodeFactory.createNode(), factory);
+            PythonUtils.createMethod(language, clazz, d.nodeClass, d.enclosingType ? clazz : null, 1, d.nodeSupplier, factory);
         }
         clazz.setAttribute(__MODULE__, _CODECS_TRUFFLE);
         clazz.setAttribute(__QUALNAME__, _CODECS_TRUFFLE);
@@ -157,11 +160,13 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     }
 
     private static final class BuiltinDescr {
-        final NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory;
+        final Supplier<PythonBuiltinBaseNode> nodeSupplier;
+        final Class<?> nodeClass;
         final boolean enclosingType;
 
-        public BuiltinDescr(NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory, boolean enclosingType) {
-            this.nodeFactory = nodeFactory;
+        public BuiltinDescr(Supplier<PythonBuiltinBaseNode> nodeSupplier, Class<?> nodeClass, boolean enclosingType) {
+            this.nodeSupplier = nodeSupplier;
+            this.nodeClass = nodeClass;
             this.enclosingType = enclosingType;
         }
     }
@@ -243,8 +248,8 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         //         return _codecs.__truffle_decode__(input, self.encoding, errors, True)
         codecsTruffleBuiltins.truffleCodecClass = initClass(TRUFFLE_CODEC, (PythonClass) codecsModule.getAttribute(CODEC),
                         new BuiltinDescr[]{
-                                        new BuiltinDescr(EncodeNodeFactory.getInstance(), false),
-                                        new BuiltinDescr(CodecDecodeNodeFactory.getInstance(), true)},
+                                        new BuiltinDescr(() -> EncodeNodeGen.create(), EncodeNode.class, false),
+                                        new BuiltinDescr(() -> CodecDecodeNodeGen.create(), CodecDecodeNode.class, true)},
                         codecsTruffleModule, language, factory);
 
         // class TruffleIncrementalEncoder(codecs.IncrementalEncoder):
@@ -255,8 +260,8 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         //         return _codecs.__truffle_encode__(input, self.encoding, self.errors)[0]
         codecsTruffleBuiltins.truffleIncrementalEncoderClass = initClass(TRUFFLE_INCREMENTAL_ENCODER, INCREMENTAL_ENCODER,
                         new BuiltinDescr[]{
-                                        new BuiltinDescr(CodecInitNodeFactory.getInstance(), false),
-                                        new BuiltinDescr(IncrementalEncodeNodeFactory.getInstance(), true)},
+                                        new BuiltinDescr(() -> CodecInitNodeGen.create(), CodecInitNode.class, false),
+                                        new BuiltinDescr(() -> IncrementalEncodeNodeGen.create(), IncrementalEncodeNode.class, true)},
                         codecsTruffleModule, codecsModule, language, factory);
 
         // class TruffleIncrementalDecoder(codecs.BufferedIncrementalDecoder):
@@ -267,8 +272,8 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         //         return _codecs.__truffle_decode__(input, self.encoding, errors, final)
         codecsTruffleBuiltins.truffleIncrementalDecoderClass = initClass(TRUFFLE_INCREMENTAL_DECODER, BUFFERED_INCREMENTAL_DECODER,
                         new BuiltinDescr[]{
-                                        new BuiltinDescr(CodecInitNodeFactory.getInstance(), false),
-                                        new BuiltinDescr(IncrementalDecodeNodeFactory.getInstance(), true)},
+                                        new BuiltinDescr(() -> CodecInitNodeGen.create(), CodecInitNode.class, false),
+                                        new BuiltinDescr(() -> IncrementalDecodeNodeGen.create(), IncrementalDecodeNode.class, true)},
                         codecsTruffleModule, codecsModule, language, factory);
 
         // class TruffleStreamWriter(codecs.StreamWriter):
@@ -279,8 +284,8 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         //         return _codecs.__truffle_encode__(input, self.encoding, errors)            
         codecsTruffleBuiltins.truffleStreamWriterClass = initClass(TRUFFLE_STREAM_WRITER, STREAM_WRITER,
                         new BuiltinDescr[]{
-                                        new BuiltinDescr(CodecInitNodeFactory.getInstance(), false),
-                                        new BuiltinDescr(EncodeNodeFactory.getInstance(), true)},
+                                        new BuiltinDescr(() -> CodecInitNodeGen.create(), CodecInitNode.class, false),
+                                        new BuiltinDescr(() -> EncodeNodeGen.create(), EncodeNode.class, true)},
                         codecsTruffleModule, codecsModule, language, factory);
 
         // class TruffleStreamReader(codecs.StreamReader):
@@ -291,22 +296,21 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         //         return _codecs.__truffle_decode__(input, self.encoding, errors)
         codecsTruffleBuiltins.truffleStreamReaderClass = initClass(TRUFFLE_STREAM_READER, STREAM_READER,
                         new BuiltinDescr[]{
-                                        new BuiltinDescr(CodecInitNodeFactory.getInstance(), false),
-                                        new BuiltinDescr(StreamDecodeNodeFactory.getInstance(), true)},
+                                        new BuiltinDescr(() -> CodecInitNodeGen.create(), CodecInitNode.class, false),
+                                        new BuiltinDescr(() -> StreamDecodeNodeGen.create(), StreamDecodeNode.class, true)},
                         codecsTruffleModule, codecsModule, language, factory);
 
         // serves as factory function for CodecInfo-s incrementalencoder/decode and streamwriter/reader
         // class apply_encoding:
         //     def __call__(self, *args, **kwargs):
         //         return self.fn(self.encoding, *args, **kwargs)
-        codecsTruffleBuiltins.applyEncodingClass = initClass(APPLY_ENCODING, context.getCore().lookupType(PythonBuiltinClassType.PythonObject),
-                        new BuiltinDescr[]{new BuiltinDescr(CallApplyNodeFactory.getInstance(), false)},
+        codecsTruffleBuiltins.applyEncodingClass = initClass(APPLY_ENCODING, context.lookupType(PythonBuiltinClassType.PythonObject),
+                        new BuiltinDescr[]{new BuiltinDescr(() -> CallApplyNodeGen.create(), CallApplyNode.class, false)},
                         codecsTruffleModule, language, factory);
     }
     // @formatter:on
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
-    @GenerateNodeFactory
     protected abstract static class CodecInitNode extends PythonVarargsBuiltinNode {
         @Specialization
         Object init(VirtualFrame frame, PythonObject self, Object[] args, PKeyword[] kw,
@@ -338,7 +342,6 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
-    @GenerateNodeFactory
     protected abstract static class CallApplyNode extends PythonVarargsBuiltinNode {
         @Specialization
         Object call(VirtualFrame frame, PythonObject self, Object[] args, PKeyword[] kw,
@@ -352,7 +355,6 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = ENCODE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
     protected abstract static class EncodeNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object encode(VirtualFrame frame, PythonObject self, Object input, Object errors,
@@ -363,7 +365,6 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = DECODE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
     protected abstract static class CodecDecodeNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object decode(VirtualFrame frame, PythonObject self, Object input, Object errors,
@@ -374,7 +375,6 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = ENCODE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
     protected abstract static class IncrementalEncodeNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object encode(VirtualFrame frame, PythonObject self, Object input, @SuppressWarnings("unused") Object ffinal,
@@ -387,7 +387,6 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = BUFFER_DECODE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 4)
-    @GenerateNodeFactory
     protected abstract static class IncrementalDecodeNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         Object decode(VirtualFrame frame, PythonObject self, Object input, Object errors, Object ffinal,
@@ -398,7 +397,6 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = DECODE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 4)
-    @GenerateNodeFactory
     protected abstract static class StreamDecodeNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         Object decode(VirtualFrame frame, PythonObject self, Object input, Object errors, Object ffinal,
@@ -408,28 +406,27 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class LookupTextEncoding extends PNodeWithRaise {
-        public abstract Object execute(VirtualFrame frame, String encoding, String alternateCommand);
+    @GenerateUncached
+    public abstract static class LookupTextEncoding extends PNodeWithContext {
+        public abstract Object execute(Frame frame, String encoding, String alternateCommand);
 
         @Specialization
         Object lookup(VirtualFrame frame, String encoding, String alternateCommand,
-                        @Cached CodecsModuleBuiltins.LookupNode lookupNode,
-                        @Cached("createGetAttributeNode()") GetAttributeNode getAttributeNode) {
+                        @Cached CodecsModuleBuiltins.InternalLookupNode lookupNode,
+                        @Cached PyObjectGetAttr getAttributeNode,
+                        @Cached PRaiseNode raiseNode) {
             Object codecInfo = lookupNode.execute(frame, encoding);
-            Object isTextObj = getAttributeNode.executeObject(frame, codecInfo);
+            Object isTextObj = getAttributeNode.execute(frame, codecInfo, "_is_text_encoding");
             if (!(codecInfo instanceof PTuple) || !((isTextObj instanceof Boolean) && (boolean) isTextObj)) {
-                throw raise(LookupError, IS_NOT_TEXT_ENCODING, encoding, alternateCommand);
+                throw raiseNode.raise(LookupError, IS_NOT_TEXT_ENCODING, encoding, alternateCommand);
             }
             return codecInfo;
         }
-
-        protected GetAttributeNode createGetAttributeNode() {
-            return GetAttributeNode.create("_is_text_encoding");
-        }
     }
 
-    public abstract static class GetPreferredEncoding extends PNodeWithRaise {
-        public abstract String execute(VirtualFrame frame);
+    @GenerateUncached
+    public abstract static class GetPreferredEncoding extends PNodeWithContext {
+        public abstract String execute(Frame frame);
 
         @Specialization
         String getpreferredencoding(VirtualFrame frame,
@@ -442,10 +439,11 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateUncached
     @ImportStatic(PGuards.class)
-    public abstract static class MakeIncrementalcodecNode extends PNodeWithRaise {
+    public abstract static class MakeIncrementalcodecNode extends PNodeWithContext {
 
-        public abstract Object execute(VirtualFrame frame, Object codecInfo, Object errors, String attrName);
+        public abstract Object execute(Frame frame, Object codecInfo, Object errors, String attrName);
 
         @Specialization
         static Object getIncEncoder(VirtualFrame frame, Object codecInfo, @SuppressWarnings("unused") PNone errors, String attrName,
@@ -460,9 +458,10 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class GetIncrementalEncoderNode extends PNodeWithRaise {
+    @GenerateUncached
+    public abstract static class GetIncrementalEncoderNode extends PNodeWithContext {
 
-        public abstract Object execute(VirtualFrame frame, Object codecInfo, String errors);
+        public abstract Object execute(Frame frame, Object codecInfo, String errors);
 
         @Specialization
         static Object getIncEncoder(VirtualFrame frame, Object codecInfo, String errors,
@@ -471,9 +470,10 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class GetIncrementalDecoderNode extends PNodeWithRaise {
+    @GenerateUncached
+    public abstract static class GetIncrementalDecoderNode extends PNodeWithContext {
 
-        public abstract Object execute(VirtualFrame frame, Object codecInfo, String errors);
+        public abstract Object execute(Frame frame, Object codecInfo, String errors);
 
         @Specialization
         Object getIncEncoder(VirtualFrame frame, Object codecInfo, String errors,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,9 +38,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.aot;
+package com.oracle.graal.python.nodes;
 
-// Checkstyle: stop
-/** Dummy class to have a class with the file's name. */
-public class PythonSubstitutions {
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.Truffle;
+
+public class PNodeWithRaiseAndIndirectCall extends PNodeWithRaise implements IndirectCallNode {
+
+    @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState;
+    @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame;
+
+    @Override
+    public final Assumption needNotPassFrameAssumption() {
+        if (nativeCodeDoesntNeedMyFrame == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
+        }
+        return nativeCodeDoesntNeedMyFrame;
+    }
+
+    @Override
+    public final Assumption needNotPassExceptionAssumption() {
+        if (nativeCodeDoesntNeedExceptionState == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
+        }
+        return nativeCodeDoesntNeedExceptionState;
+    }
 }

@@ -55,9 +55,11 @@ public abstract class ErrorMessages {
     public static final String ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD = "argument must be an int, or have a fileno() method.";
     public static final String ARG_MUST_BE_NUMBER = "%s argument must be a number, not '%p'";
     public static final String ARG_MUST_BE_S_NOT_P = "%s argument must be a %s, not %p";
+    public static final String ARGUMENTS_MUST_BE_ITERATORS = "Arguments must be iterators";
     public static final String S_BRACKETS_ARG_MUST_BE_S_NOT_P = "%s() argument must be a %s, not %p";
     public static final String S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P = "%s() argument must be read-write bytes-like object, not %p";
     public static final String ARG_MUST_BE_CALLABLE = "argument must be callable";
+    public static final String S_ARG_MUST_BE_CALLABLE = "%s argument must be callable";
     public static final String ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER = "%s argument must be a string, a bytes-like object or a number, not %p";
     public static final String ARG_MUST_BE_STRING_OR_NUMBER = "%s argument must be a string or a number, not '%p'";
     public static final String ARG_MUST_NOT_BE_ZERO = "%s arg %d must not be zero";
@@ -115,6 +117,7 @@ public abstract class ErrorMessages {
     public static final String CALLING_ARG_CONVERTER_FAIL_UNEXPECTED_RETURN = "calling argument converter failed; unexpected return value %s";
     public static final String CALLING_NATIVE_FUNC_EXPECTED_ARGS = "Calling native function %s expected %d arguments but got %d.";
     public static final String CALLING_NATIVE_FUNC_FAILED = "Calling native function %s failed: %m";
+    public static final String DECODER_RETURNED_P_INSTEAD_OF_BYTES = "'%s' decoder returned '%p' instead of 'str'; use codecs.decode() to decode to arbitrary types";
     public static final String ENCODER_RETURNED_P_INSTEAD_OF_BYTES = "'%s' encoder returned '%p' instead of 'bytes'; use codecs.encode() to encode to arbitrary types";
     public static final String EXPECTED_D_ARGS = "expected %d arguments";
     public static final String CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P = "can only assign %s to %s.%s, not %p";
@@ -156,6 +159,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_LOAD = "cannot load %s: %s";
     public static final String CANNOT_LOAD_M = "cannot load %s: %m";
     public static final String CANNOT_RELEASE_UNAQUIRED_LOCK = "cannot release un-acquired lock";
+    public static final String CANNOT_REENTER_TEE_ITERATOR = "cannot re-enter the tee iterator";
     public static final String CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE = "Cannot specify both ',' and '_'.";
     public static final String CANNOT_SPECIFY_C_WITH_C = "Cannot specify '%c' with '%c'.";
     public static final String CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = "%s: cannot use fd and follow_symlinks together";
@@ -169,7 +173,7 @@ public abstract class ErrorMessages {
     public static final String CANT_EXTEND_JAVA_CLASS_NOT_TYPE = "Function extend needs a Java type as its argument not %p";
     public static final String CANT_FIND_MODULE = "can't find module '%s'";
     public static final String CANT_MULTIPLY_SEQ_BY_NON_INT = "can't multiply sequence by non-int of type '%p'";
-    public static final String CANT_SET_S_S = "can't set %s.%s";
+    public static final String CANT_SET_N_S = "can't set %N.%s";
     public static final String CANT_SET_ATTRIBUTES_OF_TYPE = "can't set attributes of %s";
     public static final String CANT_SET_ATTRIBUTES_OF_TYPE_S = "can't set attributes of built-in/extension type '%s'";
     public static final String CANT_SPECIFY_DIRFD_WITHOUT_PATH = "%s: can't specify dir_fd without matching path";
@@ -182,10 +186,8 @@ public abstract class ErrorMessages {
     public static final String CATCHING_CLS_NOT_ALLOWED = "catching classes that do not inherit from BaseException is not allowed";
     public static final String CHARACTER_MAPPING_MUST_BE_IN_RANGE = "character mapping must be in range(0x%s)";
     public static final String CHARACTER_MAPPING_MUST_RETURN_INT_NONE_OR_STR = "character mapping must return integer, None or str";
-    public static final String CHR_DOES_NOT_SUPPORT = "chr does not support PInt ";
-    public static final String CLASS_ASIGMENT_S_LAYOUT_DIFFERS_FROM_S = "__class__ assignment: '%s' object layout differs from '%s'";
-    public static final String CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES = "__class__ assignment only supported for heap types or ModuleType subclasses";
-    public static final String CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES_NOT_P = "__class__ assignment only supported for heap types or ModuleType subclasses, not '%p'";
+    public static final String CLASS_ASSIGNMENT_S_LAYOUT_DIFFERS_FROM_S = "__class__ assignment: '%s' object layout differs from '%s'";
+    public static final String CLASS_ASSIGNMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES = "__class__ assignment only supported for heap types or ModuleType subclasses";
     public static final String CLASS_MUST_BE_SET_TO_CLASS = "__class__ must be set to a class, not '%p' object";
     public static final String MUST_BE_SET_TO_S_NOT_P = "%s must be set to a %s, not a '%p'";
     public static final String CLASSPATH_ARG_MUST_BE_STRING = "classpath argument %d must be string, not %p";
@@ -320,7 +322,7 @@ public abstract class ErrorMessages {
     public static final String INT_TOO_LARGE_TO_CONVERT_TO_FLOAT = "int too large to convert to float";
     public static final String INTEGER_DIVISION_BY_ZERO = "ZeroDivisionError: integer division or modulo by zero";
     public static final String INTEGER_DIVISION_RESULT_TOO_LARGE = "integer division result too large for a float";
-    public static final String INTEGER_EXPECTED_GOT_FLOAT = "integer argument expected, got float";
+    public static final String S_EXPECTED_GOT_P = "%s argument expected, got %p";
     public static final String INTEGER_GREATER_THAN_MAX = "integer is greater than maximum";
     public static final String INTEGER_REQUIRED = "an integer is required";
     public static final String INTEGER_REQUIRED_GOT = "an integer is required (got type %p)";
@@ -356,6 +358,7 @@ public abstract class ErrorMessages {
     public static final String INVALID_USE_OF_W_FORMAT_CHAR = "invalid use of 'w' format character";
     public static final String INVALID_BUFFER_ACCESS = "invalid buffer access";
     public static final String IS_EMPTY = "%s is empty";
+    public static final String IS_NOT_A = "%s is not a %s";
     public static final String IS_NOT_A_DICTIONARY = "%s is not a dictionary";
     public static final String IS_NOT_IN_RANGE = "%s is not in range";
     public static final String IS_NOT_A_UNICODE_OBJECT = "%s is not a unicode object";
@@ -377,10 +380,12 @@ public abstract class ErrorMessages {
     public static final String ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE = "issubclass() arg 2 must be a class or tuple of classes";
     public static final String ITER_V_MUST_BE_CALLABLE = "iter(v, w): v must be callable";
     public static final String KEYWORD_NAMES_MUST_BE_STR_GOT_P = "keyword names must be str, get %p";
-    public static final String KEYWORDS_MUST_BE_STRINGS = "%s() keywords must be strings";
+    public static final String KEYWORDS_S_MUST_BE_STRINGS = "%s() keywords must be strings";
+    public static final String KEYWORDS_MUST_BE_STRINGS = "keywords must be strings";
     public static final String KLASS_ARG_IS_NOT_HOST_OBJ = "klass argument '%p' is not a host object";
     public static final String LAZY_INITIALIZATION_FAILED = "lazy initialization of type %s failed";
     public static final String LEFT_BRACKET_WO_RIGHT_BRACKET_IN_ARG = "')' without '(' in argument parsing";
+    public static final String LEN_OF_UNSIZED_OBJECT = "len() of unsized object";
     public static final String LEN_SHOULD_RETURN_GT_ZERO = "__len__() should return >= 0";
     public static final String LENGTH_HINT_SHOULD_RETURN_MT_ZERO = "__length_hint__() should return >= 0";
     public static final String LIST_ASSIGMENT_INDEX_OUT_OF_RANGE = "list assignment index out of range";
@@ -609,6 +614,8 @@ public abstract class ErrorMessages {
     public static final String TAKES_EXACTLY_S_ARGUMENTS_D_GIVEN = "%s() takes exactly %s arguments (%d given)";
     public static final String TAKES_NO_KEYWORD_ARGS = "%s takes no keyword arguments";
     public static final String THROW_THIRD_ARG_MUST_BE_TRACEBACK = "throw() third argument must be a traceback object";
+    public static final String TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS = "_tee_dataobject should not have more than %s links";
+    public static final String TDATAOBJECT_SHOULDNT_HAVE_NEXT = "_tee_dataobject shouldn't have a next if not full";
     public static final String TIMED_OUT = "timed out";
     public static final String TIMEOUT_VALUE_MUST_BE_POSITIVE = "timeout value must be positive";
     public static final String TIMEOUT_VALUE_OUT_OF_RANGE = "Timeout value out of range";
@@ -707,6 +714,7 @@ public abstract class ErrorMessages {
     public static final String METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P = "Method requires a 'bytes' object, got '%p'";
     public static final String FIRST_ARG_MUST_BE_BYTES_OR_A_TUPLE_OF_BYTES_NOT_P = "first arg must be bytes or a tuple of bytes, not %p";
     public static final String A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P = "a bytes-like object is required, not '%p'";
+    public static final String TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT = "type '%s' takes at least one argument";
     public static final String S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN = "%s() takes at least %d arguments (%d given)";
     public static final String S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN = "%s() takes at most %d arguments (%d given)";
     public static final String RES_O_O_RANGE = "%s result out of range";
@@ -928,6 +936,7 @@ public abstract class ErrorMessages {
     public static final String THIS_FUNCTION_TAKES_D_ARGUMENT_S_D_GIVEN = "this function takes %d argument%s (%d given)";
     public static final String REQUIRED_ARGUMENT_S_MISSING = "required argument '%s' missing";
     public static final String NOT_ENOUGH_ARGUMENTS = "not enough arguments";
+    public static final String NO_POSITIONAL_ARGUMENTS_EXPECTED = "no positional arguments expected";
     public static final String NULL_STGDICT_UNEXPECTED = "NULL stgdict unexpected";
     public static final String S_OUT_PARAMETER_MUST_BE_PASSED_AS_DEFAULT_VALUE = "%s 'out' parameter must be passed as default value";
     public static final String PARAMFLAG_D_NOT_YET_IMPLEMENTED = "paramflag %d not yet implemented";
@@ -968,6 +977,11 @@ public abstract class ErrorMessages {
     public static final String UNICODE_STRING_EXPECTED_INSTEAD_OF_S_INSTANCE = "unicode string expected instead of %s instance";
     public static final String BYTES_EXPECTED_INSTEAD_OF_S_INSTANCE = "bytes expected instead of %s instance";
     public static final String BYTE_STRING_TOO_LONG = "byte string too long";
+    public static final String UNKNOWN_CLOCK = "unknown clock";
+    public static final String S_ARG_N_MUST_SUPPORT_ITERATION = "%s arg %d must support iteration";
+    public static final String REDUCE_EMPTY_SEQ = "reduce() of empty sequence with no initial value";
+    public static final String OTHER_ARG_MUST_BE_KEY = "other argument must be K instance";
+    public static final String INVALID_PARTIAL_STATE = "invalid partial state";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";

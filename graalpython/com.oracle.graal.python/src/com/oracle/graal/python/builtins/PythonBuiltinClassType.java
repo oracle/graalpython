@@ -25,38 +25,6 @@
  */
 package com.oracle.graal.python.builtins;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.library.Message;
-import com.oracle.truffle.api.library.ReflectionLibrary;
-import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-
-import java.util.Arrays;
-import java.util.HashSet;
-
 import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.DEFAULTDICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.DEQUE;
@@ -73,19 +41,38 @@ import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUEITERATOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUES;
 import static com.oracle.graal.python.nodes.BuiltinNames.FOREIGN;
 import static com.oracle.graal.python.nodes.BuiltinNames.MEMBER_DESCRIPTOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.PARTIAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.PROPERTY;
 import static com.oracle.graal.python.nodes.BuiltinNames.SIMPLE_QUEUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE_GETTER;
 import static com.oracle.graal.python.nodes.BuiltinNames.WRAPPER_DESCRIPTOR;
 
-@ExportLibrary(PythonObjectLibrary.class)
+import java.util.Arrays;
+import java.util.HashSet;
+
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.Message;
+import com.oracle.truffle.api.library.ReflectionLibrary;
+import com.oracle.truffle.api.object.Shape;
+
 // InteropLibrary is proxied through ReflectionLibrary
 @ExportLibrary(ReflectionLibrary.class)
 public enum PythonBuiltinClassType implements TruffleObject {
 
     ForeignObject(FOREIGN, Flags.PRIVATE_DERIVED_WODICT),
     Boolean("bool", BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
-    GetSetDescriptor("get_set_desc", Flags.PRIVATE_DERIVED_WODICT),
+    GetSetDescriptor("getset_descriptor", Flags.PRIVATE_DERIVED_WODICT),
     MemberDescriptor(MEMBER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
     WrapperDescriptor(WRAPPER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
     PArray("array", "array"),
@@ -97,6 +84,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PByteArray("bytearray", BUILTINS),
     PBytes("bytes", BUILTINS),
     PCell("cell", Flags.PRIVATE_DERIVED_WODICT),
+    PSimpleNamespace("SimpleNamespace", null, "types", Flags.PUBLIC_BASE_WDICT),
+    PKeyWrapper("KeyWrapper", "_functools", "functools", Flags.PUBLIC_DERIVED_WODICT),
+    PPartial(PARTIAL, "_functools", "functools", Flags.PUBLIC_BASE_WDICT),
     PDefaultDict(DEFAULTDICT, "_collections", "collections", Flags.PUBLIC_BASE_WODICT),
     PDeque(DEQUE, "_collections", Flags.PUBLIC_BASE_WODICT),
     PTupleGetter(TUPLE_GETTER, "_collections", Flags.PUBLIC_BASE_WODICT),
@@ -217,6 +207,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PSSLContext("_SSLContext", "_ssl"),
     PSSLSocket("_SSLSocket", "_ssl"),
     PMemoryBIO("MemoryBIO", "_ssl"),
+
+    // itertools
+    PTee("_tee", "itertools", Flags.PUBLIC_DERIVED_WODICT),
+    PTeeDataObject("_tee_dataobject", "itertools", Flags.PUBLIC_DERIVED_WODICT),
+    PRepeat("repeat", "itertools"),
+    PChain("chain", "itertools"),
 
     // json
     JSONScanner("Scanner", "_json", Flags.PUBLIC_BASE_WODICT),
@@ -415,7 +411,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
         this.name = name;
         this.publishInModule = publishInModule;
         this.moduleName = flags.isPublic ? moduleName : null;
-        if (publishInModule != null && publishInModule != BUILTINS) {
+        if (moduleName != null && moduleName != BUILTINS) {
             printName = moduleName + "." + name;
         } else {
             printName = name;
@@ -521,8 +517,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
         SpecialMethodSlot[] reprAndNew = new SpecialMethodSlot[]{SpecialMethodSlot.Repr, SpecialMethodSlot.New};
 
         Boolean.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.And};
-        PBaseException.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str, SpecialMethodSlot.Repr};
         PythonModule.redefinedSlots = Super.redefinedSlots = repr;
+        SyntaxError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
+        UnicodeEncodeError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
+        UnicodeDecodeError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
+        UnicodeTranslateError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
+        OSError.redefinedSlots = new SpecialMethodSlot[]{SpecialMethodSlot.Str};
 
         // These slots actually contain context independent values, but they are initialized in
         // StructSequence to artificial PBuiltinFunctions with artificial builtin node factories,
@@ -729,93 +729,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @ExportMessage
     public Object send(Message message, Object[] args,
                     @CachedLibrary(limit = "1") ReflectionLibrary lib) throws Exception {
-        return lib.send(PythonContext.get(lib).getCore().lookupType(this), message, args);
-    }
-
-    @ExportMessage
-    public Object lookupAttributeInternal(ThreadState state, String attribName, boolean strict,
-                    @Cached ConditionProfile gotState,
-                    @Cached.Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
-        VirtualFrame frame = null;
-        if (gotState.profile(state != null)) {
-            frame = PArguments.frameForCall(state);
-        }
-        return lookup.execute(frame, this, attribName, strict);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object lookupAttributeOnTypeInternal(String attributeName, boolean strict,
-                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup,
-                    @Cached.Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return lookup.execute(PythonClass, attributeName, strict);
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    @ExportMessage
-    static class IsSame {
-        @Specialization
-        static boolean tt(PythonBuiltinClassType receiver, PythonBuiltinClassType other) {
-            return receiver == other;
-        }
-
-        @Specialization
-        static boolean tc(PythonBuiltinClassType receiver, PythonBuiltinClass other) {
-            return receiver == other.getType();
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        static boolean tO(PythonBuiltinClassType receiver, Object other) {
-            return false;
-        }
-    }
-
-    @ExportMessage
-    static int equalsInternal(PythonBuiltinClassType self, Object other, @SuppressWarnings("unused") ThreadState state,
-                    @CachedLibrary("self") PythonObjectLibrary selfLib) {
-        return selfLib.isSame(self, other) ? 1 : 0;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public boolean isCallable() {
-        return true;
-    }
-
-    @ExportMessage
-    public Object callObjectWithState(ThreadState state, Object[] arguments,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        return lib.callObjectWithState(PythonContext.get(lib).getCore().lookupType(this), state, arguments);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public boolean isLazyPythonClass() {
-        return true;
+        return lib.send(PythonContext.get(lib).lookupType(this), message, args);
     }
 
     public static boolean isExceptionType(PythonBuiltinClassType type) {
         return type.isException;
-    }
-
-    @ExportMessage
-    public Object lookupAndCallSpecialMethodWithState(ThreadState state, String methodName, Object[] arguments,
-                    @CachedLibrary("this") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        Object method = plib.lookupAttributeOnTypeStrict(this, methodName);
-        return methodLib.callUnboundMethodWithState(method, state, this, arguments);
-    }
-
-    @ExportMessage
-    public Object lookupAndCallRegularMethodWithState(ThreadState state, String methodName, Object[] arguments,
-                    @CachedLibrary("this") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
-        Object method = plib.lookupAttributeStrictWithState(this, state, methodName);
-        return methodLib.callObjectWithState(method, state, arguments);
     }
 }

@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStg
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
@@ -626,7 +627,7 @@ public class CFieldBuiltins extends PythonBuiltins {
                 throw raise(TypeError, "expected bytes, %s found", getNameNode.execute(getClassNode.execute(value)));
             }
 
-            data = getBytes.execute(value); // a copy is expected.. no need for memcpy
+            data = getBytes.execute((PBytes) value); // a copy is expected.. no need for memcpy
             size = data.length; /* XXX Why not Py_SIZE(value)? */
             if (size < length) {
                 /*
@@ -643,7 +644,7 @@ public class CFieldBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "setfunc == z_set")
-        Object z_set(@SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
+        Object z_set(VirtualFrame frame, @SuppressWarnings("unused") FieldSet setfunc, PtrValue ptr, Object value, @SuppressWarnings("unused") int size,
                         @Cached GetNameNode getNameNode,
                         @Cached GetClassNode getClassNode,
                         @Cached PyLongCheckNode longCheckNode,
@@ -653,10 +654,10 @@ public class CFieldBuiltins extends PythonBuiltins {
                 return value;
             }
             if (PGuards.isPBytes(value)) {
-                ptr.writeBytesArrayElement(getBytes.execute(value));
+                ptr.writeBytesArrayElement(getBytes.execute((PBytes) value));
                 return value;
             } else if (value instanceof PythonNativeVoidPtr) {
-                ptr.writeBytesArrayElement(getBytes.execute(((PythonNativeVoidPtr) value).getPointerObject()));
+                ptr.writeBytesArrayElement(getBytes.execute(frame, ((PythonNativeVoidPtr) value).getPointerObject()));
                 return PNone.NONE;
             } else if (longCheckNode.execute(value)) {
                 // *(char **)ptr = (char *)PyLong_AsUnsignedLongMask(value);

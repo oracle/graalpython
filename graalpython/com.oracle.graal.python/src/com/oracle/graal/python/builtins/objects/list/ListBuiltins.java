@@ -70,8 +70,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SortNodes.SortSequenceStorageNode;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
@@ -81,12 +79,12 @@ import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterato
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListReverseNodeFactory;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -126,7 +124,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -574,26 +571,15 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone remove(VirtualFrame frame, PList list, Object value,
-                        @Cached ConditionProfile hasFrame,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
             SequenceStorage listStore = list.getSequenceStorage();
             int len = lenNode.execute(listStore);
-            ThreadState threadState = null;
-            if (hasFrame.profile(frame != null)) {
-                threadState = PArguments.getThreadState(frame);
-            }
             for (int i = 0; i < len; i++) {
                 Object object = getItemNode.execute(frame, listStore, i);
-                final boolean hasItem;
-                if (hasFrame.profile(frame != null)) {
-                    hasItem = lib.equalsWithState(object, value, lib, threadState);
-                } else {
-                    hasItem = lib.equals(object, value, lib);
-                }
-                if (hasItem) {
+                if (eqNode.execute(frame, object, value)) {
                     deleteNode.execute(frame, listStore, i);
                     return PNone.NONE;
                 }
@@ -803,17 +789,16 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListCountNode extends PythonBuiltinNode {
 
-        @Specialization(limit = "5")
+        @Specialization
         long count(VirtualFrame frame, PList self, Object value,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @CachedLibrary("value") PythonObjectLibrary valueLib,
-                        @CachedLibrary(limit = "16") PythonObjectLibrary otherLib) {
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
             long count = 0;
             SequenceStorage s = self.getSequenceStorage();
             for (int i = 0; i < lenNode.execute(s); i++) {
                 Object object = getItemNode.execute(frame, s, i);
-                if (valueLib.equals(value, object, otherLib)) {
+                if (eqNode.execute(frame, value, object)) {
                     count++;
                 }
             }

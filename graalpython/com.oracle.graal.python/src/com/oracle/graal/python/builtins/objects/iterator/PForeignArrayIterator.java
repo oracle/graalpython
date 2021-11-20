@@ -41,17 +41,12 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PForeignArrayIterator extends PythonBuiltinObject {
 
     private final Object foreignArray;
@@ -81,10 +76,5 @@ public final class PForeignArrayIterator extends PythonBuiltinObject {
 
     public int advance() {
         return cursor++;
-    }
-
-    @ExportMessage
-    PForeignArrayIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState) {
-        return this;
     }
 }

@@ -39,42 +39,6 @@
 from builtins import BaseException
 
 
-def make_implementation_info():
-    from _descriptor import SimpleNamespace
-    result = SimpleNamespace(
-        name="graalpython",
-        cache_tag="graalpython-"+str(version_info.major) + str(version_info.minor),
-        version=version_info,
-        _multiarch=__gmultiarch
-    )
-    return result
-implementation = make_implementation_info()
-del make_implementation_info
-del __gmultiarch
-implementation.hexversion = hexversion = ((version_info.major << 24) |
-              (version_info.minor << 16) |
-              (version_info.micro << 8) |
-              (0xa << 4) | # 0xA is alpha, 0xB is beta, 0xC is rc, 0xF is final
-              (version_info.serial << 0))
-
-
-float_repr_style = 'short'
-
-
-meta_path = []
-path_hooks = []
-path_importer_cache = {}
-# these will be initialized explicitly from Java:
-# prefix, base_prefix, exec_prefix, base_exec_prefix
-warnoptions = []
-
-
-# default prompt for interactive shell
-ps1 = ">>> "
-
-# continue prompt for interactive shell
-ps2 = "... "
-
 # Stub audit hooks implementation for PEP 578
 def audit(str, *args):
     pass
@@ -94,72 +58,6 @@ def exit(arg=None):
     if isinstance(arg, tuple) and len(arg) == 1:
         code = arg[0]
     raise SystemExit(code)
-
-
-def make_excepthook():
-    def simple_print_traceback(e):
-        print("Traceback (most recent call last):", file=stderr);
-        tb = e.__traceback__
-        while tb is not None:
-            print('  File "%s", line %d, in %s' % (
-                tb.tb_frame.f_code.co_filename,
-                tb.tb_lineno,
-                tb.tb_frame.f_code.co_name
-            ), file=stderr)
-            tb = tb.tb_next
-        msg = str(e)
-        if msg:
-            print("%s: %s" % (type(e).__qualname__, msg), file=stderr)
-        else:
-            print(type(e).__qualname__, file=stderr)
-
-    def __print_traceback__(typ, value, tb):
-        if not isinstance(value, BaseException):
-            msg = "TypeError: print_exception(): Exception expected for value, {} found\n".format(type(value).__name__)
-            print(msg, file=stderr, end="")
-            return
-        try:
-            # CPython's C traceback printer diverges from traceback.print_exception in some details marked as (*)
-            import sys
-            import traceback
-            no_traceback = False
-            limit = getattr(sys, 'tracebacklimit', None)
-            if isinstance(limit, int):
-                if limit <= 0:
-                    # (*) the C traceback printer does nothing if the limit is <= 0,
-                    # but the exception message is still printed
-                    limit = 0
-                    no_traceback = True
-                else:
-                    # (*) CPython convert 'limit' to C long and if it overflows, it uses 'LONG_MAX'; we use Java int
-                    if limit > sys.maxsize:
-                        limit = sys.maxsize
-                    # (*) in the C printer limit is interpreted as -limit in format_exception
-                    limit = -limit
-            else:
-                # (*) non integer values of limit are interpreted as the default limit
-                limit = None
-            lines = traceback.format_exception(typ, value, tb, limit=limit)
-            # (*) if the exception cannot be printed, then the message differs between the C driver and format_exception
-            # We'd like to contribute to CPython to fix the divergence, but for now we do just a string substitution
-            # to pass the tests
-            lines[-1] = lines[-1].replace(f'<unprintable {typ.__name__} object>', f'<exception str() failed>')
-            if no_traceback:
-                lines = lines[-1:]
-            for line in lines:
-                print(line, file=stderr, end="")
-        except BaseException as exc:
-            print("Error in sys.excepthook:\n", file=stderr)
-            simple_print_traceback(exc)
-            print("\nOriginal exception was:\n", file=stderr)
-            simple_print_traceback(value)
-
-    return __print_traceback__
-
-
-__excepthook__ = make_excepthook()
-excepthook = __excepthook__
-del make_excepthook
 
 
 def make_unraisablehook():

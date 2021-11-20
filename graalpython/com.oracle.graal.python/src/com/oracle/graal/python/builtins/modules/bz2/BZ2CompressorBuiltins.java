@@ -76,6 +76,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = BZ2Compressor)
@@ -138,10 +139,10 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isFlushed()"})
-        PBytes doNativeObject(BZ2Object.BZ2Compressor self, Object data,
+        PBytes doNativeObject(VirtualFrame frame, BZ2Object.BZ2Compressor self, Object data,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
-            byte[] bytes = toBytes.execute(data);
+            byte[] bytes = toBytes.execute(frame, data);
             int len = bytes.length;
             return factory().createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
         }

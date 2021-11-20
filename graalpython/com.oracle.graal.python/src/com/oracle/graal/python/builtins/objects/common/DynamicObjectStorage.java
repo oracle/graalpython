@@ -48,11 +48,13 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
@@ -206,7 +208,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Exclusive @Cached("self.store.getShape()") Shape cachedShape,
                         @Exclusive @Cached(value = "keyArray(cachedShape)", dimensions = 1) Object[] keyList,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
-                        @Shared("equalsLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                         @Shared("gotState") @Cached ConditionProfile gotState,
                         @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
@@ -215,14 +217,8 @@ public final class DynamicObjectStorage extends HashingStorage {
             for (Object currentKey : keyList) {
                 if (currentKey instanceof String) {
                     long keyHash = hashNode.execute(frame, currentKey);
-                    if (gotState.profile(state != null)) {
-                        if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
-                            return string(self, (String) currentKey, state, readKey, noValueProfile);
-                        }
-                    } else {
-                        if (keyHash == hash && lib.equals(key, currentKey, lib)) {
-                            return string(self, (String) currentKey, null, readKey, noValueProfile);
-                        }
+                    if (keyHash == hash && eqNode.execute(frame, key, currentKey)) {
+                        return string(self, (String) currentKey, state, readKey, noValueProfile);
                     }
                 }
             }
@@ -233,7 +229,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         static Object notStringLoop(DynamicObjectStorage self, Object key, ThreadState state,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
-                        @Shared("equalsLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Shared("eqNode") @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                         @Shared("gotState") @Cached ConditionProfile gotState,
                         @Shared("noValueProfile") @Cached ConditionProfile noValueProfile) {
@@ -244,14 +240,8 @@ public final class DynamicObjectStorage extends HashingStorage {
                 Object currentKey = getNext(keys);
                 if (currentKey instanceof String) {
                     long keyHash = hashNode.execute(frame, currentKey);
-                    if (gotState.profile(state != null)) {
-                        if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
-                            return string(self, (String) currentKey, state, readKey, noValueProfile);
-                        }
-                    } else {
-                        if (keyHash == hash && lib.equals(key, currentKey, lib)) {
-                            return string(self, (String) currentKey, null, readKey, noValueProfile);
-                        }
+                    if (keyHash == hash && eqNode.execute(frame, key, currentKey)) {
+                        return string(self, (String) currentKey, state, readKey, noValueProfile);
                     }
                 }
             }
@@ -406,9 +396,30 @@ public final class DynamicObjectStorage extends HashingStorage {
     }
 
     @ExportMessage
-    public HashingStorage clear(@Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-        dylib.resetShape(store, PythonLanguage.get(dylib).getEmptyShape());
-        return this;
+    @ImportStatic(PGuards.class)
+    static class Clear {
+        @Specialization(guards = "!isPythonObject(receiver.getStore())")
+        static HashingStorage clearPlain(DynamicObjectStorage receiver,
+                        @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+            dylib.resetShape(receiver.getStore(), PythonLanguage.get(dylib).getEmptyShape());
+            return receiver;
+        }
+
+        @Specialization(guards = "isPythonObject(receiver.getStore())")
+        static HashingStorage clearObjectBacked(DynamicObjectStorage receiver,
+                        @Shared("dylib") @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+            /*
+             * We cannot use resetShape as that would lose hidden keys, such as CLASS or OBJ_ID.
+             * Construct a new storage instead and set it as the object's __dict__'s storage.
+             */
+            DynamicObjectStorage newStorage = new DynamicObjectStorage(new Store(PythonLanguage.get(dylib).getEmptyShape()));
+            PythonObject owner = (PythonObject) receiver.getStore();
+            PDict dict = (PDict) dylib.getOrDefault(owner, PythonObject.DICT, null);
+            if (dict != null && dict.getDictStorage() == receiver) {
+                dict.setDictStorage(newStorage);
+            }
+            return newStorage;
+        }
     }
 
     @ExportMessage

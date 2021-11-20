@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,33 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import _codecs
 
+from .mod3 import startvalue
 
-def decode(self, encoding="utf-8", errors="strict"):
-    """Decode the bytes using the codec registered for encoding.
-
-    encoding
-      The encoding with which to decode the bytes.
-    errors
-      The error handling scheme to use for the handling of decoding errors.
-      The default is 'strict' meaning that decoding errors raise a
-      UnicodeDecodeError. Other possible values are 'ignore' and 'replace'
-      as well as any other name registered with codecs.register_error that
-      can handle UnicodeDecodeErrors.
-    """
-    result = _codecs.decode(self, encoding=encoding, errors=errors)
-    if not isinstance(result, str):
-        raise TypeError("'%s' encoder returned '%s' instead of 'str'; use codecs.decode() to decode to arbitrary types"
-                        % (encoding, type(result).__name__))
-    return result
-
-
-bytes.decode = __graalpython__.builtin_method(decode)
-
-
-def strip(self, what=None):
-    return self.lstrip(what).rstrip(what)
-
-
-bytes.strip = strip
+value = startvalue + 2

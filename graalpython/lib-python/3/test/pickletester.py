@@ -2202,6 +2202,7 @@ class AbstractPickleTests(unittest.TestCase):
             y = self.loads(s)
             self.assertEqual(y._reduce_called, 1)
 
+    @support.impl_detail("can cause crashing StackOverflow", graalvm=False)
     @no_tracing
     def test_bad_getattr(self):
         # Issue #3514: crash when there is an infinite loop in __getattr__

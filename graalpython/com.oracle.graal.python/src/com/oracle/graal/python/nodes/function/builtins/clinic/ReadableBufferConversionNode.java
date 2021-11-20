@@ -41,20 +41,31 @@
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
-public abstract class ReadableBufferConversionNode extends ArgumentCastNodeWithRaise {
-    @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-    Object doObject(Object value,
+public abstract class ReadableBufferConversionNode extends ObjectConversionBaseNode {
+    protected ReadableBufferConversionNode(Object defaultValue, boolean useDefaultForNone) {
+        super(defaultValue, useDefaultForNone);
+    }
+
+    @Specialization(guards = "!isHandledPNone(value)", limit = "getCallSiteInlineCacheMaxDepth()")
+    Object doObject(VirtualFrame frame, Object value,
                     @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib) {
-        return acquireLib.acquireReadonly(value);
+        return acquireLib.acquireReadonly(value, frame, getContext(), getLanguage(), this);
     }
 
     @ClinicConverterFactory
-    public static ReadableBufferConversionNode create() {
-        return ReadableBufferConversionNodeGen.create();
+    public static ReadableBufferConversionNode create(@ClinicConverterFactory.DefaultValue Object defaultValue, @ClinicConverterFactory.UseDefaultForNone boolean useDefaultForNone) {
+        return ReadableBufferConversionNodeGen.create(defaultValue, useDefaultForNone);
+    }
+
+    @ClinicConverterFactory
+    public static ReadableBufferConversionNode create(@ClinicConverterFactory.UseDefaultForNone boolean useDefaultForNone) {
+        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
+        return ReadableBufferConversionNodeGen.create(PNone.NONE, false);
     }
 }

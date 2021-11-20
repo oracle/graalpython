@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TIMESTAMP_OUT_OF_RANGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_CLOCK;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -52,17 +53,21 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.TimeModuleBuiltinsClinicProviders.GetClockInfoNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltinsClinicProviders.StrfTimeNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.TimeModuleBuiltinsClinicProviders.StrptimeNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -70,7 +75,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
@@ -104,14 +111,14 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     private static final StructSequence.BuiltinTypeDescriptor STRUCT_TIME_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStructTime,
                     // @formatter:off The formatter joins these lines making it less readable
-                    "The time value as returned by gmtime(), localtime(), and strptime(), and\n" +
+            "The time value as returned by gmtime(), localtime(), and strptime(), and\n" +
                     " accepted by asctime(), mktime() and strftime().  May be considered as a\n" +
                     " sequence of 9 integers.\n\n" +
                     " Note that several fields' values are not the same as those defined by\n" +
                     " the C language standard for struct tm.  For example, the value of the\n" +
                     " field tm_year is the actual year, not year - 1900.  See individual\n" +
                     " fields' descriptions for details.",
-                    // @formatter:on
+            // @formatter:on
                     9,
                     new String[]{
                                     "tm_year", "tm_mon", "tm_mday", "tm_hour", "tm_min", "tm_sec",
@@ -985,4 +992,88 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    // time.get_clock_info(name)
+    @Builtin(name = "get_clock_info", parameterNames = {"name"}, doc = "get_clock_info(name: str) -> dict\n" +
+                    "\n" +
+                    "Get information of the specified clock.")
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    @GenerateNodeFactory
+    public abstract static class GetClockInfoNode extends PythonUnaryClinicBuiltinNode {
+        public static final String TIME_IMPL_MONOTONIC = "monotonic";
+        public static final String TIME_IMPL_PERF_COUNTER = "perf_counter";
+        public static final String TIME_IMPL_PROCESS_TIME = "process_time";
+        public static final String TIME_IMPL_THREAD_TIME = "thread_time";
+        public static final String TIME_IMPL_TIME = "time";
+
+        // cpython gives resolution 1e-9 in some cases, but jdks System.nanoTime() does not
+        // guarantee that
+        public static final double TIME_RESOLUTION = 1e-6;
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return GetClockInfoNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        public Object getClockInfo(String name,
+                        @CachedLibrary(limit = "1") DynamicObjectLibrary dyLib) {
+            final boolean adjustable;
+            final boolean monotonic;
+
+            switch (name) {
+                case TIME_IMPL_MONOTONIC:
+                case TIME_IMPL_PERF_COUNTER:
+                case TIME_IMPL_THREAD_TIME:
+                case TIME_IMPL_PROCESS_TIME:
+                    adjustable = false;
+                    monotonic = true;
+                    break;
+                case TIME_IMPL_TIME:
+                    adjustable = true;
+                    monotonic = false;
+                    break;
+                default:
+                    throw raise(PythonBuiltinClassType.ValueError, UNKNOWN_CLOCK);
+            }
+
+            final PSimpleNamespace ns = factory().createSimpleNamespace();
+            dyLib.put(ns, "adjustable", adjustable);
+            dyLib.put(ns, "implementation", name);
+            dyLib.put(ns, "monotonic", monotonic);
+            dyLib.put(ns, "resolution", TIME_RESOLUTION);
+            return ns;
+        }
+    }
+
+    // time.strptime(string[, format])
+    @Builtin(name = "strptime", parameterNames = {"data_string", "format"}, doc = "strftime(format[, tuple]) -> string\n" +
+                    "\n" +
+                    "Convert a time tuple to a string according to a format specification.\n" +
+                    "See the library reference manual for formatting codes. When the time tuple\n" +
+                    "is not present, current time as returned by localtime() is used.\n" +
+                    "\n")
+    @ArgumentClinic(name = "data_string", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"%a %b %d %H:%M:%S %Y\"", useDefaultForNone = true)
+    @GenerateNodeFactory
+    public abstract static class StrptimeNode extends PythonBinaryClinicBuiltinNode {
+        public static final String MOD_STRPTIME = "_strptime";
+        public static final String FUNC_STRPTIME_TIME = "_strptime_time";
+
+        static ImportNode.ImportExpression createImportStrptime() {
+            return ImportNode.createAsExpression(MOD_STRPTIME);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StrptimeNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        public Object strptime(VirtualFrame frame, String dataString, String format,
+                        @Cached("createImportStrptime()") ImportNode.ImportExpression importNode,
+                        @Cached PyObjectCallMethodObjArgs callNode) {
+            final Object module = importNode.execute(frame);
+            return callNode.execute(frame, module, FUNC_STRPTIME_TIME, dataString, format);
+        }
+    }
 }

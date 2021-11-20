@@ -61,6 +61,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.TypeNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
@@ -70,7 +71,6 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldGet;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldSet;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -89,6 +90,7 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -185,18 +187,20 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
              * Install from_param class methods in ctypes base classes. Overrides the
              * PyCSimpleType_from_param generic method.
              */
-            if (getBaseClassNode.execute(result) == getCore().lookupType(SimpleCData)) {
+            Python3Core core = getCore();
+            PythonObjectSlowPathFactory factory = core.factory();
+            if (getBaseClassNode.execute(result) == core.lookupType(SimpleCData)) {
                 switch (proto_str) {
                     case "z": /* c_char_p */
-                        LazyPyCSimpleTypeBuiltins.addCCharPFromParam(getLanguage(), result);
+                        LazyPyCSimpleTypeBuiltins.addCCharPFromParam(factory, getLanguage(), result);
                         stgdict.flags |= TYPEFLAG_ISPOINTER;
                         break;
                     case "Z": /* c_wchar_p */
-                        LazyPyCSimpleTypeBuiltins.addCWCharPFromParam(getLanguage(), result);
+                        LazyPyCSimpleTypeBuiltins.addCWCharPFromParam(factory, getLanguage(), result);
                         stgdict.flags |= TYPEFLAG_ISPOINTER;
                         break;
                     case "P": /* c_void_p */
-                        LazyPyCSimpleTypeBuiltins.addCVoidPFromParam(getLanguage(), result);
+                        LazyPyCSimpleTypeBuiltins.addCVoidPFromParam(factory, getLanguage(), result);
                         stgdict.flags |= TYPEFLAG_ISPOINTER;
                         break;
                     case "s":
@@ -286,7 +290,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
                         @Cached SetFuncNode setFuncNode,
                         @Cached IsInstanceNode isInstanceNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
-                        @Cached LookupAttributeNode lookupAsParam) {
+                        @Cached PyObjectLookupAttr lookupAsParam) {
             /*
              * If the value is already an instance of the requested type, we can use it as is
              */
@@ -314,7 +318,7 @@ public class PyCSimpleTypeBuiltins extends PythonBuiltins {
                 // pass through to check for _as_parameter_
             }
 
-            Object as_parameter = lookupAsParam.execute(frame, value, _as_parameter_, false);
+            Object as_parameter = lookupAsParam.execute(frame, value, _as_parameter_);
             if (as_parameter != null) {
                 // Py_EnterRecursiveCall("while processing _as_parameter_"); TODO
                 Object r = PyCSimpleType_from_param(frame, type, as_parameter, setFuncNode, isInstanceNode, pyTypeStgDictNode, lookupAsParam);

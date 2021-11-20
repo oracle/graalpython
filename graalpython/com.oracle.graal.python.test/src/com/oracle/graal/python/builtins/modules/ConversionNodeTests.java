@@ -44,7 +44,6 @@ import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -56,7 +55,6 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
@@ -97,15 +95,15 @@ public class ConversionNodeTests {
         }.getCallTarget();
         try {
             Object[] arguments = PArguments.create(1);
-            PArguments.setGlobals(arguments, PythonObjectFactory.getUncached().createDict());
+            PArguments.setGlobals(arguments, pythonContext.factory().createDict());
             PArguments.setException(arguments, PException.NO_EXCEPTION);
             PArguments.setArgument(arguments, 0, arg);
             PythonThreadState threadState = pythonContext.getThreadState(language);
-            PFrame.Reference frameInfo = IndirectCalleeContext.enter(threadState, arguments, callTarget);
+            Object state = IndirectCalleeContext.enter(threadState, arguments, callTarget);
             try {
                 return CallTargetInvokeNode.invokeUncached(callTarget, arguments);
             } finally {
-                IndirectCalleeContext.exit(threadState, frameInfo);
+                IndirectCalleeContext.exit(threadState, state);
             }
         } catch (PException e) {
             // materialize PException's error message since we are leaving Python

@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -83,15 +82,20 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -428,7 +432,8 @@ public class TextIOWrapperNodes {
     /*
      * cpython/Modules/_io/textio.c:textiowrapper_read_chunk
      */
-    protected abstract static class ReadChunkNode extends PNodeWithRaise {
+    protected abstract static class ReadChunkNode extends PNodeWithRaiseAndIndirectCall {
+
         public abstract boolean execute(VirtualFrame frame, PTextIO self, int size_hint);
 
         @Specialization(guards = "self.hasDecoder()")
@@ -490,7 +495,7 @@ public class TextIOWrapperNodes {
 
             Object inputChunkBuf;
             try {
-                inputChunkBuf = bufferAcquireLib.acquireReadonly(inputChunk);
+                inputChunkBuf = bufferAcquireLib.acquireReadonly(inputChunk, frame, this);
             } catch (PException e) {
                 throw raise(TypeError, S_SHOULD_HAVE_RETURNED_A_BYTES_LIKE_OBJECT_NOT_P, (self.isHasRead1() ? READ1 : READ), inputChunk);
             }
@@ -528,7 +533,7 @@ public class TextIOWrapperNodes {
 
                 return !eof;
             } finally {
-                bufferLib.release(inputChunkBuf);
+                bufferLib.release(inputChunkBuf, frame, this);
             }
         }
 
@@ -662,9 +667,10 @@ public class TextIOWrapperNodes {
     /*
      * cpython/Modules/_io/textio.c:_textiowrapper_fix_encoder_state
      */
-    protected abstract static class FixEncoderStateNode extends PNodeWithRaise {
+    @GenerateUncached
+    protected abstract static class FixEncoderStateNode extends PNodeWithContext {
 
-        public abstract void execute(VirtualFrame frame, PTextIO self);
+        public abstract void execute(Frame frame, PTextIO self);
 
         @Specialization(guards = {"!self.isSeekable() || !self.hasEncoder()"})
         void nothing(@SuppressWarnings("unused") PTextIO self) {
@@ -675,10 +681,10 @@ public class TextIOWrapperNodes {
         static void fixEncoderState(VirtualFrame frame, PTextIO self,
                         @Cached PyObjectCallMethodObjArgs callMethodTell,
                         @Cached PyObjectCallMethodObjArgs callMethodSetState,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libCookie) {
+                        @Cached PyObjectRichCompareBool.EqNode eqNode) {
             self.setEncodingStartOfStream(true);
             Object cookieObj = callMethodTell.execute(frame, self.getBuffer(), TELL);
-            if (!libCookie.equals(cookieObj, 0, libCookie)) {
+            if (!eqNode.execute(frame, cookieObj, 0)) {
                 self.setEncodingStartOfStream(false);
                 callMethodSetState.execute(frame, self.getEncoder(), SETSTATE, 0);
             }
@@ -688,8 +694,9 @@ public class TextIOWrapperNodes {
     /*
      * cpython/Modules/_io/textio.c:_textiowrapper_set_decoder
      */
-    protected abstract static class SetDecoderNode extends PNodeWithRaise {
-        public abstract void execute(VirtualFrame frame, PTextIO self, Object codecInfo, String errors);
+    @GenerateUncached
+    protected abstract static class SetDecoderNode extends PNodeWithContext {
+        public abstract void execute(Frame frame, PTextIO self, Object codecInfo, String errors);
 
         @Specialization
         static void setDecoder(VirtualFrame frame, PTextIO self, Object codecInfo, String errors,
@@ -716,8 +723,9 @@ public class TextIOWrapperNodes {
     /*
      * cpython/Modules/_io/textio.c:_textiowrapper_set_encoder
      */
-    protected abstract static class SetEncoderNode extends PNodeWithRaise {
-        public abstract void execute(VirtualFrame frame, PTextIO self, Object codecInfo, String errors);
+    @GenerateUncached
+    protected abstract static class SetEncoderNode extends PNodeWithContext {
+        public abstract void execute(Frame frame, PTextIO self, Object codecInfo, String errors);
 
         @Specialization
         static void setEncoder(VirtualFrame frame, PTextIO self, Object codecInfo, String errors,
@@ -738,9 +746,10 @@ public class TextIOWrapperNodes {
         }
     }
 
-    public abstract static class TextIOWrapperInitNode extends PNodeWithRaise {
+    @GenerateUncached
+    public abstract static class TextIOWrapperInitNode extends PNodeWithContext {
 
-        public abstract void execute(VirtualFrame frame, PTextIO self, Object buffer, Object encodingArg,
+        public abstract void execute(Frame frame, PTextIO self, Object buffer, Object encodingArg,
                         String errors, Object newlineArg, boolean lineBuffering, boolean writeThrough);
 
         @Specialization
@@ -753,7 +762,8 @@ public class TextIOWrapperNodes {
                         @Cached FixEncoderStateNode fixEncoderStateNode,
                         @Cached PyObjectCallMethodObjArgs callMethodSeekable,
                         @Cached PyObjectLookupAttr lookup,
-                        @Cached PyObjectIsTrueNode isTrueNode) {
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached PRaiseNode raiseNode) {
             self.setOK(false);
             self.setDetached(false);
             // encoding and newline are processed through arguments clinic and safe to cast.
@@ -761,15 +771,15 @@ public class TextIOWrapperNodes {
             String newline = newlineArg == PNone.NONE ? null : (String) newlineArg;
             if (encoding != null) {
                 if (PString.indexOf(encoding, "\0", 0) != -1) {
-                    throw raise(ValueError, EMBEDDED_NULL_CHARACTER);
+                    throw raiseNode.raise(ValueError, EMBEDDED_NULL_CHARACTER);
                 }
             }
 
             if (newline != null) {
                 if (PString.indexOf(newline, "\0", 0) != -1) {
-                    throw raise(ValueError, EMBEDDED_NULL_CHARACTER);
+                    throw raiseNode.raise(ValueError, EMBEDDED_NULL_CHARACTER);
                 }
-                validateNewline(newline, getRaiseNode());
+                validateNewline(newline, raiseNode);
             }
 
             self.clearAll();
@@ -787,7 +797,7 @@ public class TextIOWrapperNodes {
             } else if (encoding != null) {
                 self.setEncoding(encoding);
             } else {
-                throw raise(OSError, COULD_NOT_DETERMINE_DEFAULT_ENCODING);
+                throw raiseNode.raise(OSError, COULD_NOT_DETERMINE_DEFAULT_ENCODING);
             }
 
             /* Check we have been asked for a real text encoding */

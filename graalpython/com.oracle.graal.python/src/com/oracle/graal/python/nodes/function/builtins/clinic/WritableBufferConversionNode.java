@@ -46,12 +46,13 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
-public abstract class WritableBufferConversionNode extends ArgumentCastNodeWithRaise {
+public abstract class WritableBufferConversionNode extends ArgumentCastNodeWithRaiseAndIndirectCall {
     private final String builtinName;
 
     public WritableBufferConversionNode(String builtinName) {
@@ -59,10 +60,10 @@ public abstract class WritableBufferConversionNode extends ArgumentCastNodeWithR
     }
 
     @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-    Object doObject(Object value,
+    Object doObject(VirtualFrame frame, Object value,
                     @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib) {
         try {
-            return acquireLib.acquireWritable(value);
+            return acquireLib.acquireWritable(value, frame, getContext(), getLanguage(), this);
         } catch (PException e) {
             throw raise(TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P, builtinName, value);
         }

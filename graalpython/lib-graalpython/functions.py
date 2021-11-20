@@ -43,22 +43,6 @@ def hasattr(obj, key):
     return getattr(obj, key, default) is not default
 
 
-@__graalpython__.builtin
-def any(iterable):
-    for i in iterable:
-        if i:
-            return True
-    return False
-
-
-@__graalpython__.builtin
-def all(iterable):
-    for i in iterable:
-        if not i:
-            return False
-    return True
-
-
 from sys import _getframe as __getframe__
 
 

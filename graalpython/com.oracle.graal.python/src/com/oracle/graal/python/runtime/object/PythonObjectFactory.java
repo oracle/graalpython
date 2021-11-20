@@ -26,6 +26,7 @@
 package com.oracle.graal.python.runtime.object;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
@@ -107,6 +108,11 @@ import com.oracle.graal.python.builtins.objects.iterator.PSentinelIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
+import com.oracle.graal.python.builtins.objects.itertools.PChain;
+import com.oracle.graal.python.builtins.objects.itertools.PRepeat;
+import com.oracle.graal.python.builtins.objects.itertools.PTee;
+import com.oracle.graal.python.builtins.objects.itertools.PTeeDataObject;
+import com.oracle.graal.python.builtins.objects.keywrapper.PKeyWrapper;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
@@ -118,7 +124,9 @@ import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.partial.PPartial;
 import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.property.PProperty;
@@ -198,6 +206,28 @@ import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.concurrent.Semaphore;
+
+/**
+ * Factory for Python objects that also reports to Truffle's {@link AllocationReporter}. The
+ * reporting needs current context. There are several implementations of this abstract class. Use
+ * this rule of thumb when choosing which one to use:
+ * <ul>
+ * <li>In partially evaluated code: use adopted (@Child/@Cached) {@link PythonObjectFactory} node
+ * </li>
+ * <li>Behind {@code TruffleBoundary}:
+ * <ul>
+ * <li>When the current context is already available, use {@link Python3Core#factory()}. This avoids
+ * repeated context lookups inside the factory.</li>
+ * <li>When the current context is not available, but multiple objects will be created: lookup the
+ * context and use {@link Python3Core#factory()}. This executes only one context lookup. Note: first
+ * check if the caller could pass the context to avoid looking it up behind {@code TruffleBoundary}.
+ * </li>
+ * <li>When the current context is not available, and only one object is to be created: use
+ * {@link PythonObjectFactory#getUncached()}.</li>
+ * </ul>
+ * </li>
+ * </ul>
+ */
 
 @GenerateUncached
 @ImportStatic(PythonOptions.class)
@@ -606,7 +636,16 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PDecoratedMethod createStaticmethodFromCallableObj(Object callable) {
-        return trace(new PDecoratedMethod(PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PStaticmethod.getInstanceShape(getLanguage()), callable));
+        Object func = callable;
+        if (func instanceof PBuiltinFunction) {
+            /*
+             * CPython's C static methods contain an object of type `builtin_function_or_method`
+             * (our PBuiltinMethod). Their self points to their type, but when called they get NULL
+             * as the first argument instead.
+             */
+            func = createBuiltinMethod(((PBuiltinFunction) func).getEnclosingType(), (PBuiltinFunction) func);
+        }
+        return trace(new PDecoratedMethod(PythonBuiltinClassType.PStaticmethod, PythonBuiltinClassType.PStaticmethod.getInstanceShape(getLanguage()), func));
     }
 
     /*
@@ -716,6 +755,26 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PDict createDict(Object cls, Shape instanceShape, HashingStorage storage) {
         return trace(new PDict(cls, instanceShape, storage));
+    }
+
+    public final PSimpleNamespace createSimpleNamespace() {
+        return createSimpleNamespace(PythonBuiltinClassType.PSimpleNamespace);
+    }
+
+    public final PSimpleNamespace createSimpleNamespace(Object cls) {
+        return createSimpleNamespace(cls, getShape(cls));
+    }
+
+    public final PSimpleNamespace createSimpleNamespace(Object cls, Shape instanceShape) {
+        return trace(new PSimpleNamespace(cls, instanceShape));
+    }
+
+    public final PKeyWrapper createKeyWrapper(Object cmp) {
+        return trace(new PKeyWrapper(PythonBuiltinClassType.PKeyWrapper, getShape(PythonBuiltinClassType.PKeyWrapper), cmp));
+    }
+
+    public final PPartial createPartial(Object cls, Object function, Object[] args, PDict kwDict) {
+        return trace(new PPartial(cls, getShape(cls), function, args, kwDict));
     }
 
     public final PDefaultDict createDefaultDict(Object cls) {
@@ -1113,6 +1172,26 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PFileIO createFileIO(Object clazz) {
         return trace(new PFileIO(clazz, getShape(clazz)));
+    }
+
+    public final PChain createChain() {
+        return trace(new PChain(PythonBuiltinClassType.PChain, PythonBuiltinClassType.PChain.getInstanceShape(getLanguage())));
+    }
+
+    public final PRepeat createRepeat() {
+        return trace(new PRepeat(PythonBuiltinClassType.PRepeat, PythonBuiltinClassType.PRepeat.getInstanceShape(getLanguage())));
+    }
+
+    public final PTee createTee(PTeeDataObject dataObj, int index) {
+        return trace(new PTee(dataObj, index, PythonBuiltinClassType.PTee, PythonBuiltinClassType.PTee.getInstanceShape(getLanguage())));
+    }
+
+    public final PTeeDataObject createTeeDataObject() {
+        return trace(new PTeeDataObject(PythonBuiltinClassType.PTeeDataObject, PythonBuiltinClassType.PTeeDataObject.getInstanceShape(getLanguage())));
+    }
+
+    public final PTeeDataObject createTeeDataObject(Object it) {
+        return trace(new PTeeDataObject(it, PythonBuiltinClassType.PTeeDataObject, PythonBuiltinClassType.PTeeDataObject.getInstanceShape(getLanguage())));
     }
 
     public final PTextIO createTextIO(Object clazz) {

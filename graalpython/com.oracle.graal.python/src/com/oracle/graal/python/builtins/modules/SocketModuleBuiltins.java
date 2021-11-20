@@ -589,7 +589,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             } else if (PGuards.isString(portObjectProfiled)) {
                 port = posixLib.createPathFromString(getPosixSupport(), castToString.execute(portObjectProfiled));
             } else if (PGuards.isBytes(portObjectProfiled)) {
-                port = posixLib.createPathFromBytes(getPosixSupport(), toBytes.execute(portObjectProfiled));
+                port = posixLib.createPathFromBytes(getPosixSupport(), toBytes.execute(frame, portObjectProfiled));
             } else if (portObject == PNone.NONE) {
                 port = null;
             } else {
@@ -722,11 +722,11 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InetNtoANode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
-        String doGeneric(Object addr,
+        String doGeneric(VirtualFrame frame, Object addr,
                         @CachedLibrary("addr") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            Object buffer = bufferAcquireLib.acquireReadonly(addr);
+            Object buffer = bufferAcquireLib.acquireReadonly(addr, frame, this);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
@@ -736,7 +736,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 Object result = posixLib.inet_ntoa(getPosixSupport(), ByteArraySupport.bigEndian().getInt(bytes, 0));
                 return posixLib.getPathAsString(getPosixSupport(), result);
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
     }
@@ -774,7 +774,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("obj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            Object buffer = bufferAcquireLib.acquireReadonly(obj);
+            Object buffer = bufferAcquireLib.acquireReadonly(obj, frame, this);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
@@ -796,7 +796,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                     throw raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 

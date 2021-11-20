@@ -63,10 +63,10 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.ssl.ALPNHelper;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
 import com.oracle.graal.python.builtins.objects.ssl.SSLCipher;
@@ -76,23 +76,23 @@ import com.oracle.graal.python.builtins.objects.ssl.SSLMethod;
 import com.oracle.graal.python.builtins.objects.ssl.SSLOptions;
 import com.oracle.graal.python.builtins.objects.ssl.SSLProtocol;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_ssl")
 public class SSLModuleBuiltins extends PythonBuiltins {
@@ -202,7 +202,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
         loadDefaults();
         PythonModule module = core.lookupBuiltinModule("_ssl");
-        PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        PythonObjectFactory factory = core.factory();
         module.setAttribute("OPENSSL_VERSION_NUMBER", 0);
         PTuple versionInfo = factory.createTuple(new int[]{0, 0, 0, 0, 0});
         module.setAttribute("OPENSSL_VERSION_INFO", versionInfo);
@@ -358,10 +358,10 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "_test_decode_cert", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"path"})
     @GenerateNodeFactory
     abstract static class DecodeCertNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "2")
+        @Specialization
         Object decode(VirtualFrame frame, Object path,
-                        @CachedLibrary("path") PythonObjectLibrary lib) {
-            return decode(toTruffleFile(frame, lib, path));
+                        @Cached PyUnicodeFSDecoderNode asPath) {
+            return decode(toTruffleFile(frame, asPath, path));
         }
 
         @TruffleBoundary
@@ -379,7 +379,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
                 if (!(cert instanceof X509Certificate)) {
                     throw raise(SSLError, "Error decoding PEM-encoded file: unexpected type " + cert.getClass().getName());
                 }
-                return CertUtils.decodeCertificate(this, (X509Certificate) l.get(0));
+                return CertUtils.decodeCertificate(this, getContext().factory(), (X509Certificate) l.get(0));
             } catch (IOException ex) {
                 throw raise(SSLError, "Can't open file: " + ex.toString());
             } catch (CertificateException | CRLException ex) {
@@ -387,10 +387,10 @@ public class SSLModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private TruffleFile toTruffleFile(VirtualFrame frame, PythonObjectLibrary lib, Object fileObject) throws PException {
+        private TruffleFile toTruffleFile(VirtualFrame frame, PyUnicodeFSDecoderNode asPath, Object fileObject) throws PException {
             TruffleFile file;
             try {
-                file = getContext().getEnv().getPublicTruffleFile(lib.asPath(fileObject));
+                file = getContext().getEnv().getPublicTruffleFile(asPath.execute(frame, fileObject));
                 if (!file.exists()) {
                     throw raiseOSError(frame, OSErrorEnum.ENOENT);
                 }

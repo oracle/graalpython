@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins.D
 import static com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins.Z_NO_FLUSH;
 import static com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.Z_OK;
 import static com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.Z_STREAM_ERROR;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__COPY__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
 
@@ -78,6 +79,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = ZlibCompress)
 public class ZlibCompressBuiltins extends PythonBuiltins {
@@ -104,22 +106,22 @@ public class ZlibCompressBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"self.isInitialized()", "!isBytes(data)"})
-        PBytes doNativeObject(ZLibCompObject.NativeZlibCompObject self, Object data,
+        PBytes doNativeObject(VirtualFrame frame, ZLibCompObject.NativeZlibCompObject self, Object data,
                         @Shared("bb") @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("co") @Cached ZlibNodes.ZlibNativeCompressObj compressObj) {
             synchronized (self) {
                 assert self.isInitialized();
-                byte[] bytes = toBytes.execute(data);
+                byte[] bytes = toBytes.execute(frame, data);
                 int len = bytes.length;
                 return factory().createBytes(compressObj.execute(self, PythonContext.get(this), bytes, len));
             }
         }
 
         @Specialization(guards = "self.isInitialized()")
-        PBytes doit(ZLibCompObject.JavaZlibCompObject self, Object data,
+        PBytes doit(VirtualFrame frame, ZLibCompObject.JavaZlibCompObject self, Object data,
                         @Shared("bb") @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached ZlibNodes.JavaCompressNode compressNode) {
-            byte[] bytes = toBytes.execute(data);
+            byte[] bytes = toBytes.execute(frame, data);
             self.setDeflaterInput(bytes);
             return compressNode.execute(self, Z_NO_FLUSH, factory());
         }
@@ -184,7 +186,7 @@ public class ZlibCompressBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__copy__", minNumOfPositionalArgs = 1)
+    @Builtin(name = __COPY__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class UndescoreCopyNode extends CopyNode {
     }

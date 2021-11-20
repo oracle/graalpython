@@ -70,6 +70,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = BZ2Decompressor)
@@ -122,11 +123,11 @@ public class BZ2DecompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isEOF()"})
-        PBytes doNativeObject(BZ2Object.BZ2Decompressor self, Object data, int maxLength,
+        PBytes doNativeObject(VirtualFrame frame, BZ2Object.BZ2Decompressor self, Object data, int maxLength,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("d") @Cached Bz2Nodes.Bz2NativeDecompress decompress) {
             synchronized (self) {
-                byte[] bytes = toBytes.execute(data);
+                byte[] bytes = toBytes.execute(frame, data);
                 int len = bytes.length;
                 return factory().createBytes(decompress.execute(self, bytes, len, maxLength));
             }

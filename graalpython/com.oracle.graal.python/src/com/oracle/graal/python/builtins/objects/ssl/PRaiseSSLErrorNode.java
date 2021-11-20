@@ -90,7 +90,8 @@ public abstract class PRaiseSSLErrorNode extends Node {
         writeAttribute.execute(exception, "errno", type.getErrno());
         writeAttribute.execute(exception, "strerror", message);
         // TODO properly populate reason/lib attrs, this are dummy values
-        writeAttribute.execute(exception, "reason", message);
+        String mnemonic = type.getMnemonic();
+        writeAttribute.execute(exception, "reason", mnemonic != null ? mnemonic : message);
         writeAttribute.execute(exception, "library", "[SSL]");
         if (type == ERROR_CERT_VERIFICATION) {
             // not trying to be 100% correct,

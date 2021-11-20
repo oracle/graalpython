@@ -58,6 +58,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETSTATE__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_ELLIPSIS;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_EMPTY_BYTES;
@@ -94,20 +95,25 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
@@ -121,6 +127,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -283,7 +290,7 @@ public abstract class ObjectNodes {
         static Object id(boolean self,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
             PythonContext context = PythonContext.get(getObjectIdNode);
-            Object bool = self ? context.getCore().getTrue() : context.getCore().getFalse();
+            Object bool = self ? context.getTrue() : context.getFalse();
             return getObjectIdNode.execute(bool);
         }
 
@@ -786,4 +793,77 @@ public abstract class ObjectNodes {
         }
     }
 
+    public abstract static class AbstractSetattrNode extends PythonTernaryBuiltinNode {
+        @Child GetClassNode getDescClassNode;
+        @Child LookupCallableSlotInMRONode lookupSetNode;
+        @Child CallTernaryMethodNode callSetNode;
+
+        public abstract PNone execute(VirtualFrame frame, Object object, String key, Object value);
+
+        protected boolean writeAttribute(Object object, String key, Object value) {
+            throw CompilerDirectives.shouldNotReachHere("writeAttribute");
+        }
+
+        @Specialization
+        protected PNone doStringKey(VirtualFrame frame, Object object, String key, Object value,
+                        @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @Shared("getExisting") @Cached LookupAttributeInMRONode.Dynamic getExisting) {
+            Object type = getClassNode.execute(object);
+            Object descr = getExisting.execute(type, key);
+            if (descr != PNone.NO_VALUE) {
+                Object dataDescClass = getDescClass(descr);
+                Object set = ensureLookupSetNode().execute(dataDescClass);
+                if (PGuards.isCallableOrDescriptor(set)) {
+                    ensureCallSetNode().execute(frame, set, descr, object, value);
+                    return PNone.NONE;
+                }
+            }
+            if (writeAttribute(object, key, value)) {
+                return PNone.NONE;
+            }
+            if (descr != PNone.NO_VALUE) {
+                throw raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
+            } else {
+                throw raise(AttributeError, ErrorMessages.HAS_NO_ATTR, object, key);
+            }
+        }
+
+        @Specialization(replaces = "doStringKey")
+        protected PNone doIt(VirtualFrame frame, Object object, Object keyObject, Object value,
+                        @Shared("getClass") @Cached GetClassNode getClassNode,
+                        @Shared("getExisting") @Cached LookupAttributeInMRONode.Dynamic getExisting,
+                        @Cached CastToJavaStringNode castKeyToStringNode) {
+            String key;
+            try {
+                key = castKeyToStringNode.execute(keyObject);
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ATTR_NAME_MUST_BE_STRING, keyObject);
+            }
+            return doStringKey(frame, object, key, value, getClassNode, getExisting);
+        }
+
+        private Object getDescClass(Object desc) {
+            if (getDescClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getDescClassNode = insert(GetClassNode.create());
+            }
+            return getDescClassNode.execute(desc);
+        }
+
+        private LookupCallableSlotInMRONode ensureLookupSetNode() {
+            if (lookupSetNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lookupSetNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Set));
+            }
+            return lookupSetNode;
+        }
+
+        private CallTernaryMethodNode ensureCallSetNode() {
+            if (callSetNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callSetNode = insert(CallTernaryMethodNode.create());
+            }
+            return callSetNode;
+        }
+    }
 }

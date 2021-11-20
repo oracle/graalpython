@@ -37,23 +37,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# an empty file for now
-
-c_unicodedata_module = None
-
-
-@__graalpython__.builtin
-def __get_c_unicodedata():
-    global c_unicodedata_module
-    if c_unicodedata_module is None:
-        import _cpython_unicodedata
-        c_unicodedata_module = _cpython_unicodedata
-    return c_unicodedata_module
-
-
-east_asian_width = lambda arg: __get_c_unicodedata().east_asian_width(arg)
-
-
-@__graalpython__.builtin
-def lookup(name):
-    return __get_c_unicodedata().lookup(name)
+__graalpython__.import_current_as_named_module_with_delegate(
+    module_name="unicodedata",
+    delegate_name="_cpython_unicodedata",
+    delegate_attributes=['ucd_3_2_0', 'lookup', 'east_asian_width'],
+    wrap_methods=False,
+    owner_globals=globals())

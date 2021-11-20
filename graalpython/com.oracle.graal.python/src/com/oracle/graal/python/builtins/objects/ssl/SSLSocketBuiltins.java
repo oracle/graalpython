@@ -109,7 +109,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached SSLOperationNode sslOperationNode) {
-            Object buffer = bufferAcquireLib.acquireWritableWithTypeError(bufferObj, "read");
+            Object buffer = bufferAcquireLib.acquireWritableWithTypeError(bufferObj, "read", frame, this);
             try {
                 int bufferLen = bufferLib.getBufferLength(buffer);
                 int toReadLen = len;
@@ -135,7 +135,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
                 }
                 return readBytes;
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -160,7 +160,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
                 sslOperationNode.write(frame, self, input);
                 return length;
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -315,7 +315,7 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             Certificate certificate = getCertificate(self.getEngine());
             if (certificate instanceof X509Certificate) {
                 try {
-                    return CertUtils.decodeCertificate(this, (X509Certificate) certificate);
+                    return CertUtils.decodeCertificate(this, getContext().factory(), (X509Certificate) certificate);
                 } catch (CertificateParsingException e) {
                     return factory().createDict();
                 }

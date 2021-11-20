@@ -66,6 +66,7 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -197,7 +198,6 @@ import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -772,16 +772,21 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     @CompilationFinal private RootCallTarget referenceCleanerCallTarget;
     private Thread hpyReferenceCleanerThread;
 
-    private PythonObjectSlowPathFactory slowPathFactory;
+    private final PythonObjectSlowPathFactory slowPathFactory;
 
     public GraalHPyContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, GraalHPyConversionNodeSupplier.HANDLE);
+        this.slowPathFactory = context.factory();
         this.hpyContextMembers = createMembers(context, getName());
         this.useNativeFastPaths = context.getLanguage().getEngineOption(PythonOptions.HPyEnableJNIFastPaths);
     }
 
     protected String getName() {
         return "HPy Universal ABI (GraalVM backend)";
+    }
+
+    public PythonObjectSlowPathFactory getSlowPathFactory() {
+        return slowPathFactory;
     }
 
     /**
@@ -834,7 +839,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 PythonLanguage language = pythonContext.getLanguage();
                 GraalHPyContext hPyContext = pythonContext.getHPyContext();
                 RootCallTarget callTarget = hPyContext.getReferenceCleanerCallTarget();
-                PDict dummyGlobals = PythonObjectFactory.getUncached().createDict();
+                PDict dummyGlobals = pythonContext.factory().createDict();
                 boolean isLoggable = LOGGER.isLoggable(Level.FINE);
                 /*
                  * Intentionally retrieve the thread state every time since this will kill the
@@ -1297,17 +1302,6 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
     }
 
-    /**
-     * Returns a Python object factory that should only be used on the slow path. The factory object
-     * is initialized lazily.
-     */
-    private PythonObjectSlowPathFactory factory() {
-        if (slowPathFactory == null) {
-            slowPathFactory = new PythonObjectSlowPathFactory(getContext().getAllocationReporter());
-        }
-        return slowPathFactory;
-    }
-
     @SuppressWarnings("static-method")
     public final long ctxFloatFromDouble(double value) {
         Counter.UpcallFloatFromDouble.increment();
@@ -1377,7 +1371,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             long basicSize = clazz.basicSize;
             if (basicSize == -1) {
                 // create the managed Python object
-                pythonObject = factory().createPythonObject(clazz, clazz.getInstanceShape());
+                pythonObject = slowPathFactory.createPythonObject(clazz, clazz.getInstanceShape());
             } else {
                 /*
                  * Since this is a JNI upcall method, we know that (1) we are not running in some
@@ -1387,7 +1381,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 long dataPtr = unsafe.allocateMemory(basicSize);
                 unsafe.setMemory(dataPtr, basicSize, (byte) 0);
                 unsafe.putLong(dataOutVar, dataPtr);
-                pythonObject = factory().createPythonHPyObject(clazz, dataPtr);
+                pythonObject = slowPathFactory.createPythonHPyObject(clazz, dataPtr);
                 Object destroyFunc = clazz.hpyDestroyFunc;
                 createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
             }
@@ -1397,7 +1391,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(this, 0, PythonBuiltinClassType.TypeError, "HPy_New arg 1 must be a type");
             }
             // TODO(fa): this should actually call __new__
-            pythonObject = factory().createPythonObject(type);
+            pythonObject = slowPathFactory.createPythonObject(type);
         }
         return GraalHPyBoxing.boxHandle(createHandle(pythonObject).getId(this, ConditionProfile.getUncached()));
     }
@@ -1416,9 +1410,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 // allocate native space
                 long dataPtr = unsafe.allocateMemory(basicSize);
                 unsafe.setMemory(dataPtr, basicSize, (byte) 0);
-                pythonObject = factory().createPythonHPyObject(clazz, dataPtr);
+                pythonObject = slowPathFactory.createPythonHPyObject(clazz, dataPtr);
             } else {
-                pythonObject = factory().createPythonObject(clazz);
+                pythonObject = slowPathFactory.createPythonObject(clazz);
             }
             return GraalHPyBoxing.boxHandle(createHandle(pythonObject).getId(this, ConditionProfile.getUncached()));
         }
@@ -1787,88 +1781,87 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     private static Object[] createMembers(PythonContext context, String name) {
         Object[] members = new Object[HPyContextMember.VALUES.length];
-        Python3Core core = context.getCore();
 
         members[HPyContextMember.NAME.ordinal()] = new CStringWrapper(name);
         createIntConstant(members, HPyContextMember.CTX_VERSION, 1);
 
         createConstant(members, HPyContextMember.H_NONE, PNone.NONE);
-        createConstant(members, HPyContextMember.H_TRUE, core.getTrue());
-        createConstant(members, HPyContextMember.H_FALSE, core.getFalse());
+        createConstant(members, HPyContextMember.H_TRUE, context.getTrue());
+        createConstant(members, HPyContextMember.H_FALSE, context.getFalse());
         createConstant(members, HPyContextMember.H_NOTIMPLEMENTED, PNotImplemented.NOT_IMPLEMENTED);
         createConstant(members, HPyContextMember.H_ELLIPSIS, PEllipsis.INSTANCE);
 
-        createTypeConstant(members, HPyContextMember.H_BASEEXCEPTION, core, PythonBuiltinClassType.PBaseException);
-        createTypeConstant(members, HPyContextMember.H_EXCEPTION, core, PythonBuiltinClassType.Exception);
-        createTypeConstant(members, HPyContextMember.H_STOPASYNCITERATION, core, PythonBuiltinClassType.StopAsyncIteration);
-        createTypeConstant(members, HPyContextMember.H_STOPITERATION, core, PythonBuiltinClassType.StopIteration);
-        createTypeConstant(members, HPyContextMember.H_GENERATOREXIT, core, PythonBuiltinClassType.GeneratorExit);
-        createTypeConstant(members, HPyContextMember.H_ARITHMETICERROR, core, PythonBuiltinClassType.ArithmeticError);
-        createTypeConstant(members, HPyContextMember.H_LOOKUPERROR, core, PythonBuiltinClassType.LookupError);
-        createTypeConstant(members, HPyContextMember.H_ASSERTIONERROR, core, PythonBuiltinClassType.AssertionError);
-        createTypeConstant(members, HPyContextMember.H_ATTRIBUTEERROR, core, PythonBuiltinClassType.AttributeError);
-        createTypeConstant(members, HPyContextMember.H_BUFFERERROR, core, PythonBuiltinClassType.BufferError);
-        createTypeConstant(members, HPyContextMember.H_EOFERROR, core, PythonBuiltinClassType.EOFError);
-        createTypeConstant(members, HPyContextMember.H_FLOATINGPOINTERROR, core, PythonBuiltinClassType.FloatingPointError);
-        createTypeConstant(members, HPyContextMember.H_OSERROR, core, PythonBuiltinClassType.OSError);
-        createTypeConstant(members, HPyContextMember.H_IMPORTERROR, core, PythonBuiltinClassType.ImportError);
-        createTypeConstant(members, HPyContextMember.H_MODULENOTFOUNDERROR, core, PythonBuiltinClassType.ModuleNotFoundError);
-        createTypeConstant(members, HPyContextMember.H_INDEXERROR, core, PythonBuiltinClassType.IndexError);
-        createTypeConstant(members, HPyContextMember.H_KEYERROR, core, PythonBuiltinClassType.KeyError);
-        createTypeConstant(members, HPyContextMember.H_KEYBOARDINTERRUPT, core, PythonBuiltinClassType.KeyboardInterrupt);
-        createTypeConstant(members, HPyContextMember.H_MEMORYERROR, core, PythonBuiltinClassType.MemoryError);
-        createTypeConstant(members, HPyContextMember.H_NAMEERROR, core, PythonBuiltinClassType.NameError);
-        createTypeConstant(members, HPyContextMember.H_OVERFLOWERROR, core, PythonBuiltinClassType.OverflowError);
-        createTypeConstant(members, HPyContextMember.H_RUNTIMEERROR, core, PythonBuiltinClassType.RuntimeError);
-        createTypeConstant(members, HPyContextMember.H_RECURSIONERROR, core, PythonBuiltinClassType.RecursionError);
-        createTypeConstant(members, HPyContextMember.H_NOTIMPLEMENTEDERROR, core, PythonBuiltinClassType.NotImplementedError);
-        createTypeConstant(members, HPyContextMember.H_SYNTAXERROR, core, PythonBuiltinClassType.SyntaxError);
-        createTypeConstant(members, HPyContextMember.H_INDENTATIONERROR, core, PythonBuiltinClassType.IndentationError);
-        createTypeConstant(members, HPyContextMember.H_TABERROR, core, PythonBuiltinClassType.TabError);
-        createTypeConstant(members, HPyContextMember.H_REFERENCEERROR, core, PythonBuiltinClassType.ReferenceError);
-        createTypeConstant(members, HPyContextMember.H_SYSTEMERROR, core, PythonBuiltinClassType.SystemError);
-        createTypeConstant(members, HPyContextMember.H_SYSTEMEXIT, core, PythonBuiltinClassType.SystemExit);
-        createTypeConstant(members, HPyContextMember.H_TYPEERROR, core, PythonBuiltinClassType.TypeError);
-        createTypeConstant(members, HPyContextMember.H_UNBOUNDLOCALERROR, core, PythonBuiltinClassType.UnboundLocalError);
-        createTypeConstant(members, HPyContextMember.H_UNICODEERROR, core, PythonBuiltinClassType.UnicodeError);
-        createTypeConstant(members, HPyContextMember.H_UNICODEENCODEERROR, core, PythonBuiltinClassType.UnicodeEncodeError);
-        createTypeConstant(members, HPyContextMember.H_UNICODEDECODEERROR, core, PythonBuiltinClassType.UnicodeDecodeError);
-        createTypeConstant(members, HPyContextMember.H_UNICODETRANSLATEERROR, core, PythonBuiltinClassType.UnicodeTranslateError);
-        createTypeConstant(members, HPyContextMember.H_VALUEERROR, core, PythonBuiltinClassType.ValueError);
-        createTypeConstant(members, HPyContextMember.H_ZERODIVISIONERROR, core, PythonBuiltinClassType.ZeroDivisionError);
-        createTypeConstant(members, HPyContextMember.H_BLOCKINGIOERROR, core, PythonBuiltinClassType.BlockingIOError);
-        createTypeConstant(members, HPyContextMember.H_BROKENPIPEERROR, core, PythonBuiltinClassType.BrokenPipeError);
-        createTypeConstant(members, HPyContextMember.H_CHILDPROCESSERROR, core, PythonBuiltinClassType.ChildProcessError);
-        createTypeConstant(members, HPyContextMember.H_CONNECTIONERROR, core, PythonBuiltinClassType.ConnectionError);
-        createTypeConstant(members, HPyContextMember.H_CONNECTIONABORTEDERROR, core, PythonBuiltinClassType.ConnectionAbortedError);
-        createTypeConstant(members, HPyContextMember.H_CONNECTIONREFUSEDERROR, core, PythonBuiltinClassType.ConnectionRefusedError);
-        createTypeConstant(members, HPyContextMember.H_CONNECTIONRESETERROR, core, PythonBuiltinClassType.ConnectionResetError);
-        createTypeConstant(members, HPyContextMember.H_FILEEXISTSERROR, core, PythonBuiltinClassType.FileExistsError);
-        createTypeConstant(members, HPyContextMember.H_FILENOTFOUNDERROR, core, PythonBuiltinClassType.FileNotFoundError);
-        createTypeConstant(members, HPyContextMember.H_INTERRUPTEDERROR, core, PythonBuiltinClassType.InterruptedError);
-        createTypeConstant(members, HPyContextMember.H_ISADIRECTORYERROR, core, PythonBuiltinClassType.IsADirectoryError);
-        createTypeConstant(members, HPyContextMember.H_NOTADIRECTORYERROR, core, PythonBuiltinClassType.NotADirectoryError);
-        createTypeConstant(members, HPyContextMember.H_PERMISSIONERROR, core, PythonBuiltinClassType.PermissionError);
-        createTypeConstant(members, HPyContextMember.H_PROCESSLOOKUPERROR, core, PythonBuiltinClassType.ProcessLookupError);
-        createTypeConstant(members, HPyContextMember.H_TIMEOUTERROR, core, PythonBuiltinClassType.TimeoutError);
-        createTypeConstant(members, HPyContextMember.H_WARNING, core, PythonBuiltinClassType.Warning);
-        createTypeConstant(members, HPyContextMember.H_USERWARNING, core, PythonBuiltinClassType.UserWarning);
-        createTypeConstant(members, HPyContextMember.H_DEPRECATIONWARNING, core, PythonBuiltinClassType.DeprecationWarning);
-        createTypeConstant(members, HPyContextMember.H_PENDINGDEPRECATIONWARNING, core, PythonBuiltinClassType.PendingDeprecationWarning);
-        createTypeConstant(members, HPyContextMember.H_SYNTAXWARNING, core, PythonBuiltinClassType.SyntaxWarning);
-        createTypeConstant(members, HPyContextMember.H_RUNTIMEWARNING, core, PythonBuiltinClassType.RuntimeWarning);
-        createTypeConstant(members, HPyContextMember.H_FUTUREWARNING, core, PythonBuiltinClassType.FutureWarning);
-        createTypeConstant(members, HPyContextMember.H_IMPORTWARNING, core, PythonBuiltinClassType.ImportWarning);
-        createTypeConstant(members, HPyContextMember.H_UNICODEWARNING, core, PythonBuiltinClassType.UnicodeWarning);
-        createTypeConstant(members, HPyContextMember.H_BYTESWARNING, core, PythonBuiltinClassType.BytesWarning);
-        createTypeConstant(members, HPyContextMember.H_RESOURCEWARNING, core, PythonBuiltinClassType.ResourceWarning);
+        createTypeConstant(members, HPyContextMember.H_BASEEXCEPTION, context, PythonBuiltinClassType.PBaseException);
+        createTypeConstant(members, HPyContextMember.H_EXCEPTION, context, PythonBuiltinClassType.Exception);
+        createTypeConstant(members, HPyContextMember.H_STOPASYNCITERATION, context, PythonBuiltinClassType.StopAsyncIteration);
+        createTypeConstant(members, HPyContextMember.H_STOPITERATION, context, PythonBuiltinClassType.StopIteration);
+        createTypeConstant(members, HPyContextMember.H_GENERATOREXIT, context, PythonBuiltinClassType.GeneratorExit);
+        createTypeConstant(members, HPyContextMember.H_ARITHMETICERROR, context, PythonBuiltinClassType.ArithmeticError);
+        createTypeConstant(members, HPyContextMember.H_LOOKUPERROR, context, PythonBuiltinClassType.LookupError);
+        createTypeConstant(members, HPyContextMember.H_ASSERTIONERROR, context, PythonBuiltinClassType.AssertionError);
+        createTypeConstant(members, HPyContextMember.H_ATTRIBUTEERROR, context, PythonBuiltinClassType.AttributeError);
+        createTypeConstant(members, HPyContextMember.H_BUFFERERROR, context, PythonBuiltinClassType.BufferError);
+        createTypeConstant(members, HPyContextMember.H_EOFERROR, context, PythonBuiltinClassType.EOFError);
+        createTypeConstant(members, HPyContextMember.H_FLOATINGPOINTERROR, context, PythonBuiltinClassType.FloatingPointError);
+        createTypeConstant(members, HPyContextMember.H_OSERROR, context, PythonBuiltinClassType.OSError);
+        createTypeConstant(members, HPyContextMember.H_IMPORTERROR, context, PythonBuiltinClassType.ImportError);
+        createTypeConstant(members, HPyContextMember.H_MODULENOTFOUNDERROR, context, PythonBuiltinClassType.ModuleNotFoundError);
+        createTypeConstant(members, HPyContextMember.H_INDEXERROR, context, PythonBuiltinClassType.IndexError);
+        createTypeConstant(members, HPyContextMember.H_KEYERROR, context, PythonBuiltinClassType.KeyError);
+        createTypeConstant(members, HPyContextMember.H_KEYBOARDINTERRUPT, context, PythonBuiltinClassType.KeyboardInterrupt);
+        createTypeConstant(members, HPyContextMember.H_MEMORYERROR, context, PythonBuiltinClassType.MemoryError);
+        createTypeConstant(members, HPyContextMember.H_NAMEERROR, context, PythonBuiltinClassType.NameError);
+        createTypeConstant(members, HPyContextMember.H_OVERFLOWERROR, context, PythonBuiltinClassType.OverflowError);
+        createTypeConstant(members, HPyContextMember.H_RUNTIMEERROR, context, PythonBuiltinClassType.RuntimeError);
+        createTypeConstant(members, HPyContextMember.H_RECURSIONERROR, context, PythonBuiltinClassType.RecursionError);
+        createTypeConstant(members, HPyContextMember.H_NOTIMPLEMENTEDERROR, context, PythonBuiltinClassType.NotImplementedError);
+        createTypeConstant(members, HPyContextMember.H_SYNTAXERROR, context, PythonBuiltinClassType.SyntaxError);
+        createTypeConstant(members, HPyContextMember.H_INDENTATIONERROR, context, PythonBuiltinClassType.IndentationError);
+        createTypeConstant(members, HPyContextMember.H_TABERROR, context, PythonBuiltinClassType.TabError);
+        createTypeConstant(members, HPyContextMember.H_REFERENCEERROR, context, PythonBuiltinClassType.ReferenceError);
+        createTypeConstant(members, HPyContextMember.H_SYSTEMERROR, context, PythonBuiltinClassType.SystemError);
+        createTypeConstant(members, HPyContextMember.H_SYSTEMEXIT, context, PythonBuiltinClassType.SystemExit);
+        createTypeConstant(members, HPyContextMember.H_TYPEERROR, context, PythonBuiltinClassType.TypeError);
+        createTypeConstant(members, HPyContextMember.H_UNBOUNDLOCALERROR, context, PythonBuiltinClassType.UnboundLocalError);
+        createTypeConstant(members, HPyContextMember.H_UNICODEERROR, context, PythonBuiltinClassType.UnicodeError);
+        createTypeConstant(members, HPyContextMember.H_UNICODEENCODEERROR, context, PythonBuiltinClassType.UnicodeEncodeError);
+        createTypeConstant(members, HPyContextMember.H_UNICODEDECODEERROR, context, PythonBuiltinClassType.UnicodeDecodeError);
+        createTypeConstant(members, HPyContextMember.H_UNICODETRANSLATEERROR, context, PythonBuiltinClassType.UnicodeTranslateError);
+        createTypeConstant(members, HPyContextMember.H_VALUEERROR, context, PythonBuiltinClassType.ValueError);
+        createTypeConstant(members, HPyContextMember.H_ZERODIVISIONERROR, context, PythonBuiltinClassType.ZeroDivisionError);
+        createTypeConstant(members, HPyContextMember.H_BLOCKINGIOERROR, context, PythonBuiltinClassType.BlockingIOError);
+        createTypeConstant(members, HPyContextMember.H_BROKENPIPEERROR, context, PythonBuiltinClassType.BrokenPipeError);
+        createTypeConstant(members, HPyContextMember.H_CHILDPROCESSERROR, context, PythonBuiltinClassType.ChildProcessError);
+        createTypeConstant(members, HPyContextMember.H_CONNECTIONERROR, context, PythonBuiltinClassType.ConnectionError);
+        createTypeConstant(members, HPyContextMember.H_CONNECTIONABORTEDERROR, context, PythonBuiltinClassType.ConnectionAbortedError);
+        createTypeConstant(members, HPyContextMember.H_CONNECTIONREFUSEDERROR, context, PythonBuiltinClassType.ConnectionRefusedError);
+        createTypeConstant(members, HPyContextMember.H_CONNECTIONRESETERROR, context, PythonBuiltinClassType.ConnectionResetError);
+        createTypeConstant(members, HPyContextMember.H_FILEEXISTSERROR, context, PythonBuiltinClassType.FileExistsError);
+        createTypeConstant(members, HPyContextMember.H_FILENOTFOUNDERROR, context, PythonBuiltinClassType.FileNotFoundError);
+        createTypeConstant(members, HPyContextMember.H_INTERRUPTEDERROR, context, PythonBuiltinClassType.InterruptedError);
+        createTypeConstant(members, HPyContextMember.H_ISADIRECTORYERROR, context, PythonBuiltinClassType.IsADirectoryError);
+        createTypeConstant(members, HPyContextMember.H_NOTADIRECTORYERROR, context, PythonBuiltinClassType.NotADirectoryError);
+        createTypeConstant(members, HPyContextMember.H_PERMISSIONERROR, context, PythonBuiltinClassType.PermissionError);
+        createTypeConstant(members, HPyContextMember.H_PROCESSLOOKUPERROR, context, PythonBuiltinClassType.ProcessLookupError);
+        createTypeConstant(members, HPyContextMember.H_TIMEOUTERROR, context, PythonBuiltinClassType.TimeoutError);
+        createTypeConstant(members, HPyContextMember.H_WARNING, context, PythonBuiltinClassType.Warning);
+        createTypeConstant(members, HPyContextMember.H_USERWARNING, context, PythonBuiltinClassType.UserWarning);
+        createTypeConstant(members, HPyContextMember.H_DEPRECATIONWARNING, context, PythonBuiltinClassType.DeprecationWarning);
+        createTypeConstant(members, HPyContextMember.H_PENDINGDEPRECATIONWARNING, context, PythonBuiltinClassType.PendingDeprecationWarning);
+        createTypeConstant(members, HPyContextMember.H_SYNTAXWARNING, context, PythonBuiltinClassType.SyntaxWarning);
+        createTypeConstant(members, HPyContextMember.H_RUNTIMEWARNING, context, PythonBuiltinClassType.RuntimeWarning);
+        createTypeConstant(members, HPyContextMember.H_FUTUREWARNING, context, PythonBuiltinClassType.FutureWarning);
+        createTypeConstant(members, HPyContextMember.H_IMPORTWARNING, context, PythonBuiltinClassType.ImportWarning);
+        createTypeConstant(members, HPyContextMember.H_UNICODEWARNING, context, PythonBuiltinClassType.UnicodeWarning);
+        createTypeConstant(members, HPyContextMember.H_BYTESWARNING, context, PythonBuiltinClassType.BytesWarning);
+        createTypeConstant(members, HPyContextMember.H_RESOURCEWARNING, context, PythonBuiltinClassType.ResourceWarning);
 
-        createTypeConstant(members, HPyContextMember.H_BASEOBJECTTYPE, core, PythonBuiltinClassType.PythonObject);
-        createTypeConstant(members, HPyContextMember.H_TYPETYPE, core, PythonBuiltinClassType.PythonClass);
-        createTypeConstant(members, HPyContextMember.H_LONGTYPE, core, PythonBuiltinClassType.PInt);
-        createTypeConstant(members, HPyContextMember.H_UNICODETYPE, core, PythonBuiltinClassType.PString);
-        createTypeConstant(members, HPyContextMember.H_TUPLETYPE, core, PythonBuiltinClassType.PTuple);
-        createTypeConstant(members, HPyContextMember.H_LISTTYPE, core, PythonBuiltinClassType.PList);
+        createTypeConstant(members, HPyContextMember.H_BASEOBJECTTYPE, context, PythonBuiltinClassType.PythonObject);
+        createTypeConstant(members, HPyContextMember.H_TYPETYPE, context, PythonBuiltinClassType.PythonClass);
+        createTypeConstant(members, HPyContextMember.H_LONGTYPE, context, PythonBuiltinClassType.PInt);
+        createTypeConstant(members, HPyContextMember.H_UNICODETYPE, context, PythonBuiltinClassType.PString);
+        createTypeConstant(members, HPyContextMember.H_TUPLETYPE, context, PythonBuiltinClassType.PTuple);
+        createTypeConstant(members, HPyContextMember.H_LISTTYPE, context, PythonBuiltinClassType.PList);
 
         members[HPyContextMember.CTX_ASPYOBJECT.ordinal()] = new GraalHPyAsPyObject();
         members[HPyContextMember.CTX_DUP.ordinal()] = new GraalHPyDup();

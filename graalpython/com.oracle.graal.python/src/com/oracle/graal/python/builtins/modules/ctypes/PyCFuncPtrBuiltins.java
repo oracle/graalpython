@@ -494,7 +494,7 @@ public class PyCFuncPtrBuiltins extends PythonBuiltins {
                 }
             }
             CtypesThreadState state = CtypesThreadState.get(getContext(), PythonLanguage.get(this));
-            CtypesModuleBuiltins ctypesModuleBuiltins = (CtypesModuleBuiltins) getContext().getCore().lookupBuiltinModule("_ctypes").getBuiltins();
+            CtypesModuleBuiltins ctypesModuleBuiltins = (CtypesModuleBuiltins) getContext().lookupBuiltinModule("_ctypes").getBuiltins();
             Object result = callProcNode.execute(frame, pProc,
                             callargs,
                             dict.flags,

@@ -40,8 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_CONCAT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_ITEM;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.SQ_REPEAT;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 
@@ -88,7 +90,7 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected boolean isMemberReadable(String member) {
-        return SQ_REPEAT.getMemberName().equals(member) || SQ_ITEM.getMemberName().equals(member);
+        return SQ_REPEAT.getMemberName().equals(member) || SQ_ITEM.getMemberName().equals(member) || SQ_CONCAT.getMemberName().equals(member);
     }
 
     @ExportMessage
@@ -99,8 +101,7 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
     @ExportMessage
     protected Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @Cached LookupAttributeInMRONode.Dynamic getSqItemNode,
-                    @Cached LookupAttributeInMRONode.Dynamic getSqRepeatNode,
+                    @Cached LookupAttributeInMRONode.Dynamic lookup,
                     @Cached ToSulongNode toSulongNode,
                     @Cached BranchProfile errorProfile,
                     @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -111,9 +112,11 @@ public class PySequenceMethodsWrapper extends PythonNativeWrapper {
             Object result;
             try {
                 if (SQ_REPEAT.getMemberName().equals(member)) {
-                    result = toSulongNode.execute(getSqRepeatNode.execute(getPythonClass(lib), __MUL__));
+                    result = toSulongNode.execute(lookup.execute(getPythonClass(lib), __MUL__));
                 } else if (SQ_ITEM.getMemberName().equals(member)) {
-                    return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(getPythonClass(lib), __GETITEM__), true);
+                    return PyProcsWrapper.createSsizeargfuncWrapper(lookup.execute(getPythonClass(lib), __GETITEM__), true);
+                } else if (SQ_CONCAT.getMemberName().equals(member)) {
+                    result = toSulongNode.execute(lookup.execute(getPythonClass(lib), __ADD__));
                 } else {
                     // TODO extend list
                     throw UnknownIdentifierException.create(member);

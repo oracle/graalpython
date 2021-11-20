@@ -30,13 +30,13 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -57,7 +57,6 @@ import com.oracle.truffle.api.utilities.TriState;
  * A Python built-in class that is immutable.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PythonBuiltinClass extends PythonManagedClass {
     private final PythonBuiltinClassType type;
 
@@ -70,7 +69,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     @Override
     public void setAttribute(Object name, Object value) {
         CompilerAsserts.neverPartOfCompilation();
-        if (name instanceof HiddenKey || !PythonContext.get(null).getCore().isInitialized()) {
+        if (name instanceof HiddenKey || !PythonContext.get(null).isCoreInitialized()) {
             setAttributeUnsafe(name, value);
         } else {
             throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, this);
@@ -91,7 +90,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     @TruffleBoundary
     @Override
     public void onAttributeUpdate(String key, Object newValue) {
-        assert !PythonContext.get(null).getCore().isInitialized();
+        assert !PythonContext.get(null).isCoreInitialized();
         // Ideally, startup code should not create ASTs that rely on assumptions of props of
         // builtins. So there should be no assumptions to invalidate yet
         assert !getMethodResolutionOrder().invalidateAttributeInMROFinalAssumptions(key);
@@ -106,7 +105,6 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         PythonClass.updateMroShapeSubTypes(this);
     }
 
-    @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")
     @ExportMessage(library = InteropLibrary.class)
     @SuppressWarnings("static-method")
     boolean isMetaObject() {
@@ -160,9 +158,9 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         static TriState doOther(PythonBuiltinClass self, Object other,
                         @Shared("convert") @Cached PForeignToPTypeNode convert,
                         @CachedLibrary(limit = "3") InteropLibrary otherLib,
-                        @CachedLibrary("self") PythonObjectLibrary objectLib,
+                        @Cached IsNode isNode,
                         @Exclusive @Cached GilNode gil) {
-            return self.isIdenticalOrUndefined(other, convert, otherLib, objectLib, gil);
+            return self.isIdenticalOrUndefined(other, convert, otherLib, isNode, gil);
         }
     }
 }

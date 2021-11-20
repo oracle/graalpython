@@ -82,7 +82,7 @@ public abstract class WriteUnraisableNode extends Node {
                     @Cached GetExceptionTracebackNode getExceptionTracebackNode) {
         PythonContext context = PythonContext.get(getClassNode);
         try {
-            PythonModule sysModule = context.getCore().lookupBuiltinModule("sys");
+            PythonModule sysModule = context.lookupBuiltinModule("sys");
             Object unraisablehook = lookup.execute(frame, sysModule, BuiltinNames.UNRAISABLEHOOK);
             Object exceptionType = getClassNode.execute(exception);
             Object traceback = getExceptionTracebackNode.execute(exception);

@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FieldDesc;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyObjectStgDictNode;
 import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins.PyTypeStgDictNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -95,6 +96,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PyCPointer)
 public class PyCPointerBuiltins extends PythonBuiltins {
@@ -282,8 +284,9 @@ public class PyCPointerBuiltins extends PythonBuiltins {
             return pyCDataGetNode.execute(proto, stgdict.getfunc, self, index, size, self.b_ptr.ref(offset), factory());
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object Pointer_subscriptSlice(VirtualFrame frame, CDataObject self, PSlice slice,
+                        @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Cached PyCDataGetNode pyCDataGetNode,
                         @Cached PyObjectStgDictNode pyObjectStgDictNode,
                         @Cached PyTypeStgDictNode pyTypeStgDictNode,
@@ -330,7 +333,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
             StgDictObject itemdict = pyTypeStgDictNode.execute(proto);
             assert itemdict != null;
             if (itemdict.getfunc == FieldDesc.c.getfunc) {
-                byte[] ptr = self.getBufferBytes();
+                byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
 
                 if (len <= 0) {
                     return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
@@ -345,7 +348,7 @@ public class PyCPointerBuiltins extends PythonBuiltins {
                 return factory().createBytes(dest);
             }
             if (itemdict.getfunc == FieldDesc.u.getfunc) { // CTYPES_UNICODE
-                byte[] ptr = self.getBufferBytes();
+                byte[] ptr = bufferLib.getInternalOrCopiedByteArray(self);
 
                 if (len <= 0) {
                     return "";

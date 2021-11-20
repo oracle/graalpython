@@ -202,10 +202,10 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isEOF()"})
-        PBytes doObject(LZMADecompressor self, Object data, int maxLength,
+        PBytes doObject(VirtualFrame frame, LZMADecompressor self, Object data, int maxLength,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("d") @Cached LZMANodes.DecompressNode decompress) {
-            byte[] bytes = toBytes.execute(data);
+            byte[] bytes = toBytes.execute(frame, data);
             int len = bytes.length;
             return factory().createBytes(decompress.execute(self, bytes, len, maxLength));
         }

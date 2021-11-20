@@ -390,6 +390,15 @@ public abstract class PGuards {
         return obj instanceof PInt;
     }
 
+    public static boolean isBuiltinPInt(PInt obj) {
+        /*
+         * int's __class__ cannot be reassigned and other objects cannot have their class assigned
+         * to builtin int, so it is enough to look at the initial class. PInt constructor ensures
+         * that it cannot be PythonBuiltinClass.
+         */
+        return obj.getInitialPythonClass() == PythonBuiltinClassType.PInt;
+    }
+
     public static boolean isPString(Object obj) {
         return obj instanceof PString;
     }

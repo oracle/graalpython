@@ -58,7 +58,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
           GetAttributeNode SourceSection: [2050,2071]`FunctionType.__code_...`
             GetFixedAttributeNodeGen SourceSection: None
               Key: __code__
-              LookupAndCallBinaryNodeGen SourceSection: None
+              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                 Op: __getattribute__
             ReadNameNodeGen SourceSection: [2050,2062]`FunctionType`
               Identifier: FunctionType

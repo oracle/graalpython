@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.call;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -51,7 +50,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -60,13 +58,10 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.utilities.NeverValidAssumption;
 
 @GenerateUncached
 public abstract class GenericInvokeNode extends InvokeNode {
-    private static final Assumption invalid = Truffle.getRuntime().createAssumption();
-    static {
-        invalid.invalidate();
-    }
 
     public static GenericInvokeNode create() {
         return GenericInvokeNodeGen.create();
@@ -81,12 +76,12 @@ public abstract class GenericInvokeNode extends InvokeNode {
 
     @Override
     public Assumption needNotPassExceptionAssumption() {
-        return invalid;
+        return NeverValidAssumption.INSTANCE;
     }
 
     @Override
     public Assumption needNotPassFrameAssumption() {
-        return invalid;
+        return NeverValidAssumption.INSTANCE;
     }
 
     /**
@@ -123,11 +118,11 @@ public abstract class GenericInvokeNode extends InvokeNode {
         optionallySetGeneratorFunction(arguments, callTarget, isGeneratorFunctionProfile, callee);
         if (isNullFrameProfile.profile(frame == null)) {
             PythonThreadState threadState = context.getThreadState(language);
-            PFrame.Reference frameInfo = IndirectCalleeContext.enterIndirect(threadState, arguments);
+            Object state = IndirectCalleeContext.enterIndirect(threadState, arguments);
             try {
                 return callNode.call(callTarget, arguments);
             } finally {
-                IndirectCalleeContext.exit(threadState, frameInfo);
+                IndirectCalleeContext.exit(threadState, state);
             }
         } else {
             assert frame instanceof VirtualFrame : "GenericInvokeNode should not be executed with non-virtual frames";

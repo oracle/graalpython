@@ -106,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.nodes.Node;
@@ -150,8 +151,7 @@ public final class CertUtils {
      * _ssl.c#_decode_certificate
      */
     @TruffleBoundary
-    public static PDict decodeCertificate(Node node, X509Certificate cert) throws CertificateParsingException {
-        PythonObjectFactory factory = PythonObjectFactory.getUncached();
+    public static PDict decodeCertificate(Node node, PythonObjectSlowPathFactory factory, X509Certificate cert) throws CertificateParsingException {
         PDict dict = factory.createDict();
         HashingStorage storage = dict.getDictStorage();
         HashingStorageLibrary hlib = HashingStorageLibrary.getUncached();

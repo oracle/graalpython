@@ -75,8 +75,14 @@ public class PDecoratedMethod extends PythonBuiltinObject implements BoundBuilti
 
     @SuppressWarnings("unchecked")
     public Object boundToObject(PythonBuiltinClassType binding, PythonObjectFactory factory) {
-        if (GetClassNode.getUncached().execute(this) != PythonBuiltinClassType.PStaticmethod && callable instanceof BoundBuiltinCallable) {
-            return factory.createBuiltinClassmethodFromCallableObj(((BoundBuiltinCallable<Object>) callable).boundToObject(binding, factory));
+        if (GetClassNode.getUncached().execute(this) != PythonBuiltinClassType.PStaticmethod) {
+            if (callable instanceof BoundBuiltinCallable) {
+                return factory.createBuiltinClassmethodFromCallableObj(((BoundBuiltinCallable<Object>) callable).boundToObject(binding, factory));
+            }
+        } else {
+            if (callable instanceof PBuiltinMethod) {
+                return factory.createStaticmethodFromCallableObj(((PBuiltinMethod) callable).getFunction().boundToObject(binding, factory));
+            }
         }
         return this;
     }

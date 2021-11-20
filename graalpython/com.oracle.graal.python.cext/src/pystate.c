@@ -58,20 +58,24 @@ PyThreadState * PyThreadState_Get() {
 int64_t
 PyInterpreterState_GetID(PyInterpreterState *interp)
 {
-    if (interp == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "no interpreter provided");
-        return -1;
-    }
     return 0;
 }
 
+typedef PyGILState_STATE (*py_gil_state_ensure_fun_t)();
+UPCALL_TYPED_ID(PyGILState_Ensure, py_gil_state_ensure_fun_t);
 PyGILState_STATE PyGILState_Ensure() {
-    // ignore for the time being
-    return PyGILState_UNLOCKED;
+    return _jls_PyGILState_Ensure();
 }
 
-void PyGILState_Release(PyGILState_STATE state) {
-    // ignore for the time being
+typedef void (*py_gil_state_release_fun_t)(PyGILState_STATE);
+UPCALL_TYPED_ID(PyGILState_Release, py_gil_state_release_fun_t);
+void PyGILState_Release(PyGILState_STATE oldstate) {
+    _jls_PyGILState_Release(oldstate);
+}
+
+PyThreadState* PyGILState_GetThisThreadState(void) {
+    // TODO this should return NULL when called from a thread that is not known to python
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyThreadState_Get");
 }
 
 UPCALL_ID(PyState_FindModule)

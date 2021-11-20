@@ -43,33 +43,18 @@ package com.oracle.graal.python.nodes.function;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PNodeWithRaiseAndIndirectCall;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public abstract class PythonBuiltinBaseNode extends PNodeWithRaise implements IndirectCallNode {
+public abstract class PythonBuiltinBaseNode extends PNodeWithRaiseAndIndirectCall {
     @Child private PythonObjectFactory objectFactory;
     @Child private PConstructAndRaiseNode constructAndRaiseNode;
-    private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
-    private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
-
-    @Override
-    public Assumption needNotPassFrameAssumption() {
-        return dontNeedCallerFrame;
-    }
-
-    @Override
-    public Assumption needNotPassExceptionAssumption() {
-        return dontNeedExceptionState;
-    }
 
     protected final PythonObjectFactory factory() {
         if (objectFactory == null) {
@@ -77,7 +62,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaise implements In
             if (isAdoptable()) {
                 objectFactory = insert(PythonObjectFactory.create());
             } else {
-                objectFactory = getCore().factory();
+                objectFactory = factory();
             }
         }
         return objectFactory;
@@ -92,7 +77,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaise implements In
     }
 
     public final Python3Core getCore() {
-        return getContext().getCore();
+        return getContext();
     }
 
     public final Object getPythonClass(Object lazyClass, ConditionProfile profile) {

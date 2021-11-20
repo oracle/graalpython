@@ -89,7 +89,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -654,7 +654,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         Object contains(VirtualFrame frame, Object self, Object arg,
                         // accesses both self and iterator
                         @CachedLibrary(limit = "3") InteropLibrary library,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary pol,
+                        @Cached PyObjectRichCompareBool.EqNode eqNode,
                         @Cached CastToJavaStringNode cast) {
             try {
                 if (library.isString(self)) {
@@ -670,7 +670,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     for (int i = 0; i < library.getArraySize(self); i++) {
                         if (library.isArrayElementReadable(self, i)) {
                             Object element = library.readArrayElement(self, i);
-                            if (pol.equalsWithFrame(arg, element, pol, frame)) {
+                            if (eqNode.execute(frame, arg, element)) {
                                 return true;
                             }
                         }
@@ -689,7 +689,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     try {
                         while (library.hasIteratorNextElement(iterator)) {
                             Object next = library.getIteratorNextElement(iterator);
-                            if (pol.equalsWithFrame(arg, next, pol, frame)) {
+                            if (eqNode.execute(frame, arg, next)) {
                                 return true;
                             }
                         }

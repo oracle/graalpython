@@ -42,9 +42,9 @@ of useable development setups with that, but it's not something we support.
 
 Besides the source code of the Python interpreter, we have some useful `mx`
 functions defined under the `mx.graalpython` directory. As you make changes, you
-can test always test them with `mx build && mx python`. Additionally, there are
+can always test them with `mx build && mx python`. Additionally, there are
 various "gates" that we use on our CI systems to check any code that goes
-in. You can run all of these using `mx python-gate` or just some by using `mx
+in. You can run all gates with `mx python-gate` or just some by using `mx
 python-gate --tags [TAG]`. Two interesting gates to run that cover most things
 are:
 

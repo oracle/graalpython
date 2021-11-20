@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,55 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def _f(): pass
-FunctionType = type(_f)
-descriptor = type(FunctionType.__code__)
+from circularimport_valid.mod3 import startvalue, getvalue
 
-
-def recursive_repr(fillfn):
-    def inner(fn):
-        data = None
-
-        def wrapper(self):
-            nonlocal data
-            if data is None:
-                # lazy initialization to avoid bootstrap issues
-                import threading
-                data = threading.local()
-                data.running = set()
-            key = id(self)
-            if key in data.running:
-                return fillfn(self)
-            data.running.add(key)
-            try:
-                result = fn(self)
-            finally:
-                data.running.discard(key)
-            return result
-
-        wrapper.__name__ = fn.__name__
-        wrapper.__qualname__ = fn.__qualname__
-        return wrapper
-    return inner
-
-
-class SimpleNamespace(object):
-    def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-
-    @recursive_repr(lambda self: "%s(...)" % 'namespace' if type(self) is SimpleNamespace else type(self).__name__)
-    def __repr__(self):
-        sb = []
-        for k, v in sorted(self.__dict__.items()):
-            sb.append("%s=%r" % (k, v))
-        name = 'namespace' if type(self) is SimpleNamespace else type(self).__name__
-        return "%s(%s)" % (name, ", ".join(sb))
-
-    def __reduce__(self):
-        return type(self), (), self.__dict__
-
-    def __eq__(self, other):
-        if __graalpython__.type_check(self, SimpleNamespace) and __graalpython__.type_check(other, SimpleNamespace):
-            return self.__dict__ == other.__dict__
-        return NotImplemented
+value = startvalue + 1

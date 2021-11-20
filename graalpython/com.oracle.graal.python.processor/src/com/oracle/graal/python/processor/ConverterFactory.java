@@ -93,7 +93,7 @@ public class ConverterFactory {
     private static ConverterFactory[] BuiltinInt;
     private static ConverterFactory[] BuiltinLong;
     private static ConverterFactory[] BuiltinCodePoint;
-    private static ConverterFactory[] BuiltinBuffer;
+    private static ConverterFactory[] BuiltinTuple;
     private static ConverterFactory[] BuiltinReadableBuffer;
     private static ConverterFactory[] BuiltinWritableBuffer;
     private static ConverterFactory[] BuiltinIndex;
@@ -142,8 +142,8 @@ public class ConverterFactory {
                 return BuiltinDouble;
             case CodePoint:
                 return BuiltinCodePoint;
-            case Buffer:
-                return BuiltinBuffer;
+            case Tuple:
+                return BuiltinTuple;
             case ReadableBuffer:
                 return BuiltinReadableBuffer;
             case WritableBuffer:
@@ -224,7 +224,7 @@ public class ConverterFactory {
         BuiltinLong = forBuiltin(elementUtils, "JavaLongConversionNode");
         BuiltinDouble = forBuiltin(elementUtils, "JavaDoubleConversionNode");
         BuiltinCodePoint = forBuiltin(elementUtils, "CodePointConversionNode");
-        BuiltinBuffer = forBuiltin(elementUtils, "BufferConversionNode");
+        BuiltinTuple = forBuiltin(elementUtils, "TupleConversionNode");
         BuiltinReadableBuffer = forBuiltin(elementUtils, "ReadableBufferConversionNode");
         BuiltinWritableBuffer = forBuiltin(elementUtils, "WritableBufferConversionNode");
         BuiltinIndex = forBuiltin(elementUtils, "IndexConversionNode");

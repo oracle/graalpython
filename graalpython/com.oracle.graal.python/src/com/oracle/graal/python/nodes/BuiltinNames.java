@@ -56,6 +56,7 @@ public abstract class BuiltinNames {
     public static final String __DEBUG__ = "__debug__";
 
     // sys
+    public static final String TRACEBACKLIMIT = "tracebacklimit";
     public static final String DISPLAYHOOK = "displayhook";
     public static final String BREAKPOINTHOOK = "breakpointhook";
     public static final String EXCEPTHOOK = "excepthook";
@@ -63,11 +64,19 @@ public abstract class BuiltinNames {
     public static final String LAST_TYPE = "last_type";
     public static final String LAST_VALUE = "last_value";
     public static final String LAST_TRACEBACK = "last_traceback";
+    public static final String __EXCEPTHOOK__ = "__excepthook__";
+    public static final String __STDERR__ = "__stderr__";
+    public static final String STDERR = "stderr";
+    public static final String __STDIN__ = "__stdin__";
+    public static final String STDIN = "stdin";
+    public static final String __STDOUT__ = "__stdout__";
+    public static final String STDOUT = "stdout";
 
     // builtin functions
     public static final String ABS = "abs";
     public static final String DICT = "dict";
     public static final String DEFAULTDICT = "defaultdict";
+    public static final String PARTIAL = "partial";
     public static final String TUPLE_GETTER = "_tuplegetter";
     public static final String DEQUE = "deque";
     public static final String DEQUE_ITER = "_deque_iterator";

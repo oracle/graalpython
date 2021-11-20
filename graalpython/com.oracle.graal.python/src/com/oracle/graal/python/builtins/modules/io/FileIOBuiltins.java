@@ -641,7 +641,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                     throw raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -675,7 +675,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Shared("e") @Cached BranchProfile errorProfile,
                         @Shared("g") @Cached GilNode gil) {
             try {
-                return posixWrite.write(self.getFD(), toBytes.execute(data), toBytes.execute(data).length, posixLib, errorProfile, gil);
+                return posixWrite.write(self.getFD(), toBytes.execute(frame, data), toBytes.execute(frame, data).length, posixLib, errorProfile, gil);
             } catch (PosixSupportLibrary.PosixException e) {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;
@@ -830,7 +830,7 @@ public class FileIOBuiltins extends PythonBuiltins {
         Object simple(VirtualFrame frame, PFileIO self,
                         @Cached PyObjectCallMethodObjArgs callClose) {
             try {
-                callClose.execute(frame, getContext().getCore().lookupType(PRawIOBase), CLOSE, self);
+                callClose.execute(frame, getContext().lookupType(PRawIOBase), CLOSE, self);
             } catch (PException e) {
                 self.setClosed();
                 throw e;
@@ -844,7 +844,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Shared("c") @Cached PosixModuleBuiltins.CloseNode posixClose,
                         @Shared("l") @Cached PyObjectCallMethodObjArgs callSuperClose) {
             try {
-                callSuperClose.execute(frame, getContext().getCore().lookupType(PRawIOBase), CLOSE, self);
+                callSuperClose.execute(frame, getContext().lookupType(PRawIOBase), CLOSE, self);
             } catch (PException e) {
                 try {
                     internalClose(frame, self, posixClose);
@@ -865,7 +865,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Shared("l") @Cached PyObjectCallMethodObjArgs callSuperClose) {
             PException rawIOException = null;
             try {
-                callSuperClose.execute(frame, getContext().getCore().lookupType(PRawIOBase), CLOSE, self);
+                callSuperClose.execute(frame, getContext().lookupType(PRawIOBase), CLOSE, self);
             } catch (PException e) {
                 rawIOException = e;
             }

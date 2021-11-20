@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
@@ -61,7 +60,6 @@ import com.oracle.truffle.api.utilities.TruffleWeakReference;
  * Mutable class.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PythonClass extends PythonManagedClass {
 
     private static final int MRO_SUBTYPES_MAX = 64;
@@ -121,7 +119,6 @@ public final class PythonClass extends PythonManagedClass {
         invalidateMroShapeSubTypes();
     }
 
-    @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")
     @ExportMessage(library = InteropLibrary.class)
     @SuppressWarnings("static-method")
     boolean isMetaObject() {
@@ -233,6 +230,7 @@ public final class PythonClass extends PythonManagedClass {
     }
 
     public void setDictHiddenProp(DynamicObjectLibrary dylib, BranchProfile hasMroShapeProfile, Object value) {
+        dylib.setShapeFlags(this, dylib.getShapeFlags(this) | HAS_MATERIALIZED_DICT);
         dylib.put(this, DICT, value);
         if (mroShapeSubTypes != null) {
             hasMroShapeProfile.enter();

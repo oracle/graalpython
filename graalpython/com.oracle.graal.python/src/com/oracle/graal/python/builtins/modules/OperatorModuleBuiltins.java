@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -105,7 +106,7 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
     abstract static class CompareDigestNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public boolean compare(Object left, Object right,
+        boolean compare(VirtualFrame frame, Object left, Object right,
                         @Cached CastToJavaStringNode cast,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
@@ -117,6 +118,7 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
                 if (!bufferAcquireLib.hasBuffer(left) || !bufferAcquireLib.hasBuffer(right)) {
                     throw raise(TypeError, "unsupported operand types(s) or combination of types: '%p' and '%p'", left, right);
                 }
+                Object savedState = IndirectCallContext.enter(frame, this);
                 Object leftBuffer = bufferAcquireLib.acquireReadonly(left);
                 try {
                     Object rightBuffer = bufferAcquireLib.acquireReadonly(right);
@@ -127,6 +129,7 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
                     }
                 } finally {
                     bufferLib.release(leftBuffer);
+                    IndirectCallContext.exit(frame, this, savedState);
                 }
             }
         }

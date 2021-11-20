@@ -335,15 +335,44 @@ def test_parse_args():
 def test_multiple_values_for_keyword_argument():
     assert_call_raises(TypeError, "f26(a=1, **{'a' : 2})") # TypeError: f26() got multiple values for keyword argument 'a'
     assert_call_raises(TypeError, "f26(**{'a' : 4}, **{'a': 3})")  # TypeError: f26() got multiple values for keyword argument 'a'
-    
+
 b = 1
 def test_argument_must_be_mapping():    
     assert_call_raises(TypeError, "f26(a=1, **b)") # TypeError: f26() argument after ** must be a mapping, not int
     assert_call_raises(TypeError, "f26(**b)") # TypeError: f26() argument after ** must be a mapping, not int
-    class MyDict(dict):
+
+    class MyDict1(dict):
         pass
-    d = MyDict()
-    assert f26(**d) == {}
+
+    class MyDict2(dict):
+        def __iter__(self):
+            return iter(self.keys())
+        def keys(self):
+            return {k.lower() for k in super().keys()}
+
+    class MyDict3(dict):
+        # If we don't redefine __iter__, the methods should get ignored
+        def keys(self):
+            return {}
+        def __getitem__(self, item):
+            return None
+
+    class MyMapping1:
+        def __init__(self, **kwargs):
+            self.delegate = dict(kwargs)
+        def keys(self):
+            return self.delegate.keys()
+        def __getitem__(self, item):
+            return self.delegate[item]
+
+    assert f26(**MyDict1(a=1), **MyMapping1(b=2), **MyDict2(c=3, C='ignored'), **MyDict3(d=4)) == {'a': 1, 'b': 2, 'c': 3, 'd': 4}
+
+def test_doesnt_modify_passed_dict():
+    d1 = {'a': 1}
+    d2 = {'b': 2}
+    assert f26(**d1, **d2) == {'a': 1, 'b': 2}
+    assert d1 == {'a': 1}
+    assert d2 == {'b': 2}
 
 fooo = f26
 def test_multiple_values_with_callable_name():

@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.util;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+
 import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -58,17 +58,19 @@ import javax.management.ReflectionException;
 
 import org.graalvm.nativeimage.ImageInfo;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -411,13 +413,41 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static String substring(String s, int start, int end) {
+        return s.substring(start, end);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String substring(String s, int start) {
+        return s.substring(start);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static int lastIndexOf(String s, char chr) {
+        return s.lastIndexOf(chr);
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static StringBuilder append(StringBuilder sb, char c) {
         return sb.append(c);
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static StringBuilder append(StringBuilder sb, Object... args) {
+        for (Object arg : args) {
+            sb.append(arg);
+        }
+        return sb;
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static StringBuilder append(StringBuilder sb, String s) {
         return sb.append(s);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder append(StringBuilder sb, int i) {
+        return sb.append(i);
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -433,6 +463,34 @@ public final class PythonUtils {
     @TruffleBoundary(allowInlining = true)
     public static StringBuilder appendCodePoint(StringBuilder sb, int codePoint) {
         return sb.appendCodePoint(codePoint);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String toString(CharSequence sequence) {
+        return sequence.toString();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String trim(String s) {
+        return s.trim();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String trim(CharSequence sequence) {
+        return sequence.toString().trim();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String trimLeft(CharSequence sequence) {
+        int len = sequence.length();
+        int st = 0;
+
+        while ((st < len) && (sequence.charAt(st) <= ' ')) {
+            st++;
+        }
+
+        final String s = sequence.toString();
+        return (st > 0) ? substring(s, st, len) : s;
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -544,9 +602,9 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary
-    public static void createMember(PythonLanguage language, Object klass, Class<?> nodeClass, String name, String doc, int idx, Function<PythonLanguage, RootNode> rootNodeSupplier) {
+    public static void createMember(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Class<?> nodeClass, String name, String doc, int idx,
+                    Function<PythonLanguage, RootNode> rootNodeSupplier) {
         RootCallTarget callTarget = language.createCachedCallTarget(rootNodeSupplier, nodeClass, idx);
-        PythonObjectFactory factory = PythonObjectFactory.getUncached();
         PBuiltinFunction getter = factory.createGetSetBuiltinFunction(name, klass, 0, callTarget);
         GetSetDescriptor callable = factory.createGetSetDescriptor(getter, null, name, klass, false);
         callable.setAttribute(__DOC__, doc);
@@ -554,7 +612,14 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary
-    public static void createMethod(PythonLanguage language, Object klass, Class<?> nodeClass, Object type, int numDefaults, Supplier<PythonBuiltinBaseNode> nodeSupplier,
+    public static PBuiltinFunction createMethod(PythonLanguage language, Object klass, Class<?> nodeClass, Object type, int numDefaults, Supplier<PythonBuiltinBaseNode> nodeSupplier,
+                    Object... callTargetCacheKeys) {
+        return createMethod(PythonObjectFactory.getUncached(), language, klass, nodeClass, type, numDefaults, nodeSupplier, callTargetCacheKeys);
+    }
+
+    @TruffleBoundary
+    public static PBuiltinFunction createMethod(PythonObjectFactory factory, PythonLanguage language, Object klass, Class<?> nodeClass, Object type, int numDefaults,
+                    Supplier<PythonBuiltinBaseNode> nodeSupplier,
                     Object... callTargetCacheKeys) {
         Builtin builtin = nodeClass.getAnnotation(Builtin.class);
         RootCallTarget callTarget = language.createCachedCallTarget(l -> {
@@ -563,11 +628,15 @@ public final class PythonUtils {
         }, nodeClass, createCalltargetKeys(callTargetCacheKeys, nodeClass));
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
         PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), type, numDefaults, flags, callTarget);
-        WriteAttributeToObjectNode.getUncached(true).execute(klass, builtin.name(), function);
+        if (klass != null) {
+            WriteAttributeToObjectNode.getUncached(true).execute(klass, builtin.name(), function);
+        }
+        return function;
     }
 
     @TruffleBoundary
-    public static void createConstructor(PythonLanguage language, Object klass, Class<?> nodeClass, Supplier<PythonBuiltinBaseNode> nodeSupplier, Object... callTargetCacheKeys) {
+    public static void createConstructor(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Class<?> nodeClass, Supplier<PythonBuiltinBaseNode> nodeSupplier,
+                    Object... callTargetCacheKeys) {
         Builtin builtin = nodeClass.getAnnotation(Builtin.class);
         assert __NEW__.equals(builtin.name());
         assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);
@@ -576,7 +645,7 @@ public final class PythonUtils {
             return new BuiltinFunctionRootNode(l, builtin, nodeFactory, true, PythonBuiltinClassType.PTuple);
         }, nodeClass, createCalltargetKeys(callTargetCacheKeys, nodeClass));
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), PythonBuiltinClassType.PTuple, 1, flags, callTarget);
+        PBuiltinFunction function = factory.createBuiltinFunction(builtin.name(), PythonBuiltinClassType.PTuple, 1, flags, callTarget);
         WriteAttributeToObjectNode.getUncached(true).execute(klass, __NEW__, function);
     }
 

@@ -51,8 +51,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Has
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -118,13 +118,10 @@ public class HashMapStorage extends HashingStorage {
     private static final class CustomKey {
         private final Object value;
         private final int hash;
-        private PythonObjectLibrary lib;
-        private final ThreadState state;
 
-        private CustomKey(Object value, int hash, ThreadState state) {
+        private CustomKey(Object value, int hash) {
             this.value = value;
             this.hash = hash;
-            this.state = state;
         }
 
         @Override
@@ -136,10 +133,8 @@ public class HashMapStorage extends HashingStorage {
                 return false;
             }
             Object otherValue = other;
-            PythonObjectLibrary otherLib = PythonObjectLibrary.getUncached();
             if (other instanceof CustomKey) {
                 otherValue = ((CustomKey) other).value;
-                otherLib = ((CustomKey) other).getPythonObjLib();
                 if (hash != ((CustomKey) other).hash) {
                     return false;
                 }
@@ -149,19 +144,12 @@ public class HashMapStorage extends HashingStorage {
             // Hopefully it will be uncommon that the object we search for will have the same hash
             // as some of the items in the storage (it may even equal to some of those items), so
             // the uncached equals call does not hurt that much here
-            return getPythonObjLib().equalsWithState(value, otherValue, otherLib, state);
+            return PyObjectRichCompareBool.EqNode.getUncached().execute(null, value, otherValue);
         }
 
         @Override
         public int hashCode() {
             return hash;
-        }
-
-        PythonObjectLibrary getPythonObjLib() {
-            if (lib == null) {
-                lib = PythonObjectLibrary.getFactory().getUncached(value);
-            }
-            return lib;
         }
     }
 
@@ -206,7 +194,7 @@ public class HashMapStorage extends HashingStorage {
             VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             long hash = hashNode.execute(frame, key);
             if (PInt.isIntRange(hash)) {
-                CustomKey keyObj = new CustomKey(key, (int) hash, state);
+                CustomKey keyObj = new CustomKey(key, (int) hash);
                 return get(self.values, keyObj);
             }
             // else the hashes cannot possibly match
@@ -274,7 +262,7 @@ public class HashMapStorage extends HashingStorage {
             VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
             long hash = hashNode.execute(frame, key);
             if (PInt.isIntRange(hash)) {
-                CustomKey keyObj = new CustomKey(key, (int) hash, state);
+                CustomKey keyObj = new CustomKey(key, (int) hash);
                 remove(self.values, keyObj);
             }
             // else the hashes cannot possibly match

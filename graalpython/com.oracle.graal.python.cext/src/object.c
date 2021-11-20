@@ -41,6 +41,7 @@
 #include "capi.h"
 
 PyObject* PyObject_SelfIter(PyObject* obj) {
+    Py_INCREF(obj);
     return obj;
 }
 

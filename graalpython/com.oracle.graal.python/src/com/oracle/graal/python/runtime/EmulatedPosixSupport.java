@@ -200,7 +200,7 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.OperationW
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
+import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
@@ -1613,7 +1613,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                     @Cached IsNode isNode) throws PosixException {
         // TODO looking up the signal values by name is probably not compatible with CPython
         // (the user might change the value of _signal.SIGKILL, but kill(pid, 9) should still work
-        PythonModule signalModule = context.getCore().lookupBuiltinModule("_signal");
+        PythonModule signalModule = context.lookupBuiltinModule("_signal");
         for (String name : TERMINATION_SIGNALS) {
             Object value = readSignalNode.execute(signalModule, name);
             if (isNode.execute(signal, value)) {

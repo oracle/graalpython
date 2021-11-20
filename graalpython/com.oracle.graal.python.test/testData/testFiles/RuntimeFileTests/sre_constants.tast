@@ -222,7 +222,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                         IfNode SourceSection: [1425,1537]`if newline in patter...`
                                           YesNodeGen SourceSection: None
                                             ContainsNodeGen SourceSection: [1428,1446]`newline in pattern`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __contains__
                                               YesNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [1428,1435]`newline`
@@ -240,14 +240,14 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                 GetAttributeNode SourceSection: [1504,1515]`self.lineno`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: lineno
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                   ReadLocalVariableNodeGen SourceSection: [1504,1508]`self`
                                                     Frame: [0,self,Illegal]
                                                 GetAttributeNode SourceSection: [1517,1527]`self.colno`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: colno
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                    LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                   ReadLocalVariableNodeGen SourceSection: [1517,1521]`self`
                                                     Frame: [0,self,Illegal]
@@ -436,7 +436,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       GetAttributeNode SourceSection: [1833,1842]`self.name`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: name
-                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                          LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                         ReadLocalVariableNodeGen SourceSection: [1833,1837]`self`
                                           Frame: [0,self,Illegal]
@@ -634,7 +634,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                           GetAttributeNode SourceSection: [2075,2084]`item.name`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: name
-                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                              LookupAndCallNonReversibleBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                             ReadGeneratorFrameVariableNodeGen SourceSection: [2075,2079]`item`
                                               Frame: [0,item,Illegal]

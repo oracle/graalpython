@@ -40,12 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.traceback;
 
+import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.UNKNOWN_LINE_NUMBER;
+
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.source.SourceSection;
 
 /**
  * A lazy representation of an exception traceback that can be evaluated to a python object by
@@ -109,6 +113,25 @@ public class LazyTraceback {
     public void setTraceback(PTraceback traceback) {
         this.traceback = traceback;
         this.materialized = true;
+    }
+
+    @CompilerDirectives.TruffleBoundary
+    public static int getSourceLineNoOrDefault(PException exception, int defaultValue) {
+        final Node location = exception.getLocation();
+        if (location != null) {
+            final SourceSection sourceSection = location.getSourceSection();
+            if (sourceSection != null) {
+                return sourceSection.getStartLine();
+            }
+        }
+        return defaultValue;
+    }
+
+    public int getLineNo() {
+        if (exception != null) {
+            return getSourceLineNoOrDefault(exception, UNKNOWN_LINE_NUMBER);
+        }
+        return UNKNOWN_LINE_NUMBER;
     }
 
     public boolean isMaterialized() {

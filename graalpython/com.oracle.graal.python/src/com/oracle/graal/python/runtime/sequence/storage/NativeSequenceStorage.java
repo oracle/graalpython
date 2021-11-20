@@ -58,18 +58,11 @@ public final class NativeSequenceStorage extends SequenceStorage {
     /* native pointer object */
     private Object ptr;
 
-    /* length of contents */
-    private int len;
-
-    /* allocated capacity */
-    private int capacity;
-
     private final ListStorageType elementType;
 
     public NativeSequenceStorage(Object ptr, int length, int capacity, ListStorageType elementType) {
+        super(length, capacity);
         this.ptr = ptr;
-        this.capacity = capacity;
-        this.len = length;
         this.elementType = elementType;
     }
 
@@ -79,10 +72,6 @@ public final class NativeSequenceStorage extends SequenceStorage {
 
     public void setPtr(Object ptr) {
         this.ptr = ptr;
-    }
-
-    public int getCapacity() {
-        return capacity;
     }
 
     public void setCapacity(int capacity) {
@@ -95,104 +84,85 @@ public final class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public final int length() {
-        return len;
-    }
-
-    @Override
     public void setNewLength(int length) {
         assert length <= capacity;
-        this.len = length;
+        this.length = length;
     }
 
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return String.format("<NativeSequenceStorage(type=%s, len=%d, cap=%d) at %s>", elementType, len, capacity, ptr);
+        return String.format("<NativeSequenceStorage(type=%s, len=%d, cap=%d) at %s>", elementType, length, capacity, ptr);
     }
 
     @Override
     public void ensureCapacity(@SuppressWarnings("unused") int newCapacity) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public SequenceStorage copy() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public SequenceStorage createEmpty(int newCapacity) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public Object[] getInternalArray() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public Object[] getCopyOfInternalArray() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public Object getItemNormalized(int idx) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
-        CompilerAsserts.neverPartOfCompilation();
-        throw new IllegalStateException("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public void insertItem(int idx, Object value) throws SequenceStoreException {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public SequenceStorage getSliceInBound(int start, int stop, int step, int length) {
-        CompilerAsserts.neverPartOfCompilation();
-        throw new IllegalStateException("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public void reverse() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public boolean equals(SequenceStorage other) {
-        CompilerAsserts.neverPartOfCompilation();
-        throw new IllegalStateException("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public SequenceStorage generalizeFor(Object value, SequenceStorage other) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public Object getIndicativeValue() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
     public void copyItem(int idxTo, int idxFrom) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new IllegalStateException("should not reach");
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @Override
@@ -214,7 +184,7 @@ public final class NativeSequenceStorage extends SequenceStorage {
 
     @ExportMessage
     int getBufferLength() {
-        return len;
+        return length;
     }
 
     @ExportMessage

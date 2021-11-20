@@ -84,7 +84,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -224,25 +226,30 @@ public class StructSequence {
 
     @TruffleBoundary
     public static void initType(Python3Core core, BuiltinTypeDescriptor desc) {
-        initType(core.getLanguage(), core.lookupType(desc.type), desc);
+        initType(core.factory(), core.getLanguage(), core.lookupType(desc.type), desc);
     }
 
     @TruffleBoundary
     public static void initType(PythonLanguage language, Object klass, Descriptor desc) {
+        initType(PythonContext.get(null).factory(), language, klass, desc);
+    }
+
+    @TruffleBoundary
+    public static void initType(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Descriptor desc) {
         assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);
 
         // create descriptors for accessing named fields by their names
         int unnamedFields = 0;
         for (int idx = 0; idx < desc.fieldNames.length; ++idx) {
             if (desc.fieldNames[idx] != null) {
-                createMember(language, klass, desc.fieldNames[idx], desc.fieldDocStrings[idx], idx);
+                createMember(factory, language, klass, desc.fieldNames[idx], desc.fieldDocStrings[idx], idx);
             } else {
                 unnamedFields++;
             }
         }
 
-        createMethod(language, klass, desc, ReprNode.class, d -> ReprNodeGen.create(d));
-        createMethod(language, klass, desc, ReduceNode.class, d -> ReduceNodeGen.create(d));
+        createMethod(factory, language, klass, desc, ReprNode.class, ReprNodeGen::create);
+        createMethod(factory, language, klass, desc, ReduceNode.class, ReduceNodeGen::create);
 
         WriteAttributeToObjectNode writeAttrNode = WriteAttributeToObjectNode.getUncached(true);
         /*
@@ -258,23 +265,25 @@ public class StructSequence {
 
         if (ReadAttributeFromObjectNode.getUncachedForceType().execute(klass, __NEW__) == PNone.NO_VALUE) {
             if (desc.allowInstances) {
-                createConstructor(language, klass, desc, NewNode.class, d -> NewNodeGen.create(d));
+                createConstructor(factory, language, klass, desc, NewNode.class, NewNodeGen::create);
             } else {
-                createConstructor(language, klass, desc, DisabledNewNode.class, d -> DisabledNewNodeGen.create());
+                createConstructor(factory, language, klass, desc, DisabledNewNode.class, d -> DisabledNewNodeGen.create());
             }
         }
     }
 
-    private static void createMember(PythonLanguage language, Object klass, String name, String doc, int idx) {
-        PythonUtils.createMember(language, klass, GetStructMemberNode.class, name, doc, idx, (l) -> new GetStructMemberNode(l, idx));
+    private static void createMember(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, String name, String doc, int idx) {
+        PythonUtils.createMember(factory, language, klass, GetStructMemberNode.class, name, doc, idx, (l) -> new GetStructMemberNode(l, idx));
     }
 
-    private static void createMethod(PythonLanguage language, Object klass, Descriptor desc, Class<?> nodeClass, Function<Descriptor, PythonBuiltinBaseNode> nodeSupplier) {
-        PythonUtils.createMethod(language, klass, nodeClass, PythonBuiltinClassType.PTuple, 0, () -> nodeSupplier.apply(desc), desc);
+    private static void createMethod(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Descriptor desc, Class<?> nodeClass,
+                    Function<Descriptor, PythonBuiltinBaseNode> nodeSupplier) {
+        PythonUtils.createMethod(factory, language, klass, nodeClass, PythonBuiltinClassType.PTuple, 0, () -> nodeSupplier.apply(desc), desc);
     }
 
-    private static void createConstructor(PythonLanguage language, Object klass, Descriptor desc, Class<?> nodeClass, Function<Descriptor, PythonBuiltinBaseNode> nodeSupplier) {
-        PythonUtils.createConstructor(language, klass, nodeClass, () -> nodeSupplier.apply(desc), desc);
+    private static void createConstructor(PythonObjectSlowPathFactory factory, PythonLanguage language, Object klass, Descriptor desc, Class<?> nodeClass,
+                    Function<Descriptor, PythonBuiltinBaseNode> nodeSupplier) {
+        PythonUtils.createConstructor(factory, language, klass, nodeClass, () -> nodeSupplier.apply(desc), desc);
     }
 
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)

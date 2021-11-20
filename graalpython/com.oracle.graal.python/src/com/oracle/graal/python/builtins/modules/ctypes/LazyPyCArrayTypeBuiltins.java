@@ -55,10 +55,10 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCArrayTypeBuiltinsFactory.CharArrayRawNodeFactory;
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCArrayTypeBuiltinsFactory.CharArrayValueNodeFactory;
 import com.oracle.graal.python.builtins.modules.ctypes.LazyPyCArrayTypeBuiltinsFactory.WCharArrayValueNodeFactory;
-import com.oracle.graal.python.builtins.modules.ctypes.PtrValue.ByteArrayStorage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -77,7 +77,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PythonObjectSlowPathFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -85,6 +86,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
@@ -124,7 +126,7 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                         l -> new BuiltinFunctionRootNode(l, builtin, factory, true),
                         factory.getNodeClass(),
                         builtin.name());
-        PythonObjectFactory f = PythonObjectFactory.getUncached();
+        PythonObjectSlowPathFactory f = PythonContext.get(null).factory();
         int flags = PBuiltinFunction.getFlags(builtin, rawCallTarget);
         PBuiltinFunction getter = f.createBuiltinFunction(name, type, 1, flags, rawCallTarget);
         GetSetDescriptor callable = f.createGetSetDescriptor(getter, getter, name, type, false);
@@ -136,17 +138,17 @@ public class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CharArrayRawNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "isNoValue(value)")
-        Object doGet(CDataObject self, @SuppressWarnings("unused") PNone value) {
-            assert self.b_ptr.ptr instanceof ByteArrayStorage;
-            return factory().createBytes(self.getBufferBytes());
+        @Specialization(guards = "isNoValue(value)", limit = "1")
+        Object doGet(CDataObject self, @SuppressWarnings("unused") PNone value,
+                        @CachedLibrary("self") PythonBufferAccessLibrary bufferLib) {
+            return factory().createBytes(bufferLib.getInternalOrCopiedByteArray(self));
         }
 
         @Specialization
-        Object doSet(CDataObject self, Object value,
+        Object doSet(VirtualFrame frame, CDataObject self, Object value,
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary qlib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary alib) {
-            Object buf = qlib.acquire(value, BufferFlags.PyBUF_SIMPLE);
+            Object buf = qlib.acquire(value, BufferFlags.PyBUF_SIMPLE, frame, this);
             byte[] bytes = alib.getInternalOrCopiedByteArray(buf);
             if (bytes.length > self.b_size) {
                 throw raise(ValueError, BYTE_STRING_TOO_LONG);

@@ -84,7 +84,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.CheckCompatibleForAssigmentNodeGen;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -103,7 +102,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -118,16 +116,15 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -138,6 +135,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -154,8 +152,6 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ClassNode extends PythonBinaryBuiltinNode {
 
-        @Child private CheckCompatibleForAssigmentNode compatibleForAssigmentNode;
-
         @Specialization(guards = "isNoValue(value)")
         static Object getClass(Object self, @SuppressWarnings("unused") PNone value,
                         @Cached GetClassNode getClass) {
@@ -164,64 +160,38 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNativeClass(klass)")
         Object setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object klass) {
-            throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
+            throw raise(TypeError, ErrorMessages.CLASS_ASSIGNMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
         }
 
         @Specialization(guards = "isPythonClass(value) || isPythonBuiltinClassType(value)")
         PNone setClass(VirtualFrame frame, PythonObject self, Object value,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib1,
-                        @Cached GetClassNode getClassNode,
-                        @Cached BranchProfile errorValueBranch,
-                        @Cached BranchProfile errorSelfBranch) {
-            if (isBuiltinClassNotModule(value) || PGuards.isNativeClass(value)) {
-                errorValueBranch.enter();
-                throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
-            }
-            Object lazyClass = getClassNode.execute(self);
-            if (isBuiltinClassNotModule(lazyClass) || PGuards.isNativeClass(lazyClass)) {
-                errorSelfBranch.enter();
-                throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
+                        @CachedLibrary(limit = "4") DynamicObjectLibrary dylib,
+                        @Cached IsBuiltinClassProfile classProfile1,
+                        @Cached IsBuiltinClassProfile classProfile2,
+                        @Cached CheckCompatibleForAssigmentNode checkCompatibleForAssigmentNode,
+                        @Cached GetClassNode getClassNode) {
+            Object type = getClassNode.execute(self);
+            if (isBuiltinClassNotModule(value, classProfile1) || PGuards.isNativeClass(value) || isBuiltinClassNotModule(type, classProfile2) || PGuards.isNativeClass(type)) {
+                throw raise(TypeError, ErrorMessages.CLASS_ASSIGNMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
             }
 
-            setClass(frame, self, lazyClass, value, PythonContext.get(this), lib1);
+            checkCompatibleForAssigmentNode.execute(frame, type, value);
+            self.setPythonClass(value, dylib);
             return PNone.NONE;
         }
 
-        private void setClass(VirtualFrame frame, PythonObject self, Object lazyClass, Object value, PythonContext ctx, PythonObjectLibrary lib1) {
-            if (lazyClass instanceof PythonBuiltinClassType) {
-                getCheckCompatibleForAssigmentNode().execute(frame, ctx.getCore().lookupType((PythonBuiltinClassType) lazyClass), value);
-            } else {
-                getCheckCompatibleForAssigmentNode().execute(frame, lazyClass, value);
-            }
-
-            lib1.setLazyPythonClass(self, value);
-        }
-
-        private static boolean isBuiltinClassNotModule(Object lazyClass) {
-            if (lazyClass instanceof PythonBuiltinClass) {
-                return ((PythonBuiltinClass) lazyClass).getType() != PythonBuiltinClassType.PythonModule;
-            } else if (lazyClass instanceof PythonBuiltinClassType) {
-                return lazyClass != PythonBuiltinClassType.PythonModule;
-            }
-            return false;
+        private static boolean isBuiltinClassNotModule(Object type, IsBuiltinClassProfile classProfile) {
+            return classProfile.profileIsAnyBuiltinClass(type) && !classProfile.profileClass(type, PythonBuiltinClassType.PythonModule);
         }
 
         @Specialization(guards = {"isPythonClass(value) || isPythonBuiltinClassType(value)", "!isPythonObject(self)"})
         Object getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value) {
-            throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
+            throw raise(TypeError, ErrorMessages.CLASS_ASSIGNMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
         }
 
         @Fallback
         Object getClassError(@SuppressWarnings("unused") Object self, Object value) {
             throw raise(TypeError, ErrorMessages.CLASS_MUST_BE_SET_TO_CLASS, value);
-        }
-
-        private CheckCompatibleForAssigmentNode getCheckCompatibleForAssigmentNode() {
-            if (compatibleForAssigmentNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                compatibleForAssigmentNode = insert(CheckCompatibleForAssigmentNodeGen.create());
-            }
-            return compatibleForAssigmentNode;
         }
     }
 
@@ -290,7 +260,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 NodeFactory<? extends PythonBuiltinBaseNode> factory = factoryProfile.profile(((PBuiltinFunction) method).getBuiltinNodeFactory());
                 return !builtinNodeFactoryClass.isInstance(factory);
             } else if (method instanceof BuiltinMethodDescriptor) {
-                return !builtinNodeFactoryClass.isInstance(((BuiltinMethodDescriptor) method).getFactory());
+                return !((BuiltinMethodDescriptor) method).isSameFactory(builtinNodeFactoryClass);
             }
             return true;
         }
@@ -540,86 +510,22 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @ImportStatic(PGuards.class)
     @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
-
-        @Child GetClassNode getDescClassNode;
-        @Child LookupCallableSlotInMRONode lookupSetNode;
-        @Child CallTernaryMethodNode callSetNode;
+    public abstract static class SetattrNode extends ObjectNodes.AbstractSetattrNode {
         @Child WriteAttributeToObjectNode writeNode;
 
-        public abstract PNone execute(VirtualFrame frame, Object object, String key, Object value);
-
-        @Specialization
-        protected PNone doStringKey(VirtualFrame frame, Object object, String key, Object value,
-                        @Shared("getClass") @Cached GetClassNode getClassNode,
-                        @Shared("getExisting") @Cached LookupAttributeInMRONode.Dynamic getExisting) {
-            Object type = getClassNode.execute(object);
-            Object descr = getExisting.execute(type, key);
-            if (descr != PNone.NO_VALUE) {
-                Object dataDescClass = getDescClass(descr);
-                Object set = ensureLookupSetNode().execute(dataDescClass);
-                if (PGuards.isCallableOrDescriptor(set)) {
-                    ensureCallSetNode().execute(frame, set, descr, object, value);
-                    return PNone.NONE;
-                }
-            }
-            if (ensureWriteNode().execute(object, key, value)) {
-                return PNone.NONE;
-            }
-            if (descr != PNone.NO_VALUE) {
-                throw raise(AttributeError, ErrorMessages.ATTR_S_READONLY, key);
-            } else {
-                throw raise(AttributeError, ErrorMessages.HAS_NO_ATTR, object, key);
-            }
-        }
-
-        @Specialization(replaces = "doStringKey")
-        protected PNone doIt(VirtualFrame frame, Object object, Object keyObject, Object value,
-                        @Shared("getClass") @Cached GetClassNode getClassNode,
-                        @Shared("getExisting") @Cached LookupAttributeInMRONode.Dynamic getExisting,
-                        @Cached CastToJavaStringNode castKeyToStringNode) {
-            String key;
-            try {
-                key = castKeyToStringNode.execute(keyObject);
-            } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObject);
-            }
-            return doStringKey(frame, object, key, value, getClassNode, getExisting);
-        }
-
-        private Object getDescClass(Object desc) {
-            if (getDescClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDescClassNode = insert(GetClassNode.create());
-            }
-            return getDescClassNode.execute(desc);
-        }
-
-        private LookupCallableSlotInMRONode ensureLookupSetNode() {
-            if (lookupSetNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupSetNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Set));
-            }
-            return lookupSetNode;
-        }
-
-        private CallTernaryMethodNode ensureCallSetNode() {
-            if (callSetNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callSetNode = insert(CallTernaryMethodNode.create());
-            }
-            return callSetNode;
-        }
-
-        private WriteAttributeToObjectNode ensureWriteNode() {
+        @Override
+        protected boolean writeAttribute(Object object, String key, Object value) {
             if (writeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 writeNode = insert(WriteAttributeToObjectNode.create());
             }
-            return writeNode;
+            return writeNode.execute(object, key, value);
+        }
+
+        public static SetattrNode create() {
+            return ObjectBuiltinsFactory.SetattrNodeFactory.create();
         }
     }
 

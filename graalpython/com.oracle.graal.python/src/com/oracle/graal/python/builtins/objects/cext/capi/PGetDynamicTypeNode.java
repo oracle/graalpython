@@ -173,7 +173,7 @@ abstract class PGetDynamicTypeNode extends PNodeWithContext {
         }
 
         protected static Object getLLVMTypeForBuiltinClass(PythonBuiltinClassType clazz, PythonContext context) {
-            PythonBuiltinClass pythonClass = context.getCore().lookupType(clazz);
+            PythonBuiltinClass pythonClass = context.lookupType(clazz);
             return getLLVMTypeForClass(pythonClass);
         }
 

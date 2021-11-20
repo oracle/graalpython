@@ -67,7 +67,7 @@ public abstract class SetDictNode extends PNodeWithContext {
     @Fallback
     static void doPythonObjectNotClass(PythonObject object, PDict dict,
                     @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        dylib.put(object, PythonObject.DICT, dict);
+        object.setDict(dylib, dict);
     }
 
     public static SetDictNode create() {

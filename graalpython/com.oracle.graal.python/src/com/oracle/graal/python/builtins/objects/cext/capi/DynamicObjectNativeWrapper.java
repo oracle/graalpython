@@ -59,6 +59,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_FLAGS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_FREE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_ITEMSIZE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_NAME;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_SUBCLASSES;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_VECTORCALL_OFFSET;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
@@ -66,6 +67,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKLISTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
@@ -113,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -129,7 +132,7 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.property.PProperty;
-import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
@@ -168,6 +171,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -416,7 +420,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         private static Object ensureClassObject(PythonContext context, Object klass) {
             if (klass instanceof PythonBuiltinClassType) {
-                return context.getCore().lookupType((PythonBuiltinClassType) klass);
+                return context.lookupType((PythonBuiltinClassType) klass);
             }
             return klass;
         }
@@ -470,7 +474,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached LookupNativeMemberInMRONode lookupTpAsBufferNode,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
                         @Shared("nullToSulongNode") @Cached ToSulongNode toSulongNode) {
-            Python3Core core = PythonContext.get(getNativeNullNode).getCore();
+            Python3Core core = PythonContext.get(getNativeNullNode);
             PythonBuiltinClass pBytes = core.lookupType(PythonBuiltinClassType.PBytes);
             if (isSubtype.execute(object, pBytes)) {
                 return new PyBufferProcsWrapper(pBytes);
@@ -718,7 +722,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 // We do not actually return _the_ traverse or clear function since we will never
                 // need
                 // it. It is just important to return a function.
-                PythonModule pythonCextModule = PythonContext.get(getNativeNullNode).getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
+                PythonModule pythonCextModule = PythonContext.get(getNativeNullNode).lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
                 Object sequenceClearMethod = readAttrNode.execute(pythonCextModule, "sequence_clear");
                 return toSulongNode.execute(sequenceClearMethod);
             }
@@ -728,12 +732,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_CALL, key)")
         @SuppressWarnings("unused")
         static Object doTpCall(PythonManagedClass object, PythonNativeWrapper nativeWrapper, String key,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttrNode,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
-            /*
-             * TODO(fa): For now, we just return NULL because that will usually cause a fallback to
-             * 'PyObject_Call' which is preferred from our point of view.
-             */
+            Object callMethod = lookupAttrNode.execute(object, __CALL__);
+            if (callMethod != PNone.NO_VALUE) {
+                return PyProcsWrapper.createTernaryFunctionWrapper(callMethod);
+            }
             return toSulongNode.execute(getNativeNullNode.execute());
         }
 
@@ -864,6 +869,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(OB_DIGIT, key)")
         static Object doObDigit(PInt object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return new PyLongDigitsWrapper(object);
+        }
+
+        @Specialization(guards = "eq(COMPLEX_CVAL, key)")
+        static Object doComplexCVal(PComplex object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return new PyComplexWrapper(object);
         }
 
         @Specialization(guards = "eq(UNICODE_WSTR, key)")
@@ -1059,7 +1069,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(SET_USED, key)", limit = "1")
-        static long doSetUsed(PSet object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+        static long doSetUsed(PBaseSet object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @CachedLibrary("object.getDictStorage()") HashingStorageLibrary lib) {
             return lib.length(object.getDictStorage());
         }
@@ -1296,6 +1306,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             @Specialization(guards = "eq(OB_EXPORTS, key)")
             static void doObExports(PByteArray array, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, int value) {
                 array.setExports(value);
+            }
+
+            @Specialization(guards = "eq(TP_NAME, key)")
+            static void doTpName(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
+                            @Cached CExtNodes.FromCharPointerNode fromCharPointerNode,
+                            @Cached CastToJavaStringNode cast) {
+                object.setName(cast.execute(fromCharPointerNode.execute(value)));
             }
 
             @Specialization(guards = "eq(TP_FLAGS, key)")
@@ -1552,6 +1569,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         return OB_TYPE.getMemberName().equals(member) ||
                         OB_REFCNT.getMemberName().equals(member) ||
                         OB_EXPORTS.getMemberName().equals(member) ||
+                        TP_NAME.getMemberName().equals(member) ||
                         TP_FLAGS.getMemberName().equals(member) ||
                         TP_BASICSIZE.getMemberName().equals(member) ||
                         TP_ITEMSIZE.getMemberName().equals(member) ||

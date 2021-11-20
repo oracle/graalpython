@@ -154,11 +154,11 @@ import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeGen;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.property.PProperty;
 import com.oracle.graal.python.builtins.objects.range.PBigRange;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
@@ -325,7 +325,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     if (cls == PythonBuiltinClassType.PBytes) {
                         return (PBytes) bytes;
                     } else {
-                        return factory().createBytes(cls, toBytesNode.execute(bytes));
+                        return factory().createBytes(cls, toBytesNode.execute(frame, bytes));
                     }
                 } else {
                     throw raise(TypeError, ErrorMessages.RETURNED_NONBYTES, __BYTES__, bytes);
@@ -1375,15 +1375,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object createIntGeneric(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone base,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-            // This method (together with callInt and callIndex) reflects the logic of PyNumber_Long
-            // in CPython. We don't use PythonObjectLibrary here since the original CPython function
-            // does not use any of the conversion functions (such as _PyLong_AsInt or
-            // PyNumber_Index) either, but it reimplements the logic in a slightly different way
-            // (e.g. trying __int__ before __index__ whereas _PyLong_AsInt does it the other way)
-            // and also with specific exception messages which are expected by Python unittests.
-            // This unfortunately means that this method relies on the internal logic of NO_VALUE
-            // return values representing missing magic methods which should be ideally hidden
-            // by PythonObjectLibrary.
+            /*
+             * This method (together with callInt and callIndex) reflects the logic of PyNumber_Long
+             * in CPython. We don't use PythonObjectLibrary here since the original CPython function
+             * does not use any of the conversion functions (such as _PyLong_AsInt or
+             * PyNumber_Index) either, but it reimplements the logic in a slightly different way
+             * (e.g. trying __int__ before __index__ whereas _PyLong_AsInt does it the other way)
+             * and also with specific exception messages which are expected by Python unittests.
+             * This unfortunately means that this method relies on the internal logic of NO_VALUE
+             * return values representing missing magic methods which should be ideally hidden by
+             * PythonObjectLibrary.
+             */
             Object result = callInt(frame, obj);
             if (result == PNone.NO_VALUE) {
                 result = callIndex(frame, obj);
@@ -1392,7 +1394,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     if (truncResult == PNone.NO_VALUE) {
                         Object buffer;
                         try {
-                            buffer = bufferAcquireLib.acquireReadonly(obj);
+                            buffer = bufferAcquireLib.acquireReadonly(obj, frame, this);
                         } catch (PException e) {
                             throw raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER, "int()", obj);
                         }
@@ -1400,7 +1402,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             String number = PythonUtils.newString(bufferLib.getInternalOrCopiedByteArray(buffer), 0, bufferLib.getBufferLength(buffer));
                             return stringToInt(frame, cls, number, 10, obj);
                         } finally {
-                            bufferLib.release(buffer);
+                            bufferLib.release(buffer, frame, this);
                         }
                     }
                     if (isIntegerType(truncResult)) {
@@ -1511,16 +1513,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = LIST, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PList)
     @GenerateNodeFactory
     public abstract static class ListNode extends PythonVarargsBuiltinNode {
-        @Specialization(guards = "lib.isLazyPythonClass(cls)")
-        protected PList constructList(Object cls, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        @Specialization
+        protected PList constructList(Object cls, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords) {
             return factory().createList(cls);
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        public PList listObject(Object cls, Object[] arguments, PKeyword[] keywords) {
-            throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
     }
 
@@ -1899,7 +1894,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             Object buffer;
             try {
-                buffer = acquireLib.acquireReadonly(obj);
+                buffer = acquireLib.acquireReadonly(obj, frame, this);
             } catch (PException e) {
                 throw raise(TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
             }
@@ -1910,7 +1905,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 Object en = encoding == PNone.NO_VALUE ? "utf-8" : encoding;
                 return decodeBytes(frame, strClass, bytesObj, en, errors);
             } finally {
-                bufferLib.release(buffer);
+                bufferLib.release(buffer, frame, this);
             }
         }
 
@@ -2147,9 +2142,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
                         @Cached BranchProfile updatedStorage,
-                        @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
+                        @Cached("create(New)") LookupInheritedSlotNode getNewFuncNode,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
-                        @Cached("create(__SET_NAME__)") LookupInheritedAttributeNode getSetNameNode,
+                        @Cached("create(SetName)") LookupInheritedSlotNode getSetNameNode,
                         @Cached("create(__MRO_ENTRIES__)") LookupInheritedAttributeNode lookupMroEntriesNode,
                         @Cached CastToJavaStringNode castStr,
                         @Cached CallNode callSetNameNode,
@@ -2169,7 +2164,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             Object winner = calculateMetaclass(frame, metaclass, bases, getClassNode, lookupMroEntriesNode);
             if (winner != metaclass) {
                 Object newFunc = getNewFuncNode.execute(winner);
-                if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode() == getRootNode())) {
+                if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode().getCallTarget() == getRootNode().getCallTarget())) {
                     metaclass = winner;
                     // the new metaclass has the same __new__ function as we are in, continue
                 } else {
@@ -2736,7 +2731,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(bases)", "!isNoValue(dict)"})
         Object typeGeneric(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds,
                         @Cached TypeNode nextTypeNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+                        @Cached IsTypeNode isTypeNode) {
             if (PGuards.isNoValue(bases) && !PGuards.isNoValue(dict) || !PGuards.isNoValue(bases) && PGuards.isNoValue(dict)) {
                 throw raise(TypeError, ErrorMessages.TAKES_D_OR_D_ARGS, "type()", 1, 3);
             } else if (!(name instanceof String || name instanceof PString)) {
@@ -2745,7 +2740,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "type() argument 2", bases);
             } else if (!(dict instanceof PDict)) {
                 throw raise(TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "type() argument 3", dict);
-            } else if (!lib.isLazyPythonClass(cls)) {
+            } else if (!isTypeNode.execute(cls)) {
                 // TODO: this is actually allowed, deal with it
                 throw raise(NotImplementedError, "creating a class with non-class metaclass");
             }
@@ -3195,7 +3190,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     abstract static class DescriptorNode extends PythonBuiltinNode {
         @TruffleBoundary
         protected final void denyInstantiationAfterInitialization(String name) {
-            if (getCore().isInitialized()) {
+            if (getCore().isCoreInitialized()) {
                 throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, name);
             }
         }
@@ -3382,6 +3377,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         PProperty doit(Object self, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords) {
             return factory().createProperty(self);
+        }
+    }
+
+    @Builtin(name = "SimpleNamespace", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, isPublic = false, constructsClass = PythonBuiltinClassType.PSimpleNamespace, doc = "A simple attribute-based namespace.\n" +
+                    "\n" +
+                    "SimpleNamespace(**kwargs)")
+    @GenerateNodeFactory
+    public abstract static class SimpleNamespaceNode extends PythonVarargsBuiltinNode {
+        @Specialization
+        PSimpleNamespace doit(Object self, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords) {
+            return factory().createSimpleNamespace(self);
         }
     }
 

@@ -44,7 +44,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__IMPORT__;
 import static com.oracle.graal.python.nodes.ErrorMessages.IMPORT_NOT_FOUND;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -119,9 +118,8 @@ public abstract class AbstractImportNode extends StatementNode {
     protected final Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
         PythonContext context = getContext();
-        Python3Core core = context.getCore();
         if (!context.isInitialized()) {
-            PythonModule builtinModule = core.lookupBuiltinModule(name);
+            PythonModule builtinModule = context.lookupBuiltinModule(name);
             if (builtinModule != null) {
                 return builtinModule;
             }
@@ -138,7 +136,7 @@ public abstract class AbstractImportNode extends StatementNode {
             }
         }
         try {
-            return importNameNode.execute(frame, context, core.getBuiltins(), name, globals, fromList, level);
+            return importNameNode.execute(frame, context, context.getBuiltins(), name, globals, fromList, level);
         } finally {
             if (emulateJython()) {
                 context.popCurrentImport();
