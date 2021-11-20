@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndentationError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TabError;
+import static com.oracle.graal.python.nodes.BuiltinNames.MODULES;
 import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
@@ -44,6 +45,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -286,6 +288,8 @@ import com.oracle.truffle.api.source.SourceSection;
  * through an extra field in the context.
  */
 public abstract class Python3Core extends ParserErrorCallback {
+    private static final int REC_LIM = 1000;
+    private static final int NATIVE_REC_LIM = 8000;
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(Python3Core.class);
     private final String[] coreFiles;
 
@@ -295,7 +299,6 @@ public abstract class Python3Core extends ParserErrorCallback {
         // Order matters!
         List<String> coreFiles = new ArrayList<>(Arrays.asList(
                         "object",
-                        "sys",
                         "type",
                         "_imp",
                         "function",
@@ -430,6 +433,8 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new WarningsModuleBuiltins(),
+                        // exceptions
+                        new SystemExitBuiltins(),
 
                         // io
                         new IOModuleBuiltins(),
@@ -601,6 +606,7 @@ public abstract class Python3Core extends ParserErrorCallback {
     @CompilationFinal private PFloat pyNaN;
 
     private final PythonParser parser;
+    private final SysModuleState sysModuleState = new SysModuleState();
 
     @CompilationFinal private Object globalScopeObject;
 
@@ -618,6 +624,41 @@ public abstract class Python3Core extends ParserErrorCallback {
         this.parser = parser;
         this.builtins = initializeBuiltins(isNativeSupportAllowed);
         this.coreFiles = initializeCoreFiles();
+    }
+
+    @CompilerDirectives.ValueType
+    public static class SysModuleState {
+        private int recursionLimit = ImageInfo.inImageCode() ? NATIVE_REC_LIM : REC_LIM;
+        private int checkInterval = 100;
+        private double switchInterval = 0.005;
+
+        public int getRecursionLimit() {
+            return recursionLimit;
+        }
+
+        public void setRecursionLimit(int recursionLimit) {
+            this.recursionLimit = recursionLimit;
+        }
+
+        public int getCheckInterval() {
+            return checkInterval;
+        }
+
+        public void setCheckInterval(int checkInterval) {
+            this.checkInterval = checkInterval;
+        }
+
+        public double getSwitchInterval() {
+            return switchInterval;
+        }
+
+        public void setSwitchInterval(double switchInterval) {
+            this.switchInterval = switchInterval;
+        }
+    }
+
+    public SysModuleState getSysModuleState() {
+        return sysModuleState;
     }
 
     @Override
@@ -837,7 +878,7 @@ public abstract class Python3Core extends ParserErrorCallback {
 
         // core machinery
         sysModule = builtinModules.get("sys");
-        sysModules = (PDict) sysModule.getAttribute("modules");
+        sysModules = (PDict) sysModule.getAttribute(MODULES);
 
         PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
         bootstrapExternal.setAttribute(__PACKAGE__, "importlib");

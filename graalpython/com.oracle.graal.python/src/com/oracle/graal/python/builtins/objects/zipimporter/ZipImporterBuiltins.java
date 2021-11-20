@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.zipimporter;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.MODULES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
@@ -691,7 +692,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             PCode code = getCodeNode.doit(frame, self, fullname, canNotFind, initWasNotCalled);
 
             PythonModule sysModule = getCore().lookupBuiltinModule("sys");
-            PDict sysModules = (PDict) sysModule.getAttribute("modules");
+            PDict sysModules = (PDict) sysModule.getAttribute(MODULES);
             PythonModule module = (PythonModule) sysModules.getItem(fullname);
             if (module == null) {
                 module = factory().createPythonModule(fullname);

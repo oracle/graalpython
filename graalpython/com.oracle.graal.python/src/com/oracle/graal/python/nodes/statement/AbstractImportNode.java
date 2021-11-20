@@ -158,7 +158,7 @@ public abstract class AbstractImportNode extends StatementNode {
                         @Cached CallNode importCallNode,
                         @Cached GetDictFromGlobalsNode getDictNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached ImportModuleLevelObject importModuleLevel) {
+                        @Cached PyImportImportModuleLevelObject importModuleLevel) {
             Object importFunc = builtinsDylib.getOrDefault(builtins, __IMPORT__, null);
             if (importFunc == null) {
                 throw raiseNode.raiseImportError(frame, IMPORT_NOT_FOUND);
@@ -179,8 +179,8 @@ public abstract class AbstractImportNode extends StatementNode {
     /**
      * Equivalent of PyImport_ImportModuleLevelObject
      */
-    abstract static class ImportModuleLevelObject extends Node {
-        protected abstract Object execute(VirtualFrame frame, PythonContext context, String name, Object globals, String[] fromList, int level);
+    public abstract static class PyImportImportModuleLevelObject extends Node {
+        public abstract Object execute(VirtualFrame frame, PythonContext context, String name, Object globals, String[] fromList, int level);
 
         @SuppressWarnings("unused")
         @Specialization(guards = "level < 0")
@@ -193,7 +193,7 @@ public abstract class AbstractImportNode extends StatementNode {
         }
 
         @Specialization(guards = {"level == 0", "fromList.length == 0", "dotIndex < 0"})
-        static Object levelZeroNoFromlist(VirtualFrame frame, PythonContext context, String name, @SuppressWarnings("unused") Object globals, @SuppressWarnings("unused") String[] fromList,
+        public static Object levelZeroNoFromlist(VirtualFrame frame, PythonContext context, String name, @SuppressWarnings("unused") Object globals, @SuppressWarnings("unused") String[] fromList,
                         @SuppressWarnings("unused") int level,
                         @SuppressWarnings("unused") @Bind("indexOfDot(name)") int dotIndex,
                         @Cached PRaiseNode raiseNode,

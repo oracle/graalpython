@@ -43,18 +43,6 @@
 #
 # ----------------------------------------------------------------------------------------------------------------------
 
-def SystemExit__init__(self, *args):
-    if len(args) > 1:
-        self.code = args
-    elif len(args) == 1:
-        self.code = args[0]
-    else:
-        self.code = 0
-    BaseException.__init__(self, *args)
-
-SystemExit.__init__ = SystemExit__init__
-del SystemExit__init__
-
 def ImportError__init__(self, *args, name=None, path=None, **kwargs):
     if kwargs:
         kwarg = next(iter(kwargs))

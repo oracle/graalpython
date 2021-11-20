@@ -861,16 +861,28 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PBaseException createBaseException(Object cls, PTuple args) {
-        return trace(new PBaseException(cls, getShape(cls), args));
+        return createBaseException(cls, null, args);
+    }
+
+    public final PBaseException createBaseException(Object cls, PBaseException.Data data, PTuple args) {
+        return trace(new PBaseException(cls, getShape(cls), data, args));
     }
 
     public final PBaseException createBaseException(Object cls, String format, Object[] args) {
+        return createBaseException(cls, null, format, args);
+    }
+
+    public final PBaseException createBaseException(Object cls, PBaseException.Data data, String format, Object[] args) {
         assert format != null;
-        return trace(new PBaseException(cls, getShape(cls), format, args));
+        return trace(new PBaseException(cls, getShape(cls), data, format, args));
     }
 
     public final PBaseException createBaseException(Object cls) {
-        return trace(new PBaseException(cls, getShape(cls)));
+        return trace(new PBaseException(cls, getShape(cls), null));
+    }
+
+    public final PBaseException createBaseException(Object cls, PBaseException.Data data) {
+        return trace(new PBaseException(cls, getShape(cls), data));
     }
 
     /*

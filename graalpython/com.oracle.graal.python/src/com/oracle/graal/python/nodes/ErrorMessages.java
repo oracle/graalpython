@@ -84,6 +84,7 @@ public abstract class ErrorMessages {
     public static final String ATTR_S_READONLY = "attribute %s is read-only";
     public static final String ATTR_VALUE_MUST_BE_BOOL = "attribute value type must be bool";
     public static final String B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P = "%%b requires a bytes-like object, or an object that implements __bytes__, not '%p'";
+    public static final String ARG_TYPE_MUST_BE = "%s argument type must be %s";
     public static final String BAD_ARG_TO_INTERNAL_FUNC = "bad argument to internal function";
     public static final String BAD_ARG_TO_INTERNAL_FUNC_P = "bad argument to internal function %p";
     public static final String BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P = "bad argument to internal function, was '%s' (type '%p')";
@@ -118,6 +119,9 @@ public abstract class ErrorMessages {
     public static final String CALLING_NATIVE_FUNC_FAILED = "Calling native function %s failed: %m";
     public static final String DECODER_RETURNED_P_INSTEAD_OF_BYTES = "'%s' decoder returned '%p' instead of 'str'; use codecs.decode() to decode to arbitrary types";
     public static final String ENCODER_RETURNED_P_INSTEAD_OF_BYTES = "'%s' encoder returned '%p' instead of 'bytes'; use codecs.encode() to encode to arbitrary types";
+    public static final String S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES = "'%s' encoder returned '%p' instead of 'bytes'; use codecs.encode() to encode to arbitrary types";
+    public static final String ENCODER_S_RETURNED_S_INSTEAD_OF_BYTES = "encoder %s returned %s instead of bytes; use codecs.encode() to encode to arbitrary types";
+    public static final String DECODER_S_RETURNED_P_INSTEAD_OF_STR = "'%s' decoder returned '%p' instead of 'str'; use codecs.decode() to decode to arbitrary types";
     public static final String EXPECTED_D_ARGS = "expected %d arguments";
     public static final String CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P = "can only assign %s to %s.%s, not %p";
     public static final String CAN_ONLY_ASSIGN_S_TO_P_S_NOT_P = "can only assign %s to %p.%s, not %p";
@@ -321,6 +325,7 @@ public abstract class ErrorMessages {
     public static final String INTEGER_DIVISION_BY_ZERO = "ZeroDivisionError: integer division or modulo by zero";
     public static final String INTEGER_DIVISION_RESULT_TOO_LARGE = "integer division result too large for a float";
     public static final String S_EXPECTED_GOT_P = "%s argument expected, got %p";
+    public static final String REC_LIMIT_GREATER_THAN_1 = "recursion limit must be greater or equal than 1";
     public static final String INTEGER_GREATER_THAN_MAX = "integer is greater than maximum";
     public static final String INTEGER_REQUIRED = "an integer is required";
     public static final String INTEGER_REQUIRED_GOT = "an integer is required (got type %p)";
@@ -454,6 +459,7 @@ public abstract class ErrorMessages {
     public static final String NAME_NOT_DEFINED = "name '%s' is not defined";
     public static final String NAMELESS_MODULE = "nameless module";
     public static final String NEED_BYTELIKE_OBJ = "decoding to str: need a bytes-like object, %p found";
+    public static final String DECODING_STR_NOT_SUPPORTED = "decoding str is not supported";
     public static final String NEG_INF_PLUS_INF_IN = "-inf + inf in fsum";
     public static final String NEGATIVE_COUNT = "negative count";
     public static final String NEGATIVE_DATA_SIZE = "negative data size";
@@ -612,6 +618,7 @@ public abstract class ErrorMessages {
     public static final String THROW_THIRD_ARG_MUST_BE_TRACEBACK = "throw() third argument must be a traceback object";
     public static final String TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS = "_tee_dataobject should not have more than %s links";
     public static final String TDATAOBJECT_SHOULDNT_HAVE_NEXT = "_tee_dataobject shouldn't have a next if not full";
+    public static final String SWITCH_INTERVAL_MUST_BE_POSITIVE = "switch interval must be strictly positive";
     public static final String TIMED_OUT = "timed out";
     public static final String TIMEOUT_VALUE_MUST_BE_POSITIVE = "timeout value must be positive";
     public static final String TIMEOUT_VALUE_OUT_OF_RANGE = "Timeout value out of range";
@@ -634,6 +641,7 @@ public abstract class ErrorMessages {
     public static final String TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ = "type '%p' is not supported by the foreign object";
     public static final String TYPE_DOESNT_SUPPORT_MRO_ENTRY_RESOLUTION = "type() doesn't support MRO entry resolution; use types.new_class()";
     public static final String TYPE_DOESNT_DEFINE_FORMAT = "Type %p doesn't define __format__";
+    public static final String UNABLE_TO_GET_S = "unable to get %";
     public static final String UNAVAILABLE_ON_THIS_PLATFORM = "%s: %s unavailable on this platform";
     public static final String UNAVAILABLE_ON_THIS_PLATFORM_NO_FUNC = "%s unavailable on this platform";
     public static final String UNEXPECTED_KEYWORD_ARGS = "%s: unexpected keyword arguments";
@@ -978,6 +986,7 @@ public abstract class ErrorMessages {
     public static final String REDUCE_EMPTY_SEQ = "reduce() of empty sequence with no initial value";
     public static final String OTHER_ARG_MUST_BE_KEY = "other argument must be K instance";
     public static final String INVALID_PARTIAL_STATE = "invalid partial state";
+    public static final String LOST_S = "lost %s";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";
@@ -989,4 +998,8 @@ public abstract class ErrorMessages {
     public static final String WARN_INT_CONVERSION_DEPRECATED = "an integer is required (got type %p).  " +
                     "Implicit conversion to integers using __int__ is deprecated, " +
                     "and may be removed in a future version of Python.";
+    public static final String WARN_CANNOT_RUN_PDB_YET = "Graal Python cannot run pdb, yet, consider using `--inspect` on the commandline";
+    public static final String WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S = "Ignoring unimportable $PYTHONBREAKPOINT: \"%s\"";
+    public static final String WARN_DEPRECTATED_SYS_CHECKINTERVAL = "sys.getcheckinterval() and sys.setcheckinterval() " +
+                    "are deprecated.  Use sys.getswitchinterval() instead.";
 }

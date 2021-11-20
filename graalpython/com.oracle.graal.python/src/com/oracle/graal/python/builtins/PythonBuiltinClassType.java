@@ -202,7 +202,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PIntInfo("int_info", "sys", Flags.PUBLIC_DERIVED_WODICT),
     PHashInfo("hash_info", "sys", Flags.PUBLIC_DERIVED_WODICT),
     PThreadInfo("thread_info", "sys", Flags.PUBLIC_DERIVED_WODICT),
-    PUnraisableHookArgs("UnraisableHookArgs", Flags.PUBLIC_DERIVED_WODICT),
+    PUnraisableHookArgs("UnraisableHookArgs", "sys", Flags.PUBLIC_DERIVED_WODICT),
     PSSLSession("SSLSession", "_ssl"),
     PSSLContext("_SSLContext", "_ssl"),
     PSSLSocket("_SSLSocket", "_ssl"),
