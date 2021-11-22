@@ -301,7 +301,6 @@ public abstract class Python3Core extends ParserErrorCallback {
                         "sys",
                         "type",
                         "_imp",
-                        "_csv",
                         "function",
                         "method",
                         "_frozen_importlib",
