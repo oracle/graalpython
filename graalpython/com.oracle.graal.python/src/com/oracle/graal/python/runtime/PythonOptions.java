@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.graalvm.options.OptionCategory;
 import org.graalvm.options.OptionDescriptor;
@@ -134,6 +135,19 @@ public final class PythonOptions {
 
     @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONWARNINGS environment variable for the standard launcher.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> WarnOptions = new OptionKey<>("");
+
+    @Option(category = OptionCategory.USER, help = "Equivalent to setting PYTHONHASHSEED environment variable", stability = OptionStability.STABLE) //
+    public static final OptionKey<Optional<Integer>> HashSeed = new OptionKey<>(Optional.empty(),
+                    new OptionType<>("HashSeed", input -> {
+                        if ("random".equals(input)) {
+                            return Optional.empty();
+                        }
+                        try {
+                            return Optional.of(Integer.parseUnsignedInt(input));
+                        } catch (NumberFormatException e) {
+                            throw new IllegalArgumentException("PYTHONHASHSEED must be \"random\" or an integer in range [0; 4294967295]");
+                        }
+                    }));
 
     @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the POSIX module. Valid values are 'java', 'native', 'llvm'.") //
     public static final OptionKey<String> PosixModuleBackend = new OptionKey<>("java");

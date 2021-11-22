@@ -573,7 +573,11 @@ PyObject * PyUnicode_Decode(const char *s, Py_ssize_t size, const char *encoding
     if (encoding == NULL) {
         return PyUnicode_DecodeUTF8Stateful(s, size, errors, NULL);
     }
-	return UPCALL_CEXT_O(_jls_PyUnicode_Decode, s, size, polyglot_from_string(encoding, SRC_CS), convert_errors(errors));
+    PyObject *mv = PyMemoryView_FromMemory(s, size, PyBUF_READ);
+    if (!mv) {
+        return NULL;
+    }
+	return UPCALL_CEXT_O(_jls_PyUnicode_Decode, mv, polyglot_from_string(encoding, SRC_CS), convert_errors(errors));
 }
 
 PyObject * PyUnicode_DecodeASCII(const char *s, Py_ssize_t size, const char *errors) {

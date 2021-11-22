@@ -119,13 +119,13 @@ public abstract class CodeNodes {
 
             RootCallTarget ct;
             if (codedata.length == 0) {
-                ct = language.createCachedCallTarget(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, name);
+                ct = language.createCachedCallTarget(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, filename, name);
             } else {
                 RootNode rootNode = context.getSerializer().deserialize(context, codedata, toStringArray(cellvars), toStringArray(freevars));
                 ct = PythonUtils.getOrCreateCallTarget(rootNode);
-                if (filename != null) {
-                    context.setCodeFilename(ct, filename);
-                }
+            }
+            if (filename != null) {
+                context.setCodeFilename(ct, filename);
             }
             PythonObjectFactory factory = context.factory();
             return factory.createCode(ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name,

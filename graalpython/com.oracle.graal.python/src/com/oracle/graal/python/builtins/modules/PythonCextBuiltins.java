@@ -50,6 +50,8 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import java.io.PrintWriter;
 import java.math.BigInteger;
@@ -165,6 +167,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.Store;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
+import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeCallTargetNode;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeSignatureNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -1450,6 +1453,26 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyTruffleHash_InitSecret", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffleHashGetSecret extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object get(Object secretPtr) {
+            try {
+                InteropLibrary lib = InteropLibrary.getUncached(secretPtr);
+                byte[] secret = getContext().getHashSecret();
+                int len = (int) lib.getArraySize(secretPtr);
+                for (int i = 0; i < len; i++) {
+                    lib.writeArrayElement(secretPtr, i, secret[i]);
+                }
+                return 0;
+            } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+    }
+
     @Builtin(name = "PyTruffleFrame_New", minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class PyTruffleFrameNewNode extends PythonBuiltinNode {
@@ -1485,6 +1508,22 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
 
             return 0;
+        }
+    }
+
+    @Builtin(name = "_PyTraceback_Add", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTracebackAdd extends PythonTernaryBuiltinNode {
+        @Specialization
+        Object tbHere(String funcname, String filename, int lineno,
+                        @Cached CodeNodes.CreateCodeNode createCodeNode,
+                        @Cached PyTraceBackHereNode pyTraceBackHereNode) {
+            PCode code = createCodeNode.execute(null, 0, 0, 0, 0, 0, 0,
+                            EMPTY_BYTE_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY, EMPTY_OBJECT_ARRAY,
+                            filename, funcname, lineno, EMPTY_BYTE_ARRAY);
+            PFrame frame = factory().createPFrame(null, code, factory().createDict(), factory().createDict());
+            pyTraceBackHereNode.execute(null, frame);
+            return PNone.NONE;
         }
     }
 
@@ -2574,36 +2613,22 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyUnicode_Decode", minNumOfPositionalArgs = 5, declaresExplicitSelf = true)
+    @Builtin(name = "PyUnicode_Decode", minNumOfPositionalArgs = 4, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    abstract static class PyUnicode_Decode extends NativeUnicodeBuiltin {
+    abstract static class PyUnicode_Decode extends NativeBuiltin {
 
         @Specialization
-        Object doDecode(VirtualFrame frame, Object module, Object cByteArray, long size, String encoding, String errors,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached GetByteArrayNode getByteArrayNode,
+        Object doDecode(VirtualFrame frame, Object module, PMemoryView mv, String encoding, String errors,
+                        @Cached CodecsModuleBuiltins.DecodeNode decodeNode,
+                        @Cached CExtNodes.ToNewRefNode toSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
-
             try {
-                ByteBuffer inputBuffer = wrap(getByteArrayNode.execute(cByteArray, size));
-                int n = remaining(inputBuffer);
-                CharBuffer resultBuffer = allocateCharBuffer(n * 4);
-                decode(resultBuffer, inputBuffer, encoding, errors);
-                return toSulongNode.execute(factory().createTuple(new Object[]{toString(resultBuffer), n - remaining(inputBuffer)}));
-            } catch (IllegalArgumentException e) {
-                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
-            } catch (InteropException e) {
-                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.TypeError, "%m", e);
-            } catch (OverflowException e) {
-                return raiseNative(frame, getNativeNullNode.execute(module), PythonErrorType.SystemError, ErrorMessages.INPUT_TOO_LONG);
+                return toSulongNode.execute(decodeNode.executeWithStrings(frame, mv, encoding, errors));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return toSulongNode.execute(getNativeNullNode.execute(module));
             }
-        }
-
-        @TruffleBoundary
-        private void decode(CharBuffer resultBuffer, ByteBuffer inputBuffer, String encoding, String errors) {
-            CharsetDecoder decoder = Charset.forName(encoding).newDecoder();
-            CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, this);
-            decoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(action).decode(inputBuffer, resultBuffer, true);
         }
     }
 
@@ -2879,7 +2904,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         static Object[] doNull(VirtualFrame frame, Object argsObj,
                         @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return PythonUtils.EMPTY_OBJECT_ARRAY;
+            return EMPTY_OBJECT_ARRAY;
         }
 
         @Specialization(guards = "!lib.isNull(argsObj)")
@@ -4068,14 +4093,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
             PBuiltinFunction get = null;
             if (!interopLibrary.isNull(getter)) {
                 RootCallTarget getterCT = getterCallTarget(name, language);
-                get = factory.createGetSetBuiltinFunction(name, cls, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getter, closure), getterCT);
+                get = factory.createGetSetBuiltinFunction(name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getter, closure), getterCT);
             }
 
             PBuiltinFunction set = null;
             boolean hasSetter = !interopLibrary.isNull(setter);
             if (hasSetter) {
                 RootCallTarget setterCT = setterCallTarget(name, language);
-                set = factory.createGetSetBuiltinFunction(name, cls, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setter, closure), setterCT);
+                set = factory.createGetSetBuiltinFunction(name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setter, closure), setterCT);
             }
 
             // create get-set descriptor
@@ -4350,7 +4375,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 Object realSizeObj = readRealSizeNode.execute(cls, StructSequence.N_FIELDS);
                 Object res;
                 if (realSizeObj == PNone.NO_VALUE) {
-                    PRaiseNativeNode.raiseNative(null, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC, PythonUtils.EMPTY_OBJECT_ARRAY, getRaiseNode(), transformExceptionToNativeNode);
+                    PRaiseNativeNode.raiseNative(null, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC, EMPTY_OBJECT_ARRAY, getRaiseNode(), transformExceptionToNativeNode);
                     res = getNativeNullNode.execute();
                 } else {
                     int realSize = castToIntNode.execute(realSizeObj);

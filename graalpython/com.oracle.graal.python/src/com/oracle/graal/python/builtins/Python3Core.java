@@ -84,7 +84,6 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixShMemModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PwdModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
@@ -495,7 +494,6 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PosixShMemModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
-                        new PyExpatModuleBuiltins(),
                         new SysConfigModuleBuiltins(),
                         new OperatorModuleBuiltins(),
                         new ZipImporterBuiltins(),

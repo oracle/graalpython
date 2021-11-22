@@ -33,7 +33,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1998,25 +1997,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class URandomNode extends PythonUnaryClinicBuiltinNode {
-        private static SecureRandom secureRandom;
-
-        private static SecureRandom createRandomInstance() {
-            try {
-                return SecureRandom.getInstance("NativePRNGNonBlocking");
-            } catch (NoSuchAlgorithmException e) {
-                throw new IllegalStateException(e);
-            }
+        @Specialization
+        PBytes urandom(int size) {
+            byte[] bytes = new byte[size];
+            nextBytes(getContext().getSecureRandom(), bytes);
+            return factory().createBytes(bytes);
         }
 
-        @Specialization
-        @TruffleBoundary(allowInlining = true)
-        PBytes urandom(int size) {
-            if (secureRandom == null) {
-                secureRandom = createRandomInstance();
-            }
-            byte[] bytes = new byte[size];
+        @TruffleBoundary
+        private static void nextBytes(SecureRandom secureRandom, byte[] bytes) {
             secureRandom.nextBytes(bytes);
-            return factory().createBytes(bytes);
         }
 
         @Override
