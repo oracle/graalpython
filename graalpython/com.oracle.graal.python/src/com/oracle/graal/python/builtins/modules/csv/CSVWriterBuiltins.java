@@ -25,8 +25,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 import java.util.List;
 
-import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONE;
-
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CSVWriter)
 public class CSVWriterBuiltins extends PythonBuiltins {
 
@@ -42,45 +40,26 @@ public class CSVWriterBuiltins extends PythonBuiltins {
         @Specialization
        Object doIt(VirtualFrame frame, CSVWriter self, Object seq,
                    @Cached PyObjectGetIter getIter,
-                   @Cached GetNextNode getNext,
                    @Cached GetClassNode getClass,
+                   @Cached IsBuiltinClassProfile errorProfile,
                    @Cached CallUnaryMethodNode callNode) {
             Object iter, field;
 
             try {
                 iter = getIter.execute(frame, seq);
-            } catch (PException e) { //TODO: should be TypeError?
+            } catch (PException e) {
+                e.expect(PythonBuiltinClassType.TypeError, errorProfile);
                 throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.EXPECTED_ITERABLE_NOT_S, getClass.execute(seq));
             }
 
             // Join all fields of passed in sequence in internal buffer.
-            self.joinReset();
-
             PythonLanguage language = PythonLanguage.get(this);
             Object state = IndirectCallContext.enter(frame, language, getContext(), this);
             try {
-                while (true) {
-                    try {
-                        field = getNext.execute(frame, iter);
-                        self.joinField(field);
-                    } catch (PException e) {
-                        e.expectStopIteration(IsBuiltinClassProfile.getUncached());
-                        break;
-                    }
-                }
+                self.joinFields(iter);
             } finally {
                 IndirectCallContext.exit(frame, language, getContext(), state);
             }
-
-            if (self.numFields > 0 && self.rec.length() == 0) {
-                if (self.dialect.quoting == QUOTE_NONE) {
-                    throw raise(PythonBuiltinClassType.CSVError, ErrorMessages.EMPTY_FIELD_RECORD_MUST_BE_QUOTED);
-                }
-                self.numFields--;
-                self.joinAppend(null, true);
-            }
-
-            self.joinAppendLineterminator();
 
             return callNode.executeObject(frame, self.write, self.rec.toString());
         }

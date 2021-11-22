@@ -41,8 +41,8 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -62,6 +62,9 @@ public abstract class PyUnicodeCheckNode extends Node {
     static boolean doString(@SuppressWarnings("unused") String object) {
         return true;
     }
+
+    @Specialization
+    static boolean doPString(@SuppressWarnings("unused") PString object) {return true;}
 
     @Specialization
     static boolean doGeneric(Object object,

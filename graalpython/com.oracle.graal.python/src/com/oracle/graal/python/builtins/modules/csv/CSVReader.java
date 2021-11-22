@@ -5,6 +5,15 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.object.Shape;
 
 import java.util.ArrayList;
@@ -27,7 +36,7 @@ public final class CSVReader extends PythonBuiltinObject {
     private static final int CARRIAGE_RETURN_CODEPOINT = "\r".codePointAt(0);
     private static final int SPACE_CODEPOINT = " ".codePointAt(0);
 
-    public enum ReaderState {
+    enum ReaderState {
         START_RECORD,
         START_FIELD,
         ESCAPED_CHAR,
@@ -58,7 +67,7 @@ public final class CSVReader extends PythonBuiltinObject {
         this.state = START_RECORD;
         this.numericField = false;
     }
-
+    
     void parseSaveField() {
         Object field = this.field.toString();
         this.field = new StringBuilder();
@@ -71,6 +80,57 @@ public final class CSVReader extends PythonBuiltinObject {
         this.fields.add(field);
     }
 
+    @TruffleBoundary
+    Object parseIterableInput() {
+        do {
+            Object lineObj;
+            try {
+                lineObj = GetNextNode.getUncached().execute(this.inputIter);
+            } catch (PException e) {
+                e.expectStopIteration(IsBuiltinClassProfile.getUncached());
+
+                if (this.field.length() != 0 || this.state == IN_QUOTED_FIELD) {
+                    if (this.dialect.strict) {
+                        throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.UNEXPECTED_END_OF_DATA);
+                    } else {
+                        try {
+                            this.parseSaveField();
+                        } catch (AbstractTruffleException ignored) {
+                            throw e.getExceptionForReraise();
+                        }
+                        break;
+                    }
+                }
+                throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.StopIteration);
+            }
+
+
+            String line;
+            try {
+                line = CastToJavaStringNode.getUncached().execute(lineObj);
+            } catch (CannotCastException e) {
+                throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.WRONG_ITERATOR_RETURN_TYPE, GetClassNode.getUncached().execute(lineObj));
+            }
+
+
+            //TODO: Implement PyUnicode_Check Node? => how do we handle the possibility of bytes?
+            // PyPy: if isinstance(line, str) and '\0' in line or isinstance(line, bytes) and line.index(0) >=0:
+            //                    raise Error("line contains NULL byte")
+            if (line.contains("\u0000")) {
+                throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.LINE_CONTAINS_NULL_BYTE);
+            }
+
+            this.lineNum++;
+            this.parseLine(line);
+
+        } while (this.state != START_RECORD);
+
+        ArrayList<Object> fields = this.fields;
+        this.fields = null;
+
+        return PythonObjectFactory.getUncached().createList(fields.toArray());
+    }
+    
     void parseLine(String line) {
         final int lineLength = line.length();
 

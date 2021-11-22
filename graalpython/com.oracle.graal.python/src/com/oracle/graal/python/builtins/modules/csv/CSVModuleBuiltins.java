@@ -71,18 +71,18 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("QUOTE_ALL", QUOTE_ALL.ordinal());
         builtinConstants.put("QUOTE_NONNUMERIC", QUOTE_NONNUMERIC.ordinal());
         builtinConstants.put("QUOTE_NONE", QUOTE_NONE.ordinal());
-        builtinConstants.put("_dialects", PythonObjectFactory.getUncached().createDict());
+        builtinConstants.put("_dialects", core.factory().createDict());
         super.initialize(core);
     }
 
-    @Builtin(name = "register_dialect", parameterNames = {"name",
-            "dialect"}, minNumOfPositionalArgs = 1, takesVarKeywordArgs = true, doc = "Create a mapping from a string name to a dialect class.\n" +
+    @Builtin(name = "register_dialect", parameterNames = { "$mod","name",
+            "dialect"}, minNumOfPositionalArgs = 2, takesVarKeywordArgs = true, declaresExplicitSelf = true, doc = "Create a mapping from a string name to a dialect class.\n" +
             "dialect = csv.register_dialect(name, dialect)")
     @GenerateNodeFactory
     public abstract static class CSVRegisterDialectNode extends PythonBuiltinNode {
 
         @Specialization
-        PNone register(VirtualFrame frame, Object nameObj, Object dialectObj, PKeyword[] keywords,
+        PNone register(VirtualFrame frame, PythonModule module, Object nameObj, Object dialectObj, PKeyword[] keywords,
                               @Cached CastToJavaStringNode nameNode,
                               @Cached ReadAttributeFromObjectNode readNode,
                               @Cached CallNode callNode,
@@ -97,9 +97,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
 
             Object result = callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, keywords);
 
-            PythonModule module = getCore().lookupBuiltinModule("_csv");
             Object dialects = readNode.execute(module, "_dialects");
-
             // TODO: Write PyDictSetItem Node?
             HashingStorage storage = library.setItem(((PDict) dialects).getDictStorage(), name, result);
             ((PDict) dialects).setDictStorage(storage);
@@ -108,16 +106,15 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "unregister_dialect", parameterNames = {"name"}, minNumOfPositionalArgs = 1, doc = "Delete the name/dialect mapping associated with a string name.\n" +
+    @Builtin(name = "unregister_dialect", parameterNames = {"$mod", "name"}, minNumOfPositionalArgs = 2, declaresExplicitSelf = true, doc = "Delete the name/dialect mapping associated with a string name.\n" +
             "csv.unregister_dialect(name)")
     @GenerateNodeFactory
     public abstract static class CSVUnregisterDialectNode extends PythonBuiltinNode {
         @Specialization
-        PNone unregister(Object nameObj,
+        PNone unregister(PythonModule module, Object nameObj,
                                 @Cached ReadAttributeFromObjectNode readNode,
                                 @CachedLibrary(limit = "1") HashingStorageLibrary library) {
 
-            PythonModule module = getCore().lookupBuiltinModule("_csv");
             Object dialects = readNode.execute(module, "_dialects");
 
             //TODO: Should we write a PyDict_DelItem Node?
@@ -131,22 +128,21 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_dialect", parameterNames = {"name"}, minNumOfPositionalArgs = 1, doc = "Return the dialect instance associated with name.\n" +
+    @Builtin(name = "get_dialect", parameterNames = {"$mod", "name"}, minNumOfPositionalArgs = 2, declaresExplicitSelf = true, doc = "Return the dialect instance associated with name.\n" +
             "dialect = csv.get_dialect(name)")
     @GenerateNodeFactory
     public abstract static class CSVGetDialectNode extends PythonBuiltinNode {
 
-        public abstract CSVDialect execute(VirtualFrame frame, Object name);
+        public abstract CSVDialect execute(VirtualFrame frame, PythonModule module, Object name);
 
         protected static CSVGetDialectNode create() {
             return CSVModuleBuiltinsFactory.CSVGetDialectNodeFactory.create(null);
         }
         @Specialization
-        CSVDialect get(VirtualFrame frame, Object nameObj,
+        CSVDialect get(VirtualFrame frame, PythonModule module, Object nameObj,
                        @Cached PyDictGetItem getItemNode,
                        @Cached ReadAttributeFromObjectNode readNode) {
 
-            PythonModule module = getCore().lookupBuiltinModule("_csv");
             PDict dialects = (PDict) readNode.execute(module, "_dialects");
 
             CSVDialect dialect = (CSVDialect) getItemNode.execute(frame, dialects, nameObj);
@@ -159,19 +155,17 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "list_dialects", doc = "Return a list of all known dialect names.\n" +
+    @Builtin(name = "list_dialects", parameterNames = {"$mod"}, declaresExplicitSelf = true, doc = "Return a list of all known dialect names.\n" +
             "names = csv.list_dialects()")
     @GenerateNodeFactory
     public abstract static class CSVListDialectsNode extends PythonBuiltinNode {
         @Specialization
-        PList listDialects(VirtualFrame frame,
+        PList listDialects(VirtualFrame frame, PythonModule module,
                          @Cached ReadAttributeFromObjectNode readNode,
                          @CachedLibrary(limit = "1") HashingStorageLibrary library,
                          @Cached ListNodes.ConstructListNode constructListNode) {
 
-            PythonModule module = getCore().lookupBuiltinModule("_csv");
             Object dialects = readNode.execute(module, "_dialects");
-
             return constructListNode.execute(frame, dialects);
         }
     }
@@ -234,13 +228,13 @@ public class CSVModuleBuiltins extends PythonBuiltins {
     public abstract static class CSVFieldSizeLimitNode extends PythonBuiltinNode {
         @Specialization
         long getOrSetFieldSizeLimit(VirtualFrame frame, Object newLimit,
-                                    @Cached PyLongCheckExactNode checkIntNode,
+                                    @Cached PyLongCheckExactNode checkLongNode,
                                     @Cached PyLongAsLongNode castToLong) {
 
             long oldLimit = fieldLimit;
 
             if (newLimit != PNone.NO_VALUE) {
-                if (!PyLongCheckExactNode.getUncached().execute(newLimit)) {
+                if (!checkLongNode.execute(newLimit)) {
                     throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_INTEGER, "limit");
                 }
 
@@ -271,7 +265,8 @@ public class CSVModuleBuiltins extends PythonBuiltins {
                                            @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
                                            @Cached ReadAttributeFromObjectNode readNode,
                                            @Cached PyDictGetItem getItemNode) {
-            return getDialect.get(frame, dialectName, getItemNode, readNode);
+            PythonModule module = getCore().lookupBuiltinModule("_csv");
+            return getDialect.get(frame, module, dialectName, getItemNode, readNode);
         }
 
         @Specialization
@@ -299,8 +294,8 @@ public class CSVModuleBuiltins extends PythonBuiltins {
                                     @Cached PyObjectIsTrueNode isTrueNode,
                                     @Cached PyLongCheckExactNode pyLongCheckExactNode,
                                     @Cached PyLongAsIntNode pyLongAsIntNode) {
-
-            CSVDialect dialectObj = getDialect.get(frame, dialectName, getItemNode, readNode);
+            PythonModule module = getCore().lookupBuiltinModule("_csv");
+            CSVDialect dialectObj = getDialect.get(frame, module, dialectName, getItemNode, readNode);
 
             if (delimiterObj == PNone.NO_VALUE) delimiterObj = dialectObj.delimiter;
             if (doublequoteObj == PNone.NO_VALUE) doublequoteObj = dialectObj.doubleQuote;
@@ -355,7 +350,8 @@ public class CSVModuleBuiltins extends PythonBuiltins {
                                      @Cached PyLongAsIntNode pyLongAsIntNode) {
 
             String dialectNameStr = castToJavaStringNode.execute(dialectName);
-            CSVDialect dialectObj = getDialect.get(frame, dialectNameStr, getItemNode, readNode);
+            PythonModule module = getCore().lookupBuiltinModule("_csv");
+            CSVDialect dialectObj = getDialect.get(frame, module, dialectNameStr, getItemNode, readNode);
 
             if (delimiterObj == PNone.NO_VALUE) delimiterObj = dialectObj.delimiter;
             if (doublequoteObj == PNone.NO_VALUE) doublequoteObj = dialectObj.doubleQuote;

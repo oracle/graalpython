@@ -41,13 +41,12 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -58,10 +57,12 @@ public abstract class PyComplexCheckNode extends Node {
     public abstract boolean execute(Object object);
 
     @Specialization
+    static boolean doPComplex(PComplex pComplex) { return true; }
+
+    @Specialization
     static boolean doGeneric(Object object,
                              @Cached GetClassNode getClassNode,
-                             @Cached IsSubtypeNode isSubtypeNode,
-                             @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
+                             @Cached IsSubtypeNode isSubtypeNode) {
         Object type = getClassNode.execute(object);
         return isSubtypeNode.execute(type, PythonBuiltinClassType.PComplex);
     }

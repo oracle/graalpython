@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.lib;
 
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -67,16 +68,26 @@ public abstract class PyObjectStrAsJavaStringNode extends PNodeWithContext {
     }
 
     @Specialization
-    static String doStr(String obj) {
+    static String doString(String obj) {
         return obj;
+    }
+
+    @Specialization
+    static String doPString(PString obj,
+                            @Cached CastToJavaStringNode castToString) {
+        try {
+            return castToString.execute(obj);
+        } catch (CannotCastException e) {
+            throw CompilerDirectives.shouldNotReachHere("PString result not convertible to string");
+        }
     }
 
     @Specialization
     static String doGeneric(VirtualFrame frame, Object obj,
                     @Cached PyObjectStrAsObjectNode strNode,
-                    @Cached CastToJavaStringNode cast) {
+                    @Cached CastToJavaStringNode castToString) {
         try {
-            return cast.execute(strNode.execute(frame, obj));
+            return castToString.execute(strNode.execute(frame, obj));
         } catch (CannotCastException e) {
             throw CompilerDirectives.shouldNotReachHere("PyObjectStrAsObjectNode result not convertible to string");
         }

@@ -40,9 +40,6 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.truffle.api.nodes.NodeCost.NONE;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -61,8 +58,15 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.truffle.api.nodes.NodeCost.NONE;
+
 public abstract class GetNextNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object iterator);
+
+    public Object execute(Object iterator) {
+        return execute(null, iterator);
+    }
 
     public abstract boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException;
 

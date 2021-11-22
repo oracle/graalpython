@@ -7,6 +7,10 @@ import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
 import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.NOT_SET;
@@ -27,6 +31,33 @@ public final class CSVWriter extends PythonBuiltinObject {
     void joinReset() {
         this.rec = new StringBuilder();
         this.numFields = 0;
+    }
+
+    @TruffleBoundary
+    void joinFields(Object iter) {
+        Object field;
+
+        this.joinReset();
+
+        while (true) {
+            try {
+                field = GetNextNode.getUncached().execute(iter);
+                this.joinField(field);
+            } catch (PException e) {
+                e.expectStopIteration(IsBuiltinClassProfile.getUncached());
+                break;
+            }
+        }
+
+        if (this.numFields > 0 && this.rec.length() == 0) {
+            if (this.dialect.quoting == QUOTE_NONE) {
+                throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.EMPTY_FIELD_RECORD_MUST_BE_QUOTED);
+            }
+            this.numFields--;
+            this.joinAppend(null, true);
+        }
+
+        this.joinAppendLineterminator();
     }
 
     void joinField(Object field) {
