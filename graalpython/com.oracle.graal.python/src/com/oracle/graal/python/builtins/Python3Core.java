@@ -45,6 +45,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.objects.exception.ImportErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -452,6 +453,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new WarningsModuleBuiltins(),
                         // exceptions
                         new SystemExitBuiltins(),
+                        new ImportErrorBuiltins(),
 
                         // io
                         new IOModuleBuiltins(),

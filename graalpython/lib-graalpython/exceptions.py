@@ -43,18 +43,6 @@
 #
 # ----------------------------------------------------------------------------------------------------------------------
 
-def ImportError__init__(self, *args, name=None, path=None, **kwargs):
-    if kwargs:
-        kwarg = next(iter(kwargs))
-        raise TypeError(f"'{kwarg}' is an invalid keyword argument for ImportError")
-    BaseException.__init__(self, *args)
-    self.msg = args[0] if args else None
-    self.name = name
-    self.path = path
-
-ImportError.__init__ = ImportError__init__
-del ImportError__init__
-
 # EnvironmentError is just an alias of OSError (i.e. 'EnvironmentError is OSError == True')
 EnvironmentError = OSError
 
