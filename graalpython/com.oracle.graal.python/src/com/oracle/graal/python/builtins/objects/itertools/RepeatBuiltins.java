@@ -100,7 +100,7 @@ public final class RepeatBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.getCnt() == 0")
         Object nextZero(PRepeat self) {
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
 
         @Specialization(guards = "self.getCnt() < 0")

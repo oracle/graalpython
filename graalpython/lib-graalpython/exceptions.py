@@ -43,26 +43,6 @@
 #
 # ----------------------------------------------------------------------------------------------------------------------
 
-# EnvironmentError is just an alias of OSError (i.e. 'EnvironmentError is OSError == True')
-EnvironmentError = OSError
-
-
-def StopIteration__value__get(self):
-    if not hasattr(self, "__value__"):
-        if self.args:
-            self.__value__ = self.args[0]
-        else:
-            self.__value__ = None
-    return self.__value__
-
-
-def StopIteration__value__set(self, arg):
-    self.__value__ = arg
-
-
-StopIteration.value = property(fget=StopIteration__value__get, fset=StopIteration__value__set)
-
-
 def SyntaxError__init__(self, *args, **kwargs):
     BaseException.__init__(self, *args, **kwargs)
     self.msg = None

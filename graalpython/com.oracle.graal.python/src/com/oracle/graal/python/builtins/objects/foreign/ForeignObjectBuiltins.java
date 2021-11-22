@@ -763,7 +763,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 try {
                     return lib.getIteratorNextElement(iterator);
                 } catch (StopIterationException e) {
-                    throw raiseNode.raise(StopIteration);
+                    throw raiseNode.raiseStopIteration();
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere("iterator claimed to be iterator but wasn't");
                 } finally {

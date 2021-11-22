@@ -98,7 +98,7 @@ public class DequeIterBuiltins extends PythonBuiltins {
                 if (self.startState == self.deque.getState()) {
                     if (!self.hasNext()) {
                         assert self.lengthHint() == 0;
-                        throw raise(StopIteration);
+                        throw raiseStopIteration();
                     }
                     return self.next();
                 }

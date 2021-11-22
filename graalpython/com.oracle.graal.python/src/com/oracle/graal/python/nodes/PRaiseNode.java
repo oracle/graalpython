@@ -46,6 +46,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -132,6 +133,14 @@ public abstract class PRaiseNode extends Node {
 
     public final PException raiseSystemExit(Object code) {
         return raiseWithData(PythonBuiltinClassType.SystemExit, SystemExitBuiltins.SystemExitData.create(code), code);
+    }
+
+    public final PException raiseStopIteration() {
+        return raiseStopIteration(null);
+    }
+
+    public final PException raiseStopIteration(Object value) {
+        return raiseWithData(PythonBuiltinClassType.StopIteration, StopIterationBuiltins.StopIterationData.create(value));
     }
 
     public final PException raiseHasNoLength(Object result) {

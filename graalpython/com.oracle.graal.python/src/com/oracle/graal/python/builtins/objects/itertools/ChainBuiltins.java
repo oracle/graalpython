@@ -125,7 +125,7 @@ public final class ChainBuiltins extends PythonBuiltins {
                     self.setActive(PNone.NONE);
                 }
             }
-            throw raise(StopIteration);
+            throw raiseStopIteration();
         }
     }
 
