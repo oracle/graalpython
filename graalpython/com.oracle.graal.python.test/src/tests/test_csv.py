@@ -38,17 +38,42 @@
 # SOFTWARE.
 
 import unittest
+import csv
+from tempfile import TemporaryFile
 
 class CsvTest(unittest.TestCase):
-    def test_utf_32_delimiter(self):
-        import csv
+    def test_read_utf_32_delimiter(self):
         test_data = ['a\U0001F642b']
         reader = csv.reader(test_data, delimiter="\U0001F642")
-        assert list(reader) == [['a', 'b']]
+        self.assertEqual(list(reader), [['a', 'b']])
 
-    def test_utf_32_field(self):
-            import csv
-            test_data = ['a,\U0001F642,b']
-            reader = csv.reader(test_data)
-            assert list(reader) == [['a', '\U0001F642', 'b']]
+    def test_read_utf_32_field(self):
+        test_data = ['a,\U0001F642,b']
+        reader = csv.reader(test_data)
+        self.assertEqual(list(reader), [['a', '\U0001F642', 'b']])
+
+    def test_write_utf32_field(self):
+        with TemporaryFile("w+", newline='') as fileobj:
+            writer = csv.writer(fileobj)
+            writer.writerow(['a', '\U0001F642','b'])
+
+            expected = 'a,\U0001F642,b'
+            fileobj.seek(0)
+
+            self.assertEqual(fileobj.read(),
+                             expected + writer.dialect.lineterminator)
+
+    def test_write_utf32_field_with_utf32_delimiter(self):
+        with TemporaryFile("w+", newline='') as fileobj:
+            writer = csv.writer(fileobj, delimiter = '\U0001F642')
+            writer.writerow(['a', '\U0001F642','b'])
+
+            expected = 'a\U0001F642"\U0001F642"\U0001F642b'
+            fileobj.seek(0)
+
+            self.assertEqual(fileobj.read(),
+                             expected + writer.dialect.lineterminator)
+
+
+
 

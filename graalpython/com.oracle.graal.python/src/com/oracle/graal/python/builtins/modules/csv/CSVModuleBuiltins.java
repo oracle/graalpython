@@ -56,6 +56,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
     static long fieldLimit = 128 * 1024; // max parsed field size
     static final String WRITE = "write";
     static final String NOT_SET = "NOT_SET";
+    static final int NOT_SET_CODEPOINT = -1;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -456,7 +457,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.S_MUST_BE_STRING_NOT_S, name, getType.execute(valueObj));
             }
 
-            if (charValue.length() != 1) {
+            if (charValue.length() != 1 && charValue.codePointCount(0, charValue.length()) != 1) {
                 throw raise(TypeError, ErrorMessages.MUST_BE_ONE_CHARACTER_STRING, name);
             }
 

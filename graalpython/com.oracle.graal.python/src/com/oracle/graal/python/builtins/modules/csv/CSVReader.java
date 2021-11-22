@@ -22,7 +22,10 @@ import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONN
 
 public final class CSVReader extends PythonBuiltinObject {
 
-    private static final String EOL = "EOL";
+    private static final int EOL = -2;
+    private static final int NEWLINE_CODEPOINT = "\n".codePointAt(0);
+    private static final int CARRIAGE_RETURN_CODEPOINT = "\r".codePointAt(0);
+    private static final int SPACE_CODEPOINT = " ".codePointAt(0);
 
     public enum ReaderState {
         START_RECORD,
@@ -69,28 +72,33 @@ public final class CSVReader extends PythonBuiltinObject {
     }
 
     void parseLine(String line) {
-        int lineLength = line.length();
+        final int lineLength = line.length();
 
-        for (int i = 0; i < lineLength; i++) {
-            String c = line.substring(i, i+1);
-            parseProcessChar(c);
+        /* Python supports utf-32 characters, as Java characters are utf-16 only,
+        * we have to work with code points instead. */
+        for (int offset = 0; offset < lineLength; ) {
+            final int codepoint = line.codePointAt(offset);
+
+            parseProcessCodePoint(codepoint);
+
+            offset += Character.charCount(codepoint);
         }
 
-        parseProcessChar(EOL);
+        parseProcessCodePoint(EOL);
     }
 
     @SuppressWarnings("fallthrough")
-    void parseProcessChar(String c) {
+    void parseProcessCodePoint(int codePoint) {
         CSVDialect dialect = this.dialect;
 
         switch (this.state) {
 
             case START_RECORD:
                 /* start of record */
-                if (c == EOL) {
+                if (codePoint== EOL) {
                     /* empty line - return [] */
                     break;
-                } else if (c.equals("\n") || c.equals("\r")) {
+                } else if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT) {
                     this.state = EAT_CRNL;
                     break;
                 }
@@ -100,24 +108,24 @@ public final class CSVReader extends PythonBuiltinObject {
 
             case START_FIELD:
                 /* expecting field */
-                if (c.equals("\n") || c.equals("\r") || c == EOL) {
+                if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT || codePoint == EOL) {
                     /* save empty field - return [fields] */
                     parseSaveField();
-                    this.state = (c == EOL) ? START_RECORD : EAT_CRNL;
+                    this.state = (codePoint == EOL) ? START_RECORD : EAT_CRNL;
                 }
-                else if (c.equals(dialect.quoteChar) &&
+                else if (codePoint == dialect.quoteCharCodePoint &&
                         dialect.quoting != QUOTE_NONE) {
                     /* start quoted field */
                     this.state = IN_QUOTED_FIELD;
                 }
-                else if (c.equals(dialect.escapeChar)) {
+                else if (codePoint == dialect.escapeCharCodePoint) {
                     /* possible escaped character */
                     this.state = ESCAPED_CHAR;
                 }
-                else if (c.equals(" ") && dialect.skipInitialSpace)
+                else if (codePoint == SPACE_CODEPOINT && dialect.skipInitialSpace)
                     /* ignore space at start of field */
                     ;
-                else if (c.equals(dialect.delimiter)) {
+                else if (codePoint == dialect.delimiterCodePoint) {
                     /* save empty field */
                     parseSaveField();
                 }
@@ -125,62 +133,62 @@ public final class CSVReader extends PythonBuiltinObject {
                     /* begin new unquoted field */
                     if (dialect.quoting == QUOTE_NONNUMERIC)
                         this.numericField = true;
-                    parseAddChar(c);
+                    parseAddCodePoint(codePoint);
                     this.state = IN_FIELD;
                 }
                 break;
 
             case ESCAPED_CHAR:
-                if (c.equals("\n") || c.equals("\r")) {
-                    parseAddChar(c);
+                if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT) {
+                    parseAddCodePoint(codePoint);
                     this.state = AFTER_ESCAPED_CRNL;
                     break;
                 }
-                if (c == EOL) {
-                    c = "\n";
+                if (codePoint == EOL) {
+                    codePoint = NEWLINE_CODEPOINT;
                 }
-                parseAddChar(c);
+                parseAddCodePoint(codePoint);
 
                 this.state = IN_FIELD;
                 break;
 
             case AFTER_ESCAPED_CRNL:
-                if (c == EOL)
+                if (codePoint == EOL)
                     break;
                 /*fallthru*/
 
             case IN_FIELD:
                 /* in unquoted field */
-                if (c.equals("\n") || c.equals("\r") || c == EOL) {
+                if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT || codePoint == EOL) {
                     /* end of line - return [fields] */
                     parseSaveField();
 
-                    this.state = (c == EOL) ? START_RECORD : EAT_CRNL;
+                    this.state = (codePoint == EOL) ? START_RECORD : EAT_CRNL;
                 }
-                else if (c.equals(dialect.escapeChar)) {
+                else if (codePoint == dialect.escapeCharCodePoint) {
                     /* possible escaped character */
                     this.state = ESCAPED_CHAR;
                 }
-                else if (c.equals(dialect.delimiter)) {
+                else if (codePoint == dialect.delimiterCodePoint) {
                     /* save field - wait for new field */
                     parseSaveField();
                     this.state = START_FIELD;
                 }
                 else {
                     /* normal character - save in field */
-                    parseAddChar(c);
+                    parseAddCodePoint(codePoint);
                 }
                 break;
 
             case IN_QUOTED_FIELD:
                 /* in quoted field */
-                if (c == EOL)
+                if (codePoint == EOL)
                     ;
-                else if (c.equals(dialect.escapeChar)) {
+                else if (codePoint == dialect.escapeCharCodePoint) {
                     /* Possible escape character */
                     this.state = ESCAPE_IN_QUOTED_FIELD;
                 }
-                else if (c.equals(dialect.quoteChar) &&
+                else if (codePoint == dialect.quoteCharCodePoint &&
                         dialect.quoting != QUOTE_NONE) {
                     if (dialect.doubleQuote) {
                         /* doublequote; " represented by "" */
@@ -193,37 +201,37 @@ public final class CSVReader extends PythonBuiltinObject {
                 }
                 else {
                     /* normal character - save in field */
-                    parseAddChar(c);
+                    parseAddCodePoint(codePoint);
                 }
                 break;
 
             case ESCAPE_IN_QUOTED_FIELD:
-                if (c == EOL)
-                    c = "\n";
-                parseAddChar(c);
+                if (codePoint == EOL)
+                    codePoint = NEWLINE_CODEPOINT;
+                parseAddCodePoint(codePoint);
                 this.state = IN_QUOTED_FIELD;
                 break;
 
             case QUOTE_IN_QUOTED_FIELD:
                 /* doublequote - seen a quote in a quoted field */
                 if (dialect.quoting != QUOTE_NONE &&
-                        c.equals(dialect.quoteChar)) {
+                        codePoint == dialect.quoteCharCodePoint) {
                     /* save "" as " */
-                    parseAddChar(c);
+                    parseAddCodePoint(codePoint);
                     this.state = IN_QUOTED_FIELD;
                 }
-                else if (c.equals(dialect.delimiter)) {
+                else if (codePoint == dialect.delimiterCodePoint) {
                     /* save field - wait for new field */
                     parseSaveField();
                     this.state = START_FIELD;
                 }
-                else if (c.equals("\n") || c.equals("\r") || c == EOL) {
+                else if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT || codePoint == EOL) {
                     /* end of line - return [fields] */
                     parseSaveField();
-                    this.state = (c == EOL) ? START_RECORD : EAT_CRNL;
+                    this.state = (codePoint == EOL) ? START_RECORD : EAT_CRNL;
                 }
                 else if (!dialect.strict) {
-                    parseAddChar(c);
+                    parseAddCodePoint(codePoint);
                     this.state = IN_FIELD;
                 }
                 else {
@@ -235,9 +243,9 @@ public final class CSVReader extends PythonBuiltinObject {
                 break;
 
             case EAT_CRNL:
-                if (c.equals("\n") || c.equals("\r"))
+                if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT)
                     ;
-                else if (c == EOL)
+                else if (codePoint == EOL)
                     this.state = START_RECORD;
                 else {
                     throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.NEWLINE_IN_UNQOUTED_FIELD);
@@ -247,13 +255,13 @@ public final class CSVReader extends PythonBuiltinObject {
 
     }
 
-    void parseAddChar(String c){
+    void parseAddCodePoint(int codePoint){
 
-        if (this.field.length() + c.length() > CSVModuleBuiltins.fieldLimit){
+        if (this.field.length() + Character.charCount(codePoint) > CSVModuleBuiltins.fieldLimit){
             throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.LARGER_THAN_FIELD_SIZE_LIMIT,
                     CSVModuleBuiltins.fieldLimit);
         }
 
-        this.field.append(c);
+        this.field.appendCodePoint(codePoint);
     }
 }

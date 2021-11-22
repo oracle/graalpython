@@ -57,18 +57,19 @@ public final class CSVWriter extends PythonBuiltinObject {
         if (field != null) {
             String fieldStr = field.toString();
             int strLen = fieldStr.length();
-            for (int i = 0; i < strLen; i++) {
+
+            for (int offset = 0; offset < strLen; ) {
                 boolean wantEscape = false;
 
-                String c = fieldStr.substring(i, i + 1);
-                if (c.equals(dialect.delimiter) ||
-                        c.equals(dialect.escapeChar) ||
-                        c.equals(dialect.quoteChar) ||
-                        dialect.lineTerminator.contains(c)) {
+                final int c = fieldStr.codePointAt(offset);
+                if (c == dialect.delimiterCodePoint ||
+                        c == dialect.escapeCharCodePoint ||
+                        c == dialect.quoteCharCodePoint ||
+                        dialect.lineTerminator.contains(new String(Character.toChars(c)))) {
 
                     if (dialect.quoting == QUOTE_NONE ||
-                            (c.equals(dialect.quoteChar) && !dialect.doubleQuote) ||
-                            c.equals(dialect.escapeChar)) {
+                            c == dialect.quoteCharCodePoint && !dialect.doubleQuote ||
+                            c == dialect.escapeCharCodePoint) {
                         wantEscape = true;
                     }
 
@@ -76,6 +77,7 @@ public final class CSVWriter extends PythonBuiltinObject {
                         needsQuotes = true;
                     }
                 }
+                offset += Character.charCount(c);
             }
         }
         return needsQuotes;
@@ -107,26 +109,30 @@ public final class CSVWriter extends PythonBuiltinObject {
         if (field != null) {
             String fieldStr = field.toString();
             int strLen = fieldStr.length();
-            for (int i = 0; i < strLen; i++) {
+
+            /* Python supports utf-32 characters, as Java characters are utf-16 only,
+             * we have to work with code points instead. */
+            for (int offset = 0; offset < strLen; ) {
 
                 boolean wantEscape = false;
 
-                String c = fieldStr.substring(i, i + 1);
-                if (c.equals(dialect.delimiter) ||
-                        c.equals(dialect.escapeChar) ||
-                        c.equals(dialect.quoteChar) ||
-                        dialect.lineTerminator.contains(c)) {
+                final int c = fieldStr.codePointAt(offset);
+
+                if (c == dialect.delimiterCodePoint ||
+                        c == dialect.escapeCharCodePoint ||
+                        c == dialect.quoteCharCodePoint ||
+                        dialect.lineTerminator.contains(new String(Character.toChars(c)))) {
 
                     if (dialect.quoting == QUOTE_NONE) {
                         wantEscape = true;
                     } else {
-                        if (c.equals(dialect.quoteChar)) {
+                        if (c == dialect.quoteCharCodePoint) {
                             if (dialect.doubleQuote) {
                                 this.rec.append(dialect.quoteChar);
                             } else {
                                 wantEscape = true;
                             }
-                        } else if (c.equals(dialect.escapeChar)) {
+                        } else if (c == dialect.escapeCharCodePoint) {
                             wantEscape = true;
                         }
                         if (!wantEscape) {
@@ -140,7 +146,8 @@ public final class CSVWriter extends PythonBuiltinObject {
                         this.rec.append(dialect.escapeChar);
                     }
                 }
-                this.rec.append(c);
+                this.rec.appendCodePoint(c);
+                offset += Character.charCount(c);
             }
         }
         if (quoted) {
@@ -150,7 +157,6 @@ public final class CSVWriter extends PythonBuiltinObject {
     }
 
     void joinAppendLineterminator() {
-        int terminatorLen = this.dialect.lineTerminator.length();
         this.rec.append(this.dialect.lineTerminator);
     }
 

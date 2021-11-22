@@ -59,7 +59,7 @@ public class CSVReaderBuiltins extends PythonBuiltins {
                        @Cached PythonObjectFactory factory,
                        @Cached GetClassNode getClassNode) {
 
-            self.parseReset(); // TODO: Error checks needed?
+            self.parseReset();
 
             PythonLanguage language = PythonLanguage.get(this);
             Object state = IndirectCallContext.enter(frame, language, getContext(), this);
