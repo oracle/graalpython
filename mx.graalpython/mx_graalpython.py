@@ -521,7 +521,7 @@ def _graalvm_home(*, envfile, extra_dy=""):
         mx.run_mx(mx_args + ["build"])
         out = mx.OutputCapture()
         mx.run_mx(mx_args + ["graalvm-home"], out=out)
-        home = out.data.strip()
+        home = out.data.splitlines()[-1].strip()
     elif "*" in home:
         home = os.path.abspath(glob.glob(home)[0])
     mx.log("choosing GRAALVM_HOME=%s" % home)
