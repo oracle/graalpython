@@ -12,6 +12,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -124,11 +125,16 @@ public class TokenizerTest {
     }
 
     @Test
+    public void testTypeComment() throws Exception {
+        checkTokensFromtestDataFile();
+    }
+    
+    @Test
     public void testInt() throws Exception {
         checkTokensFromtestDataFile();
     }
 
-   @Test
+    @Test
     public void testLong() throws Exception{
         checkTokensFromtestDataFile();
     }
@@ -219,7 +225,7 @@ public class TokenizerTest {
     }
 
     private Token[] getTokens(String code) {
-        Tokenizer tokenizer = new Tokenizer(code);
+        Tokenizer tokenizer = new Tokenizer(code, EnumSet.of(Tokenizer.Flag.EXECT_INPUT, Tokenizer.Flag.TYPE_COMMENT));
         Token token;
 
         ArrayList<Token> tokens = new ArrayList();
@@ -237,7 +243,7 @@ public class TokenizerTest {
     }
     
     private void checkTokens(String code, String[] tokens) {
-        Tokenizer tokenizer = new Tokenizer(code);
+        Tokenizer tokenizer = new Tokenizer(code, EnumSet.of(Tokenizer.Flag.EXECT_INPUT, Tokenizer.Flag.TYPE_COMMENT));
         Token token = tokenizer.next();
         int index = 0;
 
@@ -430,7 +436,7 @@ public class TokenizerTest {
             assertTrue(goldenTokens.containsKey(line), "Was not found golden result for line: '" + line + "'");
             List<String> goldenResult = goldenTokens.get(line);
             int goldenResultIndex = 0;
-            Tokenizer tokenizer = new Tokenizer(line);
+            Tokenizer tokenizer = new Tokenizer(line, EnumSet.of(Tokenizer.Flag.EXECT_INPUT, Tokenizer.Flag.TYPE_COMMENT));
             Token token;
             do {
                 token  = tokenizer.next();

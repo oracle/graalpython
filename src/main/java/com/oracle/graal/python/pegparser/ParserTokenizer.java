@@ -43,6 +43,7 @@ package com.oracle.graal.python.pegparser;
 import java.util.ArrayList;
 import com.oracle.graal.python.pegparser.tokenizer.Token;
 import com.oracle.graal.python.pegparser.tokenizer.Tokenizer;
+import java.util.EnumSet;
 
 public class ParserTokenizer {
     private int pos; // position of the mark
@@ -53,7 +54,7 @@ public class ParserTokenizer {
     public ParserTokenizer(String code) {
         this.pos = 0;
         this.tokens = new ArrayList<>();
-        this.tokenizer = new Tokenizer(code);
+        this.tokenizer = new Tokenizer(code, EnumSet.of(Tokenizer.Flag.EXECT_INPUT, Tokenizer.Flag.TYPE_COMMENT));
     }
 
     public int mark() {

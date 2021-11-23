@@ -23,10 +23,25 @@ for file in files:
                 outputFile.write(line + '\n')
                 tokens = generate_tokens(StringIO(line).readline)
                 for token in tokens:
-                    outputFile.write("Token type:%d (%s)" % (token.type, Token.tok_name[token.type]))
-                    if token.type == Token.OP:
-                        outputFile.write(" exact_type:%d (%s)" % (token.exact_type, Token.tok_name[token.exact_type]))
-                    outputFile.write(" start:[%d, %d] end:[%d, %d]" % (token.start + token.end))
-                    outputFile.write(" string:'%s'" % (token.string))
+                    end = token.end
+                    start = token.start
+                    text = token.string
+                    if token.type == Token.COMMENT and token.string.startswith("# type: "):
+                        # TODO this is hack. The python tokenizer doesn't recognize the TYPE_COMMENTs
+                        outputFile.write("Token type:58 (TYPE_COMMENT)")
+                        text = text.strip()[len("# type: "): len(text)]
+                        start = list(start)
+                        start[1] = start[1] + int(token.string.find(text))
+                        start = tuple(start)
+                        end = list(end)
+                        end[1] = start[1] + len(text)
+                        end = tuple(end)
+                    else:
+                        outputFile.write("Token type:%d (%s)" % (token.type, Token.tok_name[token.type]))
+                        if token.type == Token.OP:
+                            outputFile.write(" exact_type:%d (%s)" % (token.exact_type, Token.tok_name[token.exact_type]))
+                    
+                    outputFile.write(" start:[%d, %d] end:[%d, %d]" % (start + end))
+                    outputFile.write(" string:'%s'" % (text))
                     outputFile.write('\n')
                 outputFile.write('\n')
