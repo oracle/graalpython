@@ -4059,6 +4059,7 @@ public abstract class SequenceStorageNodes {
 
             @CompilationFinal private ListStorageType expectedElementType = Uninitialized;
 
+            private static final int MAX_PREALLOCATE_SIZE = 32;
             @CompilationFinal int startSizeProfiled = START_SIZE;
 
             public boolean isBuiltinIterator(Object iterator) {
@@ -4066,14 +4067,15 @@ public abstract class SequenceStorageNodes {
             }
 
             public static SequenceStorage getSequenceStorage(GetInternalIteratorSequenceStorage node, PBuiltinIterator iterator) {
-                return node.execute(iterator);
+                return iterator.index != 0 || iterator.isExhausted() ? null : node.execute(iterator);
             }
 
-            @Specialization(guards = {"isBuiltinIterator(it)", "it.index == 0", "storage != null"})
+            @Specialization(guards = {"isBuiltinIterator(it)", "storage != null"})
             public SequenceStorage createBuiltinFastPath(PBuiltinIterator it, int len,
                             @Cached GetInternalIteratorSequenceStorage getIterSeqStorageNode,
                             @Bind("getSequenceStorage(getIterSeqStorageNode, it)") SequenceStorage storage,
                             @Cached CopyNode copyNode) {
+                it.setExhausted();
                 return copyNode.execute(storage);
             }
 
@@ -4085,7 +4087,7 @@ public abstract class SequenceStorageNodes {
                             @Shared("arrayGrowProfile") @Cached("createCountingProfile()") ConditionProfile arrayGrowProfile,
                             @Cached NextNode nextNode) {
                 int expectedLen = lengthHint.execute(iterator);
-                if (expectedLen == -1) {
+                if (expectedLen < 0) {
                     expectedLen = startSizeProfiled;
                 }
                 SequenceStorage s = createStorageFromBuiltin(frame, iterator, expectedLen, expectedElementType, nextNode, errorProfile, arrayGrowProfile, loopProfile);
@@ -4123,7 +4125,7 @@ public abstract class SequenceStorageNodes {
             private SequenceStorage profileResult(SequenceStorage storage, boolean profileLength) {
                 if (CompilerDirectives.inInterpreter() && profileLength) {
                     int actualLen = storage.length();
-                    if (startSizeProfiled < actualLen && actualLen <= 32) {
+                    if (startSizeProfiled < actualLen && actualLen <= MAX_PREALLOCATE_SIZE) {
                         startSizeProfiled = actualLen;
                     }
                 }
@@ -4152,7 +4154,7 @@ public abstract class SequenceStorageNodes {
             private SequenceStorage executeImpl(Object iterator, int len) {
                 if (iterator instanceof PBuiltinIterator) {
                     PBuiltinIterator pbi = (PBuiltinIterator) iterator;
-                    if (GetClassNode.getUncached().execute(pbi) == PythonBuiltinClassType.PIterator && pbi.index == 0) {
+                    if (GetClassNode.getUncached().execute(pbi) == PythonBuiltinClassType.PIterator && pbi.index == 0 && !pbi.isExhausted()) {
                         SequenceStorage s = GetInternalIteratorSequenceStorage.getUncached().execute(pbi);
                         if (s != null) {
                             return s.copy();

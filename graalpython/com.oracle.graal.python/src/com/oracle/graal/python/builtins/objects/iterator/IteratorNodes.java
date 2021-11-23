@@ -80,6 +80,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -188,6 +189,7 @@ public abstract class IteratorNodes {
     }
 
     @ImportStatic(PGuards.class)
+    @GenerateUncached
     public abstract static class GetInternalIteratorSequenceStorage extends Node {
         public static GetInternalIteratorSequenceStorage getUncached() {
             return GetInternalIteratorSequenceStorageNodeGen.getUncached();
@@ -200,7 +202,7 @@ public abstract class IteratorNodes {
          */
         public final SequenceStorage execute(PBuiltinIterator iterator) {
             assert GetClassNode.getUncached().execute(iterator) == PIterator;
-            assert iterator.index == 0;
+            assert iterator.index == 0 && !iterator.isExhausted();
             return executeInternal(iterator);
         }
 
@@ -244,42 +246,53 @@ public abstract class IteratorNodes {
 
     @ImportStatic(PGuards.class)
     public abstract static class BuiltinIteratorLengthHint extends Node {
-        @Child GetInternalIteratorSequenceStorage getSeqStorage = GetInternalIteratorSequenceStorageNodeGen.create();
-        private final ConditionProfile noStorageProfile = ConditionProfile.createBinaryProfile();
-
         /**
          * The argument must be a builtin iterator. Returns {@code -1} if the length hint is not
-         * available.
+         * available and rewrites itself to generic fallback that always returns {@code -1}.
          */
         public final int execute(PBuiltinIterator iterator) {
             assert GetClassNode.getUncached().execute(iterator) == PIterator;
-            SequenceStorage result = getSeqStorage.execute(iterator);
-            if (noStorageProfile.profile(result != null)) {
-                return result.length();
-            }
             return executeInternal(iterator);
         }
 
         protected abstract int executeInternal(PBuiltinIterator iterator);
 
+        protected static SequenceStorage getStorage(GetInternalIteratorSequenceStorage getSeqStorage, PBuiltinIterator it) {
+            return it.index != 0 || it.isExhausted() ? null : getSeqStorage.execute(it);
+        }
+
+        @Specialization(guards = "storage != null")
+        static int doSeqStorage(@SuppressWarnings("unused") PBuiltinIterator it,
+                        @SuppressWarnings("unused") @Cached GetInternalIteratorSequenceStorage getSeqStorage,
+                        @Bind("getStorage(getSeqStorage, it)") SequenceStorage storage) {
+            return ensurePositive(storage.length());
+        }
+
         @Specialization
         static int doString(PStringIterator it) {
-            return it.value.length();
+            return ensurePositive(it.value.length());
         }
 
         @Specialization
         static int doSequenceArr(PArrayIterator it) {
-            return it.array.getLength();
+            return ensurePositive(it.array.getLength());
         }
 
         @Specialization
         static int doSequenceIntRange(PIntRangeIterator it) {
-            return it.getLength();
+            return ensurePositive(it.getLength());
         }
 
-        @Fallback
-        static int doOthers(PBuiltinIterator it) {
+        @Specialization(replaces = {"doSeqStorage", "doString", "doSequenceArr", "doSequenceIntRange"})
+        static int doGeneric(@SuppressWarnings("unused") PBuiltinIterator it) {
             return -1;
+        }
+
+        static int ensurePositive(int len) {
+            if (len < 0) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+            return len;
         }
     }
 
