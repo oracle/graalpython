@@ -693,6 +693,7 @@ public abstract class ErrorMessages {
     public static final String WEAK_OBJ_GONE_AWAY = "weak object has gone away";
     public static final String X_NOT_IN_LIST = "x not in list";
     public static final String X_NOT_IN_TUPLE = "tuple.index(x): x not in tuple";
+    public static final String S_IS_AN_INVALID_ARG_FOR_S = "'%s' is an invalid keyword argument for %s";
     public static final String YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH = "%s: you may specify either '%s' or '%s' but not both";
     public static final String ZIPIMPORT_CANNOT_REWAD_ARCH_MEMBERS = "zipimport: cannot read archive members large than 2GB";
     public static final String ZIPIMPORT_CANT_READ_DATA = "zipimport: can't read data";

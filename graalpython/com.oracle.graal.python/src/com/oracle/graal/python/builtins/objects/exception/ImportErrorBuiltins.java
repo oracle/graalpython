@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.S_IS_AN_INVALID_ARG_FOR_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
@@ -142,6 +143,9 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
                         break;
                     case "path":
                         path = kw.getValue();
+                        break;
+                    default:
+                        throw raise(PythonBuiltinClassType.TypeError, S_IS_AN_INVALID_ARG_FOR_S, kw.getName(), "ImportError");
                 }
             }
             self.setData(ImportErrorData.create(msg, name, path));
