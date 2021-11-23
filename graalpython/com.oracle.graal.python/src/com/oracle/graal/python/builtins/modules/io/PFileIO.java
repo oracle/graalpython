@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.io;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -213,9 +214,10 @@ class OwnFD extends AsyncHandler.SharedFinalizer.FinalizableReference {
         this.context = context;
     }
 
+    @SuppressWarnings("try")
     protected void doRelease() {
-        try {
-            markReleased();
+        markReleased();
+        try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
             PosixSupportLibrary.getUncached().close(context.getPosixSupport(), (int) getReference());
         } catch (PosixSupportLibrary.PosixException e) {
             // ignore
