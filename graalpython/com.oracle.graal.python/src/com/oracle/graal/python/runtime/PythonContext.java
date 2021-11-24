@@ -512,6 +512,17 @@ public final class PythonContext extends Python3Core {
     private final Map<String, PTuple> codecSearchCache = new HashMap<>();
     private final Map<String, Object> codecErrorRegistry = new HashMap<>();
 
+    // the full module name for package imports
+    private String pyPackageContext;
+
+    public String getPyPackageContext() {
+        return pyPackageContext;
+    }
+
+    public void setPyPackageContext(String pyPackageContext) {
+        this.pyPackageContext = pyPackageContext;
+    }
+
     public List<Object> getCodecSearchPath() {
         return codecSearchPath;
     }
