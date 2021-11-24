@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
+import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -386,6 +387,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
     public abstract static class SyntaxErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object str(VirtualFrame frame, PBaseException self,
+                        @Cached PyObjectStrAsJavaStringNode strNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflowNode,
                         @Cached PyLongCheckExactNode pyLongCheckExactNode) {
@@ -408,7 +410,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
             boolean heaveLineNo = lineno != null && pyLongCheckExactNode.execute(lineno);
 
             if (filename == null && !heaveLineNo) {
-                return msg != null ? msg : PNone.NONE;
+                return strNode.execute(frame, msg != null ? msg : PNone.NONE);
             }
 
             String result;
