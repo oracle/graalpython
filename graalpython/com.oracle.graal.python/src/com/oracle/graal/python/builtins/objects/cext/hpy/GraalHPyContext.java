@@ -238,6 +238,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 import sun.misc.Unsafe;
 
@@ -1122,6 +1123,12 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
     }
 
+    private static Object evalNFI(PythonContext context, String source, String name) {
+        Source src = Source.newBuilder("nfi", source, name).build();
+        CallTarget ct = context.getEnv().parseInternal(src);
+        return ct.call();
+    }
+
     @ExportMessage
     final void toNative() {
         if (!isPointer()) {
@@ -1136,14 +1143,17 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             }
             if (useNativeFastPaths) {
                 PythonContext context = getContext();
-                Source src = Source.newBuilder("nfi", "load \"" + getJNILibrary() + "\"", "load " + PythonContext.PYTHON_JNI_LIBRARY_NAME).build();
-                CallTarget lib = context.getEnv().parseInternal(src);
                 InteropLibrary interop = InteropLibrary.getUncached();
+                SignatureLibrary signatures = SignatureLibrary.getUncached();
                 try {
-                    Object rlib = lib.call();
-                    Object augmentFunction = interop.invokeMember(interop.readMember(rlib, "initDirectFastPaths"), "bind", "(POINTER):VOID");
-                    interop.execute(augmentFunction, nativePointer);
-                    setNativeSpaceFunction = interop.invokeMember(interop.readMember(rlib, "setHPyContextNativeSpace"), "bind", "(POINTER, SINT64):VOID");
+                    Object rlib = evalNFI(context, "load \"" + getJNILibrary() + "\"", "load " + PythonContext.PYTHON_JNI_LIBRARY_NAME);
+
+                    Object augmentSignature = evalNFI(context, "(POINTER):VOID", "hpy-nfi-signature");
+                    Object augmentFunction = interop.readMember(rlib, "initDirectFastPaths");
+                    signatures.call(augmentSignature, augmentFunction, nativePointer);
+
+                    Object setNativeSpaceSignature = evalNFI(context, "(POINTER, SINT64):VOID", "hpy-nfi-signature");
+                    setNativeSpaceFunction = signatures.bind(setNativeSpaceSignature, interop.readMember(rlib, "setHPyContextNativeSpace"));
 
                     /*
                      * Allocate a native array for the native space pointers of HPy objects and
