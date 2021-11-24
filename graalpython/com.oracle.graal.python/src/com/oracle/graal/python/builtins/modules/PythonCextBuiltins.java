@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.isClassOrStaticMethod;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.HASH_MISMATCH;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
@@ -56,6 +57,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
@@ -85,6 +87,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors.BytesNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.FrozenSetNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.MappingproxyNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
@@ -92,6 +95,8 @@ import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.Create
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.AddNode;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.JoinNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -233,7 +238,12 @@ import com.oracle.graal.python.builtins.objects.set.SetNodes.ConstructSetNode;
 import com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
+<<<<<<< HEAD
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
+=======
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ModNode;
+>>>>>>> intrinsified python_cext PyBytes_XXX
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -1588,6 +1598,200 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         protected boolean isSetSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
             return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PSet);
+        }
+    }
+
+    ///////////// bytes /////////////
+
+    @Builtin(name = "PyBytes_Size", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyBytesSizeNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object size(VirtualFrame frame, PBytes obj,
+                        @Cached PyObjectSizeNode sizeNode) {
+            return sizeNode.execute(frame, obj);
+        }
+
+        @Specialization(guards = {"!isPBytes(obj)", "isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object sizeNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "bytes");
+        }
+
+        @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object size(VirtualFrame frame, Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        }
+
+        protected boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PBytes);
+        }
+    }
+
+    @Builtin(name = "PyBytes_Check", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyBytesCheckNode extends PythonUnaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        public Object check(PBytes obj) {
+            return true;
+        }
+
+        @Specialization(guards = "!isPBytes(obj)")
+        public Object check(VirtualFrame frame, Object obj,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PBytes);
+        }
+    }
+
+    @Builtin(name = "PyBytes_Concat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PyBytesConcatNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        public Object concat(VirtualFrame frame, PBytes original, PBytes newPart,
+                        @Cached AddNode addNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return addNode.execute(frame, original, newPart);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isPBytes(obj)", "isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object concatNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "bytes");
+        }
+
+        @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object concat(VirtualFrame frame, Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        }
+
+        protected boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PBytes);
+        }
+    }
+
+    @Builtin(name = "PyBytes_Join", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PyBytesJoinNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        public Object join(VirtualFrame frame, PBytes original, PBytes newPart,
+                        @Cached JoinNode joinNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return joinNode.execute(frame, original, newPart);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isPBytes(obj)", "isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object joinNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "bytes");
+        }
+
+        @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object join(VirtualFrame frame, Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        }
+
+        protected boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PBytes);
+        }
+    }
+
+    @Builtin(name = "PyBytes_FromFormat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PyBytesFromFormatNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        public Object fromFormat(VirtualFrame frame, String fmt, Object args,
+                        @Cached ModNode modeNode,
+                        @Cached EncodeNode encodeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                Object formated = modeNode.execute(frame, fmt, args);
+                return encodeNode.execute(frame, formated, PNone.NONE, PNone.NONE);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PyBytes_FromObject", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyBytesFromObjectNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = {"isPBytes(obj) || isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object fromObject(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+            return obj;
+        }
+
+        @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)", "isAcceptedSubtype(frame, obj, getClassNode, isSubtypeNode, lookupAttrNode)"})
+        public Object fromObject(VirtualFrame frame, Object obj,
+                        @Cached BytesNode bytesNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return bytesNode.execute(frame, PythonBuiltinClassType.PBytes, obj, PNone.NO_VALUE, PNone.NO_VALUE);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)", "!isAcceptedSubtype(frame, obj, getClassNode, isSubtypeNode, lookupAttrNode)"})
+        public Object fromObject(VirtualFrame frame, Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), TypeError, CANNOT_CONVERT_P_OBJ_TO_S, obj, "bytes");
+        }
+
+        protected boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PBytes);
+        }
+
+        protected boolean isAcceptedSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode, PyObjectLookupAttr lookupAttrNode) {
+            Object klass = getClassNode.execute(obj);
+            return isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PList) ||
+                            isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PTuple) ||
+                            isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PMemoryView) ||
+                            (!isSubtypeNode.execute(frame, klass, PythonBuiltinClassType.PString) && lookupAttrNode.execute(frame, obj, __ITER__) != PNone.NO_VALUE);
         }
     }
 

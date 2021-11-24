@@ -1937,7 +1937,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __MOD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class ModNode extends PythonBinaryBuiltinNode {
+    public abstract static class ModNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         Object doStringObject(VirtualFrame frame, String self, Object right,

@@ -51,6 +51,7 @@ def may_raise(error_result=native_null):
             return make_may_raise_wrapper(fun, error_result)
         return decorator
 
+<<<<<<< HEAD
 ##################### SET, FROZENSET
 
 @may_raise(-1)
@@ -65,41 +66,6 @@ def PySet_Clear(s):
 def PyDictProxy_New(mapping):
     mappingproxy = type(type.__dict__)
     return mappingproxy(mapping)
-
-##################### BYTES
-
-def PyBytes_Size(obj):
-    return PyObject_Size(obj)
-
-
-def PyBytes_Check(obj):
-    return isinstance(obj, bytes)
-
-
-@may_raise
-def PyBytes_Concat(original, newpart):
-    return original + newpart
-
-
-@may_raise
-def PyBytes_FromFormat(fmt, args):
-    formatted = fmt % args
-    return formatted.encode()
-
-
-@may_raise
-def PyBytes_Join(sep, iterable):
-    return sep.join(iterable)
-
-
-@may_raise
-def PyBytes_FromObject(obj):
-    if type(obj) == bytes:
-        return obj
-    if isinstance(obj, (list, tuple, memoryview)) or (not isinstance(obj, str) and hasattr(obj, "__iter__")):
-        return bytes(obj)
-    raise TypeError("cannot convert '%s' object to bytes" % type(obj).__name__)
-
 
 ##################### LIST
 
