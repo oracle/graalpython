@@ -51,7 +51,6 @@ def may_raise(error_result=native_null):
             return make_may_raise_wrapper(fun, error_result)
         return decorator
 
-<<<<<<< HEAD
 ##################### SET, FROZENSET
 
 @may_raise(-1)
@@ -66,82 +65,6 @@ def PySet_Clear(s):
 def PyDictProxy_New(mapping):
     mappingproxy = type(type.__dict__)
     return mappingproxy(mapping)
-
-##################### LIST
-
-@may_raise
-def PyList_New(size):
-    if size < 0:
-        __bad_internal_call(None, None, None)
-    return [None] * size
-
-
-@may_raise
-def PyList_GetItem(listObj, pos):
-    if not isinstance(listObj, list):
-        __bad_internal_call(None, None, listObj)
-    if pos < 0:
-        raise IndexError("list index out of range")
-    return listObj[pos]
-
-
-@may_raise(-1)
-def PyList_Append(listObj, newitem):
-    if not isinstance(listObj, list):
-        __bad_internal_call(None, None, listObj)
-    listObj.append(newitem)
-    return 0
-
-
-@may_raise
-def PyList_AsTuple(listObj):
-    if not isinstance(listObj, list):
-        raise SystemError("expected list type")
-    return tuple(listObj)
-
-
-@may_raise
-def PyList_GetSlice(listObj, ilow, ihigh):
-    if not isinstance(listObj, list):
-        __bad_internal_call(None, None, listObj)
-    return listObj[ilow:ihigh]
-
-
-@may_raise(-1)
-def PyList_SetSlice(listObj, ilow, ihigh, s):
-    if not isinstance(listObj, list):
-        __bad_internal_call(None, None, listObj)
-    listObj[ilow:ihigh] = s
-    return 0
-
-
-@may_raise
-def PyList_Extend(listObj, iterable):
-    listObj.extend(iterable)
-    return None
-
-
-@may_raise(-1)
-def PyList_Size(listObj):
-    if not isinstance(listObj, list):
-        __bad_internal_call(None, None, listObj)
-    return len(listObj)
-
-
-@may_raise(-1)
-def PyList_Sort(listObj):
-    if not isinstance(listObj, list):
-        __bad_internal_call(None, None, listObj)
-    listObj.sort()
-    return 0
-
-@may_raise(-1)
-def PyList_Insert(listObj, i, item):
-    if not isinstance(listObj, list):
-        __bad_internal_call(None, None, listObj)
-    listObj.insert(i, item)
-    return 0
-
 
 ##################### LONG
 
