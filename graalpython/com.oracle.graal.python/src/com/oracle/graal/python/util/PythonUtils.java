@@ -450,6 +450,16 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static int indexOf(String s, char chr) {
+        return s.indexOf(chr);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static int indexOf(String s, String sep) {
+        return s.indexOf(sep);
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static int lastIndexOf(String s, char chr) {
         return s.lastIndexOf(chr);
     }

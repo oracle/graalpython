@@ -45,9 +45,6 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.builtins.objects.exception.ImportErrorBuiltins;
-import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
-import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -162,7 +159,6 @@ import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
@@ -182,7 +178,11 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.EllipsisBuiltins;
 import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.ImportErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
@@ -456,6 +456,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new SystemExitBuiltins(),
                         new ImportErrorBuiltins(),
                         new StopIterationBuiltins(),
+                        new SyntaxErrorBuiltins(),
 
                         // io
                         new IOModuleBuiltins(),
@@ -1063,13 +1064,7 @@ public abstract class Python3Core extends ParserErrorCallback {
         SourceSection section = location.getSourceSection();
         Source source = section.getSource();
         String path = source.getPath();
-        instance.setAttribute("filename", path != null ? path : source.getName() != null ? source.getName() : "<string>");
-        // Not very nice. This counts on the implementation in traceback.py where if the value of
-        // text attribute
-        // is NONE, then the line is not printed
-        instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : PNone.NONE);
-        instance.setAttribute("lineno", section.getStartLine());
-        instance.setAttribute("offset", section.getStartColumn());
+        final String filename = path != null ? path : source.getName() != null ? source.getName() : "<string>";
         String msg = "invalid syntax";
         if (type == PythonParser.ErrorType.Print) {
             CharSequence line = source.getCharacters(section.getStartLine());
@@ -1090,7 +1085,11 @@ public abstract class Python3Core extends ParserErrorCallback {
         } else if (message != null) {
             msg = (new ErrorMessageFormatter()).format(message, arguments);
         }
-        instance.setAttribute("msg", msg);
+        // Not very nice. This counts on the implementation in traceback.py where if the value of
+        // text attribute is NONE, then the line is not printed
+        final String text = section.isAvailable() ? source.getCharacters(section.getStartLine()).toString() : null;
+        instance.setData(SyntaxErrorBuiltins.SyntaxErrorData.create(msg, filename,
+                section.getStartLine(), section.getStartColumn(), text));
         throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
     }
 

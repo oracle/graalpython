@@ -1002,6 +1002,10 @@ public abstract class ErrorMessages {
     public static final String INVALID_PARTIAL_STATE = "invalid partial state";
     public static final String LOST_S = "lost %s";
 
+    // syntax errors
+    public static final String MISSING_PARENTHESES_IN_CALL_TO_EXEC = "Missing parentheses in call to 'exec'";
+    public static final String MISSING_PARENTHESES_IN_CALL_TO_PRINT = "Missing parentheses in call to 'print'. Did you mean print(%s%s)?";
+
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";
 

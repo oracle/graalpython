@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.deque;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 
 import java.util.ConcurrentModificationException;
 import java.util.List;
