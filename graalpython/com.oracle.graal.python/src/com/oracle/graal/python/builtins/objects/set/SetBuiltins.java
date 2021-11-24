@@ -665,34 +665,17 @@ public final class SetBuiltins extends PythonBuiltins {
     @Builtin(name = "discard", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DiscardNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         Object discard(VirtualFrame frame, PSet self, Object key,
-                        @Cached BranchProfile updatedStorage,
-                        @Cached BaseSetBuiltins.ConvertKeyNode conv,
-                        @Cached ConditionProfile hasFrame,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage storage = self.getDictStorage();
-            HashingStorage newStore = null;
-            // TODO: FIXME: this might call __hash__ twice
-            Object checkedKey = conv.execute(key);
-            boolean hasKey = lib.hasKeyWithFrame(storage, checkedKey, hasFrame, frame);
-            if (hasKey) {
-                newStore = lib.delItemWithFrame(storage, checkedKey, hasFrame, frame);
-            }
-
-            if (hasKey) {
-                if (newStore != storage) {
-                    updatedStorage.enter();
-                    self.setDictStorage(newStore);
-                }
-            }
+                        @Cached com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode discardNode) {
+            discardNode.execute(frame, self, key);
             return PNone.NONE;
         }
     }
 
     @Builtin(name = "pop", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PopNode extends PythonUnaryBuiltinNode {
+    public abstract static class PopNode extends PythonUnaryBuiltinNode {
 
         protected static void removeItem(VirtualFrame frame, PSet self, Object key,
                         HashingStorageLibrary lib, ConditionProfile hasFrame, BranchProfile updatedStorage) {

@@ -968,7 +968,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // frozenset([iterable])
     @Builtin(name = FROZENSET, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFrozenSet)
     @GenerateNodeFactory
-    public abstract static class FrozenSetNode extends PythonBuiltinNode {
+    public abstract static class FrozenSetNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(arg)")
         public PFrozenSet frozensetEmpty(Object cls, @SuppressWarnings("unused") PNone arg) {

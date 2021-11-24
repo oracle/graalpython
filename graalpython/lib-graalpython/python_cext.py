@@ -53,58 +53,6 @@ def may_raise(error_result=native_null):
 
 ##################### SET, FROZENSET
 
-
-@may_raise
-def PySet_New(iterable):
-    if iterable:
-        return set(iterable)
-    else:
-        return set()
-
-
-@may_raise(-1)
-def PySet_Contains(anyset, item):
-    if not (isinstance(anyset, set) or isinstance(anyset, frozenset)):
-        __bad_internal_call(None, None, anyset)
-    return item in anyset
-
-
-@may_raise
-def PySet_NextEntry(anyset, pos):
-    curPos = 0
-    max = len(anyset)
-    if pos >= max:
-        return native_null
-    for key in anyset:
-        if curPos == pos:
-            return key, hash(key)
-        curPos = curPos + 1
-    return native_null
-
-
-@may_raise
-def PySet_Pop(anyset):
-    if not isinstance(anyset, set):
-        __bad_internal_call(None, None, anyset)
-    return anyset.pop()
-
-
-@may_raise
-def PyFrozenSet_New(iterable):
-    if iterable:
-        return frozenset(iterable)
-    else:
-        return frozenset()
-
-
-@may_raise(-1)
-def PySet_Discard(s, key):
-    if key in s:
-        s.discard(key)
-        return 1
-    return 0
-
-
 @may_raise(-1)
 def PySet_Clear(s):
     s.clear()
