@@ -41,9 +41,6 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENTS_MUST_BE_ITERATORS;
-import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
@@ -57,41 +54,34 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
-import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.PChain})
-public final class ChainBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.PZipLongest})
+public final class ZipLongestBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return ChainBuiltinsFactory.getFactories();
+        return ZipLongestBuiltinsFactory.getFactories();
     }
 
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object iter(PChain self) {
+        static Object iter(PZipLongest self) {
             return self;
         }
     }
@@ -99,107 +89,120 @@ public final class ChainBuiltins extends PythonBuiltins {
     @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object next(VirtualFrame frame, PChain self,
-                        @Cached PyObjectGetIter getIter,
-                        @Cached BuiltinFunctions.NextNode nextNode,
-                        @Cached IsBuiltinClassProfile isStopIterationProfile,
-                        @Cached BranchProfile nextExceptioProfile,
-                        @Cached LoopConditionProfile loopProfile) {
-            while (loopProfile.profile(self.getSource() != PNone.NONE)) {
-                if (self.getActive() == PNone.NONE) {
-                    try {
-                        Object next = nextNode.execute(frame, self.getSource(), PNone.NO_VALUE);
-                        Object iter = getIter.execute(frame, next);
-                        self.setActive(iter);
-                    } catch (PException e) {
-                        nextExceptioProfile.enter();
-                        self.setSource(PNone.NONE);
-                        throw e;
-                    }
-                }
-                try {
-                    return nextNode.execute(frame, self.getActive(), PNone.NO_VALUE);
-                } catch (PException e) {
-                    e.expectStopIteration(isStopIterationProfile);
-                    self.setActive(PNone.NONE);
-                }
-            }
+        @SuppressWarnings("unused")
+        @Specialization(guards = "zeroSize(self)")
+        Object nextNoFillValue(VirtualFrame frame, PZipLongest self) {
             throw raise(StopIteration);
         }
-    }
 
-    @Builtin(name = "from_iterable", minNumOfPositionalArgs = 2, isClassmethod = true)
-    @GenerateNodeFactory
-    public abstract static class FromIterNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object fromIter(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object arg,
-                        @Cached PyObjectGetIter getIter) {
-            PChain instance = factory().createChain(PythonBuiltinClassType.PChain);
-            instance.setSource(getIter.execute(frame, arg));
-            instance.setActive(PNone.NONE);
-            return instance;
+        @Specialization(guards = {"!zeroSize(self)", "isNullFillValue(self)"})
+        Object nextNoFillValue(VirtualFrame frame, PZipLongest self,
+                        @Cached BuiltinFunctions.NextNode nextNode,
+                        @Cached IsBuiltinClassProfile isStopIterationProfile,
+                        @Cached ConditionProfile noItProfile,
+                        @Cached ConditionProfile noActiveProfile,
+                        @Cached LoopConditionProfile loopProfile) {
+            return next(frame, self, PNone.NONE, nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile);
+        }
+
+        @Specialization(guards = {"!zeroSize(self)", "!isNullFillValue(self)"})
+        Object next(VirtualFrame frame, PZipLongest self,
+                        @Cached BuiltinFunctions.NextNode nextNode,
+                        @Cached IsBuiltinClassProfile isStopIterationProfile,
+                        @Cached ConditionProfile noItProfile,
+                        @Cached ConditionProfile noActiveProfile,
+                        @Cached LoopConditionProfile loopProfile) {
+            return next(frame, self, self.getFillValue(), nextNode, isStopIterationProfile, loopProfile, noItProfile, noActiveProfile);
+        }
+
+        private Object next(VirtualFrame frame, PZipLongest self, Object fillValue, BuiltinFunctions.NextNode nextNode, IsBuiltinClassProfile isStopIterationProfile, LoopConditionProfile loopProfile,
+                        ConditionProfile noItProfile, ConditionProfile noActiveProfile) {
+            Object[] result = new Object[self.getItTuple().length];
+            loopProfile.profileCounted(result.length);
+            for (int i = 0; loopProfile.inject(i < result.length); i++) {
+                Object it = self.getItTuple()[i];
+                Object item;
+                if (noItProfile.profile(it == PNone.NONE)) {
+                    item = fillValue;
+                } else {
+                    try {
+                        item = nextNode.execute(frame, it, PNone.NO_VALUE);
+                    } catch (PException e) {
+                        if (isStopIterationProfile.profileException(e, StopIteration)) {
+                            self.setNumActive(self.getNumActive() - 1);
+                            if (noActiveProfile.profile(self.getNumActive() == 0)) {
+                                throw raise(StopIteration);
+                            } else {
+                                item = fillValue;
+                                self.getItTuple()[i] = PNone.NONE;
+                            }
+                        } else {
+                            self.setNumActive(0);
+                            throw e;
+                        }
+                    }
+                }
+                result[i] = item;
+            }
+            return factory().createTuple(result);
+        }
+
+        protected boolean isNullFillValue(PZipLongest self) {
+            return self.getFillValue() == null;
+        }
+
+        protected boolean zeroSize(PZipLongest self) {
+            return self.getItTuple().length == 0 || self.getNumActive() == 0;
         }
     }
 
     @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object reducePos(PChain self,
+        @Specialization(guards = "isNullFillValue(self)")
+        Object reduceNoFillValue(PZipLongest self,
                         @Cached GetClassNode getClass,
-                        @Cached ConditionProfile hasSourceProfile,
-                        @Cached ConditionProfile hasActiveProfile) {
+                        @Cached LoopConditionProfile loopProfile,
+                        @Cached ConditionProfile noItProfile) {
+            return reduce(getClass, self, PNone.NONE, loopProfile, noItProfile);
+        }
+
+        @Specialization(guards = "!isNullFillValue(self)")
+        Object reducePos(PZipLongest self,
+                        @Cached GetClassNode getClass,
+                        @Cached LoopConditionProfile loopProfile,
+                        @Cached ConditionProfile noItProfile) {
+            return reduce(getClass, self, self.getFillValue(), loopProfile, noItProfile);
+        }
+
+        private Object reduce(GetClassNode getClass, PZipLongest self, Object fillValue, LoopConditionProfile loopProfile, ConditionProfile noItProfile) {
             Object type = getClass.execute(self);
-            PTuple empty = factory().createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
-            if (hasSourceProfile.profile(self.getSource() != PNone.NONE)) {
-                if (hasActiveProfile.profile(self.getActive() != PNone.NONE)) {
-                    PTuple tuple = factory().createTuple(new Object[]{self.getSource(), self.getActive()});
-                    return factory().createTuple(new Object[]{type, empty, tuple});
+            Object[] its = new Object[self.getItTuple().length];
+            loopProfile.profileCounted(its.length);
+            for (int i = 0; loopProfile.profile(i < its.length); i++) {
+                Object it = self.getItTuple()[i];
+                if (noItProfile.profile(it == PNone.NONE)) {
+                    its[i] = factory().createEmptyTuple();
                 } else {
-                    PTuple tuple = factory().createTuple(new Object[]{self.getSource()});
-                    return factory().createTuple(new Object[]{type, empty, tuple});
+                    its[i] = it;
                 }
-            } else {
-                return factory().createTuple(new Object[]{type, empty});
             }
+            PTuple tuple = factory().createTuple(its);
+            return factory().createTuple(new Object[]{type, tuple, fillValue});
+        }
+
+        protected boolean isNullFillValue(PZipLongest self) {
+            return self.getFillValue() == null;
         }
     }
 
     @Builtin(name = __SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
-        abstract Object execute(VirtualFrame frame, PythonObject self, Object state);
-
         @Specialization
-        Object setState(VirtualFrame frame, PChain self, Object state,
-                        @Cached LenNode lenNode,
-                        @Cached GetItemNode getItemNode,
-                        @Cached PyObjectLookupAttr getAttrNode,
-                        @Cached BranchProfile len2Profile) {
-            if (!(state instanceof PTuple)) {
-                throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
-            }
-            int len = (int) lenNode.execute(frame, state);
-            if (len < 1 || len > 2) {
-                throw raise(TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
-            }
-            Object source = getItemNode.execute(frame, state, 0);
-            checkIterator(frame, getAttrNode, source);
-            self.setSource(source);
-            if (len == 2) {
-                len2Profile.enter();
-                Object active = getItemNode.execute(frame, state, 1);
-                checkIterator(frame, getAttrNode, active);
-                self.setActive(active);
-            }
+        static Object setState(PZipLongest self, Object state) {
+            self.setFillValue(state);
             return PNone.NONE;
-        }
-
-        private void checkIterator(VirtualFrame frame, PyObjectLookupAttr getAttrNode, Object obj) throws PException {
-            if (getAttrNode.execute(frame, obj, __NEXT__) == PNone.NO_VALUE) {
-                throw raise(TypeError, ARGUMENTS_MUST_BE_ITERATORS);
-            }
         }
     }
 

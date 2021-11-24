@@ -46,6 +46,7 @@ public abstract class ErrorMessages {
     public static final String ARG_AFTER_MUST_BE_ITERABLE = "argument after * must be an iterable, not %p";
     public static final String ARG_AFTER_MUST_BE_MAPPING = "%s() argument after ** must be a mapping, not %p";
     public static final String ARG_CONVERTED_NOT_EXECUTABLE = "argument converted is not executable";
+    public static final String ARG_CANNOT_BE_NEGATIVE = "%s argument cannot be negative";
     public static final String ARG_D_MUST_BE_S = "%s arg %d must be a %s";
     public static final String ARG_D_MUST_BE_S_NOT_P = "%s argument %d must be %s, not %p";
     public static final String ARG_S_MUST_BE_S_NOT_P = "%s argument %s must be %s, not %p";
@@ -254,6 +255,7 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_STR_BYTE_OSPATHLIKE_OBJ = "expected str, bytes or os.PathLike object, not %p";
     public static final String S_EXPECTED_STRING_OF_LEN_BUT_P = "%s expected string of length %s, but %p found";
     public static final String EXPECTED_UNICODE_CHAR_NOT_P = "expected a unicode character, not %p";
+    public static final String EXPECTED_INT_AS_R = "Expected int as r";
     public static final String EXPONENT_TOO_LARGE = "exponent too large";
     public static final String FACTORIAL_NOT_DEFINED_FOR_NEGATIVE = "factorial() not defined for negative values";
     public static final String FD_IS_GREATER_THAN_MAXIMUM = "fd is greater than maximum";
@@ -269,6 +271,7 @@ public abstract class ErrorMessages {
     public static final String FIRST_ARG_MUST_BE_CALLABLE_S = "first argument must be callable%s";
     public static final String FIRST_ARG_MUST_BE_S_OR_TUPLE_NOT_P = "%s first arg must be %s or a tuple of str, not %p";
     public static final String FIRST_TWO_MAKETRANS_ARGS_MUST_HAVE_EQ_LENGTH = "the first two maketrans arguments must have equal length";
+    public static final String S_FOR_ISLICE_MUST_BE = "% for islice() must be None or an integer: 0 <= x <= sys.maxsize.";
     public static final String FLOAT_ARG_REQUIRED = "float argument required, not %p";
     public static final String FOREIGN_INVOCATION_DOESNT_SUPPORT_KEYWORD_ARG = "foreign invocation does not support keyword arguments";
     public static final String FOREIGN_OBJ_HAS_NO_ATTR_S = "foreign object has no attribute '%s'";
@@ -360,6 +363,7 @@ public abstract class ErrorMessages {
     public static final String INVALID_SYNTAX = "invalid syntax";
     public static final String INVALID_USE_OF_W_FORMAT_CHAR = "invalid use of 'w' format character";
     public static final String INVALID_BUFFER_ACCESS = "invalid buffer access";
+    public static final String ISLICE_WRONG_ARGS = "islice(seq, stop) or islice(seq, start, stop[, step])";
     public static final String IS_EMPTY = "%s is empty";
     public static final String IS_NOT_A = "%s is not a %s";
     public static final String IS_NOT_A_DICTIONARY = "%s is not a dictionary";
@@ -483,6 +487,7 @@ public abstract class ErrorMessages {
     public static final String NOT_ENOUGH_ARGS_FOR_FORMAT_STRING = "not enough arguments for format string";
     public static final String NOT_ENOUGH_VALUES_TO_UNPACK = "not enough values to unpack (expected %d, got %d)";
     public static final String NOT_SUPPORTED_BETWEEN_INSTANCES = "'%s' not supported between instances of '%p' and '%p'";
+    public static final String NUMBER_IS_REQUIRED = "a number is required";
     public static final String NUMBER_S_CANNOT_FIT_INTO_INDEXSIZED_INT = "number %s cannot fit into index-sized integer";
     public static final String OBJ_INDEX_MUST_BE_INT_OR_SLICES = "%s indices must be integers or slices, not %p";
     public static final String OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER = "'%p' object cannot be interpreted as an int";
@@ -592,6 +597,7 @@ public abstract class ErrorMessages {
     public static final String STATE_VECTOR_INVALID = "state vector invalid.";
     public static final String STATE_VECTOR_MUST_BE_A_TUPLE = "state vector must be a tuple";
     public static final String STEP_1_NOT_SUPPORTED = "step != 1 not supported";
+    public static final String STEP_FOR_ISLICE_MUST_BE = "Step for islice() must be a positive integer or None.";
     public static final String STRING_ARG_WO_ENCODING = "string argument without an encoding";
     public static final String ENCODING_ARG_WO_STRING = "encoding without a string argument";
     public static final String ENCODING_ERROR_WITH_CODE = "decoding error; unknown error handling code: %s";
@@ -859,6 +865,7 @@ public abstract class ErrorMessages {
     public static final String CAN_T_HAVE_UNBUFFERED_TEXT_IO = "can't have unbuffered text I/O";
     public static final String ILLEGAL_STATE_ARGUMENT = "illegal state argument";
     public static final String STATE_ARGUMENT_MUST_BE_A_TUPLE = "state argument must be a tuple";
+    public static final String STATE_ARGUMENT_D_MUST_BE_A_S = "state argument %d must be a %s";
     public static final String REENTRANT_CALL_INSIDE_S_REPR = "reentrant call inside %s.__repr__";
     public static final String EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED = "Existing exports of data: object cannot be re-sized";
     public static final String SECOND_ITEM_OF_STATE_MUST_BE_AN_INTEGER_NOT_P = "second item of state must be an integer, not %p";

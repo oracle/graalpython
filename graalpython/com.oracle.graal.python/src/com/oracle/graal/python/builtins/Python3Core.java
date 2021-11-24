@@ -196,10 +196,25 @@ import com.oracle.graal.python.builtins.objects.iterator.ForeignIteratorBuiltins
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.AccumulateBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ChainBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CombinationsBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CompressBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CountBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CycleBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.DropwhileBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.FilterfalseBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.GroupByBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.GrouperBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.IsliceBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.PermutationsBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.ProductBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.RepeatBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.StarmapBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.TakewhileBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.ZipLongestBuiltins;
 import com.oracle.graal.python.builtins.objects.keywrapper.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
@@ -305,7 +320,6 @@ public abstract class Python3Core extends ParserErrorCallback {
                         "_frozen_importlib",
                         "__graalpython__",
                         "_weakref",
-                        "itertools",
                         "faulthandler",
                         PythonCextBuiltins.PYTHON_CEXT,
                         "bytearray",
@@ -500,10 +514,25 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new ZipImportModuleBuiltins(),
 
                         // itertools
+                        new AccumulateBuiltins(),
+                        new CombinationsBuiltins(),
+                        new CompressBuiltins(),
+                        new DropwhileBuiltins(),
                         new ChainBuiltins(),
+                        new CountBuiltins(),
+                        new CycleBuiltins(),
+                        new FilterfalseBuiltins(),
+                        new GroupByBuiltins(),
+                        new GrouperBuiltins(),
+                        new IsliceBuiltins(),
+                        new PermutationsBuiltins(),
+                        new ProductBuiltins(),
                         new RepeatBuiltins(),
+                        new StarmapBuiltins(),
+                        new TakewhileBuiltins(),
                         new TeeBuiltins(),
                         new TeeDataObjectBuiltins(),
+                        new ZipLongestBuiltins(),
 
                         // zlib
                         new ZLibModuleBuiltins(),

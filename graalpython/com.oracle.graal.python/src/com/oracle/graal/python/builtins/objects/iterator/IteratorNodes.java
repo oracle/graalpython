@@ -46,24 +46,33 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -75,6 +84,9 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class IteratorNodes {
 
@@ -184,6 +196,57 @@ public abstract class IteratorNodes {
         static boolean doGeneric(Object it,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupAttributeNode) {
             return lookupAttributeNode.execute(it, SpecialMethodNames.__NEXT__) != PNone.NO_VALUE;
+        }
+    }
+
+    public abstract static class ToArrayNode extends PNodeWithRaise {
+        public abstract Object[] execute(VirtualFrame frame, Object iterable);
+
+        @Specialization
+        public static Object[] doIt(String iterable,
+                        @Cached LoopConditionProfile loopProfile) {
+            Object[] result = new Object[iterable.length()];
+            loopProfile.profileCounted(result.length);
+            for (int i = 0; loopProfile.inject(i < result.length); i++) {
+                result[i] = Character.toString(iterable.charAt(i));
+            }
+            return result;
+        }
+
+        @Specialization
+        public static Object[] doIt(PString iterable,
+                        @Cached LoopConditionProfile loopProfile) {
+            return doIt(iterable.getValue(), loopProfile);
+        }
+
+        @Specialization
+        public static Object[] doIt(PSequence iterable,
+                        @Cached GetSequenceStorageNode getStorageNode,
+                        @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
+            SequenceStorage storage = getStorageNode.execute(iterable);
+            return toArrayNode.execute(storage);
+        }
+
+        @Specialization(guards = {"!isPSequence(iterable)", "!isString(iterable)"})
+        public static Object[] doIt(VirtualFrame frame, Object iterable,
+                        @Cached GetNextNode getNextNode,
+                        @Cached IsBuiltinClassProfile stopIterationProfile,
+                        @Cached PyObjectGetIter getIter) {
+            Object it = getIter.execute(frame, iterable);
+            List<Object> result = createlist();
+            while (true) {
+                try {
+                    result.add(getNextNode.execute(frame, it));
+                } catch (PException e) {
+                    e.expectStopIteration(stopIterationProfile);
+                    return result.toArray(new Object[result.size()]);
+                }
+            }
+        }
+
+        @TruffleBoundary
+        private static List<Object> createlist() {
+            return new ArrayList<>();
         }
     }
 }

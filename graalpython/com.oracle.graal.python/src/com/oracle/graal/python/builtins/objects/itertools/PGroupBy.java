@@ -40,36 +40,49 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins.LINKCELLS;
-import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_REENTER_TEE_ITERATOR;
-
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public final class PTeeDataObject extends PythonBuiltinObject {
+public final class PGroupBy extends PythonBuiltinObject {
+
+    private Object tgtKey;
+    private PGrouper currGrouper;
+    private Object currValue;
+    private Object currKey;
+    private Object keyFunc;
     private Object it;
-    private Object[] values;
-    private int numread;
-    private boolean running;
-    private PTeeDataObject nextlink;
 
-    public PTeeDataObject(Object cls, Shape instanceShape) {
+    public PGroupBy(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
     }
 
-    public PTeeDataObject(Object it, Object cls, Shape instanceShape) {
-        super(cls, instanceShape);
-        this.it = it;
-        this.values = new Object[LINKCELLS];
-        this.numread = 0;
-        this.running = false;
-        this.nextlink = null;
+    public PGrouper getCurrGrouper() {
+        return currGrouper;
+    }
+
+    public void setCurrGrouper(PGrouper currGrouper) {
+        this.currGrouper = currGrouper;
+    }
+
+    public Object getTgtKey() {
+        return tgtKey;
+    }
+
+    public void setTgtKey(Object tgtKey) {
+        this.tgtKey = tgtKey;
+    }
+
+    public Object getKeyFunc() {
+        return keyFunc;
+    }
+
+    public void setKeyFunc(Object keyFunc) {
+        this.keyFunc = keyFunc;
     }
 
     public Object getIt() {
@@ -80,65 +93,31 @@ public final class PTeeDataObject extends PythonBuiltinObject {
         this.it = it;
     }
 
-    public Object[] getValues() {
-        return values;
+    public Object getCurrValue() {
+        return currValue;
     }
 
-    public void setValues(Object[] values) {
-        this.values = values;
+    public void setCurrValue(Object currValue) {
+        this.currValue = currValue;
     }
 
-    public int getNumread() {
-        return numread;
+    public Object getCurrKey() {
+        return currKey;
     }
 
-    public void setNumread(int numread) {
-        this.numread = numread;
+    public void setCurrKey(Object currKey) {
+        this.currKey = currKey;
     }
 
-    public boolean getRunning() {
-        return running;
-    }
-
-    public void setRunning(boolean running) {
-        this.running = running;
-    }
-
-    public PTeeDataObject getNextlink() {
-        return nextlink;
-    }
-
-    public void setNextlink(PTeeDataObject nextlink) {
-        this.nextlink = nextlink;
-    }
-
-    PTeeDataObject jumplink(PythonObjectFactory factory) {
-        if (getNextlink() == null) {
-            PTeeDataObject dataObj = factory.createTeeDataObject(getIt());
-            nextlink = dataObj;
-        }
-        return nextlink;
-    }
-
-    Object getItem(VirtualFrame frame, int i, BuiltinFunctions.NextNode nextNode, PNodeWithRaise node) {
-        assert i < TeeDataObjectBuiltins.LINKCELLS;
-        if (i < numread) {
-            return values[i];
+    void groupByStep(VirtualFrame frame, BuiltinFunctions.NextNode nextNode, CallNode callNode, ConditionProfile hasFuncProfile) {
+        Object newValue = nextNode.execute(frame, it, PNone.NO_VALUE);
+        Object newKey;
+        if (hasFuncProfile.profile(keyFunc == null)) {
+            newKey = newValue;
         } else {
-            assert i == numread;
-            if (running) {
-                throw node.raise(PythonBuiltinClassType.RuntimeError, CANNOT_REENTER_TEE_ITERATOR);
-            }
-
-            running = true;
-            Object value;
-            try {
-                value = nextNode.execute(frame, it, PNone.NO_VALUE);
-            } finally {
-                running = false;
-            }
-            values[numread++] = value;
-            return value;
+            newKey = callNode.execute(keyFunc, newValue);
         }
+        currValue = newValue;
+        currKey = newKey;
     }
 }

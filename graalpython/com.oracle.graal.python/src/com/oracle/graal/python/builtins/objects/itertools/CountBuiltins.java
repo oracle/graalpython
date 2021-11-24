@@ -40,12 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.ErrorMessages.LEN_OF_UNSIZED_OBJECT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -56,13 +52,15 @@ import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
+import com.oracle.graal.python.lib.PyObjectTypeCheck;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
@@ -70,20 +68,22 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.PRepeat})
-public final class RepeatBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.PCount})
+public final class CountBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return RepeatBuiltinsFactory.getFactories();
+        return CountBuiltinsFactory.getFactories();
     }
 
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object iter(PRepeat self) {
+        static Object iter(PCount self) {
             return self;
         }
     }
@@ -91,92 +91,59 @@ public final class RepeatBuiltins extends PythonBuiltins {
     @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "self.getCnt() > 0")
-        static Object nextPos(PRepeat self) {
-            self.setCnt(self.getCnt() - 1);
-            return self.getElement();
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "self.getCnt() == 0")
-        Object nextZero(PRepeat self) {
-            throw raise(StopIteration);
-        }
-
-        @Specialization(guards = "self.getCnt() < 0")
-        static Object nextNeg(PRepeat self) {
-            return self.getElement();
-        }
-    }
-
-    @Builtin(name = __LENGTH_HINT__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class LengthHintNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "self.getCnt() >= 0")
-        static Object hintPos(PRepeat self) {
-            return self.getCnt();
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "self.getCnt() < 0")
-        Object hintNeg(PRepeat self) {
-            throw raise(TypeError, LEN_OF_UNSIZED_OBJECT);
-        }
-    }
-
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "self.getCnt() >= 0")
-        Object reducePos(PRepeat self,
-                        @Cached GetClassNode getClass) {
-            Object type = getClass.execute(self);
-            PTuple tuple = factory().createTuple(new Object[]{self.getElement(), self.getCnt()});
-            return factory().createTuple(new Object[]{type, tuple});
-        }
-
-        @Specialization(guards = "self.getCnt() < 0")
-        Object reduceNeg(PRepeat self,
-                        @Cached GetClassNode getClass) {
-            Object type = getClass.execute(self);
-            PTuple tuple = factory().createTuple(new Object[]{self.getElement()});
-            return factory().createTuple(new Object[]{type, tuple});
+        @Specialization
+        static Object next(VirtualFrame frame, PCount self,
+                        @Cached BinaryArithmetic.AddNode addNode) {
+            Object cnt = self.getCnt();
+            self.setCnt(addNode.executeObject(frame, self.getCnt(), self.getStep()));
+            return cnt;
         }
     }
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "self.getCnt() >= 0")
-        static Object reprPos(VirtualFrame frame, PRepeat self,
-                        @Cached GetClassNode getClass,
+        @Specialization
+        static Object reprPos(VirtualFrame frame, PCount self,
+                        @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetAttr getAttrNode,
                         @Cached PyObjectReprAsObjectNode reprNode,
-                        @Cached CastToJavaStringNode castNode) {
-            Object type = getClass.execute(self);
+                        @Cached CastToJavaStringNode castStringNode,
+                        @Cached CastToJavaLongExactNode castLongNode,
+                        @Cached PyObjectTypeCheck typeCheckNode,
+                        @Cached BranchProfile hasDefaultStep) {
+            Object type = getClassNode.execute(self);
             StringBuilder sb = new StringBuilder();
-            PythonUtils.append(sb, castNode.execute(getAttrNode.execute(frame, type, __NAME__)));
+            PythonUtils.append(sb, castStringNode.execute(getAttrNode.execute(frame, type, __NAME__)));
             PythonUtils.append(sb, "(");
-            PythonUtils.append(sb, castNode.execute(reprNode.execute(frame, self.getElement())));
-            PythonUtils.append(sb, ", ");
-            PythonUtils.append(sb, PInt.toString(self.getCnt()));
+            PythonUtils.append(sb, castStringNode.execute(reprNode.execute(frame, self.getCnt())));
+            if (!typeCheckNode.execute(self.getStep(), PythonBuiltinClassType.PInt) || castLongNode.execute(self.getStep()) != 1) {
+                hasDefaultStep.enter();
+                PythonUtils.append(sb, ", ");
+                PythonUtils.append(sb, castStringNode.execute(reprNode.execute(frame, self.getStep())));
+            }
             PythonUtils.append(sb, ")");
             return PythonUtils.sbToString(sb);
         }
+    }
 
-        @Specialization(guards = "self.getCnt() < 0")
-        static Object reprNeg(VirtualFrame frame, PRepeat self,
-                        @Cached GetClassNode getClass,
-                        @Cached PyObjectGetAttr getAttrNode,
-                        @Cached PyObjectReprAsObjectNode reprNode,
-                        @Cached CastToJavaStringNode castNode) {
-            Object type = getClass.execute(self);
-            StringBuilder sb = new StringBuilder();
-            PythonUtils.append(sb, castNode.execute(getAttrNode.execute(frame, type, __NAME__)));
-            PythonUtils.append(sb, "(");
-            PythonUtils.append(sb, castNode.execute(reprNode.execute(frame, self.getElement())));
-            PythonUtils.append(sb, ")");
-            return PythonUtils.sbToString(sb);
+    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object reducePos(PCount self,
+                        @Cached GetClassNode getClassNode,
+                        @Cached CastToJavaLongExactNode castLongNode,
+                        @Cached PyObjectTypeCheck typeCheckNode,
+                        @Cached ConditionProfile hasDefaultStep) {
+            Object type = getClassNode.execute(self);
+            PTuple tuple;
+            if (hasDefaultStep.profile(!typeCheckNode.execute(self.getStep(), PythonBuiltinClassType.PInt) || castLongNode.execute(self.getStep()) != 1)) {
+                tuple = factory().createTuple(new Object[]{self.getCnt(), self.getStep()});
+            } else {
+                tuple = factory().createTuple(new Object[]{self.getCnt()});
+            }
+            return factory().createTuple(new Object[]{type, tuple});
         }
     }
 }
