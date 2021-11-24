@@ -325,7 +325,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "msg", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception lineno")
+    @Builtin(name = "lineno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception lineno")
     @GenerateNodeFactory
     public abstract static class SyntaxErrorLinenoNode extends SyntaxErrorBaseAttrNode {
         @Override
