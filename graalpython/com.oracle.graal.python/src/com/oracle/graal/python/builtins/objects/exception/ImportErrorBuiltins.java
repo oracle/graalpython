@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -155,61 +154,49 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
 
     @Builtin(name = "msg", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception message")
     @GenerateNodeFactory
-    public abstract static class ImportErrorMsgNode extends PythonBuiltinNode {
-        @Specialization(guards = "isNoValue(none)")
-        public Object get(PBaseException self, @SuppressWarnings("unused") PNone none) {
-            final Object data = self.getData();
+    public abstract static class ImportErrorMsgNode extends BaseExceptionDataAttrNode {
+        @Override
+        protected Object get(PBaseException.Data data) {
             assert data instanceof ImportErrorData;
-            final Object msg = ((ImportErrorData) data).getMsg();
-            return msg != null ? msg : PNone.NONE;
+            return ((ImportErrorData) data).getMsg();
         }
 
-        @Specialization(guards = "!isNoValue(value)")
-        public Object set(PBaseException self, Object value) {
-            final Object data = self.getData();
+        @Override
+        protected void set(PBaseException.Data data, Object value) {
             assert data instanceof ImportErrorData;
             ((ImportErrorData) data).setMsg(value);
-            return PNone.NONE;
         }
     }
 
     @Builtin(name = "name", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "module name")
     @GenerateNodeFactory
-    public abstract static class ImportErrorNameNode extends PythonBuiltinNode {
-        @Specialization(guards = "isNoValue(none)")
-        public Object get(PBaseException self, @SuppressWarnings("unused") PNone none) {
-            final Object data = self.getData();
+    public abstract static class ImportErrorNameNode extends BaseExceptionDataAttrNode {
+        @Override
+        protected Object get(PBaseException.Data data) {
             assert data instanceof ImportErrorData;
-            final Object name = ((ImportErrorData) data).getName();
-            return name != null ? name : PNone.NONE;
+            return ((ImportErrorData) data).getName();
         }
 
-        @Specialization(guards = "!isNoValue(value)")
-        public Object set(PBaseException self, Object value) {
-            final Object data = self.getData();
+        @Override
+        protected void set(PBaseException.Data data, Object value) {
             assert data instanceof ImportErrorData;
             ((ImportErrorData) data).setName(value);
-            return PNone.NONE;
         }
     }
 
     @Builtin(name = "path", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "module path")
     @GenerateNodeFactory
-    public abstract static class ImportErrorPathNode extends PythonBuiltinNode {
-        @Specialization(guards = "isNoValue(none)")
-        public Object get(PBaseException self, @SuppressWarnings("unused") PNone none) {
-            final Object data = self.getData();
+    public abstract static class ImportErrorPathNode extends BaseExceptionDataAttrNode {
+        @Override
+        protected Object get(PBaseException.Data data) {
             assert data instanceof ImportErrorData;
-            final Object path = ((ImportErrorData) data).getPath();
-            return path != null ? path : PNone.NONE;
+            return ((ImportErrorData) data).getPath();
         }
 
-        @Specialization(guards = "!isNoValue(value)")
-        public Object set(PBaseException self, Object value) {
-            final Object data = self.getData();
+        @Override
+        protected void set(PBaseException.Data data, Object value) {
             assert data instanceof ImportErrorData;
             ((ImportErrorData) data).setPath(value);
-            return PNone.NONE;
         }
     }
 

@@ -1089,7 +1089,7 @@ public abstract class Python3Core extends ParserErrorCallback {
         // text attribute is NONE, then the line is not printed
         final String text = section.isAvailable() ? source.getCharacters(section.getStartLine()).toString() : null;
         instance.setData(SyntaxErrorBuiltins.SyntaxErrorData.create(msg, filename,
-                section.getStartLine(), section.getStartColumn(), text));
+                        section.getStartLine(), section.getStartColumn(), text));
         throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
     }
 

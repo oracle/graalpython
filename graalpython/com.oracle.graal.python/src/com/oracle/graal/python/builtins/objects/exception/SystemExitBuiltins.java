@@ -118,20 +118,17 @@ public final class SystemExitBuiltins extends PythonBuiltins {
 
     @Builtin(name = "code", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception code")
     @GenerateNodeFactory
-    public abstract static class CodeNode extends PythonBuiltinNode {
-        @Specialization(guards = "isNoValue(none)")
-        public Object code(PBaseException self, @SuppressWarnings("unused") PNone none) {
-            final Object data = self.getData();
+    public abstract static class CodeNode extends BaseExceptionDataAttrNode {
+        @Override
+        protected Object get(PBaseException.Data data) {
             assert data instanceof SystemExitData;
             return ((SystemExitData) data).getCode();
         }
 
-        @Specialization(guards = "!isNoValue(value)")
-        public Object code(PBaseException self, Object value) {
-            final Object data = self.getData();
+        @Override
+        protected void set(PBaseException.Data data, Object value) {
             assert data instanceof SystemExitData;
             ((SystemExitData) data).setCode(value);
-            return PNone.NONE;
         }
     }
 }

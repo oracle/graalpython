@@ -272,113 +272,99 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class SyntaxErrorBaseAttrNode extends PythonBuiltinNode {
-        protected Object get(SyntaxErrorData data) {
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-
-        protected void set(SyntaxErrorData data, Object value) {
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-
-        @Specialization(guards = "isNoValue(none)")
-        public Object get(PBaseException self, @SuppressWarnings("unused") PNone none) {
-            final Object data = self.getData();
-            assert data instanceof SyntaxErrorData;
-            final Object value = get((SyntaxErrorData) data);
-            return value != null ? value : PNone.NONE;
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        public Object set(PBaseException self, Object value) {
-            final Object data = self.getData();
-            assert data instanceof SyntaxErrorData;
-            set((SyntaxErrorData) data, value);
-            return PNone.NONE;
-        }
-    }
-
     @Builtin(name = "msg", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception msg")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorMsgNode extends SyntaxErrorBaseAttrNode {
+    public abstract static class SyntaxErrorMsgNode extends BaseExceptionDataAttrNode {
         @Override
-        protected Object get(SyntaxErrorData data) {
-            return data.getMsg();
+        protected Object get(PBaseException.Data data) {
+            assert data instanceof SyntaxErrorData;
+            return ((SyntaxErrorData) data).getMsg();
         }
 
         @Override
-        protected void set(SyntaxErrorData data, Object value) {
-            data.setMsg(value);
+        protected void set(PBaseException.Data data, Object value) {
+            assert data instanceof SyntaxErrorData;
+            ((SyntaxErrorData) data).setMsg(value);
         }
     }
 
     @Builtin(name = "filename", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception filename")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorFilenameNode extends SyntaxErrorBaseAttrNode {
+    public abstract static class SyntaxErrorFilenameNode extends BaseExceptionDataAttrNode {
         @Override
-        protected Object get(SyntaxErrorData data) {
-            return data.getFilename();
+        protected Object get(PBaseException.Data data) {
+            assert data instanceof SyntaxErrorData;
+            return ((SyntaxErrorData) data).getFilename();
         }
 
         @Override
-        protected void set(SyntaxErrorData data, Object value) {
-            data.setFilename(value);
+        protected void set(PBaseException.Data data, Object value) {
+            assert data instanceof SyntaxErrorData;
+            ((SyntaxErrorData) data).setFilename(value);
         }
     }
 
     @Builtin(name = "lineno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception lineno")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorLinenoNode extends SyntaxErrorBaseAttrNode {
+    public abstract static class SyntaxErrorLinenoNode extends BaseExceptionDataAttrNode {
         @Override
-        protected Object get(SyntaxErrorData data) {
-            return data.getLineno();
+        protected Object get(PBaseException.Data data) {
+            assert data instanceof SyntaxErrorData;
+            return ((SyntaxErrorData) data).getLineno();
         }
 
         @Override
-        protected void set(SyntaxErrorData data, Object value) {
-            data.setLineno(value);
+        protected void set(PBaseException.Data data, Object value) {
+            assert data instanceof SyntaxErrorData;
+            ((SyntaxErrorData) data).setLineno(value);
         }
     }
 
     @Builtin(name = "offset", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception offset")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorOffsetNode extends SyntaxErrorBaseAttrNode {
+    public abstract static class SyntaxErrorOffsetNode extends BaseExceptionDataAttrNode {
         @Override
-        protected Object get(SyntaxErrorData data) {
-            return data.getOffset();
+        protected Object get(PBaseException.Data data) {
+            assert data instanceof SyntaxErrorData;
+            return ((SyntaxErrorData) data).getOffset();
         }
 
         @Override
-        protected void set(SyntaxErrorData data, Object value) {
-            data.setOffset(value);
+        protected void set(PBaseException.Data data, Object value) {
+            assert data instanceof SyntaxErrorData;
+            ((SyntaxErrorData) data).setOffset(value);
         }
     }
 
     @Builtin(name = "text", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception text")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorTextNode extends SyntaxErrorBaseAttrNode {
+    public abstract static class SyntaxErrorTextNode extends BaseExceptionDataAttrNode {
         @Override
-        protected Object get(SyntaxErrorData data) {
-            return data.getText();
+        protected Object get(PBaseException.Data data) {
+            assert data instanceof SyntaxErrorData;
+            return ((SyntaxErrorData) data).getText();
         }
 
         @Override
-        protected void set(SyntaxErrorData data, Object value) {
-            data.setText(value);
+        protected void set(PBaseException.Data data, Object value) {
+            assert data instanceof SyntaxErrorData;
+            ((SyntaxErrorData) data).setText(value);
         }
     }
 
     @Builtin(name = "print_file_and_line", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "exception print_file_and_line")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorPrintFileAndLineNode extends SyntaxErrorBaseAttrNode {
+    public abstract static class SyntaxErrorPrintFileAndLineNode extends BaseExceptionDataAttrNode {
         @Override
-        protected Object get(SyntaxErrorData data) {
-            return data.getPrintFileAndLine();
+        protected Object get(PBaseException.Data data) {
+            assert data instanceof SyntaxErrorData;
+            return ((SyntaxErrorData) data).getPrintFileAndLine();
         }
 
         @Override
-        protected void set(SyntaxErrorData data, Object value) {
-            data.setPrintFileAndLine(value);
+        protected void set(PBaseException.Data data, Object value) {
+            assert data instanceof SyntaxErrorData;
+            ((SyntaxErrorData) data).setPrintFileAndLine(value);
         }
     }
 
