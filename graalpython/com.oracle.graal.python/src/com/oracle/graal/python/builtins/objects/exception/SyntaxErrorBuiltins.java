@@ -48,8 +48,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
 import java.util.List;
 
-import org.graalvm.polyglot.io.FileSystem;
-
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -385,7 +383,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
 
     @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ImportErrorStrNode extends PythonUnaryBuiltinNode {
+    public abstract static class SyntaxErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object str(VirtualFrame frame, PBaseException self,
                         @Cached CastToJavaStringNode castToJavaStringNode,
@@ -399,7 +397,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
             String filename;
             if (data.getFilename() != null && PGuards.isString(data.getFilename())) {
                 filename = castToJavaStringNode.execute(data.getFilename());
-                final int sepIdx = PythonUtils.indexOf(filename, FileSystem.newDefaultFileSystem().getSeparator());
+                final int sepIdx = PythonUtils.lastIndexOf(filename, getContext().getEnv().getFileNameSeparator());
                 filename = (sepIdx != -1) ? PythonUtils.substring(filename, sepIdx + 1) : filename;
             } else {
                 filename = null;

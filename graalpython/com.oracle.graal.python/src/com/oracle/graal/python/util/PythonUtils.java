@@ -465,6 +465,11 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static int lastIndexOf(String s, String sep) {
+        return s.lastIndexOf(sep);
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static StringBuilder append(StringBuilder sb, char c) {
         return sb.append(c);
     }
