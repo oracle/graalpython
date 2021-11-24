@@ -121,26 +121,6 @@ suite = {
             "packedResource": True,
             "sha1": "bf7badf7e248e0ecf465d33c2f5aeec774209227",
         },
-        "ICU4J-69.1" : {
-            "moduleName" : "com.ibm.icu",
-            "sha1" : "ff666ac55986650893aacb9e2e0003538e9799c0",
-            "sourceSha1" : "3e19ca5465fce86a094c24df0b6c9256e53c8885",
-            "maven" : {
-            "groupId" : "com.ibm.icu",
-            "artifactId" : "icu4j",
-            "version" : "69.1",
-            },
-        },
-        "ICU4J-CHARSET-69.1" : {
-            "moduleName" : "com.ibm.icu.charset",
-            "sha1" : "c62f823ed741048490beb1660765397ad6331287",
-            "sourceSha1" : "9b366d73b5621fe534624be8276e53f2f9ee1485",
-            "maven" : {
-              "groupId" : "com.ibm.icu",
-              "artifactId" : "icu4j-charset",
-              "version" : "69.1",
-            },
-        },
         "NETBEANS-LIB-PROFILER" : {
             "moduleName" : "org.netbeans.modules.org-netbeans-lib-profiler",
             "sha1" : "2bcd32411df5d9c5348c98cf7024ac8b76137868",
