@@ -1,5 +1,8 @@
 package com.oracle.graal.python.builtins.modules.csv;
 
+import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.NOT_SET;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONE;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -12,9 +15,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
-
-import static com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins.NOT_SET;
-import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONE;
 
 public final class CSVWriter extends PythonBuiltinObject {
 
@@ -84,33 +84,36 @@ public final class CSVWriter extends PythonBuiltinObject {
     }
 
     boolean needsQuotes(Object field) {
+        if (field == null)
+            return false;
+
         boolean needsQuotes = false;
-        if (field != null) {
-            String fieldStr = field.toString();
-            int strLen = fieldStr.length();
+        String fieldStr = field.toString();
+        final int strLen = fieldStr.length();
 
-            for (int offset = 0; offset < strLen; ) {
-                boolean wantEscape = false;
+        for (int offset = 0; offset < strLen;) {
+            boolean wantEscape = false;
 
-                final int c = fieldStr.codePointAt(offset);
-                if (c == dialect.delimiterCodePoint ||
-                        c == dialect.escapeCharCodePoint ||
-                        c == dialect.quoteCharCodePoint ||
-                        dialect.lineTerminator.contains(new String(Character.toChars(c)))) {
+            final int c = fieldStr.codePointAt(offset);
+            if (c == dialect.delimiterCodePoint ||
+                            c == dialect.escapeCharCodePoint ||
+                            c == dialect.quoteCharCodePoint ||
+                            dialect.lineTerminator.codePoints().anyMatch(cp -> cp == c)) {
 
-                    if (dialect.quoting == QUOTE_NONE ||
-                            c == dialect.quoteCharCodePoint && !dialect.doubleQuote ||
-                            c == dialect.escapeCharCodePoint) {
-                        wantEscape = true;
-                    }
-
-                    if (!wantEscape) {
-                        needsQuotes = true;
-                    }
+                if (dialect.quoting == QUOTE_NONE ||
+                                c == dialect.quoteCharCodePoint && !dialect.doubleQuote ||
+                                c == dialect.escapeCharCodePoint) {
+                    wantEscape = true;
                 }
-                offset += Character.charCount(c);
+
+                if (!wantEscape) {
+                    needsQuotes = true;
+                    break;
+                }
             }
+            offset += Character.charCount(c);
         }
+
         return needsQuotes;
     }
 
@@ -152,7 +155,7 @@ public final class CSVWriter extends PythonBuiltinObject {
                 if (c == dialect.delimiterCodePoint ||
                         c == dialect.escapeCharCodePoint ||
                         c == dialect.quoteCharCodePoint ||
-                        dialect.lineTerminator.contains(new String(Character.toChars(c)))) {
+                                dialect.lineTerminator.codePoints().anyMatch(cp -> cp == c)) {
 
                     if (dialect.quoting == QUOTE_NONE) {
                         wantEscape = true;
