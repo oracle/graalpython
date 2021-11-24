@@ -223,7 +223,6 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListExtendNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListInsertNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListSortNode;
@@ -1164,7 +1163,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached KeysNode keysNode,
                         @Cached ConstructListNode listNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return listNode.execute(frame, keysNode.execute(frame, obj));
             } catch (PException e) {
@@ -1179,7 +1178,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return getKeys(frame, obj, getAttrNode, callNode, listNode);
             } catch (PException e) {
@@ -1203,7 +1202,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached ItemsNode itemsNode,
                         @Cached ConstructListNode listNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return listNode.execute(frame, itemsNode.execute(frame, obj));
             } catch (PException e) {
@@ -1218,7 +1217,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 Object attr = getAttrNode.execute(frame, obj, ITEMS);
                 return listNode.execute(frame, callNode.execute(frame, attr));
@@ -1237,7 +1236,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached ConstructListNode listNode,
                         @Cached ValuesNode valuesNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return listNode.execute(frame, valuesNode.execute(frame, obj));
             } catch (PException e) {
@@ -1252,7 +1251,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached ConstructListNode listNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 Object attr = getAttrNode.execute(frame, obj, VALUES);
                 return listNode.execute(frame, callNode.execute(frame, attr));
@@ -1410,20 +1409,20 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "isSetSubtype(frame, anyset, getClassNode, isSubtypeNode)")
+        @Specialization(guards = "isSetSubtype(frame, anyset, getClassNode, isSubtypeNode)", limit = "1")
         public Object containsNative(VirtualFrame frame, @SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object item,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
+                        @Shared("raiseNative") @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
         }
 
-        @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "!isSetSubtype(frame, anyset, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "!isSetSubtype(frame, anyset, getClassNode, isSubtypeNode)"}, limit = "1")
         public Object contains(VirtualFrame frame, Object anyset, @SuppressWarnings("unused") Object item,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
+                        @Shared("raiseNative") @Cached PRaiseNativeNode raiseNativeNode) {
             return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, anyset), anyset);
         }
 
@@ -1679,8 +1678,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
         public Object concatNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "bytes");
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "bytes");
         }
 
         @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
@@ -1688,8 +1688,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
                         @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
         }
 
         protected boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -1717,8 +1718,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
         public Object joinNative(VirtualFrame frame, @SuppressWarnings("unused") Object obj,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "bytes");
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "bytes");
         }
 
         @Specialization(guards = {"!isPBytes(obj)", "!isBytesSubtype(frame, obj, getClassNode, isSubtypeNode)"})
@@ -1726,8 +1728,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StrNode strNode,
-                        @Cached PRaiseNativeNode raiseNativeNode) {
-            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
         }
 
         protected boolean isBytesSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
@@ -1809,15 +1812,15 @@ public class PythonCextBuiltins extends PythonBuiltins {
     public abstract static class PyListNewNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "size < 0")
         public Object newList(VirtualFrame frame, int size,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("raiseNative") @Cached PRaiseNativeNode raiseNativeNode,
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
             return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, size);
         }
 
         @Specialization(guards = "size < 0")
         public Object newList(VirtualFrame frame, long size,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Shared("raiseNative") @Cached PRaiseNativeNode raiseNativeNode,
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
             return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, size);
         }
 
@@ -1856,32 +1859,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.IndexError, LIST_INDEX_OUT_OF_RANGE);
         }
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = "pos < 0")
-        Object getItem(VirtualFrame frame, @SuppressWarnings("unused") Object list, @SuppressWarnings("unused") int pos,
-                        @Cached PRaiseNativeNode raiseNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), PythonBuiltinClassType.IndexError, LIST_INDEX_OUT_OF_RANGE);
-        }
-
-        @Specialization(guards = "pos >= 0")
-        Object getItem(VirtualFrame frame, PList list, int pos,
-                        @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.GetItemNode getItemNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
-            return getItemWithInt(frame, list, pos, getItemNode, transformExceptionToNativeNode, getNativeNullNode);
-        }
-
         @Specialization(guards = "pos >= 0")
         Object getItem(VirtualFrame frame, PList list, long pos,
                         @Cached com.oracle.graal.python.builtins.objects.list.ListBuiltins.GetItemNode getItemNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
-            return getItemWithInt(frame, list, (int) pos, getItemNode, transformExceptionToNativeNode, getNativeNullNode);
-        }
-
-        private static Object getItemWithInt(VirtualFrame frame, PList list, int pos, ListBuiltins.GetItemNode getItemNode, TransformExceptionToNativeNode transformExceptionToNativeNode,
-                        GetNativeNullNode getNativeNullNode) {
             try {
                 return getItemNode.execute(frame, list, pos);
             } catch (PException e) {
@@ -2204,17 +2186,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object append(VirtualFrame frame, PList list, int i, Object item,
                         @Cached ListInsertNode insertNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            return insert(frame, list, i, item, insertNode, transformExceptionToNativeNode);
-        }
-
-        @Specialization
-        Object append(VirtualFrame frame, PList list, long i, Object item,
-                        @Cached ListInsertNode insertNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            return insert(frame, list, (int) i, item, insertNode, transformExceptionToNativeNode);
-        }
-
-        private static int insert(VirtualFrame frame, PList list, int i, Object item, ListInsertNode insertNode, TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
                 insertNode.execute(frame, list, i, item);
                 return 0;
