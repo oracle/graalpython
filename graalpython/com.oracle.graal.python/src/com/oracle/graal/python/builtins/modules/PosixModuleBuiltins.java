@@ -822,11 +822,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PNone ftruncate(VirtualFrame frame, int fd, long length,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil,
                         @Cached BranchProfile errorProfile) {
             auditNode.audit("os.truncate", fd, length);
             while (true) {
                 try {
-                    posixLib.ftruncate(getPosixSupport(), fd, length);
+                    gil.release(true);
+                    try {
+                        posixLib.ftruncate(getPosixSupport(), fd, length);
+                    } finally {
+                        gil.acquire();
+                    }
                     return PNone.NONE;
                 } catch (PosixException e) {
                     errorProfile.enter();

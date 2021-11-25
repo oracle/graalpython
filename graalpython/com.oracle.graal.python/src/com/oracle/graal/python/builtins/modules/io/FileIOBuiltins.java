@@ -222,6 +222,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
         private int open(VirtualFrame frame, String name, int flags, int mode,
                         PythonContext ctxt,
                         PosixSupportLibrary posixLib,
+                        GilNode gil,
                         BranchProfile errorProfile) {
             Object path = posixLib.createPathFromString(ctxt.getPosixSupport(), name);
             if (path == null) {
@@ -229,7 +230,12 @@ public final class FileIOBuiltins extends PythonBuiltins {
             }
             while (true) {
                 try {
-                    return posixLib.openat(ctxt.getPosixSupport(), AT_FDCWD.value, path, flags, mode);
+                    gil.release(true);
+                    try {
+                        return posixLib.openat(ctxt.getPosixSupport(), AT_FDCWD.value, path, flags, mode);
+                    } finally {
+                        gil.acquire();
+                    }
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
@@ -303,7 +309,8 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached SetAttributeNode.Dynamic setAttr,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached BranchProfile exceptionProfile,
-                        @Cached ConditionProfile errorProfile) {
+                        @Cached ConditionProfile errorProfile,
+                        @Cached GilNode gil) {
             if (self.getFD() >= 0) {
                 if (self.isCloseFD()) {
                     /* Have to close the existing file first. */
@@ -337,7 +344,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     }
 
                     if (opener instanceof PNone) {
-                        self.setFD(open(frame, name, flags, 0666, ctxt, posixLib, exceptionProfile), ctxt);
+                        self.setFD(open(frame, name, flags, 0666, ctxt, posixLib, gil, exceptionProfile), ctxt);
                     } else {
                         Object fdobj = callOpener.execute(frame, opener, nameobj, flags);
                         if (!indexCheckNode.execute(fdobj)) {
@@ -363,7 +370,13 @@ public final class FileIOBuiltins extends PythonBuiltins {
                 }
                 self.setBlksize(DEFAULT_BUFFER_SIZE);
                 try {
-                    long[] fstatResult = posixLib.fstat(ctxt.getPosixSupport(), self.getFD());
+                    long[] fstatResult;
+                    gil.release(true);
+                    try {
+                        fstatResult = posixLib.fstat(ctxt.getPosixSupport(), self.getFD());
+                    } finally {
+                        gil.acquire();
+                    }
                     /*
                      * On Unix, open will succeed for directories. In Python, there should be no
                      * file objects referring to directories, so we need a check.
@@ -396,8 +409,13 @@ public final class FileIOBuiltins extends PythonBuiltins {
                      * it might be done only on the first write()).
                      */
                     try {
-                        long res = posixLib.lseek(ctxt.getPosixSupport(), self.getFD(), 0, mapPythonSeekWhenceToPosix(SEEK_END));
-                        self.setSeekable(res >= 0 ? 1 : 0);
+                        gil.release(true);
+                        try {
+                            long res = posixLib.lseek(ctxt.getPosixSupport(), self.getFD(), 0, mapPythonSeekWhenceToPosix(SEEK_END));
+                            self.setSeekable(res >= 0 ? 1 : 0);
+                        } finally {
+                            gil.acquire();
+                        }
                     } catch (PosixException e) {
                         exceptionProfile.enter();
                         if (self.getSeekable() < 0) {
@@ -744,9 +762,15 @@ public final class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isClosed()")
         Object seek(VirtualFrame frame, PFileIO self, long pos, int whence,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil,
                         @Cached BranchProfile exceptionProfile) {
             try {
-                return internalSeek(self, pos, whence, getPosixSupport(), posixLib);
+                gil.release(true);
+                try {
+                    return internalSeek(self, pos, whence, getPosixSupport(), posixLib);
+                } finally {
+                    gil.acquire();
+                }
             } catch (PosixException e) {
                 exceptionProfile.enter();
                 throw raiseOSErrorFromPosixException(frame, e);
@@ -985,8 +1009,14 @@ public final class FileIOBuiltins extends PythonBuiltins {
     abstract static class IsattyNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "!self.isClosed()")
         boolean isatty(@SuppressWarnings("unused") PFileIO self,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            return posixLib.isatty(getPosixSupport(), self.getFD());
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil) {
+            gil.release(true);
+            try {
+                return posixLib.isatty(getPosixSupport(), self.getFD());
+            } finally {
+                gil.acquire();
+            }
         }
 
         @Specialization(guards = "self.isClosed()")
