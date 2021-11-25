@@ -213,6 +213,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins.IntNode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -221,6 +222,9 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltins.GtNode;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltins.LtNode;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltins.NegNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -2215,7 +2219,151 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PList);
         }
     }
+    
+    ///////////// long /////////////
 
+    @Builtin(name = "_PyLong_Sign", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyLongSignNode extends PythonUnaryBuiltinNode {
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "n == 0")
+        int sign(int n) {
+            return 0;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "n < 0")
+        int signNeg(int n) {
+            return -1;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "n > 0")
+        int signPos(int n) {
+            return 1;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "n == 0")
+        int sign(long n) {
+            return 0;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "n < 0")
+        int signNeg(long n) {
+            return -1;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "n > 0")
+        int signPos(long n) {
+            return 1;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "b")
+        int signTrue(boolean b) {
+            return 1;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!b")
+        int signFalse(boolean b) {
+            return 0;
+        }
+
+        @Specialization
+        int sign(VirtualFrame frame, PInt n,
+                        @Cached LtNode ltNode,
+                        @Cached GtNode gtNode,
+                        @Cached BranchProfile gtProfile,
+                        @Cached BranchProfile ltProfile) {
+            if ((boolean) gtNode.execute(frame, n, 0)) {
+                gtProfile.enter();
+                return 1;
+            } else if ((boolean) ltNode.execute(frame, n, 0)) {
+                ltProfile.enter();
+                return -1;
+            } else {
+                return 0;
+            }
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!canBeInteger(obj)", "isPIntSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object signNative(VirtualFrame frame, Object obj,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
+            // function returns int, but -1 is expected result for 'n < 0'
+            throw CompilerDirectives.shouldNotReachHere("not yet implemented");
+        }
+
+        @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)", "!isPIntSubtype(frame, obj,getClassNode,isSubtypeNode)"})
+        public Object sign(VirtualFrame frame, Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
+            // assert(PyLong_Check(v));
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        protected boolean isPIntSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PInt);
+        }
+    }
+
+    @Builtin(name = "PyLong_FromDouble", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyLongFromDoubleNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object fromDouble(VirtualFrame frame, double d,
+                        @Cached IntNode intNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return intNode.execute(frame, d);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PyLong_FromString", minNumOfPositionalArgs = 3)
+    @TypeSystemReference(PythonTypes.class)
+    @GenerateNodeFactory    
+    abstract static class PyLongFromStringNode extends PythonTernaryBuiltinNode {
+
+        @Specialization(guards = "negative == 0")
+        Object fromString(VirtualFrame frame, String s, long base, @SuppressWarnings("unused") long negative,
+                        @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode,
+                        @Shared("transforEx") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return intNode.executeWith(frame, s, base);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+
+        @Specialization(guards = "negative != 0")
+        Object fromString(VirtualFrame frame, String s, long base, @SuppressWarnings("unused") long negative,
+                        @Cached com.oracle.graal.python.builtins.modules.BuiltinConstructors.IntNode intNode,
+                        @Cached NegNode negNode,
+                        @Shared("transforEx") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return negNode.execute(frame, intNode.executeWith(frame, s, base));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+    
     /**
      * This is used in the ExternalFunctionNode below, so all arguments passed from Python code into
      * a C function are automatically unwrapped if they are wrapped. This function is also called

@@ -66,31 +66,6 @@ def PyDictProxy_New(mapping):
     mappingproxy = type(type.__dict__)
     return mappingproxy(mapping)
 
-##################### LONG
-
-def _PyLong_Sign(n):
-    if n==0:
-        return 0
-    elif n < 0:
-        return -1
-    else:
-        return 1
-
-
-@may_raise
-def PyLong_FromDouble(d):
-    return int(d)
-
-
-@may_raise
-def PyLong_FromString(string, base, negative):
-    result = int(string, base)
-    if negative:
-        return -result
-    else:
-        return result
-
-
 ##################### FLOAT
 
 @may_raise
