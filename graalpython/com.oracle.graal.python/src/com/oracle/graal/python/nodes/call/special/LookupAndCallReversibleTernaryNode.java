@@ -81,8 +81,8 @@ public abstract class LookupAndCallReversibleTernaryNode extends LookupAndCallTe
     @Specialization(guards = "v.getClass() == cachedVClass", limit = "getCallSiteInlineCacheMaxDepth()")
     Object callObjectR(VirtualFrame frame, Object v, Object w, Object z,
                     @SuppressWarnings("unused") @Cached("v.getClass()") Class<?> cachedVClass,
-                    @Cached("createLookup()") LookupSpecialMethodNode getattr,
-                    @Cached("createLookup()") LookupSpecialMethodNode getattrR,
+                    @Cached("createLookup()") LookupSpecialBaseNode getattr,
+                    @Cached("createLookup()") LookupSpecialBaseNode getattrR,
                     @Cached GetClassNode getClass,
                     @Cached GetClassNode getClassR,
                     @Cached IsSubtypeNode isSubtype,
@@ -94,8 +94,8 @@ public abstract class LookupAndCallReversibleTernaryNode extends LookupAndCallTe
     @Specialization(replaces = "callObjectR")
     @Megamorphic
     Object callObjectRMegamorphic(VirtualFrame frame, Object v, Object w, Object z,
-                    @Cached("createLookup()") LookupSpecialMethodNode getattr,
-                    @Cached("createLookup()") LookupSpecialMethodNode getattrR,
+                    @Cached("createLookup()") LookupSpecialBaseNode getattr,
+                    @Cached("createLookup()") LookupSpecialBaseNode getattrR,
                     @Cached GetClassNode getClass,
                     @Cached GetClassNode getClassR,
                     @Cached IsSubtypeNode isSubtype,
@@ -104,7 +104,7 @@ public abstract class LookupAndCallReversibleTernaryNode extends LookupAndCallTe
         return doCallObjectR(frame, v, w, z, getattr, getattrR, getClass, getClassR, isSubtype, isSameTypeNode, notImplementedBranch);
     }
 
-    private Object doCallObjectR(VirtualFrame frame, Object v, Object w, Object z, LookupSpecialMethodNode getattr, LookupSpecialMethodNode getattrR, GetClassNode getClass, GetClassNode getClassR,
+    private Object doCallObjectR(VirtualFrame frame, Object v, Object w, Object z, LookupSpecialBaseNode getattr, LookupSpecialBaseNode getattrR, GetClassNode getClass, GetClassNode getClassR,
                     IsSubtypeNode isSubtype, IsSameTypeNode isSameTypeNode, BranchProfile notImplementedBranch) {
         // c.f. mostly slot_nb_power and wrap_ternaryfunc_r. like
         // cpython://Object/abstract.c#ternary_op we try all three combinations, and the structure
