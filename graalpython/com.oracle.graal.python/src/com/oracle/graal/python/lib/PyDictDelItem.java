@@ -54,54 +54,54 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
- * Equivalent to use for PyDict_SetItem and PyDict_SetItemString functions available in CPython.
+ * Equivalent to use for PyDict_DelItem and PyDict_DelItemString functions available in CPython.
  * Note that these functions lead to places where there are hard casts to PyDictObject anyway, so we
  * just accept PDict.
  */
 @GenerateUncached
-public abstract class PyDictSetItem extends Node {
-    public abstract void execute(Frame frame, PDict dict, Object key, Object item);
+public abstract class PyDictDelItem extends Node {
+    public abstract void execute(Frame frame, PDict dict, Object key);
 
     // We never need a frame for reading string keys
     @Specialization(limit = "3")
-    static final void setItemWithStringKey(@SuppressWarnings("unused") PDict dict, String key, Object item,
-                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
+    static final void delItemWithStringKey(@SuppressWarnings("unused") PDict dict, String key,
+                                           @Bind("dict.getDictStorage()") HashingStorage dictStorage,
                     @CachedLibrary("dictStorage") HashingStorageLibrary lib,
                     @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
-        HashingStorage updatedStorage = lib.setItem(dictStorage, key, item);
+        HashingStorage updatedStorage = lib.delItem(dictStorage, key);
         if (updateStorageProfile.profile(updatedStorage != dictStorage)) {
             dict.setDictStorage(updatedStorage);
         }
     }
 
-    @Specialization(replaces = "setItemWithStringKey", limit = "3")
-    static final void setItemCached(VirtualFrame frame, @SuppressWarnings("unused") PDict dict, Object key, Object item,
-                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
-                    @Cached ConditionProfile frameCondition,
+    @Specialization(replaces = "delItemWithStringKey", limit = "3")
+    static final void delItemCached(VirtualFrame frame, @SuppressWarnings("unused") PDict dict, Object key,
+                                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
+                                    @Cached ConditionProfile frameCondition,
                     @CachedLibrary("dictStorage") HashingStorageLibrary lib,
                     @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
-        HashingStorage updatedStorage = lib.setItemWithFrame(dictStorage, key, item, frameCondition, frame);
+        HashingStorage updatedStorage = lib.delItemWithFrame(dictStorage, key, frameCondition, frame);
         if (updateStorageProfile.profile(updatedStorage != dictStorage)) {
             dict.setDictStorage(updatedStorage);
         }
     }
 
-    @Specialization(replaces = "setItemCached")
-    static final void setItem(PDict dict, Object key, Object item,
+    @Specialization(replaces = "delItemCached")
+    static final void delItem(PDict dict, Object key,
                     @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                     @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
         HashingStorage dictStorage = dict.getDictStorage();
-        HashingStorage updatedStorage = lib.setItem(dictStorage, key, item);
+        HashingStorage updatedStorage = lib.delItem(dictStorage, key);
         if (updateStorageProfile.profile(updatedStorage != dictStorage)) {
             dict.setDictStorage(updatedStorage);
         }
     }
 
-    public static PyDictSetItem create() {
-        return PyDictSetItemNodeGen.create();
+    public static PyDictDelItem create() {
+        return PyDictDelItemNodeGen.create();
     }
 
-    public static PyDictSetItem getUncached() {
-        return PyDictSetItemNodeGen.getUncached();
+    public static PyDictDelItem getUncached() {
+        return PyDictDelItemNodeGen.getUncached();
     }
 }

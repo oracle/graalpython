@@ -5,13 +5,20 @@
  */
 package com.oracle.graal.python.builtins.modules.csv;
 
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_ALL;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_MINIMAL;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONE;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONNUMERIC;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
+import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -20,7 +27,9 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyDictGetItem;
+import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
@@ -44,11 +53,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-
-import java.util.List;
-
-import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.*;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 @CoreFunctions(defineModule = "_csv")
 public class CSVModuleBuiltins extends PythonBuiltins {
@@ -86,7 +90,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
                               @Cached CastToJavaStringNode nameNode,
                               @Cached ReadAttributeFromObjectNode readNode,
                               @Cached CallNode callNode,
-                              @CachedLibrary(limit = "1") HashingStorageLibrary library) {
+                        @Cached PyDictSetItem setItem) {
 
             String name;
             try {
@@ -97,10 +101,9 @@ public class CSVModuleBuiltins extends PythonBuiltins {
 
             Object result = callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, keywords);
 
-            Object dialects = readNode.execute(module, "_dialects");
-            // TODO: Write PyDictSetItem Node?
-            HashingStorage storage = library.setItem(((PDict) dialects).getDictStorage(), name, result);
-            ((PDict) dialects).setDictStorage(storage);
+            PDict dialects = (PDict) readNode.execute(module, "_dialects");
+
+            setItem.execute(frame, dialects, name, result);
 
             return PNone.NONE;
         }
@@ -111,15 +114,15 @@ public class CSVModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CSVUnregisterDialectNode extends PythonBuiltinNode {
         @Specialization
-        PNone unregister(PythonModule module, Object nameObj,
+        PNone unregister(VirtualFrame frame, PythonModule module, Object nameObj,
                                 @Cached ReadAttributeFromObjectNode readNode,
-                                @CachedLibrary(limit = "1") HashingStorageLibrary library) {
+                        @Cached PyDictDelItem delItem,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary hashingStorage) {
 
-            Object dialects = readNode.execute(module, "_dialects");
+            PDict dialects = (PDict) readNode.execute(module, "_dialects");
 
-            //TODO: Should we write a PyDict_DelItem Node?
-            if (library.hasKey(((PDict) dialects).getDictStorage(), nameObj)) {
-                library.delItem(((PDict) dialects).getDictStorage(), nameObj);
+            if (hashingStorage.hasKey((dialects).getDictStorage(), nameObj)) {
+                delItem.execute(frame, dialects, nameObj);
             } else {
                 throw raise(PythonBuiltinClassType.CSVError, "unknown dialect");
             }
