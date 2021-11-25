@@ -572,7 +572,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             try {
                 value = castToJavaStringNode.execute(valueObj);
             } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.MUST_BE_STRING, "\"" + attribute + "\"");
+                throw raise(TypeError, ErrorMessages.MUST_BE_STRING_QUOTED, attribute);
             }
 
             return value;

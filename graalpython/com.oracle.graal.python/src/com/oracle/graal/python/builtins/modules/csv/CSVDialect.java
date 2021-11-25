@@ -84,6 +84,19 @@ public final class CSVDialect extends PythonBuiltinObject {
         this.delimiterCodePoint = this.delimiter == NOT_SET ? NOT_SET_CODEPOINT : this.delimiter.codePointAt(0);
         this.escapeCharCodePoint = this.escapeChar == NOT_SET ? NOT_SET_CODEPOINT : this.escapeChar.codePointAt(0);
         this.quoteCharCodePoint = quoteChar.codePointAt(0); // quote char cannot be NOT_SET
-        this.lineTerminatorCodePoints = this.lineTerminator.codePoints().toArray();
+        this.lineTerminatorCodePoints = strToCodePointArray(this.lineTerminator);
+    }
+
+    private static int[] strToCodePointArray(String str) {
+        final int strLen = str.length();
+        final int codePointCount = str.codePointCount(0, strLen);
+        int[] codePoints = new int[codePointCount];
+
+        for (int offset = 0, index = 0; offset < strLen; index++) {
+            final int c = str.codePointAt(offset);
+            codePoints[index] = c;
+            offset += Character.charCount(c);
+        }
+        return codePoints;
     }
 }
