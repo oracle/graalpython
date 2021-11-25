@@ -25,6 +25,14 @@
  */
 package com.oracle.graal.python.runtime.object;
 
+import java.lang.ref.ReferenceQueue;
+import java.math.BigInteger;
+import java.util.LinkedHashMap;
+import java.util.concurrent.Semaphore;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -200,13 +208,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import java.lang.ref.ReferenceQueue;
-import java.math.BigInteger;
-import java.util.LinkedHashMap;
-import java.util.concurrent.Semaphore;
-
 /**
  * Factory for Python objects that also reports to Truffle's {@link AllocationReporter}. The
  * reporting needs current context. There are several implementations of this abstract class. Use
@@ -247,13 +248,13 @@ public abstract class PythonObjectFactory extends Node {
 
     @Specialization
     static Shape getShape(Object o, @SuppressWarnings("unused") boolean flag,
-                          @Cached TypeNodes.GetInstanceShape getShapeNode) {
+                    @Cached TypeNodes.GetInstanceShape getShapeNode) {
         return getShapeNode.execute(o);
     }
 
     @Specialization
     static AllocationReporter doTrace(Object o, long size,
-                                      @Cached(value = "getAllocationReporter()", allowUncached = true) AllocationReporter reporter) {
+                    @Cached(value = "getAllocationReporter()", allowUncached = true) AllocationReporter reporter) {
         if (reporter.isActive()) {
             reporter.onEnter(null, 0, size);
             reporter.onReturnValue(o, 0, size);
@@ -517,25 +518,25 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PMemoryView createMemoryView(PythonContext context, BufferLifecycleManager bufferLifecycleManager, Object buffer, Object owner,
-                                              int len, boolean readonly, int itemsize, BufferFormat format, String formatString, int ndim, Object bufPointer,
-                                              int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
+                    int len, boolean readonly, int itemsize, BufferFormat format, String formatString, int ndim, Object bufPointer,
+                    int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
         return trace(new PMemoryView(cls, getShape(cls), context, bufferLifecycleManager, buffer, owner, len, readonly, itemsize, format, formatString,
-                ndim, bufPointer, offset, shape, strides, suboffsets, flags));
+                        ndim, bufPointer, offset, shape, strides, suboffsets, flags));
     }
 
     public final PMemoryView createMemoryView(PythonContext context, BufferLifecycleManager bufferLifecycleManager, Object buffer, Object owner,
-                                              int len, boolean readonly, int itemsize, String formatString, int ndim, Object bufPointer,
-                                              int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
+                    int len, boolean readonly, int itemsize, String formatString, int ndim, Object bufPointer,
+                    int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
         return trace(new PMemoryView(cls, getShape(cls), context, bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
-                BufferFormat.forMemoryView(formatString), formatString, ndim, bufPointer, offset, shape, strides, suboffsets, flags));
+                        BufferFormat.forMemoryView(formatString), formatString, ndim, bufPointer, offset, shape, strides, suboffsets, flags));
     }
 
     public final PMemoryView createMemoryViewForManagedObject(Object buffer, Object owner, int itemsize, int length, boolean readonly, String format) {
         return createMemoryView(null, null, buffer, owner, length, readonly, itemsize, format, 1,
-                null, 0, new int[]{length / itemsize}, new int[]{itemsize}, null,
-                PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN);
+                        null, 0, new int[]{length / itemsize}, new int[]{itemsize}, null,
+                        PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN);
     }
 
     public final PMemoryView createMemoryViewForManagedObject(Object owner, int itemsize, int length, boolean readonly, String format) {
@@ -567,19 +568,19 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PFunction createFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
-                                          PCell[] closure) {
+                    PCell[] closure) {
         return trace(new PFunction(getLanguage(), name, qualname, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure));
     }
 
     public final PFunction createFunction(String name, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
-                                          PCell[] closure) {
+                    PCell[] closure) {
         return trace(new PFunction(getLanguage(), name, name, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure));
     }
 
     public final PFunction createFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
-                                          PCell[] closure, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
+                    PCell[] closure, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
         return trace(new PFunction(getLanguage(), name, qualname, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure,
-                codeStableAssumption, defaultsStableAssumption));
+                        codeStableAssumption, defaultsStableAssumption));
     }
 
     public final PBuiltinFunction createGetSetBuiltinFunction(String name, Object type, int numDefaults, RootCallTarget callTarget) {
@@ -600,7 +601,7 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PBuiltinFunction createWrapperDescriptor(String name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {
         return trace(new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(getLanguage()), name, type, defaults, kw, flags,
-                callTarget));
+                        callTarget));
     }
 
     public final GetSetDescriptor createGetSetDescriptor(Object get, Object set, String name, Object type) {
@@ -810,8 +811,8 @@ public abstract class PythonObjectFactory extends Node {
      */
 
     public final PGenerator createGenerator(String name, String qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure,
-                                            ExecutionCellSlots cellSlots,
-                                            GeneratorInfo generatorInfo, Object iterator) {
+                    ExecutionCellSlots cellSlots,
+                    GeneratorInfo generatorInfo, Object iterator) {
         return trace(PGenerator.create(getLanguage(), name, qualname, callTargets, frameDescriptor, arguments, closure, cellSlots, generatorInfo, this, iterator));
     }
 
@@ -989,7 +990,7 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PDictItemIterator createDictReverseItemIterator(HashingStorageIterator<DictEntry> iterator, HashingStorage hashingStorage, int initialSize) {
         return trace(new PDictItemIterator(PythonBuiltinClassType.PDictReverseItemIterator, PythonBuiltinClassType.PDictReverseItemIterator.getInstanceShape(getLanguage()), iterator, hashingStorage,
-                initialSize));
+                        initialSize));
     }
 
     public final PDictKeyIterator createDictKeyIterator(HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
@@ -998,18 +999,18 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PDictKeyIterator createDictReverseKeyIterator(HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
         return trace(new PDictKeyIterator(PythonBuiltinClassType.PDictReverseKeyIterator, PythonBuiltinClassType.PDictReverseKeyIterator.getInstanceShape(getLanguage()), iterator, hashingStorage,
-                initialSize));
+                        initialSize));
     }
 
     public final PDictValueIterator createDictValueIterator(HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
         return trace(new PDictValueIterator(PythonBuiltinClassType.PDictValueIterator, PythonBuiltinClassType.PDictValueIterator.getInstanceShape(getLanguage()), iterator, hashingStorage,
-                initialSize));
+                        initialSize));
     }
 
     public final PDictValueIterator createDictReverseValueIterator(HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
         return trace(new PDictValueIterator(PythonBuiltinClassType.PDictReverseValueIterator, PythonBuiltinClassType.PDictReverseValueIterator.getInstanceShape(getLanguage()), iterator,
-                hashingStorage,
-                initialSize));
+                        hashingStorage,
+                        initialSize));
     }
 
     public final Object createSentinelIterator(Object callable, Object sentinel) {
@@ -1053,9 +1054,9 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PCode createCode(RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, Object[] names, Object[] varnames,
-                                  Object[] freevars, Object[] cellvars, String filename, String name, int firstlineno, byte[] lnotab) {
+                    Object[] freevars, Object[] cellvars, String filename, String name, int firstlineno, byte[] lnotab) {
         return trace(new PCode(PythonBuiltinClassType.PCode, getShape(PythonBuiltinClassType.PCode), callTarget, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars,
-                filename, name, firstlineno, lnotab));
+                        filename, name, firstlineno, lnotab));
     }
 
     public PCode createCode(Supplier<CallTarget> createCode, int flags, int firstlineno, byte[] lnotab, String filename) {
@@ -1163,11 +1164,11 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final CSVDialect createCSVDialect(Object clazz, String delimiter, boolean doublequote, String escapechar,
-                                             String lineterminator, String quotechar, QuoteStyle quoting, boolean skipinitialspace,
-                                             boolean strict) {
+                    String lineterminator, String quotechar, QuoteStyle quoting, boolean skipinitialspace,
+                    boolean strict) {
         return trace(new CSVDialect(clazz, getShape(clazz), delimiter, doublequote, escapechar,
-                lineterminator, quotechar, quoting, skipinitialspace,
-                strict));
+                        lineterminator, quotechar, quoting, skipinitialspace,
+                        strict));
     }
 
     public final PFileIO createFileIO(Object clazz) {
@@ -1296,7 +1297,7 @@ public abstract class PythonObjectFactory extends Node {
 
     @TruffleBoundary
     public final PJSONEncoder createJSONEncoder(Object clazz, Object markers, Object defaultFn, Object encoder, Object indent, String keySeparator, String itemSeparator, boolean sortKeys,
-                                                boolean skipKeys, boolean allowNan, FastEncode fastEncode) {
+                    boolean skipKeys, boolean allowNan, FastEncode fastEncode) {
         return trace(new PJSONEncoder(clazz, getShape(clazz), markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode));
     }
 

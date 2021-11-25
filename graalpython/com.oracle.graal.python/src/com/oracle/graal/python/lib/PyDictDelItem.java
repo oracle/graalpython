@@ -65,7 +65,7 @@ public abstract class PyDictDelItem extends Node {
     // We never need a frame for reading string keys
     @Specialization(limit = "3")
     static final void delItemWithStringKey(@SuppressWarnings("unused") PDict dict, String key,
-                                           @Bind("dict.getDictStorage()") HashingStorage dictStorage,
+                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
                     @CachedLibrary("dictStorage") HashingStorageLibrary lib,
                     @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
         HashingStorage updatedStorage = lib.delItem(dictStorage, key);
@@ -76,8 +76,8 @@ public abstract class PyDictDelItem extends Node {
 
     @Specialization(replaces = "delItemWithStringKey", limit = "3")
     static final void delItemCached(VirtualFrame frame, @SuppressWarnings("unused") PDict dict, Object key,
-                                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
-                                    @Cached ConditionProfile frameCondition,
+                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
+                    @Cached ConditionProfile frameCondition,
                     @CachedLibrary("dictStorage") HashingStorageLibrary lib,
                     @Cached("createCountingProfile()") ConditionProfile updateStorageProfile) {
         HashingStorage updatedStorage = lib.delItemWithFrame(dictStorage, key, frameCondition, frame);

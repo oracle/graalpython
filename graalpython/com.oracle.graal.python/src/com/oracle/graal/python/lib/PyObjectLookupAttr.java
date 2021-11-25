@@ -211,17 +211,17 @@ public abstract class PyObjectLookupAttr extends Node {
     @SuppressWarnings("unused")
     @Specialization(guards = {"isTypeGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(descr)"}, limit = "1", replaces = "doBuiltinTypeType")
     static final Object doBuiltinType(VirtualFrame frame, Object object, String name,
-                                      @Cached("name") String cachedName,
-                                      @Cached GetClassNode getClass,
-                                      @Bind("getClass.execute(object)") Object type,
-                                      @Cached("create(name)") LookupAttributeInMRONode lookupName,
-                                      @Bind("lookupName.execute(type)") Object descr,
-                                      @Cached ReadAttributeFromObjectNode readNode,
-                                      @Cached ConditionProfile valueFound,
-                                      @Cached("create(Get)") LookupInheritedSlotNode lookupValueGet,
-                                      @Cached ConditionProfile noGetMethod,
-                                      @Cached CallTernaryMethodNode invokeValueGet,
-                                      @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
+                    @Cached("name") String cachedName,
+                    @Cached GetClassNode getClass,
+                    @Bind("getClass.execute(object)") Object type,
+                    @Cached("create(name)") LookupAttributeInMRONode lookupName,
+                    @Bind("lookupName.execute(type)") Object descr,
+                    @Cached ReadAttributeFromObjectNode readNode,
+                    @Cached ConditionProfile valueFound,
+                    @Cached("create(Get)") LookupInheritedSlotNode lookupValueGet,
+                    @Cached ConditionProfile noGetMethod,
+                    @Cached CallTernaryMethodNode invokeValueGet,
+                    @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
         Object value = readNode.execute(object, cachedName);
         if (valueFound.profile(value != PNone.NO_VALUE)) {
             Object valueGet = lookupValueGet.execute(value);

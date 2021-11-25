@@ -56,7 +56,9 @@ public abstract class PyComplexCheckExactNode extends Node {
     public abstract boolean execute(Object object);
 
     @Specialization
-    static boolean doPComplex(PComplex pComplex) { return true; }
+    static boolean doPComplex(PComplex pComplex) {
+        return true;
+    }
 
     @Specialization
     static boolean doGeneric(Object object,

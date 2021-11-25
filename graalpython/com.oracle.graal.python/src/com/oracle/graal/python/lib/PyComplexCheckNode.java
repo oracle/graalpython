@@ -57,12 +57,14 @@ public abstract class PyComplexCheckNode extends Node {
     public abstract boolean execute(Object object);
 
     @Specialization
-    static boolean doPComplex(PComplex pComplex) { return true; }
+    static boolean doPComplex(PComplex pComplex) {
+        return true;
+    }
 
     @Specialization
     static boolean doGeneric(Object object,
-                             @Cached GetClassNode getClassNode,
-                             @Cached IsSubtypeNode isSubtypeNode) {
+                    @Cached GetClassNode getClassNode,
+                    @Cached IsSubtypeNode isSubtypeNode) {
         Object type = getClassNode.execute(object);
         return isSubtypeNode.execute(type, PythonBuiltinClassType.PComplex);
     }

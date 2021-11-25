@@ -50,9 +50,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Equivalent of CPython's {@code PyUnicode_Check}.
- * Return true if the passed in object is a Unicode object or an instance of a Unicode
- * subtype.
+ * Equivalent of CPython's {@code PyUnicode_Check}. Return true if the passed in object is a Unicode
+ * object or an instance of a Unicode subtype.
  */
 @GenerateUncached
 public abstract class PyUnicodeCheckNode extends Node {
@@ -64,12 +63,14 @@ public abstract class PyUnicodeCheckNode extends Node {
     }
 
     @Specialization
-    static boolean doPString(@SuppressWarnings("unused") PString object) {return true;}
+    static boolean doPString(@SuppressWarnings("unused") PString object) {
+        return true;
+    }
 
     @Specialization
     static boolean doGeneric(Object object,
-                             @Cached GetClassNode getClass,
-                             @Cached IsSubtypeNode isSubtype) {
+                    @Cached GetClassNode getClass,
+                    @Cached IsSubtypeNode isSubtype) {
         Object type = getClass.execute(object);
         return isSubtype.execute(type, PythonBuiltinClassType.PString);
     }

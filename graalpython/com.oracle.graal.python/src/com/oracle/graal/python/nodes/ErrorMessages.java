@@ -1003,7 +1003,6 @@ public abstract class ErrorMessages {
     public static final String ESCAPE_WITHOUT_ESCAPECHAR = "need to escape, but no escapechar set";
     public static final String S_MUST_HAVE_WRITE_METHOD = "%s must have \"write\" method";
 
-
     // warnings
     public static final String WARN_P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +
                     "The ability to return an instance of a strict subclass of %s " +

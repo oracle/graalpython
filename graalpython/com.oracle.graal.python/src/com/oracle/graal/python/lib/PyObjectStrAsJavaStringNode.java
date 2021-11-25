@@ -74,7 +74,7 @@ public abstract class PyObjectStrAsJavaStringNode extends PNodeWithContext {
 
     @Specialization
     static String doPString(PString obj,
-                            @Cached CastToJavaStringNode castToString) {
+                    @Cached CastToJavaStringNode castToString) {
         try {
             return castToString.execute(obj);
         } catch (CannotCastException e) {

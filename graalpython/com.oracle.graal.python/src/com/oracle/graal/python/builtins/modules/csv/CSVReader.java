@@ -1,3 +1,43 @@
+/*
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * The Universal Permissive License (UPL), Version 1.0
+ *
+ * Subject to the condition set forth below, permission is hereby granted to any
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
+ *
+ * (a) the Software, and
+ *
+ * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
+ *
+ * without restriction, including without limitation the rights to copy, create
+ * derivative works of, display, perform, and distribute the Software and make,
+ * use, sell, offer for sale, import, export, have made, and have sold the
+ * Software and the Larger Work(s), and to sublicense the foregoing rights on
+ * either these or other terms.
+ *
+ * This license is subject to the following condition:
+ *
+ * The above copyright notice and either this complete permission notice or at a
+ * minimum a reference to the UPL must be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 package com.oracle.graal.python.builtins.modules.csv;
 
 import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.AFTER_ESCAPED_CRNL;
@@ -49,9 +89,9 @@ public final class CSVReader extends PythonBuiltinObject {
     }
 
     Object inputIter; /* iterate over this for input lines */
-    CSVDialect dialect;  /* parsing dialect */
+    CSVDialect dialect; /* parsing dialect */
     ArrayList<Object> fields; /* field list for current record */
-    ReaderState state;  /* current CSV parse state */
+    ReaderState state; /* current CSV parse state */
     StringBuilder field; /* temporary buffer */
     int fieldSize; /* size of allocated buffer */
     boolean numericField; /* treat field as numeric */
@@ -61,13 +101,13 @@ public final class CSVReader extends PythonBuiltinObject {
         super(cls, instanceShape);
     }
 
-     void parseReset() {
+    void parseReset() {
         this.field = new StringBuilder();
         this.fields = new ArrayList<>();
         this.state = START_RECORD;
         this.numericField = false;
     }
-    
+
     void parseSaveField() {
         Object field = this.field.toString();
         this.field = new StringBuilder();
@@ -111,9 +151,10 @@ public final class CSVReader extends PythonBuiltinObject {
                 throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.WRONG_ITERATOR_RETURN_TYPE, GetClassNode.getUncached().execute(lineObj));
             }
 
-            //TODO: Implement PyUnicode_Check Node? => how do we handle the possibility of bytes?
-            // PyPy: if isinstance(line, str) and '\0' in line or isinstance(line, bytes) and line.index(0) >=0:
-            //                    raise Error("line contains NULL byte")
+            // TODO: Implement PyUnicode_Check Node? => how do we handle the possibility of bytes?
+            // PyPy: if isinstance(line, str) and '\0' in line or isinstance(line, bytes) and
+            // line.index(0) >=0:
+            // raise Error("line contains NULL byte")
             if (line.contains("\u0000")) {
                 throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.LINE_CONTAINS_NULL_BYTE);
             }
@@ -128,13 +169,15 @@ public final class CSVReader extends PythonBuiltinObject {
 
         return PythonObjectFactory.getUncached().createList(fields.toArray());
     }
-    
+
     void parseLine(String line) {
         final int lineLength = line.length();
 
-        /* Python supports utf-32 characters, as Java characters are utf-16 only,
-        * we have to work with code points instead. */
-        for (int offset = 0; offset < lineLength; ) {
+        /*
+         * Python supports utf-32 characters, as Java characters are utf-16 only, we have to work
+         * with code points instead.
+         */
+        for (int offset = 0; offset < lineLength;) {
             final int codepoint = line.codePointAt(offset);
 
             parseProcessCodePoint(codepoint);
@@ -153,7 +196,7 @@ public final class CSVReader extends PythonBuiltinObject {
 
             case START_RECORD:
                 /* start of record */
-                if (codePoint== EOL) {
+                if (codePoint == EOL) {
                     /* empty line - return [] */
                     break;
                 } else if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT) {
@@ -170,27 +213,23 @@ public final class CSVReader extends PythonBuiltinObject {
                     /* save empty field - return [fields] */
                     parseSaveField();
                     this.state = (codePoint == EOL) ? START_RECORD : EAT_CRNL;
-                }
-                else if (codePoint == dialect.quoteCharCodePoint &&
-                        dialect.quoting != QUOTE_NONE) {
+                } else if (codePoint == dialect.quoteCharCodePoint &&
+                                dialect.quoting != QUOTE_NONE) {
                     /* start quoted field */
                     this.state = IN_QUOTED_FIELD;
-                }
-                else if (codePoint == dialect.escapeCharCodePoint) {
+                } else if (codePoint == dialect.escapeCharCodePoint) {
                     /* possible escaped character */
                     this.state = ESCAPED_CHAR;
-                }
-                else if (codePoint == SPACE_CODEPOINT && dialect.skipInitialSpace)
+                } else if (codePoint == SPACE_CODEPOINT && dialect.skipInitialSpace) {
                     /* ignore space at start of field */
-                    ;
-                else if (codePoint == dialect.delimiterCodePoint) {
+                } else if (codePoint == dialect.delimiterCodePoint) {
                     /* save empty field */
                     parseSaveField();
-                }
-                else {
+                } else {
                     /* begin new unquoted field */
-                    if (dialect.quoting == QUOTE_NONNUMERIC)
+                    if (dialect.quoting == QUOTE_NONNUMERIC) {
                         this.numericField = true;
+                    }
                     parseAddCodePoint(codePoint);
                     this.state = IN_FIELD;
                 }
@@ -211,9 +250,10 @@ public final class CSVReader extends PythonBuiltinObject {
                 break;
 
             case AFTER_ESCAPED_CRNL:
-                if (codePoint == EOL)
+                if (codePoint == EOL) {
                     break;
-                /*fallthru*/
+                }
+                /* fallthru */
 
             case IN_FIELD:
                 /* in unquoted field */
@@ -222,17 +262,14 @@ public final class CSVReader extends PythonBuiltinObject {
                     parseSaveField();
 
                     this.state = (codePoint == EOL) ? START_RECORD : EAT_CRNL;
-                }
-                else if (codePoint == dialect.escapeCharCodePoint) {
+                } else if (codePoint == dialect.escapeCharCodePoint) {
                     /* possible escaped character */
                     this.state = ESCAPED_CHAR;
-                }
-                else if (codePoint == dialect.delimiterCodePoint) {
+                } else if (codePoint == dialect.delimiterCodePoint) {
                     /* save field - wait for new field */
                     parseSaveField();
                     this.state = START_FIELD;
-                }
-                else {
+                } else {
                     /* normal character - save in field */
                     parseAddCodePoint(codePoint);
                 }
@@ -240,32 +277,30 @@ public final class CSVReader extends PythonBuiltinObject {
 
             case IN_QUOTED_FIELD:
                 /* in quoted field */
-                if (codePoint == EOL)
-                    ;
-                else if (codePoint == dialect.escapeCharCodePoint) {
+                if (codePoint == EOL) {
+                    /* ignore */
+                } else if (codePoint == dialect.escapeCharCodePoint) {
                     /* Possible escape character */
                     this.state = ESCAPE_IN_QUOTED_FIELD;
-                }
-                else if (codePoint == dialect.quoteCharCodePoint &&
-                        dialect.quoting != QUOTE_NONE) {
+                } else if (codePoint == dialect.quoteCharCodePoint &&
+                                dialect.quoting != QUOTE_NONE) {
                     if (dialect.doubleQuote) {
                         /* doublequote; " represented by "" */
                         this.state = ReaderState.QUOTE_IN_QUOTED_FIELD;
-                    }
-                    else {
+                    } else {
                         /* end of quote part of field */
                         this.state = IN_FIELD;
                     }
-                }
-                else {
+                } else {
                     /* normal character - save in field */
                     parseAddCodePoint(codePoint);
                 }
                 break;
 
             case ESCAPE_IN_QUOTED_FIELD:
-                if (codePoint == EOL)
+                if (codePoint == EOL) {
                     codePoint = NEWLINE_CODEPOINT;
+                }
                 parseAddCodePoint(codePoint);
                 this.state = IN_QUOTED_FIELD;
                 break;
@@ -273,39 +308,35 @@ public final class CSVReader extends PythonBuiltinObject {
             case QUOTE_IN_QUOTED_FIELD:
                 /* doublequote - seen a quote in a quoted field */
                 if (dialect.quoting != QUOTE_NONE &&
-                        codePoint == dialect.quoteCharCodePoint) {
+                                codePoint == dialect.quoteCharCodePoint) {
                     /* save "" as " */
                     parseAddCodePoint(codePoint);
                     this.state = IN_QUOTED_FIELD;
-                }
-                else if (codePoint == dialect.delimiterCodePoint) {
+                } else if (codePoint == dialect.delimiterCodePoint) {
                     /* save field - wait for new field */
                     parseSaveField();
                     this.state = START_FIELD;
-                }
-                else if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT || codePoint == EOL) {
+                } else if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT || codePoint == EOL) {
                     /* end of line - return [fields] */
                     parseSaveField();
                     this.state = (codePoint == EOL) ? START_RECORD : EAT_CRNL;
-                }
-                else if (!dialect.strict) {
+                } else if (!dialect.strict) {
                     parseAddCodePoint(codePoint);
                     this.state = IN_FIELD;
-                }
-                else {
+                } else {
                     /* illegal */
                     throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.S_EXPECTED_AFTER_S,
-                            dialect.delimiter,
-                            dialect.quoteChar);
+                                    dialect.delimiter,
+                                    dialect.quoteChar);
                 }
                 break;
 
             case EAT_CRNL:
-                if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT)
-                    ;
-                else if (codePoint == EOL)
+                if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT) {
+                    /* ignore */
+                } else if (codePoint == EOL) {
                     this.state = START_RECORD;
-                else {
+                } else {
                     throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.NEWLINE_IN_UNQOUTED_FIELD);
                 }
                 break;
@@ -313,11 +344,11 @@ public final class CSVReader extends PythonBuiltinObject {
 
     }
 
-    void parseAddCodePoint(int codePoint){
+    void parseAddCodePoint(int codePoint) {
 
-        if (this.field.length() + Character.charCount(codePoint) > CSVModuleBuiltins.fieldLimit){
+        if (this.field.length() + Character.charCount(codePoint) > CSVModuleBuiltins.fieldLimit) {
             throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.LARGER_THAN_FIELD_SIZE_LIMIT,
-                    CSVModuleBuiltins.fieldLimit);
+                            CSVModuleBuiltins.fieldLimit);
         }
 
         this.field.appendCodePoint(codePoint);

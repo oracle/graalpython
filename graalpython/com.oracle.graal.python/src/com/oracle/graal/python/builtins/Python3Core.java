@@ -25,6 +25,27 @@
  */
 package com.oracle.graal.python.builtins;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndentationError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TabError;
+import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
+
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.ServiceLoader;
+import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AtexitModuleBuiltins;
@@ -262,26 +283,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
-import org.graalvm.nativeimage.ImageInfo;
-
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.ServiceLoader;
-import java.util.logging.Level;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndentationError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TabError;
-import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most

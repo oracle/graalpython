@@ -702,7 +702,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
         HashSet<String> set = new HashSet<>();
         for (PythonBuiltinClassType type : VALUES) {
-            assert set.add("" + type.moduleName + "." + type.name) : type.name(); // check uniqueness
+            // check uniqueness
+            assert set.add("" + type.moduleName + "." + type.name) : type.name();
 
             /* Initialize type.base (defaults to PythonObject unless that's us) */
             if (type.base == null && type != PythonObject) {

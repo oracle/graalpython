@@ -1,7 +1,42 @@
-/* Copyright (c) 2020, 2021, Oracle and/or its affiliates.
- * Copyright (C) 1996-2020 Python Software Foundation
+/*
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ * The Universal Permissive License (UPL), Version 1.0
+ *
+ * Subject to the condition set forth below, permission is hereby granted to any
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
+ *
+ * (a) the Software, and
+ *
+ * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
+ *
+ * without restriction, including without limitation the rights to copy, create
+ * derivative works of, display, perform, and distribute the Software and make,
+ * use, sell, offer for sale, import, export, have made, and have sold the
+ * Software and the Larger Work(s), and to sublicense the foregoing rights on
+ * either these or other terms.
+ *
+ * This license is subject to the following condition:
+ *
+ * The above copyright notice and either this complete permission notice or at a
+ * minimum a reference to the UPL must be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.oracle.graal.python.builtins.modules.csv;
 
@@ -79,17 +114,17 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "register_dialect", parameterNames = { "$mod","name",
-            "dialect"}, minNumOfPositionalArgs = 2, takesVarKeywordArgs = true, declaresExplicitSelf = true, doc = "Create a mapping from a string name to a dialect class.\n" +
-            "dialect = csv.register_dialect(name, dialect)")
+    @Builtin(name = "register_dialect", parameterNames = {"$mod", "name",
+                    "dialect"}, minNumOfPositionalArgs = 2, takesVarKeywordArgs = true, declaresExplicitSelf = true, doc = "Create a mapping from a string name to a dialect class.\n" +
+                                    "dialect = csv.register_dialect(name, dialect)")
     @GenerateNodeFactory
     public abstract static class CSVRegisterDialectNode extends PythonBuiltinNode {
 
         @Specialization
         PNone register(VirtualFrame frame, PythonModule module, Object nameObj, Object dialectObj, PKeyword[] keywords,
-                              @Cached CastToJavaStringNode nameNode,
-                              @Cached ReadAttributeFromObjectNode readNode,
-                              @Cached CallNode callNode,
+                        @Cached CastToJavaStringNode nameNode,
+                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached CallNode callNode,
                         @Cached PyDictSetItem setItem) {
 
             String name;
@@ -109,13 +144,14 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "unregister_dialect", parameterNames = {"$mod", "name"}, minNumOfPositionalArgs = 2, declaresExplicitSelf = true, doc = "Delete the name/dialect mapping associated with a string name.\n" +
-            "csv.unregister_dialect(name)")
+    @Builtin(name = "unregister_dialect", parameterNames = {"$mod",
+                    "name"}, minNumOfPositionalArgs = 2, declaresExplicitSelf = true, doc = "Delete the name/dialect mapping associated with a string name.\n" +
+                                    "csv.unregister_dialect(name)")
     @GenerateNodeFactory
     public abstract static class CSVUnregisterDialectNode extends PythonBuiltinNode {
         @Specialization
         PNone unregister(VirtualFrame frame, PythonModule module, Object nameObj,
-                                @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached ReadAttributeFromObjectNode readNode,
                         @Cached PyDictDelItem delItem,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hashingStorage) {
 
@@ -132,7 +168,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "get_dialect", parameterNames = {"$mod", "name"}, minNumOfPositionalArgs = 2, declaresExplicitSelf = true, doc = "Return the dialect instance associated with name.\n" +
-            "dialect = csv.get_dialect(name)")
+                    "dialect = csv.get_dialect(name)")
     @GenerateNodeFactory
     public abstract static class CSVGetDialectNode extends PythonBuiltinNode {
 
@@ -141,10 +177,11 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         protected static CSVGetDialectNode create() {
             return CSVModuleBuiltinsFactory.CSVGetDialectNodeFactory.create(null);
         }
+
         @Specialization
         CSVDialect get(VirtualFrame frame, PythonModule module, Object nameObj,
-                       @Cached PyDictGetItem getItemNode,
-                       @Cached ReadAttributeFromObjectNode readNode) {
+                        @Cached PyDictGetItem getItemNode,
+                        @Cached ReadAttributeFromObjectNode readNode) {
 
             PDict dialects = (PDict) readNode.execute(module, "_dialects");
 
@@ -159,14 +196,14 @@ public class CSVModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "list_dialects", parameterNames = {"$mod"}, declaresExplicitSelf = true, doc = "Return a list of all known dialect names.\n" +
-            "names = csv.list_dialects()")
+                    "names = csv.list_dialects()")
     @GenerateNodeFactory
     public abstract static class CSVListDialectsNode extends PythonBuiltinNode {
         @Specialization
         PList listDialects(VirtualFrame frame, PythonModule module,
-                         @Cached ReadAttributeFromObjectNode readNode,
-                         @CachedLibrary(limit = "1") HashingStorageLibrary library,
-                         @Cached ListNodes.ConstructListNode constructListNode) {
+                        @Cached ReadAttributeFromObjectNode readNode,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary library,
+                        @Cached ListNodes.ConstructListNode constructListNode) {
 
             Object dialects = readNode.execute(module, "_dialects");
             return constructListNode.execute(frame, dialects);
@@ -178,9 +215,9 @@ public class CSVModuleBuiltins extends PythonBuiltins {
     public abstract static class CSVReaderNode extends PythonBuiltinNode {
         @Specialization
         Object createReader(VirtualFrame frame, Object csvfile, Object dialectObj, PKeyword[] kwargs,
-                            @Cached PythonObjectFactory pythonObjectFactory,
-                            @Cached PyObjectGetIter getIter,
-                            @Cached CallNode callNode) {
+                        @Cached PythonObjectFactory pythonObjectFactory,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached CallNode callNode) {
 
             CSVReader reader = pythonObjectFactory.createCSVReader(PythonBuiltinClassType.CSVReader);
 
@@ -196,15 +233,15 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "writer", doc = WRITER_DOC , parameterNames = {"outputfile", "dialect"}, minNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
+    @Builtin(name = "writer", doc = WRITER_DOC, parameterNames = {"outputfile", "dialect"}, minNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class CSVWriterNode extends PythonBuiltinNode {
         @Specialization
         Object createReader(VirtualFrame frame, Object outputFile, Object dialectObj, PKeyword[] kwargs,
-                            @Cached PythonObjectFactory pythonObjectFactory,
-                            @Cached CallNode callNode,
-                            @Cached PyObjectLookupAttr lookupAttr,
-                            @Cached PyCallableCheckNode checkCallable) {
+                        @Cached PythonObjectFactory pythonObjectFactory,
+                        @Cached CallNode callNode,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PyCallableCheckNode checkCallable) {
 
             CSVWriter writer = pythonObjectFactory.createCSVWriter(PythonBuiltinClassType.CSVWriter);
 
@@ -217,22 +254,22 @@ public class CSVModuleBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_MUST_HAVE_WRITE_METHOD, "argument 1");
             }
 
-            writer.dialect = (CSVDialect) callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, kwargs);;
+            writer.dialect = (CSVDialect) callNode.execute(frame, PythonBuiltinClassType.CSVDialect, new Object[]{dialectObj}, kwargs);
 
             return writer;
         }
     }
 
     @Builtin(name = "field_size_limit", parameterNames = {"limit"}, doc = "Sets an upper limit on parsed fields.\n" +
-            "csv.field_size_limit([limit])\n\n" +
-            "Returns old limit. If limit is not given, no new limit is set and\n" +
-            "the old limit is returned")
+                    "csv.field_size_limit([limit])\n\n" +
+                    "Returns old limit. If limit is not given, no new limit is set and\n" +
+                    "the old limit is returned")
     @GenerateNodeFactory
     public abstract static class CSVFieldSizeLimitNode extends PythonBuiltinNode {
         @Specialization
         long getOrSetFieldSizeLimit(VirtualFrame frame, Object newLimit,
-                                    @Cached PyLongCheckExactNode checkLongNode,
-                                    @Cached PyLongAsLongNode castToLong) {
+                        @Cached PyLongCheckExactNode checkLongNode,
+                        @Cached PyLongAsLongNode castToLong) {
 
             long oldLimit = fieldLimit;
 
@@ -248,85 +285,101 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "CSVDialect", constructsClass = PythonBuiltinClassType.CSVDialect,
-            parameterNames = {"class", "dialect", "delimiter", "doublequote", "escapechar", "lineterminator", "quotechar",
+    @Builtin(name = "CSVDialect", constructsClass = PythonBuiltinClassType.CSVDialect, parameterNames = {"class", "dialect", "delimiter", "doublequote", "escapechar", "lineterminator", "quotechar",
                     "quoting", "skipinitialspace", "strict"})
     @GenerateNodeFactory
     public abstract static class DialectNode extends PythonBuiltinNode {
 
         @Specialization
         Object doCSVDialectWithoutKeywords(PythonBuiltinClassType cls, CSVDialect dialect, PNone delimiter, PNone doublequote, PNone escapechar,
-                                           PNone lineterminator, PNone quotechar, PNone quoting, PNone skipinitialspace,
-                                           PNone strict) {
+                        PNone lineterminator, PNone quotechar, PNone quoting, PNone skipinitialspace,
+                        PNone strict) {
             return dialect;
         }
 
         @Specialization
         CSVDialect doStringWithoutKeywords(VirtualFrame frame, PythonBuiltinClassType cls, String dialectName, PNone delimiter, PNone doublequote, PNone escapechar,
-                                           PNone lineterminator, PNone quotechar, PNone quoting, PNone skipinitialspace,
-                                           PNone strict,
-                                           @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
-                                           @Cached ReadAttributeFromObjectNode readNode,
-                                           @Cached PyDictGetItem getItemNode) {
+                        PNone lineterminator, PNone quotechar, PNone quoting, PNone skipinitialspace,
+                        PNone strict,
+                        @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
+                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached PyDictGetItem getItemNode) {
             PythonModule module = getCore().lookupBuiltinModule("_csv");
             return getDialect.get(frame, module, dialectName, getItemNode, readNode);
         }
 
         @Specialization
-        Object doNoDialectObj(VirtualFrame frame, PythonBuiltinClassType cls, PNone dialectObj, Object delimiterObj, Object doublequoteObj, Object
-                escapecharObj, Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj,
-                              Object strictObj,
-                              @Cached GetClassNode getClassNode,
-                              @Cached CastToJavaStringNode castToJavaStringNode,
-                              @Cached PyObjectIsTrueNode isTrueNode,
-                              @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                              @Cached PyLongAsIntNode pyLongAsIntNode) {
+        Object doNoDialectObj(VirtualFrame frame, PythonBuiltinClassType cls, PNone dialectObj, Object delimiterObj, Object doublequoteObj, Object escapecharObj, Object lineterminatorObj,
+                        Object quotecharObj, Object quotingObj, Object skipinitialspaceObj,
+                        Object strictObj,
+                        @Cached GetClassNode getClassNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached PyLongCheckExactNode pyLongCheckExactNode,
+                        @Cached PyLongAsIntNode pyLongAsIntNode) {
 
             return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj, quotecharObj, quotingObj, skipinitialspaceObj, strictObj,
-                    getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
+                            getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
         @Specialization
-        Object doStringWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, String dialectName, Object delimiterObj, Object
-                doublequoteObj, Object escapecharObj, Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
-                                    @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
-                                    @Cached ReadAttributeFromObjectNode readNode,
-                                    @Cached GetClassNode getClassNode,
-                                    @Cached PyDictGetItem getItemNode,
-                                    @Cached CastToJavaStringNode castToJavaStringNode,
-                                    @Cached PyObjectIsTrueNode isTrueNode,
-                                    @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                                    @Cached PyLongAsIntNode pyLongAsIntNode) {
+        Object doStringWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, String dialectName, Object delimiterObj, Object doublequoteObj, Object escapecharObj, Object lineterminatorObj,
+                        Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
+                        @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
+                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PyDictGetItem getItemNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached PyLongCheckExactNode pyLongCheckExactNode,
+                        @Cached PyLongAsIntNode pyLongAsIntNode) {
             PythonModule module = getCore().lookupBuiltinModule("_csv");
             CSVDialect dialectObj = getDialect.get(frame, module, dialectName, getItemNode, readNode);
 
-            if (delimiterObj == PNone.NO_VALUE) delimiterObj = dialectObj.delimiter;
-            if (doublequoteObj == PNone.NO_VALUE) doublequoteObj = dialectObj.doubleQuote;
-            if (escapecharObj == PNone.NO_VALUE) escapecharObj = dialectObj.escapeChar;
-            if (lineterminatorObj == PNone.NO_VALUE) lineterminatorObj = dialectObj.lineTerminator;
-            if (quotingObj == PNone.NO_VALUE) quotingObj = dialectObj.quoting;
-            if (quotecharObj == PNone.NO_VALUE) quotecharObj = dialectObj.quoteChar;
-            if (skipinitialspaceObj == PNone.NO_VALUE) skipinitialspaceObj = dialectObj.skipInitialSpace;
-            if (strictObj == PNone.NO_VALUE) strictObj = dialectObj.strict;
+            if (delimiterObj == PNone.NO_VALUE) {
+                delimiterObj = dialectObj.delimiter;
+            }
+            if (doublequoteObj == PNone.NO_VALUE) {
+                doublequoteObj = dialectObj.doubleQuote;
+            }
+            if (escapecharObj == PNone.NO_VALUE) {
+                escapecharObj = dialectObj.escapeChar;
+            }
+            if (lineterminatorObj == PNone.NO_VALUE) {
+                lineterminatorObj = dialectObj.lineTerminator;
+            }
+            if (quotingObj == PNone.NO_VALUE) {
+                quotingObj = dialectObj.quoting;
+            }
+            if (quotecharObj == PNone.NO_VALUE) {
+                quotecharObj = dialectObj.quoteChar;
+            }
+            if (skipinitialspaceObj == PNone.NO_VALUE) {
+                skipinitialspaceObj = dialectObj.skipInitialSpace;
+            }
+            if (strictObj == PNone.NO_VALUE) {
+                strictObj = dialectObj.strict;
+            }
 
             return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj, quotecharObj, quotingObj, skipinitialspaceObj, strictObj,
-                    getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
+                            getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
         @Specialization
-        Object doDialectClassWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, PythonClass dialectObj, Object delimiterObj, Object doublequoteObj, Object
-                escapecharObj, Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj,
-                                          Object strictObj,
-                                          @Cached GetClassNode getClassNode,
-                                          @Cached PyObjectLookupAttr getFirstAttributesNode,
-                                          @Cached PyObjectLookupAttr getSecondAttributesNode,
-                                          @Cached PyObjectLookupAttr getThirdAttributesNode,
-                                          @Cached CastToJavaStringNode castToJavaStringNode,
-                                          @Cached PyObjectIsTrueNode isTrueNode,
-                                          @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                                          @Cached PyLongAsIntNode pyLongAsIntNode) {
+        Object doDialectClassWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, PythonClass dialectObj, Object delimiterObj, Object doublequoteObj, Object escapecharObj,
+                        Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj,
+                        Object strictObj,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PyObjectLookupAttr getFirstAttributesNode,
+                        @Cached PyObjectLookupAttr getSecondAttributesNode,
+                        @Cached PyObjectLookupAttr getThirdAttributesNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached PyLongCheckExactNode pyLongCheckExactNode,
+                        @Cached PyLongAsIntNode pyLongAsIntNode) {
 
-            // We use multiple AttributeNodes to be able to cache all attributes as current CACHE_SIZE is 3.
+            // We use multiple AttributeNodes to be able to cache all attributes as current
+            // CACHE_SIZE is 3.
             delimiterObj = getAttributeValue(frame, dialectObj, delimiterObj, "delimiter", getFirstAttributesNode);
             doublequoteObj = getAttributeValue(frame, dialectObj, doublequoteObj, "doublequote", getFirstAttributesNode);
             escapecharObj = getAttributeValue(frame, dialectObj, escapecharObj, "escapechar", getFirstAttributesNode);
@@ -337,48 +390,64 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             strictObj = getAttributeValue(frame, dialectObj, strictObj, "strict", getThirdAttributesNode);
 
             return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj, quotecharObj, quotingObj, skipinitialspaceObj, strictObj,
-                    getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
+                            getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
         @Specialization
-        Object doPStringWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, PString dialectName, Object delimiterObj, Object
-                doublequoteObj, Object escapecharObj, Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
-                                     @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
-                                     @Cached ReadAttributeFromObjectNode readNode,
-                                     @Cached GetClassNode getClassNode,
-                                     @Cached PyDictGetItem getItemNode,
-                                     @Cached CastToJavaStringNode castToJavaStringNode,
-                                     @Cached PyObjectIsTrueNode isTrueNode,
-                                     @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                                     @Cached PyLongAsIntNode pyLongAsIntNode) {
+        Object doPStringWithKeywords(VirtualFrame frame, PythonBuiltinClassType cls, PString dialectName, Object delimiterObj, Object doublequoteObj, Object escapecharObj, Object lineterminatorObj,
+                        Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
+                        @Cached CSVModuleBuiltins.CSVGetDialectNode getDialect,
+                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PyDictGetItem getItemNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached PyLongCheckExactNode pyLongCheckExactNode,
+                        @Cached PyLongAsIntNode pyLongAsIntNode) {
 
             String dialectNameStr = castToJavaStringNode.execute(dialectName);
             PythonModule module = getCore().lookupBuiltinModule("_csv");
             CSVDialect dialectObj = getDialect.get(frame, module, dialectNameStr, getItemNode, readNode);
 
-            if (delimiterObj == PNone.NO_VALUE) delimiterObj = dialectObj.delimiter;
-            if (doublequoteObj == PNone.NO_VALUE) doublequoteObj = dialectObj.doubleQuote;
-            if (escapecharObj == PNone.NO_VALUE) escapecharObj = dialectObj.escapeChar;
-            if (lineterminatorObj == PNone.NO_VALUE) lineterminatorObj = dialectObj.lineTerminator;
-            if (quotingObj == PNone.NO_VALUE) quotingObj = dialectObj.quoting;
-            if (quotecharObj == PNone.NO_VALUE) quotecharObj = dialectObj.quoteChar;
-            if (skipinitialspaceObj == PNone.NO_VALUE) skipinitialspaceObj = dialectObj.skipInitialSpace;
-            if (strictObj == PNone.NO_VALUE) strictObj = dialectObj.strict;
+            if (delimiterObj == PNone.NO_VALUE) {
+                delimiterObj = dialectObj.delimiter;
+            }
+            if (doublequoteObj == PNone.NO_VALUE) {
+                doublequoteObj = dialectObj.doubleQuote;
+            }
+            if (escapecharObj == PNone.NO_VALUE) {
+                escapecharObj = dialectObj.escapeChar;
+            }
+            if (lineterminatorObj == PNone.NO_VALUE) {
+                lineterminatorObj = dialectObj.lineTerminator;
+            }
+            if (quotingObj == PNone.NO_VALUE) {
+                quotingObj = dialectObj.quoting;
+            }
+            if (quotecharObj == PNone.NO_VALUE) {
+                quotecharObj = dialectObj.quoteChar;
+            }
+            if (skipinitialspaceObj == PNone.NO_VALUE) {
+                skipinitialspaceObj = dialectObj.skipInitialSpace;
+            }
+            if (strictObj == PNone.NO_VALUE) {
+                strictObj = dialectObj.strict;
+            }
 
             return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj, quotecharObj, quotingObj, skipinitialspaceObj, strictObj,
-                    getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
+                            getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
         @Specialization(guards = {"!isCSVDialect(dialectObj)", "!isPythonClass(dialectObj)", "!isString(dialectObj)", "!isPNone(dialectObj)"})
-        Object doGeneric(VirtualFrame frame, PythonBuiltinClassType cls, Object dialectObj, Object delimiterObj, Object doublequoteObj, Object
-                escapecharObj, Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj,
-                         Object strictObj,
-                         @Cached GetClassNode getClassNode,
-                         @Cached PyObjectLookupAttr getAttributeNode,
-                         @Cached CastToJavaStringNode castToJavaStringNode,
-                         @Cached PyObjectIsTrueNode isTrueNode,
-                         @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                         @Cached PyLongAsIntNode pyLongAsIntNode) {
+        Object doGeneric(VirtualFrame frame, PythonBuiltinClassType cls, Object dialectObj, Object delimiterObj, Object doublequoteObj, Object escapecharObj, Object lineterminatorObj,
+                        Object quotecharObj, Object quotingObj, Object skipinitialspaceObj,
+                        Object strictObj,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PyObjectLookupAttr getAttributeNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached PyLongCheckExactNode pyLongCheckExactNode,
+                        @Cached PyLongAsIntNode pyLongAsIntNode) {
 
             delimiterObj = getAttributeValue(frame, dialectObj, delimiterObj, "delimiter", getAttributeNode);
             doublequoteObj = getAttributeValue(frame, dialectObj, doublequoteObj, "doublequote", getAttributeNode);
@@ -390,19 +459,20 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             strictObj = getAttributeValue(frame, dialectObj, strictObj, "strict", getAttributeNode);
 
             return createCSVDialect(frame, cls, delimiterObj, doublequoteObj, escapecharObj, lineterminatorObj, quotecharObj, quotingObj, skipinitialspaceObj, strictObj,
-                    getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
+                            getClassNode, castToJavaStringNode, isTrueNode, pyLongCheckExactNode, pyLongAsIntNode);
         }
 
         protected boolean isCSVDialect(Object dialect) {
             return dialect instanceof CSVDialect;
         }
 
-        private Object createCSVDialect(VirtualFrame frame, PythonBuiltinClassType cls, Object delimiterObj, Object doublequoteObj, Object escapecharObj, Object lineterminatorObj, Object quotecharObj, Object quotingObj, Object skipinitialspaceObj, Object strictObj,
-                                        @Cached GetClassNode getClassNode,
-                                        @Cached CastToJavaStringNode castToJavaStringNode,
-                                        @Cached PyObjectIsTrueNode isTrueNode,
-                                        @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                                        @Cached PyLongAsIntNode pyLongAsIntNode) {
+        private Object createCSVDialect(VirtualFrame frame, PythonBuiltinClassType cls, Object delimiterObj, Object doublequoteObj, Object escapecharObj, Object lineterminatorObj, Object quotecharObj,
+                        Object quotingObj, Object skipinitialspaceObj, Object strictObj,
+                        @Cached GetClassNode getClassNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached PyLongCheckExactNode pyLongCheckExactNode,
+                        @Cached PyLongAsIntNode pyLongAsIntNode) {
 
             String delimiter = getChar("delimiter", delimiterObj, ",", getClassNode, castToJavaStringNode);
             boolean doublequote = getBoolean(frame, "doublequote", doublequoteObj, true, isTrueNode);
@@ -435,7 +505,9 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         }
 
         private Object getAttributeValue(VirtualFrame frame, Object dialect, Object inputValue, String attributeName, PyObjectLookupAttr getAttributeNode) {
-            if (inputValue != PNone.NO_VALUE) return inputValue;
+            if (inputValue != PNone.NO_VALUE) {
+                return inputValue;
+            }
             return getAttributeValueFromDialect(frame, dialect, attributeName, getAttributeNode);
         }
 
@@ -444,9 +516,11 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         }
 
         private String getChar(String name, Object valueObj, String defaultValue,
-                               GetClassNode getType,
-                               CastToJavaStringNode castToJavaStringNode) {
-            if (valueObj == PNone.NO_VALUE) return defaultValue;
+                        GetClassNode getType,
+                        CastToJavaStringNode castToJavaStringNode) {
+            if (valueObj == PNone.NO_VALUE) {
+                return defaultValue;
+            }
 
             String charValue;
 
@@ -464,23 +538,34 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         }
 
         private String getCharOrNone(String attribute, Object valueObj, String defaultValue,
-                                     GetClassNode getType,
-                                     CastToJavaStringNode castToJavaStringNode) {
-            if (valueObj == PNone.NO_VALUE) return defaultValue;
-            if (valueObj == PNone.NONE || valueObj == NOT_SET) return NOT_SET;
+                        GetClassNode getType,
+                        CastToJavaStringNode castToJavaStringNode) {
+            if (valueObj == PNone.NO_VALUE) {
+                return defaultValue;
+            }
+            if (valueObj == PNone.NONE || valueObj == NOT_SET) {
+                return NOT_SET;
+            }
 
             return getChar(attribute, valueObj, defaultValue, getType, castToJavaStringNode);
         }
 
         private boolean getBoolean(VirtualFrame frame, String attributeName, Object valueObj, boolean defaultValue, PyObjectIsTrueNode isTrueNode) {
-            if (valueObj == PNone.NO_VALUE) return defaultValue;
+            if (valueObj == PNone.NO_VALUE) {
+                return defaultValue;
+            }
 
             return isTrueNode.execute(frame, valueObj);
         }
 
         private String getString(String attribute, Object valueObj, String defaultValue, CastToJavaStringNode castToJavaStringNode) {
-            if (valueObj == PNone.NO_VALUE) return defaultValue;
-            if (valueObj == PNone.NONE) return null;
+            if (valueObj == PNone.NO_VALUE) {
+                return defaultValue;
+            }
+
+            if (valueObj == PNone.NONE) {
+                return null;
+            }
 
             String value;
 
@@ -494,12 +579,16 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         }
 
         private QuoteStyle getQuotingValue(VirtualFrame frame, String name, Object valueObj, QuoteStyle defaultValue,
-                                    PyLongCheckExactNode pyLongCheckExactNode,
-                                    PyLongAsIntNode pyLongAsIntNode) {
+                        PyLongCheckExactNode pyLongCheckExactNode,
+                        PyLongAsIntNode pyLongAsIntNode) {
 
-            if (valueObj == PNone.NO_VALUE) return defaultValue;
+            if (valueObj == PNone.NO_VALUE) {
+                return defaultValue;
+            }
 
-            if (valueObj instanceof QuoteStyle) return (QuoteStyle) valueObj;
+            if (valueObj instanceof QuoteStyle) {
+                return (QuoteStyle) valueObj;
+            }
 
             if (!pyLongCheckExactNode.execute(valueObj)) {
                 throw raise(TypeError, ErrorMessages.MUST_BE_INTEGER, name);
@@ -517,89 +606,87 @@ public class CSVModuleBuiltins extends PythonBuiltins {
     }
 
     private static final String CSV_DOC = "CSV parsing and writing.\n" +
-        "\n" +
-        "This module provides classes that assist in the reading and writing\n" +
-        "of Comma Separated Value (CSV) files, and implements the interface\n" +
-        "described by PEP 305.  Although many CSV files are simple to parse,\n" +
-        "the format is not formally defined by a stable specification and\n" +
-        "is subtle enough that parsing lines of a CSV file with something\n" +
-        "like line.split(\",\") is bound to fail.  The module supports three\n" +
-        "basic APIs: reading, writing, and registration of dialects.\n" +
-        "\n" +
-        "\n" +
-        "DIALECT REGISTRATION:\n" +
-        "\n" +
-        "Readers and writers support a dialect argument, which is a convenient\n" +
-        "handle on a group of settings.  When the dialect argument is a string,\n" +
-        "it identifies one of the dialects previously registered with the module.\n" +
-        "If it is a class or instance, the attributes of the argument are used as\n" +
-        "the settings for the reader or writer:\n" +
-        "\n" +
-        "    class excel:\n" +
-        "        delimiter = ','\n" +
-        "        quotechar = '\"'\n" +
-        "        escapechar = None\n" +
-        "        doublequote = True\n" +
-        "        skipinitialspace = False\n" +
-        "        lineterminator = '\\r\\n'\n" +
-        "        quoting = QUOTE_MINIMAL\n" +
-        "\n" +
-        "SETTINGS:\n" +
-        "\n" +
-        "    * quotechar - specifies a one-character string to use as the\n" +
-        "        quoting character.  It defaults to '\"'.\n" +
-        "    * delimiter - specifies a one-character string to use as the\n" +
-        "        field separator.  It defaults to ','.\n" +
-        "    * skipinitialspace - specifies how to interpret whitespace which\n" +
-        "        immediately follows a delimiter.  It defaults to False, which\n" +
-        "        means that whitespace immediately following a delimiter is part\n" +
-        "        of the following field.\n" +
-        "    * lineterminator -  specifies the character sequence which should\n" +
-        "        terminate rows.\n" +
-        "    * quoting - controls when quotes should be generated by the writer.\n" +
-        "        It can take on any of the following module constants:\n" +
-        "\n" +
-        "        csv.QUOTE_MINIMAL means only when required, for example, when a\n" +
-        "            field contains either the quotechar or the delimiter\n" +
-        "        csv.QUOTE_ALL means that quotes are always placed around fields.\n" +
-        "        csv.QUOTE_NONNUMERIC means that quotes are always placed around\n" +
-        "            fields which do not parse as integers or floating point\n" +
-        "            numbers.\n" +
-        "        csv.QUOTE_NONE means that quotes are never placed around fields.\n" +
-        "    * escapechar - specifies a one-character string used to escape\n" +
-        "        the delimiter when quoting is set to QUOTE_NONE.\n" +
-        "    * doublequote - controls the handling of quotes inside fields.  When\n" +
-        "        True, two consecutive quotes are interpreted as one during read,\n" +
-        "        and when writing, each quote character embedded in the data is\n" +
-        "        written as two quotes\n";
+                    "\n" +
+                    "This module provides classes that assist in the reading and writing\n" +
+                    "of Comma Separated Value (CSV) files, and implements the interface\n" +
+                    "described by PEP 305.  Although many CSV files are simple to parse,\n" +
+                    "the format is not formally defined by a stable specification and\n" +
+                    "is subtle enough that parsing lines of a CSV file with something\n" +
+                    "like line.split(\",\") is bound to fail.  The module supports three\n" +
+                    "basic APIs: reading, writing, and registration of dialects.\n" +
+                    "\n" +
+                    "\n" +
+                    "DIALECT REGISTRATION:\n" +
+                    "\n" +
+                    "Readers and writers support a dialect argument, which is a convenient\n" +
+                    "handle on a group of settings.  When the dialect argument is a string,\n" +
+                    "it identifies one of the dialects previously registered with the module.\n" +
+                    "If it is a class or instance, the attributes of the argument are used as\n" +
+                    "the settings for the reader or writer:\n" +
+                    "\n" +
+                    "    class excel:\n" +
+                    "        delimiter = ','\n" +
+                    "        quotechar = '\"'\n" +
+                    "        escapechar = None\n" +
+                    "        doublequote = True\n" +
+                    "        skipinitialspace = False\n" +
+                    "        lineterminator = '\\r\\n'\n" +
+                    "        quoting = QUOTE_MINIMAL\n" +
+                    "\n" +
+                    "SETTINGS:\n" +
+                    "\n" +
+                    "    * quotechar - specifies a one-character string to use as the\n" +
+                    "        quoting character.  It defaults to '\"'.\n" +
+                    "    * delimiter - specifies a one-character string to use as the\n" +
+                    "        field separator.  It defaults to ','.\n" +
+                    "    * skipinitialspace - specifies how to interpret whitespace which\n" +
+                    "        immediately follows a delimiter.  It defaults to False, which\n" +
+                    "        means that whitespace immediately following a delimiter is part\n" +
+                    "        of the following field.\n" +
+                    "    * lineterminator -  specifies the character sequence which should\n" +
+                    "        terminate rows.\n" +
+                    "    * quoting - controls when quotes should be generated by the writer.\n" +
+                    "        It can take on any of the following module constants:\n" +
+                    "\n" +
+                    "        csv.QUOTE_MINIMAL means only when required, for example, when a\n" +
+                    "            field contains either the quotechar or the delimiter\n" +
+                    "        csv.QUOTE_ALL means that quotes are always placed around fields.\n" +
+                    "        csv.QUOTE_NONNUMERIC means that quotes are always placed around\n" +
+                    "            fields which do not parse as integers or floating point\n" +
+                    "            numbers.\n" +
+                    "        csv.QUOTE_NONE means that quotes are never placed around fields.\n" +
+                    "    * escapechar - specifies a one-character string used to escape\n" +
+                    "        the delimiter when quoting is set to QUOTE_NONE.\n" +
+                    "    * doublequote - controls the handling of quotes inside fields.  When\n" +
+                    "        True, two consecutive quotes are interpreted as one during read,\n" +
+                    "        and when writing, each quote character embedded in the data is\n" +
+                    "        written as two quotes\n";
 
     private static final String READER_DOC = "\n" +
-            "csv_reader = reader(iterable [, dialect='excel']\n" +
-            "                    [optional keyword args])\n" +
-            "for row in csv_reader:\n" +
-            "process(row)\n" +
-            "\n" +
-            "The \"iterable\" argument can be any object that returns a line\n" +
-            "of input for each iteration, such as a file object or a list.  The\n" +
-            "optional \"dialect\" parameter is discussed below.  The function\n" +
-            "also accepts optional keyword arguments which override settings\n" +
-            "provided by the dialect.\n" +
-            "\n" +
-            "The returned object is an iterator.  Each iteration returns a row\n" +
-            "of the CSV file (which can span multiple input lines)";
+                    "csv_reader = reader(iterable [, dialect='excel']\n" +
+                    "                    [optional keyword args])\n" +
+                    "for row in csv_reader:\n" +
+                    "process(row)\n" +
+                    "\n" +
+                    "The \"iterable\" argument can be any object that returns a line\n" +
+                    "of input for each iteration, such as a file object or a list.  The\n" +
+                    "optional \"dialect\" parameter is discussed below.  The function\n" +
+                    "also accepts optional keyword arguments which override settings\n" +
+                    "provided by the dialect.\n" +
+                    "\n" +
+                    "The returned object is an iterator.  Each iteration returns a row\n" +
+                    "of the CSV file (which can span multiple input lines)";
 
-    private static final String WRITER_DOC =
-        "    csv_writer = csv.writer(fileobj [, dialect='excel']\n" +
-        "                            [optional keyword args])\n" +
-        "    for row in sequence:\n" +
-        "        csv_writer.writerow(row)\n" +
-        "\n" +
-        "    [or]\n" +
-        "\n" +
-        "    csv_writer = csv.writer(fileobj [, dialect='excel']\n" +
-        "                            [optional keyword args])\n" +
-        "    csv_writer.writerows(rows)\n" +
-        "\n" +
-        "The \"fileobj\" argument can be any object that supports the file API.\n";
-
+    private static final String WRITER_DOC = "    csv_writer = csv.writer(fileobj [, dialect='excel']\n" +
+                    "                            [optional keyword args])\n" +
+                    "    for row in sequence:\n" +
+                    "        csv_writer.writerow(row)\n" +
+                    "\n" +
+                    "    [or]\n" +
+                    "\n" +
+                    "    csv_writer = csv.writer(fileobj [, dialect='excel']\n" +
+                    "                            [optional keyword args])\n" +
+                    "    csv_writer.writerows(rows)\n" +
+                    "\n" +
+                    "The \"fileobj\" argument can be any object that supports the file API.\n";
 }
