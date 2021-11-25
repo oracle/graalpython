@@ -90,6 +90,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.BytesNode;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors.ComplexNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.FrozenSetNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.MappingproxyNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
@@ -204,6 +205,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.LenNode;
+import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.DelItemNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
@@ -282,6 +284,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode.CreateAndCheckArgumentsNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
@@ -2219,7 +2222,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PList);
         }
     }
-    
+
     ///////////// long /////////////
 
     @Builtin(name = "_PyLong_Sign", minNumOfPositionalArgs = 1)
@@ -2333,7 +2336,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyLong_FromString", minNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonTypes.class)
-    @GenerateNodeFactory    
+    @GenerateNodeFactory
     abstract static class PyLongFromStringNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "negative == 0")
@@ -2363,7 +2366,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
         }
     }
-    
+
     ///////////// float /////////////
 
     @Builtin(name = "PyFloat_FromDouble", minNumOfPositionalArgs = 1)
@@ -2385,7 +2388,123 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
         }
     }
-    
+
+    ///////////// complex /////////////
+
+    @Builtin(name = "PyComplex_AsCComplex", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyComplexAsCComplexNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PTuple asComplex(PComplex c) {
+            return factory().createTuple(new Object[]{c.getReal(), c.getImag()});
+        }
+
+        @Specialization(guards = "!isPComplex(obj)")
+        Object asComplex(VirtualFrame frame, Object obj,
+                        @Cached ComplexNode complexNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                PComplex c = (PComplex) complexNode.execute(frame, PythonBuiltinClassType.PComplex, obj, PNone.NO_VALUE);
+                return factory().createTuple(new Object[]{c.getReal(), c.getImag()});
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    @Builtin(name = "PyComplex_RealAsDouble", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyComplexRealAsDoubleNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        double asDouble(PComplex d) {
+            return d.getReal();
+        }
+
+        @Specialization(guards = {"!isPComplex(obj)", "isComplexSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object asDouble(VirtualFrame frame, Object obj,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached CallNode callNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return callNode.execute(getAttr.execute(frame, obj, "real"));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1.0;
+            }
+        }
+
+        @Specialization(guards = {"!isPComplex(obj)", "!isComplexSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object asDoubleFloat(VirtualFrame frame, Object obj,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached CallNode callNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return callNode.execute(getAttr.execute(frame, obj, __FLOAT__));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1.0;
+            }
+        }
+
+        protected boolean isComplexSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PComplex);
+        }
+    }
+
+    @Builtin(name = "PyComplex_ImagAsDouble", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyComplexImagAsDoubleNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        double asDouble(PComplex d) {
+            return d.getImag();
+        }
+
+        @Specialization(guards = {"!isPComplex(obj)", "isComplexSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object asDouble(VirtualFrame frame, Object obj,
+                        @Cached PyObjectGetAttr getAttr,
+                        @Cached CallNode callNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return callNode.execute(getAttr.execute(frame, obj, "imag"));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!isPComplex(obj)", "!isComplexSubtype(frame, obj, getClassNode, isSubtypeNode)"})
+        public Object asDouble(VirtualFrame frame, Object obj,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
+            return 0.0;
+        }
+
+        protected boolean isComplexSubtype(VirtualFrame frame, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
+            return isSubtypeNode.execute(frame, getClassNode.execute(obj), PythonBuiltinClassType.PComplex);
+        }
+    }
+
+    @Builtin(name = "PyComplex_FromDoubles", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyComplexFromDoublesNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        public PComplex asDouble(double r, double i) {
+            return factory().createComplex(r, i);
+        }
+    }
+
     /**
      * This is used in the ExternalFunctionNode below, so all arguments passed from Python code into
      * a C function are automatically unwrapped if they are wrapped. This function is also called

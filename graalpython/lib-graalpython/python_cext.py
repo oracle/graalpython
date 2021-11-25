@@ -66,32 +66,6 @@ def PyDictProxy_New(mapping):
     mappingproxy = type(type.__dict__)
     return mappingproxy(mapping)
 
-##################### COMPLEX
-
-@may_raise
-def PyComplex_AsCComplex(n):
-    obj = complex(n)
-    return (obj.real, obj.imag)
-
-
-@may_raise(-1.0)
-def PyComplex_RealAsDouble(n):
-    if isinstance(n, complex):
-        return n.real
-    return n.__float__()
-
-
-def PyComplex_ImagAsDouble(n):
-    if isinstance(n, complex):
-        return n.imag
-    return 0.0
-
-
-@may_raise
-def PyComplex_FromDoubles(real, imag):
-    return complex(real, imag)
-
-
 ##################### NUMBER
 
 def _safe_check(v, type_check):

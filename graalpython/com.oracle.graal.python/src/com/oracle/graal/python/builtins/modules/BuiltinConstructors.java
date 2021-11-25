@@ -355,7 +355,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                                     "Create a complex number from a real part and an optional imaginary part.\n" +
                                     "This is equivalent to (real + imag*1j) where imag defaults to 0.")
     @GenerateNodeFactory
-    public abstract static class ComplexNode extends PythonBuiltinNode {
+    public abstract static class ComplexNode extends PythonTernaryBuiltinNode {
 
         @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
         @Child private IsBuiltinClassProfile isComplexTypeProfile;
