@@ -379,6 +379,18 @@ public abstract class Python3Core extends ParserErrorCallback {
         c = null;
     }
 
+    private static List<PythonBuiltins> filterBuiltins(List<PythonBuiltins> builtins) {
+        PythonOS currentOs = PythonOS.getPythonOS();
+        List<PythonBuiltins> filtered = new ArrayList<>();
+        for (PythonBuiltins builtin: builtins) {
+            CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
+            if (annotation.os() == PythonOS.PLATFORM_ANY || annotation.os() == currentOs) {
+                filtered.add(builtin);
+            }
+        }
+        return filtered;
+    }
+
     private static PythonBuiltins[] initializeBuiltins(boolean nativeAccessAllowed) {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
                         new BuiltinConstructors(),
@@ -634,11 +646,8 @@ public abstract class Python3Core extends ParserErrorCallback {
                 builtins.add(builtin);
             }
         }
-        PythonOS currentOs = PythonOS.getPythonOS();
-        return builtins.stream().filter(builtin -> {
-            CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
-            return annotation.os() == PythonOS.PLATFORM_ANY || annotation.os() == currentOs;
-        }).toArray(PythonBuiltins[]::new);
+        builtins = filterBuiltins(builtins);
+        return builtins.toArray(new PythonBuiltins[builtins.size()]);
     }
 
     // not using EnumMap, HashMap, etc. to allow this to fold away during partial evaluation
