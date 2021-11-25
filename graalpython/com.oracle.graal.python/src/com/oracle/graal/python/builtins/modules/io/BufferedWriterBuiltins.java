@@ -47,6 +47,8 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.modules.io.BufferedWriterBuiltinsFactory.BufferedWriterInitNodeGen;
+import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins.CheckWritableNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -71,7 +73,7 @@ public final class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization
         static void doInit(VirtualFrame frame, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory,
-                        @Cached IOBaseBuiltins.CheckWritableNode checkWritableNode,
+                        @Cached CheckWritableNode checkWritableNode,
                         @Cached BufferedInitNode bufferedInitNode,
                         @Cached GetClassNode getSelfClass,
                         @Cached GetClassNode getRawClass) {

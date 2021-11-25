@@ -45,6 +45,7 @@ import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.AsyncHandler.SharedFinalizer.FinalizableReference;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.object.Shape;
@@ -220,7 +221,7 @@ final class OwnFD extends FinalizableReference {
         markReleased();
         try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
             PosixSupportLibrary.getUncached().close(context.getPosixSupport(), (int) getReference());
-        } catch (PosixSupportLibrary.PosixException e) {
+        } catch (PosixException e) {
             // ignore
         }
     }

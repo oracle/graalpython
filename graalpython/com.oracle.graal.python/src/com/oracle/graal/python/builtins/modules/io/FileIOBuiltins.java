@@ -109,6 +109,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FtruncateNode;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.LseekNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -140,6 +142,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -227,7 +230,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
             while (true) {
                 try {
                     return posixLib.openat(ctxt.getPosixSupport(), AT_FDCWD.value, path, flags, mode);
-                } catch (PosixSupportLibrary.PosixException e) {
+                } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                         PythonContext.triggerAsyncActions(this);
@@ -323,7 +326,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
             try {
                 boolean fdIsOwn = false;
-                PythonContext ctxt = PythonContext.get(this);
+                PythonContext ctxt = getContext();
                 if (fd >= 0) {
                     self.setCloseFD(closefd);
                     self.setFD(fd, ctxt);
@@ -352,7 +355,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     }
                     try {
                         posixLib.setInheritable(ctxt.getPosixSupport(), self.getFD(), false);
-                    } catch (PosixSupportLibrary.PosixException e) {
+                    } catch (PosixException e) {
                         exceptionProfile.enter();
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -374,7 +377,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                      * TODO: read fstatResult.st_blksize if (fstatResult[8] > 1)
                      * self.setBlksize(fstatResult[8]); }
                      */
-                } catch (PosixSupportLibrary.PosixException e) {
+                } catch (PosixException e) {
                     exceptionProfile.enter();
                     /*
                      * Tolerate fstat() errors other than EBADF. See Issue #25717, where an
@@ -395,7 +398,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     try {
                         long res = posixLib.lseek(ctxt.getPosixSupport(), self.getFD(), 0, mapPythonSeekWhenceToPosix(SEEK_END));
                         self.setSeekable(res >= 0 ? 1 : 0);
-                    } catch (PosixSupportLibrary.PosixException e) {
+                    } catch (PosixException e) {
                         exceptionProfile.enter();
                         if (self.getSeekable() < 0) {
                             self.setSeekable(0);
@@ -439,7 +442,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
             return constructAndRaiseNode;
         }
 
-        private PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixSupportLibrary.PosixException e) {
+        private PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e) {
             return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
         }
 
@@ -447,7 +450,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
             return getConstructAndRaiseNode().raiseOSError(frame, oserror, filename);
         }
 
-        private PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixSupportLibrary.PosixException e, Object filename1) {
+        private PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1) {
             return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), filename1, null);
         }
     }
@@ -504,7 +507,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached GilNode gil) {
             try {
                 return posixRead.read(self.getFD(), size, posixLib, readErrorProfile, gil);
-            } catch (PosixSupportLibrary.PosixException e) {
+            } catch (PosixException e) {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;
                 }
@@ -553,7 +556,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                                                      // (MAX_SIZE: MAX_INT)
                     mayBeQuick = true;
                 }
-            } catch (PosixSupportLibrary.PosixException e) {
+            } catch (PosixException e) {
                 // ignore
             }
 
@@ -565,7 +568,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                 if (bytesRead == 0 || (mayBeQuick && bytesRead == bufsize - 1)) {
                     return b;
                 }
-            } catch (PosixSupportLibrary.PosixException e) {
+            } catch (PosixException e) {
                 exceptionProfile.enter();
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;
@@ -598,7 +601,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     if (n == 0) {
                         break;
                     }
-                } catch (PosixSupportLibrary.PosixException e) {
+                } catch (PosixException e) {
                     if (e.getErrorCode() == EAGAIN.getNumber()) {
                         if (bytesRead > 0) {
                             break;
@@ -645,7 +648,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     int n = bufferLib.getBufferLength(data);
                     bufferLib.readIntoBuffer(data, 0, buffer, 0, n, bufferLib);
                     return n;
-                } catch (PosixSupportLibrary.PosixException e) {
+                } catch (PosixException e) {
                     if (e.getErrorCode() == EAGAIN.getNumber()) {
                         return PNone.NONE;
                     }
@@ -688,7 +691,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Shared("g") @Cached GilNode gil) {
             try {
                 return posixWrite.write(self.getFD(), toBytes.execute(frame, data), toBytes.execute(frame, data).length, posixLib, errorProfile, gil);
-            } catch (PosixSupportLibrary.PosixException e) {
+            } catch (PosixException e) {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;
                 }
@@ -708,7 +711,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
             byte[] bytes = encode.execute(castStr.execute(data), "utf-8", STRICT);
             try {
                 return posixWrite.write(self.getFD(), bytes, bytes.length, posixLib, errorProfile, gil);
-            } catch (PosixSupportLibrary.PosixException e) {
+            } catch (PosixException e) {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;
                 }
@@ -744,7 +747,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         @Cached BranchProfile exceptionProfile) {
             try {
                 return internalSeek(self, pos, whence, getPosixSupport(), posixLib);
-            } catch (PosixSupportLibrary.PosixException e) {
+            } catch (PosixException e) {
                 exceptionProfile.enter();
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -757,7 +760,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         protected static long internalSeek(PFileIO self, long pos, int whence,
                         Object posixSupport,
-                        PosixSupportLibrary posixLib) throws PosixSupportLibrary.PosixException {
+                        PosixSupportLibrary posixLib) throws PosixException {
             try {
                 long res = posixLib.lseek(posixSupport, self.getFD(), pos, mapPythonSeekWhenceToPosix(whence));
                 if (self.getSeekable() < 0) {
@@ -783,7 +786,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         static long internalTell(PFileIO self,
                         Object posixSupport,
-                        PosixSupportLibrary posixLib) throws PosixSupportLibrary.PosixException {
+                        PosixSupportLibrary posixLib) throws PosixException {
             return SeekNode.internalSeek(self, 0, SEEK_CUR, posixSupport, posixLib);
         }
     }
@@ -808,15 +811,15 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isClosed()", "self.isWritable()", "!isPNone(posobj)"})
         static Object num(VirtualFrame frame, PFileIO self, Object posobj,
-                        @Shared("ft") @Cached PosixModuleBuiltins.FtruncateNode posixTruncate) {
+                        @Shared("ft") @Cached FtruncateNode posixTruncate) {
             posixTruncate.execute(frame, self.getFD(), posobj);
             return posobj;
         }
 
         @Specialization(guards = {"!self.isClosed()", "self.isWritable()"})
         static Object none(VirtualFrame frame, PFileIO self, @SuppressWarnings("unused") PNone posobj,
-                        @Shared("ft") @Cached PosixModuleBuiltins.FtruncateNode posixTruncate,
-                        @Cached PosixModuleBuiltins.LseekNode posixSeek) {
+                        @Shared("ft") @Cached FtruncateNode posixTruncate,
+                        @Cached LseekNode posixSeek) {
             Object pos = posixSeek.execute(frame, self.getFD(), 0, SEEK_CUR);
             posixTruncate.execute(frame, self.getFD(), pos);
             return pos;
@@ -917,7 +920,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                 posixLib.lseek(getPosixSupport(), self.getFD(), 0, mapPythonSeekWhenceToPosix(SEEK_CUR));
                 self.setSeekable(1);
                 return true;
-            } catch (PosixSupportLibrary.PosixException e) {
+            } catch (PosixException e) {
                 self.setSeekable(0);
                 // pass through as CPython clears the exception.
             }
