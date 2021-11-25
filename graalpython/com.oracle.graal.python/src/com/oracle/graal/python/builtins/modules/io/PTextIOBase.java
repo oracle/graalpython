@@ -61,59 +61,59 @@ abstract class PTextIOBase extends PythonBuiltinObject {
         readnl = null;
     }
 
-    public boolean isOK() {
+    public final boolean isOK() {
         return ok;
     }
 
-    public void setOK(boolean ok) {
+    public final void setOK(boolean ok) {
         this.ok = ok;
     }
 
-    public Object getDecoder() {
+    public final Object getDecoder() {
         return decoder;
     }
 
-    public void setDecoder(Object decoder) {
+    public final void setDecoder(Object decoder) {
         this.decoder = decoder;
     }
 
-    public boolean hasDecoder() {
+    public final boolean hasDecoder() {
         return decoder != null;
     }
 
-    public String getReadNewline() {
+    public final String getReadNewline() {
         return readnl;
     }
 
-    public void setReadNewline(String readnl) {
+    public final void setReadNewline(String readnl) {
         this.readnl = readnl;
     }
 
-    public String getWriteNewline() {
+    public final String getWriteNewline() {
         return writenl;
     }
 
-    public boolean hasWriteNewline() {
+    public final boolean hasWriteNewline() {
         return writenl != null;
     }
 
-    public void setWriteNewline(String writenl) {
+    public final void setWriteNewline(String writenl) {
         this.writenl = writenl;
     }
 
-    public boolean isReadUniversal() {
+    public final boolean isReadUniversal() {
         return readuniversal;
     }
 
-    public void setReadUniversal(boolean readuniversal) {
+    public final void setReadUniversal(boolean readuniversal) {
         this.readuniversal = readuniversal;
     }
 
-    public boolean isReadTranslate() {
+    public final boolean isReadTranslate() {
         return readtranslate;
     }
 
-    public void setReadTranslate(boolean readtranslate) {
+    public final void setReadTranslate(boolean readtranslate) {
         this.readtranslate = readtranslate;
     }
 }

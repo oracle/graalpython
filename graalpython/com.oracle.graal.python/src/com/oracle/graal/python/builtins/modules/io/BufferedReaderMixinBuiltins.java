@@ -70,6 +70,10 @@ import java.util.List;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.CheckIsClosedNode;
+import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.EnterBufferedNode;
+import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.FlushAndRewindUnlockedNode;
+import com.oracle.graal.python.builtins.modules.io.BufferedIONodesFactory.CheckIsClosedNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -97,7 +101,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PBufferedReader, PBufferedRandom})
-public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
+public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BufferedReaderMixinBuiltinsFactory.getFactories();
@@ -107,7 +111,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
      * implementation of cpython/Modules/_io/bufferedio.c:_bufferedreader_raw_read
      */
 
-    protected static final byte[] BLOCKED = new byte[0];
+    private static final byte[] BLOCKED = new byte[0];
 
     abstract static class RawReadNode extends PNodeWithRaise {
 
@@ -200,7 +204,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
     @GenerateNodeFactory
     abstract static class ReadNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
 
-        @Child BufferedIONodes.CheckIsClosedNode checkIsClosedNode = BufferedIONodesFactory.CheckIsClosedNodeGen.create(READ);
+        @Child private CheckIsClosedNode checkIsClosedNode = CheckIsClosedNodeGen.create(READ);
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -251,10 +255,10 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
          */
         @Specialization(guards = {"self.isOK()", "size > 0", "!isReadFast(self, size)"})
         Object bufferedreaderReadGeneric(VirtualFrame frame, PBuffered self, int size,
-                        @Cached BufferedIONodes.EnterBufferedNode lock,
+                        @Cached EnterBufferedNode lock,
                         @Cached RawReadNode rawReadNode,
                         @Cached FillBufferNode fillBufferNode,
-                        @Cached BufferedIONodes.FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
+                        @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
             checkIsClosedNode.execute(frame, self);
             try {
                 lock.enter(self);
@@ -337,7 +341,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
 
                 return factory().createBytes(res);
             } finally {
-                BufferedIONodes.EnterBufferedNode.leave(self);
+                EnterBufferedNode.leave(self);
             }
         }
 
@@ -348,8 +352,8 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
          */
         @Specialization(guards = {"self.isOK()", "isReadAll(size)"})
         Object bufferedreaderReadAll(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
-                        @Cached BufferedIONodes.EnterBufferedNode lock,
-                        @Cached BufferedIONodes.FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
+                        @Cached EnterBufferedNode lock,
+                        @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
                         @Cached("create(READALL)") LookupAttributeInMRONode readallAttr,
                         @Cached ConditionProfile hasReadallProfile,
                         @Cached CallUnaryMethodNode dispatchGetattribute,
@@ -426,7 +430,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                     }
                 }
             } finally {
-                BufferedIONodes.EnterBufferedNode.leave(self);
+                EnterBufferedNode.leave(self);
             }
         }
 
@@ -449,8 +453,8 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = "self.isOK()")
         PBytes doit(VirtualFrame frame, PBuffered self, int size,
-                        @Cached BufferedIONodes.EnterBufferedNode lock,
-                        @Cached("create(READ)") BufferedIONodes.CheckIsClosedNode checkIsClosedNode,
+                        @Cached EnterBufferedNode lock,
+                        @Cached("create(READ)") CheckIsClosedNode checkIsClosedNode,
                         @Cached RawReadNode rawReadNode) {
             checkIsClosedNode.execute(frame, self);
             int n = size;
@@ -476,7 +480,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                 byte[] fill = rawReadNode.execute(frame, self, n);
                 return factory().createBytes(fill == BLOCKED ? PythonUtils.EMPTY_BYTE_ARRAY : fill);
             } finally {
-                BufferedIONodes.EnterBufferedNode.leave(self);
+                EnterBufferedNode.leave(self);
             }
         }
     }
@@ -486,7 +490,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
     @GenerateNodeFactory
     abstract static class ReadIntoNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
 
-        @Child BufferedIONodes.CheckIsClosedNode checkIsClosedNode = BufferedIONodesFactory.CheckIsClosedNodeGen.create(READLINE);
+        @Child private CheckIsClosedNode checkIsClosedNode = CheckIsClosedNodeGen.create(READLINE);
 
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_buffered_readinto_generic
@@ -494,8 +498,8 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
         @Specialization(guards = "self.isOK()", limit = "3")
         Object bufferedReadintoGeneric(VirtualFrame frame, PBuffered self, Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
-                        @Cached BufferedIONodes.EnterBufferedNode lock,
-                        @Cached BufferedIONodes.FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
+                        @Cached EnterBufferedNode lock,
+                        @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
                         @Cached RawReadNode rawReadNode,
                         @Cached FillBufferNode fillBufferNode) {
             checkIsClosedNode.execute(frame, self);
@@ -571,7 +575,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
 
                 return written;
             } finally {
-                BufferedIONodes.EnterBufferedNode.leave(self);
+                EnterBufferedNode.leave(self);
                 bufferLib.release(buffer, frame, this);
             }
         }
@@ -610,8 +614,8 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization
         static byte[] readline(VirtualFrame frame, PBuffered self, int size,
-                        @Cached BufferedIONodes.EnterBufferedNode lock,
-                        @Cached BufferedIONodes.FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
+                        @Cached EnterBufferedNode lock,
+                        @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
                         @Cached FillBufferNode fillBufferNode,
                         @Cached ConditionProfile notFound,
                         @Cached ConditionProfile reachedLimit) {
@@ -683,7 +687,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                 }
                 return toByteArray(chunks);
             } finally {
-                BufferedIONodes.EnterBufferedNode.leave(self);
+                EnterBufferedNode.leave(self);
             }
         }
     }
@@ -700,7 +704,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = "self.isOK()")
         PBytes doit(VirtualFrame frame, PBuffered self, int size,
-                        @Cached("create(READLINE)") BufferedIONodes.CheckIsClosedNode checkIsClosedNode,
+                        @Cached("create(READLINE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedReadlineNode readlineNode) {
             checkIsClosedNode.execute(frame, self);
             byte[] res = readlineNode.execute(frame, self, size);
@@ -746,10 +750,10 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = "self.isOK()")
         Object doit(VirtualFrame frame, PBuffered self, @SuppressWarnings("unused") int size,
-                        @Cached BufferedIONodes.EnterBufferedNode lock,
-                        @Cached("create(PEEK)") BufferedIONodes.CheckIsClosedNode checkIsClosedNode,
+                        @Cached EnterBufferedNode lock,
+                        @Cached("create(PEEK)") CheckIsClosedNode checkIsClosedNode,
                         @Cached FillBufferNode fillBufferNode,
-                        @Cached BufferedIONodes.FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
+                        @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
             checkIsClosedNode.execute(frame, self);
             try {
                 lock.enter(self);
@@ -758,7 +762,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                 }
                 return factory().createBytes(bufferedreaderPeekUnlocked(frame, self, fillBufferNode));
             } finally {
-                BufferedIONodes.EnterBufferedNode.leave(self);
+                EnterBufferedNode.leave(self);
             }
         }
     }
@@ -770,7 +774,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
 
         @Specialization(guards = "self.isOK()")
         PBytes doit(VirtualFrame frame, PBuffered self,
-                        @Cached("create(READLINE)") BufferedIONodes.CheckIsClosedNode checkIsClosedNode,
+                        @Cached("create(READLINE)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedReadlineNode readlineNode) {
             checkIsClosedNode.execute(frame, self);
             byte[] line = readlineNode.execute(frame, self, -1);

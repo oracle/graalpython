@@ -99,7 +99,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "_io")
-public class IOModuleBuiltins extends PythonBuiltins {
+public final class IOModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return IOModuleBuiltinsFactory.getFactories();
@@ -127,7 +127,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IOBaseNode extends PythonBuiltinNode {
         @Specialization
-        public PythonObject create(Object cls) {
+        PythonObject doGeneric(Object cls) {
             return factory().createPythonObject(cls);
         }
     }
@@ -136,7 +136,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FileIONode extends PythonBuiltinNode {
         @Specialization
-        public PFileIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        PFileIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
             // data filled in subsequent __init__ call - see FileIOBuiltins.InitNode
             return factory().createFileIO(cls);
         }
@@ -146,7 +146,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BufferedReaderNode extends PythonBuiltinNode {
         @Specialization
-        public PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg) {
             // data filled in subsequent __init__ call - see BufferedReaderBuiltins.InitNode
             return factory().createBufferedReader(cls);
         }
@@ -156,7 +156,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BufferedWriterNode extends PythonBuiltinNode {
         @Specialization
-        public PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg) {
             // data filled in subsequent __init__ call - see BufferedWriterBuiltins.InitNode
             return factory().createBufferedWriter(cls);
         }
@@ -166,7 +166,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BufferedRWPairNode extends PythonBuiltinNode {
         @Specialization
-        public PRWPair doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        PRWPair doNew(Object cls, @SuppressWarnings("unused") Object arg) {
             // data filled in subsequent __init__ call - see BufferedRWPairBuiltins.InitNode
             return factory().createRWPair(cls);
         }
@@ -176,7 +176,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BufferedRandomNode extends PythonBuiltinNode {
         @Specialization
-        public PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg) {
             // data filled in subsequent __init__ call - see BufferedRandomBuiltins.InitNode
             return factory().createBufferedRandom(cls);
         }
@@ -186,7 +186,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TextIOWrapperNode extends PythonBuiltinNode {
         @Specialization
-        public PTextIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        PTextIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
             // data filled in subsequent __init__ call - see TextIOWrapperBuiltins.InitNode
             return factory().createTextIO(cls);
         }
@@ -196,7 +196,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BytesIONode extends PythonBuiltinNode {
         @Specialization
-        public PBytesIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        PBytesIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
             // data filled in subsequent __init__ call - see BytesIONodeBuiltins.InitNode
             PBytesIO bytesIO = factory().createBytesIO(cls);
             bytesIO.setBuf(factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY));
@@ -208,7 +208,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class StringIONode extends PythonBuiltinNode {
         @Specialization
-        public PStringIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        PStringIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
             // data filled in subsequent __init__ call - see StringIONodeBuiltins.InitNode
             return factory().createStringIO(cls);
         }
@@ -218,7 +218,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IncrementalNewlineDecoderNode extends PythonBuiltinNode {
         @Specialization
-        public PNLDecoder doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+        PNLDecoder doNew(Object cls, @SuppressWarnings("unused") Object arg) {
             // data filled in subsequent __init__ call - see
             // IncrementalNewlineDecoderBuiltins.InitNode
             return factory().createNLDecoder(cls);
@@ -247,7 +247,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PFileIO openCode(VirtualFrame frame, String path,
+        PFileIO openCode(VirtualFrame frame, String path,
                         @Cached FileIOBuiltins.FileIOInit initFileIO) {
             return createFileIO(frame, path, IONodes.IOMode.create("rb"), true, PNone.NONE, factory(), initFileIO);
         }

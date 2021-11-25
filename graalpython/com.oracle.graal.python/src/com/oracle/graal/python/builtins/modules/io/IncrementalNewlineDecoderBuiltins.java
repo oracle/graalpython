@@ -84,7 +84,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PIncrementalNewlineDecoder)
-public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
+public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return IncrementalNewlineDecoderBuiltinsFactory.getFactories();

@@ -42,9 +42,12 @@ package com.oracle.graal.python.builtins.modules.io;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.AsyncHandler.SharedFinalizer.FinalizableReference;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PFileIO extends PythonBuiltinObject {
@@ -173,8 +176,8 @@ public final class PFileIO extends PythonBuiltinObject {
     }
 }
 
-@CompilerDirectives.ValueType
-class FD {
+@ValueType
+final class FD {
     private final int fd;
     private final OwnFD ownFD;
 
@@ -204,7 +207,7 @@ class FD {
     }
 }
 
-class OwnFD extends AsyncHandler.SharedFinalizer.FinalizableReference {
+final class OwnFD extends FinalizableReference {
 
     private final PythonContext context;
 
@@ -213,11 +216,12 @@ class OwnFD extends AsyncHandler.SharedFinalizer.FinalizableReference {
         this.context = context;
     }
 
-    protected void doRelease() {
-        try {
-            markReleased();
+    @SuppressWarnings("try")
+    void doRelease() {
+        markReleased();
+        try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
             PosixSupportLibrary.getUncached().close(context.getPosixSupport(), (int) getReference());
-        } catch (PosixSupportLibrary.PosixException e) {
+        } catch (PosixException e) {
             // ignore
         }
     }

@@ -413,10 +413,6 @@ def update_unittest_tags(args):
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithThreadsTestProcess.test_error_on_stdio_flush_1'),
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn.WithThreadsTestProcess.test_error_on_stdio_flush_2'),
         ('test_multiprocessing_spawn.txt', '*graalpython.lib-python.3.test.test_multiprocessing_spawn._TestImportStar.test_import'),
-        ('test_fileio.txt', '*graalpython.lib-python.3.test.test_fileio.COtherFileTests.testBytesOpen'),
-        ('test_fileio.txt', '*graalpython.lib-python.3.test.test_fileio.COtherFileTests.testUtf8BytesOpen'),
-        ('test_fileio.txt', '*graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testBytesOpen'),
-        ('test_fileio.txt', '*graalpython.lib-python.3.test.test_fileio.PyOtherFileTests.testUtf8BytesOpen'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
@@ -521,7 +517,7 @@ def _graalvm_home(*, envfile, extra_dy=""):
         mx.run_mx(mx_args + ["build"])
         out = mx.OutputCapture()
         mx.run_mx(mx_args + ["graalvm-home"], out=out)
-        home = out.data.strip()
+        home = out.data.splitlines()[-1].strip()
     elif "*" in home:
         home = os.path.abspath(glob.glob(home)[0])
     mx.log("choosing GRAALVM_HOME=%s" % home)

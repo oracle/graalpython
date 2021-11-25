@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.modules.io;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
-public class PRWPair extends PythonBuiltinObject {
+public final class PRWPair extends PythonBuiltinObject {
     private PBuffered reader;
     private PBuffered writer;
 

@@ -43,11 +43,11 @@ package com.oracle.graal.python.builtins.modules.io;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.object.Shape;
 
-public class PStringIO extends PTextIOBase {
+public final class PStringIO extends PTextIOBase {
 
-    private static class Accu {
-        protected static final int STATE_REALIZED = 1;
-        protected static final int STATE_ACCUMULATING = 2;
+    private static final class Accu {
+        static final int STATE_REALIZED = 1;
+        static final int STATE_ACCUMULATING = 2;
         /*
          * The stringio object can be in two states: accumulating or realized. In accumulating
          * state, the internal buffer contains nothing and the contents are given by the embedded
