@@ -323,7 +323,7 @@ public abstract class PyObjectLookupAttr extends Node {
                 // the type. There may be a module-level __getattr__, however. Since that would be
                 // a call anyway, we return to the generic code in that case
                 String stringName = (String) name;
-                if (!(stringName.charAt(0) == '_' && stringName.charAt(1) == '_')) {
+                if (!SpecialMethodSlot.canBeSpecial(stringName)) {
                     // not a special name, so this attribute cannot be on the module class
                     ReadAttributeFromObjectNode readUncached = ReadAttributeFromObjectNode.getUncached();
                     Object result = readUncached.execute(receiver, stringName);
