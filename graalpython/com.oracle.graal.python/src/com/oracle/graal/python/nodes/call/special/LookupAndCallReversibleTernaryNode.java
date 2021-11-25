@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -72,11 +73,16 @@ public abstract class LookupAndCallReversibleTernaryNode extends LookupAndCallTe
         this.handlerFactory = handlerFactory;
     }
 
+    public LookupAndCallReversibleTernaryNode(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handlerFactory) {
+        super(slot);
+        this.handlerFactory = handlerFactory;
+    }
+
     @Specialization(guards = "v.getClass() == cachedVClass", limit = "getCallSiteInlineCacheMaxDepth()")
     Object callObjectR(VirtualFrame frame, Object v, Object w, Object z,
                     @SuppressWarnings("unused") @Cached("v.getClass()") Class<?> cachedVClass,
-                    @Cached("create(name)") LookupSpecialMethodNode getattr,
-                    @Cached("create(name)") LookupSpecialMethodNode getattrR,
+                    @Cached("createLookup()") LookupSpecialMethodNode getattr,
+                    @Cached("createLookup()") LookupSpecialMethodNode getattrR,
                     @Cached GetClassNode getClass,
                     @Cached GetClassNode getClassR,
                     @Cached IsSubtypeNode isSubtype,
@@ -88,8 +94,8 @@ public abstract class LookupAndCallReversibleTernaryNode extends LookupAndCallTe
     @Specialization(replaces = "callObjectR")
     @Megamorphic
     Object callObjectRMegamorphic(VirtualFrame frame, Object v, Object w, Object z,
-                    @Cached("create(name)") LookupSpecialMethodNode getattr,
-                    @Cached("create(name)") LookupSpecialMethodNode getattrR,
+                    @Cached("createLookup()") LookupSpecialMethodNode getattr,
+                    @Cached("createLookup()") LookupSpecialMethodNode getattrR,
                     @Cached GetClassNode getClass,
                     @Cached GetClassNode getClassR,
                     @Cached IsSubtypeNode isSubtype,

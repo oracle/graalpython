@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -56,6 +57,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
     }
 
     protected final String name;
+    protected final SpecialMethodSlot slot;
     @Child protected CallTernaryMethodNode dispatchNode = CallTernaryMethodNode.create();
 
     public abstract Object execute(VirtualFrame frame, Object arg1, Object arg2, Object arg3);
@@ -64,11 +66,32 @@ public abstract class LookupAndCallTernaryNode extends Node {
         return LookupAndCallNonReversibleTernaryNodeGen.create(name);
     }
 
+    public static LookupAndCallTernaryNode create(SpecialMethodSlot slot) {
+        return LookupAndCallNonReversibleTernaryNodeGen.create(slot);
+    }
+
     public static LookupAndCallTernaryNode createReversible(String name, Supplier<NotImplementedHandler> handlerFactory) {
         return LookupAndCallReversibleTernaryNodeGen.create(name, handlerFactory);
     }
 
+    public static LookupAndCallTernaryNode createReversible(SpecialMethodSlot slot, Supplier<NotImplementedHandler> handlerFactory) {
+        return LookupAndCallReversibleTernaryNodeGen.create(slot, handlerFactory);
+    }
+
     LookupAndCallTernaryNode(String name) {
         this.name = name;
+        this.slot = null;
+    }
+
+    LookupAndCallTernaryNode(SpecialMethodSlot slot) {
+        this.slot = slot;
+        this.name = slot.getName();
+    }
+
+    protected final LookupSpecialBaseNode createLookup() {
+        if (slot != null) {
+            return LookupSpecialMethodSlotNode.create(slot);
+        }
+        return LookupSpecialMethodNode.create(name);
     }
 }

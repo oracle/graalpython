@@ -41,7 +41,9 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -62,6 +64,10 @@ public abstract class LookupAndCallNonReversibleTernaryNode extends LookupAndCal
         super(name);
     }
 
+    LookupAndCallNonReversibleTernaryNode(SpecialMethodSlot slot) {
+        super(slot);
+    }
+
     protected static PythonBuiltinClassType getBuiltinClass(Object receiver, GetClassNode getClassNode) {
         Object clazz = getClassNode.execute(receiver);
         return clazz instanceof PythonBuiltinClassType ? (PythonBuiltinClassType) clazz : null;
@@ -72,6 +78,14 @@ public abstract class LookupAndCallNonReversibleTernaryNode extends LookupAndCal
     }
 
     protected final PythonTernaryBuiltinNode getTernaryBuiltin(PythonBuiltinClassType clazz) {
+        if (slot != null) {
+            Object attribute = slot.getValue(clazz);
+            if (attribute instanceof TernaryBuiltinDescriptor) {
+                return ((TernaryBuiltinDescriptor) attribute).createNode();
+            }
+            // If the slot does not contain builtin, full lookup wouldn't find a builtin either
+            return null;
+        }
         Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(clazz, name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
@@ -94,7 +108,7 @@ public abstract class LookupAndCallNonReversibleTernaryNode extends LookupAndCal
     Object callObject(VirtualFrame frame, Object arg1, Object arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("arg1.getClass()") Class<?> cachedArg1Class,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name)") LookupSpecialBaseNode getattr) {
+                    @Cached("createLookup()") LookupSpecialBaseNode getattr) {
         Object klass = getClassNode.execute(arg1);
         return dispatchNode.execute(frame, getattr.execute(frame, klass, arg1), arg1, arg2, arg3);
     }
@@ -103,7 +117,7 @@ public abstract class LookupAndCallNonReversibleTernaryNode extends LookupAndCal
     @Megamorphic
     Object callObjectMegamorphic(VirtualFrame frame, Object arg1, Object arg2, Object arg3,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name)") LookupSpecialBaseNode getattr) {
+                    @Cached("createLookup()") LookupSpecialBaseNode getattr) {
         Object klass = getClassNode.execute(arg1);
         return dispatchNode.execute(frame, getattr.execute(frame, klass, arg1), arg1, arg2, arg3);
     }
