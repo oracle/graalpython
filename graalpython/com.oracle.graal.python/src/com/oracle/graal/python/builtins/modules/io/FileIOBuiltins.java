@@ -321,89 +321,101 @@ public class FileIOBuiltins extends PythonBuiltins {
             int flags = processMode(self, mode);
             auditNode.audit(OPEN, nameobj, mode.mode, flags);
 
-            boolean fdIsOwn = false;
-            PythonContext ctxt = PythonContext.get(this);
-            if (fd >= 0) {
-                self.setCloseFD(closefd);
-                self.setFD(fd, ctxt);
-            } else {
-                self.setCloseFD(true);
-                if (errorProfile.profile(!closefd)) {
-                    throw raise(ValueError, CANNOT_USE_CLOSEFD);
-                }
-
-                if (opener instanceof PNone) {
-                    self.setFD(open(frame, name, flags, 0666, ctxt, posixLib, exceptionProfile), ctxt);
-                } else {
-                    Object fdobj = callOpener.execute(frame, opener, nameobj, flags);
-                    if (!indexCheckNode.execute(fdobj)) {
-                        throw raise(TypeError, EXPECTED_INT_FROM_OPENER);
-                    }
-
-                    self.setFD(asSizeNode.executeExact(frame, fdobj), ctxt);
-                    if (self.getFD() < 0) {
-                        /*
-                         * The opener returned a negative but didn't set an exception. See issue
-                         * #27066
-                         */
-                        throw raise(ValueError, OPENER_RETURNED_D, self.getFD());
-                    }
-                }
-                try {
-                    posixLib.setInheritable(ctxt.getPosixSupport(), self.getFD(), false);
-                } catch (PosixSupportLibrary.PosixException e) {
-                    exceptionProfile.enter();
-                    throw raiseOSErrorFromPosixException(frame, e);
-                }
-                fdIsOwn = true;
-            }
-            self.setBlksize(DEFAULT_BUFFER_SIZE);
             try {
-                long[] fstatResult = posixLib.fstat(ctxt.getPosixSupport(), self.getFD());
-                /*
-                 * On Unix, open will succeed for directories. In Python, there should be no file
-                 * objects referring to directories, so we need a check.
-                 */
-                if (errorProfile.profile(PosixSupportLibrary.isDIR(fstatResult[0]))) {
-                    errorCleanup(frame, self, fdIsOwn, posixClose);
-                    name = name == null ? Integer.toString(fd) : name;
-                    throw raiseOSError(frame, OSErrorEnum.EISDIR, name);
-                }
-                /*
-                 * // TODO: read fstatResult.st_blksize if (fstatResult[8] > 1)
-                 * self.setBlksize(fstatResult[8]); }
-                 */
-            } catch (PosixSupportLibrary.PosixException e) {
-                exceptionProfile.enter();
-                /*
-                 * Tolerate fstat() errors other than EBADF. See Issue #25717, where an anonymous
-                 * file on a Virtual Box shared folder filesystem would raise ENOENT.
-                 */
-                if (e.getErrorCode() == OSErrorEnum.EBADF.getNumber()) {
-                    errorCleanup(frame, self, fdIsOwn, posixClose);
-                    throw raiseOSErrorFromPosixException(frame, e);
-                }
-            }
-            setAttr.execute(frame, self, NAME, nameobj);
+                boolean fdIsOwn = false;
+                PythonContext ctxt = PythonContext.get(this);
+                if (fd >= 0) {
+                    self.setCloseFD(closefd);
+                    self.setFD(fd, ctxt);
+                } else {
+                    self.setCloseFD(true);
+                    if (errorProfile.profile(!closefd)) {
+                        throw raise(ValueError, CANNOT_USE_CLOSEFD);
+                    }
 
-            if (self.isAppending()) {
-                /*
-                 * For consistent behaviour, we explicitly seek to the end of file (otherwise, it
-                 * might be done only on the first write()).
-                 */
+                    if (opener instanceof PNone) {
+                        self.setFD(open(frame, name, flags, 0666, ctxt, posixLib, exceptionProfile), ctxt);
+                    } else {
+                        Object fdobj = callOpener.execute(frame, opener, nameobj, flags);
+                        if (!indexCheckNode.execute(fdobj)) {
+                            throw raise(TypeError, EXPECTED_INT_FROM_OPENER);
+                        }
+
+                        self.setFD(asSizeNode.executeExact(frame, fdobj), ctxt);
+                        if (self.getFD() < 0) {
+                            /*
+                             * The opener returned a negative but didn't set an exception. See issue
+                             * #27066
+                             */
+                            throw raise(ValueError, OPENER_RETURNED_D, self.getFD());
+                        }
+                    }
+                    try {
+                        posixLib.setInheritable(ctxt.getPosixSupport(), self.getFD(), false);
+                    } catch (PosixSupportLibrary.PosixException e) {
+                        exceptionProfile.enter();
+                        throw raiseOSErrorFromPosixException(frame, e);
+                    }
+                    fdIsOwn = true;
+                }
+                self.setBlksize(DEFAULT_BUFFER_SIZE);
                 try {
-                    long res = posixLib.lseek(ctxt.getPosixSupport(), self.getFD(), 0, mapPythonSeekWhenceToPosix(SEEK_END));
-                    self.setSeekable(res >= 0 ? 1 : 0);
+                    long[] fstatResult = posixLib.fstat(ctxt.getPosixSupport(), self.getFD());
+                    /*
+                     * On Unix, open will succeed for directories. In Python, there should be no
+                     * file objects referring to directories, so we need a check.
+                     */
+                    if (errorProfile.profile(PosixSupportLibrary.isDIR(fstatResult[0]))) {
+                        errorCleanup(frame, self, fdIsOwn, posixClose);
+                        name = name == null ? Integer.toString(fd) : name;
+                        throw raiseOSError(frame, OSErrorEnum.EISDIR, name);
+                    }
+                    /*
+                     * TODO: read fstatResult.st_blksize if (fstatResult[8] > 1)
+                     * self.setBlksize(fstatResult[8]); }
+                     */
                 } catch (PosixSupportLibrary.PosixException e) {
                     exceptionProfile.enter();
-                    if (self.getSeekable() < 0) {
-                        self.setSeekable(0);
-                    }
-                    if (e.getErrorCode() != OSErrorEnum.ESPIPE.getNumber()) {
+                    /*
+                     * Tolerate fstat() errors other than EBADF. See Issue #25717, where an
+                     * anonymous file on a Virtual Box shared folder filesystem would raise ENOENT.
+                     */
+                    if (e.getErrorCode() == OSErrorEnum.EBADF.getNumber()) {
                         errorCleanup(frame, self, fdIsOwn, posixClose);
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
                 }
+                setAttr.execute(frame, self, NAME, nameobj);
+
+                if (self.isAppending()) {
+                    /*
+                     * For consistent behaviour, we explicitly seek to the end of file (otherwise,
+                     * it might be done only on the first write()).
+                     */
+                    try {
+                        long res = posixLib.lseek(ctxt.getPosixSupport(), self.getFD(), 0, mapPythonSeekWhenceToPosix(SEEK_END));
+                        self.setSeekable(res >= 0 ? 1 : 0);
+                    } catch (PosixSupportLibrary.PosixException e) {
+                        exceptionProfile.enter();
+                        if (self.getSeekable() < 0) {
+                            self.setSeekable(0);
+                        }
+                        if (e.getErrorCode() != OSErrorEnum.ESPIPE.getNumber()) {
+                            errorCleanup(frame, self, fdIsOwn, posixClose);
+                            throw raiseOSErrorFromPosixException(frame, e);
+                        }
+                    }
+                }
+            } catch (PException e) {
+                /*
+                 * IMPORTANT: In case of any error that happens during initialization, we need reset
+                 * the file descriptor such that the finalizer won't close it. This is necessary
+                 * because the file descriptor value could be reused and then this (broken) instance
+                 * would incorrectly close another resource that accidentally got the same file
+                 * descriptor value.
+                 */
+                self.setClosed();
+                throw e;
             }
         }
 
