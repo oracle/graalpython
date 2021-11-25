@@ -66,13 +66,6 @@ def PyDictProxy_New(mapping):
     mappingproxy = type(type.__dict__)
     return mappingproxy(mapping)
 
-##################### FLOAT
-
-@may_raise
-def PyFloat_FromDouble(n):
-    return float(n)
-
-
 ##################### COMPLEX
 
 @may_raise

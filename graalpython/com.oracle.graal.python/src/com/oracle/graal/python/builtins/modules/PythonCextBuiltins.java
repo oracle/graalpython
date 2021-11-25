@@ -2364,6 +2364,28 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
     
+    ///////////// float /////////////
+
+    @Builtin(name = "PyFloat_FromDouble", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyFloatFromDoubleNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        double fromDouble(double d) {
+            return d;
+        }
+
+        @Specialization(guards = {"!isDouble(obj)"})
+        public Object fromDouble(VirtualFrame frame, Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached StrNode strNode,
+                        @Cached PRaiseNativeNode raiseNativeNode) {
+            // cpython PyFloat_FromDouble takes only 'double'
+            return raiseNativeNode.raiseInt(frame, -1, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(frame, obj), obj);
+        }
+    }
+    
     /**
      * This is used in the ExternalFunctionNode below, so all arguments passed from Python code into
      * a C function are automatically unwrapped if they are wrapped. This function is also called
