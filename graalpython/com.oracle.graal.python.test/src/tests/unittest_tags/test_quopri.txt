@@ -7,3 +7,5 @@
 *graalpython.lib-python.3.test.test_quopri.QuopriTestCase.test_encode_header
 *graalpython.lib-python.3.test.test_quopri.QuopriTestCase.test_encodestring
 *graalpython.lib-python.3.test.test_quopri.QuopriTestCase.test_idempotent_string
+*graalpython.lib-python.3.test.test_quopri.QuopriTestCase.test_scriptdecode
+*graalpython.lib-python.3.test.test_quopri.QuopriTestCase.test_scriptencode

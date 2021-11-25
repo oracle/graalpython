@@ -93,7 +93,7 @@ public abstract class WriteUnraisableNode extends Node {
             if (message != null) {
                 messageObj = formatMessage(message);
             }
-            Object hookArguments = factory.createStructSeq(SysModuleBuiltins.UNRAISABLE_HOOK_ARGS_DESC, exceptionType, exception, traceback, messageObj, object != null ? object : PNone.NONE);
+            Object hookArguments = factory.createStructSeq(SysModuleBuiltins.UNRAISABLEHOOK_ARGS_DESC, exceptionType, exception, traceback, messageObj, object != null ? object : PNone.NONE);
             callNode.execute(frame, unraisablehook, hookArguments);
         } catch (PException e) {
             ignoreException(context, message);

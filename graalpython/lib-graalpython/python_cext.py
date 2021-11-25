@@ -37,7 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import _imp
 import sys
 import _thread
 
@@ -52,55 +51,6 @@ def may_raise(error_result=native_null):
             return make_may_raise_wrapper(fun, error_result)
         return decorator
 
-
-def Py_ErrorHandler():
-    return to_sulong(error_handler)
-
-
-def Py_NotImplemented():
-    return NotImplemented
-
-
-def Py_True():
-    return True
-
-
-def Py_False():
-    return False
-
-
-def Py_Ellipsis():
-    return ...
-
-
-moduletype = type(sys)
-
-
-def _PyModule_CreateInitialized_PyModule_New(name):
-    # see CPython's Objects/moduleobject.c - _PyModule_CreateInitialized for
-    # comparison how they handle _Py_PackageContext
-    if _imp._py_package_context:
-        if _imp._py_package_context.endswith(name):
-            name = _imp._py_package_context
-            _imp._py_package_context = None
-    new_module = moduletype(name)
-    # TODO: (tfel) I don't think this is the right place to set it, but somehow
-    # at least in the import of sklearn.neighbors.dist_metrics through
-    # sklearn.neighbors.ball_tree the __package__ attribute seems to be already
-    # set in CPython. To not produce a warning, I'm setting it here, although I
-    # could not find what CPython really does
-    if "." in name:
-        new_module.__package__ = name.rpartition('.')[0]
-    return new_module
-
-
-def PyModule_SetDocString(module, string):
-    module.__doc__ = string
-
-
-def PyModule_NewObject(name):
-    return moduletype(name)
-
 ##################### ABSTRACT
 
 @may_raise(-1)
@@ -111,110 +61,6 @@ def PySequence_DelItem(o,i):
 @may_raise
 def PyModule_GetNameObject(module_obj):
     return module_obj.__name__
-
-
-##################### DICT
-
-@__graalpython__.builtin
-def PyDict_New():
-    return {}
-
-
-@may_raise
-def PyDict_Next(dictObj, pos):
-    if not isinstance(dictObj, dict):
-        return native_null
-    curPos = 0
-    max = len(dictObj)
-    if pos >= max:
-        return native_null
-    for key in dictObj:
-        if curPos == pos:
-            return key, dictObj[key], hash(key)
-        curPos = curPos + 1
-    return native_null
-
-
-@may_raise
-def PyDict_Pop(dictObj, *args):
-    return dictObj.pop(*args)
-
-
-@may_raise(-1)
-def PyDict_Size(dictObj):
-    if not isinstance(dictObj, dict):
-        raise TypeError('expected dict, {!s} found'.format(type(dictObj).__name__))
-    return len(dictObj)
-
-
-@may_raise(None)
-def PyDict_Copy(dictObj):
-    if not isinstance(dictObj, dict):
-        __bad_internal_call(None, None, dictObj)
-    return dictObj.copy()
-
-
-@may_raise
-def PyDict_GetItem(dictObj, key):
-    # PyDict_GetItem suppresses all exceptions for historical reasons
-    try:
-        return dictObj.get(key, native_null)
-    except:
-        return native_null
-
-
-@may_raise
-def PyDict_GetItemWithError(dictObj, key):
-    if not isinstance(dictObj, dict):
-        raise TypeError('expected dict, {!s} found'.format(type(dictObj).__name__))
-    return dictObj.get(key, native_null)
-
-
-@may_raise(-1)
-def PyDict_SetItem(dictObj, key, value):
-    if not isinstance(dictObj, dict):
-        raise TypeError('expected dict, {!s} found'.format(type(dictObj).__name__))
-    dictObj[key] = value
-    return 0
-
-
-@may_raise(-1)
-def PyDict_SetItem_KnownHash(dictObj, key, value, given_hash):
-    if not isinstance(dictObj, dict):
-        raise TypeError('expected dict, {!s} found'.format(type(dictObj).__name__))
-    assert hash(key) == given_hash, "hash mismatch: known hash is different to computed hash"
-    dictObj[key] = value
-    return 0
-
-
-@may_raise(-1)
-def PyDict_DelItem(dictObj, key):
-    if not isinstance(dictObj, dict):
-        raise TypeError('expected dict, {!s} found'.format(type(dictObj).__name__))
-    del dictObj[key]
-    return 0
-
-
-@may_raise(-1)
-def PyDict_Contains(dictObj, key):
-    if not isinstance(dictObj, dict):
-        __bad_internal_call(None, None, dictObj)
-    return key in dictObj
-
-
-@may_raise(-1)
-def PyDict_Merge(a, b, override):
-    if override:
-        a.update(b)
-    else:
-        for k in b:
-            if not k in a:
-                a[k] = b[k]
-    return 0
-
-@may_raise
-def PyDict_Values(d):
-    return list(d.values())
 
 ##################### SET, FROZENSET
 
@@ -1214,22 +1060,6 @@ def PyThread_release_lock(lock):
 @may_raise
 def PySlice_New(start, stop, step):
     return slice(start, stop, step)
-
-
-@may_raise
-def PyMapping_Keys(obj):
-    return list(obj.keys())
-
-
-@may_raise
-def PyMapping_Items(obj):
-    return list(obj.items())
-
-
-@may_raise
-def PyMapping_Values(obj):
-    return list(obj.values())
-
 
 @may_raise
 def PyEval_GetBuiltins():

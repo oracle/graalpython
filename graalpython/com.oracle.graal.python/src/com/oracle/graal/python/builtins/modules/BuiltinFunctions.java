@@ -130,6 +130,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyEvalGetGlobals;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -2145,15 +2146,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = "globals")
     @GenerateNodeFactory
     public abstract static class GlobalsNode extends PythonBuiltinNode {
-        @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
-
         private final ConditionProfile condProfile = ConditionProfile.createBinaryProfile();
 
         @Specialization
         public Object globals(VirtualFrame frame,
+                        @Cached PyEvalGetGlobals getGlobals,
                         @Cached GetOrCreateDictNode getDict) {
-            PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
-            PythonObject globals = callerFrame.getGlobals();
+            Object globals = getGlobals.execute(frame);
             if (condProfile.profile(globals instanceof PythonModule)) {
                 return getDict.execute(globals);
             } else {

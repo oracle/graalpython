@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -192,7 +193,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__create_dynamic__", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class CreateDynamic extends PythonBuiltinNode {
+    public abstract static class CreateDynamic extends PythonBinaryBuiltinNode {
 
         @Child private CheckFunctionResultNode checkResultNode;
         @Child private HPyCheckFunctionResultNode checkHPyResultNode;
@@ -433,6 +434,31 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object run() {
             return factory().createList(new Object[]{PythonContext.get(this).getSoAbi(), HPY_SUFFIX, ".so", ".dylib", ".su"});
+        }
+    }
+
+    @Builtin(name = "create_dynamic", minNumOfPositionalArgs = 1, parameterNames = {"moduleSpec", "fileName"})
+    @GenerateNodeFactory
+    public abstract static class CreateDynamicNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(fileName)")
+        Object runNoFileName(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") PNone fileName,
+                        @Cached PyObjectStrAsJavaStringNode asStrignNode,
+                        @Cached CreateDynamic createDynamicNode) {
+            return run(frame, moduleSpec, PNone.NONE, asStrignNode, createDynamicNode);
+        }
+
+        @Specialization(guards = "!isNoValue(fileName)")
+        Object run(VirtualFrame frame, PythonObject moduleSpec, Object fileName,
+                        @Cached PyObjectStrAsJavaStringNode asStrignNode,
+                        @Cached CreateDynamic createDynamicNode) {
+            PythonContext ctx = getContext();
+            String oldPackageContext = ctx.getPyPackageContext();
+            ctx.setPyPackageContext(asStrignNode.execute(frame, PyObjectLookupAttr.getUncached().execute(frame, moduleSpec, "name")));
+            try {
+                return createDynamicNode.execute(frame, moduleSpec, fileName);
+            } finally {
+                ctx.setPyPackageContext(oldPackageContext);
+            }
         }
     }
 

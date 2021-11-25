@@ -28,7 +28,7 @@ package com.oracle.graal.python.builtins.objects.str;
 import static com.oracle.graal.python.nodes.BuiltinNames.ENCODE;
 import static com.oracle.graal.python.nodes.BuiltinNames.FORMAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.FORMAT_MAP;
-import static com.oracle.graal.python.nodes.ErrorMessages.ENCODER_RETURNED_P_INSTEAD_OF_BYTES;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
@@ -1829,7 +1829,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 if (result instanceof PByteArray) {
                     return factory().createBytes(copyNode.execute(((PByteArray) result).getSequenceStorage()));
                 }
-                throw raise(TypeError, ENCODER_RETURNED_P_INSTEAD_OF_BYTES, encoding, result);
+                throw raise(TypeError, S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES, encoding, result);
             }
             return result;
         }

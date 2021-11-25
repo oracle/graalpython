@@ -47,11 +47,13 @@ Py_hash_t _Py_HashDouble(double value) {
 long _PyHASH_INF;
 long _PyHASH_NAN;
 long _PyHASH_IMAG;
+_Py_HashSecret_t _Py_HashSecret = {{0}};
 
 void initialize_hashes() {
     _PyHASH_INF = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), INFINITY);
     _PyHASH_NAN = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), NAN);
     _PyHASH_IMAG = UPCALL_L(PY_TRUFFLE_CEXT, polyglot_from_string("PyHash_Imag", SRC_CS));
+    ((void (*)(int8_t *))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffleHash_InitSecret", SRC_CS)))(polyglot_from_i8_array((int8_t *)&_Py_HashSecret, sizeof(_Py_HashSecret)));
 }
 
 Py_hash_t _Py_HashBytes(const void *src, Py_ssize_t len) {

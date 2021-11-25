@@ -46,6 +46,7 @@ public abstract class ErrorMessages {
     public static final String ARG_AFTER_MUST_BE_ITERABLE = "argument after * must be an iterable, not %p";
     public static final String ARG_AFTER_MUST_BE_MAPPING = "%s() argument after ** must be a mapping, not %p";
     public static final String ARG_CONVERTED_NOT_EXECUTABLE = "argument converted is not executable";
+    public static final String ARG_CANNOT_BE_NEGATIVE = "%s argument cannot be negative";
     public static final String ARG_D_MUST_BE_S = "%s arg %d must be a %s";
     public static final String ARG_D_MUST_BE_S_NOT_P = "%s argument %d must be %s, not %p";
     public static final String ARG_S_MUST_BE_S_NOT_P = "%s argument %s must be %s, not %p";
@@ -85,6 +86,7 @@ public abstract class ErrorMessages {
     public static final String ATTR_S_READONLY = "attribute %s is read-only";
     public static final String ATTR_VALUE_MUST_BE_BOOL = "attribute value type must be bool";
     public static final String B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P = "%%b requires a bytes-like object, or an object that implements __bytes__, not '%p'";
+    public static final String ARG_TYPE_MUST_BE = "%s argument type must be %s";
     public static final String BAD_ARG_TO_INTERNAL_FUNC = "bad argument to internal function";
     public static final String BAD_ARG_TO_INTERNAL_FUNC_P = "bad argument to internal function %p";
     public static final String BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P = "bad argument to internal function, was '%s' (type '%p')";
@@ -119,6 +121,9 @@ public abstract class ErrorMessages {
     public static final String CALLING_NATIVE_FUNC_FAILED = "Calling native function %s failed: %m";
     public static final String DECODER_RETURNED_P_INSTEAD_OF_BYTES = "'%s' decoder returned '%p' instead of 'str'; use codecs.decode() to decode to arbitrary types";
     public static final String ENCODER_RETURNED_P_INSTEAD_OF_BYTES = "'%s' encoder returned '%p' instead of 'bytes'; use codecs.encode() to encode to arbitrary types";
+    public static final String S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES = "'%s' encoder returned '%p' instead of 'bytes'; use codecs.encode() to encode to arbitrary types";
+    public static final String ENCODER_S_RETURNED_S_INSTEAD_OF_BYTES = "encoder %s returned %s instead of bytes; use codecs.encode() to encode to arbitrary types";
+    public static final String DECODER_S_RETURNED_P_INSTEAD_OF_STR = "'%s' decoder returned '%p' instead of 'str'; use codecs.decode() to decode to arbitrary types";
     public static final String EXPECTED_D_ARGS = "expected %d arguments";
     public static final String CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P = "can only assign %s to %s.%s, not %p";
     public static final String CAN_ONLY_ASSIGN_S_TO_P_S_NOT_P = "can only assign %s to %p.%s, not %p";
@@ -252,6 +257,7 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_STR_BYTE_OSPATHLIKE_OBJ = "expected str, bytes or os.PathLike object, not %p";
     public static final String S_EXPECTED_STRING_OF_LEN_BUT_P = "%s expected string of length %s, but %p found";
     public static final String EXPECTED_UNICODE_CHAR_NOT_P = "expected a unicode character, not %p";
+    public static final String EXPECTED_INT_AS_R = "Expected int as r";
     public static final String EXPONENT_TOO_LARGE = "exponent too large";
     public static final String FACTORIAL_NOT_DEFINED_FOR_NEGATIVE = "factorial() not defined for negative values";
     public static final String FD_IS_GREATER_THAN_MAXIMUM = "fd is greater than maximum";
@@ -267,6 +273,7 @@ public abstract class ErrorMessages {
     public static final String FIRST_ARG_MUST_BE_CALLABLE_S = "first argument must be callable%s";
     public static final String FIRST_ARG_MUST_BE_S_OR_TUPLE_NOT_P = "%s first arg must be %s or a tuple of str, not %p";
     public static final String FIRST_TWO_MAKETRANS_ARGS_MUST_HAVE_EQ_LENGTH = "the first two maketrans arguments must have equal length";
+    public static final String S_FOR_ISLICE_MUST_BE = "% for islice() must be None or an integer: 0 <= x <= sys.maxsize.";
     public static final String FLOAT_ARG_REQUIRED = "float argument required, not %p";
     public static final String FOREIGN_INVOCATION_DOESNT_SUPPORT_KEYWORD_ARG = "foreign invocation does not support keyword arguments";
     public static final String FOREIGN_OBJ_HAS_NO_ATTR_S = "foreign object has no attribute '%s'";
@@ -295,6 +302,7 @@ public abstract class ErrorMessages {
     public static final String P_HAS_NO_ATTRS_S_TO_DELETE = "'%p' object has no attributes (del .%s)";
     public static final String P_HAS_RO_ATTRS_S_TO_ASSIGN = "'%p' object has only read-only attributes (assign to .%s)";
     public static final String P_HAS_RO_ATTRS_S_TO_DELETE = "'%p' object has only read-only attributes (del .%s)";
+    public static final String HASH_MISMATCH = "hash mismatch: known hash is different to computed hash";
     public static final String HASH_SHOULD_RETURN_INTEGER = "__hash__ method should return an integer";
     public static final String HEX_VALUE_TOO_LARGE_AS_FLOAT = "hexadecimal value too large to represent as a float";
     public static final String HOST_ACCESS_NOT_ALLOWED = "host access is not allowed";
@@ -323,6 +331,7 @@ public abstract class ErrorMessages {
     public static final String INTEGER_DIVISION_BY_ZERO = "ZeroDivisionError: integer division or modulo by zero";
     public static final String INTEGER_DIVISION_RESULT_TOO_LARGE = "integer division result too large for a float";
     public static final String S_EXPECTED_GOT_P = "%s argument expected, got %p";
+    public static final String REC_LIMIT_GREATER_THAN_1 = "recursion limit must be greater or equal than 1";
     public static final String INTEGER_GREATER_THAN_MAX = "integer is greater than maximum";
     public static final String INTEGER_REQUIRED = "an integer is required";
     public static final String INTEGER_REQUIRED_GOT = "an integer is required (got type %p)";
@@ -357,6 +366,7 @@ public abstract class ErrorMessages {
     public static final String INVALID_SYNTAX = "invalid syntax";
     public static final String INVALID_USE_OF_W_FORMAT_CHAR = "invalid use of 'w' format character";
     public static final String INVALID_BUFFER_ACCESS = "invalid buffer access";
+    public static final String ISLICE_WRONG_ARGS = "islice(seq, stop) or islice(seq, start, stop[, step])";
     public static final String IS_EMPTY = "%s is empty";
     public static final String IS_NOT_A = "%s is not a %s";
     public static final String IS_NOT_A_DICTIONARY = "%s is not a dictionary";
@@ -457,7 +467,9 @@ public abstract class ErrorMessages {
     public static final String NAME_IS_ASSIGNED_BEFORE_NONLOCAL = "name '%s' is assigned to before nonlocal declaration";
     public static final String NAME_NOT_DEFINED = "name '%s' is not defined";
     public static final String NAMELESS_MODULE = "nameless module";
+    public static final String NATIVE_S_SUBTYPES_NOT_IMPLEMENTED = "native %s subtypes not implemented";
     public static final String NEED_BYTELIKE_OBJ = "decoding to str: need a bytes-like object, %p found";
+    public static final String DECODING_STR_NOT_SUPPORTED = "decoding str is not supported";
     public static final String NEG_INF_PLUS_INF_IN = "-inf + inf in fsum";
     public static final String NEGATIVE_COUNT = "negative count";
     public static final String NEGATIVE_DATA_SIZE = "negative data size";
@@ -481,6 +493,7 @@ public abstract class ErrorMessages {
     public static final String NOT_ENOUGH_ARGS_FOR_FORMAT_STRING = "not enough arguments for format string";
     public static final String NOT_ENOUGH_VALUES_TO_UNPACK = "not enough values to unpack (expected %d, got %d)";
     public static final String NOT_SUPPORTED_BETWEEN_INSTANCES = "'%s' not supported between instances of '%p' and '%p'";
+    public static final String NUMBER_IS_REQUIRED = "a number is required";
     public static final String NUMBER_S_CANNOT_FIT_INTO_INDEXSIZED_INT = "number %s cannot fit into index-sized integer";
     public static final String OBJ_INDEX_MUST_BE_INT_OR_SLICES = "%s indices must be integers or slices, not %p";
     public static final String OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER = "'%p' object cannot be interpreted as an int";
@@ -590,6 +603,7 @@ public abstract class ErrorMessages {
     public static final String STATE_VECTOR_INVALID = "state vector invalid.";
     public static final String STATE_VECTOR_MUST_BE_A_TUPLE = "state vector must be a tuple";
     public static final String STEP_1_NOT_SUPPORTED = "step != 1 not supported";
+    public static final String STEP_FOR_ISLICE_MUST_BE = "Step for islice() must be a positive integer or None.";
     public static final String STRING_ARG_WO_ENCODING = "string argument without an encoding";
     public static final String ENCODING_ARG_WO_STRING = "encoding without a string argument";
     public static final String ENCODING_ERROR_WITH_CODE = "decoding error; unknown error handling code: %s";
@@ -616,6 +630,7 @@ public abstract class ErrorMessages {
     public static final String THROW_THIRD_ARG_MUST_BE_TRACEBACK = "throw() third argument must be a traceback object";
     public static final String TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS = "_tee_dataobject should not have more than %s links";
     public static final String TDATAOBJECT_SHOULDNT_HAVE_NEXT = "_tee_dataobject shouldn't have a next if not full";
+    public static final String SWITCH_INTERVAL_MUST_BE_POSITIVE = "switch interval must be strictly positive";
     public static final String TIMED_OUT = "timed out";
     public static final String TIMEOUT_VALUE_MUST_BE_POSITIVE = "timeout value must be positive";
     public static final String TIMEOUT_VALUE_OUT_OF_RANGE = "Timeout value out of range";
@@ -638,6 +653,7 @@ public abstract class ErrorMessages {
     public static final String TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ = "type '%p' is not supported by the foreign object";
     public static final String TYPE_DOESNT_SUPPORT_MRO_ENTRY_RESOLUTION = "type() doesn't support MRO entry resolution; use types.new_class()";
     public static final String TYPE_DOESNT_DEFINE_FORMAT = "Type %p doesn't define __format__";
+    public static final String UNABLE_TO_GET_S = "unable to get %";
     public static final String UNAVAILABLE_ON_THIS_PLATFORM = "%s: %s unavailable on this platform";
     public static final String UNAVAILABLE_ON_THIS_PLATFORM_NO_FUNC = "%s unavailable on this platform";
     public static final String UNEXPECTED_KEYWORD_ARGS = "%s: unexpected keyword arguments";
@@ -855,6 +871,7 @@ public abstract class ErrorMessages {
     public static final String CAN_T_HAVE_UNBUFFERED_TEXT_IO = "can't have unbuffered text I/O";
     public static final String ILLEGAL_STATE_ARGUMENT = "illegal state argument";
     public static final String STATE_ARGUMENT_MUST_BE_A_TUPLE = "state argument must be a tuple";
+    public static final String STATE_ARGUMENT_D_MUST_BE_A_S = "state argument %d must be a %s";
     public static final String REENTRANT_CALL_INSIDE_S_REPR = "reentrant call inside %s.__repr__";
     public static final String EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED = "Existing exports of data: object cannot be re-sized";
     public static final String SECOND_ITEM_OF_STATE_MUST_BE_AN_INTEGER_NOT_P = "second item of state must be an integer, not %p";
@@ -982,6 +999,7 @@ public abstract class ErrorMessages {
     public static final String REDUCE_EMPTY_SEQ = "reduce() of empty sequence with no initial value";
     public static final String OTHER_ARG_MUST_BE_KEY = "other argument must be K instance";
     public static final String INVALID_PARTIAL_STATE = "invalid partial state";
+    public static final String LOST_S = "lost %s";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";
@@ -1010,4 +1028,8 @@ public abstract class ErrorMessages {
     public static final String WARN_INT_CONVERSION_DEPRECATED = "an integer is required (got type %p).  " +
                     "Implicit conversion to integers using __int__ is deprecated, " +
                     "and may be removed in a future version of Python.";
+    public static final String WARN_CANNOT_RUN_PDB_YET = "Graal Python cannot run pdb, yet, consider using `--inspect` on the commandline";
+    public static final String WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S = "Ignoring unimportable $PYTHONBREAKPOINT: \"%s\"";
+    public static final String WARN_DEPRECTATED_SYS_CHECKINTERVAL = "sys.getcheckinterval() and sys.setcheckinterval() " +
+                    "are deprecated.  Use sys.getswitchinterval() instead.";
 }

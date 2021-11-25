@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes;
 
 public abstract class SpecialAttributeNames {
+    public static final String __ = "_";
     public static final String __DOC__ = "__doc__";
     public static final String __DEFAULTS__ = "__defaults__";
     public static final String __CODE__ = "__code__";

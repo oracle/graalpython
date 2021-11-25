@@ -103,6 +103,7 @@ public final class PythonUtils {
     }
 
     public static final String EMPTY_STRING = "";
+    public static final String NEW_LINE = "\n";
     public static final String[] EMPTY_STRING_ARRAY = new String[0];
     public static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
     public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
@@ -491,6 +492,16 @@ public final class PythonUtils {
 
         final String s = sequence.toString();
         return (st > 0) ? substring(s, st, len) : s;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String toLowerCase(String s) {
+        return s.toLowerCase();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String toUpperCase(String s) {
+        return s.toUpperCase();
     }
 
     @TruffleBoundary(allowInlining = true)

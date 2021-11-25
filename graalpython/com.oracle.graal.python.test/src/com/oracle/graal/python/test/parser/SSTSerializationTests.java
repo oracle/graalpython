@@ -86,7 +86,6 @@ public class SSTSerializationTests extends ParserTestBase {
         checkFileSerialization("RuntimeFileTests/sre_compile.py");
         checkFileSerialization("RuntimeFileTests/sre_constants.py");
         checkFileSerialization("RuntimeFileTests/sre_parse.py");
-        checkFileSerialization("RuntimeFileTests/sys.py");
         checkFileSerialization("RuntimeFileTests/traceback.py");
         checkFileSerialization("RuntimeFileTests/types.py");
         // TODO test of these two files are disabled because the comparing framedescriptors

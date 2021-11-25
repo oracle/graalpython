@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndentationError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TabError;
+import static com.oracle.graal.python.nodes.BuiltinNames.MODULES;
 import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
@@ -44,6 +45,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -82,7 +84,6 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixShMemModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PwdModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.PyExpatModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
@@ -199,10 +200,25 @@ import com.oracle.graal.python.builtins.objects.iterator.ForeignIteratorBuiltins
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.AccumulateBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.ChainBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CombinationsBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CompressBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CountBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.CycleBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.DropwhileBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.FilterfalseBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.GroupByBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.GrouperBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.IsliceBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.PermutationsBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.ProductBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.RepeatBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.StarmapBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.TakewhileBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins;
 import com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.itertools.ZipLongestBuiltins;
 import com.oracle.graal.python.builtins.objects.keywrapper.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
@@ -290,6 +306,8 @@ import com.oracle.truffle.api.source.SourceSection;
  * through an extra field in the context.
  */
 public abstract class Python3Core extends ParserErrorCallback {
+    private static final int REC_LIM = 1000;
+    private static final int NATIVE_REC_LIM = 8000;
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(Python3Core.class);
     private final String[] coreFiles;
 
@@ -299,7 +317,6 @@ public abstract class Python3Core extends ParserErrorCallback {
         // Order matters!
         List<String> coreFiles = new ArrayList<>(Arrays.asList(
                         "object",
-                        "sys",
                         "type",
                         "_imp",
                         "function",
@@ -307,7 +324,6 @@ public abstract class Python3Core extends ParserErrorCallback {
                         "_frozen_importlib",
                         "__graalpython__",
                         "_weakref",
-                        "itertools",
                         "faulthandler",
                         PythonCextBuiltins.PYTHON_CEXT,
                         "bytearray",
@@ -434,6 +450,8 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new WarningsModuleBuiltins(),
+                        // exceptions
+                        new SystemExitBuiltins(),
 
                         // io
                         new IOModuleBuiltins(),
@@ -495,17 +513,31 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new PosixShMemModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
-                        new PyExpatModuleBuiltins(),
                         new SysConfigModuleBuiltins(),
                         new OperatorModuleBuiltins(),
                         new ZipImporterBuiltins(),
                         new ZipImportModuleBuiltins(),
 
                         // itertools
+                        new AccumulateBuiltins(),
+                        new CombinationsBuiltins(),
+                        new CompressBuiltins(),
+                        new DropwhileBuiltins(),
                         new ChainBuiltins(),
+                        new CountBuiltins(),
+                        new CycleBuiltins(),
+                        new FilterfalseBuiltins(),
+                        new GroupByBuiltins(),
+                        new GrouperBuiltins(),
+                        new IsliceBuiltins(),
+                        new PermutationsBuiltins(),
+                        new ProductBuiltins(),
                         new RepeatBuiltins(),
+                        new StarmapBuiltins(),
+                        new TakewhileBuiltins(),
                         new TeeBuiltins(),
                         new TeeDataObjectBuiltins(),
+                        new ZipLongestBuiltins(),
 
                         // zlib
                         new ZLibModuleBuiltins(),
@@ -611,6 +643,7 @@ public abstract class Python3Core extends ParserErrorCallback {
     @CompilationFinal private PFloat pyNaN;
 
     private final PythonParser parser;
+    private final SysModuleState sysModuleState = new SysModuleState();
 
     @CompilationFinal private Object globalScopeObject;
 
@@ -628,6 +661,41 @@ public abstract class Python3Core extends ParserErrorCallback {
         this.parser = parser;
         this.builtins = initializeBuiltins(isNativeSupportAllowed);
         this.coreFiles = initializeCoreFiles();
+    }
+
+    @CompilerDirectives.ValueType
+    public static class SysModuleState {
+        private int recursionLimit = ImageInfo.inImageCode() ? NATIVE_REC_LIM : REC_LIM;
+        private int checkInterval = 100;
+        private double switchInterval = 0.005;
+
+        public int getRecursionLimit() {
+            return recursionLimit;
+        }
+
+        public void setRecursionLimit(int recursionLimit) {
+            this.recursionLimit = recursionLimit;
+        }
+
+        public int getCheckInterval() {
+            return checkInterval;
+        }
+
+        public void setCheckInterval(int checkInterval) {
+            this.checkInterval = checkInterval;
+        }
+
+        public double getSwitchInterval() {
+            return switchInterval;
+        }
+
+        public void setSwitchInterval(double switchInterval) {
+            this.switchInterval = switchInterval;
+        }
+    }
+
+    public SysModuleState getSysModuleState() {
+        return sysModuleState;
     }
 
     @Override
@@ -847,7 +915,7 @@ public abstract class Python3Core extends ParserErrorCallback {
 
         // core machinery
         sysModule = builtinModules.get("sys");
-        sysModules = (PDict) sysModule.getAttribute("modules");
+        sysModules = (PDict) sysModule.getAttribute(MODULES);
 
         PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
         bootstrapExternal.setAttribute(__PACKAGE__, "importlib");

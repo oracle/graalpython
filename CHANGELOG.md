@@ -3,9 +3,13 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 22.0.0
+* Added support for `pyexpat` module.
+* Added partial support for `PYTHONHASHSEED` environment variable (also available via `HashSeed` context option), currently only affecting hashing in `pyexpat` module.
+
 ## Version 21.3.0
 
-* Remove PYPY_VERSION from our C extension emulation, enabling PyGame 2.0 and other extensions to work out of the box.
+* Remove `PYPY_VERSION` from our C extension emulation, enabling PyGame 2.0 and other extensions to work out of the box.
 * Intrinsify and optimize more of the core language for better startup and reduced footprint.
 * Implement a new binary compatible backend for HPy 0.0.3, which allows binary HPy wheels to run unmodified on CPython and GraalPython
 * Support the `multiprocessing` module via in-process nested contexts, allowing execution on multiple cores within the same process using the Python multiprocessing API

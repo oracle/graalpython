@@ -37,6 +37,8 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.nio.file.LinkOption;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -46,6 +48,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -419,6 +422,11 @@ public final class PythonContext extends Python3Core {
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
     private final IDUtils idUtils = new IDUtils();
 
+    @CompilationFinal private SecureRandom secureRandom;
+
+    // Equivalent of _Py_HashSecret
+    @CompilationFinal(dimensions = 1) private byte[] hashSecret = new byte[24];
+
     // ctypes' used native libraries/functions.
     private final ConcurrentHashMap<Long, Object> ptrAdrMap = new ConcurrentHashMap<>();
 
@@ -503,6 +511,17 @@ public final class PythonContext extends Python3Core {
     private final List<Object> codecSearchPath = new ArrayList<>();
     private final Map<String, PTuple> codecSearchCache = new HashMap<>();
     private final Map<String, Object> codecErrorRegistry = new HashMap<>();
+
+    // the full module name for package imports
+    private String pyPackageContext;
+
+    public String getPyPackageContext() {
+        return pyPackageContext;
+    }
+
+    public void setPyPackageContext(String pyPackageContext) {
+        this.pyPackageContext = pyPackageContext;
+    }
 
     public List<Object> getCodecSearchPath() {
         return codecSearchPath;
@@ -1074,6 +1093,27 @@ public final class PythonContext extends Python3Core {
         return perfCounterStart;
     }
 
+    /**
+     * Get a SecureRandom instance using a non-blocking source.
+     */
+    public SecureRandom getSecureRandom() {
+        assert !ImageInfo.inImageBuildtimeCode();
+        if (secureRandom == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            try {
+                secureRandom = SecureRandom.getInstance("NativePRNGNonBlocking");
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException("Unable to obtain entropy source for random number generation (NativePRNGNonBlocking)", e);
+            }
+        }
+        return secureRandom;
+    }
+
+    public byte[] getHashSecret() {
+        assert !ImageInfo.inImageBuildtimeCode();
+        return hashSecret;
+    }
+
     public boolean isInitialized() {
         if (PythonUtils.ASSERTIONS_ENABLED && isInitializedNonCompilationFinal != isInitialized) {
             // We cannot use normal assertion, because those are removed in compilation
@@ -1229,6 +1269,9 @@ public final class PythonContext extends Python3Core {
     }
 
     private void setupRuntimeInformation(boolean isPatching) {
+        if (!ImageInfo.inImageBuildtimeCode()) {
+            initializeHashSecret();
+        }
         nativeZlib = NFIZlibSupport.createNative(this, "");
         nativeBz2lib = NFIBz2Support.createNative(this, "");
         nativeLZMA = NFILZMASupport.createNative(this, "");
@@ -1253,6 +1296,30 @@ public final class PythonContext extends Python3Core {
         applyToAllThreadStates(ts -> ts.currentException = null);
         isInitialized = true;
         isInitializedNonCompilationFinal = true;
+    }
+
+    private void initializeHashSecret() {
+        assert !ImageInfo.inImageBuildtimeCode();
+        Optional<Integer> hashSeed = getOption(PythonOptions.HashSeed);
+        if (hashSeed.isPresent()) {
+            int hashSeedValue = hashSeed.get();
+            // 0 disables the option, leaving the secret at 0
+            if (hashSeedValue != 0) {
+                // Generate the whole secret from the seed number the same way as CPython
+                // Taken from bootstrap_hash.c:lcg_urandom
+                // hashSeedValue was parsed as unsigned integer
+                int x = hashSeedValue;
+                for (int i = 0; i < hashSecret.length; i++) {
+                    x *= 214013;
+                    x += 2531011;
+                    /* modulo 2 ^ (8 * sizeof(int)) */
+                    hashSecret[i] = (byte) ((x >>> 16) & 0xff);
+                }
+            }
+        } else {
+            // Generate random seed
+            getSecureRandom().nextBytes(hashSecret);
+        }
     }
 
     private void initializePosixSupport() {
