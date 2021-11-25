@@ -1,5 +1,18 @@
 package com.oracle.graal.python.builtins.modules.csv;
 
+import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.AFTER_ESCAPED_CRNL;
+import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.EAT_CRNL;
+import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.ESCAPED_CHAR;
+import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.ESCAPE_IN_QUOTED_FIELD;
+import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.IN_FIELD;
+import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.IN_QUOTED_FIELD;
+import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.START_FIELD;
+import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.START_RECORD;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONE;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONNUMERIC;
+
+import java.util.ArrayList;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
@@ -15,19 +28,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.object.Shape;
-
-import java.util.ArrayList;
-
-import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.AFTER_ESCAPED_CRNL;
-import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.EAT_CRNL;
-import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.ESCAPED_CHAR;
-import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.ESCAPE_IN_QUOTED_FIELD;
-import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.IN_FIELD;
-import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.IN_QUOTED_FIELD;
-import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.START_FIELD;
-import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.START_RECORD;
-import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONE;
-import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONNUMERIC;
 
 public final class CSVReader extends PythonBuiltinObject {
 
@@ -94,7 +94,7 @@ public final class CSVReader extends PythonBuiltinObject {
                         throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.UNEXPECTED_END_OF_DATA);
                     } else {
                         try {
-                            this.parseSaveField();
+                            parseSaveField();
                         } catch (AbstractTruffleException ignored) {
                             throw e.getExceptionForReraise();
                         }
@@ -104,14 +104,12 @@ public final class CSVReader extends PythonBuiltinObject {
                 throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.StopIteration);
             }
 
-
             String line;
             try {
                 line = CastToJavaStringNode.getUncached().execute(lineObj);
             } catch (CannotCastException e) {
                 throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.WRONG_ITERATOR_RETURN_TYPE, GetClassNode.getUncached().execute(lineObj));
             }
-
 
             //TODO: Implement PyUnicode_Check Node? => how do we handle the possibility of bytes?
             // PyPy: if isinstance(line, str) and '\0' in line or isinstance(line, bytes) and line.index(0) >=0:

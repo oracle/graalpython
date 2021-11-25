@@ -1,5 +1,7 @@
 package com.oracle.graal.python.builtins.modules.csv;
 
+import java.util.List;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -17,13 +19,12 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-
-import java.util.List;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CSVWriter)
 public class CSVWriterBuiltins extends PythonBuiltins {
@@ -43,7 +44,7 @@ public class CSVWriterBuiltins extends PythonBuiltins {
                    @Cached GetClassNode getClass,
                    @Cached IsBuiltinClassProfile errorProfile,
                    @Cached CallUnaryMethodNode callNode) {
-            Object iter, field;
+           Object iter;
 
             try {
                 iter = getIter.execute(frame, seq);
@@ -61,7 +62,7 @@ public class CSVWriterBuiltins extends PythonBuiltins {
                 IndirectCallContext.exit(frame, language, getContext(), state);
             }
 
-            return callNode.executeObject(frame, self.write, self.rec.toString());
+            return callNode.executeObject(frame, self.write, PythonUtils.sbToString(self.rec));
         }
     }
 

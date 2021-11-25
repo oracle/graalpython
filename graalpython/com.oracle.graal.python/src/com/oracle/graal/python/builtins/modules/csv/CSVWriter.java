@@ -83,22 +83,21 @@ public final class CSVWriter extends PythonBuiltinObject {
         }
     }
 
-    boolean needsQuotes(Object field) {
+    boolean needsQuotes(String field) {
         if (field == null)
             return false;
 
         boolean needsQuotes = false;
-        String fieldStr = field.toString();
-        final int strLen = fieldStr.length();
+        final int strLen = field.length();
 
         for (int offset = 0; offset < strLen;) {
             boolean wantEscape = false;
 
-            final int c = fieldStr.codePointAt(offset);
+            final int c = field.codePointAt(offset);
             if (c == dialect.delimiterCodePoint ||
                             c == dialect.escapeCharCodePoint ||
                             c == dialect.quoteCharCodePoint ||
-                            dialect.lineTerminator.codePoints().anyMatch(cp -> cp == c)) {
+                            containsCodePoint(dialect.lineTerminatorCodePoints, c)) {
 
                 if (dialect.quoting == QUOTE_NONE ||
                                 c == dialect.quoteCharCodePoint && !dialect.doubleQuote ||
@@ -117,7 +116,7 @@ public final class CSVWriter extends PythonBuiltinObject {
         return needsQuotes;
     }
 
-    void joinAppend(Object field, boolean quoted) {
+    void joinAppend(String field, boolean quoted) {
         CSVDialect dialect = this.dialect;
 
         /* If we don't already know that the field must be quoted due to
@@ -141,8 +140,7 @@ public final class CSVWriter extends PythonBuiltinObject {
         /* Copy field data and add escape chars as needed */
         /* If field is null just pass over */
         if (field != null) {
-            String fieldStr = field.toString();
-            int strLen = fieldStr.length();
+            int strLen = field.length();
 
             /* Python supports utf-32 characters, as Java characters are utf-16 only,
              * we have to work with code points instead. */
@@ -150,12 +148,12 @@ public final class CSVWriter extends PythonBuiltinObject {
 
                 boolean wantEscape = false;
 
-                final int c = fieldStr.codePointAt(offset);
+                final int c = field.codePointAt(offset);
 
                 if (c == dialect.delimiterCodePoint ||
                         c == dialect.escapeCharCodePoint ||
                         c == dialect.quoteCharCodePoint ||
-                                dialect.lineTerminator.codePoints().anyMatch(cp -> cp == c)) {
+                                containsCodePoint(dialect.lineTerminatorCodePoints, c)) {
 
                     if (dialect.quoting == QUOTE_NONE) {
                         wantEscape = true;
@@ -192,6 +190,14 @@ public final class CSVWriter extends PythonBuiltinObject {
 
     void joinAppendLineterminator() {
         this.rec.append(this.dialect.lineTerminator);
+    }
+
+    boolean containsCodePoint(int[] codePoints, int codePoint) {
+        for (int cp : codePoints) {
+            if (cp == codePoint)
+                return true;
+        }
+        return false;
     }
 
 }
