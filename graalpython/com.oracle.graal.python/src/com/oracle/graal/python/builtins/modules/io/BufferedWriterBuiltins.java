@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.modules.io.BufferedWriterBuiltinsFactory
 import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins.CheckWritableNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
