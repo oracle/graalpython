@@ -97,7 +97,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PBufferedReader, PBufferedRandom})
-public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
+public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BufferedReaderMixinBuiltinsFactory.getFactories();
@@ -107,7 +107,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
      * implementation of cpython/Modules/_io/bufferedio.c:_bufferedreader_raw_read
      */
 
-    protected static final byte[] BLOCKED = new byte[0];
+    private static final byte[] BLOCKED = new byte[0];
 
     abstract static class RawReadNode extends PNodeWithRaise {
 
@@ -200,7 +200,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
     @GenerateNodeFactory
     abstract static class ReadNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
 
-        @Child BufferedIONodes.CheckIsClosedNode checkIsClosedNode = BufferedIONodesFactory.CheckIsClosedNodeGen.create(READ);
+        @Child private CheckIsClosedNode checkIsClosedNode = CheckIsClosedNodeGen.create(READ);
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {

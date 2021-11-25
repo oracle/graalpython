@@ -155,7 +155,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PTextIOWrapper)
-public class TextIOWrapperBuiltins extends PythonBuiltins {
+public final class TextIOWrapperBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -183,7 +183,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
     }
 
     abstract static class ClosedCheckPythonUnaryBuiltinNode extends AttachedCheckPythonUnaryBuiltinNode {
-        @Child TextIOWrapperNodes.CheckClosedNode checkClosedNode = TextIOWrapperNodesFactory.CheckClosedNodeGen.create();
+        @Child private TextIOWrapperNodes.CheckClosedNode checkClosedNode = TextIOWrapperNodesFactory.CheckClosedNodeGen.create();
 
         protected boolean isOpen(VirtualFrame frame, PTextIO self) {
             checkClosedNode.execute(frame, self);
@@ -218,7 +218,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
     }
 
     abstract static class ClosedCheckPythonBinaryClinicBuiltinNode extends AttachedCheckPythonBinaryClinicBuiltinNode {
-        @Child TextIOWrapperNodes.CheckClosedNode checkClosedNode = TextIOWrapperNodesFactory.CheckClosedNodeGen.create();
+        @Child private TextIOWrapperNodes.CheckClosedNode checkClosedNode = TextIOWrapperNodesFactory.CheckClosedNodeGen.create();
 
         protected boolean isOpen(VirtualFrame frame, PTextIO self) {
             checkClosedNode.execute(frame, self);

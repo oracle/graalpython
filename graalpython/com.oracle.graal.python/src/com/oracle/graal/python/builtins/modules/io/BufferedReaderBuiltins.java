@@ -48,6 +48,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltinsFactory.BufferedReaderInitNodeGen;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -61,7 +62,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PBufferedReader)
-public class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
+public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BufferedReaderBuiltinsFactory.getFactories();
@@ -94,7 +95,6 @@ public class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
             BufferedInitNode.internalInit(self, bufferSize, factory, posixSupport, posixLib);
             self.resetRead();
             self.setOK(true);
-
         }
     }
 
@@ -103,7 +103,7 @@ public class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
     @GenerateNodeFactory
     public abstract static class InitNode extends BaseInitNode {
 
-        @Child BufferedReaderInit init = BufferedReaderBuiltinsFactory.BufferedReaderInitNodeGen.create();
+        @Child private BufferedReaderInit init = BufferedReaderInitNodeGen.create();
 
         @Override
         protected final void init(VirtualFrame frame, PBuffered self, Object raw, int bufferSize) {

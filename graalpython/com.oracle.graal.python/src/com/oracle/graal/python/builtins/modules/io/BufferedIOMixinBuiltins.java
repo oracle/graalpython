@@ -104,7 +104,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PBufferedReader, PBufferedWriter, PBufferedRandom})
-public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
+public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BufferedIOMixinBuiltinsFactory.getFactories();

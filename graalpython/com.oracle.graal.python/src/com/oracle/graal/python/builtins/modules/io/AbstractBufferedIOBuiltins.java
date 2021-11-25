@@ -78,7 +78,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
     public abstract static class BufferedInitNode extends PNodeWithRaise {
 
-        @Child BufferedIONodes.RawTellNode rawTellNode = BufferedIONodesFactory.RawTellNodeGen.create(true);
+        @Child private BufferedIONodes.RawTellNode rawTellNode = BufferedIONodesFactory.RawTellNodeGen.create(true);
 
         public abstract void execute(VirtualFrame frame, PBuffered self, int bufferSize, PythonObjectFactory factory);
 
@@ -94,7 +94,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
             throw raise(ValueError, BUF_SIZE_POS);
         }
 
-        public static void init(PBuffered self, int bufferSize, PythonObjectFactory factory) {
+        private static void init(PBuffered self, int bufferSize, PythonObjectFactory factory) {
             self.initBuffer(bufferSize);
             self.setLock(factory.createLock());
             self.setOwner(0);

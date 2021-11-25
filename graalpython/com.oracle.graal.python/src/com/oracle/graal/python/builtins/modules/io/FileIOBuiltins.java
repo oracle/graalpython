@@ -156,7 +156,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFileIO)
-public class FileIOBuiltins extends PythonBuiltins {
+public final class FileIOBuiltins extends PythonBuiltins {
 
     /*
      * We are limited to max primitive array size, Integer.MAX_VALUE, the jdk can offer. CPython
@@ -172,7 +172,7 @@ public class FileIOBuiltins extends PythonBuiltins {
         return FileIOBuiltinsFactory.getFactories();
     }
 
-    static class FDReleaseCallback implements AsyncHandler.AsyncAction {
+    static final class FDReleaseCallback implements AsyncHandler.AsyncAction {
         private final OwnFD fd;
 
         public FDReleaseCallback(OwnFD fd) {
@@ -207,7 +207,7 @@ public class FileIOBuiltins extends PythonBuiltins {
 
         public abstract void execute(VirtualFrame frame, PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener);
 
-        static void errorCleanup(VirtualFrame frame, PFileIO self, boolean fdIsOwn,
+        private static void errorCleanup(VirtualFrame frame, PFileIO self, boolean fdIsOwn,
                         PosixModuleBuiltins.CloseNode posixClose) {
             if (!fdIsOwn) {
                 self.setClosed();
@@ -216,7 +216,7 @@ public class FileIOBuiltins extends PythonBuiltins {
             }
         }
 
-        int open(VirtualFrame frame, String name, int flags, int mode,
+        private int open(VirtualFrame frame, String name, int flags, int mode,
                         PythonContext ctxt,
                         PosixSupportLibrary posixLib,
                         BranchProfile errorProfile) {
@@ -285,12 +285,12 @@ public class FileIOBuiltins extends PythonBuiltins {
             WriteAttributeToObjectNode.getUncached().execute(self, NAME, name);
         }
 
-        protected Object getPosixSupport() {
-            return PythonContext.get(this).getPosixSupport();
+        protected final Object getPosixSupport() {
+            return getContext().getPosixSupport();
         }
 
         @Specialization(guards = {"!isBadMode(mode)", "!isInvalidMode(mode)"})
-        public void doInit(VirtualFrame frame, PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener,
+        void doInit(VirtualFrame frame, PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached CallNode callOpener,
                         @Cached PyIndexCheckNode indexCheckNode,
@@ -420,14 +420,14 @@ public class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isInvalidMode(mode)")
-        public void invalidMode(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") Object nameobj, IONodes.IOMode mode, @SuppressWarnings("unused") boolean closefd,
+        void invalidMode(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") Object nameobj, IONodes.IOMode mode, @SuppressWarnings("unused") boolean closefd,
                         @SuppressWarnings("unused") Object opener) {
             throw raise(ValueError, INVALID_MODE_S, mode.mode);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isBadMode(mode)")
-        public void badMode(PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener) {
+        void badMode(PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener) {
             throw raise(ValueError, BAD_MODE);
         }
 
@@ -439,15 +439,15 @@ public class FileIOBuiltins extends PythonBuiltins {
             return constructAndRaiseNode;
         }
 
-        final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixSupportLibrary.PosixException e) {
+        private PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixSupportLibrary.PosixException e) {
             return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
         }
 
-        final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, String filename) {
+        private PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, String filename) {
             return getConstructAndRaiseNode().raiseOSError(frame, oserror, filename);
         }
 
-        final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixSupportLibrary.PosixException e, Object filename1) {
+        private PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixSupportLibrary.PosixException e, Object filename1) {
             return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), filename1, null);
         }
     }
@@ -781,7 +781,7 @@ public class FileIOBuiltins extends PythonBuiltins {
             return seekNode.execute(frame, self, 0, SEEK_CUR);
         }
 
-        public static long internalTell(PFileIO self,
+        static long internalTell(PFileIO self,
                         Object posixSupport,
                         PosixSupportLibrary posixLib) throws PosixSupportLibrary.PosixException {
             return SeekNode.internalSeek(self, 0, SEEK_CUR, posixSupport, posixLib);
@@ -1025,7 +1025,7 @@ public class FileIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ModeNode extends PythonUnaryBuiltinNode {
 
-        public static String modeString(PFileIO self) {
+        static String modeString(PFileIO self) {
             if (self.isCreated()) {
                 return self.isReadable() ? "xb+" : "xb";
             }
@@ -1052,7 +1052,7 @@ public class FileIOBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(v)")
-        Object doit(VirtualFrame frame, PFileIO self, Object v,
+        static Object doit(VirtualFrame frame, PFileIO self, Object v,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             self.setBlksize(asSizeNode.executeExact(frame, v));
             return PNone.NONE;

@@ -65,7 +65,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = {PBufferedWriter, PBufferedRandom})
-public class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltins {
+public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BufferedWriterMixinBuiltinsFactory.getFactories();

@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.Shape;
 
-public class PBuffered extends PythonBuiltinObject {
+public final class PBuffered extends PythonBuiltinObject {
 
     private Object raw;
     private boolean ok; /* Initialized? */
