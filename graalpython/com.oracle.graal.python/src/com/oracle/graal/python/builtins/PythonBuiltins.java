@@ -130,15 +130,18 @@ public abstract class PythonBuiltins {
     private void initializeEachFactoryWith(BiConsumer<NodeFactory<? extends PythonBuiltinBaseNode>, Builtin> func) {
         List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> factories = getNodeFactories();
         assert factories != null : "No factories found. Override getFactories() to resolve this.";
+        PythonOS currentOs = PythonOS.getPythonOS();
         for (NodeFactory<? extends PythonBuiltinBaseNode> factory : factories) {
             Boolean needsFrame = null;
             for (Builtin builtin : factory.getNodeClass().getAnnotationsByType(Builtin.class)) {
-                if (needsFrame == null) {
-                    needsFrame = builtin.needsFrame();
-                } else if (needsFrame != builtin.needsFrame()) {
-                    throw new IllegalStateException(String.format("Implementation error in %s: all @Builtin annotations must agree if the node needs a frame.", factory.getNodeClass().getName()));
+                if (builtin.os() == PythonOS.PLATFORM_ANY || builtin.os() == currentOs) {
+                    if (needsFrame == null) {
+                        needsFrame = builtin.needsFrame();
+                    } else if (needsFrame != builtin.needsFrame()) {
+                        throw new IllegalStateException(String.format("Implementation error in %s: all @Builtin annotations must agree if the node needs a frame.", factory.getNodeClass().getName()));
+                    }
+                    func.accept(factory, builtin);
                 }
-                func.accept(factory, builtin);
             }
         }
     }

@@ -61,7 +61,6 @@ import org.graalvm.nativeimage.ImageInfo;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
@@ -558,28 +557,6 @@ public final class PythonUtils {
             arch = "x86_64";
         }
         return arch;
-    }
-
-    @TruffleBoundary
-    public static String getPythonOSName() {
-        String property = System.getProperty("os.name");
-        String os = "java";
-        if (property != null) {
-            if (property.toLowerCase().contains("cygwin")) {
-                os = "cygwin";
-            } else if (property.toLowerCase().contains("linux")) {
-                os = "linux";
-            } else if (property.toLowerCase().contains("mac")) {
-                os = SysModuleBuiltins.PLATFORM_DARWIN;
-            } else if (property.toLowerCase().contains("windows")) {
-                os = SysModuleBuiltins.PLATFORM_WIN32;
-            } else if (property.toLowerCase().contains("sunos")) {
-                os = "sunos";
-            } else if (property.toLowerCase().contains("freebsd")) {
-                os = "freebsd";
-            }
-        }
-        return os;
     }
 
     @TruffleBoundary

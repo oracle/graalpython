@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
-import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.PLATFORM_DARWIN;
-import static com.oracle.graal.python.util.PythonUtils.getPythonOSName;
+import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -362,7 +362,7 @@ public enum OSErrorEnum {
     }
 
     private static int platformSpecific(int linuxValue, int darwinValue) {
-        return getPythonOSName().equals(PLATFORM_DARWIN) ? darwinValue : linuxValue;
+        return getPythonOS() == PLATFORM_DARWIN ? darwinValue : linuxValue;
     }
 
     public static class OperationWouldBlockException extends IllegalStateException {

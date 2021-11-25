@@ -45,6 +45,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -344,9 +345,11 @@ public abstract class Python3Core extends ParserErrorCallback {
         // add service loader defined python file extensions
         if (!ImageInfo.inImageRuntimeCode()) {
             ServiceLoader<PythonBuiltins> providers = ServiceLoader.load(PythonBuiltins.class, Python3Core.class.getClassLoader());
+            PythonOS currentOs = PythonOS.getPythonOS();
             for (PythonBuiltins builtin : providers) {
                 CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
-                if (!annotation.pythonFile().isEmpty()) {
+                if (!annotation.pythonFile().isEmpty() &&
+                                (annotation.os() == PythonOS.PLATFORM_ANY || annotation.os() == currentOs)) {
                     coreFiles.add(annotation.pythonFile());
                 }
             }
@@ -457,6 +460,7 @@ public abstract class Python3Core extends ParserErrorCallback {
                         new ImportErrorBuiltins(),
                         new StopIterationBuiltins(),
                         new SyntaxErrorBuiltins(),
+                        new OsErrorBuiltins(),
 
                         // io
                         new IOModuleBuiltins(),
@@ -630,7 +634,11 @@ public abstract class Python3Core extends ParserErrorCallback {
                 builtins.add(builtin);
             }
         }
-        return builtins.toArray(new PythonBuiltins[builtins.size()]);
+        PythonOS currentOs = PythonOS.getPythonOS();
+        return builtins.stream().filter(builtin -> {
+            CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
+            return annotation.os() == PythonOS.PLATFORM_ANY || annotation.os() == currentOs;
+        }).toArray(PythonBuiltins[]::new);
     }
 
     // not using EnumMap, HashMap, etc. to allow this to fold away during partial evaluation
@@ -874,6 +882,10 @@ public abstract class Python3Core extends ParserErrorCallback {
             }
         }
         return builtinTypes[index];
+    }
+
+    private static boolean canPublishBuiltin(PythonOS currentOs, Builtin builtin) {
+        return builtin.os() == PythonOS.PLATFORM_ANY || builtin.os() == currentOs;
     }
 
     private void initializeTypes() {

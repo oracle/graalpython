@@ -49,6 +49,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeWar
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeEncodeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.BACKSLASHREPLACE;
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.STRICT;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
@@ -107,6 +109,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import org.graalvm.nativeimage.ImageInfo;
@@ -206,8 +209,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
     static final String VALUE_UNKNOWN = "<unknown>";
     private static final String LICENSE = "Copyright (c) Oracle and/or its affiliates. Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.";
     private static final String COMPILE_TIME;
-    public static final String PLATFORM_DARWIN = "darwin";
-    public static final String PLATFORM_WIN32 = "win32";
     public static final PNone FRAMEWORK = PNone.NONE;
     public static final int MAXSIZE = Integer.MAX_VALUE;
     public static final long HASH_MULTIPLIER = 1000003L;
@@ -436,12 +437,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("thread_info", factory.createStructSeq(THREAD_INFO_DESC, PNone.NONE, PNone.NONE, PNone.NONE));
         builtinConstants.put("maxunicode", IntegerFormatter.LIMIT_UNICODE.intValue() - 1);
 
-        String os = PythonUtils.getPythonOSName();
-        builtinConstants.put("platform", os);
-        if (os.equals(PLATFORM_DARWIN)) {
+        PythonOS os = getPythonOS();
+        builtinConstants.put("platform", os.getName());
+        if (os == PLATFORM_DARWIN) {
             builtinConstants.put("_framework", FRAMEWORK);
         }
-        final String gmultiarch = PythonUtils.getPythonArch() + "-" + os;
+        final String gmultiarch = PythonUtils.getPythonArch() + "-" + os.getName();
         builtinConstants.put("__gmultiarch", gmultiarch);
 
         PFileIO stdin = factory.createFileIO(PythonBuiltinClassType.PFileIO);

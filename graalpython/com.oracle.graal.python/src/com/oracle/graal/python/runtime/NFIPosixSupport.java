@@ -41,6 +41,8 @@
 // skip GIL
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
@@ -66,6 +68,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.PythonOS;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -329,8 +332,8 @@ public final class NFIPosixSupport extends PosixSupport {
         private static String getLibPath(PythonContext context) {
             CompilerAsserts.neverPartOfCompilation();
 
-            String os = PythonUtils.getPythonOSName();
-            String multiArch = PythonUtils.getPythonArch() + "-" + os;
+            PythonOS os = getPythonOS();
+            String multiArch = PythonUtils.getPythonArch() + "-" + os.getName();
             String cacheTag = "graalpython-38";
             Env env = context.getEnv();
             LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
@@ -339,7 +342,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
             // only use '.dylib' if we are on 'Darwin-native'
             String soExt;
-            if ("darwin".equals(os) && "native".equals(toolchainId)) {
+            if (os == PLATFORM_DARWIN && "native".equals(toolchainId)) {
                 soExt = ".dylib";
             } else {
                 soExt = ".so";
