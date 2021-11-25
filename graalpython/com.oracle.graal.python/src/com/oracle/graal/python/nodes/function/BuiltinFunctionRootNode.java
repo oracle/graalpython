@@ -25,6 +25,10 @@
  */
 package com.oracle.graal.python.nodes.function;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -57,10 +61,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * CPython wraps built-in types' slots so the C can take the direct arguments. The slot wrappers for

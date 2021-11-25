@@ -246,7 +246,6 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_AT_MOST_D_ARGS_GOT_D = "%s expected at most %d arguments, got %d";
     public static final String EXPECTED_BYTESLIKE_GOT_P = "expected a bytes-like object, %p found";
     public static final String EXPECTED_CHARACTER_BUT_STRING_FOUND = "%s expected a character, but string of length %d found";
-    public static final String MUST_BE_ONE_CHARACTER_STRING = "\"%s\" must be a 1-character string";
     public static final String EXPECTED_CONVERSION = "expected conversion";
     public static final String EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES = "expected %p.__fspath__() to return str or bytes, not %p";
     public static final String EXPECTED_OBJ_TYPE_S_GOT_P = "expected object of type %s, got %p";
@@ -1005,7 +1004,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";
 
     // csv errors
-
+    public static final String MUST_BE_ONE_CHARACTER_STRING = "\"%s\" must be a 1-character string";
     public static final String DELIMITER_MUST_BE_ONE_CHAR_STRING = "\"delimiter\" must be a 1-character string";
     public static final String QUOTECHAR_MUST_BE_SET_IF_QUOTING_ENABLED = "quotechar must be set if quoting enabled";
     public static final String LINETERMINATOR_MUST_BE_SET = "lineterminator must be set";
