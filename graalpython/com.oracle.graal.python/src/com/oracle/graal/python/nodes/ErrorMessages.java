@@ -120,6 +120,7 @@ public abstract class ErrorMessages {
     public static final String CALLING_NATIVE_FUNC_EXPECTED_ARGS = "Calling native function %s expected %d arguments but got %d.";
     public static final String CALLING_NATIVE_FUNC_FAILED = "Calling native function %s failed: %m";
     public static final String DECODER_RETURNED_P_INSTEAD_OF_BYTES = "'%s' decoder returned '%p' instead of 'str'; use codecs.decode() to decode to arbitrary types";
+    public static final String ENCODER_RETURNED_P_INSTEAD_OF_BYTES = "'%s' encoder returned '%p' instead of 'bytes'; use codecs.encode() to encode to arbitrary types";
     public static final String S_ENCODER_RETURNED_P_INSTEAD_OF_BYTES = "'%s' encoder returned '%p' instead of 'bytes'; use codecs.encode() to encode to arbitrary types";
     public static final String ENCODER_S_RETURNED_S_INSTEAD_OF_BYTES = "encoder %s returned %s instead of bytes; use codecs.encode() to encode to arbitrary types";
     public static final String DECODER_S_RETURNED_P_INSTEAD_OF_STR = "'%s' decoder returned '%p' instead of 'str'; use codecs.decode() to decode to arbitrary types";
@@ -168,6 +169,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_SPECIFY_C_WITH_C = "Cannot specify '%c' with '%c'.";
     public static final String CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = "%s: cannot use fd and follow_symlinks together";
     public static final String CANT_CONCAT_P_TO_S = "can't concat %p to %s";
+    public static final String CANT_CONVERT_TO_FLOAT = "can't convert %s to float";
     public static final String CANT_CONVERT_TO_STR_EXPLICITELY = "Can't convert '%p' object to str implicitly";
     public static final String CANT_COMPARE = "Can't compare %p and %p";
     public static final String CANT_DELETE = "can't delete '%s'";
@@ -219,6 +221,7 @@ public abstract class ErrorMessages {
     public static final String DICT_CHANGED_DURING_COMPARISON = "dictionary changed during comparison operation";
     public static final String CHANGED_SIZE_DURING_ITERATION = "%s changed size during iteration";
     public static final String DICT_MUST_BE_SET_TO_DICT = "__dict__ must be set to a dictionary, not a '%p'";
+    public static final String DICT_OF_P_OBJECTS_HAS_NO_ATTR = "'%p' dict of '%p' object has no attribute '__setitem__'";
     public static final String DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED = "dictionary update sequence element #%d has length %d; 2 is required";
     public static final String DIVISION_BY_ZERO = "division by zero";
     public static final String S_DIVISION_BY_ZERO = "%s division by zero";
@@ -279,7 +282,9 @@ public abstract class ErrorMessages {
     public static final String FORMATED_S_TOO_LONG = "formatted %s is too long (precision too large?)";
     public static final String FREE_VAR_REFERENCED_BEFORE_ASSIGMENT = "free variable '%s' referenced before assignment in enclosing scope";
     public static final String FUNC_CONSTRUCTION_NOT_SUPPORTED = "function construction not supported for (%p, %p, %p, %p, %p, %p)";
+    public static final String FUNC_TAKES_AT_LEAST_D_ARGS = "function takes at least %d arguments (%d given)";
     public static final String FUNC_TAKES_EXACTLY_D_ARGS = "function takes exaclty %d arguments (%d given)";
+    public static final String FUNC_S_MUST_BE_S_NOT_P = "%s() %s must be %s, not %p";
     public static final String GENERATOR_EXPR_MUST_BE_PARENTHESIZED = "Generator expression must be parenthesized";
     public static final String GENERATOR_IGNORED_EXIT = "generator ignored GeneratorExit";
     public static final String GENERATOR_RAISED_STOPITER = "generator raised StopIteration";
@@ -307,22 +312,26 @@ public abstract class ErrorMessages {
     public static final String INVALID_INDEXING_OF_0_DIM_MEMORY = "invalid indexing of 0-dim memory";
     public static final String ILLEGAL_ENVIRONMENT_VARIABLE_NAME = "illegal environment variable name";
     public static final String ILLEGAL_EXPRESSION_FOR_AUGMENTED_ASSIGNEMNT = "illegal expression for augmented assignment";
+    public static final String ILLEGAL_IP_STRING_PASSED_TO = "illegal IP address string passed to %s";
     public static final String ILLEGAL_SOCKET_ADDR_ARG = "%s: illegal sockaddr argument";
     public static final String S_ILLEGAL_TIME_TUPLE_ARG = "%s: illegal time tuple argument";
     public static final String IMPORT_STAR_ONLY_ALLOWED_AT_MODULE_LEVEL = "import * only allowed at module level";
     public static final String INCOMPLETE_FORMAT = "incomplete format";
+    public static final String INDEX_NOT_INT = "%s: index not int";
     public static final String INDEX_OUT_OF_BOUNDS = "index out of bounds";
     public static final String INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D = "index out of bounds on dimension %d";
     public static final String INDEX_OUT_OF_RANGE = "index out of range";
     public static final String INDEX_RETURNED_NON_INT = "__index__ returned non-int (type %p)";
     public static final String INPUT_TOO_LONG = "input too long";
     public static final String INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE = "instance exception may not have a separate value";
+    public static final String INSTANCE_HAS_NO_ATTR_S = "%s instance has no attribute '%s'";
     public static final String INT_CANT_CONVERT_STRING_WITH_EXPL_BASE = "int() can't convert non-string with explicit base";
     public static final String INT_TOO_LARGE_TO_CONVERT_TO_FLOAT = "int too large to convert to float";
     public static final String INTEGER_DIVISION_BY_ZERO = "ZeroDivisionError: integer division or modulo by zero";
     public static final String INTEGER_DIVISION_RESULT_TOO_LARGE = "integer division result too large for a float";
     public static final String S_EXPECTED_GOT_P = "%s argument expected, got %p";
     public static final String REC_LIMIT_GREATER_THAN_1 = "recursion limit must be greater or equal than 1";
+    public static final String INTEGER_GREATER_THAN_MAX = "integer is greater than maximum";
     public static final String INTEGER_REQUIRED = "an integer is required";
     public static final String INTEGER_REQUIRED_GOT = "an integer is required (got type %p)";
     public static final String INTERMEDIATE_OVERFLOW_IN = "intermediate overflow in %s";
@@ -341,6 +350,7 @@ public abstract class ErrorMessages {
     public static final String INVALID_FILTER = "Invalid filter ID: %d";
     public static final String INVALID_FILTER_CHAIN_FOR_FORMAT = "Invalid filter chain for FORMAT_ALONE - must be a single LZMA1 filter";
     public static final String INVALID_INDEX_S = "invalid index %s";
+    public static final String INVALID_INPUT_ELEM_TYPE = "Invalid input element type '%p'";
     public static final String INVALID_INSTANTIATION_OF_FOREIGN_OBJ = "invalid instantiation of foreign object";
     public static final String INVALID_ITEM_RETURNED_FROM_NATIVE_SEQ = "Invalid item type %s returned from native sequence storage (expected: %s)";
     public static final String INVALID_LITERAL_FOR_INT_WITH_BASE = "invalid literal for int() with base %s: %s";
@@ -380,6 +390,7 @@ public abstract class ErrorMessages {
     public static final String ITER_V_MUST_BE_CALLABLE = "iter(v, w): v must be callable";
     public static final String KEYWORD_NAMES_MUST_BE_STR_GOT_P = "keyword names must be str, get %p";
     public static final String KEYWORDS_S_MUST_BE_STRINGS = "%s() keywords must be strings";
+    public static final String KEYWORDS_MUST_BE_STRINGS = "keywords must be strings";
     public static final String KLASS_ARG_IS_NOT_HOST_OBJ = "klass argument '%p' is not a host object";
     public static final String LAZY_INITIALIZATION_FAILED = "lazy initialization of type %s failed";
     public static final String LEFT_BRACKET_WO_RIGHT_BRACKET_IN_ARG = "')' without '(' in argument parsing";
@@ -447,7 +458,9 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_TUPLE_OF_CLASSES_NOT_P = "%s.%s must be tuple of classes, not '%p'";
     public static final String MUST_RETURN_2TUPLE = "%p.__divmod__() must return a 2-tuple, not %p";
     public static final String S_MUST_RETURN_TUPLE = "%s must return a tuple (object, integer)";
+    public static final String MUST_S_ITER_RETURN_2TUPLE = "%s iterator must return 2-tuples";
     public static final String S_MUST_RETURN_S_NOT_P = "%s must return a %s, not %p";
+    public static final String S_MUST_RETURN_S_OR_S = "%s must return a %s or %s";
     public static final String MUTATED_DURING_UPDATE = "%s mutated during update";
     public static final String NAME_IS_USED_BEFORE_GLOBAL = "name '%s' is used prior to global declaration";
     public static final String NAME_IS_ASSIGNED_BEFORE_GLOBAL = "name '%s' is assigned to before global declaration";
@@ -505,12 +518,15 @@ public abstract class ErrorMessages {
     public static final String ONLY_S_AND_S_AMY_FOLLOW_S = "Only %s and %s may follow %s";
     public static final String ORDER_MUST_BE_C_F_OR_A = "order must be 'C', 'F' or 'A'";
     public static final String PATH_SHOULD_BE_STR_BYTES_PATHLIKE_NOT_P = "path should be string, bytes, or os.PathLike, not %p";
+    public static final String PACKED_IP_WRONG_LENGTH = "packed IP wrong length for %s";
+    public static final String PACKET_IP_WRONG_LENGTH_FOR = "packed IP wrong length for %s";
     public static final String PATCHED_DATETIME_CLASS = "patched datetime class: %r";
     public static final String POLYGLOT_ACCESS_NOT_ALLOWED = "polyglot access is not allowed";
     public static final String POLYGLOT_EVAL_MUST_PASS_STRINGS = "polyglot.eval must pass strings as either 'path' or a 'string' keyword";
     public static final String POLYGLOT_EVAL_WITH_STRING_MUST_PASS_LANG = "polyglot.eval with a string argument must pass a language or mime-type";
     public static final String POP_FROM_EMPTY_SET = "pop from an emtpy set";
     public static final String POP_INDEX_OUT_OF_RANGE = "pop index out of range";
+    public static final String PORT_PROTO_NOT_FOUND = "port/proto not found";
     public static final String PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED = "private identifier too large to be mangled";
     public static final String PROVIDED_OBJ_NOT_ARRAY = "provided object is not an array";
     public static final String PYTHON_INT_TOO_LARGE_TO_CONV_TO = "Python int too large to convert to %s";
@@ -529,6 +545,7 @@ public abstract class ErrorMessages {
     public static final String S_FORMAT_INTEGER_IS_REQUIRED_NOT_S = "%%%s format: an integer is required, not %p";
     public static final String C_ARG_NOT_IN_RANGE256_DECIMAL = "%%c arg not in range(256)";
     public static final String C_REQUIRES_INT_IN_BYTE_RANGE_OR_SINGLE_BYTE = "%%c requires an integer in range(256) or a single byte";
+    public static final String REQUIRES_OBJ_THAT_IMPLEMENTS_S = " %%r requires an object that implements %s";
     public static final String REQUIRES_STRING_AS_LEFT_OPERAND = "'in <string>' requires string as left operand, not %P";
     public static final String REQUIRES_STR_OBJECT_BUT_RECEIVED_P = "'%s' requires a 'str' object but received a '%p'";
     public static final String RETURN_OUTSIDE_FUNC = "'return' outside function";
@@ -608,6 +625,7 @@ public abstract class ErrorMessages {
     public static final String TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_POS_ARG_S = "%s() takes from %d to %d positional argument%s but %d positional argument%s (and %d keyword-only argument%s) were given%s";
     public static final String TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_S_GIVEN_S = "%s() takes from %d to %d positional argument%s but %d %s given%s";
     public static final String TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN = "%s() takes exactly %d arguments (%d given)";
+    public static final String TAKES_EXACTLY_S_ARGUMENTS_D_GIVEN = "%s() takes exactly %s arguments (%d given)";
     public static final String TAKES_NO_KEYWORD_ARGS = "%s takes no keyword arguments";
     public static final String THROW_THIRD_ARG_MUST_BE_TRACEBACK = "throw() third argument must be a traceback object";
     public static final String TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS = "_tee_dataobject should not have more than %s links";
@@ -643,6 +661,7 @@ public abstract class ErrorMessages {
     public static final String UNHASHABLE_TYPE_P = "unhashable type: '%p'";
     public static final String UNHASHABLE_TYPE = "unhashable type";
     public static final String UNINITIALIZED_S_OBJECT = "uninitialized classmethod object";
+    public static final String UNKNOWN_ADDR_FAMILY = "unknown address family %d";
     public static final String UNKNOWN_ATTR = "Unknown attribute: '%s'";
     public static final String UNKNOWN_ENCODING = "unknown encoding %s";
     public static final String UNKNOWN_ERROR_HANDLER = "unknown error handler name '%s'";
@@ -669,6 +688,7 @@ public abstract class ErrorMessages {
     public static final String UNSUPPORTED_USE_OF_SYS_EXECUTABLE = "internal error: unsupported use of sys.executable";
     public static final String UTIME_CANNOT_USE_DIR_FD_AND_FOLLOW_SYMLINKS = "utime: cannot use dir_fd and follow_symlinks together on this platform";
     public static final String VALUE_TOO_LARGE_TO_FIT_INTO_INDEX = "value too large to fit into index-sized integer";
+    public static final String WAS_NOT_POSSIBLE_TO_MARSHAL = "Was not possible to marshal";
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL_P = "Was not possible to marshal %p";
     public static final String WEAK_OBJ_GONE_AWAY = "weak object has gone away";
     public static final String X_NOT_IN_LIST = "x not in list";
@@ -852,6 +872,7 @@ public abstract class ErrorMessages {
     public static final String ILLEGAL_STATE_ARGUMENT = "illegal state argument";
     public static final String STATE_ARGUMENT_MUST_BE_A_TUPLE = "state argument must be a tuple";
     public static final String STATE_ARGUMENT_D_MUST_BE_A_S = "state argument %d must be a %s";
+    public static final String REENTRANT_CALL_INSIDE_S_REPR = "reentrant call inside %s.__repr__";
     public static final String EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED = "Existing exports of data: object cannot be re-sized";
     public static final String SECOND_ITEM_OF_STATE_MUST_BE_AN_INTEGER_NOT_P = "second item of state must be an integer, not %p";
     public static final String WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING = "write could not complete without blocking";
@@ -861,6 +882,7 @@ public abstract class ErrorMessages {
     public static final String DEQUE_MUTATED_DURING_ITERATION = "deque mutated during iteration";
     public static final String DEQUE_INDEX_OUT_OF_RANGE = "deque index out of range";
     public static final String CAN_ONLY_CONCATENATE_DEQUE_NOT_P_TO_DEQUE = "can only concatenate deque (not \"%p\") to deque";
+    public static final String MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S = "multi-phase init of extension module %s";
     public static final String INIT_S_RETURNED_AN_UNEXPECTED_VALUE = "HPyInit_%s returned an unexpected value (expected a Python module).";
 
     // ctypes
@@ -903,6 +925,7 @@ public abstract class ErrorMessages {
     public static final String ARGUMENT_D = "argument %d: ";
     public static final String FFI_CALL_FAILED = "ffi_call failed";
     public static final String FFI_PREP_CIF_FAILED = "ffi_prep_cif failed";
+    public static final String NO_FFI_TYPE_FOR_RESULT = "No ffi_type for result";
     public static final String INT_TOO_LONG_TO_CONVERT = "int too long to convert";
     public static final String CAST_ARGUMENT_2_MUST_BE_A_POINTER_TYPE_NOT_S = "cast() argument 2 must be a pointer type, not %s";
     public static final String WRONG_TYPE = "wrong type";
@@ -921,6 +944,9 @@ public abstract class ErrorMessages {
     public static final String OUT_PARAMETER_D_MUST_BE_A_POINTER_TYPE_NOT_S = "'out' parameter %d must be a pointer type, not %s";
     public static final String ARGUMENT_MUST_BE_CALLABLE_OR_INTEGER_FUNCTION_ADDRESS = "argument must be callable or integer function address";
     public static final String CANNOT_CONSTRUCT_INSTANCE_OF_THIS_CLASS_NO_ARGTYPES = "cannot construct instance of this class: no argtypes";
+    public static final String INVALID_RESULT_TYPE_FOR_CALLBACK_FUNCTION = "invalid result type for callback function";
+    public static final String FFI_PREP_CIF_FAILED_WITH_D = "ffi_prep_cif failed with %d";
+    public static final String FFI_PREP_CLOSURE_FAILED_WITH_D = "ffi_prep_closure failed with %d";
     public static final String THE_ERRCHECK_ATTRIBUTE_MUST_BE_CALLABLE = "the errcheck attribute must be callable";
     public static final String RESTYPE_MUST_BE_A_TYPE_A_CALLABLE_OR_NONE = "restype must be a type, a callable, or None";
     public static final String THIS_FUNCTION_TAKES_AT_LEAST_D_ARGUMENT_S_D_GIVEN = "this function takes at least %d argument%s (%d given)";
