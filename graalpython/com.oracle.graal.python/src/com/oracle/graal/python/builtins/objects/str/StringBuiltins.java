@@ -391,7 +391,9 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class ContainsNode extends PythonBinaryBuiltinNode {
+    public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
+        public abstract boolean executeBool(Object self, Object left);
+
         @Specialization
         boolean doit(Object self, Object other,
                         @Cached CastToJavaStringNode castStr) {

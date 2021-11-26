@@ -226,6 +226,7 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -1631,6 +1632,22 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         PString run(PString str) {
             return str;
+        }
+    }
+
+    @Builtin(name = "PyUnicode_Contains", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyUnicodeContains extends PythonBinaryBuiltinNode {
+        @Specialization
+        int contains(VirtualFrame frame, Object haystack, Object needle,
+                        @Cached StringBuiltins.ContainsNode containsNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                return containsNode.executeBool(haystack, needle) ? 1 : 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return -1;
+            }
         }
     }
 

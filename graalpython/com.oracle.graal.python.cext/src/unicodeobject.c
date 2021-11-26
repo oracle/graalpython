@@ -665,3 +665,8 @@ UPCALL_ID(PyUnicode_ReadChar);
 Py_UCS4 PyUnicode_ReadChar(PyObject *unicode, Py_ssize_t index) {
 	return UPCALL_CEXT_I(_jls_PyUnicode_ReadChar, native_to_java(unicode), index);
 }
+
+UPCALL_ID(PyUnicode_Contains)
+int PyUnicode_Contains(PyObject *str, PyObject *substr) {
+    return UPCALL_CEXT_I(_jls_PyUnicode_Contains, native_to_java(str), native_to_java(substr));
+}
