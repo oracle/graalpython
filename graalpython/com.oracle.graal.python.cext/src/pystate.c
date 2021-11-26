@@ -81,7 +81,14 @@ PyThreadState* PyGILState_GetThisThreadState(void) {
 typedef PyObject* (*find_module_fun_t)(long index);
 UPCALL_TYPED_ID(PyState_FindModule, find_module_fun_t);
 PyObject* PyState_FindModule(struct PyModuleDef* module) {
-    return _jls_PyState_FindModule(module->m_base.m_index);
+    Py_ssize_t index = module->m_base.m_index;
+    if (module->m_slots) {
+        return NULL;
+    } else if (index == 0) {
+        return NULL;
+    } else {
+        return _jls_PyState_FindModule(index);
+    }
 }
 
 int PyState_AddModule(PyObject* module, struct PyModuleDef* def) {
