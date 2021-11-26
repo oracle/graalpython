@@ -492,9 +492,10 @@ public class ParserTestBase {
 //        checkTreeResult(source, mode);
 //    }
 //
-//    public void checkScopeAndTree(String source) throws Exception {
-//        checkScopeAndTree(source, PythonParser.ParserMode.File);
-//    }
+   public void checkScopeAndTree(String source) throws Exception {
+       // checkScopeAndTree(source, PythonParser.ParserMode.File);
+       checkTreeResult(source);
+   }
 
     public void checkTreeResult(String source) throws Exception {
         checkTreeResult(source, 1);

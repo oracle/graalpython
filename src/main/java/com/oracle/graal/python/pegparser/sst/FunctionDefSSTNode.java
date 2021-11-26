@@ -41,22 +41,22 @@
 
 package com.oracle.graal.python.pegparser.sst;
 
-import com.oracle.graal.python.pegparser.ScopeInfo;
-
 public class FunctionDefSSTNode extends SSTNodeWithScope {
     protected final String name;
-    protected final String enclosingClassName;
     protected final ArgDefListBuilder argBuilder;
-    protected final SSTNode body;
+    protected final SSTNode[] body;
+    protected final SSTNode[] decorators;
     protected final SSTNode resultAnnotation;
+    protected final String typeComment;
 
-    public FunctionDefSSTNode(ScopeInfo functionScope, String name, String enclosingClassName, ArgDefListBuilder argBuilder, SSTNode body, SSTNode resultAnnotation, int startOffset, int endOffset) {
-        super(startOffset, endOffset, functionScope);
+    public FunctionDefSSTNode(String name, ArgDefListBuilder args, SSTNode[] body, SSTNode[] decorators, SSTNode resultAnnotation, String typeComment, int startOffset, int endOffset) {
+        super(startOffset, endOffset, null); // TODO
         this.name = name;
-        this.enclosingClassName = enclosingClassName;
-        this.argBuilder = argBuilder;
+        this.argBuilder = args;
         this.body = body;
+        this.decorators = decorators;
         this.resultAnnotation = resultAnnotation;
+        this.typeComment = typeComment;
     }
 
     @Override

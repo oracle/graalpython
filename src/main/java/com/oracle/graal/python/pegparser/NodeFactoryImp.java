@@ -44,6 +44,7 @@ package com.oracle.graal.python.pegparser;
 
 import com.oracle.graal.python.pegparser.sst.AnnAssignmentSSTNode;
 import com.oracle.graal.python.pegparser.sst.AnnotationSSTNode;
+import com.oracle.graal.python.pegparser.sst.ArgDefListBuilder;
 import com.oracle.graal.python.pegparser.sst.AssignmentSSTNode;
 import com.oracle.graal.python.pegparser.sst.BinaryArithmeticSSTNode;
 import com.oracle.graal.python.pegparser.sst.BlockSSTNode;
@@ -51,6 +52,7 @@ import com.oracle.graal.python.pegparser.sst.BooleanLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.CollectionSSTNode;
 import com.oracle.graal.python.pegparser.sst.ComprehensionSSTNode;
 import com.oracle.graal.python.pegparser.sst.ForComprehensionSSTNode;
+import com.oracle.graal.python.pegparser.sst.FunctionDefSSTNode;
 import com.oracle.graal.python.pegparser.sst.KeyValueSSTNode;
 import com.oracle.graal.python.pegparser.sst.NumberLiteralSSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTNode;
@@ -198,5 +200,10 @@ public class NodeFactoryImp implements NodeFactory{
     @Override
     public SSTNode createGenerator(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset) {
         return ComprehensionSSTNode.createGenerator(name, generators, startOffset, endOffset);
+    }
+
+    @Override
+    public SSTNode createFunctionDef(String name, ArgDefListBuilder args, SSTNode[] body, SSTNode[] decorators, SSTNode returns, String typeComment, int startOffset, int endOffset) {
+        return new FunctionDefSSTNode(name, args, body, decorators, returns, typeComment, startOffset, endOffset);
     }
 }

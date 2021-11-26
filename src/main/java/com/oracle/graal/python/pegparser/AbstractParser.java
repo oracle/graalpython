@@ -251,6 +251,7 @@ abstract class AbstractParser {
             // TODO: raise error
             return null;
         }
+        tokenizer.getToken(); // advance
         return t;
     }
 
@@ -367,6 +368,13 @@ abstract class AbstractParser {
             }
         }
         return token;
+    }
+
+    /**
+     * _PyPegen_new_type_comment
+     */
+    protected String newTypeComment(Token token) {
+        return token != null ? getText(token) : null;
     }
 
     // debug methods

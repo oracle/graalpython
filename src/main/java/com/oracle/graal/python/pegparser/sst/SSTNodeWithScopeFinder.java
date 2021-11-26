@@ -363,7 +363,7 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
                             (result = checkParametersWithDefaultValue(node.argBuilder.getKWArgsWithDefValue())) != null)) {
                 return result;
             }
-            return node.body.accept(this);
+            return visitNodes(node.body);
         }
         return null;
     }

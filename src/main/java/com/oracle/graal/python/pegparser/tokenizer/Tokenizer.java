@@ -357,11 +357,6 @@ public class Tokenizer {
         if (nextCharIndex < codePointsInput.length) {
             int c = codePointsInput[nextCharIndex];
             nextCharIndex++;
-            if (c == '\n') {
-                currentLineNumber++;
-                atBeginningOfLine = true;
-                lineStartIndex = nextCharIndex;
-            }
             return c;
         } else {
             if (nextCharIndex == codePointsInput.length && execInput) {
@@ -801,6 +796,13 @@ public class Tokenizer {
                 // newline
                 if (c == '\n') {
                     atBeginningOfLine = true;
+                    // since CPython only reads more characters line by line in
+                    // their underflow function, they know that if the next
+                    // character is requested, you'll always be on a new
+                    // line. we do not, so we modify the line number and line
+                    // start here
+                    currentLineNumber++;
+                    lineStartIndex = nextCharIndex;
                     if (blankline || parensNestingLevel > 0) {
                         target = LABEL_NEXTLINE;
                         continue GOTO_LOOP;

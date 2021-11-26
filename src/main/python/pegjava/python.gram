@@ -131,7 +131,7 @@ type_expressions[asdl_expr_seq*]:
 
 statements[SSTNode*]: a=statement+ { a }
 statement[SSTNode*]:
-    | a=compound_stmt { a }
+    | a=compound_stmt { new SSTNode[]{a} }
     | a[SSTNode*]=simple_stmts { a }
 statement_newline[SSTNode*]:
     | a=compound_stmt NEWLINE { this.singletonSequence(a) }
@@ -424,9 +424,10 @@ function_def[stmt_ty]:
 
 function_def_raw[stmt_ty]:
     | 'def' n=NAME '(' params=[params] ')' a=['->' z=expression { z }] &&':' tc=[func_type_comment] b=block {
-        _PyAST_FunctionDef(n->v.Name.id,
-                        (params) ? params : CHECK(arguments_ty, _PyPegen_empty_arguments(p)),
-                        b, NULL, a, NEW_TYPE_COMMENT(p, tc), EXTRA) }
+        factory.createFunctionDef(((VarLookupSSTNode)n).getName(),
+                        (ArgDefListBuilder)params,
+                        b, null, (SSTNode)a, this.newTypeComment((Token)tc),
+                        startToken.startOffset, endToken.endOffset) }
     | ASYNC 'def' n=NAME '(' params=[params] ')' a=['->' z=expression { z }] &&':' tc=[func_type_comment] b=block {
         CHECK_VERSION(
             stmt_ty,
@@ -436,7 +437,7 @@ function_def_raw[stmt_ty]:
                             (params) ? params : CHECK(arguments_ty, _PyPegen_empty_arguments(p)),
                             b, NULL, a, NEW_TYPE_COMMENT(p, tc), EXTRA)
         ) }
-func_type_comment[Token*]:
+func_type_comment[Token]:
     | NEWLINE t=TYPE_COMMENT &(NEWLINE INDENT) { t }  # Must be followed by indented block
     | invalid_double_type_comments
     | TYPE_COMMENT

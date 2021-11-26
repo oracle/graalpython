@@ -96,4 +96,6 @@ public interface NodeFactory {
     public SSTNode createSetComprehension(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset);
 
     public SSTNode createGenerator(SSTNode name, ForComprehensionSSTNode[] generators, int startOffset, int endOffset);
+
+    public SSTNode createFunctionDef(String name, ArgDefListBuilder args, SSTNode[] body, SSTNode[] decorators, SSTNode returns, String typeComment, int startOffset, int endOffset);
 }
