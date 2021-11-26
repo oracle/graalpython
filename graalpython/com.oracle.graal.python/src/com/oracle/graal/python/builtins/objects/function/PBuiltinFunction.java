@@ -168,7 +168,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         } else if (signature.takesVarArgs()) {
             flags |= CExtContext.METH_VARARGS;
         }
-        return flags | CExtContext.METH_FASTCALL;
+        return flags;
     }
 
     public Class<? extends PythonBuiltinBaseNode> getNodeClass() {
