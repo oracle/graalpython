@@ -323,8 +323,7 @@ class TestPyDict(CPyExtTestCase):
     # PyDict_Next
     test_PyDict_Next = CPyExtFunctionOutVars(
         _reference_next,
-        # lambda: (({'a': "hello"}, 0), ({'a': "hello", 'b': 'world'}, 1), ({'a': "hello"}, 1)),
-        lambda: (({'a': "hello"}, 1),),
+        lambda: (({'a': "hello"}, 1), ({'a': "hello"}, 0), ({'a': "hello", 'b': 'world'}, 1), ({'a': "hello"}, 1)),
         code='''int wrap_PyDict_Next(PyObject* dict, Py_ssize_t* ppos, PyObject** key, PyObject** value) {
             int res = 0;
             Py_ssize_t iterations = *ppos;
@@ -366,7 +365,7 @@ class TestPyDict(CPyExtTestCase):
             PyObject* value;
             Py_hash_t phash;            
             
-           _PyDict_Next(dict, &ppos, &key, &value, &phash);
+            _PyDict_Next(dict, &ppos, &key, &value, &phash);
             _PyDict_SetItem_KnownHash(result, key, value, phash);
             return result;
         }
