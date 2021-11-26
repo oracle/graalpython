@@ -78,9 +78,10 @@ PyThreadState* PyGILState_GetThisThreadState(void) {
     return polyglot_invoke(PY_TRUFFLE_CEXT, "PyThreadState_Get");
 }
 
-UPCALL_ID(PyState_FindModule)
+typedef PyObject* (*find_module_fun_t)(long index);
+UPCALL_TYPED_ID(PyState_FindModule, find_module_fun_t);
 PyObject* PyState_FindModule(struct PyModuleDef* module) {
-    return UPCALL_CEXT_O(_jls_PyState_FindModule, module->m_base.m_index);
+    return _jls_PyState_FindModule(module->m_base.m_index);
 }
 
 int PyState_AddModule(PyObject* module, struct PyModuleDef* def) {
