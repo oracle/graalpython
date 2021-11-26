@@ -41,7 +41,6 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -54,11 +53,6 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateUncached
 public abstract class PyComplexCheckExactNode extends Node {
     public abstract boolean execute(Object object);
-
-    @Specialization
-    static boolean doPComplex(PComplex pComplex) {
-        return true;
-    }
 
     @Specialization
     static boolean doGeneric(Object object,
