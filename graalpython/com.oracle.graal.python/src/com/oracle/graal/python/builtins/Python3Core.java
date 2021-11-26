@@ -382,7 +382,7 @@ public abstract class Python3Core extends ParserErrorCallback {
     private static List<PythonBuiltins> filterBuiltins(List<PythonBuiltins> builtins) {
         PythonOS currentOs = PythonOS.getPythonOS();
         List<PythonBuiltins> filtered = new ArrayList<>();
-        for (PythonBuiltins builtin: builtins) {
+        for (PythonBuiltins builtin : builtins) {
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.os() == PythonOS.PLATFORM_ANY || annotation.os() == currentOs) {
                 filtered.add(builtin);

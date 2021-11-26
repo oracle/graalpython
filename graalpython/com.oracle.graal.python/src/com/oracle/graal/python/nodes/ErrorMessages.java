@@ -626,7 +626,8 @@ public abstract class ErrorMessages {
     public static final String TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_S_GIVEN_S = "%s() takes from %d to %d positional argument%s but %d %s given%s";
     public static final String TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN = "%s() takes exactly %d arguments (%d given)";
     public static final String TAKES_EXACTLY_S_ARGUMENTS_D_GIVEN = "%s() takes exactly %s arguments (%d given)";
-    public static final String TAKES_NO_KEYWORD_ARGS = "%s takes no keyword arguments";
+    public static final String S_TAKES_NO_KEYWORD_ARGS = "%s takes no keyword arguments";
+    public static final String P_TAKES_NO_KEYWORD_ARGS = "%p takes no keyword arguments";
     public static final String THROW_THIRD_ARG_MUST_BE_TRACEBACK = "throw() third argument must be a traceback object";
     public static final String TDATAOBJECT_SHOULD_NOT_HAVE_MORE_LINKS = "_tee_dataobject should not have more than %s links";
     public static final String TDATAOBJECT_SHOULDNT_HAVE_NEXT = "_tee_dataobject shouldn't have a next if not full";

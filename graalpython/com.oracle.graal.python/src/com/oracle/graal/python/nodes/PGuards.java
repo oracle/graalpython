@@ -386,6 +386,10 @@ public abstract class PGuards {
         return isBoolean(idx) || isInteger(idx) || isPInt(idx);
     }
 
+    public static boolean isNumber(Object num) {
+        return isPFloat(num) || isDouble(num) || canBeInteger(num);
+    }
+
     public static boolean isPInt(Object obj) {
         return obj instanceof PInt;
     }
