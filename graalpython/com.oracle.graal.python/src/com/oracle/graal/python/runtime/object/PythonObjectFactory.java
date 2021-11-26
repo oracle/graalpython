@@ -215,7 +215,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
@@ -326,7 +325,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonNativeVoidPtr(obj));
     }
 
-    public final PythonNativeVoidPtr createNativeVoidPtr(TruffleObject obj, long nativePtr) {
+    public final PythonNativeVoidPtr createNativeVoidPtr(Object obj, long nativePtr) {
         return trace(new PythonNativeVoidPtr(obj, nativePtr));
     }
 

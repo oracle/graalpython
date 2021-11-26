@@ -344,7 +344,6 @@ import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
@@ -2156,7 +2155,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffle_Unicode_DecodeUTF32 extends NativeUnicodeBuiltin {
 
         @Specialization
-        Object doUnicodeStringErrors(VirtualFrame frame, TruffleObject o, long size, String errors, int byteorder, Object errorMarker,
+        Object doUnicodeStringErrors(VirtualFrame frame, Object o, long size, String errors, int byteorder, Object errorMarker,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
             try {
@@ -2174,7 +2173,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doUnicodeStringErrors")
-        Object doUnicode(VirtualFrame frame, TruffleObject o, long size, Object errors, int byteorder, Object errorMarker,
+        Object doUnicode(VirtualFrame frame, Object o, long size, Object errors, int byteorder, Object errorMarker,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("getByteArrayNode") @Cached GetByteArrayNode getByteArrayNode) {
@@ -2826,7 +2825,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffleHandleCacheCreate extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object createCache(TruffleObject ptrToResolveHandle) {
+        static Object createCache(Object ptrToResolveHandle) {
             return new HandleCache(ptrToResolveHandle);
         }
     }
@@ -2896,7 +2895,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyLongFromVoidPtr extends PythonUnaryBuiltinNode {
         @Specialization(limit = "2")
-        Object doPointer(TruffleObject pointer,
+        Object doPointer(Object pointer,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @CachedLibrary("pointer") InteropLibrary lib) {
             // We capture the native pointer at the time when we create the wrapper if it exists.
