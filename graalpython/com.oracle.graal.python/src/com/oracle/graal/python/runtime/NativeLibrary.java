@@ -62,6 +62,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 /**
  * Wraps a native library loaded via NFI and provides caching for functions looked up in the
@@ -174,7 +175,7 @@ public class NativeLibrary {
             // This should be a one-off thing for each context
             CompilerDirectives.transferToInterpreter();
             synchronized (this) {
-                dummy = getFunction(lib, function);
+                dummy = getFunction(context, lib, function);
                 // it is OK to overwrite cachedFunctions[functionIndex] that may have been
                 // written from another thread: no need to double check that it's still null.
                 // dummy is volatile, the object must be fully initialized at this point
@@ -187,15 +188,21 @@ public class NativeLibrary {
     private Object getFunction(PythonContext context, NativeFunction function) {
         CompilerAsserts.neverPartOfCompilation();
         Object lib = getCachedLibrary(context);
-        return getFunction(lib, function);
+        return getFunction(context, lib, function);
     }
 
-    private Object getFunction(Object lib, NativeFunction function) {
+    private Object parseSignature(PythonContext context, String signature) {
+        Source sigSource = Source.newBuilder("nfi", nfiBackend.withClause + signature, "python-nfi-signature").build();
+        return context.getEnv().parseInternal(sigSource).call();
+    }
+
+    private Object getFunction(PythonContext context, Object lib, NativeFunction function) {
         CompilerAsserts.neverPartOfCompilation();
         try {
+            Object signature = parseSignature(context, function.signature());
             Object symbol = cachedLibraryInterop.readMember(lib, function.name());
-            return InteropLibrary.getUncached().invokeMember(symbol, "bind", function.signature());
-        } catch (UnsupportedMessageException | UnknownIdentifierException | ArityException | UnsupportedTypeException e) {
+            return SignatureLibrary.getUncached().bind(signature, symbol);
+        } catch (UnsupportedMessageException | UnknownIdentifierException e) {
             throw new IllegalStateException(String.format("Cannot load symbol '%s' from the internal shared library '%s'", function.name(), name), e);
         }
     }
@@ -250,9 +257,9 @@ public class NativeLibrary {
         final Object lib = getCachedLibrary(context);
         if (lib != null) {
             try {
+                Object signature = parseSignature(context, f.signature());
                 Object symbol = cachedLibraryInterop.readMember(lib, f.name());
-                Object function = InteropLibrary.getUncached(symbol).invokeMember(symbol, "bind", f.signature());
-                return InteropLibrary.getUncached(function).execute(function, args);
+                return SignatureLibrary.getUncached().call(signature, symbol, args);
             } catch (Exception e) {
                 throw CompilerDirectives.shouldNotReachHere(f.name(), e);
             }
