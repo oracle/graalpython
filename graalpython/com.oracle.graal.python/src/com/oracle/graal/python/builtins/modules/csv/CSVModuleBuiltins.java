@@ -485,7 +485,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
 
             /* validate options */
 
-            if (delimiter == NOT_SET) {
+            if (delimiter.equals(NOT_SET)) {
                 throw raise(TypeError, ErrorMessages.DELIMITER_MUST_BE_ONE_CHAR_STRING);
             }
 
@@ -493,7 +493,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
                 quoting = QUOTE_NONE;
             }
 
-            if (quoting != QUOTE_NONE && quotechar == NOT_SET) {
+            if (quoting != QUOTE_NONE && quotechar.equals(NOT_SET)) {
                 throw raise(TypeError, ErrorMessages.QUOTECHAR_MUST_BE_SET_IF_QUOTING_ENABLED);
             }
 
@@ -543,7 +543,7 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             if (valueObj == PNone.NO_VALUE) {
                 return defaultValue;
             }
-            if (valueObj == PNone.NONE || valueObj == NOT_SET) {
+            if (valueObj == PNone.NONE || valueObj.equals(NOT_SET)) {
                 return NOT_SET;
             }
 

@@ -215,7 +215,7 @@ public final class CSVWriter extends PythonBuiltinObject {
                         }
                     }
                     if (wantEscape) {
-                        if (dialect.escapeChar == NOT_SET) {
+                        if (dialect.escapeChar.equals(NOT_SET)) {
                             throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.CSVError, ErrorMessages.ESCAPE_WITHOUT_ESCAPECHAR);
                         }
                         this.rec.append(dialect.escapeChar);
@@ -235,7 +235,7 @@ public final class CSVWriter extends PythonBuiltinObject {
         this.rec.append(this.dialect.lineTerminator);
     }
 
-    boolean containsCodePoint(int[] codePoints, int codePoint) {
+    private boolean containsCodePoint(int[] codePoints, int codePoint) {
         for (int cp : codePoints) {
             if (cp == codePoint) {
                 return true;

@@ -68,6 +68,7 @@ public final class CSVDialect extends PythonBuiltinObject {
         super(cls, instanceShape);
     }
 
+
     public CSVDialect(Object cls, Shape instanceShape, String delimiter, boolean doubleQuote, String escapeChar,
                     String lineTerminator, String quoteChar, QuoteStyle quoting, boolean skipInitialSpace,
                     boolean strict) {
@@ -81,9 +82,9 @@ public final class CSVDialect extends PythonBuiltinObject {
         this.skipInitialSpace = skipInitialSpace;
         this.strict = strict;
 
-        this.delimiterCodePoint = this.delimiter == NOT_SET ? NOT_SET_CODEPOINT : this.delimiter.codePointAt(0);
-        this.escapeCharCodePoint = this.escapeChar == NOT_SET ? NOT_SET_CODEPOINT : this.escapeChar.codePointAt(0);
-        this.quoteCharCodePoint = quoteChar.codePointAt(0); // quote char cannot be NOT_SET
+        this.delimiterCodePoint = this.delimiter.codePointAt(0); // delimiter cannot be NOT_SET
+        this.escapeCharCodePoint = this.escapeChar.equals(NOT_SET) ? NOT_SET_CODEPOINT : this.escapeChar.codePointAt(0);
+        this.quoteCharCodePoint = this.quoteChar.equals(NOT_SET) ? NOT_SET_CODEPOINT : this.quoteChar.codePointAt(0);
         this.lineTerminatorCodePoints = strToCodePointArray(this.lineTerminator);
     }
 

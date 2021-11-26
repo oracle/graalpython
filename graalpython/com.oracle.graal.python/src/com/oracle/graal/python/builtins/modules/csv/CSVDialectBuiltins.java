@@ -68,7 +68,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
     abstract static class DelimiterNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doIt(CSVDialect self) {
-            return self.delimiter == NOT_SET ? PNone.NONE : self.delimiter;
+            return self.delimiter;
         }
     }
 
@@ -86,7 +86,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
     abstract static class EscapeCharNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doIt(CSVDialect self) {
-            return self.escapeChar == NOT_SET ? PNone.NONE : self.escapeChar;
+            return self.escapeChar.equals(NOT_SET) ? PNone.NONE : self.escapeChar;
         }
     }
 
@@ -104,7 +104,7 @@ public class CSVDialectBuiltins extends PythonBuiltins {
     abstract static class QuoteCharNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doIt(CSVDialect self) {
-            return self.quoteChar == NOT_SET ? PNone.NONE : self.quoteChar;
+            return self.quoteChar.equals(NOT_SET) ? PNone.NONE : self.quoteChar;
         }
     }
 
