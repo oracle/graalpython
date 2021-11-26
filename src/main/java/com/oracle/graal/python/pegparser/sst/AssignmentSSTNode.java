@@ -44,11 +44,13 @@ package com.oracle.graal.python.pegparser.sst;
 public class AssignmentSSTNode extends SSTNode {
     protected final SSTNode[] lhs;
     protected final SSTNode rhs;
+    protected final SSTNode typeComment;
 
-    public AssignmentSSTNode(SSTNode[] lhs, SSTNode rhs, int start, int end) {
+    public AssignmentSSTNode(SSTNode[] lhs, SSTNode rhs, SSTNode typeComment, int start, int end) {
         super(start, end);
         this.lhs = lhs;
         this.rhs = rhs;
+        this.typeComment = typeComment;
     }
 
     @Override

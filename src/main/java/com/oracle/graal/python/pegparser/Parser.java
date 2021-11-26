@@ -1844,9 +1844,12 @@ public final class Parser extends AbstractParser {
             )
             {
                 debugMessageln("%d assignment[%d-%d]: %s succeeded!", level, _mark, mark(), "((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?");
-                // TODO: node.action: _PyAST_Assign ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )
-                debugMessageln("[33;5;7m!!! TODO: Convert _PyAST_Assign ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA ) to Java !!![0m");
-                _res = null;
+                Token endToken = getLastNonWhitespaceToken();
+                if (endToken == null) {
+                    level--;
+                    return null;
+                }
+                _res = factory.createAssignment(a,(SSTNode)b,this.newTypeComment((Token)tc),startToken.startOffset,endToken.endOffset);;
                 debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "((star_targets '='))+ (yield_expr | star_expressions) !'=' TYPE_COMMENT?");
                 cache.putResult(_mark, ASSIGNMENT_ID, _res);
                 level--;
