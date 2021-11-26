@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors.MappingproxyNode;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors.StrNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -248,6 +249,7 @@ import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -1236,6 +1238,95 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 transformExceptionToNativeNode.execute(e);
                 return getNativeNullNode.execute();
             }
+        }
+    }
+
+    @Builtin(name = "PySequence_DelItem", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PySequence_DelItemNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object run(VirtualFrame frame, Object o, Object i,
+                        @Cached PyObjectDelItem delItemNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                delItemNode.execute(frame, o, i);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+            return 0;
+        }
+    }
+
+    @Builtin(name = "PyModule_GetNameObject", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyModule_GetNameObjectNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object run(VirtualFrame frame, Object o,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return lookupAttrNode.execute(frame, o, __NAME__);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    ///////////// mappingproxy /////////////
+
+    @Builtin(name = "PyDictProxy_New", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyDictProxyNewNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object values(VirtualFrame frame, Object obj,
+                        @Cached MappingproxyNode mappingNode) {
+            return mappingNode.execute(frame, PythonBuiltinClassType.PMappingproxy, obj);
+        }
+    }
+
+    @Builtin(name = "Py_DECREF", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyDECREFNode extends PythonUnaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        public Object values(Object obj) {
+            // pass
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "Py_INCREF", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyINCREFNode extends PythonUnaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        public Object values(Object obj) {
+            // pass
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "Py_XINCREF", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyXINCREFNode extends PythonUnaryBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        public Object values(Object obj) {
+            // pass
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "PyObject_LEN", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class PyLenNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object values(VirtualFrame frame, Object obj,
+                        @Cached PyObject_Size sizeNode) {
+            return sizeNode.execute(frame, obj);
         }
     }
 

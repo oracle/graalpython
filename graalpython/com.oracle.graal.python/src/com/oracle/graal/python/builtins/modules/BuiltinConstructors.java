@@ -3170,7 +3170,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     @Builtin(name = "mappingproxy", constructsClass = PythonBuiltinClassType.PMappingproxy, isPublic = false, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class MappingproxyNode extends PythonBuiltinNode {
+    public abstract static class MappingproxyNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "!isNoValue(obj)")
         Object doMapping(Object klass, Object obj,
                         @Cached PyMappingCheckNode mappingCheckNode) {

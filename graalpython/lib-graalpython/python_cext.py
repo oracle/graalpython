@@ -51,17 +51,6 @@ def may_raise(error_result=native_null):
             return make_may_raise_wrapper(fun, error_result)
         return decorator
 
-##################### ABSTRACT
-
-@may_raise(-1)
-def PySequence_DelItem(o,i):
-    del o[i]
-    return 0
-
-@may_raise
-def PyModule_GetNameObject(module_obj):
-    return module_obj.__name__
-
 ##################### SET, FROZENSET
 
 
@@ -128,23 +117,6 @@ def PySet_Clear(s):
 def PyDictProxy_New(mapping):
     mappingproxy = type(type.__dict__)
     return mappingproxy(mapping)
-
-
-def Py_DECREF(obj):
-    pass
-
-
-def Py_INCREF(obj):
-    pass
-
-
-def Py_XINCREF(obj):
-    pass
-
-
-def PyObject_LEN(obj):
-    return len(obj)
-
 
 ##################### BYTES
 
