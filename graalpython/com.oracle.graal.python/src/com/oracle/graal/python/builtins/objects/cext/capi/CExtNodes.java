@@ -195,7 +195,6 @@ import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
@@ -520,7 +519,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
-        static Object doForeignObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
+        static Object doForeignObject(@SuppressWarnings("unused") CExtContext cextContext, Object object,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
             return TruffleObjectNativeWrapper.wrap(object);
         }
@@ -785,7 +784,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
-        static Object doForeignObject(CExtContext cextContext, TruffleObject object,
+        static Object doForeignObject(CExtContext cextContext, Object object,
                         @Cached IsForeignObjectNode isForeignObjectNode) {
             // this will always be a new wrapper; it's implicitly always a new reference in any case
             return ToSulongNode.doForeignObject(cextContext, object, isForeignObjectNode);
@@ -960,7 +959,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
-        static Object doForeignObject(CExtContext cextContext, TruffleObject object,
+        static Object doForeignObject(CExtContext cextContext, Object object,
                         @Cached IsForeignObjectNode isForeignObjectNode) {
             // this will always be a new wrapper; it's implicitly always a new reference in any case
             return ToSulongNode.doForeignObject(cextContext, object, isForeignObjectNode);
@@ -1137,7 +1136,7 @@ public abstract class CExtNodes {
     public abstract static class AsPythonObjectNode extends AsPythonObjectBaseNode {
 
         @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "2")
-        static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
+        static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, Object object,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @Cached ConditionProfile newRefProfile,
                         @Cached ConditionProfile validRefProfile,
@@ -1163,7 +1162,7 @@ public abstract class CExtNodes {
     public abstract static class AsPythonObjectStealingNode extends AsPythonObjectBaseNode {
 
         @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
-        static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
+        static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, Object object,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @Cached ConditionProfile newRefProfile,
                         @Cached ConditionProfile validRefProfile,
@@ -1188,7 +1187,7 @@ public abstract class CExtNodes {
     public abstract static class WrapVoidPtrNode extends AsPythonObjectBaseNode {
 
         @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
-        static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
+        static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, Object object,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
             // TODO(fa): should we use a different wrapper for non-'PyObject*' pointers; they cannot
             // be used in the user value space but might be passed-through
@@ -1204,7 +1203,7 @@ public abstract class CExtNodes {
     public abstract static class WrapCharPtrNode extends AsPythonObjectBaseNode {
 
         @Specialization(guards = {"isForeignObjectNode.execute(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
-        static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
+        static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, Object object,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @Cached FromCharPointerNode fromCharPointerNode) {
             return fromCharPointerNode.execute(object);
@@ -3226,20 +3225,20 @@ public abstract class CExtNodes {
 
     @GenerateUncached
     public abstract static class GetLLVMType extends Node {
-        public abstract TruffleObject execute(LLVMType llvmType);
+        public abstract Object execute(LLVMType llvmType);
 
         @Specialization(guards = "llvmType == cachedType", limit = "typeCount()")
-        TruffleObject doGeneric(@SuppressWarnings("unused") LLVMType llvmType,
+        Object doGeneric(@SuppressWarnings("unused") LLVMType llvmType,
                         @Cached("llvmType") LLVMType cachedType) {
 
             CApiContext cApiContext = PythonContext.get(this).getCApiContext();
-            TruffleObject llvmTypeID = cApiContext.getLLVMTypeID(cachedType);
+            Object llvmTypeID = cApiContext.getLLVMTypeID(cachedType);
 
             // TODO(fa): get rid of lazy initialization for better sharing
             if (llvmTypeID == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 NativeCAPISymbol getterFunctionSymbol = LLVMType.getGetterFunctionName(llvmType);
-                llvmTypeID = (TruffleObject) PCallCapiFunction.getUncached().call(getterFunctionSymbol);
+                llvmTypeID = PCallCapiFunction.getUncached().call(getterFunctionSymbol);
                 cApiContext.setLLVMTypeID(cachedType, llvmTypeID);
             }
             return llvmTypeID;
@@ -3508,16 +3507,16 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class AttachLLVMTypeNode extends Node {
 
-        public abstract TruffleObject execute(TruffleObject ptr);
+        public abstract Object execute(Object ptr);
 
         @Specialization(guards = "lib.hasMetaObject(ptr)", limit = "1")
-        static TruffleObject doTyped(TruffleObject ptr,
+        static Object doTyped(Object ptr,
                         @CachedLibrary("ptr") @SuppressWarnings("unused") InteropLibrary lib) {
             return ptr;
         }
 
         @Specialization(guards = "!lib.hasMetaObject(ptr)", limit = "1", replaces = "doTyped")
-        static TruffleObject doUntyped(TruffleObject ptr,
+        static Object doUntyped(Object ptr,
                         @CachedLibrary("ptr") @SuppressWarnings("unused") InteropLibrary lib,
                         @Shared("getSulongTypeNode") @Cached GetSulongTypeNode getSulongTypeNode,
                         @Shared("getLLVMType") @Cached GetLLVMType getLLVMType,
@@ -3529,11 +3528,11 @@ public abstract class CExtNodes {
             if (llvmType == null) {
                 llvmType = getLLVMType.execute(LLVMType.PyObject);
             }
-            return (TruffleObject) callPolyglotFromTypedNode.call(FUN_POLYGLOT_FROM_TYPED, ptr, llvmType);
+            return callPolyglotFromTypedNode.call(FUN_POLYGLOT_FROM_TYPED, ptr, llvmType);
         }
 
         @Specialization(limit = "1", replaces = {"doTyped", "doUntyped"})
-        static TruffleObject doGeneric(TruffleObject ptr,
+        static Object doGeneric(Object ptr,
                         @CachedLibrary("ptr") InteropLibrary lib,
                         @Shared("getSulongTypeNode") @Cached GetSulongTypeNode getSulongTypeNode,
                         @Shared("getLLVMType") @Cached GetLLVMType getLLVMType,
