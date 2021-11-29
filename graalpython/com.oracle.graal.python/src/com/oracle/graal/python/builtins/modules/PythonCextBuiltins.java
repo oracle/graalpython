@@ -1432,6 +1432,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "PySet_NextEntry", minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonTypes.class)
     @GenerateNodeFactory
     public abstract static class PySetNextEntryNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "pos < size(frame, set, sizeNode)", limit = "3")
@@ -1808,19 +1809,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     ///////////// list /////////////
     @Builtin(name = "PyList_New", minNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonTypes.class)
     @GenerateNodeFactory
     public abstract static class PyListNewNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "size < 0")
-        public Object newList(VirtualFrame frame, int size,
-                        @Shared("raiseNative") @Cached PRaiseNativeNode raiseNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
-            return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, size);
-        }
-
-        @Specialization(guards = "size < 0")
         public Object newList(VirtualFrame frame, long size,
-                        @Shared("raiseNative") @Cached PRaiseNativeNode raiseNativeNode,
-                        @Shared("nativeNull") @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached PRaiseNativeNode raiseNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
             return raiseNativeNode.raise(frame, getNativeNullNode.execute(), SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, size);
         }
 
@@ -1848,6 +1843,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "PyList_GetItem", minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonTypes.class)
     @GenerateNodeFactory
     abstract static class PyListGetItemNode extends PythonBinaryBuiltinNode {
 
