@@ -1411,7 +1411,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "isPythonClass(cls)")
         static boolean isInstance(VirtualFrame frame, Object instance, Object cls,
-                        @Shared("instanceCheck") @Cached("create(__INSTANCECHECK__)") LookupAndCallBinaryNode instanceCheckNode,
+                        @Shared("instanceCheck") @Cached("create(InstanceCheck)") LookupAndCallBinaryNode instanceCheckNode,
                         @Shared("boolCast") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                         @Cached GetClassNode getClassNode,
                         @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
@@ -1423,7 +1423,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = {"!isPTuple(cls)", "!isPythonClass(cls)"})
         static boolean isInstance(VirtualFrame frame, Object instance, Object cls,
-                        @Shared("instanceCheck") @Cached("create(__INSTANCECHECK__)") LookupAndCallBinaryNode instanceCheckNode,
+                        @Shared("instanceCheck") @Cached("create(InstanceCheck)") LookupAndCallBinaryNode instanceCheckNode,
                         @Shared("boolCast") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                         @Cached TypeBuiltins.InstanceCheckNode typeInstanceCheckNode) {
             TriState check = isInstanceCheckInternal(frame, instance, cls, instanceCheckNode, castToBooleanNode);
@@ -1459,7 +1459,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "!isPTuple(cls)")
         static boolean isSubclass(VirtualFrame frame, Object derived, Object cls,
-                        @Cached("create(__SUBCLASSCHECK__)") LookupAndCallBinaryNode subclassCheckNode,
+                        @Cached("create(Subclasscheck)") LookupAndCallBinaryNode subclassCheckNode,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             return isSubclassCheckInternal(frame, derived, cls, subclassCheckNode, castToBooleanNode) || isSubtypeNode.execute(frame, derived, cls);
@@ -1885,13 +1885,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(formatSpec)")
         Object format(VirtualFrame frame, Object obj, @SuppressWarnings("unused") PNone formatSpec,
-                        @Shared("callFormat") @Cached("create(__FORMAT__)") LookupAndCallBinaryNode callFormat) {
+                        @Shared("callFormat") @Cached("create(Format)") LookupAndCallBinaryNode callFormat) {
             return format(frame, obj, "", callFormat);
         }
 
         @Specialization(guards = "!isNoValue(formatSpec)")
         Object format(VirtualFrame frame, Object obj, Object formatSpec,
-                        @Shared("callFormat") @Cached("create(__FORMAT__)") LookupAndCallBinaryNode callFormat) {
+                        @Shared("callFormat") @Cached("create(Format)") LookupAndCallBinaryNode callFormat) {
             Object res = callFormat.executeObject(frame, obj, formatSpec);
             if (res == NO_VALUE) {
                 throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_FORMAT, obj);
@@ -1921,7 +1921,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class RoundNode extends PythonBuiltinNode {
         @Specialization
         Object round(VirtualFrame frame, Object x, @SuppressWarnings("unused") PNone n,
-                        @Cached("create(__ROUND__)") LookupAndCallUnaryNode callRound) {
+                        @Cached("create(Round)") LookupAndCallUnaryNode callRound) {
             Object result = callRound.executeObject(frame, x);
             if (result == PNone.NO_VALUE) {
                 throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, __ROUND__);
@@ -1931,7 +1931,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "!isPNone(n)")
         Object round(VirtualFrame frame, Object x, Object n,
-                        @Cached("create(__ROUND__)") LookupAndCallBinaryNode callRound) {
+                        @Cached("create(Round)") LookupAndCallBinaryNode callRound) {
             Object result = callRound.executeObject(frame, x, n);
             if (result == NOT_IMPLEMENTED) {
                 throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, __ROUND__);

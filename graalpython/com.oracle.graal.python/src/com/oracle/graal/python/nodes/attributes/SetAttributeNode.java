@@ -102,7 +102,7 @@ public abstract class SetAttributeNode extends StatementNode implements WriteNod
 
     @Specialization
     protected void doIt(VirtualFrame frame, Object object, Object value,
-                    @Cached("create(__SETATTR__)") LookupAndCallTernaryNode call) {
+                    @Cached("create(SetAttr)") LookupAndCallTernaryNode call) {
         call.execute(frame, object, key, value);
     }
 }

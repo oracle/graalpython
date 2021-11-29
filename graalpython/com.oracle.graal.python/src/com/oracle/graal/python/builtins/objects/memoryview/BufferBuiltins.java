@@ -110,25 +110,25 @@ public class BufferBuiltins extends PythonBuiltins {
 
         @Specialization
         public static Object iter(VirtualFrame frame, PBuffer self, boolean key,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
         public static Object iter(VirtualFrame frame, PBuffer self, int key,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
         public static Object iter(VirtualFrame frame, PBuffer self, long key,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
         public static Object iter(VirtualFrame frame, PBuffer self, PInt key,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
+                        @Cached("create(GetItem)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 

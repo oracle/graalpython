@@ -114,7 +114,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
 
     abstract static class GetAttributeBaseNode extends Node {
 
-        @Child protected LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
+        @Child protected LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(SpecialMethodSlot.GetAttribute);
         @Child private IsBuiltinClassProfile isBuiltinClassProfile;
 
         @Child private LookupSpecialMethodSlotNode lookupGetattrNode;

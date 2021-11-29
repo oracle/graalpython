@@ -81,11 +81,11 @@ public abstract class LookupAndCallBinaryNode extends Node {
     public abstract Object executeObject(VirtualFrame frame, Object arg, Object arg2);
 
     public static LookupAndCallBinaryNode create(String name) {
+        // Use SpecialMethodSlot overload for special slots, if there is a need to create
+        // LookupAndCallBinaryNode for dynamic name, then we should change this method or the caller
+        // to try to lookup a slot and use that if found
+        assert SpecialMethodSlot.findSpecialSlot(name) == null : name;
         return LookupAndCallNonReversibleBinaryNodeGen.create(name, null, false);
-    }
-
-    public static LookupAndCallBinaryNode create(String name, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallNonReversibleBinaryNodeGen.create(name, handlerFactory, false);
     }
 
     public static LookupAndCallBinaryNode create(SpecialMethodSlot slot) {

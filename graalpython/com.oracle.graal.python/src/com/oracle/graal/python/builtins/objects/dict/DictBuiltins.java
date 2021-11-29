@@ -300,14 +300,14 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @ImportStatic(SpecialMethodNames.class)
+    @ImportStatic(SpecialMethodSlot.class)
     protected abstract static class DispatchMissingNode extends Node {
 
         protected abstract Object execute(VirtualFrame frame, Object self, Object key);
 
         @Specialization
         protected static Object misssing(VirtualFrame frame, Object self, Object key,
-                        @Cached("create(__MISSING__)") LookupAndCallBinaryNode callMissing,
+                        @Cached("create(Missing)") LookupAndCallBinaryNode callMissing,
                         @Cached DefaultMissingNode defaultMissing) {
             Object result = callMissing.executeObject(frame, self, key);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {

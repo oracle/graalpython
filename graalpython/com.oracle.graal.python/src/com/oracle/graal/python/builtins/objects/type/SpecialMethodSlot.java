@@ -98,6 +98,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMATMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RPOW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RRSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSHIFT__;
@@ -144,6 +145,11 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+
+import com.sun.org.apache.xpath.internal.operations.And;
+import com.sun.org.apache.xpath.internal.operations.Mod;
+import com.sun.org.apache.xpath.internal.operations.Or;
+import jdk.internal.loader.AbstractClassLoaderValue.Sub;
 
 /**
  * Subset of special methods that is cached in {@link PythonManagedClass} and
@@ -250,6 +256,7 @@ public enum SpecialMethodSlot {
     RLShift(__RLSHIFT__),
     RShift(__RSHIFT__),
     RRShift(__RRSHIFT__),
+    Round(__ROUND__),
 
     IAdd(__IADD__),
     IMul(__IMUL__),
@@ -823,6 +830,8 @@ public enum SpecialMethodSlot {
                 return RShift;
             case __RRSHIFT__:
                 return RRShift;
+            case __ROUND__:
+                return Round;
             case __IADD__:
                 return IAdd;
             case __IMUL__:

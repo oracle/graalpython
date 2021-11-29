@@ -315,7 +315,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         Object ne(VirtualFrame frame, Object self, Object other) {
             if (eqNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                eqNode = insert(LookupAndCallBinaryNode.create(__EQ__));
+                eqNode = insert(LookupAndCallBinaryNode.create(SpecialMethodSlot.Eq));
             }
             Object result = eqNode.executeObject(frame, self, other);
             if (result == PNotImplemented.NOT_IMPLEMENTED) {

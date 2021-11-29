@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -282,7 +283,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         private LookupAndCallBinaryNode getContains() {
             if (contains == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                contains = insert(LookupAndCallBinaryNode.create(SpecialMethodNames.__CONTAINS__));
+                contains = insert(LookupAndCallBinaryNode.create(SpecialMethodSlot.Contains));
             }
             return contains;
         }

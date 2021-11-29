@@ -342,7 +342,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         private LookupAndCallBinaryNode getGetAttr() {
             if (getAttrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getAttrNode = insert(LookupAndCallBinaryNode.create(SpecialMethodNames.__GETATTRIBUTE__));
+                getAttrNode = insert(LookupAndCallBinaryNode.create(SpecialMethodSlot.GetAttribute));
             }
             return getAttrNode;
         }

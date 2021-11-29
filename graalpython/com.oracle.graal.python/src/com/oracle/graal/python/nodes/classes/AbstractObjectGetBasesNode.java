@@ -76,7 +76,7 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
 
     @Specialization(guards = "!isUncached()")
     static PTuple getBasesCached(VirtualFrame frame, Object cls,
-                    @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttributeNode,
+                    @Cached("create(GetAttribute)") LookupAndCallBinaryNode getAttributeNode,
                     @Shared("exceptionMaskProfile") @Cached IsBuiltinClassProfile exceptionMaskProfile) {
         try {
             Object bases = getAttributeNode.executeObject(frame, cls, __BASES__);

@@ -3392,7 +3392,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isReprFormatCode(formatCode)")
         Object doGeneric(VirtualFrame frame, Object module, double val, int formatCode, int precision, @SuppressWarnings("unused") int flags,
-                        @Cached("create(__FORMAT__)") LookupAndCallBinaryNode callReprNode,
+                        @Cached("create(Format)") LookupAndCallBinaryNode callReprNode,
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {

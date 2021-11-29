@@ -28,6 +28,7 @@ package com.oracle.graal.python.nodes.subscript;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.util.Supplier;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -97,7 +98,7 @@ public abstract class DeleteItemNode extends StatementNode {
     }
 
     protected LookupAndCallBinaryNode createDelItemNode() {
-        return LookupAndCallBinaryNode.create(SpecialMethodNames.__DELITEM__, notImplementedHandler);
+        return LookupAndCallBinaryNode.create(SpecialMethodSlot.DelItem, notImplementedHandler);
 
     }
 

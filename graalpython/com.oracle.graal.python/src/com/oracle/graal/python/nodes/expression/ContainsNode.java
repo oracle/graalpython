@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.expression;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -57,7 +58,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public abstract class ContainsNode extends BinaryOpNode {
-    @Child private LookupAndCallBinaryNode callNode = LookupAndCallBinaryNode.create(__CONTAINS__);
+    @Child private LookupAndCallBinaryNode callNode = LookupAndCallBinaryNode.create(SpecialMethodSlot.Contains);
     @Child private CoerceToBooleanNode castBool = CoerceToBooleanNode.createIfTrueNode();
 
     @Child private GetNextNode next;

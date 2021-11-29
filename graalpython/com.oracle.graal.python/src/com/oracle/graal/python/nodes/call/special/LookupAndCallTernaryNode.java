@@ -63,6 +63,10 @@ public abstract class LookupAndCallTernaryNode extends Node {
     public abstract Object execute(VirtualFrame frame, Object arg1, Object arg2, Object arg3);
 
     public static LookupAndCallTernaryNode create(String name) {
+        // Use SpecialMethodSlot overload for special slots, if there is a need to create
+        // LookupAndCallBinaryNode for dynamic name, then we should change this method or the caller
+        // to try to lookup a slot and use that if found
+        assert SpecialMethodSlot.findSpecialSlot(name) == null : name;
         return LookupAndCallNonReversibleTernaryNodeGen.create(name);
     }
 
