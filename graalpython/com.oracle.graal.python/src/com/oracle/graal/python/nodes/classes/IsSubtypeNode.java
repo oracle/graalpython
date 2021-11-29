@@ -86,11 +86,10 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     /**
-     * This method is used to search for a constant base type in the mro of
-     * non-constant potential subtypes when all subtypes' MROs have the same
-     * length. Since the entire base mro must strictly be behind the base, we
-     * only need to search from the beginning of the mro to the length
-     * difference.
+     * This method is used to search for a constant base type in the mro of non-constant potential
+     * subtypes when all subtypes' MROs have the same length. Since the entire base mro must
+     * strictly be behind the base, we only need to search from the beginning of the mro to the
+     * length difference.
      */
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     protected boolean isSubMro(Object base, PythonAbstractClass[] derivedMroAry, int mroDiff, IsSameTypeNode isSameTypeNode) {
@@ -105,8 +104,8 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     }
 
     /**
-     * This method is used to search in a constant length subtype mro for a
-     * (non-constant) base type. It has to loop over the entire mro to do this.
+     * This method is used to search in a constant length subtype mro for a (non-constant) base
+     * type. It has to loop over the entire mro to do this.
      */
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     protected boolean isInMro(Object cls, MroSequenceStorage mro, int sz, IsSameTypeNode isSameTypeNode) {
