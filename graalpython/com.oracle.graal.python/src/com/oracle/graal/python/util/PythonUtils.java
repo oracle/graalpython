@@ -179,6 +179,19 @@ public final class PythonUtils {
     }
 
     /**
+     * Executes {@link Arrays#copyOf(boolean[], int)} and puts all exceptions on the slow path.
+     */
+    public static boolean[] arrayCopyOf(boolean[] original, int newLength) {
+        try {
+            return Arrays.copyOf(original, newLength);
+        } catch (Throwable t) {
+            // Break exception edges
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw t;
+        }
+    }
+
+    /**
      * Executes {@link Arrays#copyOf(byte[], int)} and puts all exceptions on the slow path.
      */
     public static byte[] arrayCopyOf(byte[] original, int newLength) {
@@ -195,6 +208,19 @@ public final class PythonUtils {
      * Executes {@link Arrays#copyOf(int[], int)} and puts all exceptions on the slow path.
      */
     public static int[] arrayCopyOf(int[] original, int newLength) {
+        try {
+            return Arrays.copyOf(original, newLength);
+        } catch (Throwable t) {
+            // Break exception edges
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw t;
+        }
+    }
+
+    /**
+     * Executes {@link Arrays#copyOf(double[], int)} and puts all exceptions on the slow path.
+     */
+    public static double[] arrayCopyOf(double[] original, int newLength) {
         try {
             return Arrays.copyOf(original, newLength);
         } catch (Throwable t) {
