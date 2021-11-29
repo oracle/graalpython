@@ -44,7 +44,7 @@ public class AnnAssignmentSSTNode extends AssignmentSSTNode {
     protected final AnnotationSSTNode annotation;
 
     public AnnAssignmentSSTNode(AnnotationSSTNode annotation, SSTNode rhs, int start, int end) {
-        super(new SSTNode[]{annotation.lhs}, rhs, start, end);
+        super(new SSTNode[]{annotation.lhs}, rhs, null, start, end);
         this.annotation = annotation;
     }
 

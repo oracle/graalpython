@@ -63,24 +63,23 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
         StringBuilder sb = new StringBuilder();
         sb.append(addHeader(node)).append("\n");
         level++;
-
+        sb.append(indent()).append("LHS: ");
+        if (node.lhs.length == 1) {
+            sb.append(node.lhs[0].accept(this)).append("\n");
+        } else {
+            sb.append("\n");
+            level++;
+            for(SSTNode lh: node.lhs) {
+                sb.append(indent()).append(lh.accept(this)).append("\n");
+            }
+            level--;
+        }
+        sb.append(indent()).append("RHS: ").append(node.rhs.accept(this)).append("\n");;
+        if (node.typeComment != null) {
+            sb.append(indent()).append("TypeComment: ").append(node.typeComment.accept(this)).append("\n");
+        }
         level--;
         return sb.toString();
-//        level++;
-//        indent();
-//        sb.append("Left hand sides:\n");
-//        level++;
-//        for(SSTNode lh: node.lhs) {
-//            lh.accept(this);
-//        }
-//        level--;
-//        indent();
-//        sb.append("Right hand:\n");
-//        level++;
-//        node.rhs.accept(this);
-//        level--;
-//        level--;
-//        return null;
     }
 
     @Override
@@ -243,7 +242,30 @@ public class SSTTreePrinterVisitor implements SSTreeVisitor<String>{
 
     @Override
     public String visit(FunctionDefSSTNode node) {
-        return addHeader(node);
+        StringBuilder sb = new StringBuilder();
+        sb.append(addHeader(node));
+        level++;
+        sb.append('\n').append(indent()).append("Name:").append(node.name);
+        if (node.decorators != null) {
+            sb.append('\n').append(indent()).append("Decorators:");
+            for (SSTNode n : node.decorators) {
+                sb.append('\n').append(indent()).append(n.accept(this));
+            }
+        }
+        if (node.resultAnnotation != null) {
+            sb.append('\n').append(indent()).append("Result Annotation: ").append(node.resultAnnotation.accept(this));
+        }
+        if (node.typeComment != null) {
+            sb.append('\n').append(indent()).append("Type Comment: ").append(node.typeComment.accept(this));
+        }
+        sb.append('\n').append(indent()).append("---- Function body of ").append(node.name).append(" ----");
+        for(SSTNode stm : node.body) {
+            sb.append('\n').append(indent()).append(stm.accept(this));
+        }
+        sb.append(indent()).append("---- End of ").append(node.name).append(" function ----");
+        level--;
+        
+        return sb.toString();
     }
 
     @Override

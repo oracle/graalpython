@@ -29,6 +29,9 @@ checks, whether it has the same results as the python tokenizer.
     * build: `ant jar`
     * run tests: `ant test`
 
+## TODO
+* when a rule in grammar returns token, then the generated parser can generate the `Token` as well. Like in [TYPE_COMMENT]
+
 ### Updating the grammar
 
 We have modified the grammar actions and return types to match the Java

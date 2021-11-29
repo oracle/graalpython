@@ -373,8 +373,8 @@ abstract class AbstractParser {
     /**
      * _PyPegen_new_type_comment
      */
-    protected String newTypeComment(Token token) {
-        return token != null ? getText(token) : null;
+    protected SSTNode newTypeComment(Token token) {
+        return token != null ? factory.createTypeComment(getText(token), token.startOffset, token.endOffset) : null;
     }
 
     // debug methods

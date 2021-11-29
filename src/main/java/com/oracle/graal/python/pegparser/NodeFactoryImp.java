@@ -77,8 +77,8 @@ public class NodeFactoryImp implements NodeFactory{
     }
 
     @Override
-    public AssignmentSSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, int startOffset, int endOffset) {
-        return new AssignmentSSTNode(lhs, rhs, startOffset, endOffset);
+    public AssignmentSSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, SSTNode typeComment, int startOffset, int endOffset) {
+        return new AssignmentSSTNode(lhs, rhs, typeComment, startOffset, endOffset);
     }
     
     @Override
@@ -203,7 +203,12 @@ public class NodeFactoryImp implements NodeFactory{
     }
 
     @Override
-    public SSTNode createFunctionDef(String name, ArgDefListBuilder args, SSTNode[] body, SSTNode[] decorators, SSTNode returns, String typeComment, int startOffset, int endOffset) {
+    public SSTNode createFunctionDef(String name, ArgDefListBuilder args, SSTNode[] body, SSTNode[] decorators, SSTNode returns, SSTNode typeComment, int startOffset, int endOffset) {
         return new FunctionDefSSTNode(name, args, body, decorators, returns, typeComment, startOffset, endOffset);
+    }
+    
+    @Override
+    public SSTNode createTypeComment(String typeComment, int startOffset, int ednOffset) {
+        return new VarLookupSSTNode(typeComment, startOffset, ednOffset);
     }
 }

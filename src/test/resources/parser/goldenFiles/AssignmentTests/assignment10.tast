@@ -1,0 +1,10 @@
+BlockSSTNode[0, 15]
+    AssignmentSSTNode[0, 15]
+        LHS: 
+            CollectionSSTNode[0, 7] Tuple
+                Values:
+                    VarLookupSSTNode[0, 1] Value: "i"
+                    VarLookupSSTNode[3, 4] Value: "j"
+                    VarLookupSSTNode[6, 7] Value: "k"
+            VarLookupSSTNode[10, 11] Value: "x"
+        RHS: VarLookupSSTNode[14, 15] Value: "a"

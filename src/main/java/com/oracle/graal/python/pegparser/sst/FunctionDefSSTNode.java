@@ -47,9 +47,9 @@ public class FunctionDefSSTNode extends SSTNodeWithScope {
     protected final SSTNode[] body;
     protected final SSTNode[] decorators;
     protected final SSTNode resultAnnotation;
-    protected final String typeComment;
+    protected final SSTNode typeComment;
 
-    public FunctionDefSSTNode(String name, ArgDefListBuilder args, SSTNode[] body, SSTNode[] decorators, SSTNode resultAnnotation, String typeComment, int startOffset, int endOffset) {
+    public FunctionDefSSTNode(String name, ArgDefListBuilder args, SSTNode[] body, SSTNode[] decorators, SSTNode resultAnnotation, SSTNode typeComment, int startOffset, int endOffset) {
         super(startOffset, endOffset, null); // TODO
         this.name = name;
         this.argBuilder = args;
