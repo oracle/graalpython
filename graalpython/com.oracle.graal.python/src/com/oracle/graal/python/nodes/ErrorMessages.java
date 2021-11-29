@@ -43,6 +43,8 @@ package com.oracle.graal.python.nodes;
 public abstract class ErrorMessages {
 
     public static final String ABSOLUTE_VALUE_TOO_LARGE = "absolute value too large";
+    public static final String S_EXPECTED_SD_ARGS_GOT_D = "%s expected %s%d argument%s, got %d";
+    public static final String UNPACKED_TUPLE_SHOULD_HAVE_D_ELEMS = "unpacked tuple should have %s%d element%s, but has %d";
     public static final String ARG_AFTER_MUST_BE_ITERABLE = "argument after * must be an iterable, not %p";
     public static final String ARG_AFTER_MUST_BE_MAPPING = "%s() argument after ** must be a mapping, not %p";
     public static final String ARG_CONVERTED_NOT_EXECUTABLE = "argument converted is not executable";
