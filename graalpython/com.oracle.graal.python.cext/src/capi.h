@@ -86,6 +86,7 @@ typedef struct {
 
 PyAPI_DATA(PyTypeObject) PyBuffer_Type;
 PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
+PyAPI_DATA(PyTypeObject) _PyExc_StopIteration;
 
 typedef void (*init_upcall)();
 
