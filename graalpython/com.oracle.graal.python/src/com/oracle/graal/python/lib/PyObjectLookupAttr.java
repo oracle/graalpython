@@ -118,6 +118,15 @@ public abstract class PyObjectLookupAttr extends Node {
         return getAttributeIs(lazyClass, BuiltinMethodDescriptors.TYPE_GET_ATTRIBUTE);
     }
 
+    protected static final boolean isBuiltinTypeType(Object type) {
+        return type == PythonBuiltinClassType.PythonClass;
+    }
+
+    protected static final boolean isNotTypeSlot(String name) {
+        final int length = name.length();
+        return length < 3 || (length > 3 && name.charAt(0) != '_') || !name.equals("mro");
+    }
+
     // simple version that needs no calls and only reads from the object directly
     @SuppressWarnings("unused")
     @Specialization(guards = {"isObjectGetAttribute(type)", "hasNoGetAttr(type)", "name == cachedName", "isNoValue(descr)"})
@@ -166,19 +175,11 @@ public abstract class PyObjectLookupAttr extends Node {
         }
     }
 
-    protected static final boolean isBuiltinTypeType(Object type) {
-        return type == PythonBuiltinClassType.PythonClass;
-    }
-
-    protected static final boolean isNotUnderscoreName(String name) {
-        return name.length() < 4 || name.charAt(0) != '_';
-    }
-
     // simple version that needs no calls and only reads from the object directly. the only
     // difference for type.__getattribute__ over object.__getattribute__ is that it looks for a
     // __get__ method on the value and invokes it if it is callable.
     @SuppressWarnings("unused")
-    @Specialization(guards = {"isTypeGetAttribute(type)", "isBuiltinTypeType(type)", "isNotUnderscoreName(name)"}, limit = "1")
+    @Specialization(guards = {"isTypeGetAttribute(type)", "isBuiltinTypeType(type)", "isNotTypeSlot(name)"}, limit = "1")
     static final Object doBuiltinTypeType(VirtualFrame frame, Object object, String name,
                     @Cached GetClassNode getClass,
                     @Bind("getClass.execute(object)") Object type,
