@@ -68,7 +68,6 @@ public final class CSVDialect extends PythonBuiltinObject {
         super(cls, instanceShape);
     }
 
-
     public CSVDialect(Object cls, Shape instanceShape, String delimiter, boolean doubleQuote, String escapeChar,
                     String lineTerminator, String quoteChar, QuoteStyle quoting, boolean skipInitialSpace,
                     boolean strict) {

@@ -543,8 +543,9 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             if (valueObj == PNone.NO_VALUE) {
                 return defaultValue;
             }
-            if (valueObj == PNone.NONE || valueObj.equals(NOT_SET)) {
+            if (valueObj == PNone.NONE || valueObj == NOT_SET) {
                 return NOT_SET;
+
             }
 
             return getChar(attribute, valueObj, defaultValue, getType, castToJavaStringNode);
