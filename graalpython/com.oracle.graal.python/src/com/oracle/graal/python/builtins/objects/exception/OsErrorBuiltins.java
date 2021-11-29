@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.lib.PyArgCheckPositionalNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -81,6 +82,9 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.OSError)
 public final class OsErrorBuiltins extends PythonBuiltins {
+    static final int ARGS_MIN = 2;
+    static final int ARGS_MAX = 5;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return OsErrorBuiltinsFactory.getFactories();
@@ -178,6 +182,11 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         baseInitNode.execute(self, pArgs);
     }
 
+    static OSErrorData osErrorParseArgs(Object[] args, PyArgCheckPositionalNode checkPositionalNode) {
+        checkPositionalNode.execute(PythonBuiltinClassType.OSError.getPrintName(), args, ARGS_MIN, ARGS_MAX);
+        return OSErrorData.create(args);
+    }
+
     @CompilerDirectives.ValueType
     public static final class OSErrorData extends PBaseException.Data {
         private Object myerrno;
@@ -256,7 +265,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                 data.setFilename2(args[3]);
             }
             if (args.length == 5) {
-                data.setWinerror(args[5]);
+                data.setWinerror(args[4]);
             }
             return data;
         }
@@ -272,7 +281,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NEW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 5, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     protected abstract static class OSErrorNewNode extends PythonBuiltinNode {
         @Specialization
@@ -280,6 +289,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyNumberCheckNode pyNumberCheckNode,
                         @Cached PyNumberAsSizeNode pyNumberAsSizeNode,
+                        @Cached PyArgCheckPositionalNode checkPositionalNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
             Object type = subType;
             OSErrorData parsedArgs = OSErrorData.create();
@@ -289,7 +299,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                     throw raise(PythonBuiltinClassType.TypeError, P_TAKES_NO_KEYWORD_ARGS, type);
                 }
 
-                parsedArgs = OSErrorData.create(args);
+                parsedArgs = osErrorParseArgs(args, checkPositionalNode);
                 final Object myerrno = parsedArgs.getMyerrno();
                 if (myerrno != null && PGuards.canBeInteger(myerrno) &&
                                 subType == PythonBuiltinClassType.OSError) {
@@ -311,7 +321,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 5, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class OSErrorInitNode extends PythonBuiltinNode {
         @Specialization
@@ -320,6 +330,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyNumberCheckNode pyNumberCheckNode,
                         @Cached PyNumberAsSizeNode pyNumberAsSizeNode,
+                        @Cached PyArgCheckPositionalNode checkPositionalNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode) {
             final Object type = getClassNode.execute(self);
             if (!osErrorUseInit(frame, getCore(), type, getAttr)) {
@@ -331,7 +342,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.TypeError, P_TAKES_NO_KEYWORD_ARGS, type);
             }
 
-            OSErrorData parsedArgs = OSErrorData.create(args);
+            OSErrorData parsedArgs = osErrorParseArgs(args, checkPositionalNode);
             osErrorInit(frame, self, type, args, parsedArgs, pyNumberCheckNode, pyNumberAsSizeNode, baseInitNode);
             return PNone.NONE;
         }
