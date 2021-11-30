@@ -481,8 +481,8 @@ public class SSLContextBuiltins extends PythonBuiltins {
     abstract static class SetCiphersNode extends PythonClinicBuiltinNode {
 
         @Specialization
-        Object setCiphers(PSSLContext self, String cipherlist) {
-            self.setCiphers(SSLCipherSelector.selectCiphers(this, cipherlist));
+        Object setCiphers(VirtualFrame frame, PSSLContext self, String cipherlist) {
+            self.setCiphers(SSLCipherSelector.selectCiphers(frame, this, cipherlist));
             return PNone.NONE;
         }
 

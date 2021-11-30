@@ -41,7 +41,10 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
+import static com.oracle.graal.python.nodes.ErrorMessages.SSL_CANT_OPEN_FILE_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.SSL_ERR_DECODING_PEM_FILE;
+import static com.oracle.graal.python.nodes.ErrorMessages.SSL_ERR_DECODING_PEM_FILE_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -77,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.ssl.SSLOptions;
 import com.oracle.graal.python.builtins.objects.ssl.SSLProtocol;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -92,6 +96,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "_ssl")
@@ -133,7 +138,7 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     static {
         SSLCipher[] computed;
         try {
-            computed = SSLCipherSelector.selectCiphers(null, DEFAULT_CIPHER_STRING);
+            computed = SSLCipherSelector.selectCiphers(null,null, DEFAULT_CIPHER_STRING);
         } catch (PException e) {
             computed = new SSLCipher[0];
         }
@@ -360,30 +365,31 @@ public class SSLModuleBuiltins extends PythonBuiltins {
     abstract static class DecodeCertNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object decode(VirtualFrame frame, Object path,
-                        @Cached PyUnicodeFSDecoderNode asPath) {
-            return decode(toTruffleFile(frame, asPath, path));
+                        @Cached PyUnicodeFSDecoderNode asPath,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+            return decode(frame, toTruffleFile(frame, asPath, path), constructAndRaiseNode);
         }
 
         @TruffleBoundary
-        private Object decode(TruffleFile file) throws PException {
+        private Object decode(Frame frame, TruffleFile file, PConstructAndRaiseNode constructAndRaiseNode) throws PException {
             List<Object> l = new ArrayList<>();
             try (BufferedReader r = file.newBufferedReader()) {
                 CertUtils.LoadCertError result = CertUtils.getCertificates(r, l);
                 if (result != CertUtils.LoadCertError.NO_ERROR) {
-                    throw raise(SSLError, "Error decoding PEM-encoded file: " + result);
+                    throw constructAndRaiseNode.raiseSSLError(frame, SSL_ERR_DECODING_PEM_FILE_S, result);
                 }
                 if (l.isEmpty()) {
-                    throw raise(SSLError, "Error decoding PEM-encoded file");
+                    throw constructAndRaiseNode.raiseSSLError(frame, SSL_ERR_DECODING_PEM_FILE);
                 }
                 Object cert = l.get(0);
                 if (!(cert instanceof X509Certificate)) {
-                    throw raise(SSLError, "Error decoding PEM-encoded file: unexpected type " + cert.getClass().getName());
+                    throw constructAndRaiseNode.raiseSSLError(frame, SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S, cert.getClass().getName());
                 }
                 return CertUtils.decodeCertificate(this, getContext().factory(), (X509Certificate) l.get(0));
             } catch (IOException ex) {
-                throw raise(SSLError, "Can't open file: " + ex.toString());
+                throw constructAndRaiseNode.raiseSSLError(frame, SSL_CANT_OPEN_FILE_S, ex.toString());
             } catch (CertificateException | CRLException ex) {
-                throw raise(SSLError, "Error decoding PEM-encoded file: " + ex.toString());
+                throw constructAndRaiseNode.raiseSSLError(frame, SSL_ERR_DECODING_PEM_FILE_S, ex.toString());
             }
         }
 

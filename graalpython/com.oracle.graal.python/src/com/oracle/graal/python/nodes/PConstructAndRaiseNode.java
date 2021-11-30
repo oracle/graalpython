@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -231,6 +232,18 @@ public abstract class PConstructAndRaiseNode extends Node {
 
     public final PException raiseOSError(Frame frame, int errno, String message, Object filename, Object filename2) {
         return raiseOSErrorInternal(frame, createOsErrorArgs(errno, message, filename, filename2));
+    }
+
+    public final PException raiseSSLError(Frame frame, String message) {
+        return raiseSSLError(frame, message, PythonUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    public final PException raiseSSLError(Frame frame, String message, Object ... formatArgs) {
+        return executeWithFmtMessageAndArgs(frame, PythonBuiltinClassType.SSLError, message, formatArgs, PythonUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    public final PException raiseSSLError(Frame frame, String message, Object[] formatArgs, Object[] args) {
+        return executeWithFmtMessageAndArgs(frame, PythonBuiltinClassType.SSLError, message, formatArgs, args);
     }
 
     public static PConstructAndRaiseNode create() {

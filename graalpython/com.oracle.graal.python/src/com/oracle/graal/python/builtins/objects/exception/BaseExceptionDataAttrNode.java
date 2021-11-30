@@ -57,6 +57,7 @@ public abstract class BaseExceptionDataAttrNode extends PythonBuiltinNode {
     @Specialization(guards = "isNoValue(none)")
     public Object getAttr(PBaseException self, @SuppressWarnings("unused") PNone none) {
         final PBaseException.Data data = self.getData();
+        assert data != null : "PBaseException data field is null, perhaps __init__ was not called?";
         final Object value = get(data);
         return value != null ? value : PNone.NONE;
     }
@@ -64,6 +65,7 @@ public abstract class BaseExceptionDataAttrNode extends PythonBuiltinNode {
     @Specialization(guards = "!isNoValue(value)")
     public Object setAttr(PBaseException self, Object value) {
         final PBaseException.Data data = self.getData();
+        assert data != null : "PBaseException data field is null, perhaps __init__ was not called?";
         set(data, value);
         return PNone.NONE;
     }

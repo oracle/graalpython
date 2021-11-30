@@ -180,11 +180,15 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         data.setWinerror(parsedArgs.getWinerror());
 
         baseInitNode.execute(self, pArgs);
+        self.setData(parsedArgs);
     }
 
     static OSErrorData osErrorParseArgs(Object[] args, PyArgCheckPositionalNode checkPositionalNode) {
-        checkPositionalNode.execute(PythonBuiltinClassType.OSError.getPrintName(), args, ARGS_MIN, ARGS_MAX);
-        return OSErrorData.create(args);
+        if (args.length >= 2 && args.length <= 5) {
+            checkPositionalNode.execute(PythonBuiltinClassType.OSError.getPrintName(), args, ARGS_MIN, ARGS_MAX);
+            return OSErrorData.create(args);
+        }
+        return OSErrorData.create();
     }
 
     @CompilerDirectives.ValueType
@@ -317,7 +321,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
             } else {
                 self.setArgs(factory().createEmptyTuple());
             }
-            return null;
+            return self;
         }
     }
 

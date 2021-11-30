@@ -1005,6 +1005,13 @@ public abstract class ErrorMessages {
     public static final String INVALID_PARTIAL_STATE = "invalid partial state";
     public static final String LOST_S = "lost %s";
 
+    // ssl error messages
+    public static final String SSL_ERR_DECODING_PEM_FILE_S = "Error decoding PEM-encoded file: %s";
+    public static final String SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S = "Error decoding PEM-encoded file: unexpected type %s";
+    public static final String SSL_ERR_DECODING_PEM_FILE= "Error decoding PEM-encoded file";
+    public static final String SSL_CANT_OPEN_FILE_S = "Can't open file: %s";
+    public static final String SSL_CANNOT_WRITE_AFTER_EOF = "cannot write() after write_eof()";
+
     // syntax errors
     public static final String MISSING_PARENTHESES_IN_CALL_TO_EXEC = "Missing parentheses in call to 'exec'";
     public static final String MISSING_PARENTHESES_IN_CALL_TO_PRINT = "Missing parentheses in call to 'print'. Did you mean print(%s%s)?";
