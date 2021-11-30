@@ -82,6 +82,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -202,7 +203,6 @@ public class CSVModuleBuiltins extends PythonBuiltins {
         @Specialization
         PList listDialects(VirtualFrame frame, PythonModule module,
                         @Cached ReadAttributeFromObjectNode readNode,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary library,
                         @Cached ListNodes.ConstructListNode constructListNode) {
 
             Object dialects = readNode.execute(module, "_dialects");
@@ -543,9 +543,8 @@ public class CSVModuleBuiltins extends PythonBuiltins {
             if (valueObj == PNone.NO_VALUE) {
                 return defaultValue;
             }
-            if (valueObj == PNone.NONE || valueObj == NOT_SET) {
+            if (valueObj == PNone.NONE || PythonUtils.equals(valueObj, NOT_SET)) {
                 return NOT_SET;
-
             }
 
             return getChar(attribute, valueObj, defaultValue, getType, castToJavaStringNode);

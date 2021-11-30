@@ -122,9 +122,8 @@ public abstract class PyObjectLookupAttr extends Node {
         return type == PythonBuiltinClassType.PythonClass;
     }
 
-    protected static final boolean isNotTypeSlot(String name) {
-        final int length = name.length();
-        return length < 3 || (length > 3 && name.charAt(0) != '_') || !name.equals("mro");
+    protected static final boolean isTypeSlot(String name) {
+        return SpecialMethodSlot.canBeSpecial(name) || name.equals("mro");
     }
 
     // simple version that needs no calls and only reads from the object directly
@@ -179,7 +178,7 @@ public abstract class PyObjectLookupAttr extends Node {
     // difference for type.__getattribute__ over object.__getattribute__ is that it looks for a
     // __get__ method on the value and invokes it if it is callable.
     @SuppressWarnings("unused")
-    @Specialization(guards = {"isTypeGetAttribute(type)", "isBuiltinTypeType(type)", "isNotTypeSlot(name)"}, limit = "1")
+    @Specialization(guards = {"isTypeGetAttribute(type)", "isBuiltinTypeType(type)", "!isTypeSlot(name)"}, limit = "1")
     static final Object doBuiltinTypeType(VirtualFrame frame, Object object, String name,
                     @Cached GetClassNode getClass,
                     @Bind("getClass.execute(object)") Object type,
